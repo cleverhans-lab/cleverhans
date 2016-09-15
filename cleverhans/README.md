@@ -32,4 +32,4 @@ The following authors contributed to this library (by alphabetical order):
 
 ## Copyright
 
-Copyright 2016 - Pennsylvania State University and OpenAI.
+Copyright 2016 - OpenAI and Pennsylvania State University.
