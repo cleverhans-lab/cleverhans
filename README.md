@@ -3,6 +3,8 @@
 This repository contains the source code for `cleverhans`, a Python library to
 benchmark adversarial examples in machine learning.
 
+![](https://github.com/openai/cleverhans/blob/master/logo.png?raw=true | width=100)
+
 ## Setting up `cleverhans`
 
 This library uses `TensorFlow` to accelerate graph computations performed by
