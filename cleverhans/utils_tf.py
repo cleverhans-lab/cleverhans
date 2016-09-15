@@ -3,7 +3,7 @@ import os
 import keras
 import tensorflow as tf
 
-from attacks import fgsm
+import attacks
 from keras.backend import categorical_crossentropy
 from tensorflow.python.platform import flags
 from utils import batch_indices
@@ -72,7 +72,7 @@ def tf_model_train(sess, x, y, model, X_train, Y_train, save=False, adversarial=
 
                 if adversarial:
                     # Compute adversarial examples
-                    adv_ex = fgsm(sess, x, y, model, X_train[start:end], Y_train[start:end], 0.3)
+                    adv_ex = attacks.fgsm(sess, x, y, model, X_train[start:end], Y_train[start:end], 0.3)
 
                     # Train on adversarial examples
                     train_step.run(feed_dict={x: adv_ex,
