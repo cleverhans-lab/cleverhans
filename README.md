@@ -38,6 +38,12 @@ craft adversarial examples, and make the model more robust to adversarial
 examples using adversarial training.
 * more to come soon...
 
+## Contributing
+
+Contributions are welcomed! We ask that new efforts and features be coordinated
+on the mailing list for `cleverhans` development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev). 
+Bug fixes can be initiated through Github pull requests.
+
 ## Authors
 
 The following authors contributed to this library (by alphabetical order):
