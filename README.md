@@ -3,8 +3,9 @@
 <img src="https://github.com/openai/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
 
 This repository contains the source code for `cleverhans`, a Python library to
-benchmark [adversarial examples](http://karpathy.github.io/2015/03/30/breaking-convnets/)
-in machine learning.
+benchmark machine learning systems' vulnerability to
+[adversarial examples](http://karpathy.github.io/2015/03/30/breaking-convnets/)
+.
 
 ## Setting up `cleverhans`
 
