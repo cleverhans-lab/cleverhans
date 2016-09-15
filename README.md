@@ -1,9 +1,9 @@
 # cleverhans (v0.1)
 
+<img src="https://github.com/openai/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
+
 This repository contains the source code for `cleverhans`, a Python library to
 benchmark adversarial examples in machine learning.
-
-<img src="https://github.com/openai/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo" style="width: 100px;"/>
 
 ## Setting up `cleverhans`
 
