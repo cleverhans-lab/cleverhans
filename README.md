@@ -16,6 +16,13 @@ explained [on this page](https://keras.io/backend/).
 Installing `TensorFlow` and `Keras` should take care of all other dependencies
 like `numpy` and `scipy`.
 
+On UNIX machines, it is recommended to add your clone of this repository to the
+`PYTHONPATH` variable so as to be able to import `cleverhans` from any folder.
+
+```
+export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
+```
+
 ## Tutorials
 
 This library comes with the following tutorials:
