@@ -4,9 +4,9 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from utils_mnist import data_mnist, model_mnist
-from utils_tf import tf_model_train, tf_model_eval
-from attacks import fgsm
+from cleverhans.utils_mnist import data_mnist, model_mnist
+from cleverhans.utils_tf import tf_model_train, tf_model_eval
+from cleverhans.attacks import fgsm
 
 FLAGS = flags.FLAGS
 
@@ -64,6 +64,11 @@ def main(argv=None):
 
     # Perform adversarial training
     tf_model_train(sess, x, y, model_adv, X_train, Y_train, adversarial=True)
+
+    # Evaluate the accuracy of the adversarialy trained MNIST model on
+    # legitimate test examples
+    accuracy = tf_model_eval(sess, x, y, model_adv, X_test, Y_test)
+    print 'Test accuracy on legitimate test examples: ' + str(accuracy)
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM) on
     # the new model, which was trained using adversarial training
