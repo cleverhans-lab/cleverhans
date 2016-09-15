@@ -62,6 +62,7 @@ def main(argv=None):
     # Redefine TF model graph
     model_adv = model_mnist(x)
 
+    print "Repeating the process, using adversarial training"
     # Perform adversarial training
     tf_model_train(sess, x, y, model_adv, X_train, Y_train, adversarial=True)
 
