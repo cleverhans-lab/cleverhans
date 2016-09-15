@@ -28,8 +28,7 @@ def fgsm(sess, x, y, model, X_test, Y_test, eps, back='tf'):
         # Compute FGSM using TensorFlow
         return fgsm_tf(sess, x, y, model, X_test, Y_test, eps)
     elif back == 'th':
-        # TODO(implement)
-        print("Theano FGSM not implemented")
+        raise NotImplementedError("Theano FGSM not implemented.")
 
 
 def fgsm_tf(sess, x, y, model, X_test, Y_test, eps):
