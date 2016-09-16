@@ -32,7 +32,7 @@ def data_mnist():
     return X_train, Y_train, X_test, Y_test
 
 
-def model_mnist(tf_placeholder=None):
+def model_mnist():
     """
     Defines MNIST model using Keras sequential model
     :param tf_placeholder:
@@ -56,11 +56,4 @@ def model_mnist(tf_placeholder=None):
     model.add(Dense(FLAGS.nb_classes))
     model.add(Activation('softmax'))
 
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='adadelta',
-                  metrics=['accuracy'])
-
-    if tf_placeholder is None:
-        return model
-    else:
-        return model(tf_placeholder)
+    return model
