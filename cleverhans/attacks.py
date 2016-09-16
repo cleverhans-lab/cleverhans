@@ -13,7 +13,7 @@ FLAGS = flags.FLAGS
 
 def fgsm(sess, x, y, model, X_test, Y_test, eps, back='tf', fgsm_symb=None):
     """
-
+    This is a wrapper for FGSM that we can use to select between TF and Theano
     :param sess:
     :param x:
     :param y:
@@ -50,7 +50,7 @@ def fgsm_tf_graph(x, y, model):
 
 def fgsm_tf(sess, x, y, model, X_test, Y_test, eps, fgsm_symb=None):
     """
-
+    Compute adversarial examples using FGSM
     :param sess:
     :param x:
     :param y:
