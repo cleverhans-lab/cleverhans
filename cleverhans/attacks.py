@@ -13,7 +13,7 @@ FLAGS = flags.FLAGS
 
 def fgsm(x, predictions, eps, back='tf'):
     """
-    This is a wrapper for FGSM that we can use to select between TF and Theano
+
     :param sess:
     :param x:
     :param y:
