@@ -2,6 +2,7 @@ import math
 import os
 import keras
 import tensorflow as tf
+import time
 
 import attacks
 from keras.backend import categorical_crossentropy
@@ -58,9 +59,13 @@ def tf_model_train(sess, x, y, model, X_train, Y_train, save=False, adversarial=
             # Compute number of batches
             nb_batches = int(math.ceil(len(X_train) / FLAGS.batch_size))
 
+            prev = time.time()
             for batch in range(nb_batches):
                 if batch % 100 == 0 and batch > 0:
                     print("Batch " + str(batch))
+                    cur = time.time()
+                    print("\tTook " + str(cur - prev) + " seconds")
+                    prev = cur
 
                 # Compute batch start and end indices
                 start, end = batch_indices(batch, len(X_train), FLAGS.batch_size)

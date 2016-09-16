@@ -49,7 +49,7 @@ def main(argv=None):
     model = model_mnist(x)
     print "Defined TensorFlow model graph."
 
-    # Train a MNIST model
+    # Train an MNIST model
     tf_model_train(sess, x, y, model, X_train, Y_train)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
@@ -66,6 +66,7 @@ def main(argv=None):
     # Redefine TF model graph
     model_adv = model_mnist(x)
 
+    print "Repeating the process, using adversarial training"
     # Perform adversarial training
     tf_model_train(sess, x, y, model_adv, X_train, Y_train, adversarial=True)
 

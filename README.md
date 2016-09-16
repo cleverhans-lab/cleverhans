@@ -3,8 +3,9 @@
 <img src="https://github.com/openai/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
 
 This repository contains the source code for `cleverhans`, a Python library to
-benchmark [adversarial examples](http://karpathy.github.io/2015/03/30/breaking-convnets/)
-in machine learning.
+benchmark machine learning systems' vulnerability to
+[adversarial examples](http://karpathy.github.io/2015/03/30/breaking-convnets/)
+.
 
 ## Setting up `cleverhans`
 
@@ -32,7 +33,7 @@ You may want to make that change permanent through your shell's profile.
 
 To help you get started with the functionalities provided by this library, it
 comes with the following tutorials:
-* MNIST ([code](mnist_tutorial.py), [tutorial](mnist_tutorial.md)): this first
+* MNIST ([code](tutorials/mnist_tutorial.py), [tutorial](tutorials/mnist_tutorial.md)): this first
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples, and make the model more robust to adversarial
 examples using adversarial training.
