@@ -31,7 +31,7 @@ def main(argv=None):
     # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'th':
         keras.backend.set_image_dim_ordering('th')
-        print "INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporary setting to 'th'"
+        print "INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'"
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
