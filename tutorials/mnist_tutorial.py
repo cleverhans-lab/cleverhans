@@ -20,6 +20,7 @@ flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
 flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
 flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+flags.DEFINE_float('fgsm_eps', 0.25, 'Epsilon used in the FGSM attack')
 
 
 def main(argv=None):
@@ -57,7 +58,7 @@ def main(argv=None):
     print 'Test accuracy on legitimate test examples: ' + str(accuracy)
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    adv_ex = fgsm(sess, x, y, model, X_test, Y_test, eps=0.3)
+    adv_ex = fgsm(sess, x, y, model, X_test, Y_test, eps=FLAGS.fgsm_eps)
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
     accuracy = tf_model_eval(sess, x, y, model, adv_ex, Y_test)
