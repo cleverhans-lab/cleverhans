@@ -28,7 +28,9 @@ def main(argv=None):
     :return:
     """
     # Image dimensions ordering should follow the Theano convention
-    assert keras.backend.image_dim_ordering() == 'th'
+    if keras.backend.image_dim_ordering() != 'th':
+        keras.backend.set_image_dim_ordering('th')
+        print "INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporary setting to 'th'"
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
