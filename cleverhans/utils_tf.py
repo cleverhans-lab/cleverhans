@@ -53,6 +53,10 @@ def tf_model_train(sess, x, y, model, X_train, Y_train, save=False, adversarial=
         init = tf.initialize_all_variables()
         sess.run(init)
 
+        # If adversarial training is turned on, add FGSM to the TF graph
+        if adversarial:
+            fgsm_symb = attacks.fgsm_tf_graph(x, y, model)
+
         for epoch in xrange(FLAGS.nb_epochs):
             print("Epoch " + str(epoch))
 
@@ -77,7 +81,8 @@ def tf_model_train(sess, x, y, model, X_train, Y_train, save=False, adversarial=
 
                 if adversarial:
                     # Compute adversarial examples
-                    adv_ex = attacks.fgsm(sess, x, y, model, X_train[start:end], Y_train[start:end], 0.3)
+                    # Feed fgsm_symb to avoid adding new elements to the TF graph at each iteration
+                    adv_ex = attacks.fgsm(sess, x, y, model, X_train[start:end], Y_train[start:end], 0.3, fgsm_symb=fgsm_symb)
 
                     # Train on adversarial examples
                     train_step.run(feed_dict={x: adv_ex,

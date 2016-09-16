@@ -11,7 +11,7 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(sess, x, y, model, X_test, Y_test, eps, back='tf'):
+def fgsm(sess, x, y, model, X_test, Y_test, eps, back='tf', fgsm_symb=None):
     """
 
     :param sess:
@@ -26,17 +26,47 @@ def fgsm(sess, x, y, model, X_test, Y_test, eps, back='tf'):
     """
     if back == 'tf':
         # Compute FGSM using TensorFlow
-        return fgsm_tf(sess, x, y, model, X_test, Y_test, eps)
+        return fgsm_tf(sess, x, y, model, X_test, Y_test, eps, fgsm_symb=fgsm_symb)
     elif back == 'th':
         raise NotImplementedError("Theano FGSM not implemented.")
 
 
-def fgsm_tf(sess, x, y, model, X_test, Y_test, eps):
+def fgsm_tf_graph(x, y, model):
+    """
+    Add FGSM to TF graph
+    :param x:
+    :param y:
+    :param model:
+    :return:
+    """
     # Define loss
     loss = utils_tf.tf_model_loss(y, model, mean=False)
 
     # Define FGSM
     fgsm_symb = tf.gradients(loss, x)
+
+    return fgsm_symb
+
+
+def fgsm_tf(sess, x, y, model, X_test, Y_test, eps, fgsm_symb=None):
+    """
+
+    :param sess:
+    :param x:
+    :param y:
+    :param model:
+    :param X_test:
+    :param Y_test:
+    :param eps:
+    :param fgsm_symb:
+    :return:
+    """
+    if fgsm_symb is None:
+        # Define loss
+        loss = utils_tf.tf_model_loss(y, model, mean=False)
+
+        # Define FGSM
+        fgsm_symb = tf.gradients(loss, x)
 
     # Initial result variable
     result = copy.copy(X_test)
