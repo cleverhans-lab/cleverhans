@@ -20,7 +20,6 @@ flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
 flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
 flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
-flags.DEFINE_float('fgsm_eps', 0.25, 'Epsilon used in the FGSM attack')
 
 
 def main(argv=None):
