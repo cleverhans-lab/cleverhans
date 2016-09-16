@@ -27,6 +27,8 @@ def main(argv=None):
     MNIST cleverhans tutorial
     :return:
     """
+    # Image dimensions ordering should follow the Theano convention
+    assert keras.backend.image_dim_ordering() == 'th'
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
