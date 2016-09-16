@@ -11,7 +11,7 @@ First, make sure that you have [TensorFlow](https://www.tensorflow.org/versions/
 and [Keras](https://keras.io/#installation) installed on
 your machine and then clone the `cleverhans` 
 [repository](https://github.com/openai/cleverhans).
-Also, add the path to the repository cloneto your 
+Also, add the path of the repository clone to your 
 `PYTHONPATH` environment variable. 
 ```
 export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
@@ -25,4 +25,14 @@ is provided in the `tutorial` folder of the
 
 ## Defining the model with TensorFlow and Keras
 
+In this tutorial, we use Keras to define the model
+and TensorFlow to train it. The model is a Keras 
+[`Sequential` model](https://keras.io/models/sequential/): 
+it is made up of multiple convolutional and ReLU layers. 
+You can find the model definition in the 
+[`utils_mnist` cleverhans module](https://github.com/openai/cleverhans/blob/master/cleverhans/utils_mnist.py).
+
+TODO(insert code snippet here)
+
+## Training the model with TensorFlow
 
