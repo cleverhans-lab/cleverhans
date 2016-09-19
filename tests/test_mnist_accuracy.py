@@ -54,7 +54,7 @@ def main(argv=None):
 
     	# Evaluate the accuracy of the MNIST model on legitimate test examples
     	accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
-    	assert float(accuracy) >= 0.97
+    	assert float(accuracy) >= 0.97, accuracy
 
 
 if __name__ == '__main__':
