@@ -40,6 +40,16 @@ tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples, and make the model more robust to adversarial
 examples using adversarial training.
 * more to come soon...
+ 
+## Reporting benchmarks
+
+When reporting benchmarks, please:
+* Use a versioned release of `cleverhans`.
+* Either use the latest version, or, if comparing to an earlier publication, use the same version as the earlier publication.
+* Report which attack method was used.
+* Report any configuration variables used to determine the behavior of the attack.
+
+For example, you might report "We benchmarked the robustness of our method to adversarial attack using v0.1.0 of `cleverhans`. On a test set modified by the `fgsm` with `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Contributing
 
