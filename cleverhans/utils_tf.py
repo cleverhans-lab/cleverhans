@@ -124,6 +124,7 @@ def tf_model_eval(sess, x, y, model, X_test, Y_test):
             accuracy += acc_value.eval(feed_dict={x: X_test[start:end],
                                             y: Y_test[start:end],
                                             keras.backend.learning_phase(): 0})
+        assert end >= len(X_test)
 
         # Divide by number of batches to get final value
         accuracy /= nb_batches
