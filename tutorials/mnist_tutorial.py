@@ -92,7 +92,5 @@ def main(argv=None):
     accuracy_adv = tf_model_eval(sess, x, y, predictions_2, X_test_adv_2, Y_test)
     print'Test accuracy on adversarial examples: ' + str(accuracy_adv)
 
-    sess.close()
-
 if __name__ == '__main__':
     app.run()
