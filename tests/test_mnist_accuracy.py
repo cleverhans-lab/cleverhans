@@ -33,28 +33,28 @@ def main(argv=None):
 
     # Create TF session and set as Keras backend session
     with tf.Session() as sess:
-    	keras.backend.set_session(sess)
-    	print "Created TensorFlow session and set Keras backend."
+        keras.backend.set_session(sess)
+        print "Created TensorFlow session and set Keras backend."
 
-    	# Get MNIST test data
-    	X_train, Y_train, X_test, Y_test = data_mnist()
-    	print "Loaded MNIST test data."
+        # Get MNIST test data
+        X_train, Y_train, X_test, Y_test = data_mnist()
+        print "Loaded MNIST test data."
 
-    	# Define input TF placeholder
-    	x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
-    	y = tf.placeholder(tf.float32, shape=(None, FLAGS.nb_classes))
+        # Define input TF placeholder
+        x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
+        y = tf.placeholder(tf.float32, shape=(None, FLAGS.nb_classes))
 
-    	# Define TF model graph
-    	model = model_mnist()
-    	predictions = model(x)
-    	print "Defined TensorFlow model graph."
+        # Define TF model graph
+        model = model_mnist()
+        predictions = model(x)
+        print "Defined TensorFlow model graph."
 
-    	# Train an MNIST model
-    	tf_model_train(sess, x, y, predictions, X_train, Y_train)
+        # Train an MNIST model
+        tf_model_train(sess, x, y, predictions, X_train, Y_train)
 
-    	# Evaluate the accuracy of the MNIST model on legitimate test examples
-    	accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
-    	assert float(accuracy) >= 0.97, accuracy
+        # Evaluate the accuracy of the MNIST model on legitimate test examples
+        accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
+        assert float(accuracy) >= 0.97, accuracy
 
 
 if __name__ == '__main__':
