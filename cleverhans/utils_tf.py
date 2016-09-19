@@ -81,6 +81,7 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 train_step.run(feed_dict={x: X_train[start:end],
                                           y: Y_train[start:end],
                                           keras.backend.learning_phase(): 1})
+            assert end >= len(X_train) # Check that all examples were used
 
 
         if save:
