@@ -63,7 +63,8 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             print("Epoch " + str(epoch))
 
             # Compute number of batches
-            nb_batches = int(math.ceil(len(X_train) / FLAGS.batch_size))
+            nb_batches = int(math.ceil(float(len(X_train)) / FLAGS.batch_size))
+            assert nb_batches * FLAGS.batch_size >= len(X_train)
 
             prev = time.time()
             for batch in range(nb_batches):
