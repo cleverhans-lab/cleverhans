@@ -33,14 +33,16 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                    predictions_adv=None):
     """
     Train a TF graph
-    :param sess:
-    :param x:
-    :param y:
-    :param model:
-    :param X_train:
-    :param Y_train:
-    :param save:
-    :return:
+    :param sess: TF session to use when training the graph
+    :param x: input placeholder
+    :param y: output placeholder (for labels)
+    :param predictions: model output predictions
+    :param X_train: numpy array with training inputs
+    :param Y_train: numpy array with training outputs
+    :param save: Boolean controling the save operation
+    :param predictions_adv: if set with the adversarial example tensor, 
+                            will run adversarial training 
+    :return: True if model trained
     """
     print "Starting model training using TensorFlow."
 
@@ -93,14 +95,14 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
 def tf_model_eval(sess, x, y, model, X_test, Y_test):
     """
-
-    :param sess:
-    :param x:
-    :param y:
-    :param model:
-    :param X_test:
-    :param Y_test:
-    :return:
+    Compute the accuracy of a TF model on some data
+    :param sess: TF session to use when training the graph
+    :param x: input placeholder
+    :param y: output placeholder (for labels)
+    :param model: model output predictions
+    :param X_test: numpy array with training inputs
+    :param Y_test: numpy array with training outputs
+    :return: a float with the accuracy value
     """
     # Define sympbolic for accuracy
     acc_value = keras.metrics.categorical_accuracy(y, model)
@@ -145,6 +147,9 @@ def tf_model_load(sess):
     return True
 
 def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
+    """
+    A helper function that computes a tensor on numpy inputs by batches.
+    """
     n = len(numpy_inputs)
     assert n > 0
     assert n == len(tf_inputs)

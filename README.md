@@ -7,6 +7,8 @@ benchmark machine learning systems' vulnerability to
 [adversarial examples](http://karpathy.github.io/2015/03/30/breaking-convnets/)
 .
 
+Note: this library is still in active development.
+
 ## Setting up `cleverhans`
 
 ### Dependencies
@@ -50,7 +52,6 @@ Bug fixes can be initiated through Github pull requests.
 The following authors contributed to this library (by alphabetical order):
 * Ian Goodfellow (OpenAI)
 * Nicolas Papernot (Pennsylvania State University)
-* Ryan Sheatsley (Pennsylvania State University)
 
 ## Copyright
 
