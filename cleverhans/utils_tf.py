@@ -40,8 +40,8 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
     :param save: Boolean controling the save operation
-    :param predictions_adv: if set with the adversarial example tensor, 
-                            will run adversarial training 
+    :param predictions_adv: if set with the adversarial example tensor,
+                            will run adversarial training
     :return: True if model trained
     """
     print "Starting model training using TensorFlow."
