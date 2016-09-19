@@ -13,7 +13,9 @@ FLAGS = flags.FLAGS
 
 def fgsm(x, predictions, eps, back='tf'):
     """
-
+    A wrapper for the Fast Gradient Sign Method.
+    It calls the right function, depending on the 
+    user's backend.
     :param sess:
     :param x:
     :param y:
@@ -31,6 +33,14 @@ def fgsm(x, predictions, eps, back='tf'):
         raise NotImplementedError("Theano FGSM not implemented.")
 
 def fgsm_tf(x, predictions, eps):
+    """
+    TensorFlow implementation of the Fast Gradient 
+    Sign method. 
+    :param x: the input placeholder
+    :param predictions: the model's output tensor
+    :param eps: the epsilon (input variation parameter) 
+    :return: a tensor for the adversarial example
+    """
     # Define loss
 
     y = tf.to_float(tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
