@@ -59,7 +59,7 @@ Bug fixes can be initiated through Github pull requests.
 
 ## About the name
 
-The name `cleverhans` is a reference to a presentation by Bob Sturm titled “Clever Hans, Clever Algorithms: Are Your Machine Learnings Learning What You Think?" Clever Hans was a horse that appeared to have learned to answer arithmetic questions, but had in fact only learned to read social cues that enabled him to give the correct answer. In controlled settings where he could not see people's faces or receive other feedback, he was unable to answer the same questions. The story of Clever Hans is a metaphor for machine learning systems that may achieve very high accuracy on a test set drawn from the same distribution as the training data, but that do not actually understand the underlying task and perform poorly on other inputs.
+The name `cleverhans` is a reference to a presentation by Bob Sturm titled “Clever Hans, Clever Algorithms: Are Your Machine Learnings Learning What You Think?" and the corresponding publication, ["A Simple Method to Determine if a Music Information Retrieval System is a 'Horse'."](http://ieeexplore.ieee.org/document/6847693/). Clever Hans was a horse that appeared to have learned to answer arithmetic questions, but had in fact only learned to read social cues that enabled him to give the correct answer. In controlled settings where he could not see people's faces or receive other feedback, he was unable to answer the same questions. The story of Clever Hans is a metaphor for machine learning systems that may achieve very high accuracy on a test set drawn from the same distribution as the training data, but that do not actually understand the underlying task and perform poorly on other inputs.
 
 ## Authors
 
