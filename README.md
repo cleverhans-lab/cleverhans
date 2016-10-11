@@ -67,6 +67,23 @@ The following authors contributed to this library (by alphabetical order):
 * Ian Goodfellow (OpenAI)
 * Nicolas Papernot (Pennsylvania State University)
 
+## Citing this work
+
+If you use `cleverhans` for academic research, you are highly encouraged 
+(though not required) to cite the following paper:
+
+```
+@article{goodfellow2016cleverhans,
+  title={cleverhans v0. 1: an adversarial machine learning library},
+  author={Goodfellow, Ian and Papernot, Nicolas and McDaniel, Patrick},
+  journal={arXiv preprint arXiv:1610.00768},
+  year={2016}
+}
+```
+
+A new version of the technical report will be uploaded for each major
+revision. GitHub contributors will be added to the author list.
+
 ## Copyright
 
 Copyright 2016 - OpenAI and Pennsylvania State University.
