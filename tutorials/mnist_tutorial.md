@@ -13,7 +13,7 @@ your machine and then clone the `cleverhans`
 [repository](https://github.com/openai/cleverhans).
 Also, add the path of the repository clone to your 
 `PYTHONPATH` environment variable. 
-```
+```bash
 export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
 ```
 This allows our tutorial script to import the library 
@@ -32,7 +32,7 @@ it is made up of multiple convolutional and ReLU layers.
 You can find the model definition in the 
 [`utils_mnist` cleverhans module](https://github.com/openai/cleverhans/blob/master/cleverhans/utils_mnist.py).
 
-```
+```python
 # Define input TF placeholder
 x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
 y = tf.placeholder(tf.float32, shape=(None, FLAGS.nb_classes))
@@ -50,7 +50,7 @@ TensorFlow optimizer to train models and another
 helper function to load the MNIST dataset. 
 To train our MNIST model, we run the following: 
 
-```
+```python
 # Get MNIST test data
 X_train, Y_train, X_test, Y_test = data_mnist()
 
@@ -61,7 +61,7 @@ tf_model_train(sess, x, y, predictions, X_train, Y_train)
 We can then evaluate the performance of this model
 using `tf_model_eval` included in `cleverhans.utils_tf`:
 
-```
+```python
 # Evaluate the accuracy of the MNIST model on legitimate test examples
 accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
 assert X_test.shape[0] == 10000, X_test.shape
@@ -79,7 +79,7 @@ calling `cleverhans.attacks.fgsm` before using the helper
 function `cleverhans.utils_tf.batch_eval` to apply it to 
 our test set. This gives the following:
 
-```
+```python
 # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
 adv_x = fgsm(x, predictions, eps=0.3)
 X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
@@ -110,7 +110,7 @@ In the following snippet, we first declare a new model (in a
 way similar to the one described previously) and then we train
 it with both legitimate and adversarial training points. 
 
-```
+```python
 # Redefine TF model graph
 model_2 = model_mnist()
 predictions_2 = model_2(x)
@@ -125,7 +125,7 @@ We can then verify that (1) its accuracy on legitimate data is
 still comparable to the first model, (2) its accuracy on newly
 generated adversarial examples is higher.
 
-```
+```python
 # Evaluate the accuracy of the adversarialy trained MNIST model on
 # legitimate test examples
 accuracy = tf_model_eval(sess, x, y, predictions_2, X_test, Y_test)
