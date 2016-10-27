@@ -146,7 +146,8 @@ def saliency_map(sess, x, f_x, X, target, search_domain, increase):
     other_classes = [i for i in range(FLAGS.nb_classes) if i != target]
     deriv_others, = tf.gradients([f_x[:, i] for i in other_classes], x)
     grads_target, grads_others = \
-        sess.run([tf.reshape(deriv_target, (28, 28)), tf.reshape(deriv_others, (28, 28))],
+        sess.run([tf.reshape(deriv_target, (FLAGS.img_rows, FLAGS.img_cols)),
+                  tf.reshape(deriv_others, (FLAGS.img_rows, FLAGS.img_cols))],
                  {x: X, keras.backend.learning_phase(): 0})
     pool = mp.Pool()
     outs = pool.map(compute_saliency, [(p, q, grads_target, grads_others, increase) \
