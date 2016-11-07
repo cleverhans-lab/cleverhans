@@ -1,14 +1,20 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import math
 import numpy as np
 import os
 import keras
+from keras.backend import categorical_crossentropy
+import six
 import tensorflow as tf
 import time
 
-import attacks
-from keras.backend import categorical_crossentropy
+from .utils import batch_indices
+
 from tensorflow.python.platform import flags
-from utils import batch_indices
 
 FLAGS = flags.FLAGS
 
@@ -44,7 +50,7 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                             will run adversarial training
     :return: True if model trained
     """
-    print "Starting model training using TensorFlow."
+    print("Starting model training using TensorFlow.")
 
     # Define loss
     loss = tf_model_loss(y, predictions)
@@ -53,13 +59,13 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate, rho=0.95, epsilon=1e-08).minimize(loss)
     # train_step = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
-    print "Defined optimizer."
+    print("Defined optimizer.")
 
     with sess.as_default():
         init = tf.initialize_all_variables()
         sess.run(init)
 
-        for epoch in xrange(FLAGS.nb_epochs):
+        for epoch in six.moves.xrange(FLAGS.nb_epochs):
             print("Epoch " + str(epoch))
 
             # Compute number of batches
@@ -88,9 +94,9 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             save_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            print "Completed model training and model saved at:" + str(save_path)
+            print("Completed model training and model saved at:" + str(save_path))
         else:
-            print "Completed model training."
+            print("Completed model training.")
 
     return True
 
@@ -164,13 +170,13 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
     assert n > 0
     assert n == len(tf_inputs)
     m = numpy_inputs[0].shape[0]
-    for i in xrange(1, n):
+    for i in six.moves.xrange(1, n):
         assert numpy_inputs[i].shape[0] == m
     out = []
     for _ in tf_outputs:
         out.append([])
     with sess.as_default():
-        for start in xrange(0, m, FLAGS.batch_size):
+        for start in six.moves.xrange(0, m, FLAGS.batch_size):
             batch = start // FLAGS.batch_size
             if batch % 100 == 0 and batch > 0:
                 print("Batch " + str(batch))
@@ -192,7 +198,7 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
             for out_elem, numpy_output_batch in zip(out, numpy_output_batches):
                 out_elem.append(numpy_output_batch)
 
-    out = map(lambda x: np.concatenate(x, axis=0), out)
+    out = [np.concatenate(x, axis=0) for x in out]
     for e in out:
         assert e.shape[0] == m, e.shape
     return out
