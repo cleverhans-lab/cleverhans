@@ -49,7 +49,7 @@ def load_model(directory, filename, weights_only=False, model=None):
     # Return Keras model
     if weights_only:
         result = model.load_weights(filepath)
-        print result
+        print(result)
         return model.load_weights(filepath)
     else:
         return keras.models.load_model(filepath)

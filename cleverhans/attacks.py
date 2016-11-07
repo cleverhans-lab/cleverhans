@@ -4,8 +4,8 @@ import math
 import numpy as np
 import tensorflow as tf
 
-from utils import batch_indices
-import utils_tf
+from .utils import batch_indices
+from . import utils_tf
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
@@ -35,8 +35,8 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
 
 def fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None):
     """
-    TensorFlow implementation of the Fast Gradient 
-    Sign method. 
+    TensorFlow implementation of the Fast Gradient
+    Sign method.
     :param x: the input placeholder
     :param predictions: the model's output tensor
     :param eps: the epsilon (input variation parameter)
