@@ -34,16 +34,16 @@ def main(argv=None):
     # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'th':
         keras.backend.set_image_dim_ordering('th')
-        print "INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'"
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'")
 
     # Create TF session and set as Keras backend session
     with tf.Session() as sess:
         keras.backend.set_session(sess)
-        print "Created TensorFlow session and set Keras backend."
+        print("Created TensorFlow session and set Keras backend.")
 
         # Get MNIST test data
         X_train, Y_train, X_test, Y_test = data_mnist()
-        print "Loaded MNIST test data."
+        print("Loaded MNIST test data.")
 
         # Define input TF placeholder
         x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
@@ -52,7 +52,7 @@ def main(argv=None):
         # Define TF model graph
         model = model_mnist()
         predictions = model(x)
-        print "Defined TensorFlow model graph."
+        print("Defined TensorFlow model graph.")
 
         # Train an MNIST model
         tf_model_train(sess, x, y, predictions, X_train, Y_train)
