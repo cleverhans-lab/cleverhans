@@ -12,6 +12,8 @@ import six
 import tensorflow as tf
 import time
 
+from . import attacks
+from tensorflow.python.platform import flags
 from .utils import batch_indices
 
 from tensorflow.python.platform import flags
@@ -27,15 +29,18 @@ def tf_model_loss(y, model, mean=True):
     :return: return mean of loss if True, otherwise return vector with per
              sample loss
     """
+
     op = model.op
     if "softmax" in str(op).lower():
-        raise ValueError("Must use logits rather than probabilities")
-    if mean:
-        # Return mean of the loss
-        return tf.reduce_mean(categorical_crossentropy(output=model, target=y, from_logits=True))
+        logits, = op.inputs
     else:
-        # Return a vector with the loss per sample
-        return categorical_crossentropy(output=model, target=y, from_logits=True)
+        logits = model
+
+    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+
+    if mean:
+        out = tf.reduce_mean(out)
+    return out
 
 
 def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
