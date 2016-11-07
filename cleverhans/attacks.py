@@ -221,4 +221,6 @@ def saliency_tf(sess, x, f_x, sample,
             print('Current class: %i' % s)
         i += 1
 
+    print model_argmax(sess, x, f_x, X)
+
     return X

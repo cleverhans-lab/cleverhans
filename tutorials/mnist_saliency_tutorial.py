@@ -8,7 +8,8 @@ from keras.layers import Convolution2D, MaxPooling2D
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-from cleverhans.utils_mnist import data_mnist
+from cleverhans.utils_mnist import data_mnist, model_mnist
+from cleverhans.utils_keras import accuracy
 from cleverhans.attacks import saliency
 
 FLAGS = flags.FLAGS
@@ -21,45 +22,6 @@ flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
 flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
 flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
 
-def model_mnist(x):
-    """
-    Defines MNIST model using Keras. Returns both the model
-    and a symbolic function for the linear, pre-softmax output.
-    :param x: The TensorFlow placeholder for the input
-    :return: (model, linear output function)
-    """
-    model = Sequential()
-    model.add(Convolution2D(FLAGS.nb_filters, 5, 5,
-                            border_mode='valid',
-                            input_shape=(1, FLAGS.img_rows, FLAGS.img_cols)))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(FLAGS.nb_filters, 3, 3))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(FLAGS.nb_pool, FLAGS.nb_pool)))
-    model.add(Dropout(0.25))
-
-    model.add(Flatten())
-    model.add(Dense(128))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(FLAGS.nb_classes))
-    linear_out = model(x)
-    model.add(Activation('softmax'))
-
-    return model, linear_out
-
-def test_accuracy(model, X, y):
-    """
-    Test the model accuracy on a holdout set.
-    :param model: A Keras model.
-    :param X: input features
-    :param y: input labels
-    :return:
-    """
-    class_preds = model.predict_classes(X, batch_size=512)
-    class_true = np.where(y)[1]
-    nb_correct = np.where(class_preds == class_true)[0].shape[0]
-    return float(nb_correct)/class_preds.shape[0]
 
 def main(argv=None):
     # Image dimensions ordering should follow the Theano convention
@@ -78,7 +40,7 @@ def main(argv=None):
 
     # build the Keras model, and the
     x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
-    model, f_x = model_mnist(x)
+    model, f_x = model_mnist(logits=True, input_ph=x)
     model.compile(loss='categorical_crossentropy',
                   optimizer='adadelta',
                   metrics=['accuracy'])
@@ -88,7 +50,7 @@ def main(argv=None):
               validation_split=0.15,
               verbose=1,
               shuffle=True)
-    acc = test_accuracy(model, X_test, Y_test)
+    acc = accuracy(model, X_test, Y_test, batch_size=FLAGS.batch_size)
     print('Accuracy on the test set: %0.2f%%' % (100*acc))
 
     # Let's pick a random test sample to try our adversarial method on
