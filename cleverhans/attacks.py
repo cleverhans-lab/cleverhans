@@ -8,9 +8,10 @@ import keras
 import math
 import numpy as np
 import tensorflow as tf
+from sys import modules
 
 from .utils import batch_indices
-from . import utils_tf
+from . import utils_tf 
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS

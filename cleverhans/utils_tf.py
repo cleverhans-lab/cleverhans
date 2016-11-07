@@ -7,14 +7,15 @@ import math
 import numpy as np
 import os
 import keras
+from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time
+from sys import modules
 
-from . import attacks
-from keras.backend import categorical_crossentropy
-from tensorflow.python.platform import flags
 from .utils import batch_indices
+
+from tensorflow.python.platform import flags
 
 FLAGS = flags.FLAGS
 
