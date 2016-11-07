@@ -68,7 +68,7 @@ assert X_test.shape[0] == 10000, X_test.shape
 print 'Test accuracy on legitimate test examples: ' + str(accuracy)
 ```
 
-The accuracy returned should be above `97%`.
+The accuracy returned should be above `99.3%`.
 
 ## Crafting adversarial examples
 
@@ -92,8 +92,8 @@ print'Test accuracy on adversarial examples: ' + str(accuracy)
 
 The second part evaluates the accuracy of the model on 
 adversarial examples in a similar way than described 
-previously for legitimate examples. It should be lower
-than the previous accuracy you obtained.
+previously for legitimate examples. It should be
+significantly lower than the previous accuracy you obtained.
 
 
 ## Improving robustness using adversarial training
