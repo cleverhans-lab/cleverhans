@@ -11,7 +11,6 @@ from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time
-from sys import modules
 
 from .utils import batch_indices
 
