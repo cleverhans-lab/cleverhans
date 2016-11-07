@@ -12,7 +12,6 @@ import six
 import tensorflow as tf
 import time
 
-from . import attacks
 from tensorflow.python.platform import flags
 from .utils import batch_indices
 
