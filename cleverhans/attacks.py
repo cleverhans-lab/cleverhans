@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 import multiprocessing as mp
 
-import utils_tf
+from . import utils_tf
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
