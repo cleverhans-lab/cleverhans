@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Convolution2D
 from keras.utils import np_utils
 from tensorflow.python.platform import flags
 
@@ -45,19 +45,20 @@ def model_mnist():
     """
     model = Sequential()
 
-    model.add(Convolution2D(FLAGS.nb_filters, 5, 5,
-                            border_mode='valid',
-                            input_shape=(1, FLAGS.img_rows, FLAGS.img_cols)))
+    model.add(Dropout(0.2, input_shape=(1, FLAGS.img_rows, FLAGS.img_cols)))
+    model.add(Convolution2D(FLAGS.nb_filters, 8, 8,
+                            subsample=(2, 2),
+                            border_mode="same"
+                            ))
     model.add(Activation('relu'))
-    model.add(Convolution2D(FLAGS.nb_filters, 3, 3))
+    model.add(Convolution2D(FLAGS.nb_filters, 6, 6, subsample=(2, 2),
+        border_mode="valid"))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(FLAGS.nb_pool, FLAGS.nb_pool)))
-    model.add(Dropout(0.25))
-
-    model.add(Flatten())
-    model.add(Dense(128))
+    model.add(Convolution2D(FLAGS.nb_filters, 5, 5, subsample=(2, 2)))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
+
+    model.add(Flatten())
     model.add(Dense(FLAGS.nb_classes))
     model.add(Activation('softmax'))
 
