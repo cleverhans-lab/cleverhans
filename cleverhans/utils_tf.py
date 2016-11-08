@@ -81,11 +81,6 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
             prev = time.time()
             for batch in range(nb_batches):
-                if batch % 100 == 0 and batch > 0:
-                    print("Batch " + str(batch))
-                    cur = time.time()
-                    print("\tTook " + str(cur - prev) + " seconds")
-                    prev = cur
 
                 # Compute batch start and end indices
                 start, end = batch_indices(batch, len(X_train), FLAGS.batch_size)
@@ -95,6 +90,9 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                                           y: Y_train[start:end],
                                           keras.backend.learning_phase(): 1})
             assert end >= len(X_train) # Check that all examples were used
+            cur = time.time()
+            print("\tEpoch took " + str(cur - prev) + " seconds")
+            prev = cur
             if evaluate is not None:
                 evaluate()
 
