@@ -46,6 +46,10 @@ def main(argv=None):
     X_train, Y_train, X_test, Y_test = data_mnist()
     print("Loaded MNIST test data.")
 
+    assert Y_train.shape[1] == 10.
+    label_smooth = .1
+    Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
+
     # Define input TF placeholder
     x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
     y = tf.placeholder(tf.float32, shape=(None, FLAGS.nb_classes))
