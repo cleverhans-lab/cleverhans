@@ -43,7 +43,7 @@ def tf_model_loss(y, model, mean=True):
 
 
 def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                   predictions_adv=None):
+                   predictions_adv=None, evaluate=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -95,6 +95,8 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                                           y: Y_train[start:end],
                                           keras.backend.learning_phase(): 1})
             assert end >= len(X_train) # Check that all examples were used
+            if evaluate is not None:
+                evaluate()
 
 
         if save:
@@ -139,7 +141,7 @@ def tf_model_eval(sess, x, y, model, X_test, Y_test):
             # It's acceptable to repeat during training, but not eval.
             start = batch * FLAGS.batch_size
             end = min(len(X_test), start + FLAGS.batch_size)
-            cur_batch_size = end - start + 1
+            cur_batch_size = end - start
 
             # The last batch may be smaller than all others, so we need to
             # account for variable batch size here

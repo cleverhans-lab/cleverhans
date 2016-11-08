@@ -68,7 +68,8 @@ assert X_test.shape[0] == 10000, X_test.shape
 print 'Test accuracy on legitimate test examples: ' + str(accuracy)
 ```
 
-The accuracy returned should be above `99.3%`.
+The accuracy returned should be above `98%`.
+The accuracy can become much higher by training for more epochs.
 
 ## Crafting adversarial examples
 
