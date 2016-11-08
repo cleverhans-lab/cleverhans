@@ -141,7 +141,7 @@ def tf_model_eval(sess, x, y, model, X_test, Y_test):
             # It's acceptable to repeat during training, but not eval.
             start = batch * FLAGS.batch_size
             end = min(len(X_test), start + FLAGS.batch_size)
-            cur_batch_size = end - start + 1
+            cur_batch_size = end - start
 
             # The last batch may be smaller than all others, so we need to
             # account for variable batch size here
