@@ -51,10 +51,10 @@ def model_mnist():
                             border_mode="same"
                             ))
     model.add(Activation('relu'))
-    model.add(Convolution2D(FLAGS.nb_filters, 6, 6, subsample=(2, 2),
+    model.add(Convolution2D(FLAGS.nb_filters * 2, 6, 6, subsample=(2, 2),
         border_mode="valid"))
     model.add(Activation('relu'))
-    model.add(Convolution2D(FLAGS.nb_filters, 5, 5, subsample=(2, 2)))
+    model.add(Convolution2D(FLAGS.nb_filters *2, 5, 5, subsample=(1, 1)))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
