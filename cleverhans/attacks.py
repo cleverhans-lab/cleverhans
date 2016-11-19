@@ -189,7 +189,7 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
 
     return pairs[candidates][0], pairs[candidates][1], search_domain
 
-def jacobian(sess, x, predictions, deriv_target, deriv_others, X):
+def jacobian(sess, x, deriv_target, deriv_others, X):
     """
     TensorFlow implementation of the foward derivative
     :param x: the input placeholder
@@ -246,7 +246,7 @@ def jsma_tf(sess, x, predictions, sample, target, theta, gamma, increase, clip_m
     while current != target and iteration < max_iters and len(search_domain) > 0: 
 
         # compute the Jacobian derivatives
-        grads_target, grads_others = jacobian(sess, x, predictions, deriv_target, deriv_others, adv_x)
+        grads_target, grads_others = jacobian(sess, x, deriv_target, deriv_others, adv_x)
 
         # compute the salency map for each of our taget classes
         i, j, search_domain = saliency_map(grads_target, grads_others, search_domain, increase)

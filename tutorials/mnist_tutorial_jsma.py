@@ -77,7 +77,7 @@ def main(argv=None):
         target_classes.remove(np.argmax(Y_test[sample]))
         for target in target_classes:
             print '--------------------------------------\nCreating adversarial example for target class ' + str(target)
-            adv_x, result, percentage_perterb = jsma(sess, x, predictions, X_test[sample:(sample+1)], target,
+            _, result, percentage_perterb = jsma(sess, x, predictions, X_test[sample:(sample+1)], target,
                     theta=1, gamma=0.1, increase=True, back='tf', clip_min=0, clip_max=1)
             results[target, sample] = result
             perturbations[target, sample] = percentage_perterb
