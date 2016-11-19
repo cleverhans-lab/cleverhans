@@ -10,14 +10,70 @@ import numpy as np
 import tensorflow as tf
 import multiprocessing as mp
 
-from .utils import batch_indices
-from . import utils_tf 
+from . import utils_tf
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
-import multiprocessing as mp
-import resource
+
+def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
+    """
+    A wrapper for the Fast Gradient Sign Method.
+    It calls the right function, depending on the
+    user's backend.
+    :param x: the input
+    :param predictions: the model's output
+    :param eps: the epsilon (input variation parameter)
+    :param back: switch between TensorFlow ('tf') and
+                Theano ('th') implementation
+    :param clip_min: optional parameter that can be used to set a minimum
+                    value for components of the example returned
+    :param clip_max: optional parameter that can be used to set a maximum
+                    value for components of the example returned
+    :return: a tensor for the adversarial example
+    """
+    if back == 'tf':
+        # Compute FGSM using TensorFlow
+        return fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None)
+    elif back == 'th':
+        raise NotImplementedError("Theano FGSM not implemented.")
+
+def fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None):
+    """
+    TensorFlow implementation of the Fast Gradient
+    Sign method.
+    :param x: the input placeholder
+    :param predictions: the model's output tensor
+    :param eps: the epsilon (input variation parameter)
+    :param clip_min: optional parameter that can be used to set a minimum
+                    value for components of the example returned
+    :param clip_max: optional parameter that can be used to set a maximum
+                    value for components of the example returned
+    :return: a tensor for the adversarial example
+    """
+
+    # Compute loss
+    y = tf.to_float(tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
+    y = y / tf.reduce_sum(y, 1, keep_dims=True)
+    loss = utils_tf.tf_model_loss(y, predictions, mean=False)
+
+    # Define gradient of loss wrt input
+    grad, = tf.gradients(loss, x)
+
+    # Take sign of gradient
+    signed_grad = tf.sign(grad)
+
+    # Multiply by constant epsilon
+    scaled_signed_grad = eps * signed_grad
+
+    # Add perturbation to original example to obtain adversarial example
+    adv_x = tf.stop_gradient(x + scaled_signed_grad)
+
+    # If clipping is needed, reset all values outside of [clip_min, clip_max]
+    if (clip_min is not None) and (clip_max is not None):
+        adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
+
+    return adv_x
 
 
 def jsma(sess, x, predictions, sample, target, theta, gamma=np.inf, increase=True, back='tf', clip_min=None, clip_max=None):
@@ -31,7 +87,7 @@ def jsma(sess, x, predictions, sample, target, theta, gamma=np.inf, increase=Tru
     :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
     :param target: target class for input sample
     :param theta: delta for each feature adjustment
-    :param gamma: a float between 0 - 1 indiciating the maximum distortion percentage
+    :param gamma: a float between 0 - 1 indicating the maximum distortion percentage
     :param increase: boolean; true if we are increasing pixels, false otherwise
     :param back: switch between TensorFlow ('tf') and
                 Theano ('th') implementation
@@ -43,9 +99,9 @@ def jsma(sess, x, predictions, sample, target, theta, gamma=np.inf, increase=Tru
     """
     if back == 'tf':
         # Compute Jacobian-based saliency map attack using TensorFlow
-        return PLACEHOLDER_tf(sess, x, predictions, sample, target, theta, gamma, increase, clip_min, clip_max)
+        return jsma_tf(sess, x, predictions, sample, target, theta, gamma, increase, clip_min, clip_max)
     elif back == 'th':
-        raise NotImplementedError("Theano PLACEHOLDER not implemented.")
+        raise NotImplementedError("Theano jsma not implemented.")
 
 def model_argmax(sess, x, predictions, sample):
     """
@@ -65,8 +121,8 @@ def model_argmax(sess, x, predictions, sample):
 def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
     """
     TensorFlow implementation for apply perterbations to input features based on salency maps
-    :param i: row of our selected pixel
-    :param j: column of our selected pixel
+    :param i: row, colum of first selected pixel
+    :param j: row, colum of second selected pixel
     :param X: a matrix containing our input features for our sample
     :param increase: boolean; true if we are increasing pixels, false otherwise
     :param theta: delta for each feature adjustment
@@ -79,6 +135,9 @@ def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
     if increase:
         X[0, 0, i[0], i[1]] = np.minimum(clip_max, X[0, 0, i[0], i[1]] + theta)
         X[0, 0, j[0], j[1]] = np.minimum(clip_max, X[0, 0, j[0], j[1]] + theta)
+    else:
+        X[0, 0, i[0], i[1]] = np.maximum(clip_min, X[0, 0, i[0], i[1]] - theta)
+        X[0, 0, j[0], j[1]] = np.maximum(clip_min, X[0, 0, j[0], j[1]] - theta)
 
     return X
 
@@ -205,10 +264,10 @@ def jsma_tf(sess, x, predictions, sample, target, theta, gamma, increase, clip_m
     percent_perterbed = float(iteration * 2)/float(FLAGS.img_rows * FLAGS.img_cols)
     # failed to perterb the input sample to the target class within the constraints
     if iteration == max_iters or len(search_domain) == 0:
-        print 'Unsuccesful'
+        print('Unsuccesful')
         return adv_x, -1, percent_perterbed
     # success!
     else:
-        print 'Successful'
+        print('Successful')
         return adv_x, 1, percent_perterbed
 

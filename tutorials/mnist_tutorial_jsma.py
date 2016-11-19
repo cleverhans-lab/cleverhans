@@ -1,14 +1,14 @@
 import keras
+import numpy as np
+import os
 
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
-from cleverhans.utils_tf import tf_model_train, tf_model_eval, batch_eval
+from cleverhans.utils_tf import tf_model_train, tf_model_eval
 from cleverhans.attacks import jsma
-
-import os
 
 FLAGS = flags.FLAGS
 
@@ -21,11 +21,10 @@ flags.DEFINE_integer('img_rows', 28, 'Input row dimension')
 flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
 flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
 flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
-flags.DEFINE_float('per_samples', 0.01, 'Percentage of test set to attack')
+flags.DEFINE_integer('source_samples', 5, 'Number of examples in test set to attack')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
 
-import numpy as np
 def main(argv=None):
     """
     MNIST cleverhans tutorial for the Jacobian-based saliency map approach (JSMA)
@@ -54,12 +53,14 @@ def main(argv=None):
     predictions = model(x)
     print "Defined TensorFlow model graph."
 
-    # Train an MNIST model, name="inputTensor")
-    tf_model_train(sess, x, y, predictions, X_train, Y_train)
-
-    #saver = tf.train.Saver()
-    #save_path = saver.save(sess, os.path.join(FLAGS.train_dir, 'model.ckpt'))
-    #saver.restore(sess, "/tmp/model.ckpt")
+    # Train an MNIST model if it does not exist in the train_dir folder
+    saver = tf.train.Saver()
+    save_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
+    if os.path.isfile(save_path):
+        saver.restore(sess, os.path.join(FLAGS.train_dir, FLAGS.filename))
+    else:
+        tf_model_train(sess, x, y, predictions, X_train, Y_train)
+        saver.save(sess, save_path)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
@@ -67,27 +68,25 @@ def main(argv=None):
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
 
     # Craft adversarial examples for nb_classes from per_samples using the Jacobian-based saliency map approach 
-    num_samples = int(len(X_test)*FLAGS.per_samples)
-    results = np.zeros((FLAGS.nb_classes, num_samples), dtype='i,f')
-    print 'Crafting ' + str(num_samples) + ' * ' + str(FLAGS.nb_classes) + ' adversarial examples'
-    for sample in xrange(num_samples):
-        for target in xrange(FLAGS.nb_classes):
-            print '------------------------------------------\nCreating adversarial example for target class ' + str(target)
-            adv_x, result, percentage_perterb = jsma(sess, x, predictions, X_test[sample:(sample + 1)], target, 
+    results = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='i')
+    perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='f')
+    print 'Crafting ' + str(FLAGS.source_samples) + ' * ' + str(FLAGS.nb_classes) + ' adversarial examples'
+
+    for sample in xrange(FLAGS.source_samples):
+        target_classes = list(xrange(FLAGS.nb_classes))
+        target_classes.remove(np.argmax(Y_test[sample]))
+        for target in target_classes:
+            print '--------------------------------------\nCreating adversarial example for target class ' + str(target)
+            adv_x, result, percentage_perterb = jsma(sess, x, predictions, X_test[sample:(sample+1)], target,
                     theta=1, gamma=0.1, increase=True, back='tf', clip_min=0, clip_max=1)
-            results[target, sample] = (result, percentage_perterb)
+            results[target, sample] = result
+            perturbations[target, sample] = percentage_perterb
 
-    num_suceeded = 0
-    percentage_perterbed = 0.0
-    for y in xrange(num_samples):
-        for x in xrange(FLAGS.nb_classes):
-            if results[x, y][0] == 1:
-                num_suceeded = num_suceeded + 1
-            percentage_perterbed = percentage_perterbed + results[x, y][1]
+    success_rate = np.sum(results) / ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
+    percentage_perterbed = np.mean(perturbations)
 
-    percentage_perterbed = percentage_perterbed / float(num_samples * FLAGS.nb_classes)
-    print('Avg. percent of successful misclassifcations {0} \n avg. percent perterbed {1}'\
-            .format(float(num_suceeded)/float(FLAGS.nb_classes - 1), percentage_perterbed))
+    print('Avg. rate of successful misclassifcations {0} \n avg. rate of perterbed features {1}'\
+            .format(success_rate, percentage_perterbed))
 
 if __name__ == '__main__':
     app.run()
