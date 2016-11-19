@@ -82,10 +82,10 @@ def main(argv=None):
             results[target, sample] = result
             perturbations[target, sample] = percentage_perterb
 
-    success_rate = np.sum(results) / ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
+    success_rate = float(np.sum(results)) / ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
     percentage_perterbed = np.mean(perturbations)
 
-    print('Avg. rate of successful misclassifcations {0} \n avg. rate of perterbed features {1}'\
+    print('Avg. rate of successful misclassifcations {0} \nAvg. rate of perterbed features {1}'\
             .format(success_rate, percentage_perterbed))
 
 if __name__ == '__main__':
