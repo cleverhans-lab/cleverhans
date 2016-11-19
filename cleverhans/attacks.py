@@ -16,217 +16,199 @@ from . import utils_tf
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
+import multiprocessing as mp
+import resource
 
-def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
+
+def jsma(sess, x, predictions, sample, target, theta, gamma=np.inf, increase=True, back='tf', clip_min=None, clip_max=None):
     """
-    A wrapper for the Fast Gradient Sign Method.
+    A wrapper for the Jacobian-based saliency map approach.
     It calls the right function, depending on the
     user's backend.
+    :param sess: TF session
     :param x: the input
-    :param predictions: the model's output
-    :param eps: the epsilon (input variation parameter)
+    :param predictions: the model's symbolic output (linear output, pre-softmax)
+    :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
+    :param target: target class for input sample
+    :param theta: delta for each feature adjustment
+    :param gamma: a float between 0 - 1 indiciating the maximum distortion percentage
+    :param increase: boolean; true if we are increasing pixels, false otherwise
     :param back: switch between TensorFlow ('tf') and
                 Theano ('th') implementation
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
-    :return: a tensor for the adversarial example
+    :return: an adversarial sample
     """
     if back == 'tf':
-        # Compute FGSM using TensorFlow
-        return fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None)
+        # Compute Jacobian-based saliency map attack using TensorFlow
+        return PLACEHOLDER_tf(sess, x, predictions, sample, target, theta, gamma, increase, clip_min, clip_max)
     elif back == 'th':
-        raise NotImplementedError("Theano FGSM not implemented.")
+        raise NotImplementedError("Theano PLACEHOLDER not implemented.")
 
-def fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None):
+def model_argmax(sess, x, predictions, sample):
     """
-    TensorFlow implementation of the Fast Gradient
-    Sign method.
+    Helper function for jsma_tf that computes the current class prediction
+    :param sess: TF session 
     :param x: the input placeholder
-    :param predictions: the model's output tensor
-    :param eps: the epsilon (input variation parameter)
+    :param predictions: the model's symbolic output
+    :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
+    :return: the argmax output of predictions, i.e. the current predicted class
+    """
+
+    feed_dict = {x: sample, keras.backend.learning_phase(): 0}
+    probabilities = sess.run(predictions, feed_dict)
+
+    return np.argmax(probabilities)
+
+def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
+    """
+    TensorFlow implementation for apply perterbations to input features based on salency maps
+    :param i: row of our selected pixel
+    :param j: column of our selected pixel
+    :param X: a matrix containing our input features for our sample
+    :param increase: boolean; true if we are increasing pixels, false otherwise
+    :param theta: delta for each feature adjustment
+    :param clip_min: mininum value for a feature in our sample
+    :param clip_max: maximum value for a feature in our sample
+    : return: a perterbed input feature matrix for a target class
+    """
+
+    # perterb our input sample
+    if increase:
+        X[0, 0, i[0], i[1]] = np.minimum(clip_max, X[0, 0, i[0], i[1]] + theta)
+        X[0, 0, j[0], j[1]] = np.minimum(clip_max, X[0, 0, j[0], j[1]] + theta)
+
+    return X
+
+def saliency_score(packed_data):
+    """
+    Helper function for saliency_map. This is used for a parallelized map() operation
+    via multiprocessing.Pool()
+    :param packed_data: tuple containing (point, point, gradients, target, 
+    other_classes, increase).
+    : return: saliency score for the pair of points i, j. Either target_sum * abs(other_sum)
+    if the conditions are met, or 0 otherwise.
+    """
+
+    # compute the saliency score for the given pair
+    i, j, grads_target, grads_others, increase = packed_data
+    target_sum = grads_target[i[0],i[1]] + grads_target[j[0],j[1]]
+    other_sum = grads_others[i[0],i[1]] + grads_others[j[0],j[1]]
+
+    # evaluate the saliency map conditions
+    if (increase and target_sum > 0 and other_sum < 0) or (not increase and target_sum < 0 and other_sum > 0):
+        return -target_sum * other_sum
+    else:
+        return 0
+
+def saliency_map(grads_target, grads_other, search_domain, increase):
+    """
+    TensorFlow implementation for computing salency maps
+    :param jacobian: a matrix containing forward derivatives for all classes
+    :param target: the desired target class for the sample
+    : return: a vector of scores for the target class
+    """
+
+    # determine the saliency score for every pair of pixels from our search domain
+    pool = mp.Pool()
+    scores = pool.map(saliency_score, [(i, j, grads_target, grads_other, increase) \
+            for i, j in itertools.combinations(search_domain, 2)])
+
+    # wait for the threads to finish to free up memory
+    pool.close()
+    pool.join()
+
+    # grab the pixels with the largest scores
+    candidates = np.argmax(scores)
+    pairs = [elt for elt in itertools.combinations(search_domain, 2)]
+
+    # update our search domain
+    search_domain.remove(pairs[candidates][0])
+    search_domain.remove(pairs[candidates][1])
+
+    return pairs[candidates][0], pairs[candidates][1], search_domain
+
+def jacobian(sess, x, predictions, deriv_target, deriv_others, X):
+    """
+    TensorFlow implementation of the foward derivative
+    :param x: the input placeholder
+    :param X: numpy array with sample input
+    :param predictions: the model's symbolic output
+    :return: matrix of forward derivatives flattened into vectors
+    """
+
+    # compute the gradients for all classes
+    grad_target, grad_others = \
+            sess.run([tf.reshape(deriv_target, (FLAGS.img_rows, FLAGS.img_cols)),
+                tf.reshape(deriv_others, (FLAGS.img_rows, FLAGS.img_cols))], {x: X, keras.backend.learning_phase(): 0})
+
+    return grad_target, grad_others
+
+def jsma_tf(sess, x, predictions, sample, target, theta, gamma, increase, clip_min, clip_max):
+    """
+    TensorFlow implementation of the jsma.
+    :param sess: TF session
+    :param x: the input placeholder
+    :param predictions: the model's symbolic output (linear output, pre-softmax)
+    :param sample: numpy array with sample input
+    :param target: target class for sample input
+    :param theta: delta for each feature adjustment
+    :param gamma: a float between 0 - 1 indiciating the maximum distortion percentage
+    :param increase: boolean; true if we are increasing pixels, false otherwise
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
-    :return: a tensor for the adversarial example
+    :return: an adversarial sample
     """
 
-    # Compute loss
-    y = tf.to_float(tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
-    y = y / tf.reduce_sum(y, 1, keep_dims=True)
-    loss = utils_tf.tf_model_loss(y, predictions, mean=False)
+    adv_x = copy.copy(sample)
+    max_iters = np.floor(np.product(adv_x[0][0].shape) * gamma / 2)
+    print('Maximum number of iterations: {0}'.format(max_iters))
 
-    # Define gradient of loss wrt input
-    grad, = tf.gradients(loss, x)
-
-    # Take sign of gradient
-    signed_grad = tf.sign(grad)
-
-    # Multiply by constant epsilon
-    scaled_signed_grad = eps * signed_grad
-
-    # Add perturbation to original example to obtain adversarial example
-    adv_x = tf.stop_gradient(x + scaled_signed_grad)
-
-    # If clipping is needed, reset all values outside of [clip_min, clip_max]
-    if (clip_min is not None) and (clip_max is not None):
-        adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
-
-    return adv_x
-
-def saliency(sess, x, f_x, sample,
-             target, theta, gamma=np.inf,
-             clip_min=None, clip_max=None,
-             increase=True, back='tf'):
-    """
-    A wrapper for the saliency method algorithm. It calls the right
-    function, depending on the user's backend.
-    :param sess: The TensorFlow session
-    :param x: The TensorFlow placeholder for the input
-    :param f_x: The symbolic output of the model. NOTE: this is the linear output,
-    pre-softmax.
-    :param sample: The input (1 x 1 x n_rows x n_cols) image sample
-    :param target: The target label for this sample
-    :param theta: The delta for each feature adjustment
-    :param gamma: A float between 0 - 1 indicating the maximum distortion percentage
-    :param clip_min: The minimum allowed feature value
-    :param clip_max: The maximum allowed feature value
-    :param increase: Boolean; true if we are increasing pixels, false otherwise.
-    """
-    if back == 'tf':
-        # Compute FGSM using TensorFlow
-        return saliency_tf(sess, x, f_x, sample, target,
-                           theta, gamma, clip_min,
-                           clip_max, increase)
-    elif back == 'th':
-        raise NotImplementedError("Theano saliency method not implemented.")
-
-def compute_saliency(x):
-    """
-    A helper function for saliency_tf. This is used for a parallelized
-    map() operation via multiprocessing.Pool().
-    :param x: A tuple containing (point, point, grads_target,
-    grads_others, increase).
-    :return: The saliency value for this pair of points. Either -alpha*beta
-    if conditions are met, or 0 otherwise.
-    """
-    p, q, grads_target, grads_others, increase = x
-    alpha = grads_target[p[0], p[1]] + grads_target[q[0], q[1]]
-    beta = grads_others[p[0], p[1]] + grads_others[q[0], q[1]]
-    if (increase and alpha > 0 and beta < 0) or (not increase and alpha < 0 and beta > 0):
-        return -alpha * beta
-    else:
-        return 0
-
-def model_argmax(sess, x, f_x, X):
-    """
-    A helper function for saliency_tf. Computes the current
-    model argmax output (the current class prediction).
-    :param sess: The TensorFlow session
-    :param x: The tensorflow placeholder for the input
-    :param f_x: The symbolic output of the model
-    :param X: The input (1 x 1 x n_rows x n_cols) image sample
-    :return: The argmax output of f_x (the model's current predicted class)
-    """
-    s = tf.argmax(f_x, dimension=1)
-    feed_dict = {x: X, keras.backend.learning_phase(): 0}
-    return sess.run(s, feed_dict)[0]
-
-def saliency_map(sess, x, f_x, X, target, search_domain, increase):
-    """
-    A helper function for saliency_tf. This function implements Algorithm 2 from
-    Papernot's paper.
-    :param sess: The TensorFlow session
-    :param x: The tensorflow placeholder for the input
-    :param f_x: The symbolic output of the model
-    :param X: The input (1 x 1 x n_rows x n_cols) image sample
-    :param target: The target label for this sample
-    :param search_domain: the pairs of points that remain to be considered
-    :param increase: Boolean; true if we are increasing pixels, false otherwise.
-    """
-    # compute derivatives for target class
-    deriv_target, = tf.gradients(f_x[:, target], x)
-    # compute derivatives for other classes
+    # prep our derivatives for all classes
+    deriv_target, = tf.gradients(predictions[:,target], x)
     other_classes = [i for i in range(FLAGS.nb_classes) if i != target]
-    deriv_others, = tf.gradients([f_x[:, i] for i in other_classes], x)
-    grads_target, grads_others = \
-        sess.run([tf.reshape(deriv_target, (FLAGS.img_rows, FLAGS.img_cols)),
-                  tf.reshape(deriv_others, (FLAGS.img_rows, FLAGS.img_cols))],
-                 {x: X, keras.backend.learning_phase(): 0})
-    pool = mp.Pool()
-    outs = pool.map(compute_saliency, [(p, q, grads_target, grads_others, increase) \
-                                    for p, q in itertools.combinations(search_domain, 2)])
-    ind = np.argmax(outs)
-    pairs = [elt for elt in itertools.combinations(search_domain, 2)]
-    return pairs[ind]
+    deriv_others, = tf.gradients([predictions[:,i] for i in other_classes], x)
 
-def saliency_tf(sess, x, f_x, sample,
-                target, theta, gamma,
-                clip_min, clip_max,
-                increase):
-    """
-    :param sess: The TensorFlow session
-    :param x: The TensorFlow placeholder for the input
-    :param f_x: The symbolic output of the model
-    :param sample: The input (1 x 1 x n_rows x n_cols) image sample
-    :param target: The target label for this sample
-    :param theta: The delta for each feature adjustment
-    :param gamma: A float between 0 - 1 indicating the maximum distortion percentage
-    :param clip_min: The minimum allowed feature value
-    :param clip_max: The maximum allowed feature value
-    :param increase: Boolean; true if we are increasing pixels, false otherwise.
-    """
-    X = copy.copy(sample)
-    max_iter = np.floor(np.product(X[0][0].shape) * gamma / 2)
-    print('Maximum # of iterations: %i' % max_iter)
+    # compute our search domain based on maximizing or minimizing pixels
     if increase:
-        # Since we'll be increasing pixel values, our search domain must contain
-        # only pixels that are not already maxed out.
         search_domain = set([(row, col) for row in xrange(FLAGS.img_rows) \
-                             for col in xrange(FLAGS.img_cols) if X[0, 0, row, col] < clip_max])
+                 for col in xrange(FLAGS.img_cols) if adv_x[0, 0, row, col] < clip_max])
     else:
-        # Since we'll be decreasing pixel values, our search domain must contain
-        # only pixels that are not at the minimum.
         search_domain = set([(row, col) for row in xrange(FLAGS.img_rows) \
-                             for col in xrange(FLAGS.img_cols) if X[0, 0, row, col] > clip_min])
-    # compute model argmax
-    s = model_argmax(sess, x, f_x, X)
-    print('Start class: %i' % s)
-    # begin loop
-    i = 0
-    while s != target and i < max_iter and len(search_domain) > 0:
-        if i%5 == 0:
-            print('iteration # %i' % i)
-        # find pixels to change, update them
-        p1, p2 = saliency_map(sess, x, f_x, X, target, search_domain, increase)
-        # sanity check p1 and p2
-        assert 0 <= p1[0] < FLAGS.img_rows and 0 <= p2[0] < FLAGS.img_rows
-        assert 0 <= p1[1] < FLAGS.img_cols and 0 <= p2[1] < FLAGS.img_cols
-        # update pixel values at p1 and p2
-        if increase:
-            X[0, 0, p1[0], p1[1]] = np.minimum(clip_max, X[0, 0, p1[0], p1[1]] + theta)
-            X[0, 0, p2[0], p2[1]] = np.minimum(clip_max, X[0, 0, p2[0], p2[1]] + theta)
-        else:
-            X[0, 0, p1[0], p1[1]] = np.maximum(clip_min, X[0, 0, p1[0], p1[1]] - theta)
-            X[0, 0, p2[0], p2[1]] = np.maximum(clip_min, X[0, 0, p2[0], p2[1]] - theta)
-        assert np.max(X) <= clip_max
-        assert np.min(X) >= clip_min
-        # remove pixels from search domain
-        l = len(search_domain)
-        if X[0, 0, p1[0], p1[1]] == clip_min or X[0, 0, p1[0], p1[1]] == clip_max:
-            search_domain.remove(p1)
-            assert len(search_domain) < l
-        if X[0, 0, p2[0], p2[1]] == clip_min or X[0, 0, p2[0], p2[1]] == clip_max:
-            search_domain.remove(p2)
-            assert len(search_domain) < l
-        # update argmax
-        s = model_argmax(sess, x, f_x, X)
-        if i % 5 == 0:
-            print('Current class: %i' % s)
-        i += 1
+                 for col in xrange(FLAGS.img_cols) if adv_x[0, 0, row, col] > clip_min])
 
-    print model_argmax(sess, x, f_x, X)
+    # repeat until we have achieved misclassification
+    iteration = 0
+    current = model_argmax(sess, x, predictions, adv_x)	
+    while current != target and iteration < max_iters and len(search_domain) > 0: 
 
-    return X
+        # compute the Jacobian derivatives
+        grads_target, grads_others = jacobian(sess, x, predictions, deriv_target, deriv_others, adv_x)
+
+        # compute the salency map for each of our taget classes
+        i, j, search_domain = saliency_map(grads_target, grads_others, search_domain, increase)
+
+        # apply an adversarial perterbation to the sample
+        adv_x = apply_perturbations(i, j, adv_x, increase, theta, clip_min, clip_max)
+
+        # update our current prediction
+        current = model_argmax(sess, x, predictions, adv_x)
+        iteration = iteration + 1
+
+        if iteration % 5 == 0:
+            print('Current iteration: {0} - Current Prediction: {1}'.format(iteration, current))
+
+    percent_perterbed = float(iteration * 2)/float(FLAGS.img_rows * FLAGS.img_cols)
+    # failed to perterb the input sample to the target class within the constraints
+    if iteration == max_iters or len(search_domain) == 0:
+        print 'Unsuccesful'
+        return adv_x, -1, percent_perterbed
+    # success!
+    else:
+        print 'Successful'
+        return adv_x, 1, percent_perterbed
+
