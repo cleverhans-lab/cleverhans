@@ -37,10 +37,11 @@ def data_mnist():
     return X_train, Y_train, X_test, Y_test
 
 
-def model_mnist():
+def model_mnist(logits=False,input_ph=None):
     """
     Defines MNIST model using Keras sequential model
-    :param tf_placeholder:
+    :param logits: If set to False, returns a Keras model, otherwise will also return logits tensor
+    :param input_ph: The TensorFlow placeholder for the input (needed if returning logits)
     :return:
     """
     model = Sequential()
@@ -60,6 +61,11 @@ def model_mnist():
 
     model.add(Flatten())
     model.add(Dense(FLAGS.nb_classes))
+    if logits:
+        logits_tensor = model(input_ph)
     model.add(Activation('softmax'))
 
-    return model
+    if logits:
+        return model, logits_tensor
+    else:
+        return model
