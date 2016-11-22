@@ -27,7 +27,7 @@ You can find the model definition in the
 ```python
 # Define input TF placeholder
 x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
-y = tf.placeholder(tf.float32, shape=(None, FLAGS.nb_classes))
+y = tf.placeholder(tf.float32, shape=(None, 10))
 
 # Define TF model graph
 model = model_mnist()
