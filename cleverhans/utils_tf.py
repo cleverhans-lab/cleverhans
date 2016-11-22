@@ -209,3 +209,19 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
     for e in out:
         assert e.shape[0] == m, e.shape
     return out
+
+
+def model_argmax(sess, x, predictions, sample):
+    """
+    Helper function that computes the current class prediction
+    :param sess: TF session
+    :param x: the input placeholder
+    :param predictions: the model's symbolic output
+    :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
+    :return: the argmax output of predictions, i.e. the current predicted class
+    """
+
+    feed_dict = {x: sample, keras.backend.learning_phase(): 0}
+    probabilities = sess.run(predictions, feed_dict)
+
+    return np.argmax(probabilities)

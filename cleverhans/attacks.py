@@ -105,22 +105,6 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf, incre
         raise NotImplementedError("Theano jsma not implemented.")
 
 
-def model_argmax(sess, x, predictions, sample):
-    """
-    Helper function for jsma_tf that computes the current class prediction
-    :param sess: TF session 
-    :param x: the input placeholder
-    :param predictions: the model's symbolic output
-    :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
-    :return: the argmax output of predictions, i.e. the current predicted class
-    """
-
-    feed_dict = {x: sample, keras.backend.learning_phase(): 0}
-    probabilities = sess.run(predictions, feed_dict)
-
-    return np.argmax(probabilities)
-
-
 def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
     """
     TensorFlow implementation for apply perterbations to input features based on salency maps
@@ -134,7 +118,7 @@ def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
     : return: a perterbed input feature matrix for a target class
     """
 
-    # perterb our input sample
+    # perturb our input sample
     if increase:
         X[0, 0, i[0], i[1]] = np.minimum(clip_max, X[0, 0, i[0], i[1]] + theta)
         X[0, 0, j[0], j[1]] = np.minimum(clip_max, X[0, 0, j[0], j[1]] + theta)
@@ -278,7 +262,7 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma, increase,
 
     # Initial the loop variables
     iteration = 0
-    current = model_argmax(sess, x, predictions, adv_x)	
+    current = utils_tf.model_argmax(sess, x, predictions, adv_x)
     
     # Repeat this main loop until we have achieved misclassification
     while current != target and iteration < max_iters and len(search_domain) > 0: 
@@ -294,7 +278,7 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma, increase,
         adv_x = apply_perturbations(i, j, adv_x, increase, theta, clip_min, clip_max)
 
         # Update our current prediction by querying the model
-        current = model_argmax(sess, x, predictions, adv_x)
+        current = utils_tf.model_argmax(sess, x, predictions, adv_x)
         
         # Update loop variables
         iteration = iteration + 1
