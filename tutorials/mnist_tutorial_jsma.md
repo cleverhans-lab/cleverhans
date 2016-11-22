@@ -122,43 +122,50 @@ in misclassification.
 
 ## Crafting adversarial examples - the Salency map
 
-In the second stage of the process, we determine the best pixes for our goal: to 
-misclassify an input sample by applying the smallest number of perterbations possible.
-To achieve this, we must take into account how much of an impact our pixel will have on
-not only the target class, but all other classes as well. Ideally, we would like our model
-to confidently misclassify our input sample, therefore the score for a pixel is defined as
-the product of the gradient of the target class and the sum of the gradients of all other 
-classes (multiplied by -1 so that we do not consider pixels that have a high impact on 
-non-target classes). 
+In the second stage of the process, we determine the best pixels for 
+our adversarial goal: to misclassify an input sample in a chosen target
+class by applying the smallest number of perturbations possible to its
+input features. To achieve this, we must take into account how much of 
+an impact our pixel will have on not only the target class, but all 
+other classes as well. Therefore the adversarial saliency score for a 
+pixel is defined as the product of the gradient of the target class and 
+the sum of the gradients of all other classes (multiplied by -1 so that
+we do not consider pixels with a high impact on non-target classes). 
 
-However, this scoring methodology has implications. Ideally, the best pixel is one that
-has a highly positive impact on the target class and a highly negative impact on all 
-other classes. Nevertheless, such pixels are rare. In practice, the highest scoring pixels
-can be placed in one of two categories; either the pixel has a high positive impact on
-the target class and a moderate impact on other classes or the pixel has little positive impact
-on our target class, but a highly negative impact on all other classes.
+However, this scoring methodology has implications. Ideally, the best 
+pixel is one that has a highly positive impact on the target class and a
+highly negative impact on all other classes. Nevertheless, such pixels
+are rare. In practice, the highest scoring pixels can be placed in one
+of two categories; either the pixel has a high positive impact on
+the target class and a moderate impact on other classes or the pixel has
+little positive impact on our target class, but a highly negative impact
+on all other classes.
 
-This would imply then that such a pair of pixels belonging to the two categories would be 
-ideal in practice as their strenghts would cancel out their weaknesses, i.e. a pixel
-that has no impact on the target class but highly negative impact on all other classes
-should be selected with a pixel that has a highly positive impact on the target class and
+This would imply then that such a pair of pixels belonging to the two
+categories would be ideal in practice as their strengths would cancel
+out their weaknesses, i.e. a pixel that has no impact on the target
+class but highly negative impact on all other classes should be selected
+with a pixel that has a highly positive impact on the target class and
 a moderate to low positive impact on all other classes. 
 
-The end result is then a pair of pixels who, when both perterbed, push us towards our target
-class while simultaneously push us away from all other classes. Concisely, it is this pair
+The end result is then a pair of pixels which, when both perturbed 
+simultaneously, push us towards our target class while simultaneously 
+pushing us away from all other classes. Concisely, it is this pair
 of pixels we seek to identify in this step of the attack.
 
 ## Crafting adversarial examples - applying the perterbations
 
-In the third stage of the process, we simply maximize the value of the pixel pair we 
-identified in the prior stage. Depending upon the desired adversarial example, this 
-functionally means setting the pixel to absolute black or white (0 or 1). Once the 
-perterbation has been applied, the model is queried again to check if we have 
-achieved misclassification. If we have not succesfully perterbed our input sample
-to our desired target class, then this process begins again at stage 1 and continues
-until either we achieve misclassification, exceeded our maximum desired perterbation 
-percentage, or we have exhaustively perterbed all input features (which should never
-happen unless your input samples have an incredibly low number of features).
+In the third stage of the process, we simply maximize the value of the 
+pixel pair we identified in the prior stage. Depending upon the desired
+adversarial example, this functionally means---for this MNIST tutorial
+with black and white digits---setting the pixel to absolute black or 
+white (0 or 1). Once the  perturbation has been applied, the model is 
+queried again to check if we have achieved misclassification. If we have
+not successfully perturbed our input sample to our desired target class,
+then this process begins again at stage 1 and continues until either we
+achieve misclassification, exceeded our maximum desired perturbation 
+percentage, or we have exhaustively perturbed all input features (which
+should be rare unless the inputs have a small number of features).
 
 ## Code
 
