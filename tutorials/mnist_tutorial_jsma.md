@@ -1,4 +1,5 @@
-# MNIST tutorial with the Jacobian-based saliency map attack
+# MNIST tutorial: crafting adversarial examples with the Jacobian-based
+saliency map attack
 
 This tutorial explains how to use `cleverhans` together 
 with a TensorFlow model to craft adversarial examples, 
