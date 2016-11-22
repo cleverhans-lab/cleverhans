@@ -73,7 +73,7 @@ our test set. This gives the following:
 ```
 INSERT UPDATED CODE HERE
 ```
-`
+
 The second part evaluates the accuracy of the model on 
 adversarial examples in a similar way than described 
 previously for legitimate examples. It should be
