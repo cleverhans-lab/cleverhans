@@ -2,26 +2,18 @@
 
 This tutorial explains how to use `cleverhans` together 
 with a TensorFlow model to craft adversarial examples, 
-using the Jacobian-based forward derivative.
-We assume basic knowledge of TensorFlow. 
-
-## Setup
-
-First, make sure that you have [TensorFlow](https://www.tensorflow.org/versions/r0.10/get_started/os_setup.html#download-and-setup) 
-and [Keras](https://keras.io/#installation) installed on
-your machine and then clone the `cleverhans` 
-[repository](https://github.com/openai/cleverhans).
-Also, add the path of the repository clone to your 
-`PYTHONPATH` environment variable. 
-```bash
-export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
-```
-This allows our tutorial script to import the library 
-simply with `import cleverhans`. 
+using the Jacobian-based saliency map approach. This attack
+is described in details by the following [paper](https://arxiv.org/abs/1511.07528).
+We assume basic knowledge of TensorFlow. If you need help 
+getting `cleverhans` installed before getting started, 
+you may find our [MNIST tutorial on the fast gradient sign method](mnist_tutorial.md)
+to be useful. 
 
 The tutorial's [complete script](https://github.com/openai/cleverhans/blob/master/tutorials/mnist_tutorial_jsma.py) 
 is provided in the `tutorial` folder of the 
-`cleverhans` repository. 
+`cleverhans` repository. Please be sure to 
+add `cleverhans` to your `PYTHONPATH` environment variable
+before executing this tutorial. 
 
 ## Defining the model with TensorFlow and Keras
 
@@ -73,41 +65,24 @@ The accuracy can become much higher by training for more epochs.
 
 ## Crafting adversarial examples - Overview
 
-This tutorial applies the Jacobian-based forwad derivative method
-introduced by [this paper](https://arxiv.org/abs/1511.07528).
-We first need to create the necessary graph elements by 
-calling `cleverhans.attacks.jsma` before using the helper
+We first need to create the necessary elements in the TensorFlow graph 
+by calling `cleverhans.attacks.jsma` before using the helper
 function `cleverhans.utils_tf.batch_eval` to apply it to 
 our test set. This gives the following:
 
-```python
-    #Craft adversarial examples for nb_classes from per_samples using the Jacobian-based saliency map approach 
-    results = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='i')
-    perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='f')
-    print 'Crafting ' + str(FLAGS.source_samples) + ' * ' + str(FLAGS.nb_classes) + ' adversarial examples'
-
-    for sample in xrange(FLAGS.source_samples):
-        target_classes = list(xrange(FLAGS.nb_classes))
-        target_classes.remove(np.argmax(Y_test[sample]))
-        for target in target_classes:
-            print '--------------------------------------\nCreating adversarial example for target class ' + str(target)
-            _, result, percentage_perterb = jsma(sess, x, predictions, X_test[sample:(sample+1)], target,
-                    theta=1, gamma=0.1, increase=True, back='tf', clip_min=0, clip_max=1)
-            results[target, sample] = result
-            perturbations[target, sample] = percentage_perterb
-
-# Evaluate the accuracy of the MNIST model on adversarial examples
-accuracy = tf_model_eval(sess, x, y, predictions, X_test_adv, Y_test)
-print'Test accuracy on adversarial examples: ' + str(accuracy)
 ```
-
+INSERT UPDATED CODE HERE
+```
+`
 The second part evaluates the accuracy of the model on 
 adversarial examples in a similar way than described 
 previously for legitimate examples. It should be
-significantly lower than the previous accuracy you obtained.
+significantly lower than the previous accuracy you obtained on 
+legitimate samples from the test set.
 
 Crafting adversarial examples is a 3-step process and is outlined in 
-the main loop of the attack:
+the main loop of the attack, which you may find in the function
+`cleverhans.attacks.jsma_tf`:
 
 ```python
     # repeat until we have achieved misclassification
@@ -131,12 +106,19 @@ the main loop of the attack:
 
 ## Crafting adversarial examples - the Jacobian
 
-In the first stage of the process, we compute the Jacobian forward derivatives for
-each class to determine how changes in the pixels will affect the classification 
-of the input sample. These changes are represented as 28 x 28 floating point numbers
-where higher values mean the associated pixels have a large influence in misclassifying
-the input sample to a target class (Conversely, negative values imply a negligable impact). 
-Concisely, this step in the attack is to identify the features we might be interested in perterbing.
+In the first stage of the process, we compute the Jacobian component
+corresponding to each pair of output class and input feature. This 
+helps us estimating how changes in the input features (here pixels 
+of the MNIST images) will affect each of the class probability 
+assigned by the model. The Jacobian is a 10 x 28 x 28 matrix of floating 
+point numbers where large positive values mean that increasing the 
+associated pixels will yield a large increase in the probabilities 
+output by the model. Conversely, components with large negative values
+correspond to pixels that yield large decreases in the probabilities
+output by the model when their value is increased. 
+Concisely, this step in the attack is key to identify the features 
+we should prioritize when crafting the perturbation that will result
+in misclassification.
 
 ## Crafting adversarial examples - the Salency map
 
