@@ -34,7 +34,7 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
     if back == 'tf':
         # Compute FGSM using TensorFlow
-        return fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None)
+        return fgsm_tf(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
     elif back == 'th':
         raise NotImplementedError("Theano FGSM not implemented.")
 
