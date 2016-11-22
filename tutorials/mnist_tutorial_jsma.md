@@ -104,7 +104,9 @@ the main loop of the attack, which you may find in the function
         iteration = iteration + 1
 ```
 
-## Crafting adversarial examples - the Jacobian
+## Crafting adversarial examples
+
+### The Jacobian
 
 In the first stage of the process, we compute the Jacobian component
 corresponding to each pair of output class and input feature. This 
@@ -120,7 +122,7 @@ Concisely, this step in the attack is key to identify the features
 we should prioritize when crafting the perturbation that will result
 in misclassification.
 
-## Crafting adversarial examples - the Salency map
+### The saliency map
 
 In the second stage of the process, we determine the best pixels for 
 our adversarial goal: to misclassify an input sample in a chosen target
@@ -153,7 +155,7 @@ simultaneously, push us towards our target class while simultaneously
 pushing us away from all other classes. Concisely, it is this pair
 of pixels we seek to identify in this step of the attack.
 
-## Crafting adversarial examples - applying the perterbations
+### Applying the perturbations
 
 In the third stage of the process, we simply maximize the value of the 
 pixel pair we identified in the prior stage. Depending upon the desired
