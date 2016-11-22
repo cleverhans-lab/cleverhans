@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import keras
 import numpy as np
 import os
@@ -38,16 +43,16 @@ def main(argv=None):
     # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'th':
         keras.backend.set_image_dim_ordering('th')
-        print "INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'"
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'")
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
     keras.backend.set_session(sess)
-    print "Created TensorFlow session and set Keras backend."
+    print("Created TensorFlow session and set Keras backend.")
 
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist()
-    print "Loaded MNIST test data."
+    print("Loaded MNIST test data.")
 
     # Define input TF placeholder
     x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
@@ -56,7 +61,7 @@ def main(argv=None):
     # Define TF model graph
     model = model_mnist()
     predictions = model(x)
-    print "Defined TensorFlow model graph."
+    print("Defined TensorFlow model graph.")
 
     ###########################################################################
     # Training the model using TensorFlow
@@ -79,7 +84,7 @@ def main(argv=None):
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print 'Crafting ' + str(FLAGS.source_samples) + ' * ' + str(FLAGS.nb_classes) + ' adversarial examples'
+    print('Crafting ' + str(FLAGS.source_samples) + ' * ' + str(FLAGS.nb_classes) + ' adversarial examples')
 
     # This array indicates whether an adversarial example was found for each
     # test set sample and target class

@@ -207,7 +207,8 @@ def jacobian(sess, x, deriv_target, deriv_others, X):
 
 def jsma_tf(sess, x, predictions, sample, target, theta, gamma, increase, clip_min, clip_max):
     """
-    TensorFlow implementation of the jsma.
+    TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
+    for details about the algorithm design choices).
     :param sess: TF session
     :param x: the input placeholder
     :param predictions: the model's symbolic output (linear output, pre-softmax)
@@ -223,6 +224,8 @@ def jsma_tf(sess, x, predictions, sample, target, theta, gamma, increase, clip_m
     :return: an adversarial sample
     """
 
+    # Copy the source sample and define the maximum number of features
+    # (i.e. the maximum number of iterations) that we may perturb
     adv_x = copy.copy(sample)
     max_iters = np.floor(np.product(adv_x[0][0].shape) * gamma / 2)
     print('Maximum number of iterations: {0}'.format(max_iters))
