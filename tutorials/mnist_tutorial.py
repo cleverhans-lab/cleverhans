@@ -27,6 +27,10 @@ def main(argv=None):
     MNIST cleverhans tutorial
     :return:
     """
+
+    # Set TF random seed to improve reproducibility
+    tf.set_random_seed(1234)
+
     # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'th':
         keras.backend.set_image_dim_ordering('th')

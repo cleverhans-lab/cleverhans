@@ -37,6 +37,9 @@ def main(argv=None):
     :return:
     """
 
+    # Set TF random seed to improve reproducibility
+    tf.set_random_seed(1234)
+
     ###########################################################################
     # Define the dataset and model
     ###########################################################################
