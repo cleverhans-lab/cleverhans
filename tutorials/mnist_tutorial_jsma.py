@@ -19,8 +19,6 @@ flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_integer('nb_classes', 10, 'Number of classification classes')
 flags.DEFINE_integer('img_rows', 28, 'Input row dimension')
 flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
-flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
-flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
 flags.DEFINE_integer('source_samples', 5, 'Number of examples in test set to attack')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
@@ -46,7 +44,7 @@ def main(argv=None):
 
     # Define input TF placeholder
     x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
-    y = tf.placeholder(tf.float32, shape=(None, FLAGS.nb_classes))
+    y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
     model = model_mnist()
