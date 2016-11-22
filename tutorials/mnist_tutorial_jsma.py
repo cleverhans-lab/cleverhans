@@ -13,7 +13,7 @@ from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_tf import tf_model_train, tf_model_eval
-from cleverhans.attacks import jsma
+from cleverhans.attacks import jsma, jacobian_graph
 
 FLAGS = flags.FLAGS
 
@@ -94,6 +94,8 @@ def main(argv=None):
     # sample and target class
     perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='f')
 
+    grads = jacobian_graph(predictions, x)
+
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(FLAGS.source_samples):
         # We want to find an adversarial example for each possible target class
@@ -107,7 +109,7 @@ def main(argv=None):
             print('Creating adversarial example for target class ' + str(target))
 
             # This call runs the Jacobian-based saliency map approach
-            _, result, percentage_perterb = jsma(sess, x, predictions,
+            _, result, percentage_perterb = jsma(sess, x, predictions, grads,
                                                  X_test[sample_ind:(sample_ind+1)],
                                                  target, theta=1, gamma=0.1,
                                                  increase=True, back='tf',
