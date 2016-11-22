@@ -65,20 +65,65 @@ The accuracy can become much higher by training for more epochs.
 
 ## Crafting adversarial examples
 
-We first need to create the necessary elements in the TensorFlow graph 
-by calling `cleverhans.attacks.jsma` before using the helper
-function `cleverhans.utils_tf.batch_eval` to apply it to 
-our test set. This gives the following:
+We first need to create the elements in the TensorFlow graph necessary
+to compute Jacobian matrices (see below for more details), as well as
+two numpy arrays to keep track of the results of adversarial example
+crafting. 
 
-```
-INSERT UPDATED CODE HERE
+```python
+# This array indicates whether an adversarial example was found for each
+# test set sample and target class
+results = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='i')
+
+# This array contains the fraction of perturbed features for each test set
+# sample and target class
+perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='f')
+
+# Define the TF graph for the model's Jacobian
+grads = jacobian_graph(predictions, x)
 ```
 
-The second part evaluates the accuracy of the model on 
-adversarial examples in a similar way than described 
-previously for legitimate examples. It should be
+We then iterate over the samples that we want to perturb and all
+possible target classes (i.e. all classes that are different from
+the label assigned to the input in the dataset). 
+
+```python
+# Loop over the samples we want to perturb into adversarial examples
+for sample_ind in xrange(FLAGS.source_samples):
+    # We want to find an adversarial example for each possible target class
+    # (i.e. all classes that differ from the label given in the dataset)
+    target_classes = list(xrange(FLAGS.nb_classes))
+    target_classes.remove(int(np.argmax(Y_test[sample_ind])))
+
+    # Loop over all target classes
+    for target in target_classes:
+        print('--------------------------------------')
+        print('Creating adversarial example for target class ' + str(target))
+
+        # This call runs the Jacobian-based saliency map approach
+        _, result, percentage_perterb = jsma(sess, x, predictions, grads,
+                                             X_test[sample_ind:(sample_ind+1)],
+                                             target, theta=1, gamma=0.1,
+                                             increase=True, back='tf',
+                                             clip_min=0, clip_max=1)
+
+        # Update the arrays for later analysis
+        results[target, sample_ind] = result
+        perturbations[target, sample_ind] = percentage_perterb
+```
+
+The last few lines analyze the numpy arrays updated throughout crafting 
+in order to compute the success rate of the adversary: the number of 
+source-target misclassifications that were successful. Therefore, the
+adversarial success rate is the opposite of the model's accuracy.
+Given that the adversarial success rate should be larger than `90%`, 
+the model's accuracy on these adversarial examples is lower than `10%`.
+This should be 
 significantly lower than the previous accuracy you obtained on 
 legitimate samples from the test set.
+It also provides
+the average fraction of input features perturbed to achieve this 
+misclassification. 
 
 ### Overview of the crafting process
 
@@ -87,23 +132,15 @@ the main loop of the attack, which you may find in the function
 `cleverhans.attacks.jsma_tf`:
 
 ```python
-    # repeat until we have achieved misclassification
-    iteration = 0
-    current = model_argmax(sess, x, predictions, adv_x)	
-    while current != target and iteration < max_iters and len(search_domain) > 0: 
+# Compute the Jacobian components
+grads_target, grads_others = jacobian(sess, x, grads, target, adv_x)
 
-        # compute the Jacobian derivatives
-        grads_target, grads_others = jacobian(sess, x, deriv_target, deriv_others, adv_x)
+# Compute the saliency map for each of our target classes
+# and return the two best candidate features for perturbation
+i, j, search_domain = saliency_map(grads_target, grads_others, search_domain, increase)
 
-        # compute the salency map for each of our taget classes
-        i, j, search_domain = saliency_map(grads_target, grads_others, search_domain, increase)
-
-        # apply an adversarial perterbation to the sample
-        adv_x = apply_perturbations(i, j, adv_x, increase, theta, clip_min, clip_max)
-
-        # update our current prediction
-        current = model_argmax(sess, x, predictions, adv_x)
-        iteration = iteration + 1
+# Apply the perturbation to the two input features selected previously
+adv_x = apply_perturbations(i, j, adv_x, increase, theta, clip_min, clip_max)
 ```
 
 ### The Jacobian
@@ -121,6 +158,11 @@ output by the model when their value is increased.
 Concisely, this step in the attack is key to identify the features 
 we should prioritize when crafting the perturbation that will result
 in misclassification.
+
+Before computing its actual values, the Jacobian is defined as a TF
+graph by one call to `attacks.jacobian_graph()`. This graph is ran
+by function `attacks.jacobian()`, which is fed with the current 
+values of input features to be fed as the input of the graph. 
 
 ### The saliency map
 
@@ -155,6 +197,11 @@ simultaneously, push us towards our target class while simultaneously
 pushing us away from all other classes. Concisely, it is this pair
 of pixels we seek to identify in this step of the attack.
 
+The computation of saliency map scores for pixel pairs is defined in
+function `attacks.saliency_score()`. It is used to compute the entire
+saliency map of an input with a pool
+of threads by function `attacks.saliency_map()`.
+
 ### Applying the perturbations
 
 In the third stage of the process, we simply maximize the value of the 
@@ -168,6 +215,11 @@ then this process begins again at stage 1 and continues until either we
 achieve misclassification, exceeded our maximum desired perturbation 
 percentage, or we have exhaustively perturbed all input features (which
 should be rare unless the inputs have a small number of features).
+
+This perturbation is applied by function `attacks.apply_perturbations`,
+which makes sure that the resulting adversarial example remains in the
+expected input domain (i.e., it constraints the perturbed input features
+to remain between 0 and 1 in the case of MNIST).
 
 ## Code
 

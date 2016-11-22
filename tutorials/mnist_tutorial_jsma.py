@@ -94,6 +94,7 @@ def main(argv=None):
     # sample and target class
     perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='f')
 
+    # Define the TF graph for the model's Jacobian
     grads = jacobian_graph(predictions, x)
 
     # Loop over the samples we want to perturb into adversarial examples
