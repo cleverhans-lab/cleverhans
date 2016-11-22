@@ -79,3 +79,17 @@ def batch_indices(batch_nb, data_length, batch_size):
         end -= shift
 
     return start, end
+
+
+def other_classes(nb_classes, class_ind):
+    """
+    Heper function that returns a list of class indices without one class
+    :param nb_classes: number of classes in total
+    :param class_ind: the class index to be omitted
+    :return: list of class indices without one class
+    """
+
+    other_classes_list = list(xrange(nb_classes))
+    other_classes_list.remove(class_ind)
+
+    return other_classes_list

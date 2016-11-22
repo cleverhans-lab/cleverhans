@@ -14,6 +14,7 @@ from tensorflow.python.platform import flags
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_tf import tf_model_train, tf_model_eval
 from cleverhans.attacks import jsma, jacobian_graph
+from cleverhans.utils import other_classes
 
 FLAGS = flags.FLAGS
 
@@ -101,8 +102,7 @@ def main(argv=None):
     for sample_ind in xrange(FLAGS.source_samples):
         # We want to find an adversarial example for each possible target class
         # (i.e. all classes that differ from the label given in the dataset)
-        target_classes = list(xrange(FLAGS.nb_classes))
-        target_classes.remove(int(np.argmax(Y_test[sample_ind])))
+        target_classes = other_classes(FLAGS.nb_classes, int(np.argmax(Y_test[sample_ind])))
 
         # Loop over all target classes
         for target in target_classes:
@@ -127,6 +127,9 @@ def main(argv=None):
     # Compute the average distortion introduced by the algorithm
     percentage_perturbed = np.mean(perturbations)
     print('Avg. rate of perterbed features {0}'.format(percentage_perturbed))
+
+    # Close TF session
+    sess.close()
 
 if __name__ == '__main__':
     app.run()

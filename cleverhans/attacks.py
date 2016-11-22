@@ -11,6 +11,7 @@ import tensorflow as tf
 import multiprocessing as mp
 
 from . import utils_tf
+from . import utils
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
@@ -200,8 +201,7 @@ def jacobian(sess, x, grads, target, X):
 
     # Sum over all classes different from the target class to prepare for
     # saliency map computation in the next step of the attack
-    other_classes = list(xrange(FLAGS.nb_classes))
-    other_classes.remove(target)
+    other_classes = utils.other_classes(FLAGS.nb_classes, target)
     grad_others = np.sum(jacobian_val[other_classes, :, :], axis=0)
 
     return jacobian_val[target], grad_others
