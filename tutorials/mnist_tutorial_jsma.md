@@ -63,7 +63,7 @@ print 'Test accuracy on legitimate test examples: ' + str(accuracy)
 The accuracy returned should be above `98%`.
 The accuracy can become much higher by training for more epochs.
 
-## Crafting adversarial examples - Overview
+## Crafting adversarial examples
 
 We first need to create the necessary elements in the TensorFlow graph 
 by calling `cleverhans.attacks.jsma` before using the helper
@@ -79,6 +79,8 @@ adversarial examples in a similar way than described
 previously for legitimate examples. It should be
 significantly lower than the previous accuracy you obtained on 
 legitimate samples from the test set.
+
+### Overview of the crafting process
 
 Crafting adversarial examples is a 3-step process and is outlined in 
 the main loop of the attack, which you may find in the function
@@ -103,8 +105,6 @@ the main loop of the attack, which you may find in the function
         current = model_argmax(sess, x, predictions, adv_x)
         iteration = iteration + 1
 ```
-
-## Crafting adversarial examples
 
 ### The Jacobian
 
