@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import os
 import keras
+from keras import backend as K
 
 
 def save_model(model, dir, filename, weights_only=False):
@@ -59,6 +60,22 @@ def load_model(directory, filename, weights_only=False, model=None):
     else:
         return keras.models.load_model(filepath)
 
+def model_loss(y, model, mean=True):
+    """
+    Define loss of the graph
+    :param y: correct labels
+    :param model: output of the model
+    :return: return mean of loss if True, otherwise return vector with per
+             sample loss
+    """
+
+    from_logits = "softmax" not in str(model).lower()
+
+    out = K.categorical_crossentropy(model, y, from_logits)
+
+    if mean:
+        out = K.mean(out)
+    return out
 
 def batch_indices(batch_nb, data_length, batch_size):
     """

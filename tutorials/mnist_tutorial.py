@@ -11,7 +11,7 @@ from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_tf import tf_model_train, tf_model_eval, batch_eval
-from cleverhans.attacks import fgsm
+from cleverhans.attacks import fgsm_tf
 
 FLAGS = flags.FLAGS
 
@@ -69,7 +69,7 @@ def main(argv=None):
 
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    adv_x = fgsm(x, predictions, eps=0.3)
+    adv_x = fgsm_tf(x, predictions, eps=0.3)
     X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
@@ -81,7 +81,7 @@ def main(argv=None):
     # Redefine TF model graph
     model_2 = model_mnist()
     predictions_2 = model_2(x)
-    adv_x_2 = fgsm(x, predictions_2, eps=0.3)
+    adv_x_2 = fgsm_tf(x, predictions_2, eps=0.3)
     predictions_2_adv = model_2(adv_x_2)
 
 
