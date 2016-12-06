@@ -12,7 +12,6 @@ import six
 import tensorflow as tf
 import time
 
-from tensorflow.python.platform import flags
 from .utils import batch_indices
 
 from tensorflow.python.platform import flags
@@ -42,27 +41,30 @@ def tf_model_loss(y, model, mean=True):
     return out
 
 
-def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                   predictions_adv=None, evaluate=None):
+def tf_model_train(sess, model, X_train, Y_train, save=False,
+                   adversarial_training=False, evaluate=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
-    :param x: input placeholder
-    :param y: output placeholder (for labels)
-    :param predictions: model output predictions
+    :param model: the model graph
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
-    :param save: Boolean controling the save operation
-    :param predictions_adv: if set with the adversarial example tensor,
-                            will run adversarial training
+    :param save: Boolean controlling the save operation
+    :param adversarial_training: Boolean controlling whether or not we will
+    perform adversarial training
     :return: True if model trained
     """
     print("Starting model training using TensorFlow.")
 
+    # Create placeholders for inputs and labels
+    x = tf.placeholder(tf.float32, shape=(None,) + X_train.shape[1:])
+    y = tf.placeholder(tf.float32, shape=(None,) + Y_train.shape[1:])
+
     # Define loss
-    loss = tf_model_loss(y, predictions)
-    if predictions_adv is not None:
-        loss = (loss + tf_model_loss(y, predictions_adv)) / 2
+    loss = tf_model_loss(y, model(x))
+    if adversarial_training:
+        raise NotImplementedError("Adversarial training not yet implemented.")
+        #loss = (loss + tf_model_loss(y, predictions_adv)) / 2
 
     train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate, rho=0.95, epsilon=1e-08).minimize(loss)
     # train_step = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
@@ -108,19 +110,21 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     return True
 
 
-def tf_model_eval(sess, x, y, model, X_test, Y_test):
+def tf_model_eval(sess, model, X_test, Y_test):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
-    :param x: input placeholder
-    :param y: output placeholder (for labels)
-    :param model: model output predictions
     :param X_test: numpy array with training inputs
     :param Y_test: numpy array with training outputs
+    :param model: the model graph
     :return: a float with the accuracy value
     """
+    # Create placeholders for inputs and labels
+    x = tf.placeholder(tf.float32, shape=(None,) + X_test.shape[1:])
+    y = tf.placeholder(tf.float32, shape=(None,) + Y_test.shape[1:])
+
     # Define sympbolic for accuracy
-    acc_value = keras.metrics.categorical_accuracy(y, model)
+    acc_value = keras.metrics.categorical_accuracy(y, model(x))
 
     # Init result var
     accuracy = 0.0

@@ -17,13 +17,14 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
+def fgsm(sess, model, X, eps, back='tf', clip_min=None, clip_max=None):
     """
     A wrapper for the Fast Gradient Sign Method.
     It calls the right function, depending on the
     user's backend.
-    :param x: the input
-    :param predictions: the model's output
+    :param sess: TF session
+    :param model: The model graph
+    :param X: The input feature matrix
     :param eps: the epsilon (input variation parameter)
     :param back: switch between TensorFlow ('tf') and
                 Theano ('th') implementation
@@ -35,17 +36,18 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
     if back == 'tf':
         # Compute FGSM using TensorFlow
-        return fgsm_tf(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
+        return fgsm_tf(sess, model, X, eps, clip_min=clip_min, clip_max=clip_max)
     elif back == 'th':
         raise NotImplementedError("Theano FGSM not implemented.")
 
 
-def fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None):
+def fgsm_tf(sess, model, X, eps, clip_min=None, clip_max=None):
     """
     TensorFlow implementation of the Fast Gradient
     Sign method.
-    :param x: the input placeholder
-    :param predictions: the model's output tensor
+    :param sess: TF session
+    :param model: The model graph
+    :param X: numpy array with model inputs
     :param eps: the epsilon (input variation parameter)
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
@@ -54,10 +56,13 @@ def fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None):
     :return: a tensor for the adversarial example
     """
 
+    # Create placeholders for inputs
+    x = tf.placeholder(tf.float32, shape=(None,) + X.shape[1:])
+
     # Compute loss
-    y = tf.to_float(tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
+    y = tf.to_float(tf.equal(model(x), tf.reduce_max(model(x), 1, keep_dims=True)))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
-    loss = utils_tf.tf_model_loss(y, predictions, mean=False)
+    loss = utils_tf.tf_model_loss(y, model(x), mean=False)
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
@@ -75,7 +80,10 @@ def fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None):
     if (clip_min is not None) and (clip_max is not None):
         adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
 
-    return adv_x
+    # Evaluate
+    adv_X, = utils_tf.batch_eval(sess, [x], [adv_x], [X])
+
+    return adv_X
 
 
 def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf, increase=True, back='tf', clip_min=None, clip_max=None):
