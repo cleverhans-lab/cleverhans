@@ -17,14 +17,15 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(sess, model, X, eps, back='tf', clip_min=None, clip_max=None):
+def fgsm(sess, model, X, Y, eps, back='tf', clip_min=None, clip_max=None):
     """
     A wrapper for the Fast Gradient Sign Method.
     It calls the right function, depending on the
     user's backend.
     :param sess: TF session
     :param model: The model graph
-    :param X: The input feature matrix
+    :param X: numpy array with model inputs
+    :param Y: numpy array with model outputs
     :param eps: the epsilon (input variation parameter)
     :param back: switch between TensorFlow ('tf') and
                 Theano ('th') implementation
@@ -36,17 +37,18 @@ def fgsm(sess, model, X, eps, back='tf', clip_min=None, clip_max=None):
     """
     if back == 'tf':
         # Compute FGSM using TensorFlow
-        return fgsm_tf(sess, model, X, eps, clip_min=clip_min, clip_max=clip_max)
+        return fgsm_tf(sess, model, X, Y, eps, clip_min=clip_min, clip_max=clip_max)
     elif back == 'th':
         raise NotImplementedError("Theano FGSM not implemented.")
 
-def fgsm_tf(sess, model, X, eps, clip_min=None, clip_max=None):
+def fgsm_tf(sess, model, X, Y, eps, clip_min=None, clip_max=None):
     """
     TensorFlow implementation of the Fast Gradient
     Sign method.
     :param sess: TF session
     :param model: The model graph
     :param X: numpy array with model inputs
+    :param Y: numpy array with model outputs
     :param eps: the epsilon (input variation parameter)
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
@@ -57,19 +59,21 @@ def fgsm_tf(sess, model, X, eps, clip_min=None, clip_max=None):
 
     # Create placeholders for inputs
     x = tf.placeholder(tf.float32, shape=(None,) + X.shape[1:])
+    y = tf.placeholder(tf.float32, shape=(None,) + Y.shape[1:])
 
     # Compute symbolic tensor for adversarial samples
-    adv_x = fgsm_tf_symbolic(x, model, eps, clip_min, clip_max)
+    adv_x = fgsm_tf_symbolic(x, y, model, eps, clip_min, clip_max)
 
     # Evaluate
-    adv_X, = utils_tf.batch_eval(sess, [x], [adv_x], [X])
+    adv_X, = utils_tf.batch_eval(sess, [x, y], [adv_x], [X, Y])
 
     return adv_X
 
-def fgsm_tf_symbolic(x, model, eps, clip_min=None, clip_max=None):
+def fgsm_tf_symbolic(x, y, model, eps, clip_min=None, clip_max=None):
     """
     Compute symbolic expression for adversarial samples using FGSM.
     :param x: TF placeholder for the model inputs
+    :param y: TF placeholder for the model outputs
     :param model: The model graph
     :param eps: the epsilon (input variation parameter)
     :param clip_min: optional parameter that can be used to set a minimum
@@ -80,7 +84,6 @@ def fgsm_tf_symbolic(x, model, eps, clip_min=None, clip_max=None):
     """
 
     # Compute loss
-    y = tf.to_float(tf.equal(model(x), tf.reduce_max(model(x), 1, keep_dims=True)))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
     loss = utils_tf.tf_model_loss(y, model(x), mean=False)
 

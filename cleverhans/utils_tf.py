@@ -73,7 +73,7 @@ def tf_model_train(sess, model, X_train, Y_train, save=False,
     loss = tf_model_loss(y, model(x))
     if adversarial_training:
         from .attacks import fgsm_tf_symbolic
-        x_adv = fgsm_tf_symbolic(x, model, adv_eps, adv_clip_min, adv_clip_max)
+        x_adv = fgsm_tf_symbolic(x, y, model, adv_eps, adv_clip_min, adv_clip_max)
         loss = (loss + tf_model_loss(y, model(x_adv))) / 2
 
     train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate, rho=0.95, epsilon=1e-08).minimize(loss)

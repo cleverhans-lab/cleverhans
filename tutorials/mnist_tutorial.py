@@ -64,7 +64,7 @@ def main(argv=None):
 
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    X_test_adv = fgsm(sess, model, X_test, eps=0.3)
+    X_test_adv = fgsm(sess, model, X_test, Y_test, eps=0.3)
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
@@ -84,7 +84,7 @@ def main(argv=None):
 
         # Evaluate the accuracy of the adversarially trained MNIST model on
         # adversarial examples
-        X_test_adv_2 = fgsm(sess, model_2, X_test, eps=0.3)
+        X_test_adv_2 = fgsm(sess, model_2, X_test, Y_test, eps=0.3)
         accuracy_adv = tf_model_eval(sess, model_2, X_test_adv_2, Y_test)
         print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
 
