@@ -71,28 +71,26 @@ def main(argv=None):
     accuracy = tf_model_eval(sess, model, X_test_adv, Y_test)
     print('Test accuracy on adversarial examples: ' + str(accuracy))
 
-    # print("Repeating the process, using adversarial training")
-    # # Redefine TF model graph
-    # model_2 = model_mnist()
-    # predictions_2 = model_2(x)
-    # adv_x_2 = fgsm(x, predictions_2, eps=0.3)
-    # predictions_2_adv = model_2(adv_x_2)
-    #
-    #
-    # def evaluate_2():
-    #     # Evaluate the accuracy of the adversarialy trained MNIST model on
-    #     # legitimate test examples
-    #     accuracy = tf_model_eval(sess, model_2, X_test, Y_test)
-    #     print('Test accuracy on legitimate test examples: ' + str(accuracy))
-    #
-    #     # Evaluate the accuracy of the adversarially trained MNIST model on
-    #     # adversarial examples
-    #     accuracy_adv = tf_model_eval(sess, x, y, predictions_2_adv, X_test, Y_test)
-    #     print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
-    #
-    # # Perform adversarial training
-    # tf_model_train(sess, x, y, predictions_2, X_train, Y_train, predictions_adv=predictions_2_adv,
-    #         evaluate=evaluate_2)
+    print("Repeating the process, using adversarial training")
+    # Redefine TF model graph
+    model_2 = model_mnist()
+
+
+    def evaluate_2():
+        # Evaluate the accuracy of the adversarialy trained MNIST model on
+        # legitimate test examples
+        accuracy = tf_model_eval(sess, model_2, X_test, Y_test)
+        print('Test accuracy on legitimate test examples: ' + str(accuracy))
+
+        # Evaluate the accuracy of the adversarially trained MNIST model on
+        # adversarial examples
+        X_test_adv_2 = fgsm(sess, model_2, X_test, eps=0.3)
+        accuracy_adv = tf_model_eval(sess, model_2, X_test_adv_2, Y_test)
+        print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
+
+    # Perform adversarial training
+    tf_model_train(sess, model_2, X_train, Y_train, evaluate=evaluate_2,
+                   adversarial_training=True, adv_eps=0.3)
 
 
 if __name__ == '__main__':

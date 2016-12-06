@@ -7,7 +7,6 @@ import math
 import numpy as np
 import os
 import keras
-from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time
@@ -42,7 +41,9 @@ def tf_model_loss(y, model, mean=True):
 
 
 def tf_model_train(sess, model, X_train, Y_train, save=False,
-                   adversarial_training=False, evaluate=None):
+                   evaluate=None, adversarial_training=False,
+                   adv_eps=None, adv_clip_min=None,
+                   adv_clip_max=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -50,11 +51,19 @@ def tf_model_train(sess, model, X_train, Y_train, save=False,
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
     :param save: Boolean controlling the save operation
+    :param evaluate: a function for evaluating the model at the end of
+    each training epoch
     :param adversarial_training: Boolean controlling whether or not we will
     perform adversarial training
+    :param adv_eps:
+    :param adv_clip_min:
+    :param adv_clip_max:
     :return: True if model trained
     """
     print("Starting model training using TensorFlow.")
+
+    if adversarial_training:
+        assert adv_eps is not None
 
     # Create placeholders for inputs and labels
     x = tf.placeholder(tf.float32, shape=(None,) + X_train.shape[1:])
@@ -63,8 +72,9 @@ def tf_model_train(sess, model, X_train, Y_train, save=False,
     # Define loss
     loss = tf_model_loss(y, model(x))
     if adversarial_training:
-        raise NotImplementedError("Adversarial training not yet implemented.")
-        #loss = (loss + tf_model_loss(y, predictions_adv)) / 2
+        from .attacks import fgsm_tf_symbolic
+        x_adv = fgsm_tf_symbolic(x, model, adv_eps, adv_clip_min, adv_clip_max)
+        loss = (loss + tf_model_loss(y, model(x_adv))) / 2
 
     train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate, rho=0.95, epsilon=1e-08).minimize(loss)
     # train_step = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
