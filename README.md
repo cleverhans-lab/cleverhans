@@ -74,8 +74,8 @@ Ryan Sheatsley (Pennsylvania State University).
 The following authors contributed (ordered according to the GitHub contributors page):
 * Nicolas Papernot (Pennsylvania State University)
 * Ian Goodfellow (OpenAI)
-* Reuben Feinman (Symantec)
 * Ryan Sheatsley (Pennsylvania State University)
+* Reuben Feinman (Symantec)
 
 ## Citing this work
 
@@ -85,7 +85,7 @@ If you use `cleverhans` for academic research, you are highly encouraged
 ```
 @article{papernot2016cleverhans,
   title={cleverhans v1.0.0: an adversarial machine learning library},
-  author={Papernot, Nicolas and Goodfellow, Ian and Feinman, Reuben and Sheatsley, Ryan and McDaniel, Patrick},
+  author={Papernot, Nicolas and Goodfellow, Ian and Sheatsley, Ryan and Feinman, Reuben and McDaniel, Patrick},
   journal={arXiv preprint arXiv:1610.00768},
   year={2016}
 }
