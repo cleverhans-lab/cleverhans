@@ -10,20 +10,22 @@ import numpy as np
 import tensorflow as tf
 import multiprocessing as mp
 
-from . import utils_tf
 from . import utils
+from . import utils_tf
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
+def fgsm(sess, model, X, Y, eps, back='tf', clip_min=None, clip_max=None):
     """
     A wrapper for the Fast Gradient Sign Method.
     It calls the right function, depending on the
     user's backend.
-    :param x: the input
-    :param predictions: the model's output
+    :param sess: TF session
+    :param model: The model graph
+    :param X: numpy array with model inputs
+    :param Y: numpy array with model outputs
     :param eps: the epsilon (input variation parameter)
     :param back: switch between TensorFlow ('tf') and
                 Theano ('th') implementation
@@ -35,29 +37,55 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
     if back == 'tf':
         # Compute FGSM using TensorFlow
-        return fgsm_tf(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
+        return fgsm_tf(sess, model, X, Y, eps, clip_min=clip_min, clip_max=clip_max)
     elif back == 'th':
         raise NotImplementedError("Theano FGSM not implemented.")
 
-
-def fgsm_tf(x, predictions, eps, clip_min=None, clip_max=None):
+def fgsm_tf(sess, model, X, Y, eps, clip_min=None, clip_max=None):
     """
     TensorFlow implementation of the Fast Gradient
     Sign method.
-    :param x: the input placeholder
-    :param predictions: the model's output tensor
+    :param sess: TF session
+    :param model: The model graph
+    :param X: numpy array with model inputs
+    :param Y: numpy array with model outputs
     :param eps: the epsilon (input variation parameter)
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
-    :return: a tensor for the adversarial example
+    :return: a numpy array holding the adversarial samples
+    """
+
+    # Create placeholders for inputs
+    x = tf.placeholder(tf.float32, shape=(None,) + X.shape[1:])
+    y = tf.placeholder(tf.float32, shape=(None,) + Y.shape[1:])
+
+    # Compute symbolic tensor for adversarial samples
+    adv_x = fgsm_tf_symbolic(x, y, model, eps, clip_min, clip_max)
+
+    # Evaluate
+    adv_X, = utils_tf.batch_eval(sess, [x, y], [adv_x], [X, Y])
+
+    return adv_X
+
+def fgsm_tf_symbolic(x, y, model, eps, clip_min=None, clip_max=None):
+    """
+    Compute symbolic expression for adversarial samples using FGSM.
+    :param x: TF placeholder for the model inputs
+    :param y: TF placeholder for the model outputs
+    :param model: The model graph
+    :param eps: the epsilon (input variation parameter)
+    :param clip_min: optional parameter that can be used to set a minimum
+                    value for components of the example returned
+    :param clip_max: optional parameter that can be used to set a maximum
+                    value for components of the example returned
+    :return: a tensor for the adversarial sample
     """
 
     # Compute loss
-    y = tf.to_float(tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
-    loss = utils_tf.tf_model_loss(y, predictions, mean=False)
+    loss = utils_tf.tf_model_loss(y, model(x), mean=False)
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
