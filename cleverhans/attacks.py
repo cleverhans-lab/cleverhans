@@ -39,7 +39,7 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
         return fgsm_tf(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
     elif back == 'th':
         # Compute FGSM using Theano
-        from .attack_th import fgsm as fgsm_th
+        from .attacks_th import fgsm as fgsm_th
         return fgsm_th(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
 
 def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf, increase=True, back='tf', clip_min=None, clip_max=None):
