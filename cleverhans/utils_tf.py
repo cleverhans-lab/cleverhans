@@ -7,7 +7,6 @@ import math
 import numpy as np
 import os
 import keras
-from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time

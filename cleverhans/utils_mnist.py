@@ -8,9 +8,6 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D
 from keras.utils import np_utils
-from tensorflow.python.platform import flags
-
-FLAGS = flags.FLAGS
 
 
 def data_mnist():
@@ -43,7 +40,7 @@ def data_mnist():
     return X_train, Y_train, X_test, Y_test
 
 
-def model_mnist(logits=False,input_ph=None, img_rows=28, img_cols=28, nb_filters=64, nb_classes=10):
+def model_mnist(logits=False, input_ph=None, img_rows=28, img_cols=28, nb_filters=64, nb_classes=10):
     """
     Defines MNIST model using Keras sequential model
     :param logits: If set to False, returns a Keras model, otherwise will also return logits tensor
