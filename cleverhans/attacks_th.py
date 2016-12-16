@@ -20,7 +20,7 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
     y = T.eq(predictions, T.max(predictions, axis=1, keepdims=True))
     y = T.cast(y, utils_th.floatX)
     y = y / T.sum(y, 1, keepdims=True)
-    loss = utils_th.th_model_loss(y, predictions, mean=True)
+    loss = utils_th.model_loss(y, predictions, mean=True)
 
     # Define gradient of loss wrt input
     grad = T.grad(loss, x)

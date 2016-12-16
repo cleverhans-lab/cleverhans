@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--train_dir', '-d', default='/tmp', help='Directory storing the saved model.')
     parser.add_argument('--filename', '-f',  default='mnist.ckpt', help='Filename to save model under.')
     parser.add_argument('--nb_epochs', '-e', default=6, type=int, help='Number of epochs to train model')
-    parser.add_argument('--learning_rate', '-lr', default=0.1, type=float, help='Learning rate for training')
+    parser.add_argument('--learning_rate', '-lr', default=0.5, type=float, help='Learning rate for training')
     args = parser.parse_args()
 
     # Get MNIST test data

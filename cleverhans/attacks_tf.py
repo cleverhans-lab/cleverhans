@@ -18,7 +18,7 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
     # Compute loss
     y = tf.to_float(tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
-    loss = utils_tf.tf_model_loss(y, predictions, mean=False)
+    loss = utils_tf.model_loss(y, predictions, mean=False)
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)

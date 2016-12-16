@@ -20,7 +20,7 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def tf_model_loss(y, model, mean=True):
+def model_loss(y, model, mean=True):
     """
     Define loss of TF graph
     :param y: correct labels
@@ -60,9 +60,9 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     print("Starting model training using TensorFlow.")
 
     # Define loss
-    loss = tf_model_loss(y, predictions)
+    loss = model_loss(y, predictions)
     if predictions_adv is not None:
-        loss = (loss + tf_model_loss(y, predictions_adv)) / 2
+        loss = (loss + model_loss(y, predictions_adv)) / 2
 
     train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate, rho=0.95, epsilon=1e-08).minimize(loss)
     # train_step = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)

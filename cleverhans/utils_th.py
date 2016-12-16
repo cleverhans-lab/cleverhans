@@ -62,7 +62,7 @@ def adadelta(loss_or_grads, params, learning_rate=1.0, rho=0.95, epsilon=1e-6):
 
     return updates
 
-def th_model_loss(y, model, mean=True):
+def model_loss(y, model, mean=True):
     """
     Define loss of Theano graph
     :param y: correct labels
@@ -101,9 +101,9 @@ def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
     print("Starting model training using Theano.")
 
     # Define loss
-    loss = th_model_loss(y, predictions)
+    loss = model_loss(y, predictions)
     if predictions_adv is not None:
-        loss = (loss + th_model_loss(y, predictions_adv)) / 2
+        loss = (loss + model_loss(y, predictions_adv)) / 2
 
     
     
