@@ -19,7 +19,7 @@ export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
 This allows our tutorial script to import the library 
 simply with `import cleverhans`. 
 
-The tutorial's [complete script](https://github.com/openai/cleverhans/blob/master/tutorials/mnist_tutorial_tf.py) 
+The tutorial's [complete script](mnist_tutorial_tf.py) 
 is provided in the `tutorial` folder of the 
 `cleverhans` repository. 
 
@@ -145,4 +145,4 @@ print'Test accuracy on adversarial examples: ' + str(accuracy_adv)
 
 ## Code
 
-The complete code for this tutorial is available [here](https://github.com/openai/cleverhans/blob/master/tutorials/mnist_tutorial_tf.py).
+The complete code for this tutorial is available [here](mnist_tutorial_tf.py).
