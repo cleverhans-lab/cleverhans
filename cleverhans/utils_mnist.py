@@ -8,9 +8,6 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D
 from keras.utils import np_utils
-from tensorflow.python.platform import flags
-
-FLAGS = flags.FLAGS
 
 
 def data_mnist():
