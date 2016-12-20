@@ -3,9 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import sys
 import copy
 import itertools
-import keras
 import numpy as np
 import tensorflow as tf
 import multiprocessing as mp
@@ -139,7 +139,11 @@ def jacobian(sess, x, grads, target, X):
     :return: matrix of forward derivatives flattened into vectors
     """
     # Prepare feeding dictionary for all gradient computations
-    feed_dict = {x: X, keras.backend.learning_phase(): 0}
+    if 'keras' in sys.modules:
+	import keras
+	feed_dict = {x: X, keras.backend.learning_phase(): 0}
+    else:
+	feed_dict = {x: X}
 
     # Initialize a numpy array to hold the Jacobian component values
     jacobian_val = np.zeros((FLAGS.nb_classes, FLAGS.img_rows, FLAGS.img_cols), dtype=np.float32)
