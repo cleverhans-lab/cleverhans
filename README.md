@@ -77,8 +77,7 @@ will prove useful in the meanwhile.
 ## Reporting benchmarks
 
 When reporting benchmarks, please:
-* Use a versioned release of `cleverhans`. You can find a list of released
-versions [here](https://github.com/openai/cleverhans/releases)
+* Use a versioned release of `cleverhans`. You can find a list of released versions [here](https://github.com/openai/cleverhans/releases).
 * Either use the latest version, or, if comparing to an earlier publication,
 * use the same version as the earlier publication.
 * Report which attack method was used.
