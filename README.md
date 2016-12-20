@@ -22,12 +22,11 @@ and [here for Theano](http://deeplearning.net/software/theano/install.html).
 For better performance, it is also recommended to install the
 backend library of your choice (`TensorFlow` or `Theano`) with GPU support.
 
-Some  
-models used in the tutorials are also defined using `Keras`.
+Some models used in the tutorials are also defined using `Keras`.
 Note that you should **configure Keras to use the backend that matches
 the one used by the tutorial**. Indeed, some tutorials use `Tensorflow`
-as their backend while others use `Theano`.  
-You can find instructions for
+as their backend while others use `Theano`. You
+can find instructions for
 setting the Keras backend [on this page](https://keras.io/backend/). 
 
 Installing `TensorFlow` or `Theano`
