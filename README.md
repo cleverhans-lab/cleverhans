@@ -13,11 +13,24 @@ contributions of the latest attacks and defenses.
 
 ### Dependencies
 
-This library uses `TensorFlow` to accelerate graph computations performed by
-many machine learning models. Some models are also defined using `Keras`.
-Installing these libraries with GPU support is recommended for performance.
-Note that you should **configure Keras to use the TensorFlow backend**, as
-explained [on this page](https://keras.io/backend/). Installing `TensorFlow`
+This library uses `TensorFlow` or `Theano` to accelerate graph 
+computations performed by many machine learning models. 
+Installing these libraries is therefore a pre-requisite. 
+You can find instructions 
+[here for Tensorflow](https://www.tensorflow.org/get_started/os_setup)
+and [here for Theano](http://deeplearning.net/software/theano/install.html).
+For better performance, it is also recommended to install the
+backend library of your choice (`TensorFlow` or `Theano`) with GPU support.
+
+Some  
+models used in the tutorials are also defined using `Keras`.
+Note that you should **configure Keras to use the backend that matches
+the one used by the tutorial**. Indeed, some tutorials use `Tensorflow`
+as their backend while others use `Theano`.  
+You can find instructions for
+setting the Keras backend [on this page](https://keras.io/backend/). 
+
+Installing `TensorFlow` or `Theano`
 and `Keras` will take care of all other dependencies like `numpy` and `scipy`.
 
 ### Updating the `PYTHONPATH` environment variable
