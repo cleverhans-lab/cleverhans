@@ -29,8 +29,17 @@ as their backend while others use `Theano`. You
 can find instructions for
 setting the Keras backend [on this page](https://keras.io/backend/). 
 
-Installing `TensorFlow` or `Theano`
-and `Keras` will take care of all other dependencies like `numpy` and `scipy`.
+Installing `TensorFlow` or `Theano` will
+take care of all other dependencies like `numpy` and `scipy`.
+
+### Cloning the repository 
+
+Once dependencies have been taken care of, you simply need to clone
+this repository into a folder of your choice. 
+
+```
+git clone https://github.com/openai/cleverhans
+```
 
 ### Updating the `PYTHONPATH` environment variable
 
