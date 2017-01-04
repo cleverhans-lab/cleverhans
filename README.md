@@ -92,6 +92,9 @@ Contributions are welcomed! We ask that new efforts and features be coordinated
 on the mailing list for `cleverhans` development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev). 
 Bug fixes can be initiated through Github pull requests.
 
+When making contributions to `cleverhans`, we ask that you follow the 
+`PEP8` coding style in your pull requests. 
+
 ## About the name
 
 The name `cleverhans` is a reference to a presentation by Bob Sturm titled
