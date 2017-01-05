@@ -52,13 +52,15 @@ def model_mnist(logits=False,input_ph=None, img_rows=28, img_cols=28, nb_filters
     model.add(Dropout(0.2, input_shape=(1, img_rows, img_cols)))
     model.add(Convolution2D(nb_filters, 8, 8,
                             subsample=(2, 2),
+                            dim_ordering="th",
                             border_mode="same"
                             ))
     model.add(Activation('relu'))
     model.add(Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
-        border_mode="valid"))
+        dim_ordering="th", border_mode="valid"))
     model.add(Activation('relu'))
-    model.add(Convolution2D(nb_filters *2, 5, 5, subsample=(1, 1)))
+    model.add(Convolution2D(nb_filters *2, 5, 5, subsample=(1, 1),
+        dim_ordering="th"))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
