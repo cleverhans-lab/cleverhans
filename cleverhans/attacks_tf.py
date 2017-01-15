@@ -9,6 +9,7 @@ import itertools
 import numpy as np
 import tensorflow as tf
 import multiprocessing as mp
+from six.moves import xrange
 
 from . import utils_tf
 from . import utils
@@ -140,10 +141,10 @@ def jacobian(sess, x, grads, target, X):
     """
     # Prepare feeding dictionary for all gradient computations
     if 'keras' in sys.modules:
-	import keras
-	feed_dict = {x: X, keras.backend.learning_phase(): 0}
+        import keras
+        feed_dict = {x: X, keras.backend.learning_phase(): 0}
     else:
-	feed_dict = {x: X}
+        feed_dict = {x: X}
 
     # Initialize a numpy array to hold the Jacobian component values
     jacobian_val = np.zeros((FLAGS.nb_classes, FLAGS.img_rows, FLAGS.img_cols), dtype=np.float32)
