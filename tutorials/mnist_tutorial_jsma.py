@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import keras
 import numpy as np
 import os
+from six.moves import xrange
 
 import tensorflow as tf
 from tensorflow.python.platform import app

@@ -89,7 +89,7 @@ def other_classes(nb_classes, class_ind):
     :return: list of class indices without one class
     """
 
-    other_classes_list = list(xrange(nb_classes))
+    other_classes_list = list(range(nb_classes))
     other_classes_list.remove(class_ind)
 
     return other_classes_list

@@ -49,7 +49,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf, incre
     """
     if back == 'tf':
         # Compute Jacobian-based saliency map attack using TensorFlow
-	from .attacks_tf import jsma_tf
+        from .attacks_tf import jsma_tf
         return jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma, increase, clip_min, clip_max)
     elif back == 'th':
         raise NotImplementedError("Theano jsma not implemented.")
