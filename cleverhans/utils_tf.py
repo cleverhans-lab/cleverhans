@@ -63,20 +63,25 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                             will run adversarial training
     :return: True if model trained
     """
-    print("Starting model training using TensorFlow.")
 
     # Define loss
     loss = model_loss(y, predictions)
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate, rho=0.95, epsilon=1e-08).minimize(loss)
-    # train_step = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
-    print("Defined optimizer.")
+    train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate,
+                                            rho=0.95,
+                                            epsilon=1e-08).minimize(loss)
 
     with sess.as_default():
-        init = tf.initialize_all_variables()
-        sess.run(init)
+        if hasattr(tf, "global_variables_initializer"):
+            init = tf.global_variables_initializer()
+            inputs = init.control_inputs
+            init.run()
+        else:
+            warnings.warn("Update your copy of tensorflow; future versions of"
+                          "cleverhans may drop support for this version.")
+            sess.run(tf.initialize_all_variables())
 
         for epoch in six.moves.xrange(FLAGS.nb_epochs):
             print("Epoch " + str(epoch))
