@@ -75,9 +75,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
-            init = tf.global_variables_initializer()
-            inputs = init.control_inputs
-            init.run()
+            tf.global_variables_initializer().run()
         else:
             warnings.warn("Update your copy of tensorflow; future versions of"
                           "cleverhans may drop support for this version.")
