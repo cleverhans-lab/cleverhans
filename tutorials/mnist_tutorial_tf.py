@@ -10,7 +10,7 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
-from cleverhans.utils_tf import tf_model_train, tf_model_eval, batch_eval
+from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import fgsm
 
 FLAGS = flags.FLAGS
@@ -39,11 +39,9 @@ def main(argv=None):
     # Create TF session and set as Keras backend session
     sess = tf.Session()
     keras.backend.set_session(sess)
-    print("Created TensorFlow session and set Keras backend.")
 
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist()
-    print("Loaded MNIST test data.")
 
     assert Y_train.shape[1] == 10.
     label_smooth = .1
@@ -60,12 +58,12 @@ def main(argv=None):
 
     def evaluate():
         # Evaluate the accuracy of the MNIST model on legitimate test examples
-        accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
+        accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
         assert X_test.shape[0] == 10000, X_test.shape
         print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
     # Train an MNIST model
-    tf_model_train(sess, x, y, predictions, X_train, Y_train, evaluate=evaluate)
+    model_train(sess, x, y, predictions, X_train, Y_train, evaluate=evaluate)
 
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
@@ -74,7 +72,7 @@ def main(argv=None):
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
-    accuracy = tf_model_eval(sess, x, y, predictions, X_test_adv, Y_test)
+    accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test)
     print('Test accuracy on adversarial examples: ' + str(accuracy))
 
     print("Repeating the process, using adversarial training")
@@ -88,16 +86,16 @@ def main(argv=None):
     def evaluate_2():
         # Evaluate the accuracy of the adversarialy trained MNIST model on
         # legitimate test examples
-        accuracy = tf_model_eval(sess, x, y, predictions_2, X_test, Y_test)
+        accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test)
         print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
         # Evaluate the accuracy of the adversarially trained MNIST model on
         # adversarial examples
-        accuracy_adv = tf_model_eval(sess, x, y, predictions_2_adv, X_test, Y_test)
+        accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test, Y_test)
         print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
 
     # Perform adversarial training
-    tf_model_train(sess, x, y, predictions_2, X_train, Y_train, predictions_adv=predictions_2_adv,
+    model_train(sess, x, y, predictions_2, X_train, Y_train, predictions_adv=predictions_2_adv,
             evaluate=evaluate_2)
 
 

@@ -118,8 +118,12 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     return True
 
+def tf_model_eval(*args, **kwargs):
+    warnings.warn("`tf_model_eval` is deprecated. Switch to `model_eval`."
+                  "`tf_model_eval` will be removed after 2017-07-18.")
+    return model_eval(*args, **kwargs)
 
-def tf_model_eval(sess, x, y, model, X_test, Y_test):
+def model_eval(sess, x, y, model, X_test, Y_test):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph

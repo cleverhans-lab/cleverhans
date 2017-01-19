@@ -10,7 +10,7 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
-from cleverhans.utils_tf import tf_model_train, tf_model_eval
+from cleverhans.utils_tf import model_train, model_eval
 
 FLAGS = flags.FLAGS
 
@@ -55,10 +55,10 @@ def main(argv=None):
         print("Defined TensorFlow model graph.")
 
         # Train an MNIST model
-        tf_model_train(sess, x, y, predictions, X_train, Y_train)
+        model_train(sess, x, y, predictions, X_train, Y_train)
 
         # Evaluate the accuracy of the MNIST model on legitimate test examples
-        accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
+        accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
         assert float(accuracy) >= 0.98, accuracy
 
 
