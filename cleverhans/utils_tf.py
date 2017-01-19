@@ -11,6 +11,7 @@ from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time
+import warnings
 
 from tensorflow.python.platform import flags
 from .utils import batch_indices
@@ -42,7 +43,12 @@ def model_loss(y, model, mean=True):
     return out
 
 
-def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
+def tf_model_train(*args, **kwargs):
+    warnings.warn("`tf_model_train` is deprecated. Switch to `model_train`."
+                  "`tf_model_train` will be removed after 2017-07-18.")
+    return model_train(*args, **kwargs)
+
+def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                    predictions_adv=None, evaluate=None):
     """
     Train a TF graph
@@ -57,20 +63,25 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                             will run adversarial training
     :return: True if model trained
     """
-    print("Starting model training using TensorFlow.")
 
     # Define loss
     loss = model_loss(y, predictions)
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate, rho=0.95, epsilon=1e-08).minimize(loss)
-    # train_step = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
-    print("Defined optimizer.")
+    train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate,
+                                            rho=0.95,
+                                            epsilon=1e-08).minimize(loss)
 
     with sess.as_default():
-        init = tf.initialize_all_variables()
-        sess.run(init)
+        if hasattr(tf, "global_variables_initializer"):
+            init = tf.global_variables_initializer()
+            inputs = init.control_inputs
+            init.run()
+        else:
+            warnings.warn("Update your copy of tensorflow; future versions of"
+                          "cleverhans may drop support for this version.")
+            sess.run(tf.initialize_all_variables())
 
         for epoch in six.moves.xrange(FLAGS.nb_epochs):
             print("Epoch " + str(epoch))
@@ -107,8 +118,12 @@ def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     return True
 
+def tf_model_eval(*args, **kwargs):
+    warnings.warn("`tf_model_eval` is deprecated. Switch to `model_eval`."
+                  "`tf_model_eval` will be removed after 2017-07-18.")
+    return model_eval(*args, **kwargs)
 
-def tf_model_eval(sess, x, y, model, X_test, Y_test):
+def model_eval(sess, x, y, model, X_test, Y_test):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
