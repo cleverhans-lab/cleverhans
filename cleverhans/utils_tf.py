@@ -11,6 +11,7 @@ from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time
+import warnings
 
 from tensorflow.python.platform import flags
 from .utils import batch_indices
@@ -42,7 +43,12 @@ def model_loss(y, model, mean=True):
     return out
 
 
-def tf_model_train(sess, x, y, predictions, X_train, Y_train, save=False,
+def tf_model_train(*args, **kwargs):
+    warnings.warn("`tf_model_train` is deprecated. Switch to `model_train`."
+                  "`tf_model_train` will be removed after 2017-07-18.")
+    return model_train(*args, **kwargs)
+
+def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                    predictions_adv=None, evaluate=None):
     """
     Train a TF graph
