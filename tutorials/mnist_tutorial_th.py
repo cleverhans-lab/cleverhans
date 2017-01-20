@@ -8,6 +8,7 @@ import argparse
 import theano
 import theano.tensor as T
 
+import keras
 from keras import backend
 
 
@@ -25,6 +26,11 @@ def main():
     if not hasattr(backend, "theano"):
         raise RuntimeError("This tutorial requires keras to be configured"
                            " to use the Theano backend.")
+
+    # Image dimensions ordering should follow the Theano convention
+    if keras.backend.image_dim_ordering() != 'th':
+        keras.backend.set_image_dim_ordering('th')
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'")
 
     import argparse
     parser = argparse.ArgumentParser()

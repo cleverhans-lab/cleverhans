@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import keras
+from keras import backend
 
 import tensorflow as tf
 from tensorflow.python.platform import app
@@ -30,6 +31,10 @@ def main(argv=None):
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
+
+    if not hasattr(backend, "tf"):
+        raise RuntimeError("This tutorial requires keras to be configured"
+                           " to use the TensorFlow backend.")
 
     # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'tf':
