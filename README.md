@@ -5,11 +5,11 @@
 This repository contains the source code for `cleverhans`, a Python library to
 benchmark machine learning systems' vulnerability to
 [adversarial examples](http://karpathy.github.io/2015/03/30/breaking-convnets/).
-You can learn more about such vulnerabilities on the accompanying [blog](http://cleverhans.io)
+You can learn more about such vulnerabilities on the accompanying [blog](http://cleverhans.io).
 
 The `cleverhans` library is under continual development, always welcoming
 contributions of the latest attacks and defenses.
-In particular, we always welcome help towards resolving the [issues](https://github.com/openai/cleverhans)
+In particular, we always welcome help towards resolving the [issues](https://github.com/openai/cleverhans/issues)
 currently open.
 
 ## Setting up `cleverhans`
