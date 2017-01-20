@@ -1,0 +1,4 @@
+This directory contains implementations of tests.
+These implementations should not be run directly. Instead, they should
+be run via the scripts in the parent directory, which will invoke them
+with the appropriate environment variables, etc.

@@ -8,6 +8,9 @@ import argparse
 import theano
 import theano.tensor as T
 
+import keras
+from keras import backend
+
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_th import th_model_train, th_model_eval, batch_eval
@@ -19,6 +22,16 @@ def main():
     MNIST cleverhans tutorial
     :return:
     """
+
+    if not hasattr(backend, "theano"):
+        raise RuntimeError("This tutorial requires keras to be configured"
+                           " to use the Theano backend.")
+
+    # Image dimensions ordering should follow the Theano convention
+    if keras.backend.image_dim_ordering() != 'th':
+        keras.backend.set_image_dim_ordering('th')
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'")
+
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', '-b', default=128, help='Size of training batches')

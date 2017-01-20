@@ -1,0 +1,2 @@
+Until automated tests are set up, pull request reviewers should just manually
+run all executables beginning with "test_" in this directory.
