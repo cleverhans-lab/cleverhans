@@ -46,7 +46,7 @@ def main(argv=None):
         print("Loaded MNIST test data.")
 
         # Define input TF placeholder
-        x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
+        x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
         y = tf.placeholder(tf.float32, shape=(None, FLAGS.nb_classes))
 
         # Define TF model graph
