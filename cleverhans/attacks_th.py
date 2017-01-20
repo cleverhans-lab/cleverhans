@@ -1,6 +1,6 @@
 import theano
 import theano.tensor as T
-import utils_th
+from cleverhans import utils_th
 
 def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
     """
