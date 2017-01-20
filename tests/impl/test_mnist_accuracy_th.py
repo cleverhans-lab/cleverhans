@@ -8,6 +8,8 @@ import argparse
 import theano
 import theano.tensor as T
 
+import keras
+from keras import backend
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_th import th_model_train, th_model_eval, batch_eval
@@ -18,6 +20,17 @@ def main():
     Test the accuracy of the MNIST cleverhans tutorial model
     :return:
     """
+
+    if not hasattr(backend, "theano"):
+        raise RuntimeError("This tutorial requires keras to be configured"
+                           " to use the Theano backend.")
+
+    # Image dimensions ordering should follow the Theano convention
+    if keras.backend.image_dim_ordering() != 'th':
+        keras.backend.set_image_dim_ordering('th')
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'")
+
+
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', '-b', default=128, help='Size of training batches')
@@ -26,7 +39,7 @@ def main():
     parser.add_argument('--nb_epochs', '-e', default=6, type=int, help='Number of epochs to train model')
     parser.add_argument('--learning_rate', '-lr', default=0.5, type=float, help='Learning rate for training')
     args = parser.parse_args()
-    
+
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist()
     print("Loaded MNIST test data.")
@@ -36,7 +49,7 @@ def main():
     y_shape = (None, 10)
     x = T.tensor4('x')
     y = T.matrix('y')
-    
+
     # Define Theano model graph
     model = model_mnist()
     model.build(x_shape)
