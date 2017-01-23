@@ -45,7 +45,7 @@ def data_mnist():
     return X_train, Y_train, X_test, Y_test
 
 
-def model_mnist(logits=False,input_ph=None, img_rows=28, img_cols=28, nb_filters=64, nb_classes=10):
+def model_mnist(logits=False, input_ph=None, img_rows=28, img_cols=28, nb_filters=64, nb_classes=10):
     """
     Defines MNIST model using Keras sequential model
     :param logits: If set to False, returns a Keras model, otherwise will also return logits tensor
@@ -68,7 +68,7 @@ def model_mnist(logits=False,input_ph=None, img_rows=28, img_cols=28, nb_filters
               Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
                             border_mode="valid"),
               Activation('relu'),
-              Convolution2D(nb_filters *2, 5, 5, subsample=(1, 1)),
+              Convolution2D(nb_filters * 2, 5, 5, subsample=(1, 1)),
               Activation('relu'),
               Dropout(0.5),
               Flatten(),

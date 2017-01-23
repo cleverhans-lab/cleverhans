@@ -48,8 +48,9 @@ def tf_model_train(*args, **kwargs):
                   "`tf_model_train` will be removed after 2017-07-18.")
     return model_train(*args, **kwargs)
 
+
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                   predictions_adv=None, evaluate=None):
+                predictions_adv=None, evaluate=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -92,34 +93,37 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             for batch in range(nb_batches):
 
                 # Compute batch start and end indices
-                start, end = batch_indices(batch, len(X_train), FLAGS.batch_size)
+                start, end = batch_indices(
+                    batch, len(X_train), FLAGS.batch_size)
 
                 # Perform one training step
                 train_step.run(feed_dict={x: X_train[start:end],
                                           y: Y_train[start:end],
                                           keras.backend.learning_phase(): 1})
-            assert end >= len(X_train) # Check that all examples were used
+            assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
             print("\tEpoch took " + str(cur - prev) + " seconds")
             prev = cur
             if evaluate is not None:
                 evaluate()
 
-
         if save:
             save_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            print("Completed model training and model saved at:" + str(save_path))
+            print(
+                "Completed model training and model saved at:" + str(save_path))
         else:
             print("Completed model training.")
 
     return True
 
+
 def tf_model_eval(*args, **kwargs):
     warnings.warn("`tf_model_eval` is deprecated. Switch to `model_eval`."
                   "`tf_model_eval` will be removed after 2017-07-18.")
     return model_eval(*args, **kwargs)
+
 
 def model_eval(sess, x, y, model, X_test, Y_test):
     """
@@ -156,9 +160,10 @@ def model_eval(sess, x, y, model, X_test, Y_test):
 
             # The last batch may be smaller than all others, so we need to
             # account for variable batch size here
-            accuracy += cur_batch_size * acc_value.eval(feed_dict={x: X_test[start:end],
-                                            y: Y_test[start:end],
-                                            keras.backend.learning_phase(): 0})
+            accuracy += cur_batch_size * acc_value.eval(
+                feed_dict={x: X_test[start:end],
+                           y: Y_test[start:end],
+                           keras.backend.learning_phase(): 0})
         assert end >= len(X_test)
 
         # Divide by number of examples to get final value
@@ -182,6 +187,7 @@ def tf_model_load(sess):
 
     return True
 
+
 def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
     """
     A helper function that computes a tensor on numpy inputs by batches.
@@ -204,7 +210,8 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
             # Compute batch start and end indices
             start = batch * FLAGS.batch_size
             end = start + FLAGS.batch_size
-            numpy_input_batches = [numpy_input[start:end] for numpy_input in numpy_inputs]
+            numpy_input_batches = [numpy_input[start:end]
+                                   for numpy_input in numpy_inputs]
             cur_batch_size = numpy_input_batches[0].shape[0]
             assert cur_batch_size <= FLAGS.batch_size
             for e in numpy_input_batches:

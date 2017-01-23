@@ -33,7 +33,8 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
     """
 
     # Compute loss
-    y = tf.to_float(tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
+    y = tf.to_float(
+        tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
     loss = utils_tf.model_loss(y, predictions, mean=False)
 
@@ -58,7 +59,8 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
 
 def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
     """
-    TensorFlow implementation for apply perterbations to input features based on salency maps
+    TensorFlow implementation for apply perturbations to input features based
+    on salency maps
     :param i: row, colum of first selected pixel
     :param j: row, colum of second selected pixel
     :param X: a matrix containing our input features for our sample
@@ -82,18 +84,18 @@ def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
 
 def saliency_score(packed_data):
     """
-    Helper function for saliency_map. This is used for a parallelized map() operation
-    via multiprocessing.Pool()
-    :param packed_data: tuple containing (point, point, gradients, target, 
+    Helper function for saliency_map. This is used for a parallelized map()
+    operation via multiprocessing.Pool()
+    :param packed_data: tuple containing (point, point, gradients, target,
     other_classes, increase).
-    : return: saliency score for the pair of points i, j. Either target_sum * abs(other_sum)
-    if the conditions are met, or 0 otherwise.
+    : return: saliency score for the pair of points i, j. Either
+    target_sum * abs(other_sum) if the conditions are met, or 0 otherwise.
     """
 
     # compute the saliency score for the given pair
     i, j, grads_target, grads_others, increase = packed_data
-    target_sum = grads_target[i[0],i[1]] + grads_target[j[0],j[1]]
-    other_sum = grads_others[i[0],i[1]] + grads_others[j[0],j[1]]
+    target_sum = grads_target[i[0], i[1]] + grads_target[j[0], j[1]]
+    other_sum = grads_others[i[0], i[1]] + grads_others[j[0], j[1]]
 
     # evaluate the saliency map conditions
     if (increase and target_sum > 0 and other_sum < 0) or (not increase and target_sum < 0 and other_sum > 0):
@@ -110,9 +112,10 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
     : return: a vector of scores for the target class
     """
 
-    # determine the saliency score for every pair of pixels from our search domain
+    # determine the saliency score for every pair of pixels from our search
+    # domain
     pool = mp.Pool()
-    scores = pool.map(saliency_score, [(i, j, grads_target, grads_other, increase) \
+    scores = pool.map(saliency_score, [(i, j, grads_target, grads_other, increase)
             for i, j in itertools.combinations(search_domain, 2)])
 
     # wait for the threads to finish to free up memory
@@ -147,7 +150,8 @@ def jacobian(sess, x, grads, target, X):
         feed_dict = {x: X}
 
     # Initialize a numpy array to hold the Jacobian component values
-    jacobian_val = np.zeros((FLAGS.nb_classes, FLAGS.img_rows, FLAGS.img_cols), dtype=np.float32)
+    jacobian_val = np.zeros(
+        (FLAGS.nb_classes, FLAGS.img_rows, FLAGS.img_cols), dtype=np.float32)
 
     # Compute the gradients for all classes
     for class_ind, grad in enumerate(grads):
@@ -156,7 +160,7 @@ def jacobian(sess, x, grads, target, X):
     # Sum over all classes different from the target class to prepare for
     # saliency map computation in the next step of the attack
     other_classes = utils.other_classes(FLAGS.nb_classes, target)
-    grad_others = np.sum(jacobian_val[other_classes, :, :], axis=0)
+    grad_others = np.sum(jacobian_val[other_classes,:,:], axis=0)
 
     return jacobian_val[target], grad_others
 
@@ -208,47 +212,51 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma, increase,
     # by removing all features that are already at their maximum values (if
     # increasing input features---otherwise, at their minimum value).
     if increase:
-        search_domain = set([(row, col) for row in xrange(FLAGS.img_rows) \
+        search_domain = set([(row, col) for row in xrange(FLAGS.img_rows)
                  for col in xrange(FLAGS.img_cols) if adv_x[0, 0, row, col] < clip_max])
     else:
-        search_domain = set([(row, col) for row in xrange(FLAGS.img_rows) \
+        search_domain = set([(row, col) for row in xrange(FLAGS.img_rows)
                  for col in xrange(FLAGS.img_cols) if adv_x[0, 0, row, col] > clip_min])
 
     # Initial the loop variables
     iteration = 0
     current = utils_tf.model_argmax(sess, x, predictions, adv_x)
-    
+
     # Repeat this main loop until we have achieved misclassification
-    while current != target and iteration < max_iters and len(search_domain) > 0: 
+    while current != target and iteration < max_iters and len(search_domain) > 0:
 
         # Compute the Jacobian components
         grads_target, grads_others = jacobian(sess, x, grads, target, adv_x)
 
         # Compute the saliency map for each of our target classes
         # and return the two best candidate features for perturbation
-        i, j, search_domain = saliency_map(grads_target, grads_others, search_domain, increase)
+        i, j, search_domain = saliency_map(
+            grads_target, grads_others, search_domain, increase)
 
         # Apply the perturbation to the two input features selected previously
-        adv_x = apply_perturbations(i, j, adv_x, increase, theta, clip_min, clip_max)
+        adv_x = apply_perturbations(
+            i, j, adv_x, increase, theta, clip_min, clip_max)
 
         # Update our current prediction by querying the model
         current = utils_tf.model_argmax(sess, x, predictions, adv_x)
-        
+
         # Update loop variables
         iteration = iteration + 1
 
         # This process may take a while, so outputting progress regularly
         if iteration % 5 == 0:
-            print('Current iteration: {0} - Current Prediction: {1}'.format(iteration, current))
+            print(
+                'Current iteration: {0} - Current Prediction: {1}'.format(iteration, current))
 
     # Compute the ratio of pixels perturbed by the algorithm
-    percent_perturbed = float(iteration * 2)/float(FLAGS.img_rows * FLAGS.img_cols)
+    percent_perturbed = float(iteration * 2) / float(
+        FLAGS.img_rows * FLAGS.img_cols)
 
-    # Report success when the adversarial example is misclassified in the target class
+    # Report success when the adversarial example is misclassified in the
+    # target class
     if current == target:
         print('Successful')
         return adv_x, 1, percent_perturbed
     else:
         print('Unsuccesful')
         return adv_x, -1, percent_perturbed
-
