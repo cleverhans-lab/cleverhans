@@ -67,7 +67,8 @@ def test_format_docstrings():
     """
     Test if docstrings are well formatted.
     """
-    return True #  Disabled for now
+    # Disabled for now
+    return True
 
     try:
         verify_format_docstrings()

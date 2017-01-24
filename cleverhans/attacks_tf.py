@@ -99,7 +99,7 @@ def saliency_score(packed_data):
 
     # evaluate the saliency map conditions
     if ((increase and target_sum > 0 and other_sum < 0) or
-      (not increase and target_sum < 0 and other_sum > 0)):
+       (not increase and target_sum < 0 and other_sum > 0)):
         return -target_sum * other_sum
     else:
         return 0
@@ -219,8 +219,8 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
     # increasing input features---otherwise, at their minimum value).
     if increase:
         search_domain = set([(row, col) for row in xrange(FLAGS.img_rows)
-                              for col in xrange(FLAGS.img_cols) if
-                              adv_x[0, 0, row, col] < clip_max])
+                             for col in xrange(FLAGS.img_cols) if
+                             adv_x[0, 0, row, col] < clip_max])
     else:
         search_domain = set([(row, col) for row in xrange(FLAGS.img_rows)
                              for col in xrange(FLAGS.img_cols)
