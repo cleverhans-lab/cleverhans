@@ -101,7 +101,7 @@ for sample_ind in xrange(FLAGS.source_samples):
         print('Creating adversarial example for target class ' + str(target))
 
         # This call runs the Jacobian-based saliency map approach
-        _, result, percentage_perterb = jsma(sess, x, predictions, grads,
+        _, result, percentage_perturb = jsma(sess, x, predictions, grads,
                                              X_test[sample_ind:(sample_ind+1)],
                                              target, theta=1, gamma=0.1,
                                              increase=True, back='tf',
@@ -109,7 +109,7 @@ for sample_ind in xrange(FLAGS.source_samples):
 
         # Update the arrays for later analysis
         results[target, sample_ind] = result
-        perturbations[target, sample_ind] = percentage_perterb
+        perturbations[target, sample_ind] = percentage_perturb
 ```
 
 The last few lines analyze the numpy arrays updated throughout crafting 

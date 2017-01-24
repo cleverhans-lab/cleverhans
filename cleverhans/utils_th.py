@@ -23,11 +23,13 @@ floatX = theano.config.floatX
 _TEST_PHASE = np.uint8(0)
 _TRAIN_PHASE = np.uint8(1)
 
+
 def get_or_compute_grads(loss_or_grads, params):
     if isinstance(loss_or_grads, list):
         return loss_or_grads
     else:
         return theano.grad(loss_or_grads, params)
+
 
 def adadelta(loss_or_grads, params, learning_rate=1.0, rho=0.95, epsilon=1e-6):
     """ From Lasagne
@@ -62,6 +64,7 @@ def adadelta(loss_or_grads, params, learning_rate=1.0, rho=0.95, epsilon=1e-6):
 
     return updates
 
+
 def model_loss(y, model, mean=True):
     """
     Define loss of Theano graph
@@ -70,7 +73,7 @@ def model_loss(y, model, mean=True):
     :return: return mean of loss if True, otherwise return vector with per
              sample loss
     """
-        
+
     from_logits = "softmax" not in str(model).lower()
 
     if from_logits:
@@ -84,7 +87,7 @@ def model_loss(y, model, mean=True):
 
 
 def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
-                  predictions_adv=None, evaluate=None, args={}):
+                   predictions_adv=None, evaluate=None, args={}):
     """
     Train a Theano graph
     :param x: input placeholder
@@ -105,16 +108,16 @@ def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    
-    
     print("Defined optimizer.")
 
     train_step = theano.function(
         inputs=[x, y],
         outputs=[loss],
-        givens={ keras.backend.learning_phase(): _TRAIN_PHASE },
+        givens={keras.backend.learning_phase(): _TRAIN_PHASE},
         allow_input_downcast=True,
-        updates=adadelta(loss, params, learning_rate=args.learning_rate, rho=0.95, epsilon=1e-08)
+        updates=adadelta(
+            loss, params, learning_rate=args.learning_rate, rho=0.95,
+            epsilon=1e-08)
     )
 
     for epoch in six.moves.xrange(args.nb_epochs):
@@ -132,7 +135,7 @@ def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
 
             # Perform one training step
             train_step(X_train[start:end], Y_train[start:end])
-        assert end >= len(X_train) # Check that all examples were used
+        assert end >= len(X_train)  # Check that all examples were used
         cur = time.time()
         print("\tEpoch took " + str(cur - prev) + " seconds")
         prev = cur
@@ -164,11 +167,11 @@ def th_model_eval(x, y, model, X_test, Y_test, args={}):
     eval_step = theano.function(
         inputs=[x, y],
         outputs=acc_value,
-        givens={ keras.backend.learning_phase(): _TEST_PHASE },
+        givens={keras.backend.learning_phase(): _TEST_PHASE},
         allow_input_downcast=True,
         updates=None
     )
-    
+
     for batch in range(nb_batches):
         if batch % 100 == 0 and batch > 0:
             print("Batch " + str(batch))
@@ -182,13 +185,15 @@ def th_model_eval(x, y, model, X_test, Y_test, args={}):
 
         # The last batch may be smaller than all others, so we need to
         # account for variable batch size here
-        accuracy += cur_batch_size * eval_step(X_test[start:end], Y_test[start:end])
+        accuracy += cur_batch_size * \
+            eval_step(X_test[start:end], Y_test[start:end])
     assert end >= len(X_test)
 
     # Divide by number of examples to get final value
     accuracy /= len(X_test)
 
     return accuracy
+
 
 def batch_eval(th_inputs, th_outputs, numpy_inputs, args={}):
     """
@@ -203,15 +208,15 @@ def batch_eval(th_inputs, th_outputs, numpy_inputs, args={}):
     out = []
     for _ in th_outputs:
         out.append([])
-    
+
     eval_step = theano.function(
         inputs=th_inputs,
         outputs=th_outputs,
-        givens={ keras.backend.learning_phase(): _TEST_PHASE },
+        givens={keras.backend.learning_phase(): _TEST_PHASE},
         allow_input_downcast=True,
         updates=None
     )
-    
+
     for start in six.moves.xrange(0, m, args.batch_size):
         batch = start // args.batch_size
         if batch % 100 == 0 and batch > 0:
@@ -220,7 +225,8 @@ def batch_eval(th_inputs, th_outputs, numpy_inputs, args={}):
         # Compute batch start and end indices
         start = batch * args.batch_size
         end = start + args.batch_size
-        numpy_input_batches = [numpy_input[start:end] for numpy_input in numpy_inputs]
+        numpy_input_batches = [numpy_input[start:end]
+                               for numpy_input in numpy_inputs]
         cur_batch_size = numpy_input_batches[0].shape[0]
         assert cur_batch_size <= args.batch_size
         for e in numpy_input_batches:
@@ -250,9 +256,9 @@ def model_argmax(x, predictions, sample):
     probabilities = theano.function(
         inputs=[x],
         outputs=predictions,
-        givens={ keras.backend.learning_phase(): _TEST_PHASE },
+        givens={keras.backend.learning_phase(): _TEST_PHASE},
         allow_input_downcast=True,
         updates=None
-    ) (x)
+    )(x)
 
     return np.argmax(probabilities)
