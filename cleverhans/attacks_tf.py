@@ -216,7 +216,8 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma, increase,
                  for col in xrange(FLAGS.img_cols) if adv_x[0, 0, row, col] < clip_max])
     else:
         search_domain = set([(row, col) for row in xrange(FLAGS.img_rows)
-                 for col in xrange(FLAGS.img_cols) if adv_x[0, 0, row, col] > clip_min])
+                             for col in xrange(FLAGS.img_cols)
+                             if adv_x[0, 0, row, col] > clip_min])
 
     # Initial the loop variables
     iteration = 0

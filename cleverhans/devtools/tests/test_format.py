@@ -11,7 +11,7 @@ import os
 import cleverhans
 from cleverhans.devtools.tests.docscrape import docstring_errors
 from cleverhans.devtools.list_files import list_files
-from cleverhans.devtools.tests.pep8.pep8 import StyleGuide
+from pycodestyle import StyleGuide
 
 whitelist_pep8 = [
 ]
