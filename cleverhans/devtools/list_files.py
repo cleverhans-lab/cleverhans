@@ -68,6 +68,7 @@ def _list_files(path, suffix=""):
             return [path]
         return []
 
+
 if __name__ == '__main__':
     # Print all .py files in the library
     result = list_files('.py')

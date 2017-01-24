@@ -45,11 +45,15 @@ def data_mnist():
     return X_train, Y_train, X_test, Y_test
 
 
-def model_mnist(logits=False, input_ph=None, img_rows=28, img_cols=28, nb_filters=64, nb_classes=10):
+def model_mnist(logits=False, input_ph=None, img_rows=28, img_cols=28,
+                nb_filters=64, nb_classes=10):
     """
     Defines MNIST model using Keras sequential model
-    :param logits: If set to False, returns a Keras model, otherwise will also return logits tensor
-    :param input_ph: The TensorFlow placeholder for the input (needed if returning logits)
+    :param logits: If set to False, returns a Keras model, otherwise will also
+        return logits tensor
+    :param input_ph: The TensorFlow tensor for the input
+        (needed if returning logits)
+        ("ph" stands for placeholder but it need not actually be a placeholder)
     :return:
     """
     model = Sequential()
