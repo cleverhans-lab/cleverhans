@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--batch_size', '-b', default=1000, type=int, help='Size of training batches')
     parser.add_argument('--train_dir', '-d', default='/tmp', help='Directory storing the saved model.')
     parser.add_argument('--filename', '-f',  default='mnist.ckpt', help='Filename to save model under.')
-    parser.add_argument('--nb_epochs', '-e', default=0, type=int, help='Number of epochs to train model')
+    parser.add_argument('--nb_epochs', '-e', default=6, type=int, help='Number of epochs to train model')
     parser.add_argument('--nb_iters', '-i', default=10000, type=int, help='Number of iterations for crafting adversarial examples')
     parser.add_argument('--learning_rate', '-lr', default=0.1, type=float, help='Learning rate for training')
     parser.add_argument('--eps', default=0.01, type=float, help='Epsilon for Carlini L2 Attack')

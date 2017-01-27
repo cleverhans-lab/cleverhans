@@ -2,8 +2,9 @@ import theano
 import theano.tensor as T
 import numpy as np
 import time
-from cleverhans import utils_th
-from cleverhans import utils
+import sys
+from cleverhans.utils_th import floatX, model_loss, adam
+from cleverhans.utils_th import _TEST_PHASE, _TRAIN_PHASE
 
 
 def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
@@ -22,9 +23,9 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
 
     # Compute loss
     y = T.eq(predictions, T.max(predictions, axis=1, keepdims=True))
-    y = T.cast(y, utils_th.floatX)
+    y = T.cast(y, floatX)
     y = y / T.sum(y, 1, keepdims=True)
-    loss = utils_th.model_loss(y, predictions, mean=True)
+    loss = model_loss(y, predictions, mean=True)
 
     # Define gradient of loss wrt input
     grad = T.grad(loss, x)
@@ -63,9 +64,13 @@ def carlini_L2_step(x, predictions, x0, w, t, beta, eps, kappa, c):
     loss = norm + c * f
     loss = T.mean(loss)
 
-    updates = utils_th.adam(loss, [w], eps)
+    updates = adam(loss, [w], eps)
 
-    import keras
+    givens = {x: adv_x}
+    if 'keras' in sys.modules:
+        import keras
+        givens.update({keras.backend.learning_phase(): _TRAIN_PHASE})
+    
     return theano.function(
         inputs=[],
         outputs=[
@@ -75,12 +80,10 @@ def carlini_L2_step(x, predictions, x0, w, t, beta, eps, kappa, c):
             adv_x
         ],
         updates=updates,
-        givens={
-            keras.backend.learning_phase(): 0,
-            x: adv_x
-        },
+        givens=givens,
+        rebuild_strict=False,
         allow_input_downcast=True,
-        rebuild_strict=False
+        on_unused_input='ignore'
     )
 
 
@@ -113,9 +116,9 @@ def carlini_L2(x, predictions, samples, labels, beta=0.000001,
     batch_samples_shape = (batch_size, ) + sample_shape
     batch_targets_shape = (batch_size, nb_classes)
 
-    x0 = np.zeros(batch_samples_shape, dtype=utils_th.floatX)
-    w0 = np.zeros(batch_samples_shape, dtype=utils_th.floatX)
-    t0 = np.zeros(batch_targets_shape, dtype=utils_th.floatX)
+    x0 = np.zeros(batch_samples_shape, dtype=floatX)
+    w0 = np.zeros(batch_samples_shape, dtype=floatX)
+    t0 = np.zeros(batch_targets_shape, dtype=floatX)
 
     x0 = theano.shared(x0, name='x0')
     w = theano.shared(w0, name='w')
@@ -143,7 +146,7 @@ def carlini_L2(x, predictions, samples, labels, beta=0.000001,
         targets = np.argmax(batch_labels, axis=1) 
         targets += np.random.randint(1, 10, end - start)
         targets %= 10
-        t0 = np.eye(10, dtype=utils_th.floatX) [targets]
+        t0 = np.eye(10, dtype=floatX) [targets]
         t.set_value(t0)
 
         step = carlini_L2_step(x, predictions, x0, w, t, beta, eps, kappa, c)
