@@ -3,14 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import keras
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D
 from keras.utils import np_utils
-from tensorflow.python.platform import flags
-
-FLAGS = flags.FLAGS
 
 
 def data_mnist():
@@ -27,8 +25,12 @@ def data_mnist():
     # the data, shuffled and split between train and test sets
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
-    X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
-    X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
+    if keras.backend.image_dim_ordering() == 'th':
+        X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
+        X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
+    else:
+        X_train = X_train.reshape(X_train.shape[0], img_rows, img_cols, 1)
+        X_test = X_test.reshape(X_test.shape[0], img_rows, img_cols, 1)
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
     X_train /= 255
@@ -43,30 +45,40 @@ def data_mnist():
     return X_train, Y_train, X_test, Y_test
 
 
-def model_mnist(logits=False,input_ph=None, img_rows=28, img_cols=28, nb_filters=64, nb_classes=10):
+def model_mnist(logits=False, input_ph=None, img_rows=28, img_cols=28,
+                nb_filters=64, nb_classes=10):
     """
     Defines MNIST model using Keras sequential model
-    :param logits: If set to False, returns a Keras model, otherwise will also return logits tensor
-    :param input_ph: The TensorFlow placeholder for the input (needed if returning logits)
+    :param logits: If set to False, returns a Keras model, otherwise will also
+        return logits tensor
+    :param input_ph: The TensorFlow tensor for the input
+        (needed if returning logits)
+        ("ph" stands for placeholder but it need not actually be a placeholder)
     :return:
     """
     model = Sequential()
 
-    model.add(Dropout(0.2, input_shape=(1, img_rows, img_cols)))
-    model.add(Convolution2D(nb_filters, 8, 8,
+    if keras.backend.image_dim_ordering() == 'th':
+        input_shape = (1, img_rows, img_cols)
+    else:
+        input_shape = (img_rows, img_cols, 1)
+
+    layers = [Dropout(0.2, input_shape=input_shape),
+              Convolution2D(nb_filters, 8, 8,
                             subsample=(2, 2),
                             border_mode="same"
-                            ))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
-        border_mode="valid"))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(nb_filters *2, 5, 5, subsample=(1, 1)))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
-
-    model.add(Flatten())
-    model.add(Dense(nb_classes))
+                            ),
+              Activation('relu'),
+              Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
+                            border_mode="valid"),
+              Activation('relu'),
+              Convolution2D(nb_filters * 2, 5, 5, subsample=(1, 1)),
+              Activation('relu'),
+              Dropout(0.5),
+              Flatten(),
+              Dense(nb_classes)]
+    for layer in layers:
+        model.add(layer)
     if logits:
         logits_tensor = model(input_ph)
     model.add(Activation('softmax'))

@@ -10,7 +10,7 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
-from cleverhans.utils_tf import tf_model_train, tf_model_eval
+from cleverhans.utils_tf import model_train, model_eval
 
 FLAGS = flags.FLAGS
 
@@ -32,9 +32,9 @@ def main(argv=None):
     :return:
     """
     # Image dimensions ordering should follow the Theano convention
-    if keras.backend.image_dim_ordering() != 'th':
-        keras.backend.set_image_dim_ordering('th')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'")
+    if keras.backend.image_dim_ordering() != 'tf':
+        keras.backend.set_image_dim_ordering('tf')
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'th', temporarily setting to 'tf'")
 
     # Create TF session and set as Keras backend session
     with tf.Session() as sess:
@@ -46,7 +46,7 @@ def main(argv=None):
         print("Loaded MNIST test data.")
 
         # Define input TF placeholder
-        x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
+        x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
         y = tf.placeholder(tf.float32, shape=(None, FLAGS.nb_classes))
 
         # Define TF model graph
@@ -55,10 +55,10 @@ def main(argv=None):
         print("Defined TensorFlow model graph.")
 
         # Train an MNIST model
-        tf_model_train(sess, x, y, predictions, X_train, Y_train)
+        model_train(sess, x, y, predictions, X_train, Y_train)
 
         # Evaluate the accuracy of the MNIST model on legitimate test examples
-        accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
+        accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
         assert float(accuracy) >= 0.98, accuracy
 
 

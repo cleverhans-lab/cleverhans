@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import keras
 import numpy as np
 import os
+from six.moves import xrange
 
 import tensorflow as tf
 from tensorflow.python.platform import app
@@ -13,7 +14,8 @@ from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_tf import tf_model_train, tf_model_eval
-from cleverhans.attacks import jsma, jacobian_graph
+from cleverhans.attacks import jsma
+from cleverhans.attacks_tf import jacobian_graph
 from cleverhans.utils import other_classes
 
 FLAGS = flags.FLAGS
@@ -113,7 +115,7 @@ def main(argv=None):
             print('Creating adversarial example for target class ' + str(target))
 
             # This call runs the Jacobian-based saliency map approach
-            _, result, percentage_perterb = jsma(sess, x, predictions, grads,
+            _, result, percentage_perturb = jsma(sess, x, predictions, grads,
                                                  X_test[sample_ind:(sample_ind+1)],
                                                  target, theta=1, gamma=0.1,
                                                  increase=True, back='tf',
@@ -121,7 +123,7 @@ def main(argv=None):
 
             # Update the arrays for later analysis
             results[target, sample_ind] = result
-            perturbations[target, sample_ind] = percentage_perterb
+            perturbations[target, sample_ind] = percentage_perturb
 
     # Compute the number of adversarial examples that were successfuly found
     success_rate = float(np.sum(results)) / ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
@@ -129,7 +131,7 @@ def main(argv=None):
 
     # Compute the average distortion introduced by the algorithm
     percentage_perturbed = np.mean(perturbations)
-    print('Avg. rate of perterbed features {0}'.format(percentage_perturbed))
+    print('Avg. rate of perturbed features {0}'.format(percentage_perturbed))
 
     # Close TF session
     sess.close()

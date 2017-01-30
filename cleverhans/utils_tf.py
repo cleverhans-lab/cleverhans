@@ -10,6 +10,7 @@ import keras
 import six
 import tensorflow as tf
 import time
+import warnings
 
 from .utils import batch_indices
 
@@ -18,7 +19,7 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def tf_model_loss(y, model, mean=True):
+def model_loss(y, model, mean=True):
     """
     Define loss of TF graph
     :param y: correct labels
@@ -40,10 +41,14 @@ def tf_model_loss(y, model, mean=True):
     return out
 
 
-def tf_model_train(sess, model, X_train, Y_train, save=False,
-                   evaluate=None, adversarial_training=False,
-                   adv_eps=None, adv_clip_min=None,
-                   adv_clip_max=None):
+def tf_model_train(*args, **kwargs):
+    warnings.warn("`tf_model_train` is deprecated. Switch to `model_train`."
+                  "`tf_model_train` will be removed after 2017-07-18.")
+    return model_train(*args, **kwargs)
+
+
+def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
+                predictions_adv=None, evaluate=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -60,7 +65,6 @@ def tf_model_train(sess, model, X_train, Y_train, save=False,
     :param adv_clip_max:
     :return: True if model trained
     """
-    print("Starting model training using TensorFlow.")
 
     if adversarial_training:
         assert adv_eps is not None
@@ -70,19 +74,21 @@ def tf_model_train(sess, model, X_train, Y_train, save=False,
     y = tf.placeholder(tf.float32, shape=(None,) + Y_train.shape[1:])
 
     # Define loss
-    loss = tf_model_loss(y, model(x))
-    if adversarial_training:
-        from .attacks import fgsm_tf_symbolic
-        x_adv = fgsm_tf_symbolic(x, y, model, adv_eps, adv_clip_min, adv_clip_max)
-        loss = (loss + tf_model_loss(y, model(x_adv))) / 2
+    loss = model_loss(y, predictions)
+    if predictions_adv is not None:
+        loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate, rho=0.95, epsilon=1e-08).minimize(loss)
-    # train_step = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
-    print("Defined optimizer.")
+    train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate,
+                                            rho=0.95,
+                                            epsilon=1e-08).minimize(loss)
 
     with sess.as_default():
-        init = tf.initialize_all_variables()
-        sess.run(init)
+        if hasattr(tf, "global_variables_initializer"):
+            tf.global_variables_initializer().run()
+        else:
+            warnings.warn("Update your copy of tensorflow; future versions of"
+                          "cleverhans may drop support for this version.")
+            sess.run(tf.initialize_all_variables())
 
         for epoch in six.moves.xrange(FLAGS.nb_epochs):
             print("Epoch " + str(epoch))
@@ -95,32 +101,39 @@ def tf_model_train(sess, model, X_train, Y_train, save=False,
             for batch in range(nb_batches):
 
                 # Compute batch start and end indices
-                start, end = batch_indices(batch, len(X_train), FLAGS.batch_size)
+                start, end = batch_indices(
+                    batch, len(X_train), FLAGS.batch_size)
 
                 # Perform one training step
                 train_step.run(feed_dict={x: X_train[start:end],
                                           y: Y_train[start:end],
                                           keras.backend.learning_phase(): 1})
-            assert end >= len(X_train) # Check that all examples were used
+            assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
             print("\tEpoch took " + str(cur - prev) + " seconds")
             prev = cur
             if evaluate is not None:
                 evaluate()
 
-
         if save:
             save_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            print("Completed model training and model saved at:" + str(save_path))
+            print("Completed model training and model saved at:"
+                  + str(save_path))
         else:
             print("Completed model training.")
 
     return True
 
 
-def tf_model_eval(sess, model, X_test, Y_test):
+def tf_model_eval(*args, **kwargs):
+    warnings.warn("`tf_model_eval` is deprecated. Switch to `model_eval`."
+                  "`tf_model_eval` will be removed after 2017-07-18.")
+    return model_eval(*args, **kwargs)
+
+
+def model_eval(sess, x, y, model, X_test, Y_test):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
@@ -157,9 +170,10 @@ def tf_model_eval(sess, model, X_test, Y_test):
 
             # The last batch may be smaller than all others, so we need to
             # account for variable batch size here
-            accuracy += cur_batch_size * acc_value.eval(feed_dict={x: X_test[start:end],
-                                            y: Y_test[start:end],
-                                            keras.backend.learning_phase(): 0})
+            accuracy += cur_batch_size * acc_value.eval(
+                feed_dict={x: X_test[start:end],
+                           y: Y_test[start:end],
+                           keras.backend.learning_phase(): 0})
         assert end >= len(X_test)
 
         # Divide by number of examples to get final value
@@ -183,6 +197,7 @@ def tf_model_load(sess):
 
     return True
 
+
 def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
     """
     A helper function that computes a tensor on numpy inputs by batches.
@@ -205,7 +220,8 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
             # Compute batch start and end indices
             start = batch * FLAGS.batch_size
             end = start + FLAGS.batch_size
-            numpy_input_batches = [numpy_input[start:end] for numpy_input in numpy_inputs]
+            numpy_input_batches = [numpy_input[start:end]
+                                   for numpy_input in numpy_inputs]
             cur_batch_size = numpy_input_batches[0].shape[0]
             assert cur_batch_size <= FLAGS.batch_size
             for e in numpy_input_batches:

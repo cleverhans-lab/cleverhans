@@ -72,7 +72,8 @@ def batch_indices(batch_nb, data_length, batch_size):
     start = int(batch_nb * batch_size)
     end = int((batch_nb + 1) * batch_size)
 
-    # When there are not enough inputs left, we reuse some to complete the batch
+    # When there are not enough inputs left, we reuse some to complete the
+    # batch
     if end > data_length:
         shift = end - data_length
         start -= shift
@@ -89,7 +90,7 @@ def other_classes(nb_classes, class_ind):
     :return: list of class indices without one class
     """
 
-    other_classes_list = list(xrange(nb_classes))
+    other_classes_list = list(range(nb_classes))
     other_classes_list.remove(class_ind)
 
     return other_classes_list
