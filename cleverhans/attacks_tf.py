@@ -243,8 +243,8 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
     current = utils_tf.model_argmax(sess, x, predictions, adv_x_original_shape)
 
     # Repeat this main loop until we have achieved misclassification
-    while (current != target and iteration < max_iters
-           and len(search_domain) > 0):
+    while (current != target and iteration < max_iters and
+           len(search_domain) > 0):
         # Reshape the adversarial example
         adv_x_original_shape = np.reshape(adv_x, original_shape)
 
