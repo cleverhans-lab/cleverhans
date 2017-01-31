@@ -114,8 +114,8 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
     derivatives over all non-target classes at that index
     :param search_domain: the set of input indices that we are considering
     :param increase: boolean; true if we are increasing pixels, false otherwise
-    :return: (i, j, search_domain) the two input indices selected and the updated
-    search domain
+    :return: (i, j, search_domain) the two input indices selected and the
+             updated search domain
     """
 
     # determine the saliency score for every pair of pixels from our search
@@ -162,7 +162,8 @@ def jacobian(sess, x, grads, target, X, nb_features):
 
     # Compute the gradients for all classes
     for class_ind, grad in enumerate(grads):
-        jacobian_val[class_ind] = np.reshape(sess.run(grad, feed_dict), (1, nb_features))
+        run_grad = sess.run(grad, feed_dict)
+        jacobian_val[class_ind] = np.reshape(run_grad, (1, nb_features))
 
     # Sum over all classes different from the target class to prepare for
     # saliency map computation in the next step of the attack
@@ -238,14 +239,19 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
 
     # Initialize the loop variables
     iteration = 0
-    current = utils_tf.model_argmax(sess, x, predictions, np.reshape(adv_x, original_shape))
+    adv_x_original_shape = np.reshape(adv_x, original_shape)
+    current = utils_tf.model_argmax(sess, x, predictions, adv_x_original_shape)
 
     # Repeat this main loop until we have achieved misclassification
     while (current != target and iteration < max_iters
            and len(search_domain) > 0):
+        # Reshape the adversarial example
+        adv_x_original_shape = np.reshape(adv_x, original_shape)
 
         # Compute the Jacobian components
-        grads_target, grads_others = jacobian(sess, x, grads, target, np.reshape(adv_x, original_shape), nb_features)
+        grads_target, grads_others = jacobian(sess, x, grads, target,
+                                              adv_x_original_shape,
+                                              nb_features)
 
         # Compute the saliency map for each of our target classes
         # and return the two best candidate features for perturbation
@@ -257,7 +263,8 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
             i, j, adv_x, increase, theta, clip_min, clip_max)
 
         # Update our current prediction by querying the model
-        current = utils_tf.model_argmax(sess, x, predictions, np.reshape(adv_x, original_shape))
+        current = utils_tf.model_argmax(sess, x, predictions,
+                                        adv_x_original_shape)
 
         # Update loop variables
         iteration = iteration + 1
