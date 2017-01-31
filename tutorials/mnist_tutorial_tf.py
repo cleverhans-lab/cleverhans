@@ -58,6 +58,7 @@ def main(argv=None):
 
     # Define TF model graph
     model = model_mnist()
+    predictions = model(x)
     print("Defined TensorFlow model graph.")
 
     def evaluate():
@@ -71,7 +72,8 @@ def main(argv=None):
 
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    X_test_adv = fgsm(sess, model, X_test, Y_test, eps=0.3)
+    adv_x = fgsm(x, predictions, eps=0.3)
+    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
@@ -81,6 +83,9 @@ def main(argv=None):
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
     model_2 = model_mnist()
+    predictions_2 = model_2(x)
+    adv_x_2 = fgsm(x, predictions_2, eps=0.3)
+    predictions_2_adv = model_2(adv_x_2)
 
 
     def evaluate_2():

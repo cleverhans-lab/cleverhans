@@ -1,15 +1,13 @@
 import numpy as np
 
 
-def fgsm(sess, model, X, Y, eps, back='tf', clip_min=None, clip_max=None):
+def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
     A wrapper for the Fast Gradient Sign Method.
     It calls the right function, depending on the
     user's backend.
-    :param sess: TF session
-    :param model: The model graph
-    :param X: numpy array with model inputs
-    :param Y: numpy array with model outputs
+    :param x: the input
+    :param predictions: the model's output
     :param eps: the epsilon (input variation parameter)
     :param back: switch between TensorFlow ('tf') and
                 Theano ('th') implementation

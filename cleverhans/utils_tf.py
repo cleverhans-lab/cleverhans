@@ -7,11 +7,13 @@ import math
 import numpy as np
 import os
 import keras
+from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time
 import warnings
 
+from tensorflow.python.platform import flags
 from .utils import batch_indices
 
 from tensorflow.python.platform import flags
@@ -52,26 +54,16 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
-    :param model: the model graph
+    :param x: input placeholder
+    :param y: output placeholder (for labels)
+    :param predictions: model output predictions
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
-    :param save: Boolean controlling the save operation
-    :param evaluate: a function for evaluating the model at the end of
-    each training epoch
-    :param adversarial_training: Boolean controlling whether or not we will
-    perform adversarial training
-    :param adv_eps:
-    :param adv_clip_min:
-    :param adv_clip_max:
+    :param save: Boolean controling the save operation
+    :param predictions_adv: if set with the adversarial example tensor,
+                            will run adversarial training
     :return: True if model trained
     """
-
-    if adversarial_training:
-        assert adv_eps is not None
-
-    # Create placeholders for inputs and labels
-    x = tf.placeholder(tf.float32, shape=(None,) + X_train.shape[1:])
-    y = tf.placeholder(tf.float32, shape=(None,) + Y_train.shape[1:])
 
     # Define loss
     loss = model_loss(y, predictions)
@@ -137,17 +129,15 @@ def model_eval(sess, x, y, model, X_test, Y_test):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
+    :param x: input placeholder
+    :param y: output placeholder (for labels)
+    :param model: model output predictions
     :param X_test: numpy array with training inputs
     :param Y_test: numpy array with training outputs
-    :param model: the model graph
     :return: a float with the accuracy value
     """
-    # Create placeholders for inputs and labels
-    x = tf.placeholder(tf.float32, shape=(None,) + X_test.shape[1:])
-    y = tf.placeholder(tf.float32, shape=(None,) + Y_test.shape[1:])
-
     # Define sympbolic for accuracy
-    acc_value = keras.metrics.categorical_accuracy(y, model(x))
+    acc_value = keras.metrics.categorical_accuracy(y, model)
 
     # Init result var
     accuracy = 0.0
@@ -184,7 +174,6 @@ def model_eval(sess, x, y, model, X_test, Y_test):
 
 def tf_model_load(sess):
     """
-
     :param sess:
     :param x:
     :param y:
