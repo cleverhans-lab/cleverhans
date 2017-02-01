@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy as np
 import keras
 from keras import backend
 
@@ -13,6 +14,7 @@ from tensorflow.python.platform import flags
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import fgsm
+from cleverhans.attacks_tf import basic_iterative
 
 FLAGS = flags.FLAGS
 
@@ -21,6 +23,9 @@ flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
 flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
 flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+flags.DEFINE_boolean('iterative', True, 'Whether to use basic iterative method'
+                                        'to craft adversarial samples. if false, '
+                                        'FGSM will be used.')
 
 
 def main(argv=None):
@@ -70,10 +75,21 @@ def main(argv=None):
     # Train an MNIST model
     model_train(sess, x, y, predictions, X_train, Y_train, evaluate=evaluate)
 
-
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    adv_x = fgsm(x, predictions, eps=0.3)
-    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
+    if FLAGS.iterative:
+        print('Computing adversarial samples via basic iterative method...')
+        eps = 0.3
+        n_iter = 10
+        adv_x = basic_iterative(x, y, model, eps=eps, eps_iter=eps / n_iter,
+                                n_iter=n_iter, clip_min=0., clip_max=1.)
+        X_test_adv, = batch_eval(sess, [x, y], [adv_x], [X_test, Y_test])
+        # check that we didn't move more than eps away from the original
+        max_diff = np.abs(X_test_adv - X_test).max()
+        assert max_diff <= eps + 1e-4, max_diff
+    else:
+        print('Computing adversarial samples via FGSM...')
+        adv_x = fgsm(x, predictions, eps=0.3)
+        X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
