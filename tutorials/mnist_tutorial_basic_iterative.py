@@ -13,7 +13,7 @@ from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
-from cleverhans.attacks_tf import fgsm_iterative
+from cleverhans.attacks_tf import basic_iterative
 
 FLAGS = flags.FLAGS
 
@@ -76,8 +76,8 @@ def main(argv=None):
     print('Computing adversarial samples via iterative FGSM...')
     eps = 0.3
     n_iter = 10
-    adv_x = fgsm_iterative(x, y, model, eps=eps, eps_iter=eps/n_iter,
-                           n_iter=n_iter, clip_min=0., clip_max=1.)
+    adv_x = basic_iterative(x, y, model, eps=eps, eps_iter=eps/n_iter,
+                            n_iter=n_iter, clip_min=0., clip_max=1.)
     X_test_adv, = batch_eval(sess, [x, y], [adv_x], [X_test, Y_test])
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
     # check that we didn't move more than eps away from the original

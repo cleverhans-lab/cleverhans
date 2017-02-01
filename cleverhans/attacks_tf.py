@@ -63,8 +63,8 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
     return adv_x
 
 
-def fgsm_iterative(x, y, model, eps, eps_iter, n_iter,
-                   clip_min=None, clip_max=None):
+def basic_iterative(x, y, model, eps, eps_iter, n_iter,
+                    clip_min=None, clip_max=None):
     """
     TensorFlow implementation of the iterative Fast Gradient
     Sign method.
