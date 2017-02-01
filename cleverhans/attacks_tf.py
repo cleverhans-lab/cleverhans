@@ -66,8 +66,9 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
 def basic_iterative(x, y, model, eps, eps_iter, n_iter,
                     clip_min=None, clip_max=None):
     """
-    TensorFlow implementation of the iterative Fast Gradient
-    Sign method.
+    TensorFlow implementation of the basic iterative method as
+    per Kurakin et al. (2016).
+    Paper link: https://arxiv.org/abs/1607.02533
     :param x: the input placeholder
     :param y: the output placeholder
     :param model: the Keras model that we want to attack
