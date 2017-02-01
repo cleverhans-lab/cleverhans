@@ -18,7 +18,7 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
+def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
     """
     TensorFlow implementation of the Fast Gradient
     Sign method.
@@ -29,12 +29,18 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
+    :param y: the output placeholder. If doing adversarial training, this
+            should be none (the default).
     :return: a tensor for the adversarial example
     """
 
     # Compute loss
-    y = tf.to_float(
-        tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
+    if y is None:
+        # if doing adversarial training, use model predictions as ground truth
+        # to avoid label leaking
+        y = tf.to_float(
+            tf.equal(predictions,
+                     tf.reduce_max(predictions, 1, keep_dims=True)))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
     loss = utils_tf.model_loss(y, predictions, mean=False)
 
@@ -53,6 +59,38 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
     # If clipping is needed, reset all values outside of [clip_min, clip_max]
     if (clip_min is not None) and (clip_max is not None):
         adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
+
+    return adv_x
+
+
+def fgsm_iterative(x, y, model, eps, eps_iter, n_iter,
+                   clip_min=None, clip_max=None):
+    """
+    TensorFlow implementation of the iterative Fast Gradient
+    Sign method.
+    :param x: the input placeholder
+    :param y: the output placeholder
+    :param model: the Keras model that we want to attack
+    :param eps: the maximum input variation parameter
+    :param eps_iter: the input variation for each iteration
+    :param n_iter: the number of iterations to run
+    :param clip_min: optional parameter that can be used to set a minimum
+                    value for components of the example returned
+    :param clip_max: optional parameter that can be used to set a maximum
+                    value for components of the example returned
+    :return: a tensor for the adversarial example
+    """
+    # define the upper and lower bounds
+    upper_bound = x + eps
+    lower_bound = x - eps
+    # run through the iterations
+    adv_x = x
+    for i in range(n_iter):
+        predictions = model(adv_x)
+        adv_x = fgsm(adv_x, predictions, eps_iter,
+                     clip_min=clip_min, clip_max=clip_max, y=y)
+        adv_x = tf.minimum(adv_x, upper_bound)
+        adv_x = tf.maximum(adv_x, lower_bound)
 
     return adv_x
 
