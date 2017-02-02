@@ -29,8 +29,8 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
-    :param y: the output placeholder. If doing adversarial training, this
-            should be none (the default).
+    :param y: the output placeholder. Use None (the default) to avoid the
+            label leaking effect.
     :return: a tensor for the adversarial example
     """
 
