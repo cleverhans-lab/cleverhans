@@ -67,7 +67,8 @@ def basic_iterative(x, y, model, eps, eps_iter, n_iter,
                     clip_min=None, clip_max=None):
     """
     TensorFlow implementation of the basic iterative method as
-    per Kurakin et al. (2016).
+    per Kurakin et al. (2016). The original paper used hard
+    labels for this attack (no label smoothing).
     Paper link: https://arxiv.org/abs/1607.02533
     :param x: the input placeholder
     :param y: the output placeholder
