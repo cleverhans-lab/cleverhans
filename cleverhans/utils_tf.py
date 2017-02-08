@@ -50,7 +50,7 @@ def tf_model_train(*args, **kwargs):
 
 
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                predictions_adv=None, evaluate=None):
+                predictions_adv=None, evaluate=None, verbose=True):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -83,7 +83,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             sess.run(tf.initialize_all_variables())
 
         for epoch in six.moves.xrange(FLAGS.nb_epochs):
-            print("Epoch " + str(epoch))
+            if verbose:
+                print("Epoch " + str(epoch))
 
             # Compute number of batches
             nb_batches = int(math.ceil(float(len(X_train)) / FLAGS.batch_size))
@@ -102,7 +103,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                                           keras.backend.learning_phase(): 1})
             assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
-            print("\tEpoch took " + str(cur - prev) + " seconds")
+            if verbose:
+                print("\tEpoch took " + str(cur - prev) + " seconds")
             prev = cur
             if evaluate is not None:
                 evaluate()
