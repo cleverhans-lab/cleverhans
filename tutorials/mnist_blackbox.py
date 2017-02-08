@@ -5,6 +5,9 @@ from __future__ import unicode_literals
 
 import keras
 from keras import backend
+from keras.utils.np_utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Activation, Dropout
 import numpy as np
 
 import tensorflow as tf
@@ -20,12 +23,13 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('train_dir', '/tmp', 'Directory storing the saved model.')
 flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
-flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
+flags.DEFINE_integer('nb_epochs', 2, 'Number of epochs to train model')
 flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_integer('holdout', 100, 'Test set holdout for adversary')
 flags.DEFINE_integer('nb_classes', 10, 'Number of classes in problem')
 flags.DEFINE_integer('nb_epochs_s', 6, 'Number of epochs to train substitute')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+flags.DEFINE_float('lmbda', 0.2, 'Learning rate for training')
 
 
 def setup_tutorial():
@@ -49,7 +53,7 @@ def setup_tutorial():
     return True
 
 
-def prepare_black_box(sess, x, y, X_train, Y_train, X_test, Y_test):
+def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test):
     """
     Define and train a model that simulates the "remote"
     black-box oracle described in the original paper.
@@ -79,36 +83,94 @@ def prepare_black_box(sess, x, y, X_train, Y_train, X_test, Y_test):
     return predictions
 
 
-def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads):
-    X_sub_shape = np.shape(X_sub_prev)
-    X_sub_shape = (2*X_sub_shape[0], X_sub_shape[1:])
-    X_sub = np.zeros(X_sub_shape)
+def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
+    """
+    Defines model architecture to be used by substitute
+    :param img_rows:
+    :param img_cols:
+    :param nb_filters:
+    :param nb_classes:
+    :return:
+    """
+    model = Sequential()
 
+    if keras.backend.image_dim_ordering() == 'th':
+        input_shape = (1, img_rows, img_cols)
+    else:
+        input_shape = (img_rows, img_cols, 1)
+
+    layers = [Flatten(input_shape=input_shape),
+              Dense(200),
+              Activation('relu'),
+              Dropout(0.5),
+              Dense(200),
+              Activation('relu'),
+              Dropout(0.5),
+              Dense(nb_classes),
+              Activation('softmax')]
+
+    for layer in layers:
+        model.add(layer)
+
+    return model
+
+
+def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads):
+    """
+    Augment the adversary's substitute training set using the Jacobian
+    of the substitute model to generate new synthetic inputs.
+    :param sess:
+    :param x:
+    :param X_sub_prev:
+    :param Y_sub:
+    :param grads:
+    :return:
+    """
+
+    # Create new numpy array for adversary training data
+    # with twice as many components on the first dimension.
+    X_sub = np.vstack([X_sub_prev, X_sub_prev])
+
+    # For each input in the previous' substitute training iteration
     for ind, input in enumerate(X_sub_prev):
+        # Select gradient corresponding to the label predicted by the oracle
         grad = grads[Y_sub[ind]]
-        grad_val = sess.run([tf.sign(grad)], feed_dict={x: input, keras.backend.learning_phase(): 0})[0]
+
+        # Compute sign matrix
+        grad_val = sess.run([tf.sign(grad)], feed_dict={x: np.reshape(input, (1, 28, 28, 1)), keras.backend.learning_phase(): 0})[0]
+
+        # Create new synthetic point in adversary substitute training set
         X_sub[2*ind] = X_sub[ind] + FLAGS.lmbda * grad_val
 
     return X_sub
 
 
-def train_substitute(sess, x, y, black_box_predictions, X_sub, Y_sub):
+def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
 
     # Define TF model graph (for the black-box model)
-    model_sub = model_mnist()
-    predictions_sub = model_sub(x)
-    print("Defined TensorFlow model graph.")
+    model_sub = substitute_model()
+    preds_sub = model_sub(x)
+    print("Defined TensorFlow model graph for the substitute.")
 
-    grads = jacobian_graph(predictions_sub, x)
+    # Define the Jacobian symbolically using TensorFlow
+    grads = jacobian_graph(preds_sub, x)
 
+    # Train the substitute and augment dataset alternatively
     for rho in xrange(FLAGS.nb_epochs_s):
-        model_train(sess, x, y, predictions_sub, X_sub, Y_sub)
+        model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub))
 
+        # If we are not at last substitute training iteration, augment dataset
         if rho < FLAGS.nb_epochs_s - 1:
+            # Perform the Jacobian augmentation
             X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads)
-            Y_sub[len(X_sub)/2:] = np.argmax(batch_eval(sess, [x], [black_box_predictions], [X_sub[len(X_sub)/2:]]), axis=1)
 
-    return predictions_sub
+            # Label the newly generated synthetic points using the black-box
+            Y_sub = np.hstack([Y_sub, Y_sub])
+            X_sub_prev = X_sub[len(X_sub)/2:]
+            bbox_preds = batch_eval(sess, [x], [bbox_preds], [X_sub_prev])[0]
+            Y_sub[len(X_sub)/2:] = np.argmax(bbox_preds, axis=1)
+
+    return preds_sub
 
 
 def main(argv=None):
@@ -124,35 +186,36 @@ def main(argv=None):
     sess = tf.Session()
     keras.backend.set_session(sess)
 
-    # Get MNIST test data
+    # Get MNIST data
     X_train, Y_train, X_test, Y_test = data_mnist()
 
-    # Initialize substitute training set for adversary
+    # Initialize substitute training set reserved for adversary
     X_sub = X_test[:FLAGS.holdout]
-    Y_sub = Y_test[:FLAGS.holdout]
+    Y_sub = np.argmax(Y_test[:FLAGS.holdout], axis=1)
 
-    # Redefine test set as remaining samples
+    # Redefine test set as remaining samples unavailable to adversaries
     X_test = X_test[FLAGS.holdout:]
     Y_test = Y_test[FLAGS.holdout:]
 
-    # Define input TF placeholder
+    # Define input and output TF placeholders
     x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
-    black_box_predictions = prepare_black_box(sess, x, y, X_train, Y_train, X_test, Y_test)
+    bbox_preds = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test)
 
-    # Train substitute
-    substitute_predictions = train_substitute(sess, x, y, black_box_predictions, X_sub, Y_sub)
+    # Train substitute using method from https://arxiv.org/abs/1602.02697
+    substitute_predictions = train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub)
 
     # Craft adversarial examples using the substitute
     adv_x = fgsm(x, substitute_predictions, eps=0.3)
     X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
-    accuracy = model_eval(sess, x, y, black_box_predictions, X_test_adv, Y_test)
-    print('Test accuracy of oracle on substitute adversarial examples: ' + str(accuracy))
+    accuracy = model_eval(sess, x, y, bbox_preds, X_test_adv, Y_test)
+    print('Test accuracy of oracle on adversarial examples generated'
+          'using the substitute: ' + str(accuracy))
 
 
 if __name__ == '__main__':
