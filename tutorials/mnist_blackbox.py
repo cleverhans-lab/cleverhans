@@ -3,12 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy as np
+
 import keras
 from keras import backend
 from keras.utils.np_utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Activation, Dropout
-import numpy as np
 
 import tensorflow as tf
 from tensorflow.python.platform import app
@@ -29,7 +30,7 @@ flags.DEFINE_integer('holdout', 100, 'Test set holdout for adversary')
 flags.DEFINE_integer('nb_classes', 10, 'Number of classes in problem')
 flags.DEFINE_integer('nb_epochs_s', 6, 'Number of epochs to train substitute')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
-flags.DEFINE_float('lmbda', 0.2, 'Learning rate for training')
+flags.DEFINE_float('lmbda', 0.2, 'Lambda in https://arxiv.org/abs/1602.02697')
 
 
 def setup_tutorial():
@@ -48,7 +49,8 @@ def setup_tutorial():
     # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'tf':
         keras.backend.set_image_dim_ordering('tf')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'th', temporarily setting to 'tf'")
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
+              "to 'th', temporarily setting to 'tf'")
 
     return True
 
@@ -72,33 +74,34 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test):
     predictions = model(x)
     print("Defined TensorFlow model graph.")
 
-    def evaluate():
-        # Evaluate the accuracy of the MNIST model on legitimate test examples
-        accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
-        print('Test accuracy on legitimate test examples: ' + str(accuracy))
-
     # Train an MNIST model
-    model_train(sess, x, y, predictions, X_train, Y_train, evaluate=evaluate)
+    model_train(sess, x, y, predictions, X_train, Y_train, verbose=False)
+
+    # Print out the accuracy on legitimate data
+    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
+    print('Test accuracy of black-box on legitimate test '
+          'examples: ' + str(accuracy))
 
     return predictions
 
 
 def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     """
-    Defines model architecture to be used by substitute
-    :param img_rows:
-    :param img_cols:
-    :param nb_filters:
-    :param nb_classes:
-    :return:
+    Defines the model architecture to be used by the substitute
+    :param img_rows: number of rows in input
+    :param img_cols: number of columns in input
+    :param nb_classes: number of classes in output
+    :return: keras model
     """
     model = Sequential()
 
+    # Find out the input shape ordering
     if keras.backend.image_dim_ordering() == 'th':
         input_shape = (1, img_rows, img_cols)
     else:
         input_shape = (img_rows, img_cols, 1)
 
+    # Define a fully connected model (it's different than the black-box)
     layers = [Flatten(input_shape=input_shape),
               Dense(200),
               Activation('relu'),
