@@ -122,11 +122,12 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads):
     """
     Augment the adversary's substitute training set using the Jacobian
     of the substitute model to generate new synthetic inputs.
-    :param sess:
-    :param x:
-    :param X_sub_prev:
-    :param Y_sub:
-    :param grads:
+    See https://arxiv.org/abs/1602.02697 for more details.
+    :param sess: TF session
+    :param x: input TF placeholder
+    :param X_sub_prev: substitute training data available to the adversary
+    :param Y_sub: substitute training labels available to the adversary
+    :param grads: Jacobian symbolic graph for the substitute
     :return:
     """
 
@@ -139,12 +140,17 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads):
         # Select gradient corresponding to the label predicted by the oracle
         grad = grads[Y_sub[ind]]
 
+        # Prepare feeding dictionary
+        feed_dict = {x: np.reshape(input, (1, 28, 28, 1)),
+                     keras.backend.learning_phase(): 0}
+
         # Compute sign matrix
-        grad_val = sess.run([tf.sign(grad)], feed_dict={x: np.reshape(input, (1, 28, 28, 1)), keras.backend.learning_phase(): 0})[0]
+        grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
 
         # Create new synthetic point in adversary substitute training set
         X_sub[2*ind] = X_sub[ind] + FLAGS.lmbda * grad_val
 
+    # Return augmented training data (needs to be labeled afterwards)
     return X_sub
 
 
