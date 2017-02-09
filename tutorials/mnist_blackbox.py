@@ -234,10 +234,10 @@ def main(argv=None):
 
     print("Training the substitute model.")
     # Train substitute using method from https://arxiv.org/abs/1602.02697
-    substitute_predictions = train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub)
+    substitute_preds = train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub)
 
     # Craft adversarial examples using the substitute
-    adv_x = fgsm(x, substitute_predictions, eps=0.3)
+    adv_x = fgsm(x, substitute_preds, eps=0.3)
     X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
