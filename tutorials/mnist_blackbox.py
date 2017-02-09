@@ -155,7 +155,17 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads):
 
 
 def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
-
+    """
+    This function creates the substitute by alternatively
+    augmenting the training data and training the substitute.
+    :param sess: TF session
+    :param x: input TF placeholder
+    :param y: output TF placeholder
+    :param bbox_preds: output of black-box model predictions
+    :param X_sub: initial substitute training data
+    :param Y_sub: initial substitute training labels
+    :return:
+    """
     # Define TF model graph (for the black-box model)
     model_sub = substitute_model()
     preds_sub = model_sub(x)
@@ -166,18 +176,25 @@ def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
 
     # Train the substitute and augment dataset alternatively
     for rho in xrange(FLAGS.nb_epochs_s):
-        model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub))
+        print("Substitute training epoch #" + str(rho))
+        model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
+                    verbose=False)
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < FLAGS.nb_epochs_s - 1:
+            print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
             X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads)
 
+            print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
             Y_sub = np.hstack([Y_sub, Y_sub])
-            X_sub_prev = X_sub[len(X_sub)/2:]
-            bbox_preds = batch_eval(sess, [x], [bbox_preds], [X_sub_prev])[0]
-            Y_sub[len(X_sub)/2:] = np.argmax(bbox_preds, axis=1)
+            X_sub_prev = X_sub[int(len(X_sub)/2):]
+            bbox_val = batch_eval(sess, [x], [bbox_preds], [X_sub_prev])[0]
+            # Note here that we take the argmax because the adversary
+            # only has access to the label (not the probabilities) output
+            # by the black-box model
+            Y_sub[int(len(X_sub)/2):] = np.argmax(bbox_val, axis=1)
 
     return preds_sub
 
@@ -212,8 +229,10 @@ def main(argv=None):
 
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
+    print("Preparing the black-box model.")
     bbox_preds = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test)
 
+    print("Training the substitute model.")
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     substitute_predictions = train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub)
 
@@ -223,7 +242,7 @@ def main(argv=None):
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
     accuracy = model_eval(sess, x, y, bbox_preds, X_test_adv, Y_test)
-    print('Test accuracy of oracle on adversarial examples generated'
+    print('Test accuracy of oracle on adversarial examples generated '
           'using the substitute: ' + str(accuracy))
 
 
