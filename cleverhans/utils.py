@@ -7,6 +7,19 @@ import os
 import keras
 
 
+class _ArgsWrapper(object):
+    """
+    Wrapper that allows attribute access to dictionaries
+    """
+    def __init__(self, args):
+        if not isinstance(args, dict):
+            args = vars(args)
+        self.args = args
+
+    def __getattr__(self, name):
+        return self.args.get(name)
+
+
 def save_model(model, dir, filename, weights_only=False):
     """
     Save Keras model
