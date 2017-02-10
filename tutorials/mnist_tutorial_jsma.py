@@ -13,7 +13,7 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
-from cleverhans.utils_tf import tf_model_train, tf_model_eval
+from cleverhans.utils_tf import tf_model_train, model_eval
 from cleverhans.attacks import jsma
 from cleverhans.attacks_tf import jacobian_graph
 from cleverhans.utils import other_classes
@@ -49,7 +49,8 @@ def main(argv=None):
     # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'th':
         keras.backend.set_image_dim_ordering('th')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'tf', temporarily setting to 'th'")
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
+              "to 'tf', temporarily setting to 'th'")
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
@@ -83,14 +84,15 @@ def main(argv=None):
         saver.save(sess, save_path)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
-    accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
+    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
     assert X_test.shape[0] == 10000, X_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
 
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(FLAGS.source_samples) + ' * ' + str(FLAGS.nb_classes) + ' adversarial examples')
+    print('Crafting ' + str(FLAGS.source_samples) + ' * ' 
+          + str(FLAGS.nb_classes) + ' adversarial examples')
 
     # This array indicates whether an adversarial example was found for each
     # test set sample and target class
@@ -104,34 +106,41 @@ def main(argv=None):
     grads = jacobian_graph(predictions, x)
 
     # Loop over the samples we want to perturb into adversarial examples
-    for sample_ind in xrange(FLAGS.source_samples):
+    for sample_ind in xrange(0, FLAGS.source_samples):
         # We want to find an adversarial example for each possible target class
         # (i.e. all classes that differ from the label given in the dataset)
-        target_classes = other_classes(FLAGS.nb_classes, int(np.argmax(Y_test[sample_ind])))
+        current_class = int(np.argmax(Y_test[sample_ind]))
+        target_classes = other_classes(FLAGS.nb_classes, current_class)
 
         # Loop over all target classes
         for target in target_classes:
             print('--------------------------------------')
-            print('Creating adversarial example for target class ' + str(target))
+            print('Creating adv. example for target class ' + str(target))
 
             # This call runs the Jacobian-based saliency map approach
-            _, result, percentage_perturb = jsma(sess, x, predictions, grads,
-                                                 X_test[sample_ind:(sample_ind+1)],
-                                                 target, theta=1, gamma=0.1,
-                                                 increase=True, back='tf',
-                                                 clip_min=0, clip_max=1)
+            _, res, percent_perturb = jsma(sess, x, predictions, grads,
+                                           X_test[sample_ind:(sample_ind+1)],
+                                           target, theta=1, gamma=0.1,
+                                           increase=True, back='tf',
+                                           clip_min=0, clip_max=1)
 
             # Update the arrays for later analysis
-            results[target, sample_ind] = result
-            perturbations[target, sample_ind] = percentage_perturb
+            results[target, sample_ind] = res
+            perturbations[target, sample_ind] = percent_perturb
 
     # Compute the number of adversarial examples that were successfuly found
-    success_rate = float(np.sum(results)) / ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
-    print('Avg. rate of successful misclassifcations {0}'.format(success_rate))
+    nb_targets_tried = ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
+    succ_rate = float(np.sum(results)) / nb_targets_tried
+    print('Avg. rate of successful adv. examples {0:.2f}'.format(succ_rate))
 
     # Compute the average distortion introduced by the algorithm
-    percentage_perturbed = np.mean(perturbations)
-    print('Avg. rate of perturbed features {0}'.format(percentage_perturbed))
+    percent_perturbed = np.mean(perturbations)
+    print('Avg. rate of perturbed features {0:.2f}'.format(percent_perturbed))
+    
+    # Compute the average distortion introduced for successful samples only
+    percent_perturb_succ = np.mean(perturbations * (results == 1))
+    print('Avg. rate of perturbed features for successful '
+          'adversarial examples {0:.2f}'.format(percent_perturb_succ))
 
     # Close TF session
     sess.close()
