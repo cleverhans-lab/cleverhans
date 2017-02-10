@@ -284,4 +284,4 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
         return np.reshape(adv_x, original_shape), 1, percent_perturbed
     else:
         print('Unsuccesful')
-        return np.reshape(adv_x, original_shape), -1, percent_perturbed
+        return np.reshape(adv_x, original_shape), 0, percent_perturbed
