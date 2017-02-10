@@ -10,6 +10,7 @@ import numpy as np
 import tensorflow as tf
 import multiprocessing as mp
 from six.moves import xrange
+import warnings
 
 from . import utils_tf
 from . import utils
@@ -192,8 +193,7 @@ def jacobian_graph(predictions, x):
     return list_derivatives
 
 
-def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
-            increase, clip_min, clip_max):
+def jsma_tf(*arguments):
     """
     TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
     for details about the algorithm design choices).
@@ -207,12 +207,29 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
     :param gamma: a float between 0 - 1 indicating the maximum distortion
         percentage
     :param increase: boolean; true if we are increasing pixels, false otherwise
+                    (this argument is deprecated and will be removed)
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
     :return: an adversarial sample
     """
+
+    # Depending on number of arguments passed, send out warning
+    # that increase argument is deprecated
+    if len(arguments) == 11:
+        warnings.warn("The 'increase' argument is deprecated (i's now deduced"
+                      " automatically from the sign of 'theta' argument). It "
+                      "will be removed after 09-02-17")
+
+        sess, x, predictions, grads, sample, target, theta, gamma, \
+            increase, clip_min, clip_max = arguments
+    else:
+        sess, x, predictions, grads, sample, target, theta, gamma, \
+            clip_min, clip_max = arguments
+
+    # Deduce whether we will increase or decrease input components
+    increase = bool(theta > 0)
 
     # Copy the source sample and define the maximum number of features
     # (i.e. the maximum number of iterations) that we may perturb
