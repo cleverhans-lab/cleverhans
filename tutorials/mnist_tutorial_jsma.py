@@ -13,7 +13,7 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist, model_mnist
-from cleverhans.utils_tf import tf_model_train, tf_model_eval
+from cleverhans.utils_tf import tf_model_train, model_eval
 from cleverhans.attacks import jsma
 from cleverhans.attacks_tf import jacobian_graph
 from cleverhans.utils import other_classes
@@ -83,7 +83,7 @@ def main(argv=None):
         saver.save(sess, save_path)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
-    accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
+    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
     assert X_test.shape[0] == 10000, X_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
 
@@ -104,7 +104,7 @@ def main(argv=None):
     grads = jacobian_graph(predictions, x)
 
     # Loop over the samples we want to perturb into adversarial examples
-    for sample_ind in xrange(FLAGS.source_samples):
+    for sample_ind in xrange(0, FLAGS.source_samples):
         # We want to find an adversarial example for each possible target class
         # (i.e. all classes that differ from the label given in the dataset)
         target_classes = other_classes(FLAGS.nb_classes, int(np.argmax(Y_test[sample_ind])))
@@ -127,11 +127,16 @@ def main(argv=None):
 
     # Compute the number of adversarial examples that were successfuly found
     success_rate = float(np.sum(results)) / ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
-    print('Avg. rate of successful misclassifcations {0}'.format(success_rate))
+    print('Avg. rate of successful misclassifcations {0:.2f}'.format(success_rate))
 
     # Compute the average distortion introduced by the algorithm
     percentage_perturbed = np.mean(perturbations)
-    print('Avg. rate of perturbed features {0}'.format(percentage_perturbed))
+    print('Avg. rate of perturbed features {0:.2f}'.format(percentage_perturbed))
+    
+    # Compute the average distortion introduced for successful samples only
+    percent_perturb_succ = np.mean(perturbations * (results == 1))
+    print('Avg. rate of perturbed features for successful '
+          'adversarial examples {0:.2f}'.format(percent_perturb_succ))
 
     # Close TF session
     sess.close()
