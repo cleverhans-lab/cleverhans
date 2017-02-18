@@ -1,3 +1,5 @@
+keras
 nose
-theano
 pycodestyle
+theano
+
