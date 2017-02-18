@@ -26,7 +26,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c conda-forge -c jaikumarm --file requirements.txt
   - source activate test-environment
 script:
- - python -c "import keras.backend"
+  - python -c "import keras.backend"
   # create dataset directory to avoid concurrent directory creation at runtime
   - mkdir ~/.keras/datasets
   # set up keras backend
