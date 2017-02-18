@@ -1,6 +1,6 @@
 keras=1.2.0
 nose
 pycodestyle
-tensorflow=0.12.1
+tensorflow
 theano
 
