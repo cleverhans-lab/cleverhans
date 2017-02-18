@@ -18,7 +18,7 @@ from tensorflow.python.platform import flags
 from cleverhans.utils_mnist import data_mnist, model_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import fgsm
-from cleverhans.attacks_tf import jacobian_graph
+from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
 FLAGS = flags.FLAGS
 
@@ -118,52 +118,6 @@ def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     return model
 
 
-def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads):
-    """
-    Augment the adversary's substitute training set using the Jacobian
-    of the substitute model to generate new synthetic inputs.
-    See https://arxiv.org/abs/1602.02697 for more details.
-    :param sess: TF session in which the substitute model is defined
-    :param x: input TF placeholder for the substitute model
-    :param X_sub_prev: substitute training data available to the adversary
-                       at the previous iteration
-    :param Y_sub: substitute training labels available to the adversary
-                  at the previous iteration
-    :param grads: Jacobian symbolic graph for the substitute
-                  (should be generated using attacks_tf.jacobian_graph)
-    :return: augmented substitute data (will need to be labeled by oracle)
-    """
-    assert len(x.get_shape()) == len(np.shape(X_sub_prev))
-    assert len(grads) >= np.max(Y_sub) + 1
-    assert len(X_sub_prev) == len(Y_sub)
-
-    # Prepare input_shape (outside loop) for feeding dictionary below
-    input_shape = list(x.get_shape())
-    input_shape[0] = 1
-
-    # Create new numpy array for adversary training data
-    # with twice as many components on the first dimension.
-    X_sub = np.vstack([X_sub_prev, X_sub_prev])
-
-    # For each input in the previous' substitute training iteration
-    for ind, input in enumerate(X_sub_prev):
-        # Select gradient corresponding to the label predicted by the oracle
-        grad = grads[Y_sub[ind]]
-
-        # Prepare feeding dictionary
-        feed_dict = {x: np.reshape(input, input_shape),
-                     keras.backend.learning_phase(): 0}
-
-        # Compute sign matrix
-        grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
-
-        # Create new synthetic point in adversary substitute training set
-        X_sub[2*ind] = X_sub[ind] + FLAGS.lmbda * grad_val
-
-    # Return augmented training data (needs to be labeled afterwards)
-    return X_sub
-
-
 def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
     """
     This function creates the substitute by alternatively
@@ -194,7 +148,9 @@ def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
         if rho < FLAGS.nb_epochs_s - 1:
             print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
-            X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads)
+            X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
+                                          keras_phase=keras.backend.
+                                          learning_phase())
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box

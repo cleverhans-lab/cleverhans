@@ -285,3 +285,51 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
     else:
         print('Unsuccesful')
         return np.reshape(adv_x, original_shape), 0, percent_perturbed
+
+
+def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, keras_phase=None):
+    """
+    Augment an adversary's substitute training set using the Jacobian
+    of a substitute model to generate new synthetic inputs.
+    See https://arxiv.org/abs/1602.02697 for more details.
+    See tutorials/mnist_blackbox.py for example use case
+    :param sess: TF session in which the substitute model is defined
+    :param x: input TF placeholder for the substitute model
+    :param X_sub_prev: substitute training data available to the adversary
+                       at the previous iteration
+    :param Y_sub: substitute training labels available to the adversary
+                  at the previous iteration
+    :param grads: Jacobian symbolic graph for the substitute
+                  (should be generated using attacks_tf.jacobian_graph)
+    :param keras_phase: if not None, contains keras.backend.learning_phase()
+    :return: augmented substitute data (will need to be labeled by oracle)
+    """
+    assert len(x.get_shape()) == len(np.shape(X_sub_prev))
+    assert len(grads) >= np.max(Y_sub) + 1
+    assert len(X_sub_prev) == len(Y_sub)
+
+    # Prepare input_shape (outside loop) for feeding dictionary below
+    input_shape = list(x.get_shape())
+    input_shape[0] = 1
+
+    # Create new numpy array for adversary training data
+    # with twice as many components on the first dimension.
+    X_sub = np.vstack([X_sub_prev, X_sub_prev])
+
+    # For each input in the previous' substitute training iteration
+    for ind, input in enumerate(X_sub_prev):
+        # Select gradient corresponding to the label predicted by the oracle
+        grad = grads[Y_sub[ind]]
+
+        # Prepare feeding dictionary
+        feed_dict = {x: np.reshape(input, input_shape),
+                     keras_phase: 0}
+
+        # Compute sign matrix
+        grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
+
+        # Create new synthetic point in adversary substitute training set
+        X_sub[2*ind] = X_sub[ind] + FLAGS.lmbda * grad_val
+
+    # Return augmented training data (needs to be labeled afterwards)
+    return X_sub
