@@ -1,8 +1,6 @@
-# adapted from https://github.com/fchollet/keras/blob/master/.travis.yml
-sudo: required
-dist: trusty
 language: python
-matrix:
+dist: trusty
+python:
     include:
         - python: 2.7
           env: KERAS_BACKEND=tensorflow
@@ -13,11 +11,9 @@ matrix:
         - python: 3.5
           env: KERAS_BACKEND=theano
 install:
-  # code below is taken from http://conda.pydata.org/docs/travis.html
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
+  # from https://conda.io/docs/travis.html
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
     else
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
@@ -26,36 +22,77 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
   - conda info -a
-
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas pytest h5py pycodestyle keras
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c conda-forge -c jaikumarm --file requirements.txt
   - source activate test-environment
-  - pip install git+git://github.com/Theano/Theano.git
-
-  # install PIL for preprocessing tests
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      conda install pil;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
-      conda install Pillow;
-    fi
-
-  # install TensorFlow
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.12.1-cp27-none-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.12.1-cp35-cp35m-linux_x86_64.whl;
-    fi
-  # - pip install keras
-# command to run tests
 script:
-  # run keras backend init to initialize backend config
-  - python -c "import keras.backend"
+ - python -c "import keras.backend"
   # create dataset directory to avoid concurrent directory creation at runtime
   - mkdir ~/.keras/datasets
   # set up keras backend
   - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
   - nosetests
-after_success:
-  - coveralls
+
+
+# adapted from https://github.com/fchollet/keras/blob/master/.travis.yml
+#sudo: required
+#dist: trusty
+#language: python
+#matrix:
+#    include:
+#        - python: 2.7
+#          env: KERAS_BACKEND=tensorflow
+#        - python: 3.5
+#          env: KERAS_BACKEND=tensorflow
+#        - python: 2.7
+#          env: KERAS_BACKEND=theano
+#        - python: 3.5
+#          env: KERAS_BACKEND=theano
+#install:
+#  # code below is taken from http://conda.pydata.org/docs/travis.html
+#  # We do this conditionally because it saves us some downloading if the
+#  # version is the same.
+#  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+#      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+#    else
+#      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+#    fi
+#  - bash miniconda.sh -b -p $HOME/miniconda
+#  - export PATH="$HOME/miniconda/bin:$PATH"
+#  - hash -r
+#  - conda config --set always_yes yes --set changeps1 no
+#  - conda update -q conda
+#  # Useful for debugging any issues with conda
+#  - conda info -a
+#
+#  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas pytest h5py pycodestyle keras
+#  - source activate test-environment
+#  - pip install git+git://github.com/Theano/Theano.git
+#
+#  # install PIL for preprocessing tests
+#  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+#      conda install pil;
+#    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
+#      conda install Pillow;
+#    fi
+#
+#  # install TensorFlow
+#  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+#      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.12.1-cp27-none-linux_x86_64.whl;
+#    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
+#      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.12.1-cp35-cp35m-linux_x86_64.whl;
+#    fi
+#  # - pip install keras
+## command to run tests
+#script:
+#  # run keras backend init to initialize backend config
+#  - python -c "import keras.backend"
+#  # create dataset directory to avoid concurrent directory creation at runtime
+#  - mkdir ~/.keras/datasets
+#  # set up keras backend
+#  - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
+#  - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
+#  - nosetests
+#after_success:
+#  - coveralls
