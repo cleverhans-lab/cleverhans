@@ -3,11 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import keras
 import math
 import numpy as np
 import os
-import keras
-from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time
@@ -42,6 +41,8 @@ def model_loss(y, model, mean=True):
     Define loss of TF graph
     :param y: correct labels
     :param model: output of the model
+    :param mean: boolean indicating whether should return mean of loss
+                 or vector of losses for each input of the batch
     :return: return mean of loss if True, otherwise return vector with per
              sample loss
     """
@@ -86,6 +87,15 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :return: True if model trained
     """
     args = _FlagsWrapper(args or {})
+
+    # Check that necessary arguments were given (see doc above)
+    assert args.nb_epochs, "Number of epochs was not given in args dict"
+    assert args.learning_rate, "Learning rate was not given in args dict"
+    assert args.batch_size, "Batch size was not given in args dict"
+
+    if save:
+        assert args.train_dir, "Directory for save was not given in args dict"
+        assert args.filename, "Filename for save was not given in args dict"
 
     # Define loss
     loss = model_loss(y, predictions)
@@ -164,6 +174,8 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
     """
     args = _FlagsWrapper(args or {})
 
+    assert args.batch_size, "Batch size was not given in args dict"
+
     # Define symbol for accuracy
     acc_value = keras.metrics.categorical_accuracy(y, model)
 
@@ -228,6 +240,8 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, args=None):
                  Should contain `batch_size`
     """
     args = _FlagsWrapper(args or {})
+
+    assert args.batch_size, "Batch size was not given in args dict"
 
     n = len(numpy_inputs)
     assert n > 0
