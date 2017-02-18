@@ -1,3 +1,4 @@
+sudo: require
 language: python
 dist: trusty
 matrix:
@@ -24,6 +25,12 @@ install:
   - conda update -q conda
   - conda info -a
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c conda-forge -c jaikumarm --file requirements.txt
+  # install TensorFlow
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.12.1-cp27-none-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.12.1-cp35-cp35m-linux_x86_64.whl;
+    fi
   - source activate test-environment
 script:
   - python -c "import keras.backend"
