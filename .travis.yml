@@ -15,6 +15,6 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c conda-forge -c jaikumarm -c msarahan --file requirements.txt
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c conda-forge -c jaikumarm --file requirements.txt
   - source activate test-environment
 script: nosetests
