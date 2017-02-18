@@ -15,21 +15,26 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from cleverhans.utils_mnist import data_mnist, model_mnist
+from cleverhans.utils import cnn_model
+from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import fgsm
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('train_dir', '/tmp', 'Directory storing the saved model.')
-flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
-flags.DEFINE_integer('nb_epochs', 2, 'Number of epochs to train model')
-flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-flags.DEFINE_integer('holdout', 100, 'Test set holdout for adversary')
+# General flags
 flags.DEFINE_integer('nb_classes', 10, 'Number of classes in problem')
-flags.DEFINE_integer('nb_epochs_s', 6, 'Number of epochs to train substitute')
+flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+
+# Flags related to oracle
+flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
+
+# Flags related to substitute
+flags.DEFINE_integer('holdout', 100, 'Test set holdout for adversary')
+flags.DEFINE_integer('data_aug', 6, 'Nb of times substitute data augmented')
+flags.DEFINE_integer('nb_epochs_s', 6, 'Training epochs for each substitute')
 flags.DEFINE_float('lmbda', 0.2, 'Lambda in https://arxiv.org/abs/1602.02697')
 
 
@@ -70,12 +75,18 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test):
     """
 
     # Define TF model graph (for the black-box model)
-    model = model_mnist()
+    model = cnn_model()
     predictions = model(x)
     print("Defined TensorFlow model graph.")
 
     # Train an MNIST model
-    model_train(sess, x, y, predictions, X_train, Y_train, verbose=False)
+    train_params = {
+        'nb_epochs': FLAGS.nb_epochs,
+        'batch_size': FLAGS.batch_size,
+        'learning_rate': FLAGS.learning_rate
+    }
+    model_train(sess, x, y, predictions, X_train, Y_train,
+                verbose=False, args=train_params)
 
     # Print out the accuracy on legitimate data
     accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
@@ -139,13 +150,18 @@ def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
     grads = jacobian_graph(preds_sub, x)
 
     # Train the substitute and augment dataset alternatively
-    for rho in xrange(FLAGS.nb_epochs_s):
+    for rho in xrange(FLAGS.data_aug):
         print("Substitute training epoch #" + str(rho))
+        train_params = {
+            'nb_epochs': FLAGS.nb_epochs_s,
+            'batch_size': FLAGS.batch_size,
+            'learning_rate': FLAGS.learning_rate
+        }
         model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
-                    verbose=False)
+                    verbose=False, args=train_params)
 
         # If we are not at last substitute training iteration, augment dataset
-        if rho < FLAGS.nb_epochs_s - 1:
+        if rho < FLAGS.data_aug - 1:
             print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
             X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
@@ -156,7 +172,9 @@ def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
             # Label the newly generated synthetic points using the black-box
             Y_sub = np.hstack([Y_sub, Y_sub])
             X_sub_prev = X_sub[int(len(X_sub)/2):]
-            bbox_val = batch_eval(sess, [x], [bbox_preds], [X_sub_prev])[0]
+            eval_params = {'batch_size': FLAGS.batch_size}
+            bbox_val = batch_eval(sess, [x], [bbox_preds], [X_sub_prev],
+                                  args=eval_params)[0]
             # Note here that we take the argmax because the adversary
             # only has access to the label (not the probabilities) output
             # by the black-box model
@@ -204,10 +222,12 @@ def main(argv=None):
 
     # Craft adversarial examples using the substitute
     adv_x = fgsm(x, substitute_preds, eps=0.3)
-    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
+    eval_params = {'batch_size': FLAGS.batch_size}
+    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], args=eval_params)
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
-    accuracy = model_eval(sess, x, y, bbox_preds, X_test_adv, Y_test)
+    accuracy = model_eval(sess, x, y, bbox_preds, X_test_adv, Y_test,
+                          args=eval_params)
     print('Test accuracy of oracle on adversarial examples generated '
           'using the substitute: ' + str(accuracy))
 
