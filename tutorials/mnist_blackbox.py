@@ -123,13 +123,23 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads):
     Augment the adversary's substitute training set using the Jacobian
     of the substitute model to generate new synthetic inputs.
     See https://arxiv.org/abs/1602.02697 for more details.
-    :param sess: TF session
-    :param x: input TF placeholder
+    :param sess: TF session in which the substitute model is defined
+    :param x: input TF placeholder for the substitute model
     :param X_sub_prev: substitute training data available to the adversary
+                       at the previous iteration
     :param Y_sub: substitute training labels available to the adversary
+                  at the previous iteration
     :param grads: Jacobian symbolic graph for the substitute
-    :return:
+                  (should be generated using attacks_tf.jacobian_graph)
+    :return: augmented substitute data (will need to be labeled by oracle)
     """
+    assert len(x.get_shape()) == len(np.shape(X_sub_prev))
+    assert len(grads) >= np.max(Y_sub) + 1
+    assert len(X_sub_prev) == len(Y_sub)
+
+    # Prepare input_shape (outside loop) for feeding dictionary below
+    input_shape = list(x.get_shape())
+    input_shape[0] = 1
 
     # Create new numpy array for adversary training data
     # with twice as many components on the first dimension.
@@ -141,7 +151,7 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads):
         grad = grads[Y_sub[ind]]
 
         # Prepare feeding dictionary
-        feed_dict = {x: np.reshape(input, (1, 28, 28, 1)),
+        feed_dict = {x: np.reshape(input, input_shape),
                      keras.backend.learning_phase(): 0}
 
         # Compute sign matrix
