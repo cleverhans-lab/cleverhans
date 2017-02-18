@@ -12,11 +12,12 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from cleverhans.utils_mnist import data_mnist, model_mnist
-from cleverhans.utils_tf import model_train, model_eval
+from cleverhans.utils_mnist import data_mnist
+from cleverhans.utils_tf import tf_model_train, model_eval
+
 from cleverhans.attacks import jsma
 from cleverhans.attacks_tf import jacobian_graph
-from cleverhans.utils import other_classes
+from cleverhans.utils import other_classes, cnn_model
 
 FLAGS = flags.FLAGS
 
@@ -66,7 +67,7 @@ def main(argv=None):
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
-    model = model_mnist()
+    model = cnn_model()
     predictions = model(x)
     print("Defined TensorFlow model graph.")
 
