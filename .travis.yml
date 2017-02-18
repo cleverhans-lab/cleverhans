@@ -1,6 +1,6 @@
 language: python
 dist: trusty
-python:
+matrix:
     include:
         - python: 2.7
           env: KERAS_BACKEND=tensorflow
