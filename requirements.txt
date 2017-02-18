@@ -1,3 +1,4 @@
+glibc
 keras=1.2.0
 nose
 pycodestyle
