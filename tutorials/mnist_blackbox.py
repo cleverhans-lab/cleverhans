@@ -149,7 +149,7 @@ def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
     print("Defined TensorFlow model graph for the substitute.")
 
     # Define the Jacobian symbolically using TensorFlow
-    grads = jacobian_graph(preds_sub, x)
+    grads = jacobian_graph(preds_sub, x, FLAGS.nb_classes)
 
     # Train the substitute and augment dataset alternatively
     for rho in xrange(FLAGS.data_aug):
@@ -167,8 +167,8 @@ def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
             print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
             X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
-                                          keras_phase=keras.backend.
-                                          learning_phase())
+                                          FLAGS.lmbda, keras_phase=keras.
+                                          backend.learning_phase())
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
