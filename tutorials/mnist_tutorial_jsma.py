@@ -13,7 +13,7 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import tf_model_train, model_eval
+from cleverhans.utils_tf import model_train, model_eval
 
 from cleverhans.attacks import jsma
 from cleverhans.attacks_tf import jacobian_graph
@@ -48,10 +48,10 @@ def main(argv=None):
     ###########################################################################
 
     # Image dimensions ordering should follow the Theano convention
-    if keras.backend.image_dim_ordering() != 'th':
-        keras.backend.set_image_dim_ordering('th')
+    if keras.backend.image_dim_ordering() != 'tf':
+        keras.backend.set_image_dim_ordering('tf')
         print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
-              "to 'tf', temporarily setting to 'th'")
+              "to 'th', temporarily setting to 'tf'")
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
@@ -63,7 +63,7 @@ def main(argv=None):
     print("Loaded MNIST test data.")
 
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, 1, 28, 28))
+    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
@@ -113,7 +113,7 @@ def main(argv=None):
                              dtype='f')
 
     # Define the TF graph for the model's Jacobian
-    grads = jacobian_graph(predictions, x)
+    grads = jacobian_graph(predictions, x, FLAGS.nb_classes)
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
