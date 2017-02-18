@@ -13,7 +13,7 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import tf_model_train, model_eval
+from cleverhans.utils_tf import model_train, model_eval
 
 from cleverhans.attacks import jsma
 from cleverhans.attacks_tf import jacobian_graph
