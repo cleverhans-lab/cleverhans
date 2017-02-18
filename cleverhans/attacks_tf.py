@@ -322,8 +322,9 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, keras_phase=None):
         grad = grads[Y_sub[ind]]
 
         # Prepare feeding dictionary
-        feed_dict = {x: np.reshape(input, input_shape),
-                     keras_phase: 0}
+        feed_dict = {x: np.reshape(input, input_shape)}
+        if keras_phase is not None:
+            feed_dict[keras_phase] = 0
 
         # Compute sign matrix
         grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
