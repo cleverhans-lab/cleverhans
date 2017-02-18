@@ -40,7 +40,8 @@ def main(argv=None):
     # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'tf':
         keras.backend.set_image_dim_ordering('tf')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to 'th', temporarily setting to 'tf'")
+        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to "
+              "'th', temporarily setting to 'tf'")
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
@@ -64,21 +65,30 @@ def main(argv=None):
 
     def evaluate():
         # Evaluate the accuracy of the MNIST model on legitimate test examples
-        accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
+        eval_params = {'batch_size': FLAGS.batch_size}
+        accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
+                              args=eval_params)
         assert X_test.shape[0] == 10000, X_test.shape
         print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
     # Train an MNIST model
-    model_train(sess, x, y, predictions, X_train, Y_train, evaluate=evaluate)
-
+    train_params = {
+        'nb_epochs': FLAGS.nb_epochs,
+        'batch_size': FLAGS.batch_size,
+        'learning_rate': FLAGS.learning_rate
+    }
+    model_train(sess, x, y, predictions, X_train, Y_train,
+                evaluate=evaluate, args=train_params)
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
     adv_x = fgsm(x, predictions, eps=0.3)
-    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
+    eval_params = {'batch_size': FLAGS.batch_size}
+    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], args=eval_params)
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
-    accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test)
+    accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test,
+                          args=eval_params)
     print('Test accuracy on adversarial examples: ' + str(accuracy))
 
     print("Repeating the process, using adversarial training")
@@ -88,21 +98,24 @@ def main(argv=None):
     adv_x_2 = fgsm(x, predictions_2, eps=0.3)
     predictions_2_adv = model_2(adv_x_2)
 
-
     def evaluate_2():
         # Evaluate the accuracy of the adversarialy trained MNIST model on
         # legitimate test examples
-        accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test)
+        eval_params = {'batch_size': FLAGS.batch_size}
+        accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test,
+                              args=eval_params)
         print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
         # Evaluate the accuracy of the adversarially trained MNIST model on
         # adversarial examples
-        accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test, Y_test)
+        accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test,
+                                  Y_test, args=eval_params)
         print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
 
     # Perform adversarial training
-    model_train(sess, x, y, predictions_2, X_train, Y_train, predictions_adv=predictions_2_adv,
-            evaluate=evaluate_2)
+    model_train(sess, x, y, predictions_2, X_train, Y_train,
+                predictions_adv=predictions_2_adv, evaluate=evaluate_2,
+                args=train_params)
 
 
 if __name__ == '__main__':

@@ -81,6 +81,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param args: dict or argparse `Namespace` object.
                  Should contain `nb_epochs`, `learning_rate`,
                  `batch_size`
+                 If save is True, should also contain 'train_dir'
+                 and 'filename'
     :return: True if model trained
     """
     args = _FlagsWrapper(args or {})
@@ -130,7 +132,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 evaluate()
 
         if save:
-            save_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
+            save_path = os.path.join(args.train_dir, args.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
             print("Completed model training and model saved at:"

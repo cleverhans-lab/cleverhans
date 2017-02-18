@@ -14,6 +14,7 @@ from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import tf_model_train, model_eval
+
 from cleverhans.attacks import jsma
 from cleverhans.attacks_tf import jacobian_graph
 from cleverhans.utils import other_classes, cnn_model
@@ -29,13 +30,13 @@ flags.DEFINE_integer('img_rows', 28, 'Input row dimension')
 flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
 flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
 flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
-flags.DEFINE_integer('source_samples', 5, 'Number of examples in test set to attack')
+flags.DEFINE_integer('source_samples', 5, 'Nb of test set examples to attack')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
 
 def main(argv=None):
     """
-    MNIST cleverhans tutorial for the Jacobian-based saliency map approach (JSMA)
+    MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
     :return:
     """
 
@@ -80,18 +81,26 @@ def main(argv=None):
     if os.path.isfile(save_path):
         saver.restore(sess, os.path.join(FLAGS.train_dir, FLAGS.filename))
     else:
-        tf_model_train(sess, x, y, predictions, X_train, Y_train)
+        train_params = {
+            'nb_epochs': FLAGS.nb_epochs,
+            'batch_size': FLAGS.batch_size,
+            'learning_rate': FLAGS.learning_rate
+        }
+        model_train(sess, x, y, predictions, X_train, Y_train,
+                    args=train_params)
         saver.save(sess, save_path)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
-    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
+    eval_params = {'batch_size': FLAGS.batch_size}
+    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
+                          args=eval_params)
     assert X_test.shape[0] == 10000, X_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
 
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(FLAGS.source_samples) + ' * ' 
+    print('Crafting ' + str(FLAGS.source_samples) + ' * '
           + str(FLAGS.nb_classes) + ' adversarial examples')
 
     # This array indicates whether an adversarial example was found for each
@@ -100,7 +109,8 @@ def main(argv=None):
 
     # This array contains the fraction of perturbed features for each test set
     # sample and target class
-    perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='f')
+    perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples),
+                             dtype='f')
 
     # Define the TF graph for the model's Jacobian
     grads = jacobian_graph(predictions, x)
@@ -136,7 +146,7 @@ def main(argv=None):
     # Compute the average distortion introduced by the algorithm
     percent_perturbed = np.mean(perturbations)
     print('Avg. rate of perturbed features {0:.2f}'.format(percent_perturbed))
-    
+
     # Compute the average distortion introduced for successful samples only
     percent_perturb_succ = np.mean(perturbations * (results == 1))
     print('Avg. rate of perturbed features for successful '
