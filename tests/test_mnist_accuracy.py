@@ -6,8 +6,6 @@ import os
 os.environ['KERAS_BACKEND'] = 'tensorflow'
 
 import keras
-from keras import backend as K
-K.set_epsilon(1e-7)
 
 import tensorflow as tf
 from tensorflow.python.platform import app
