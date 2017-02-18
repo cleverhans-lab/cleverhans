@@ -1,3 +1,6 @@
+keras=1.2.0
 nose
-theano
 pycodestyle
+tensorflow=0.12.1
+theano
+
