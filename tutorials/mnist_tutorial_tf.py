@@ -79,7 +79,6 @@ def main(argv=None):
     model_train(sess, x, y, predictions, X_train, Y_train,
                 evaluate=evaluate, args=train_params)
 
-
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
     adv_x = fgsm(x, predictions, eps=0.3)
     eval_params = {'batch_size': FLAGS.batch_size}
@@ -98,7 +97,6 @@ def main(argv=None):
     adv_x_2 = fgsm(x, predictions_2, eps=0.3)
     predictions_2_adv = model_2(adv_x_2)
 
-
     def evaluate_2():
         # Evaluate the accuracy of the adversarialy trained MNIST model on
         # legitimate test examples
@@ -109,8 +107,8 @@ def main(argv=None):
 
         # Evaluate the accuracy of the adversarially trained MNIST model on
         # adversarial examples
-        accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test, Y_test,
-                                  args=eval_params)
+        accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test,
+                                  Y_test, args=eval_params)
         print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
 
     # Perform adversarial training

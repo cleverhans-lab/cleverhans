@@ -29,13 +29,13 @@ flags.DEFINE_integer('img_rows', 28, 'Input row dimension')
 flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
 flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
 flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
-flags.DEFINE_integer('source_samples', 5, 'Number of examples in test set to attack')
+flags.DEFINE_integer('source_samples', 5, 'Nb of test set examples to attack')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
 
 def main(argv=None):
     """
-    MNIST cleverhans tutorial for the Jacobian-based saliency map approach (JSMA)
+    MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
     :return:
     """
 
@@ -99,7 +99,7 @@ def main(argv=None):
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(FLAGS.source_samples) + ' * ' 
+    print('Crafting ' + str(FLAGS.source_samples) + ' * '
           + str(FLAGS.nb_classes) + ' adversarial examples')
 
     # This array indicates whether an adversarial example was found for each
@@ -108,7 +108,8 @@ def main(argv=None):
 
     # This array contains the fraction of perturbed features for each test set
     # sample and target class
-    perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples), dtype='f')
+    perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples),
+                             dtype='f')
 
     # Define the TF graph for the model's Jacobian
     grads = jacobian_graph(predictions, x)
@@ -144,7 +145,7 @@ def main(argv=None):
     # Compute the average distortion introduced by the algorithm
     percent_perturbed = np.mean(perturbations)
     print('Avg. rate of perturbed features {0:.2f}'.format(percent_perturbed))
-    
+
     # Compute the average distortion introduced for successful samples only
     percent_perturb_succ = np.mean(perturbations * (results == 1))
     print('Avg. rate of perturbed features for successful '
