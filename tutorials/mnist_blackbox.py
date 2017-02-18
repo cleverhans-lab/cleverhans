@@ -89,7 +89,9 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test):
                 verbose=False, args=train_params)
 
     # Print out the accuracy on legitimate data
-    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
+    eval_params = {'batch_size': FLAGS.batch_size}
+    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
+                          args=eval_params)
     print('Test accuracy of black-box on legitimate test '
           'examples: ' + str(accuracy))
 
