@@ -113,7 +113,7 @@ def main(argv=None):
                              dtype='f')
 
     # Define the TF graph for the model's Jacobian
-    grads = jacobian_graph(predictions, x)
+    grads = jacobian_graph(predictions, x, FLAGS.nb_classes)
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
