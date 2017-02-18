@@ -1,7 +1,8 @@
 import numpy as np
 
 
-def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
+def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None,
+         ord=np.inf):
     """
     A wrapper for the Fast Gradient Sign Method.
     It calls the right function, depending on the
@@ -21,12 +22,15 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
         # Compute FGSM using TensorFlow
         from .attacks_tf import fgsm as fgsm_tf
         return fgsm_tf(x, predictions, eps, clip_min=clip_min,
-                       clip_max=clip_max)
+                       clip_max=clip_max, ord=ord)
     elif back == 'th':
         # Compute FGSM using Theano
         from .attacks_th import fgsm as fgsm_th
-        return fgsm_th(x, predictions, eps, clip_min=clip_min,
-                       clip_max=clip_max)
+        if ord != np.inf:
+            raise NotImplementedError("L1 inf norm is only Theano FGSM norm")
+        else:
+            return fgsm_th(x, predictions, eps, clip_min=clip_min,
+                           clip_max=clip_max)
 
 
 def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
