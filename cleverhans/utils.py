@@ -5,6 +5,9 @@ from __future__ import unicode_literals
 
 import os
 import keras
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.layers import Convolution2D
 
 
 class _ArgsWrapper(object):
@@ -107,3 +110,53 @@ def other_classes(nb_classes, class_ind):
     other_classes_list.remove(class_ind)
 
     return other_classes_list
+
+
+def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
+              channels=1, nb_filters=64, nb_classes=10):
+    """
+    Defines a CNN model using Keras sequential model
+    :param logits: If set to False, returns a Keras model, otherwise will also
+                    return logits tensor
+    :param input_ph: The TensorFlow tensor for the input
+                    (needed if returning logits)
+                    ("ph" stands for placeholder but it need not actually be a
+                    placeholder)
+    :param img_rows: number of row in the image
+    :param img_cols: number of columns in the image
+    :param channels: number of color channels (e.g., 1 for MNIST)
+    :param nb_filters: number of convolutional filters per layer
+    :param nb_classes: the number of output classes
+    :return:
+    """
+    model = Sequential()
+
+    if keras.backend.image_dim_ordering() == 'th':
+        input_shape = (channels, img_rows, img_cols)
+    else:
+        input_shape = (img_rows, img_cols, channels)
+
+    layers = [Dropout(0.2, input_shape=input_shape),
+              Convolution2D(nb_filters, 8, 8,
+                            subsample=(2, 2),
+                            border_mode="same"
+                            ),
+              Activation('relu'),
+              Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
+                            border_mode="valid"),
+              Activation('relu'),
+              Convolution2D(nb_filters * 2, 5, 5, subsample=(1, 1)),
+              Activation('relu'),
+              Dropout(0.5),
+              Flatten(),
+              Dense(nb_classes)]
+    for layer in layers:
+        model.add(layer)
+    if logits:
+        logits_tensor = model(input_ph)
+    model.add(Activation('softmax'))
+
+    if logits:
+        return model, logits_tensor
+    else:
+        return model
