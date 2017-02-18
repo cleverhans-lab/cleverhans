@@ -10,9 +10,10 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from cleverhans.utils_mnist import data_mnist, model_mnist
+from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import fgsm
+from cleverhans.utils import cnn_model
 
 FLAGS = flags.FLAGS
 
@@ -57,7 +58,7 @@ def main(argv=None):
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
-    model = model_mnist()
+    model = cnn_model()
     predictions = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -82,7 +83,7 @@ def main(argv=None):
 
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
-    model_2 = model_mnist()
+    model_2 = cnn_model()
     predictions_2 = model_2(x)
     adv_x_2 = fgsm(x, predictions_2, eps=0.3)
     predictions_2_adv = model_2(adv_x_2)
