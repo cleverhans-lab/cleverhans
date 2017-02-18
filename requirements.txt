@@ -1,4 +1,4 @@
-keras=1.2.0
+jaikumarm/keras
 nose
 pycodestyle
 theano
