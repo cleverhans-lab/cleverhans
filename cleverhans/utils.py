@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import os
 import keras
+import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D
@@ -160,3 +161,72 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
         return model, logits_tensor
     else:
         return model
+
+def pair_visual(original, adversarial, figure=None):
+    """ 
+    This function displays two images: the original and the adversarial sample
+    :param original: the original input
+    :param adversarial: the original input after adversarial perterbations have been applied
+    :param figure: if we've already displayed images, use the same plot
+    :return: the matplot figure to reuse for future samples
+    """
+
+    # Ensure our inputs are of proper shape
+    assert(len(original.shape) == 2 or len(original.shape) == 3)
+    
+    # To avoid creating figures per input sample, reuse the sample plot if possible
+    #import pdb; pdb.set_trace()
+    if figure is None:
+        plt.ion()
+        figure = plt.figure()
+        figure.canvas.set_window_title('Cleverhans: Pair Visualization')
+
+    # Add the images to the plot
+    perterbations = adversarial - original
+    for index, image in enumerate((original, perterbations, adversarial)):
+        figure.add_subplot(1, 3, index + 1)
+        plt.axis('off')
+
+        # If the image is 2D, then we have 1 color channel
+        if len(image.shape) == 2:
+            plt.imshow(image, cmap='gray')
+        else:
+            plt.imshow(image)
+
+        # Give the plot some time to update
+        plt.pause(0.01)
+
+    # Draw the plot and return
+    plt.show()
+    return figure
+
+def grid_visual(data):
+    """ 
+    This function displays a grid of images to demonstrate source/target misclassification
+    :param data: grid data of the form; [nb_classes : nb_classes : img_rows : img_cols : nb_channels]
+    :return: if necessary, the matplot figure to reuse
+    """
+    
+    # Ensure interactive mode is disabled and initialize our graph
+    plt.ioff()
+    figure = plt.figure()
+    figure.canvas.set_window_title('Cleverhans: Grid Visualization')
+
+    # Add the images to the plot
+    num_cols = data.shape[0]
+    num_rows = data.shape[1]
+    num_channels = data.shape[4]
+    current_row = 0 
+    for y in xrange(num_rows):
+        for x in xrange(num_cols):
+            figure.add_subplot(num_cols, num_rows, (x+1)+(y*num_rows))
+            plt.axis('off')
+
+            if num_channels == 1:
+                plt.imshow(data[x, y, :, :, 0], cmap='gray')
+            else:
+                plt.imshow(data[x, y, :, :, :]) 
+    
+    # Draw the plot and return
+    plt.show()
+    return figure
