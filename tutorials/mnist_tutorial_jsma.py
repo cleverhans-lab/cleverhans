@@ -23,13 +23,13 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('train_dir', '/tmp', 'Directory storing the saved model.')
 flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
-flags.DEFINE_boolean('enable_vis', True, 'Enable/Disable sample visualization.')
+flags.DEFINE_boolean('enable_vis', True, 'Enable sample visualization.')
 flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
 flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_integer('nb_classes', 10, 'Number of classification classes')
 flags.DEFINE_integer('img_rows', 28, 'Input row dimension')
 flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
-flags.DEFINE_integer('nb_channels', 1, 'Number of color channels in the input.')
+flags.DEFINE_integer('nb_channels', 1, 'Nb of color channels in the input.')
 flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
 flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
 flags.DEFINE_integer('source_samples', 10, 'Nb of test set examples to attack')
@@ -102,8 +102,8 @@ def main(argv=None):
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(FLAGS.source_samples) + ' * '
-          + str(FLAGS.nb_classes) + ' adversarial examples')
+    print('Crafting ' + str(FLAGS.source_samples) + ' * ' +
+          str(FLAGS.nb_classes) + ' adversarial examples')
 
     # This array indicates whether an adversarial example was found for each
     # test set sample and target class
@@ -118,8 +118,12 @@ def main(argv=None):
     grads = jacobian_graph(predictions, x, FLAGS.nb_classes)
 
     # Initialize our array for grid visualization
-    grid_viz_data = np.zeros((FLAGS.nb_classes, FLAGS.nb_classes,
-        FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels), dtype='f')
+    grid_shape = (FLAGS.nb_classes,
+                  FLAGS.nb_classes,
+                  FLAGS.img_rows,
+                  FLAGS.img_cols,
+                  FLAGS.nb_channels)
+    grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
@@ -130,8 +134,8 @@ def main(argv=None):
 
         # For the grid visualization, keep original images along the diagonal
         grid_viz_data[current_class, current_class, :, :, :] = np.reshape(
-                X_test[sample_ind:(sample_ind+1)], (FLAGS.img_rows, FLAGS.img_cols,
-                    FLAGS.nb_channels))
+                X_test[sample_ind:(sample_ind+1)],
+                (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
 
         # Loop over all target classes
         for target in target_classes:
@@ -140,21 +144,23 @@ def main(argv=None):
 
             # This call runs the Jacobian-based saliency map approach
             adv_x, res, percent_perturb = jsma(sess, x, predictions, grads,
-                                           X_test[sample_ind:(sample_ind+1)],
-                                           target, theta=1, gamma=0.1,
-                                           increase=True, back='tf',
-                                           clip_min=0, clip_max=1)
+                                               X_test[sample_ind:
+                                                      (sample_ind+1)],
+                                               target, theta=1, gamma=0.1,
+                                               increase=True, back='tf',
+                                               clip_min=0, clip_max=1)
 
             # Display the original and adversarial images side-by-side
             if 'figure' not in vars():
                     figure = pair_visual(
-                            np.reshape(X_test[sample_ind:(sample_ind+1)], 
-                                (FLAGS.img_rows, FLAGS.img_cols)), 
-                            np.reshape(adv_x, (FLAGS.img_rows, FLAGS.img_cols)))
+                            np.reshape(X_test[sample_ind:(sample_ind+1)],
+                                       (FLAGS.img_rows, FLAGS.img_cols)),
+                            np.reshape(adv_x,
+                                       (FLAGS.img_rows, FLAGS.img_cols)))
             else:
                 figure = pair_visual(
-                        np.reshape(X_test[sample_ind:(sample_ind+1)], 
-                            (FLAGS.img_rows, FLAGS.img_cols)),
+                        np.reshape(X_test[sample_ind:(sample_ind+1)],
+                                   (FLAGS.img_rows, FLAGS.img_cols)),
                         np.reshape(adv_x, (FLAGS.img_rows, FLAGS.img_cols)),
                         figure)
 
