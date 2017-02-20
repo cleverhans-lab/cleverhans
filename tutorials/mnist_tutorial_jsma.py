@@ -21,7 +21,7 @@ from cleverhans.utils import other_classes, cnn_model, pair_visual, grid_visual
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('train_dir', '/tmp/ch', 'Directory storing the saved model.')
+flags.DEFINE_string('train_dir', '/tmp', 'Directory storing the saved model.')
 flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
 flags.DEFINE_boolean('enable_vis', True, 'Enable/Disable sample visualization.')
 flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')

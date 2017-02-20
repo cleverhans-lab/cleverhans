@@ -175,7 +175,6 @@ def pair_visual(original, adversarial, figure=None):
     assert(len(original.shape) == 2 or len(original.shape) == 3)
     
     # To avoid creating figures per input sample, reuse the sample plot if possible
-    #import pdb; pdb.set_trace()
     if figure is None:
         plt.ion()
         figure = plt.figure()
