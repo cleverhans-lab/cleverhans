@@ -17,20 +17,22 @@ from cleverhans.utils_tf import model_train, model_eval
 
 from cleverhans.attacks import jsma
 from cleverhans.attacks_tf import jacobian_graph
-from cleverhans.utils import other_classes, cnn_model
+from cleverhans.utils import other_classes, cnn_model, pair_visual, grid_visual
 
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('train_dir', '/tmp', 'Directory storing the saved model.')
 flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
+flags.DEFINE_boolean('enable_vis', True, 'Enable sample visualization.')
 flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
 flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_integer('nb_classes', 10, 'Number of classification classes')
 flags.DEFINE_integer('img_rows', 28, 'Input row dimension')
 flags.DEFINE_integer('img_cols', 28, 'Input column dimension')
+flags.DEFINE_integer('nb_channels', 1, 'Nb of color channels in the input.')
 flags.DEFINE_integer('nb_filters', 64, 'Number of convolutional filter to use')
 flags.DEFINE_integer('nb_pool', 2, 'Size of pooling area for max pooling')
-flags.DEFINE_integer('source_samples', 5, 'Nb of test set examples to attack')
+flags.DEFINE_integer('source_samples', 10, 'Nb of test set examples to attack')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
 
@@ -100,8 +102,8 @@ def main(argv=None):
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(FLAGS.source_samples) + ' * '
-          + str(FLAGS.nb_classes) + ' adversarial examples')
+    print('Crafting ' + str(FLAGS.source_samples) + ' * ' +
+          str(FLAGS.nb_classes) + ' adversarial examples')
 
     # This array indicates whether an adversarial example was found for each
     # test set sample and target class
@@ -115,6 +117,14 @@ def main(argv=None):
     # Define the TF graph for the model's Jacobian
     grads = jacobian_graph(predictions, x, FLAGS.nb_classes)
 
+    # Initialize our array for grid visualization
+    grid_shape = (FLAGS.nb_classes,
+                  FLAGS.nb_classes,
+                  FLAGS.img_rows,
+                  FLAGS.img_cols,
+                  FLAGS.nb_channels)
+    grid_viz_data = np.zeros(grid_shape, dtype='f')
+
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
         # We want to find an adversarial example for each possible target class
@@ -122,17 +132,41 @@ def main(argv=None):
         current_class = int(np.argmax(Y_test[sample_ind]))
         target_classes = other_classes(FLAGS.nb_classes, current_class)
 
+        # For the grid visualization, keep original images along the diagonal
+        grid_viz_data[current_class, current_class, :, :, :] = np.reshape(
+                X_test[sample_ind:(sample_ind+1)],
+                (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
+
         # Loop over all target classes
         for target in target_classes:
             print('--------------------------------------')
             print('Creating adv. example for target class ' + str(target))
 
             # This call runs the Jacobian-based saliency map approach
-            _, res, percent_perturb = jsma(sess, x, predictions, grads,
-                                           X_test[sample_ind:(sample_ind+1)],
-                                           target, theta=1, gamma=0.1,
-                                           increase=True, back='tf',
-                                           clip_min=0, clip_max=1)
+            adv_x, res, percent_perturb = jsma(sess, x, predictions, grads,
+                                               X_test[sample_ind:
+                                                      (sample_ind+1)],
+                                               target, theta=1, gamma=0.1,
+                                               increase=True, back='tf',
+                                               clip_min=0, clip_max=1)
+
+            # Display the original and adversarial images side-by-side
+            if 'figure' not in vars():
+                    figure = pair_visual(
+                            np.reshape(X_test[sample_ind:(sample_ind+1)],
+                                       (FLAGS.img_rows, FLAGS.img_cols)),
+                            np.reshape(adv_x,
+                                       (FLAGS.img_rows, FLAGS.img_cols)))
+            else:
+                figure = pair_visual(
+                        np.reshape(X_test[sample_ind:(sample_ind+1)],
+                                   (FLAGS.img_rows, FLAGS.img_cols)),
+                        np.reshape(adv_x, (FLAGS.img_rows, FLAGS.img_cols)),
+                        figure)
+
+            # Add our adversarial example to our grid data
+            grid_viz_data[target, current_class, :, :, :] = np.reshape(
+                    adv_x, (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
 
             # Update the arrays for later analysis
             results[target, sample_ind] = res
@@ -154,6 +188,9 @@ def main(argv=None):
 
     # Close TF session
     sess.close()
+
+    # Finally, block & display a grid of all the adversarial examples
+    _ = grid_visual(grid_viz_data)
 
 if __name__ == '__main__':
     app.run()
