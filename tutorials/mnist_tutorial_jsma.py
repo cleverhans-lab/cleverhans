@@ -191,7 +191,7 @@ def main(argv=None):
     sess.close()
 
     # Finally, block & display a grid of all the adversarial examples
-    if viz_enabled:
+    if FLAGS.viz_enabled:
         _ = grid_visual(grid_viz_data)
 
 if __name__ == '__main__':
