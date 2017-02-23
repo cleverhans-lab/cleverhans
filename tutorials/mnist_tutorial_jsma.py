@@ -23,7 +23,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('train_dir', '/tmp', 'Directory storing the saved model.')
 flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
-flags.DEFINE_boolean('enable_vis', True, 'Enable sample visualization.')
+flags.DEFINE_boolean('viz_enabled', True, 'Enable sample visualization.')
 flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
 flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_integer('nb_classes', 10, 'Number of classification classes')
@@ -103,7 +103,7 @@ def main(argv=None):
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
     print('Crafting ' + str(FLAGS.source_samples) + ' * ' +
-          str(FLAGS.nb_classes) + ' adversarial examples')
+          str(FLAGS.nb_classes-1) + ' adversarial examples')
 
     # This array indicates whether an adversarial example was found for each
     # test set sample and target class
@@ -151,18 +151,19 @@ def main(argv=None):
                                                clip_min=0, clip_max=1)
 
             # Display the original and adversarial images side-by-side
-            if 'figure' not in vars():
+            if FLAGS.viz_enabled:
+                if 'figure' not in vars():
+                        figure = pair_visual(
+                                np.reshape(X_test[sample_ind:(sample_ind+1)],
+                                           (FLAGS.img_rows, FLAGS.img_cols)),
+                                np.reshape(adv_x,
+                                           (FLAGS.img_rows, FLAGS.img_cols)))
+                else:
                     figure = pair_visual(
                             np.reshape(X_test[sample_ind:(sample_ind+1)],
                                        (FLAGS.img_rows, FLAGS.img_cols)),
-                            np.reshape(adv_x,
-                                       (FLAGS.img_rows, FLAGS.img_cols)))
-            else:
-                figure = pair_visual(
-                        np.reshape(X_test[sample_ind:(sample_ind+1)],
-                                   (FLAGS.img_rows, FLAGS.img_cols)),
-                        np.reshape(adv_x, (FLAGS.img_rows, FLAGS.img_cols)),
-                        figure)
+                            np.reshape(adv_x, (FLAGS.img_rows,
+                                       FLAGS.img_cols)), figure)
 
             # Add our adversarial example to our grid data
             grid_viz_data[target, current_class, :, :, :] = np.reshape(
@@ -190,7 +191,8 @@ def main(argv=None):
     sess.close()
 
     # Finally, block & display a grid of all the adversarial examples
-    _ = grid_visual(grid_viz_data)
+    if FLAGS.viz_enabled:
+        _ = grid_visual(grid_viz_data)
 
 if __name__ == '__main__':
     app.run()
