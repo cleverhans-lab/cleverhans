@@ -18,19 +18,20 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
+def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=None):
     """
     TensorFlow implementation of the Fast Gradient
     Sign method.
     :param x: the input placeholder
     :param predictions: the model's output tensor
+    :param y: the output placeholder. Use None (the default) to avoid the
+            label leaking effect.
     :param eps: the epsilon (input variation parameter)
+    :param ord: string indicating the norm order to use when computing gradients.
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
-    :param y: the output placeholder. Use None (the default) to avoid the
-            label leaking effect.
     :return: a tensor for the adversarial example
     """
 
@@ -46,6 +47,8 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
+
+    # TODO: make use of 'ord' parameter
 
     # Take sign of gradient
     signed_grad = tf.sign(grad)
