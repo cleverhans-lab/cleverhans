@@ -66,40 +66,6 @@ def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=Non
     return adv_x
 
 
-def basic_iterative(x, y, model, eps, eps_iter, n_iter,
-                    clip_min=None, clip_max=None):
-    """
-    TensorFlow implementation of the basic iterative method as
-    per Kurakin et al. (2016). The original paper used hard
-    labels for this attack (no label smoothing).
-    Paper link: https://arxiv.org/abs/1607.02533
-    :param x: the input placeholder
-    :param y: the output placeholder
-    :param model: the Keras model that we want to attack
-    :param eps: the maximum input variation parameter
-    :param eps_iter: the input variation for each iteration
-    :param n_iter: the number of iterations to run
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
-    :return: a tensor for the adversarial example
-    """
-    # define the upper and lower bounds
-    upper_bound = x + eps
-    lower_bound = x - eps
-    # run through the iterations
-    adv_x = x
-    for i in range(n_iter):
-        predictions = model(adv_x)
-        adv_x = fgsm(adv_x, predictions, eps_iter,
-                     clip_min=clip_min, clip_max=clip_max, y=y)
-        adv_x = tf.minimum(adv_x, upper_bound)
-        adv_x = tf.maximum(adv_x, lower_bound)
-
-    return adv_x
-
-
 def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
     """
     TensorFlow implementation for apply perturbations to input features based
