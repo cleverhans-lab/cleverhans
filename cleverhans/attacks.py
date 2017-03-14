@@ -112,7 +112,6 @@ class FastGradientMethod(Attack):
         else:
             # Theano backend; evaluate symbolic samples
             from .utils_th import batch_eval
-        # TODO: fix args parameter for Theano case
         eval_params = {'batch_size': batch_size}
         if Y is not None:
             X_adv, = batch_eval(sess, [self.x, self.y], [x_adv],
@@ -133,8 +132,13 @@ class BasicIterativeMethod(Attack):
                  clip_max=None, eps=0.3, eps_iter=0.05, ord='inf', nb_iter=10):
         """
         Create a BasicIterativeMethod instance.
-        :param eps: TODO
-        :param eps_iter: TODO
+        :param eps: A float indicating the maximum allowed perturbation
+                    distance for each feature.
+        :param eps_iter: A float indicating the step size to use for each
+                        iteration of BIM (input variation parameter).
+        :param ord: A string indicating the norm order to use when computing
+                    gradients.
+        :param nb_iter: An integer indicating the number of BIM iterations to run.
         """
         super(BasicIterativeMethod, self).__init__(x, pred, y, backend,
                                                    clip_min, clip_max)
@@ -215,7 +219,7 @@ class SaliencyMapMethod(Attack):
             # no need to raise notimplemented error again; should have been done
             # during initialization
             pass
-        X_adv, _, _ =  jsma(
+        X_adv, _, _ = jsma(
             sess, self.x, self.pred, X, target, self.theta, self.gamma,
             self.increase, self.clip_min, self.clip_max, nb_classes
         )
