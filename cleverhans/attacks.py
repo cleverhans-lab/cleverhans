@@ -59,14 +59,16 @@ class FastGradientMethod(Attack):
     Sign Method").
     Paper link: TODO
     """
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None, eps=0.3, ord='inf'):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
+                 eps=0.3, ord='inf'):
         """
         Create a FastGradientMethod instance.
         :param eps: A float indicating the step size to use for the adversarial algorithm
                     (input variation parameter).
         :param ord: A string indicating the norm order to use when computing gradients.
         """
-        super(FastGradientMethod, self).__init__(x, pred, y, backend, clip_min, clip_max)
+        super(FastGradientMethod, self).__init__(x, pred, y, backend,
+                                                 clip_min, clip_max)
         self.eps = eps
         self.ord = ord
 
@@ -81,7 +83,8 @@ class FastGradientMethod(Attack):
             from .attacks_th import fgsm
 
 
-        return fgsm(self.x, self.pred, self.y, self.eps, self.ord, self.clip_min, self.clip_max)
+        return fgsm(self.x, self.pred, self.y, self.eps, self.ord,
+                    self.clip_min, self.clip_max)
 
     def generate_numpy(self, X, Y=None, sess=None, batch_size=128):
         """
@@ -112,7 +115,8 @@ class FastGradientMethod(Attack):
         # TODO: fix args parameter for Theano case
         eval_params = {'batch_size': batch_size}
         if Y is not None:
-            X_adv, = batch_eval(sess, [self.x, self.y], [x_adv], [X, Y], args=eval_params)
+            X_adv, = batch_eval(sess, [self.x, self.y], [x_adv],
+                                [X, Y], args=eval_params)
         else:
             X_adv, = batch_eval(sess, [self.x], [x_adv], [X], args=eval_params)
 
@@ -125,19 +129,24 @@ class BasicIterativeMethod(Attack):
     labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/abs/1607.02533
     """
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None, eps=0.3, eps_iter=0.05, nb_iter=10):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
+                 clip_max=None, eps=0.3, eps_iter=0.05, ord='inf', nb_iter=10):
         """
         Create a BasicIterativeMethod instance.
         :param eps: TODO
         :param eps_iter: TODO
         """
-        super(BasicIterativeMethod, self).__init__(x, pred, y=None, backend='tf', clip_min=None, clip_max=None)
+        super(BasicIterativeMethod, self).__init__(x, pred, y=None,
+                                                   backend='tf', clip_min=None,
+                                                   clip_max=None)
         self.eps = eps
         self.eps_iter = eps_iter
         self.nb_iter = nb_iter
+        self.fgm = FastGradientMethod(x, pred, y, backend, clip_min,
+                                      clip_max, eps_iter, ord)
 
     def generate_symbolic(self):
-        return None
+        raise NotImplementedError('')
 
     def generate_numpy(self, X, Y=None, sess=None, batch_size=128):
         """
@@ -157,7 +166,13 @@ class BasicIterativeMethod(Attack):
         if Y is not None:
             assert self.y is not None
         super(BasicIterativeMethod, self).generate_numpy(sess)
-        return None
+        upper_bound = X + self.eps
+        lower_bound = X - self.eps
+        X_adv = X
+        for i in range(self.nb_iter):
+            X_adv = self.fgm.generate_numpy(X_adv, Y, sess, batch_size)
+            X_adv = np.minimum(np.maximum(X_adv, lower_bound), upper_bound)
+        return X_adv
 
 
 class SaliencyMapMethod(Attack):
@@ -165,7 +180,8 @@ class SaliencyMapMethod(Attack):
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: TODO
     """
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None, theta=1., gamma=np.inf, increase=True):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
+                 clip_max=None, theta=1., gamma=np.inf, increase=True):
         """
         Create a SaliencyMapMethod instance.
         :param theta: A float indicating the delta for each feature adjustment.
@@ -174,15 +190,18 @@ class SaliencyMapMethod(Attack):
         :param increase: A boolean; True if we are increasing feature values,
                         False if we are decreasing.
         """
-        super(SaliencyMapMethod, self).__init__(x, pred, y=None, backend='tf', clip_min=None, clip_max=None)
+        super(SaliencyMapMethod, self).__init__(x, pred, y=None, backend='tf',
+                                                clip_min=None, clip_max=None)
         self.theta = theta
         self.gamma = gamma
         self.increase = increase
         if self.backend == 'th':
-            raise NotImplementedError('Theano version of Saliency Map Method not currently implemented.')
+            raise NotImplementedError('Theano version of Saliency Map Method not '
+                                      'currently implemented.')
 
     def generate_symbolic(self):
-        raise NotImplementedError('Symbolic version of Saliency Map Method not currently implemented.')
+        raise NotImplementedError('Symbolic version of Saliency Map Method not '
+                                  'currently implemented.')
 
     def generate_numpy(self, X, target, sess=None):
         """
@@ -199,6 +218,8 @@ class SaliencyMapMethod(Attack):
         if self.backend == 'tf':
             from .attacks_tf import jsma
         else:
-            raise NotImplementedError('Theano version of Saliency Map Method not currently implemented.')
+            raise NotImplementedError('Theano version of Saliency Map Method not '
+                                      'currently implemented.')
 
-        return jsma(sess, self.x, self.pred, X, target, self.theta, self.gamma, self.increase, self.clip_min, self.clip_max)
+        return jsma(sess, self.x, self.pred, X, target, self.theta, self.gamma,
+                    self.increase, self.clip_min, self.clip_max)
