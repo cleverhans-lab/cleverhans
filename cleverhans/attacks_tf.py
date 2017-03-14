@@ -237,7 +237,7 @@ def jsma(sess, x, predictions, sample, target, theta, gamma,
     adv_x = np.reshape(adv_x, (1, nb_features))
     # compute maximum number of iterations
     max_iters = np.floor(nb_features * gamma / 2)
-    print('Maximum number of iterations: {0}'.format(max_iters))
+    print('Maximum number of iterations: %i' % max_iters)
 
     # Compute our initial search domain. We optimize the initial search domain
     # by removing all features that are already at their maximum values (if
