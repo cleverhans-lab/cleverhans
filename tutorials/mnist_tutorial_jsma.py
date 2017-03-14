@@ -15,8 +15,7 @@ from tensorflow.python.platform import flags
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 
-from cleverhans.attacks import jsma
-from cleverhans.attacks_tf import jacobian_graph
+from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.utils import other_classes, cnn_model, pair_visual, grid_visual
 
 FLAGS = flags.FLAGS
@@ -114,9 +113,6 @@ def main(argv=None):
     perturbations = np.zeros((FLAGS.nb_classes, FLAGS.source_samples),
                              dtype='f')
 
-    # Define the TF graph for the model's Jacobian
-    grads = jacobian_graph(predictions, x, FLAGS.nb_classes)
-
     # Initialize our array for grid visualization
     grid_shape = (FLAGS.nb_classes,
                   FLAGS.nb_classes,
@@ -124,6 +120,12 @@ def main(argv=None):
                   FLAGS.img_cols,
                   FLAGS.nb_channels)
     grid_viz_data = np.zeros(grid_shape, dtype='f')
+
+    # Define the attack instance
+    attack = SaliencyMapMethod(
+        x, predictions, backend='tf', clip_min=0.,
+        clip_max=1., theta=1., gamma=0.1, increase=True
+    )
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
@@ -143,13 +145,17 @@ def main(argv=None):
             print('Creating adv. example for target class ' + str(target))
 
             # This call runs the Jacobian-based saliency map approach
-            adv_x, res, percent_perturb = jsma(sess, x, predictions,
-                                               X_test[sample_ind:
-                                                      (sample_ind+1)],
-                                               target, theta=1, gamma=0.1,
-                                               increase=True, back='tf',
-                                               clip_min=0, clip_max=1,
-                                               nb_classes=FLAGS.nb_classes)
+            adv_x = attack.generate_numpy(
+                X=X_test[sample_ind:(sample_ind+1)],
+                target=target,
+                nb_classes=FLAGS.nb_classes,
+                sess=sess
+            )
+            # TODO: update this; how do we actually get the 'res' value? Don't want to break from
+            # the API and have generate_numpy() return an extra variable for this class.
+            res = 1
+            nb_changed = np.where(adv_x.reshape(-1) != X_test[sample_ind].reshape(-1))[0].shape[0]
+            percent_perturb = float(nb_changed) / adv_x.reshape(-1).shape[0]
 
             # Display the original and adversarial images side-by-side
             if FLAGS.viz_enabled:

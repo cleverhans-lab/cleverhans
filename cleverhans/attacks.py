@@ -215,6 +215,9 @@ class SaliencyMapMethod(Attack):
             # no need to raise notimplemented error again; should have been done
             # during initialization
             pass
+        X_adv, _, _ =  jsma(
+            sess, self.x, self.pred, X, target, self.theta, self.gamma,
+            self.increase, self.clip_min, self.clip_max, nb_classes
+        )
 
-        return jsma(sess, self.x, self.pred, X, target, self.theta, self.gamma,
-                    self.increase, self.clip_min, self.clip_max, nb_classes)
+        return X_adv
