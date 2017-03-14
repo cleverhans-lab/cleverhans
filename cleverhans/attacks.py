@@ -136,9 +136,8 @@ class BasicIterativeMethod(Attack):
         :param eps: TODO
         :param eps_iter: TODO
         """
-        super(BasicIterativeMethod, self).__init__(x, pred, y=None,
-                                                   backend='tf', clip_min=None,
-                                                   clip_max=None)
+        super(BasicIterativeMethod, self).__init__(x, pred, y, backend,
+                                                   clip_min, clip_max)
         self.eps = eps
         self.eps_iter = eps_iter
         self.nb_iter = nb_iter
@@ -188,8 +187,8 @@ class SaliencyMapMethod(Attack):
         :param increase: A boolean; True if we are increasing feature values,
                         False if we are decreasing.
         """
-        super(SaliencyMapMethod, self).__init__(x, pred, y=None, backend='tf',
-                                                clip_min=None, clip_max=None)
+        super(SaliencyMapMethod, self).__init__(x, pred, y, backend,
+                                                clip_min, clip_max)
         self.theta = theta
         self.gamma = gamma
         self.increase = increase
