@@ -81,7 +81,6 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgsm
 
-
         return fgsm(self.x, self.pred, self.y, self.eps, self.ord,
                     self.clip_min, self.clip_max)
 
@@ -145,7 +144,8 @@ class BasicIterativeMethod(Attack):
                                       clip_max, eps_iter, ord)
 
     def generate_symbolic(self):
-        raise NotImplementedError('')
+        raise NotImplementedError('Symbolic version of Basic Iterative Method not '
+                                  'currently implemented.')
 
     def generate_numpy(self, X, Y=None, sess=None, batch_size=128):
         """
@@ -202,13 +202,14 @@ class SaliencyMapMethod(Attack):
         raise NotImplementedError('Symbolic version of Saliency Map Method not '
                                   'currently implemented.')
 
-    def generate_numpy(self, X, target, sess=None):
+    def generate_numpy(self, X, target, nb_classes, sess=None):
         """
         Generate adversarial samples and return them in a Numpy array.
         NOTE: this attack currently only computes one sample at a time.
         :param X: A Numpy array representing the feature vector for the baseline
                 sample.
         :param target: TODO
+        :param nb_classes: TODO
         :param sess: A TensorFlow session to use for evaluating the adversarial
                     samples (for 'tf' backend only). Default is None.
         :return: A Numpy array holding the adversarial sample.
@@ -217,8 +218,9 @@ class SaliencyMapMethod(Attack):
         if self.backend == 'tf':
             from .attacks_tf import jsma
         else:
-            raise NotImplementedError('Theano version of Saliency Map Method not '
-                                      'currently implemented.')
+            # no need to raise notimplemented error again; should have been done
+            # during initialization
+            pass
 
         return jsma(sess, self.x, self.pred, X, target, self.theta, self.gamma,
-                    self.increase, self.clip_min, self.clip_max)
+                    self.increase, self.clip_min, self.clip_max, nb_classes)
