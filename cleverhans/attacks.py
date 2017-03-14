@@ -55,7 +55,7 @@ class Attack:
 class FastGradientMethod(Attack):
     """
     The Fast Gradient Method. This attack was originally implemented by
-    Goodfellow et al. (2015) with the infinium norm ("Fast Gradient
+    Goodfellow et al. (2015) with the infinity norm ("Fast Gradient
     Sign Method").
     Paper link: https://arxiv.org/pdf/1412.6572.pdf
     """
