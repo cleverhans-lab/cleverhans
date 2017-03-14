@@ -31,12 +31,14 @@ class Attack:
         self.clip_min = clip_min
         self.clip_max = clip_max
 
-    @abstractmethod
     def generate_symbolic(self):
         """
-        Generate symbolic graph for adversarial samples and return.
+        Generate symbolic graph for adversarial samples and return. This
+        method should be overwritten in any child class which has a
+        symbolic implementation available.
         """
-        return None
+        raise NotImplementedError("The symbolic version of this attack "
+                                  "is not currently implemented.")
 
     @abstractmethod
     def generate_numpy(self, sess):
@@ -143,10 +145,6 @@ class BasicIterativeMethod(Attack):
         self.fgm = FastGradientMethod(x, pred, y, backend, clip_min,
                                       clip_max, eps_iter, ord)
 
-    def generate_symbolic(self):
-        raise NotImplementedError('Symbolic version of Basic Iterative Method not '
-                                  'currently implemented.')
-
     def generate_numpy(self, X, Y=None, sess=None, batch_size=128):
         """
         Generate adversarial samples and return them in a Numpy array.
@@ -171,6 +169,7 @@ class BasicIterativeMethod(Attack):
         for i in range(self.nb_iter):
             X_adv = self.fgm.generate_numpy(X_adv, Y, sess, batch_size)
             X_adv = np.minimum(np.maximum(X_adv, lower_bound), upper_bound)
+
         return X_adv
 
 
@@ -197,10 +196,6 @@ class SaliencyMapMethod(Attack):
         if self.backend == 'th':
             raise NotImplementedError('Theano version of Saliency Map Method not '
                                       'currently implemented.')
-
-    def generate_symbolic(self):
-        raise NotImplementedError('Symbolic version of Saliency Map Method not '
-                                  'currently implemented.')
 
     def generate_numpy(self, X, target, nb_classes, sess=None):
         """
