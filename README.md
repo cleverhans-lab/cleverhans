@@ -2,6 +2,8 @@
 
 <img src="https://github.com/openai/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
 
+[![Build Status](https://travis-ci.org/openai/cleverhans.svg?branch=master)](https://travis-ci.org/openai/cleverhans)
+
 This repository contains the source code for `cleverhans`, a Python library to
 benchmark machine learning systems' vulnerability to
 [adversarial examples](http://karpathy.github.io/2015/03/30/breaking-convnets/).
@@ -75,6 +77,9 @@ adversarial examples using adversarial training.
 Note: this script does not have a tutorial markdown
 yet, but the corresponding [tutorial](tutorials/mnist_tutorial_tf.md) in TensorFlow
 will prove useful in the meanwhile.
+* **MNIST using a black-box attack** ([code](tutorials/mnist_blackbox.py)):
+this tutorial implements the black-box
+attack described in this [paper](https://arxiv.org/abs/1602.02697).
 * more to come soon...
  
 ## Reporting benchmarks

@@ -180,7 +180,7 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
     return pairs[candidates][0], pairs[candidates][1], search_domain
 
 
-def jacobian(sess, x, grads, target, X, nb_features):
+def jacobian(sess, x, grads, target, X, nb_features, nb_classes):
     """
     TensorFlow implementation of the foward derivative / Jacobian
     :param x: the input placeholder
@@ -198,7 +198,7 @@ def jacobian(sess, x, grads, target, X, nb_features):
         feed_dict = {x: X}
 
     # Initialize a numpy array to hold the Jacobian component values
-    jacobian_val = np.zeros((FLAGS.nb_classes, nb_features), dtype=np.float32)
+    jacobian_val = np.zeros((nb_classes, nb_features), dtype=np.float32)
 
     # Compute the gradients for all classes
     for class_ind, grad in enumerate(grads):
@@ -207,13 +207,13 @@ def jacobian(sess, x, grads, target, X, nb_features):
 
     # Sum over all classes different from the target class to prepare for
     # saliency map computation in the next step of the attack
-    other_classes = utils.other_classes(FLAGS.nb_classes, target)
+    other_classes = utils.other_classes(nb_classes, target)
     grad_others = np.sum(jacobian_val[other_classes, :], axis=0)
 
     return jacobian_val[target], grad_others
 
 
-def jacobian_graph(predictions, x):
+def jacobian_graph(predictions, x, nb_classes):
     """
     Create the Jacobian graph to be ran later in a TF session
     :param predictions: the model's symbolic output (linear output,
@@ -225,7 +225,7 @@ def jacobian_graph(predictions, x):
     list_derivatives = []
 
     # Define the TF graph elements to compute our derivatives for each class
-    for class_ind in xrange(FLAGS.nb_classes):
+    for class_ind in xrange(nb_classes):
         derivatives, = tf.gradients(predictions[:, class_ind], x)
         list_derivatives.append(derivatives)
 
@@ -291,7 +291,7 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
         # Compute the Jacobian components
         grads_target, grads_others = jacobian(sess, x, grads, target,
                                               adv_x_original_shape,
-                                              nb_features)
+                                              nb_features, FLAGS.nb_classes)
 
         # Compute the saliency map for each of our target classes
         # and return the two best candidate features for perturbation
@@ -324,4 +324,54 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
         return np.reshape(adv_x, original_shape), 1, percent_perturbed
     else:
         print('Unsuccesful')
-        return np.reshape(adv_x, original_shape), -1, percent_perturbed
+        return np.reshape(adv_x, original_shape), 0, percent_perturbed
+
+
+def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
+                          keras_phase=None):
+    """
+    Augment an adversary's substitute training set using the Jacobian
+    of a substitute model to generate new synthetic inputs.
+    See https://arxiv.org/abs/1602.02697 for more details.
+    See tutorials/mnist_blackbox.py for example use case
+    :param sess: TF session in which the substitute model is defined
+    :param x: input TF placeholder for the substitute model
+    :param X_sub_prev: substitute training data available to the adversary
+                       at the previous iteration
+    :param Y_sub: substitute training labels available to the adversary
+                  at the previous iteration
+    :param grads: Jacobian symbolic graph for the substitute
+                  (should be generated using attacks_tf.jacobian_graph)
+    :param keras_phase: if not None, contains keras.backend.learning_phase()
+    :return: augmented substitute data (will need to be labeled by oracle)
+    """
+    assert len(x.get_shape()) == len(np.shape(X_sub_prev))
+    assert len(grads) >= np.max(Y_sub) + 1
+    assert len(X_sub_prev) == len(Y_sub)
+
+    # Prepare input_shape (outside loop) for feeding dictionary below
+    input_shape = list(x.get_shape())
+    input_shape[0] = 1
+
+    # Create new numpy array for adversary training data
+    # with twice as many components on the first dimension.
+    X_sub = np.vstack([X_sub_prev, X_sub_prev])
+
+    # For each input in the previous' substitute training iteration
+    for ind, input in enumerate(X_sub_prev):
+        # Select gradient corresponding to the label predicted by the oracle
+        grad = grads[Y_sub[ind]]
+
+        # Prepare feeding dictionary
+        feed_dict = {x: np.reshape(input, input_shape)}
+        if keras_phase is not None:
+            feed_dict[keras_phase] = 0
+
+        # Compute sign matrix
+        grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
+
+        # Create new synthetic point in adversary substitute training set
+        X_sub[2*ind] = X_sub[ind] + lmbda * grad_val
+
+    # Return augmented training data (needs to be labeled afterwards)
+    return X_sub

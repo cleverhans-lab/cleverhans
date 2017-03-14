@@ -3,22 +3,37 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import keras
 import math
 import numpy as np
 import os
-import keras
-from keras.backend import categorical_crossentropy
 import six
 import tensorflow as tf
 import time
 import warnings
 
-from tensorflow.python.platform import flags
-from .utils import batch_indices
+from .utils import batch_indices, _ArgsWrapper
 
 from tensorflow.python.platform import flags
 
 FLAGS = flags.FLAGS
+
+
+class _FlagsWrapper(_ArgsWrapper):
+    """
+    Wrapper that tries to find missing parameters in TensorFlow FLAGS
+    for backwards compatibility.
+
+    Plain _ArgsWrapper should be used instead if the support for FLAGS
+    is removed.
+    """
+    def __getattr__(self, name):
+        val = self.args.get(name)
+        if val is None:
+            warnings.warn('Setting parameters ({}) from TensorFlow FLAGS is '
+                          'deprecated.'.format(name))
+            val = FLAGS.__getattr__(name)
+        return val
 
 
 def model_loss(y, model, mean=True):
@@ -26,6 +41,8 @@ def model_loss(y, model, mean=True):
     Define loss of TF graph
     :param y: correct labels
     :param model: output of the model
+    :param mean: boolean indicating whether should return mean of loss
+                 or vector of losses for each input of the batch
     :return: return mean of loss if True, otherwise return vector with per
              sample loss
     """
@@ -50,7 +67,7 @@ def tf_model_train(*args, **kwargs):
 
 
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                predictions_adv=None, evaluate=None, verbose=True):
+                predictions_adv=None, evaluate=None, verbose=True, args=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -59,18 +76,33 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param predictions: model output predictions
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
-    :param save: Boolean controling the save operation
+    :param save: boolean controling the save operation
     :param predictions_adv: if set with the adversarial example tensor,
                             will run adversarial training
+    :param args: dict or argparse `Namespace` object.
+                 Should contain `nb_epochs`, `learning_rate`,
+                 `batch_size`
+                 If save is True, should also contain 'train_dir'
+                 and 'filename'
     :return: True if model trained
     """
+    args = _FlagsWrapper(args or {})
+
+    # Check that necessary arguments were given (see doc above)
+    assert args.nb_epochs, "Number of epochs was not given in args dict"
+    assert args.learning_rate, "Learning rate was not given in args dict"
+    assert args.batch_size, "Batch size was not given in args dict"
+
+    if save:
+        assert args.train_dir, "Directory for save was not given in args dict"
+        assert args.filename, "Filename for save was not given in args dict"
 
     # Define loss
     loss = model_loss(y, predictions)
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    train_step = tf.train.AdadeltaOptimizer(learning_rate=FLAGS.learning_rate,
+    train_step = tf.train.AdadeltaOptimizer(learning_rate=args.learning_rate,
                                             rho=0.95,
                                             epsilon=1e-08).minimize(loss)
 
@@ -78,24 +110,24 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         if hasattr(tf, "global_variables_initializer"):
             tf.global_variables_initializer().run()
         else:
-            warnings.warn("Update your copy of tensorflow; future versions of"
+            warnings.warn("Update your copy of tensorflow; future versions of "
                           "cleverhans may drop support for this version.")
             sess.run(tf.initialize_all_variables())
 
-        for epoch in six.moves.xrange(FLAGS.nb_epochs):
+        for epoch in six.moves.xrange(args.nb_epochs):
             if verbose:
                 print("Epoch " + str(epoch))
 
             # Compute number of batches
-            nb_batches = int(math.ceil(float(len(X_train)) / FLAGS.batch_size))
-            assert nb_batches * FLAGS.batch_size >= len(X_train)
+            nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
+            assert nb_batches * args.batch_size >= len(X_train)
 
             prev = time.time()
             for batch in range(nb_batches):
 
                 # Compute batch start and end indices
                 start, end = batch_indices(
-                    batch, len(X_train), FLAGS.batch_size)
+                    batch, len(X_train), args.batch_size)
 
                 # Perform one training step
                 train_step.run(feed_dict={x: X_train[start:end],
@@ -110,7 +142,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 evaluate()
 
         if save:
-            save_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
+            save_path = os.path.join(args.train_dir, args.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
             print("Completed model training and model saved at:"
@@ -127,7 +159,7 @@ def tf_model_eval(*args, **kwargs):
     return model_eval(*args, **kwargs)
 
 
-def model_eval(sess, x, y, model, X_test, Y_test):
+def model_eval(sess, x, y, model, X_test, Y_test, args=None):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
@@ -136,9 +168,15 @@ def model_eval(sess, x, y, model, X_test, Y_test):
     :param model: model output predictions
     :param X_test: numpy array with training inputs
     :param Y_test: numpy array with training outputs
+    :param args: dict or argparse `Namespace` object.
+                 Should contain `batch_size`
     :return: a float with the accuracy value
     """
-    # Define sympbolic for accuracy
+    args = _FlagsWrapper(args or {})
+
+    assert args.batch_size, "Batch size was not given in args dict"
+
+    # Define symbol for accuracy
     acc_value = keras.metrics.categorical_accuracy(y, model)
 
     # Init result var
@@ -146,8 +184,8 @@ def model_eval(sess, x, y, model, X_test, Y_test):
 
     with sess.as_default():
         # Compute number of batches
-        nb_batches = int(math.ceil(float(len(X_test)) / FLAGS.batch_size))
-        assert nb_batches * FLAGS.batch_size >= len(X_test)
+        nb_batches = int(math.ceil(float(len(X_test)) / args.batch_size))
+        assert nb_batches * args.batch_size >= len(X_test)
 
         for batch in range(nb_batches):
             if batch % 100 == 0 and batch > 0:
@@ -156,8 +194,8 @@ def model_eval(sess, x, y, model, X_test, Y_test):
             # Must not use the `batch_indices` function here, because it
             # repeats some examples.
             # It's acceptable to repeat during training, but not eval.
-            start = batch * FLAGS.batch_size
-            end = min(len(X_test), start + FLAGS.batch_size)
+            start = batch * args.batch_size
+            end = min(len(X_test), start + args.batch_size)
             cur_batch_size = end - start
 
             # The last batch may be smaller than all others, so we need to
@@ -190,10 +228,21 @@ def tf_model_load(sess):
     return True
 
 
-def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
+def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, args=None):
     """
     A helper function that computes a tensor on numpy inputs by batches.
+
+    :param sess:
+    :param tf_inputs:
+    :param tf_outputs:
+    :param numpy_inputs:
+    :param args: dict or argparse `Namespace` object.
+                 Should contain `batch_size`
     """
+    args = _FlagsWrapper(args or {})
+
+    assert args.batch_size, "Batch size was not given in args dict"
+
     n = len(numpy_inputs)
     assert n > 0
     assert n == len(tf_inputs)
@@ -204,18 +253,18 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs):
     for _ in tf_outputs:
         out.append([])
     with sess.as_default():
-        for start in six.moves.xrange(0, m, FLAGS.batch_size):
-            batch = start // FLAGS.batch_size
+        for start in six.moves.xrange(0, m, args.batch_size):
+            batch = start // args.batch_size
             if batch % 100 == 0 and batch > 0:
                 print("Batch " + str(batch))
 
             # Compute batch start and end indices
-            start = batch * FLAGS.batch_size
-            end = start + FLAGS.batch_size
+            start = batch * args.batch_size
+            end = start + args.batch_size
             numpy_input_batches = [numpy_input[start:end]
                                    for numpy_input in numpy_inputs]
             cur_batch_size = numpy_input_batches[0].shape[0]
-            assert cur_batch_size <= FLAGS.batch_size
+            assert cur_batch_size <= args.batch_size
             for e in numpy_input_batches:
                 assert e.shape[0] == cur_batch_size
 

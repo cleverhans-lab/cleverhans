@@ -11,7 +11,7 @@ import time
 
 from collections import OrderedDict
 
-from .utils import batch_indices
+from .utils import batch_indices, _ArgsWrapper
 
 import theano
 import theano.tensor as T
@@ -87,7 +87,7 @@ def model_loss(y, model, mean=True):
 
 
 def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
-                   predictions_adv=None, evaluate=None, args={}):
+                   predictions_adv=None, evaluate=None, args=None):
     """
     Train a Theano graph
     :param x: input placeholder
@@ -96,11 +96,16 @@ def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
     :param params: model trainable weights
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
-    :param save: Boolean controling the save operation
+    :param save: boolean controling the save operation
     :param predictions_adv: if set with the adversarial example tensor,
                             will run adversarial training
+    :param args: dict or argparse `Namespace` object.
+                 Should contain `nb_epochs`, `learning_rate`,
+                 `batch_size`
     :return: True if model trained
     """
+    args = _ArgsWrapper(args or {})
+
     print("Starting model training using Theano.")
 
     # Define loss
@@ -145,7 +150,7 @@ def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
     return True
 
 
-def th_model_eval(x, y, model, X_test, Y_test, args={}):
+def th_model_eval(x, y, model, X_test, Y_test, args=None):
     """
     Compute the accuracy of a Theano model on some data
     :param x: input placeholder
@@ -153,9 +158,13 @@ def th_model_eval(x, y, model, X_test, Y_test, args={}):
     :param model: model output predictions
     :param X_test: numpy array with training inputs
     :param Y_test: numpy array with training outputs
+    :param args: dict or argparse `Namespace` object.
+                 Should contain `batch_size`
     :return: a float with the accuracy value
     """
-    # Define sympbolic for accuracy
+    args = _ArgsWrapper(args or {})
+
+    # Define symbol for accuracy
     acc_value = keras.metrics.categorical_accuracy(y, model)
 
     # Init result var
@@ -195,10 +204,18 @@ def th_model_eval(x, y, model, X_test, Y_test, args={}):
     return accuracy
 
 
-def batch_eval(th_inputs, th_outputs, numpy_inputs, args={}):
+def batch_eval(th_inputs, th_outputs, numpy_inputs, args=None):
     """
     A helper function that computes a tensor on numpy inputs by batches.
+
+    :param th_inputs:
+    :param th_outputs:
+    :param numpy_inputs:
+    :param args: dict or argparse `Namespace` object.
+                 Should contain `batch_size`
     """
+    args = _ArgsWrapper(args or {})
+
     n = len(numpy_inputs)
     assert n > 0
     assert n == len(th_inputs)

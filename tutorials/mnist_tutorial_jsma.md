@@ -147,7 +147,7 @@ adv_x = apply_perturbations(i, j, adv_x, increase, theta, clip_min, clip_max)
 
 In the first stage of the process, we compute the Jacobian component
 corresponding to each pair of output class and input feature. This 
-helps us estimating how changes in the input features (here pixels 
+helps us estimate how changes in the input features (here pixels 
 of the MNIST images) will affect each of the class probability 
 assigned by the model. The Jacobian is a 10 x 28 x 28 matrix of floating 
 point numbers where large positive values mean that increasing the 

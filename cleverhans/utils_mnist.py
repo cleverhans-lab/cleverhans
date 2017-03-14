@@ -5,10 +5,10 @@ from __future__ import unicode_literals
 
 import keras
 from keras.datasets import mnist
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Convolution2D
 from keras.utils import np_utils
+import warnings
+
+from . import utils
 
 
 def data_mnist():
@@ -47,43 +47,9 @@ def data_mnist():
 
 def model_mnist(logits=False, input_ph=None, img_rows=28, img_cols=28,
                 nb_filters=64, nb_classes=10):
-    """
-    Defines MNIST model using Keras sequential model
-    :param logits: If set to False, returns a Keras model, otherwise will also
-        return logits tensor
-    :param input_ph: The TensorFlow tensor for the input
-        (needed if returning logits)
-        ("ph" stands for placeholder but it need not actually be a placeholder)
-    :return:
-    """
-    model = Sequential()
-
-    if keras.backend.image_dim_ordering() == 'th':
-        input_shape = (1, img_rows, img_cols)
-    else:
-        input_shape = (img_rows, img_cols, 1)
-
-    layers = [Dropout(0.2, input_shape=input_shape),
-              Convolution2D(nb_filters, 8, 8,
-                            subsample=(2, 2),
-                            border_mode="same"
-                            ),
-              Activation('relu'),
-              Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
-                            border_mode="valid"),
-              Activation('relu'),
-              Convolution2D(nb_filters * 2, 5, 5, subsample=(1, 1)),
-              Activation('relu'),
-              Dropout(0.5),
-              Flatten(),
-              Dense(nb_classes)]
-    for layer in layers:
-        model.add(layer)
-    if logits:
-        logits_tensor = model(input_ph)
-    model.add(Activation('softmax'))
-
-    if logits:
-        return model, logits_tensor
-    else:
-        return model
+    warnings.warn("`utils_mnist.model_mnist` is deprecated. Switch to"
+                  "`utils.cnn_model`. `utils_mnist.model_mnist` will "
+                  "be removed after 2017-08-17.")
+    return utils.cnn_model(logits=logits, input_ph=input_ph,
+                           img_rows=img_rows, img_cols=img_cols,
+                           nb_filters=nb_filters, nb_classes=nb_classes)

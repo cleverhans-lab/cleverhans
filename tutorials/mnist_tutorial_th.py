@@ -11,8 +11,8 @@ import theano.tensor as T
 import keras
 from keras import backend
 
-
-from cleverhans.utils_mnist import data_mnist, model_mnist
+from cleverhans.utils import cnn_model
+from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_th import th_model_train, th_model_eval, batch_eval
 from cleverhans.attacks_th import fgsm
 
@@ -56,7 +56,7 @@ def main():
     y = T.matrix('y')
 
     # Define Theano model graph
-    model = model_mnist()
+    model = cnn_model()
     model.build(x_shape)
     predictions = model(x)
     print("Defined Theano model graph.")
@@ -83,7 +83,7 @@ def main():
 
     print("Repeating the process, using adversarial training")
     # Redefine Theano model graph
-    model_2 = model_mnist()
+    model_2 = cnn_model()
     model_2.build(x_shape)
     predictions_2 = model_2(x)
     adv_x_2 = fgsm(x, predictions_2, eps=0.3)
