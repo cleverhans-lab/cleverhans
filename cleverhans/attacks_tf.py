@@ -232,7 +232,7 @@ def jacobian_graph(predictions, x, nb_classes):
     return list_derivatives
 
 
-def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
+def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
             increase, clip_min, clip_max):
     """
     TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
