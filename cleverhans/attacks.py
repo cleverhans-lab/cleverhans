@@ -57,7 +57,7 @@ class FastGradientMethod(Attack):
     The Fast Gradient Method. This attack was originally implemented by
     Goodfellow et al. (2015) with the infinium norm ("Fast Gradient
     Sign Method").
-    Paper link: TODO
+    Paper link: https://arxiv.org/pdf/1412.6572.pdf
     """
     def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
                  eps=0.3, ord='inf'):
@@ -127,7 +127,7 @@ class BasicIterativeMethod(Attack):
     """
     The Basic Iterative Method (Kurakin et al. 2016). The original paper used hard
     labels for this attack; no label smoothing.
-    Paper link: https://arxiv.org/abs/1607.02533
+    Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
     def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
                  clip_max=None, eps=0.3, eps_iter=0.05, ord='inf', nb_iter=10):
@@ -178,7 +178,7 @@ class BasicIterativeMethod(Attack):
 class SaliencyMapMethod(Attack):
     """
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
-    Paper link: TODO
+    Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
     def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
                  clip_max=None, theta=1., gamma=np.inf, increase=True):
