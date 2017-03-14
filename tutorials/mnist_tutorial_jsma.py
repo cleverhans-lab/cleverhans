@@ -143,12 +143,13 @@ def main(argv=None):
             print('Creating adv. example for target class ' + str(target))
 
             # This call runs the Jacobian-based saliency map approach
-            adv_x, res, percent_perturb = jsma(sess, x, predictions, grads,
+            adv_x, res, percent_perturb = jsma(sess, x, predictions,
                                                X_test[sample_ind:
                                                       (sample_ind+1)],
                                                target, theta=1, gamma=0.1,
                                                increase=True, back='tf',
-                                               clip_min=0, clip_max=1)
+                                               clip_min=0, clip_max=1,
+                                               nb_classes=FLAGS.nb_classes)
 
             # Display the original and adversarial images side-by-side
             if FLAGS.viz_enabled:
