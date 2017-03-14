@@ -22,7 +22,6 @@ class Attack:
                         value for components of the example returned.
         :param clip_max: Optional float parameter that can be used to set a maximum
                         value for components of the example returned.
-            label leaking effect.
         """
         assert backend == 'tf' or backend == 'th'
         self.x = x
