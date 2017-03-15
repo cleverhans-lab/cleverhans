@@ -67,11 +67,16 @@ class FastGradientMethod(Attack):
         :param eps: A float indicating the step size to use for the adversarial algorithm
                     (input variation parameter).
         :param ord: A string indicating the norm order to use when computing gradients.
+                    This should be either 'inf', 'L1' or 'L2'.
         """
+        assert ord == 'inf' or ord == 'L1' or ord == 'L2'
         super(FastGradientMethod, self).__init__(x, pred, y, backend,
                                                  clip_min, clip_max)
         self.eps = eps
         self.ord = ord
+        if backend == 'th' and ord != 'inf':
+            raise NotImplementedError("The only FastGradientMethod norm currently "
+                                      "implemented for Theano is 'inf'.")
 
     def generate_symbolic(self):
         """
@@ -137,9 +142,10 @@ class BasicIterativeMethod(Attack):
         :param eps_iter: A float indicating the step size to use for each
                         iteration of BIM (input variation parameter).
         :param ord: A string indicating the norm order to use when computing
-                    gradients.
+                    gradients. This should be either 'inf', 'L1' or 'L2'.
         :param nb_iter: An integer indicating the number of BIM iterations to run.
         """
+        assert ord == 'inf' or ord == 'L1' or ord == 'L2'
         super(BasicIterativeMethod, self).__init__(x, pred, y, backend,
                                                    clip_min, clip_max)
         self.eps = eps

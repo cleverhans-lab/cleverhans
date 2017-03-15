@@ -28,6 +28,7 @@ def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=Non
             label leaking effect.
     :param eps: the epsilon (input variation parameter)
     :param ord: string indicating the norm order to use when computing gradients.
+                This should be either 'inf', 'L1' or 'L2'.
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
@@ -35,23 +36,34 @@ def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=Non
     :return: a tensor for the adversarial example
     """
 
-    # Compute loss
     if y is None:
-        # if doing adversarial training, use model predictions as ground truth
-        # to avoid label leaking
+        # Using model predictions as ground truth to avoid label leaking
         y = tf.to_float(
             tf.equal(predictions,
                      tf.reduce_max(predictions, 1, keep_dims=True)))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
+    # Compute loss
     loss = utils_tf.model_loss(y, predictions, mean=False)
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
 
-    # TODO: make use of 'ord' parameter
-
-    # Take sign of gradient
-    signed_grad = tf.sign(grad)
+    if ord == 'inf':
+        # Take sign of gradient
+        signed_grad = tf.sign(grad)
+    elif ord == 1:
+        reduc_ind = list(xrange(1, len(x.get_shape())))
+        signed_grad = grad / tf.reduce_sum(tf.abs(grad),
+                                           reduction_indices=reduc_ind,
+                                           keep_dims=True)
+    elif ord == 2:
+        reduc_ind = list(xrange(1, len(x.get_shape())))
+        signed_grad = grad / tf.sqrt(tf.reduce_sum(tf.square(grad),
+                                                   reduction_indices=reduc_ind,
+                                                   keep_dims=True))
+    else:
+        raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                                  "currently implemented.")
 
     # Multiply by constant epsilon
     scaled_signed_grad = eps * signed_grad

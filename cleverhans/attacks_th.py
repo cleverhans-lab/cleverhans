@@ -13,6 +13,7 @@ def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=Non
             label leaking effect.
     :param eps: the epsilon (input variation parameter)
     :param ord: string indicating the norm order to use when computing gradients.
+                This should be either 'inf', 'L1' or 'L2'.
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
