@@ -118,7 +118,7 @@ def main(argv=None):
                 args=train_params)
 
     # Evaluate the accuracy of the CIFAR10 model on adversarial examples
-    accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test,
+    accuracy = model_eval(sess, x, y, predictions_2_adv, X_test_adv, Y_test,
                           args=eval_params)
     print('Test accuracy on adversarial examples: ' + str(accuracy))
 
