@@ -66,6 +66,10 @@ tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572), 
 and make the model more robust to adversarial
 examples using adversarial training.
+* **CIFAR10 with FGSM using the TensorFlow backend** ([code](tutorials/cifar10_tutorial_tf.py)): this tutorial covers how to train a CIFAR10 model using TensorFlow,
+craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572), 
+and make the model more robust to adversarial
+examples using adversarial training.
 * **MNIST with JSMA using the Tensorflow backend** ([code](tutorials/mnist_tutorial_jsma.py), [tutorial](tutorials/mnist_tutorial_jsma.md)): this second
 tutorial covers how to train a MNIST model using TensorFlow and
 craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528). 
