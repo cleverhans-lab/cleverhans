@@ -84,42 +84,45 @@ def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
 
 def saliency_map(grads_target, grads_other, search_domain, increase):
     """
-    TensorFlow implementation for computing salency maps
+    TensorFlow implementation for computing saliency maps
     :param grads_target: a matrix containing forward derivatives for the
-    target class
+                         target class
     :param grads_other: a matrix where every element is the sum of forward
-    derivatives over all non-target classes at that index
+                        derivatives over all non-target classes at that index
     :param search_domain: the set of input indices that we are considering
     :param increase: boolean; true if we are increasing pixels, false otherwise
     :return: (i, j, search_domain) the two input indices selected and the
              updated search domain
     """
+    # Compute the size of the input (the number of features)
+    nf = len(grads_target)
 
-    size = len(grads_target)
-
-    # remove the already-used targets from the search space
-    invalid = list(set(range(size)) - search_domain)
+    # Remove the already-used input features from the search space
+    invalid = list(set(range(nf)) - search_domain)
     grads_target[invalid] = 0
     grads_other[invalid] = 0
 
-    # create a 2-d numpy array of the sum of grads_target and grads_other
-    target_sum = grads_target.reshape((1,size))+grads_target.reshape((size,1))
-    other_sum = grads_other.reshape((1,size))+grads_other.reshape((size,1))
+    # Create a 2D numpy array of the sum of grads_target and grads_other
+    target_sum = grads_target.reshape((1, nf)) + grads_target.reshape((nf, 1))
+    other_sum = grads_other.reshape((1, nf)) + grads_other.reshape((nf, 1))
 
-    # create a 2-d numpy array of the scores for each pair of inputs to change
+    # Create a mask to only keep features that match saliency map conditions
     if increase:
-        scores = ((target_sum > 0) & (other_sum < 0)) * (-target_sum * other_sum)
+        scores_mask = ((target_sum > 0) & (other_sum < 0))
     else:
-        scores = ((target_sum < 0) & (other_sum > 0)) * (-target_sum * other_sum)
+        scores_mask = ((target_sum < 0) & (other_sum > 0))
 
-    # no changing one pixel twice
+    # Create a 2D numpy array of the scores for each pair of candidate features
+    scores = scores_mask * (-target_sum * other_sum)
+
+    # A pixel can only be selected (and changed) once
     np.fill_diagonal(scores, 0)
 
-    # extract the best two pixels
+    # Extract the best two pixels
     best = np.argmax(scores)
-    p1, p2 = best%size, best//size
+    p1, p2 = best % nf, best // nf
 
-    # update our search domain
+    # Remove used pixels from our search domain
     search_domain.remove(p1)
     search_domain.remove(p2)
 
