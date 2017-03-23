@@ -8,6 +8,14 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     user's backend.
     :param x: the input
     :param predictions: the model's output
+                        (Note: in the original paper that introduced this
+                         attack, the loss was computed by comparing the
+                         model predictions with the hard labels (from the
+                         dataset). Instead, this version implements the loss
+                         by comparing the model predictions with the most
+                         likely class. This tweak is recommended since the
+                         discovery of label leaking in the following paper:
+                         https://arxiv.org/abs/1611.01236)
     :param eps: the epsilon (input variation parameter)
     :param back: switch between TensorFlow ('tf') and
                 Theano ('th') implementation
