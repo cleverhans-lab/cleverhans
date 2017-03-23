@@ -5,10 +5,8 @@ from __future__ import unicode_literals
 
 import sys
 import copy
-import itertools
 import numpy as np
 import tensorflow as tf
-import multiprocessing as mp
 from six.moves import xrange
 
 from . import utils_tf
