@@ -214,8 +214,8 @@ def jacobian_graph(predictions, x, nb_classes):
     return list_derivatives
 
 
-def jsma(sess, x, predictions, sample, target, theta, gamma,
-            increase, clip_min, clip_max, nb_classes):
+def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
+            increase, clip_min, clip_max):
     """
     TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
     for details about the algorithm design choices).
@@ -223,6 +223,7 @@ def jsma(sess, x, predictions, sample, target, theta, gamma,
     :param x: the input placeholder
     :param predictions: the model's symbolic output (linear output,
         pre-softmax)
+    :param grads: symbolic gradients
     :param sample: numpy array with sample input
     :param target: target class for sample input
     :param theta: delta for each feature adjustment
@@ -233,11 +234,9 @@ def jsma(sess, x, predictions, sample, target, theta, gamma,
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
-    :param nb_classes: the number of classes the model has
     :return: an adversarial sample
     """
-    # Define the TF graph for the model's Jacobian
-    grads = jacobian_graph(predictions, x, nb_classes)
+
     # Copy the source sample and define the maximum number of features
     # (i.e. the maximum number of iterations) that we may perturb
     adv_x = copy.copy(sample)

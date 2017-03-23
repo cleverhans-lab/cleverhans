@@ -124,7 +124,8 @@ def main(argv=None):
     # Define the attack instance
     attack = SaliencyMapMethod(
         x, predictions, backend='tf', clip_min=0.,
-        clip_max=1., theta=1., gamma=0.1, increase=True
+        clip_max=1., theta=1., gamma=0.1, increase=True,
+        nb_classes=FLAGS.nb_classes
     )
 
     # Loop over the samples we want to perturb into adversarial examples
@@ -148,7 +149,6 @@ def main(argv=None):
             adv_x = attack.generate_numpy(
                 X=X_test[sample_ind:(sample_ind+1)],
                 target=target,
-                nb_classes=FLAGS.nb_classes,
                 sess=sess
             )
             # TODO: update this; how do we actually get the 'res' value? Don't want to break from

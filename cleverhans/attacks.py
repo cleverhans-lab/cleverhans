@@ -77,6 +77,8 @@ class FastGradientMethod(Attack):
         if backend == 'th' and ord != 'inf':
             raise NotImplementedError("The only FastGradientMethod norm currently "
                                       "implemented for Theano is 'inf'.")
+        # create symbolic adversarial sample graph
+        self.x_adv = self.generate_symbolic()
 
     def generate_symbolic(self):
         """
@@ -109,8 +111,6 @@ class FastGradientMethod(Attack):
         if Y is not None:
             assert self.y is not None
         super(FastGradientMethod, self).generate_numpy(sess)
-        # collect symbolic adversarial samples
-        x_adv = self.generate_symbolic()
         if self.backend == 'tf':
             # Tensorflow backend; evaluate symbolic samples
             from .utils_tf import batch_eval
@@ -119,10 +119,10 @@ class FastGradientMethod(Attack):
             from .utils_th import batch_eval
         eval_params = {'batch_size': batch_size}
         if Y is not None:
-            X_adv, = batch_eval(sess, [self.x, self.y], [x_adv],
+            X_adv, = batch_eval(sess, [self.x, self.y], [self.x_adv],
                                 [X, Y], args=eval_params)
         else:
-            X_adv, = batch_eval(sess, [self.x], [x_adv], [X], args=eval_params)
+            X_adv, = batch_eval(sess, [self.x], [self.x_adv], [X], args=eval_params)
 
         return X_adv
 
@@ -188,7 +188,8 @@ class SaliencyMapMethod(Attack):
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
     def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
-                 clip_max=None, theta=1., gamma=np.inf, increase=True):
+                 clip_max=None, theta=1., gamma=np.inf, increase=True,
+                 nb_classes=2):
         """
         Create a SaliencyMapMethod instance.
         :param theta: A float indicating the delta for each feature adjustment.
@@ -196,24 +197,28 @@ class SaliencyMapMethod(Attack):
                     percentage.
         :param increase: A boolean; True if we are increasing feature values,
                         False if we are decreasing.
+        :param nb_classes: An integer specifying the number of classes in
+                        this classification model.
         """
         super(SaliencyMapMethod, self).__init__(x, pred, y, backend,
                                                 clip_min, clip_max)
         self.theta = theta
         self.gamma = gamma
         self.increase = increase
-        if self.backend == 'th':
+        if self.backend == 'tf':
+            from .attacks_tf import jacobian_graph
+        else:
             raise NotImplementedError('Theano version of Saliency Map Method not '
                                       'currently implemented.')
+        self.grads = jacobian_graph(pred, x, nb_classes)
 
-    def generate_numpy(self, X, target, nb_classes, sess=None):
+    def generate_numpy(self, X, target, sess=None):
         """
         Generate adversarial samples and return them in a Numpy array.
         NOTE: this attack currently only computes one sample at a time.
         :param X: A Numpy array representing the feature vector for the baseline
                 sample.
-        :param target: TODO
-        :param nb_classes: TODO
+        :param target: The target class for this adversarial sample.
         :param sess: A TensorFlow session to use for evaluating the adversarial
                     samples (for 'tf' backend only). Default is None.
         :return: A Numpy array holding the adversarial sample.
@@ -226,8 +231,8 @@ class SaliencyMapMethod(Attack):
             # during initialization
             pass
         X_adv, _, _ = jsma(
-            sess, self.x, self.pred, X, target, self.theta, self.gamma,
-            self.increase, self.clip_min, self.clip_max, nb_classes
+            sess, self.x, self.pred, self.grads, X, target, self.theta, self.gamma,
+            self.increase, self.clip_min, self.clip_max
         )
 
         return X_adv
