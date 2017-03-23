@@ -103,6 +103,23 @@ Bug fixes can be initiated through Github pull requests.
 When making contributions to `cleverhans`, we ask that you follow the 
 `PEP8` coding style in your pull requests. 
 
+## Citing this work
+
+If you use `cleverhans` for academic research, you are highly encouraged 
+(though not required) to cite the following [paper](https://arxiv.org/abs/1610.00768):
+
+```
+@article{papernot2016cleverhans,
+  title={cleverhans v1.0.0: an adversarial machine learning library},
+  author={Papernot, Nicolas and Goodfellow, Ian and Sheatsley, Ryan and Feinman, Reuben and McDaniel, Patrick},
+  journal={arXiv preprint arXiv:1610.00768},
+  year={2016}
+}
+```
+
+A new version of the technical report will be uploaded for each major
+revision. GitHub contributors will be added to the author list.
+
 ## About the name
 
 The name `cleverhans` is a reference to a presentation by Bob Sturm titled
@@ -130,23 +147,6 @@ The following authors contributed (ordered according to the GitHub contributors 
 * Ian Goodfellow (OpenAI)
 * Ryan Sheatsley (Pennsylvania State University)
 * Reuben Feinman (Symantec)
-
-## Citing this work
-
-If you use `cleverhans` for academic research, you are highly encouraged 
-(though not required) to cite the following [paper](https://arxiv.org/abs/1610.00768):
-
-```
-@article{papernot2016cleverhans,
-  title={cleverhans v1.0.0: an adversarial machine learning library},
-  author={Papernot, Nicolas and Goodfellow, Ian and Sheatsley, Ryan and Feinman, Reuben and McDaniel, Patrick},
-  journal={arXiv preprint arXiv:1610.00768},
-  year={2016}
-}
-```
-
-A new version of the technical report will be uploaded for each major
-revision. GitHub contributors will be added to the author list.
 
 ## Copyright
 
