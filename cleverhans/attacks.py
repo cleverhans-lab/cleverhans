@@ -8,7 +8,8 @@ class Attack:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
+                 other_params={}):
         """
         :param x: A placeholder for the model inputs.
         :param pred: The model's symbolic output.
@@ -22,6 +23,8 @@ class Attack:
                         value for components of the example returned.
         :param clip_max: Optional float parameter that can be used to set a maximum
                         value for components of the example returned.
+        :param other_params: Dictionary holding the other parameters needed for
+                            various child classes
         """
         assert backend == 'tf' or backend == 'th'
         self.x = x
@@ -75,7 +78,8 @@ class FastGradientMethod(Attack):
                other_params['ord'] == 'L1' or \
                other_params['ord'] == 'L2'
         super(FastGradientMethod, self).__init__(x, pred, y, backend,
-                                                 clip_min, clip_max)
+                                                 clip_min, clip_max,
+                                                 other_params)
         self.eps = other_params['eps']
         self.ord = other_params['ord']
         if backend == 'th' and self.ord != 'inf':
@@ -155,7 +159,8 @@ class BasicIterativeMethod(Attack):
                other_params['ord'] == 'L1' or \
                other_params['ord'] == 'L2'
         super(BasicIterativeMethod, self).__init__(x, pred, y, backend,
-                                                   clip_min, clip_max)
+                                                   clip_min, clip_max,
+                                                   other_params)
         self.eps = other_params['eps']
         self.eps_iter = other_params['eps_iter']
         self.nb_iter = other_params['nb_iter']
@@ -213,7 +218,8 @@ class SaliencyMapMethod(Attack):
                         this classification model.
         """
         super(SaliencyMapMethod, self).__init__(x, pred, y, backend,
-                                                clip_min, clip_max)
+                                                clip_min, clip_max,
+                                                other_params)
         self.theta = other_params['theta']
         self.gamma = other_params['gamma']
         self.increase = other_params['increase']
