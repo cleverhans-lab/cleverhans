@@ -5,10 +5,8 @@ from __future__ import unicode_literals
 
 import sys
 import copy
-import itertools
 import numpy as np
 import tensorflow as tf
-import multiprocessing as mp
 from six.moves import xrange
 
 from . import utils_tf
@@ -82,62 +80,51 @@ def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
     return X
 
 
-def saliency_score(packed_data):
-    """
-    Helper function for saliency_map. This is used for a parallelized map()
-    operation via multiprocessing.Pool()
-    :param packed_data: tuple containing (index, index, gradients, target,
-    other_classes, increase).
-    : return: saliency score for the pair of indices i, j. Either
-    target_sum * abs(other_sum) if the conditions are met, or 0 otherwise.
-    """
-
-    # compute the saliency score for the given pair
-    i, j, grads_target, grads_others, increase = packed_data
-    target_sum = grads_target[i] + grads_target[j]
-    other_sum = grads_others[i] + grads_others[j]
-
-    # evaluate the saliency map conditions
-    if ((increase and target_sum > 0 and other_sum < 0) or
-       (not increase and target_sum < 0 and other_sum > 0)):
-        return -target_sum * other_sum
-    else:
-        return 0
-
-
 def saliency_map(grads_target, grads_other, search_domain, increase):
     """
-    TensorFlow implementation for computing salency maps
+    TensorFlow implementation for computing saliency maps
     :param grads_target: a matrix containing forward derivatives for the
-    target class
+                         target class
     :param grads_other: a matrix where every element is the sum of forward
-    derivatives over all non-target classes at that index
+                        derivatives over all non-target classes at that index
     :param search_domain: the set of input indices that we are considering
     :param increase: boolean; true if we are increasing pixels, false otherwise
     :return: (i, j, search_domain) the two input indices selected and the
              updated search domain
     """
+    # Compute the size of the input (the number of features)
+    nf = len(grads_target)
 
-    # determine the saliency score for every pair of pixels from our search
-    # domain
-    pool = mp.Pool()
-    scores = pool.map(saliency_score,
-                      [(i, j, grads_target, grads_other, increase)
-                       for i, j in itertools.combinations(search_domain, 2)])
+    # Remove the already-used input features from the search space
+    invalid = list(set(range(nf)) - search_domain)
+    grads_target[invalid] = 0
+    grads_other[invalid] = 0
 
-    # wait for the threads to finish to free up memory
-    pool.close()
-    pool.join()
+    # Create a 2D numpy array of the sum of grads_target and grads_other
+    target_sum = grads_target.reshape((1, nf)) + grads_target.reshape((nf, 1))
+    other_sum = grads_other.reshape((1, nf)) + grads_other.reshape((nf, 1))
 
-    # grab the pixels with the largest scores
-    candidates = np.argmax(scores)
-    pairs = [elt for elt in itertools.combinations(search_domain, 2)]
+    # Create a mask to only keep features that match saliency map conditions
+    if increase:
+        scores_mask = ((target_sum > 0) & (other_sum < 0))
+    else:
+        scores_mask = ((target_sum < 0) & (other_sum > 0))
 
-    # update our search domain
-    search_domain.remove(pairs[candidates][0])
-    search_domain.remove(pairs[candidates][1])
+    # Create a 2D numpy array of the scores for each pair of candidate features
+    scores = scores_mask * (-target_sum * other_sum)
 
-    return pairs[candidates][0], pairs[candidates][1], search_domain
+    # A pixel can only be selected (and changed) once
+    np.fill_diagonal(scores, 0)
+
+    # Extract the best two pixels
+    best = np.argmax(scores)
+    p1, p2 = best % nf, best // nf
+
+    # Remove used pixels from our search domain
+    search_domain.remove(p1)
+    search_domain.remove(p2)
+
+    return p1, p2, search_domain
 
 
 def jacobian(sess, x, grads, target, X, nb_features, nb_classes):
