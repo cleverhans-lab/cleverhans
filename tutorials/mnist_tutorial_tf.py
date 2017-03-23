@@ -84,7 +84,7 @@ def main(argv=None):
     # Initialize the attack object.
     attack = FastGradientMethod(
         x, predictions, backend='tf', clip_min=0.,
-        clip_max=1., eps=0.3
+        clip_max=1., other_params={'eps': 0.3, 'ord': 'inf'}
     )
     # Generate the sample.
     X_test_adv = attack.generate_numpy(X_test, sess=sess,
@@ -103,7 +103,7 @@ def main(argv=None):
     predictions_2 = model_2(x)
     attack_2 = FastGradientMethod(
         x, predictions_2, backend='tf', clip_min=0.,
-        clip_max=1., eps=0.3, ord='inf'
+        clip_max=1., other_params={'eps': 0.3, 'ord': 'inf'}
     )
     predictions_2_adv = model_2(attack_2.generate_symbolic())
 

@@ -123,9 +123,9 @@ def main(argv=None):
 
     # Define the attack instance
     attack = SaliencyMapMethod(
-        x, predictions, backend='tf', clip_min=0.,
-        clip_max=1., theta=1., gamma=0.1, increase=True,
-        nb_classes=FLAGS.nb_classes
+        x, predictions, backend='tf', clip_min=0., clip_max=1.,
+        other_params={'theta': 1., 'gamma': 0.1, 'increase': True,
+                      'nb_classes': FLAGS.nb_classes}
     )
 
     # Loop over the samples we want to perturb into adversarial examples

@@ -61,20 +61,24 @@ class FastGradientMethod(Attack):
     Paper link: https://arxiv.org/pdf/1412.6572.pdf
     """
     def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
-                 eps=0.3, ord='inf'):
+                 other_params={'eps': 0.3, 'ord': 'inf'}):
         """
         Create a FastGradientMethod instance.
+
+        Attack-specific parameters:
         :param eps: A float indicating the step size to use for the adversarial algorithm
                     (input variation parameter).
         :param ord: A string indicating the norm order to use when computing gradients.
                     This should be either 'inf', 'L1' or 'L2'.
         """
-        assert ord == 'inf' or ord == 'L1' or ord == 'L2'
+        assert other_params['ord'] == 'inf' or \
+               other_params['ord'] == 'L1' or \
+               other_params['ord'] == 'L2'
         super(FastGradientMethod, self).__init__(x, pred, y, backend,
                                                  clip_min, clip_max)
-        self.eps = eps
-        self.ord = ord
-        if backend == 'th' and ord != 'inf':
+        self.eps = other_params['eps']
+        self.ord = other_params['ord']
+        if backend == 'th' and self.ord != 'inf':
             raise NotImplementedError("The only FastGradientMethod norm currently "
                                       "implemented for Theano is 'inf'.")
         # create symbolic adversarial sample graph
@@ -133,10 +137,12 @@ class BasicIterativeMethod(Attack):
     labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
-                 clip_max=None, eps=0.3, eps_iter=0.05, ord='inf', nb_iter=10):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
+                 other_params={'eps': 0.3, 'eps_iter': 0.05, 'ord': 'inf', 'nb_iter': 10}):
         """
         Create a BasicIterativeMethod instance.
+
+        Attack-specific parameters:
         :param eps: A float indicating the maximum allowed perturbation
                     distance for each feature.
         :param eps_iter: A float indicating the step size to use for each
@@ -145,14 +151,19 @@ class BasicIterativeMethod(Attack):
                     gradients. This should be either 'inf', 'L1' or 'L2'.
         :param nb_iter: An integer indicating the number of BIM iterations to run.
         """
-        assert ord == 'inf' or ord == 'L1' or ord == 'L2'
+        assert other_params['ord'] == 'inf' or \
+               other_params['ord'] == 'L1' or \
+               other_params['ord'] == 'L2'
         super(BasicIterativeMethod, self).__init__(x, pred, y, backend,
                                                    clip_min, clip_max)
-        self.eps = eps
-        self.eps_iter = eps_iter
-        self.nb_iter = nb_iter
-        self.fgm = FastGradientMethod(x, pred, y, backend, clip_min,
-                                      clip_max, eps_iter, ord)
+        self.eps = other_params['eps']
+        self.eps_iter = other_params['eps_iter']
+        self.nb_iter = other_params['nb_iter']
+        self.fgm = FastGradientMethod(
+            x, pred, y, backend, clip_min, clip_max,
+            other_params={'eps': other_params['eps_iter'],
+                          'ord': other_params['ord']}
+        )
 
     def generate_numpy(self, X, Y=None, sess=None, batch_size=128):
         """
@@ -187,11 +198,12 @@ class SaliencyMapMethod(Attack):
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
-                 clip_max=None, theta=1., gamma=np.inf, increase=True,
-                 nb_classes=2):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
+                 other_params={'theta': 1., 'gamma': np.inf, 'increase': True, 'nb_classes': 2}):
         """
         Create a SaliencyMapMethod instance.
+
+        Attack-specific parameters:
         :param theta: A float indicating the delta for each feature adjustment.
         :param gamma: A float between 0 - 1 indicating the maximum distortion
                     percentage.
@@ -202,15 +214,15 @@ class SaliencyMapMethod(Attack):
         """
         super(SaliencyMapMethod, self).__init__(x, pred, y, backend,
                                                 clip_min, clip_max)
-        self.theta = theta
-        self.gamma = gamma
-        self.increase = increase
+        self.theta = other_params['theta']
+        self.gamma = other_params['gamma']
+        self.increase = other_params['increase']
         if self.backend == 'tf':
             from .attacks_tf import jacobian_graph
         else:
             raise NotImplementedError('Theano version of Saliency Map Method not '
                                       'currently implemented.')
-        self.grads = jacobian_graph(pred, x, nb_classes)
+        self.grads = jacobian_graph(pred, x, other_params['nb_classes'])
 
     def generate_numpy(self, X, target, sess=None):
         """
