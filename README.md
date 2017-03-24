@@ -81,7 +81,12 @@ will prove useful in the meanwhile.
 this tutorial implements the black-box
 attack described in this [paper](https://arxiv.org/abs/1602.02697).
 * more to come soon...
- 
+
+## Examples
+
+The `examples/` folder contains additional scripts to showcase different uses
+of the `cleverhans` library.
+
 ## Reporting benchmarks
 
 When reporting benchmarks, please:
