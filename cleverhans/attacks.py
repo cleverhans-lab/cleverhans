@@ -8,21 +8,21 @@ class Attack:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
-                 other_params={}):
+    def __init__(self, x, pred, y=None, backend='tf',
+                 clip_min=None, clip_max=None, other_params={}):
         """
         :param x: A placeholder for the model inputs.
         :param pred: The model's symbolic output.
-        :param y: A placeholder for the model inputs. Only provide this parameter if
-                you'd like to use the true labels when crafting adversarial samples.
-                Otherwise, model predictions are used as labels to avoid the label
-                leaking effect. Default is None.
-        :param backend: A string indicating which backend to use. Must be either
-                        'tf' or 'th'. Default is 'tf'.
-        :param clip_min: Optional float parameter that can be used to set a minimum
-                        value for components of the example returned.
-        :param clip_max: Optional float parameter that can be used to set a maximum
-                        value for components of the example returned.
+        :param y: A placeholder for the model inputs. Only provide this
+                  parameter if you'd like to use the true labels when crafting
+                  adversarial samples. Otherwise, model predictions are used as
+                  labels to avoid the label leaking effect. Default is None.
+        :param backend: A string indicating which backend to use. Must be
+                        either 'tf' or 'th'. Default is 'tf'.
+        :param clip_min: Optional float parameter that can be used to set a
+                         minimum value for components of the example returned.
+        :param clip_max: Optional float parameter that can be used to set a
+                         maximum value for components of the example returned.
         :param other_params: Dictionary holding the other parameters needed for
                             various child classes
         """
@@ -63,27 +63,25 @@ class FastGradientMethod(Attack):
     Sign Method").
     Paper link: https://arxiv.org/pdf/1412.6572.pdf
     """
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
-                 other_params={'eps': 0.3, 'ord': 'inf'}):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
+                 clip_max=None, other_params={'eps': 0.3, 'ord': 'inf'}):
         """
         Create a FastGradientMethod instance.
 
         Attack-specific parameters:
-        :param eps: A float indicating the step size to use for the adversarial algorithm
-                    (input variation parameter).
-        :param ord: A string indicating the norm order to use when computing gradients.
-                    This should be either 'inf', 'L1' or 'L2'.
+        :param eps: A float indicating the step size to use for the adversarial
+                    algorithm (input variation parameter).
+        :param ord: A string indicating the norm order to use when computing
+                    gradients. This should be either 'inf', 'L1' or 'L2'.
         """
-        assert other_params['ord'] == 'inf' or \
-               other_params['ord'] == 'L1' or \
-               other_params['ord'] == 'L2'
+        assert other_params['ord'] is ('inf' or 'L1' or 'L2')
         super(FastGradientMethod, self).__init__(x, pred, y, backend,
                                                  clip_min, clip_max,
                                                  other_params)
         self.eps = other_params['eps']
         self.ord = other_params['ord']
         if backend == 'th' and self.ord != 'inf':
-            raise NotImplementedError("The only FastGradientMethod norm currently "
+            raise NotImplementedError("The only FastGradientMethod norm "
                                       "implemented for Theano is 'inf'.")
         # create symbolic adversarial sample graph
         self.x_adv = self.generate_symbolic()
@@ -104,18 +102,18 @@ class FastGradientMethod(Attack):
     def generate_numpy(self, X, Y=None, sess=None, batch_size=128):
         """
         Generate adversarial samples and return them in a Numpy array.
-        :param X: A Numpy array representing the feature matrix for the baseline
-                samples.
+        :param X: A Numpy array representing the feature matrix for the
+                  baseline samples.
         :param Y: A Numpy array representing the label matrix for the baseline
-                samples. Default is None (this is only used when using true labels
-                to craft adversarial samples)
+                samples. Default is None (this is only used when using true
+                labels to craft adversarial samples)
         :param sess: A TensorFlow session to use for evaluating the adversarial
                     samples (for 'tf' backend only). Default is None.
-        :param batch_size: An int indicating the batch size to use when evaluating
-                        adversarial samples.
+        :param batch_size: An int indicating the batch size to use when
+                           evaluating adversarial samples.
         :return: A Numpy array holding the adversarial samples.
         """
-        # verify that we are only using true labels if we indicated so previously
+        # verify we are only using true labels if we indicated so previously
         if Y is not None:
             assert self.y is not None
         super(FastGradientMethod, self).generate_numpy(sess)
@@ -130,19 +128,21 @@ class FastGradientMethod(Attack):
             X_adv, = batch_eval(sess, [self.x, self.y], [self.x_adv],
                                 [X, Y], args=eval_params)
         else:
-            X_adv, = batch_eval(sess, [self.x], [self.x_adv], [X], args=eval_params)
+            X_adv, = batch_eval(sess, [self.x], [self.x_adv], [X],
+                                args=eval_params)
 
         return X_adv
 
 
 class BasicIterativeMethod(Attack):
     """
-    The Basic Iterative Method (Kurakin et al. 2016). The original paper used hard
-    labels for this attack; no label smoothing.
+    The Basic Iterative Method (Kurakin et al. 2016). The original paper used
+    hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
-                 other_params={'eps': 0.3, 'eps_iter': 0.05, 'ord': 'inf', 'nb_iter': 10}):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
+                 clip_max=None, other_params={'eps': 0.3, 'eps_iter': 0.05,
+                                              'ord': 'inf', 'nb_iter': 10}):
         """
         Create a BasicIterativeMethod instance.
 
@@ -153,11 +153,9 @@ class BasicIterativeMethod(Attack):
                         iteration of BIM (input variation parameter).
         :param ord: A string indicating the norm order to use when computing
                     gradients. This should be either 'inf', 'L1' or 'L2'.
-        :param nb_iter: An integer indicating the number of BIM iterations to run.
+        :param nb_iter: The number of BIM iterations to run.
         """
-        assert other_params['ord'] == 'inf' or \
-               other_params['ord'] == 'L1' or \
-               other_params['ord'] == 'L2'
+        assert other_params['ord'] is ('inf' or 'L1' or 'L2')
         super(BasicIterativeMethod, self).__init__(x, pred, y, backend,
                                                    clip_min, clip_max,
                                                    other_params)
@@ -173,18 +171,18 @@ class BasicIterativeMethod(Attack):
     def generate_numpy(self, X, Y=None, sess=None, batch_size=128):
         """
         Generate adversarial samples and return them in a Numpy array.
-        :param X: A Numpy array representing the feature matrix for the baseline
-                samples.
+        :param X: A Numpy array representing the feature matrix for the
+                  baseline samples.
         :param Y: A Numpy array representing the label matrix for the baseline
-                samples. Default is None (this is only used when using true labels
-                to craft adversarial samples)
+                samples. Default is None (this is only used when using true
+                labels to craft adversarial samples)
         :param sess: A TensorFlow session to use for evaluating the adversarial
                 samples (for 'tf' backend only). Default is None.
-        :param batch_size: An int indicating the batch size to use when evaluating
-                adversarial samples.
+        :param batch_size: An int indicating the batch size to use when
+                           evaluating adversarial samples.
         :return: A Numpy array holding the adversarial samples.
         """
-        # verify that we are only using true labels if we indicated so previously
+        # verify we are only using true labels if we indicated so previously
         if Y is not None:
             assert self.y is not None
         super(BasicIterativeMethod, self).generate_numpy(sess)
@@ -203,8 +201,10 @@ class SaliencyMapMethod(Attack):
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    def __init__(self, x, pred, y=None, backend='tf', clip_min=None, clip_max=None,
-                 other_params={'theta': 1., 'gamma': np.inf, 'increase': True, 'nb_classes': 2}):
+    def __init__(self, x, pred, y=None, backend='tf', clip_min=None,
+                 clip_max=None, other_params={'theta': 1., 'gamma': np.inf,
+                                              'increase': True,
+                                              'nb_classes': 2}):
         """
         Create a SaliencyMapMethod instance.
 
@@ -226,16 +226,16 @@ class SaliencyMapMethod(Attack):
         if self.backend == 'tf':
             from .attacks_tf import jacobian_graph
         else:
-            raise NotImplementedError('Theano version of Saliency Map Method not '
-                                      'currently implemented.')
+            raise NotImplementedError('Theano version of SaliencyMapMethod not'
+                                      ' currently implemented.')
         self.grads = jacobian_graph(pred, x, other_params['nb_classes'])
 
     def generate_numpy(self, X, target, sess=None):
         """
         Generate adversarial samples and return them in a Numpy array.
         NOTE: this attack currently only computes one sample at a time.
-        :param X: A Numpy array representing the feature vector for the baseline
-                sample.
+        :param X: A Numpy array representing the feature vector for the
+                  baseline sample.
         :param target: The target class for this adversarial sample.
         :param sess: A TensorFlow session to use for evaluating the adversarial
                     samples (for 'tf' backend only). Default is None.
@@ -245,12 +245,10 @@ class SaliencyMapMethod(Attack):
         if self.backend == 'tf':
             from .attacks_tf import jsma
         else:
-            # no need to raise notimplemented error again; should have been done
-            # during initialization
+            # no need to raise notimplemented error again; should have been
+            # done during initialization
             pass
-        X_adv, _, _ = jsma(
-            sess, self.x, self.pred, self.grads, X, target, self.theta, self.gamma,
-            self.increase, self.clip_min, self.clip_max
-        )
-
+        X_adv, _, _ = jsma(sess, self.x, self.pred, self.grads, X, target,
+                           self.theta,  self.gamma, self.increase,
+                           self.clip_min, self.clip_max)
         return X_adv
