@@ -18,10 +18,10 @@ currently open.
 
 ### Dependencies
 
-This library uses `TensorFlow` or `Theano` to accelerate graph 
-computations performed by many machine learning models. 
-Installing these libraries is therefore a pre-requisite. 
-You can find instructions 
+This library uses `TensorFlow` or `Theano` to accelerate graph
+computations performed by many machine learning models.
+Installing these libraries is therefore a pre-requisite.
+You can find instructions
 [here for Tensorflow](https://www.tensorflow.org/get_started/os_setup)
 and [here for Theano](http://deeplearning.net/software/theano/install.html).
 For better performance, it is also recommended to install the
@@ -32,15 +32,15 @@ Note that you should **configure Keras to use the backend that matches
 the one used by the tutorial**. Indeed, some tutorials use `Tensorflow`
 as their backend while others use `Theano`. You
 can find instructions for
-setting the Keras backend [on this page](https://keras.io/backend/). 
+setting the Keras backend [on this page](https://keras.io/backend/).
 
 Installing `TensorFlow` or `Theano` will
 take care of all other dependencies like `numpy` and `scipy`.
 
-### Cloning the repository 
+### Cloning the repository
 
 Once dependencies have been taken care of, you simply need to clone
-this repository into a folder of your choice. 
+this repository into a folder of your choice.
 
 ```
 git clone https://github.com/openai/cleverhans
@@ -63,12 +63,12 @@ To help you get started with the functionalities provided by this library, it
 comes with the following tutorials:
 * **MNIST with FGSM using the TensorFlow backend** ([code](tutorials/mnist_tutorial_tf.py), [tutorial](tutorials/mnist_tutorial_tf.md)): this first
 tutorial covers how to train a MNIST model using TensorFlow,
-craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572), 
+craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial
 examples using adversarial training.
 * **MNIST with JSMA using the Tensorflow backend** ([code](tutorials/mnist_tutorial_jsma.py), [tutorial](tutorials/mnist_tutorial_jsma.md)): this second
 tutorial covers how to train a MNIST model using TensorFlow and
-craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528). 
+craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528).
 * **MNIST with FGSM using the Theano backend** ([code](tutorials/mnist_tutorial_th.py)): this
 tutorial covers how to train a MNIST model using Theano,
 craft adversarial examples using the fast gradient sign
@@ -102,15 +102,21 @@ adversarial attack using v1.0.0 of `cleverhans`. On a test set modified by the
 ## Contributing
 
 Contributions are welcomed! We ask that new efforts and features be coordinated
-on the mailing list for `cleverhans` development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev). 
+on the mailing list for `cleverhans` development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
 Bug fixes can be initiated through Github pull requests.
 
-When making contributions to `cleverhans`, we ask that you follow the 
-`PEP8` coding style in your pull requests. 
+When making contributions to `cleverhans`, we ask that you follow the
+`PEP8` coding style in your pull requests.
+
+### Setup for contributing
+
+- `pip3 install -r requirements.txt`
+- `sudo python3 setup.py install`
+- `python3 examples/ex_cifar10_tf.py`
 
 ## Citing this work
 
-If you use `cleverhans` for academic research, you are highly encouraged 
+If you use `cleverhans` for academic research, you are highly encouraged
 (though not required) to cite the following [paper](https://arxiv.org/abs/1610.00768):
 
 ```
