@@ -3,7 +3,8 @@ import theano.tensor as T
 from cleverhans import utils_th
 
 
-def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=None):
+def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None,
+         clip_max=None):
     """
     Theano implementation of the Fast Gradient
     Sign method.
@@ -12,7 +13,7 @@ def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=Non
     :param y: the output placeholder. Use None (the default) to avoid the
             label leaking effect.
     :param eps: the epsilon (input variation parameter)
-    :param ord: string indicating the norm order to use when computing gradients.
+    :param ord: string with the norm order to use when computing gradients.
                 This should be either 'inf', 'L1' or 'L2'.
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
