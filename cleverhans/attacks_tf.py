@@ -16,7 +16,8 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=None):
+def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None,
+         clip_max=None):
     """
     TensorFlow implementation of the Fast Gradient
     Sign method.
@@ -25,7 +26,7 @@ def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None, clip_max=Non
     :param y: the output placeholder. Use None (the default) to avoid the
             label leaking effect.
     :param eps: the epsilon (input variation parameter)
-    :param ord: string indicating the norm order to use when computing gradients.
+    :param ord: string with the norm order to use when computing gradients.
                 This should be either 'inf', 'L1' or 'L2'.
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
@@ -202,7 +203,7 @@ def jacobian_graph(predictions, x, nb_classes):
 
 
 def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
-            increase, clip_min, clip_max):
+         increase, clip_min, clip_max):
     """
     TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
     for details about the algorithm design choices).
