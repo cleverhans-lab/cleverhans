@@ -2,14 +2,21 @@ import numpy as np
 import warnings
 from abc import ABCMeta, abstractmethod
 
+from .utils import other_classes
 
-def random_targets(Y):
+
+def random_targets(gt, nb_classes):
     """
-    TODO
-    :param Y:
-    :return:
+    Take in the correct labels for each sample and randomly choose
+    target labels from the others
+    :param gt: TODO
+    :param nb_classes: The number of classes for this model
+    :return: A numpy array holding the randomly-selected target classes
     """
-    return
+    def f(label):
+        return np.random.choice(other_classes(nb_classes, label))
+
+    return np.asarray([f(label) for label in gt])
 
 class Attack:
     """
@@ -244,6 +251,7 @@ class SaliencyMapMethod(Attack):
         self.theta = other_params['theta']
         self.gamma = other_params['gamma']
         self.increase = other_params['increase']
+        self.nb_classes = other_params['nb_classes']
         if self.backend == 'tf':
             from .attacks_tf import jacobian_graph
         else:
@@ -257,17 +265,24 @@ class SaliencyMapMethod(Attack):
         NOTE: this attack currently only computes one sample at a time.
         """
         super(SaliencyMapMethod, self).generate_numpy(X, Y, sess, batch_size, target)
+        if len(X) > 1:
+            raise Exception('SaliencyMapMethod currently only handles one sample'
+                            'at a time. Make sure that len(X) = 1.')
         if target is None:
-            # No targets provided, so we will randomly choose targets from the incorrect classes
-            if Y is None:
-                # No true labels provided: use model predictions as true labels
-                if self.backend == 'tf':
-                    from .utils_tf import model_argmax
-                else:
-                    from .utils_th import model_argmax
-                Y = model_argmax(self.x, self.pred, X)
-            # Randomly choose from the incorrect classes for each sample
-            target = random_targets(Y)
+            raise Exception('For now, user must provide target classes.')
+            # # No targets provided, so we will randomly choose targets from the incorrect classes
+            # if Y is None:
+            #     # No true labels provided: use model predictions as ground truth
+            #     if self.backend == 'tf':
+            #         from .utils_tf import model_argmax
+            #     else:
+            #         from .utils_th import model_argmax
+            #     gt = model_argmax(self.x, self.pred, X)
+            # else:
+            #     # True labels were provided
+            #     gt = np.argmax(Y, axis=1)
+            # # Randomly choose from the incorrect classes for each sample
+            # target = random_targets(gt, self.nb_classes)
         else:
             if Y is not None:
                 warnings.warn("Ignoring 'Y' argument since class targets were provided.")
