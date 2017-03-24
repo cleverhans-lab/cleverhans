@@ -4,7 +4,9 @@ from abc import ABCMeta, abstractmethod
 
 class Attack:
     """
-    Abstract base class for all attack classes.
+    Abstract base class for all attack classes. All attacks must override the
+    generate_numpy method that returns the adversarial examples corresponding
+    to the input data. However, the generate_symbolic method is optional.
     """
     __metaclass__ = ABCMeta
 
@@ -13,10 +15,12 @@ class Attack:
         """
         :param x: A placeholder for the model inputs.
         :param pred: The model's symbolic output.
-        :param y: A placeholder for the model inputs. Only provide this
+        :param y: A placeholder for the model labels. Only provide this
                   parameter if you'd like to use the true labels when crafting
                   adversarial samples. Otherwise, model predictions are used as
-                  labels to avoid the label leaking effect. Default is None.
+                  labels to avoid the label leaking effect. This phenomenon
+                  is explained in this paper: https://arxiv.org/abs/1611.01236)
+                  Default value is None.
         :param backend: A string indicating which backend to use. Must be
                         either 'tf' or 'th'. Default is 'tf'.
         :param clip_min: Optional float parameter that can be used to set a
@@ -26,7 +30,7 @@ class Attack:
         :param other_params: Dictionary holding the other parameters needed for
                             various child classes
         """
-        assert backend == 'tf' or backend == 'th'
+        assert backend == 'tf' or backend == 'th', 'Backend must be tf or th'
         self.x = x
         self.pred = pred
         self.y = y
