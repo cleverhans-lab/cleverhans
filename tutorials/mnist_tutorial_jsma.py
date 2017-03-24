@@ -151,10 +151,13 @@ def main(argv=None):
                 target=target,
                 sess=sess
             )
-            # TODO: update this; how do we actually get the 'res' value? Don't want to break from
-            # the API and have generate_numpy() return an extra variable for this class.
+            # TODO: update this; how do we actually get the 'res' value?
+            # Don't want to break from the API and have generate_numpy()
+            # return an extra variable for this class.
             res = 1
-            nb_changed = np.where(adv_x.reshape(-1) != X_test[sample_ind].reshape(-1))[0].shape[0]
+            adv_x_reshape = adv_x.reshape(-1)
+            test_in_reshape = X_test[sample_ind].reshape(-1)
+            nb_changed = np.where(adv_x_reshape != test_in_reshape)[0].shape[0]
             percent_perturb = float(nb_changed) / adv_x.reshape(-1).shape[0]
 
             # Display the original and adversarial images side-by-side
