@@ -269,20 +269,21 @@ class SaliencyMapMethod(Attack):
             raise Exception('SaliencyMapMethod currently only handles one sample'
                             'at a time. Make sure that len(X) = 1.')
         if target is None:
-            raise Exception('For now, user must provide target classes.')
-            # # No targets provided, so we will randomly choose targets from the incorrect classes
-            # if Y is None:
-            #     # No true labels provided: use model predictions as ground truth
-            #     if self.backend == 'tf':
-            #         from .utils_tf import model_argmax
-            #     else:
-            #         from .utils_th import model_argmax
-            #     gt = model_argmax(self.x, self.pred, X)
-            # else:
-            #     # True labels were provided
-            #     gt = np.argmax(Y, axis=1)
-            # # Randomly choose from the incorrect classes for each sample
-            # target = random_targets(gt, self.nb_classes)
+            # No targets provided, so we will randomly choose targets from the
+            # incorrect classes
+            if Y is None:
+                # No true labels provided: use model predictions as ground truth
+                if self.backend == 'tf':
+                    from .utils_tf import model_argmax
+                else:
+                    from .utils_th import model_argmax
+                gt = model_argmax(self.x, self.pred, X)
+            else:
+                # True labels were provided
+                gt = np.argmax(Y, axis=1)
+            # Randomly choose from the incorrect classes for each sample
+            # TODO: remove [0] once we fix SaliencyMapMethod to handle multiple samples
+            target = random_targets(gt, self.nb_classes)[0]
         else:
             if Y is not None:
                 warnings.warn("Ignoring 'Y' argument since class targets were provided.")

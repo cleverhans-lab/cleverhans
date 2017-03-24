@@ -140,16 +140,25 @@ def main(argv=None):
                 X_test[sample_ind:(sample_ind+1)],
                 (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
 
+        # Try the untargeted attack; target class will be randomly selected
+        print('--------------------------------------')
+        print('Creating untargeted adv. example')
+        adv_x = attack.generate_numpy(
+            X=X_test[sample_ind:(sample_ind+1)],
+            Y=Y_test[sample_ind:(sample_ind+1)],
+            sess=sess
+        )
+
         # Loop over all target classes
         for target in target_classes:
             print('--------------------------------------')
-            print('Creating adv. example for target class ' + str(target))
+            print('Creating adv. example for target class %i' % target)
 
             # This call runs the Jacobian-based saliency map approach
             adv_x = attack.generate_numpy(
                 X=X_test[sample_ind:(sample_ind+1)],
-                target=target,
-                sess=sess
+                sess=sess,
+                target=target
             )
             # TODO: update this; how do we actually get the 'res' value?
             # Don't want to break from the API and have generate_numpy()
