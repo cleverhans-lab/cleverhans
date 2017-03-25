@@ -120,6 +120,7 @@ def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
         outputs=[loss],
         givens={keras.backend.learning_phase(): _TRAIN_PHASE},
         allow_input_downcast=True,
+        on_unused_input='ignore',
         updates=adadelta(
             loss, params, learning_rate=args.learning_rate, rho=0.95,
             epsilon=1e-08)
@@ -177,6 +178,7 @@ def th_model_eval(x, y, model, X_test, Y_test, args=None):
         inputs=[x, y],
         outputs=acc_value,
         givens={keras.backend.learning_phase(): _TEST_PHASE},
+        on_unused_input="ignore",
         allow_input_downcast=True,
         updates=None
     )
