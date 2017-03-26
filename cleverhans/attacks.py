@@ -84,6 +84,8 @@ class FastGradientMethod(Attack):
         """
         super(FastGradientMethod, self).__init__(x, pred, back, sess, clip_min,
                                                  clip_max, params)
+
+        # Check that all required attack specific parameters are defined
         assert 'eps' in params and 'ord' in params
 
         # Check if order of the norm is acceptable given current implementation
@@ -135,6 +137,7 @@ class FastGradientMethod(Attack):
         eval_params = {'batch_size': params['batch_size']}
 
         # Run symbolic graph without or with true labels
+        # TODO(This will not work with Theano because of sess)
         if params['Y'] is None:
             X_adv, = batch_eval(self.sess, [self.x], [self.x_adv], [X],
                                 args=eval_params)
@@ -151,57 +154,75 @@ class BasicIterativeMethod(Attack):
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
-    def __init__(self, x, pred, y=None, back='tf', clip_min=None,
-                 clip_max=None, other_params={'eps': 0.3, 'eps_iter': 0.05,
-                                              'ord': 'inf', 'nb_iter': 10}):
+    def __init__(self, x, pred, back='tf', sess=None, clip_min=None,
+                 clip_max=None, params={'eps': 0.3,
+                                        'eps_iter': 0.05,
+                                        'ord': np.inf,
+                                        'nb_iter': 10,
+                                        'y': None}):
         """
         Create a BasicIterativeMethod instance.
 
         Attack-specific parameters:
-        :param eps: A float indicating the maximum allowed perturbation
-                    distance for each feature.
-        :param eps_iter: A float indicating the step size to use for each
-                        iteration of BIM (input variation parameter).
-        :param ord: A string indicating the norm order to use when computing
-                    gradients. This should be either 'inf', 'L1' or 'L2'.
-        :param nb_iter: The number of BIM iterations to run.
+        :param eps: (required float) maximum allowed perturbation distance
+                    per feature. TODO(should this be per feature or per input?)
+        :param eps_iter: (required float) step size for each attack iteration
+        :param ord: (required) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param nb_iter: (required int) The number of iterations to run.
+        :param y: (required) A placeholder for the model labels.
         """
-        super(BasicIterativeMethod, self).__init__(x, pred, y, back,
-                                                   clip_min, clip_max,
-                                                   other_params)
-        if other_params['ord'] not in ['inf', 'L1', 'L2']:
-            raise Exception("'ord' param must be either 'inf', 'L1', or 'L2'.")
-        if back == 'th' and other_params['ord'] != 'inf':
-            raise NotImplementedError("The only BasicIterativeMethod norm currently "
-                                      "implemented for Theano is 'inf'.")
-        self.eps = other_params['eps']
-        self.eps_iter = other_params['eps_iter']
-        self.nb_iter = other_params['nb_iter']
-        self.fgm = FastGradientMethod(
-            x, pred, y, back, clip_min, clip_max,
-            other_params={'eps': other_params['eps_iter'],
-                          'ord': other_params['ord']}
-        )
+        super(BasicIterativeMethod, self).__init__(x, pred, back, sess,
+                                                   clip_min, clip_max, params)
 
-    def craft(self, X, Y=None, sess=None, batch_size=128, target=None):
+        # Check that all required attack specific parameters are defined
+        required_params = ('eps', 'eps_iter', 'ord', 'nb_iter', 'y')
+        assert all(k in params for k in required_params)
+        assert params['y'] is not None, "Attack requires label placeholder."
+
+        # Check if order of the norm is acceptable given current implementation
+        if params['ord'] not in [np.inf, 1, 2]:
+            raise Exception("Norm order must be either np.inf, 1, or 2.")
+        if back == 'th' and params['ord'] != np.inf:
+            raise NotImplementedError("The only BasicIterativeMethod norm "
+                                      "implemented for Theano is np.inf.")
+
+        # Save attack-specific parameters
+        self.eps = params['eps']
+        self.eps_iter = params['eps_iter']
+        self.nb_iter = params['nb_iter']
+        self.y = params['y']
+
+        # Initialize symbolic graph of FastGradientMethod used in iterations
+        self.fgm = FastGradientMethod(x, pred, back, sess, clip_min, clip_max,
+                                      params={'eps': params['eps_iter'],
+                                              'ord': params['ord'],
+                                              'y': self.y})
+        self.fgm.generate_symbolic()
+
+    def craft(self, X, params={'Y': None, 'batch_size': 128}):
         """
         Generate adversarial samples and return them in a Numpy array.
         """
-        super(BasicIterativeMethod, self).craft(X, Y, sess, batch_size, target)
-        # targets not currently used by this attack
-        if target is not None:
-            warnings.warn("Ignoring 'target' argument: the use of targets is not "
-                          "currently implemented for this attack.")
-        # verify we are only using true labels if we indicated so previously
-        if Y is not None:
-            assert self.y is not None, 'Label placeholder must be provided to _init_ ' \
-                                       'in order to use true labels'
+        super(BasicIterativeMethod, self).craft(X, params)
+
+        # Verify label placeholder was defined previously if using true labels
+        if params['Y'] is not None:
+            error = "True labels given but label placeholder missing in _init_"
+            assert self.y is not None, error
+
+        # Define clipping extrema
         upper_bound = X + self.eps
         lower_bound = X - self.eps
+
+        # Iteratively apply the FastGradientMethod
         X_adv = X
         for i in range(self.nb_iter):
-            X_adv = self.fgm.craft(X_adv, Y, sess, batch_size)
-            X_adv = np.minimum(np.maximum(X_adv, lower_bound), upper_bound)
+            # TODO(This implementation is wrong because the label should be)
+            # TODO(fixed after the first iteration. This attack can be)
+            # TODO(defined symbolically using a tf loop.)
+            X_adv = self.fgm.craft(X_adv, params)
+            X_adv = np.clip(X_adv, a_min=lower_bound, a_max=upper_bound)
 
         return X_adv
 
