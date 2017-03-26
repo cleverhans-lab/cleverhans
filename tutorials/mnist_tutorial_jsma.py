@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import keras
+from keras.utils.np_utils import to_categorical
 import numpy as np
 import os
 from six.moves import xrange
@@ -13,7 +14,7 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval
+from cleverhans.utils_tf import model_train, model_eval, model_argmax
 
 from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.utils import other_classes, cnn_model, pair_visual, grid_visual
@@ -122,11 +123,9 @@ def main(argv=None):
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Define the attack instance
-    attack = SaliencyMapMethod(
-        x, predictions, backend='tf', clip_min=0., clip_max=1.,
-        other_params={'theta': 1., 'gamma': 0.1, 'increase': True,
-                      'nb_classes': FLAGS.nb_classes}
-    )
+    attack_params = {'theta': 1., 'gamma': 0.1, 'nb_classes': FLAGS.nb_classes}
+    attack = SaliencyMapMethod(x, predictions, back='tf', sess=sess,
+                               clip_min=0., clip_max=1., params=attack_params)
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
@@ -142,28 +141,25 @@ def main(argv=None):
 
         # Try the untargeted attack; target class will be randomly selected
         print('--------------------------------------')
-        print('Creating untargeted adv. example')
-        adv_x = attack.generate_numpy(
-            X=X_test[sample_ind:(sample_ind+1)],
-            Y=Y_test[sample_ind:(sample_ind+1)],
-            sess=sess
-        )
+        print('Crafting untargeted adv. example')
+        attack.craft(X_test[sample_ind:(sample_ind+1)])
 
         # Loop over all target classes
         for target in target_classes:
             print('--------------------------------------')
-            print('Creating adv. example for target class %i' % target)
+            print('Crafting adv. example for target class %i' % target)
 
             # This call runs the Jacobian-based saliency map approach
-            adv_x = attack.generate_numpy(
-                X=X_test[sample_ind:(sample_ind+1)],
-                sess=sess,
-                target=target
-            )
-            # TODO: update this; how do we actually get the 'res' value?
-            # Don't want to break from the API and have generate_numpy()
-            # return an extra variable for this class.
-            res = 1
+            one_hot_target = np.zeros((1, FLAGS.nb_classes), dtype=np.float32)
+            one_hot_target[0, target] = 1
+            adv_x = attack.craft(X_test[sample_ind:(sample_ind+1)],
+                                 params={'targets': one_hot_target})
+
+            # Check if success was achieved
+            predicted_label = model_argmax(sess, x, predictions, adv_x)
+            res = int(predicted_label == target)
+
+            # Computer number of modified features
             adv_x_reshape = adv_x.reshape(-1)
             test_in_reshape = X_test[sample_ind].reshape(-1)
             nb_changed = np.where(adv_x_reshape != test_in_reshape)[0].shape[0]
