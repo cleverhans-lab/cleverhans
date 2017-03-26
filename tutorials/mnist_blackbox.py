@@ -18,7 +18,7 @@ from tensorflow.python.platform import flags
 from cleverhans.utils import cnn_model
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
-from cleverhans.attacks import fgsm
+from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
 FLAGS = flags.FLAGS
@@ -222,10 +222,13 @@ def main(argv=None):
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     substitute_preds = train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub)
 
+    # Initialize the Fast Gradient Sign Method (FGSM) attack object.
+    FGSM = FastGradientMethod(x, substitute_preds, sess=sess, clip_min=0.,
+                              clip_max=1., params={'eps': 0.3, 'ord': np.inf})
+
     # Craft adversarial examples using the substitute
-    adv_x = fgsm(x, substitute_preds, eps=0.3)
     eval_params = {'batch_size': FLAGS.batch_size}
-    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], args=eval_params)
+    X_test_adv = FGSM.craft(X_test)
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
     accuracy = model_eval(sess, x, y, bbox_preds, X_test_adv, Y_test,
