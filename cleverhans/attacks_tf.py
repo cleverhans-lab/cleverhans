@@ -16,33 +16,28 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
-         clip_max=None):
+def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
     """
-    TensorFlow implementation of the Fast Gradient
-    Sign method.
+    TensorFlow implementation of the Fast Gradient Method.
     :param x: the input placeholder
-    :param predictions: the model's output tensor
-    :param y: the output placeholder. Use None (the default) to avoid the
-            label leaking effect.
+    :param preds: the model's output tensor
+    :param y: the output placeholder. Use None (default) to avoid label leaking
     :param eps: the epsilon (input variation parameter)
     :param ord: string with the norm order to use when computing gradients.
-                This should be either 'inf', 'L1' or 'L2'.
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
+                This should be either np.inf, 1 or 2.
+    :param clip_min: Minimum float value for adversarial example components
+    :param clip_max: Maximum float value for adversarial example components
     :return: a tensor for the adversarial example
     """
 
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
-        y = tf.to_float(
-            tf.equal(predictions,
-                     tf.reduce_max(predictions, 1, keep_dims=True)))
+        preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+        y = tf.to_float(tf.equal(preds, preds_max))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
+
     # Compute loss
-    loss = utils_tf.model_loss(y, predictions, mean=False)
+    loss = utils_tf.model_loss(y, preds, mean=False)
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
