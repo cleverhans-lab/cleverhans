@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import os
 import keras
+from keras.utils import np_utils
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D
@@ -122,10 +123,20 @@ def random_targets(gt, nb_classes):
     :param nb_classes: The number of classes for this model
     :return: A numpy array holding the randomly-selected target classes
     """
-    def f(label):
-        return np.random.choice(other_classes(nb_classes, label))
+    # TODO(This functionality implementation can be improved.)
 
-    return np.asarray([f(label) for label in gt])
+    if len(gt.shape) > 1:
+        gt = np.argmax(gt, axis=1)
+
+    def f(label):
+        random_label = np.random.choice(other_classes(nb_classes, label))
+        random_label = np.expand_dims(random_label, axis=0)
+        return np_utils.to_categorical(np.asarray(random_label), nb_classes)
+
+    if type(gt) is np.int64:
+        return f(gt)
+    else:
+        return np.asarray([f(label) for label in gt])
 
 
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,

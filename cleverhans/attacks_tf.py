@@ -197,8 +197,8 @@ def jacobian_graph(predictions, x, nb_classes):
     return list_derivatives
 
 
-def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
-         increase, clip_min, clip_max):
+def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
+         clip_max):
     """
     TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
     for details about the algorithm design choices).
@@ -212,7 +212,6 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
     :param theta: delta for each feature adjustment
     :param gamma: a float between 0 - 1 indicating the maximum distortion
         percentage
-    :param increase: boolean; true if we are increasing pixels, false otherwise
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
@@ -231,7 +230,8 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
     adv_x = np.reshape(adv_x, (1, nb_features))
     # compute maximum number of iterations
     max_iters = np.floor(nb_features * gamma / 2)
-    print('Maximum number of iterations: %i' % max_iters)
+
+    increase = bool(theta > 0)
 
     # Compute our initial search domain. We optimize the initial search domain
     # by removing all features that are already at their maximum values (if
@@ -274,11 +274,6 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
 
         # Update loop variables
         iteration = iteration + 1
-
-        # This process may take a while, so outputting progress regularly
-        if iteration % 5 == 0:
-            msg = 'Current iteration: {0} - Current Prediction: {1}'
-            print(msg.format(iteration, current))
 
     # Compute the ratio of pixels perturbed by the algorithm
     percent_perturbed = float(iteration * 2) / nb_features

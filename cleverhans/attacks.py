@@ -232,72 +232,79 @@ class SaliencyMapMethod(Attack):
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    def __init__(self, x, pred, y=None, back='tf', clip_min=None,
-                 clip_max=None, other_params={'theta': 1., 'gamma': np.inf,
-                                              'increase': True,
-                                              'nb_classes': 2}):
+    def __init__(self, x, pred, back='tf', sess=None, clip_min=None,
+                 clip_max=None, params={'theta': 1.,
+                                        'gamma': np.inf,
+                                        'nb_classes': 2}):
         """
         Create a SaliencyMapMethod instance.
 
         Attack-specific parameters:
-        :param theta: A float indicating the delta for each feature adjustment.
-        :param gamma: A float between 0 - 1 indicating the maximum distortion
-                    percentage.
-        :param increase: A boolean; True if we are increasing feature values,
-                        False if we are decreasing.
-        :param nb_classes: An integer specifying the number of classes in
-                        this classification model.
+        :param theta: (required float) perturbation introduced to modified
+                      components (can be positive or negative)
+        :param gamma: (required float) Maximum percentage of perturbed features
+        :param nb_classes: (required int) Number of model output classes
         """
-        super(SaliencyMapMethod, self).__init__(x, pred, y, back,
+        super(SaliencyMapMethod, self).__init__(x, pred, back, sess,
                                                 clip_min, clip_max,
-                                                other_params)
-        self.theta = other_params['theta']
-        self.gamma = other_params['gamma']
-        self.increase = other_params['increase']
-        self.nb_classes = other_params['nb_classes']
+                                                params)
+
+        # Check that all required attack specific parameters are defined
+        required_params = ('theta', 'gamma', 'nb_classes')
+        assert all(k in params for k in required_params)
+
+        self.theta = params['theta']
+        self.gamma = params['gamma']
+        self.nb_classes = params['nb_classes']
+
         if self.back == 'tf':
             from .attacks_tf import jacobian_graph
         else:
             raise NotImplementedError('Theano version of SaliencyMapMethod not'
                                       ' currently implemented.')
-        self.grads = jacobian_graph(pred, x, other_params['nb_classes'])
 
-    def craft(self, X, Y=None, sess=None, batch_size=128, target=None):
+        self.grads = jacobian_graph(pred, x, params['nb_classes'])
+
+    def craft(self, X, params={'Y': None,
+                               'batch_size': 128,
+                               'targets': None}):
         """
         Generate adversarial samples and return them in a Numpy array.
-        NOTE: this attack currently only computes one sample at a time.
         """
-        super(SaliencyMapMethod, self).craft(X, Y, sess, batch_size, target)
-        if len(X) > 1:
-            raise Exception('SaliencyMapMethod currently only handles one sample'
-                            'at a time. Make sure that len(X) = 1.')
-        if target is None:
-            # No targets provided, so we will randomly choose targets from the
-            # incorrect classes
-            if Y is None:
-                # No true labels provided: use model predictions as ground truth
-                if self.back == 'tf':
-                    from .utils_tf import model_argmax
-                else:
-                    from .utils_th import model_argmax
-                gt = model_argmax(self.x, self.pred, X)
+        super(SaliencyMapMethod, self).craft(X, params)
+
+        # If targets were specified, make sure we have as many as the inputs
+        if params['targets'] is not None:
+            if len(params['targets'].shape) > 1:
+                nb_targets = len(params['targets'])
             else:
-                # True labels were provided
-                gt = np.argmax(Y, axis=1)
-            # Randomly choose from the incorrect classes for each sample
-            # TODO: remove [0] once we fix SaliencyMapMethod to handle multiple samples
-            target = random_targets(gt, self.nb_classes)[0]
-        else:
-            if Y is not None:
-                warnings.warn("Ignoring 'Y' argument since class targets were provided.")
-        if self.back == 'tf':
+                nb_targets = 1
+        if params['targets'] is not None and nb_targets != len(X):
+            raise Exception("Must specify exactly one target per input.")
+
+        X_adv = np.zeros(X.shape)
+
+        # TODO(Optimize underlying functions to remove this loop: issue #)
+        for ind, val in enumerate(X):
+            val = np.expand_dims(val, axis=0)
+            if params['targets'] is None:
+                # No targets provided, randomly choose from incorrect classes
+                if params['Y'] is None:
+                    # No true labels given: use model pred as ground truth
+                    from .utils_tf import model_argmax
+                    gt = model_argmax(self.sess, self.x, self.pred, val)
+                else:
+                    # True labels were provided
+                    gt = np.argmax(params['Y'][ind], axis=1)
+
+                # Randomly choose from the incorrect classes for each sample
+                target = random_targets(gt, self.nb_classes)[0]
+            else:
+                target = params['targets'][ind]
+
             from .attacks_tf import jsma
-        else:
-            # no need to raise notimplemented error again; should have been
-            # done during initialization
-            pass
-        X_adv, _, _ = jsma(sess, self.x, self.pred, self.grads, X, target,
-                           self.theta, self.gamma, self.increase,
-                           self.clip_min, self.clip_max)
+            X_adv[ind], _, _ = jsma(self.sess, self.x, self.pred, self.grads,
+                                    val, np.argmax(target), self.theta,
+                                    self.gamma, self.clip_min, self.clip_max)
 
         return X_adv
