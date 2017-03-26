@@ -3,11 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys
 import copy
 import numpy as np
-import tensorflow as tf
 from six.moves import xrange
+import sys
+import tensorflow as tf
 
 from . import utils_tf
 from . import utils
