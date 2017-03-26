@@ -32,6 +32,7 @@ class Attack:
         self.x = x
         self.pred = pred
         self.back = back
+        self.sess = sess
         self.clip_min = clip_min
         self.clip_max = clip_max
 
@@ -57,38 +58,55 @@ class Attack:
 
 class FastGradientMethod(Attack):
     """
-    The Fast Gradient Method. This attack was originally implemented by
-    Goodfellow et al. (2015) with the infinity norm ("Fast Gradient
-    Sign Method").
-    Paper link: https://arxiv.org/pdf/1412.6572.pdf
+    This attack was originally implemented by Goodfellow et al. (2015) with the
+    infinity norm (and is known as the "Fast Gradient Sign Method"). This
+    implementation extends the attack to other norms, and is therefore called
+    the Fast Gradient Method.
+    Paper link: https://arxiv.org/abs/1412.6572
     """
-    def __init__(self, x, pred, y=None, back='tf', clip_min=None,
-                 clip_max=None, other_params={'eps': 0.3, 'ord': 'inf'}):
+    def __init__(self, x, pred, back='tf', sess=None, clip_min=None,
+                 clip_max=None, params={'eps': 0.3,
+                                        'ord': 'np.inf',
+                                        'y': None}):
         """
         Create a FastGradientMethod instance.
 
         Attack-specific parameters:
-        :param eps: A float indicating the step size to use for the adversarial
-                    algorithm (input variation parameter).
-        :param ord: A string indicating the norm order to use when computing
-                    gradients. This should be either 'inf', 'L1' or 'L2'.
+        :param eps: (required float) attack step size (input variation)
+        :param ord: (required) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param y: (optional) A placeholder for the model labels. Only provide
+                  this parameter if you'd like to use true labels when crafting
+                  adversarial samples. Otherwise, model predictions are used as
+                  labels to avoid the label leaking effect (explained in this
+                  paper: https://arxiv.org/abs/1611.01236). Default is None.
+                  Labels should be one-hot-encoded.
         """
-        super(FastGradientMethod, self).__init__(x, pred, y, back,
-                                                 clip_min, clip_max,
-                                                 other_params)
-        if other_params['ord'] not in ['inf', 'L1', 'L2']:
-            raise Exception("'ord' param must be either 'inf', 'L1', or 'L2'.")
-        if back == 'th' and other_params['ord'] != 'inf':
+        super(FastGradientMethod, self).__init__(x, pred, back, sess, clip_min,
+                                                 clip_max, params)
+        assert 'eps' in params and 'ord' in params
+
+        # Check if order of the norm is acceptable given current implementation
+        if params['ord'] not in [np.inf, int(1), int(2)]:
+            raise Exception("Norm order must be either np.inf, 1, or 2.")
+        if back == 'th' and params['ord'] != np.inf:
             raise NotImplementedError("The only FastGradientMethod norm "
-                                      "implemented for Theano is 'inf'.")
-        self.eps = other_params['eps']
-        self.ord = other_params['ord']
-        # create symbolic adversarial sample graph
+                                      "implemented for Theano is np.inf.")
+
+        # Save attack-specific parameters
+        self.eps = params['eps']
+        self.ord = params['ord']
+        if 'y' in params:
+            self.y = params['y']
+        else:
+            self.y = None
+
+        # Create symbolic graph defining adversarial examples
         self.x_adv = self.generate_symbolic()
 
     def generate_symbolic(self):
         """
-        Generate symbolic graph for adversarial samples and return.
+        Generate symbolic graph for adversarial examples and return.
         """
         if self.back == 'tf':
             from .attacks_tf import fgsm
@@ -98,32 +116,31 @@ class FastGradientMethod(Attack):
         return fgsm(self.x, self.pred, self.y, self.eps, self.ord,
                     self.clip_min, self.clip_max)
 
-    def craft(self, X, Y=None, sess=None, batch_size=128, target=None):
+    def craft(self, X, params={'Y': None, 'batch_size': 128}):
         """
         Generate adversarial samples and return them in a Numpy array.
         """
-        super(FastGradientMethod, self).craft(X, Y, sess, batch_size, target)
-        # targets not currently used by this attack
-        if target is not None:
-            warnings.warn("Ignoring 'target' argument: the use of targets is not "
-                          "currently implemented for this attack.")
-        # verify we are only using true labels if we indicated so previously
-        if Y is not None:
-            assert self.y is not None, 'Label placeholder must be provided to _init_ ' \
-                                       'in order to use true labels'
+        super(FastGradientMethod, self).craft(X, params)
+
+        # Verify label placeholder was defined previously if using true labels
+        if params['Y'] is not None:
+            error = "True labels given but label placeholder missing in _init_"
+            assert self.y is not None, error
+
+        # Define appropriate batch_eval function for chosen backend
         if self.back == 'tf':
-            # Tensorflow backend; evaluate symbolic samples
             from .utils_tf import batch_eval
         else:
-            # Theano backend; evaluate symbolic samples
             from .utils_th import batch_eval
-        eval_params = {'batch_size': batch_size}
-        if Y is not None:
-            X_adv, = batch_eval(sess, [self.x, self.y], [self.x_adv],
-                                [X, Y], args=eval_params)
-        else:
-            X_adv, = batch_eval(sess, [self.x], [self.x_adv], [X],
+        eval_params = {'batch_size': params['batch_size']}
+
+        # Run symbolic graph without or with true labels
+        if params['Y'] is None:
+            X_adv, = batch_eval(self.sess, [self.x], [self.x_adv], [X],
                                 args=eval_params)
+        else:
+            X_adv, = batch_eval(self.sess, [self.x, self.y], [self.x_adv],
+                                [X, params['Y']], args=eval_params)
 
         return X_adv
 
