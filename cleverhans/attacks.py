@@ -2,21 +2,8 @@ import numpy as np
 import warnings
 from abc import ABCMeta, abstractmethod
 
-from .utils import other_classes
+from .utils import random_targets
 
-
-def random_targets(gt, nb_classes):
-    """
-    Take in the correct labels for each sample and randomly choose
-    target labels from the others
-    :param gt: TODO
-    :param nb_classes: The number of classes for this model
-    :return: A numpy array holding the randomly-selected target classes
-    """
-    def f(label):
-        return np.random.choice(other_classes(nb_classes, label))
-
-    return np.asarray([f(label) for label in gt])
 
 class Attack:
     """
