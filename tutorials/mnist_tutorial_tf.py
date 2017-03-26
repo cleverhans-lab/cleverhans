@@ -80,11 +80,11 @@ def main(argv=None):
     model_train(sess, x, y, predictions, X_train, Y_train,
                 evaluate=evaluate, args=train_params)
 
-    # Craft adversarial examples using Fast Gradient Sign Method (FGSM).
-    # Initialize the attack object.
+    # Initialize the Fast Gradient Sign Method (FGSM) attack object.
     FGSM = FastGradientMethod(x, predictions, sess=sess, clip_min=0.,
                               clip_max=1., params={'eps': 0.3, 'ord': np.inf})
-    # Generate the sample.
+
+    # Craft adversarial examples
     X_test_adv = FGSM.craft(X_test)
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
