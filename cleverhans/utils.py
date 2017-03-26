@@ -5,10 +5,11 @@ from __future__ import unicode_literals
 
 import os
 import keras
-import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class _ArgsWrapper(object):
@@ -111,6 +112,20 @@ def other_classes(nb_classes, class_ind):
     other_classes_list.remove(class_ind)
 
     return other_classes_list
+
+
+def random_targets(gt, nb_classes):
+    """
+    Take in the correct labels for each sample and randomly choose
+    target labels from the others
+    :param gt: TODO
+    :param nb_classes: The number of classes for this model
+    :return: A numpy array holding the randomly-selected target classes
+    """
+    def f(label):
+        return np.random.choice(other_classes(nb_classes, label))
+
+    return np.asarray([f(label) for label in gt])
 
 
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
