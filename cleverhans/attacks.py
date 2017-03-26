@@ -1,6 +1,6 @@
+from abc import ABCMeta, abstractmethod
 import numpy as np
 import warnings
-from abc import ABCMeta, abstractmethod
 
 from .utils import random_targets
 
