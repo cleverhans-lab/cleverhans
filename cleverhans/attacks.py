@@ -109,7 +109,7 @@ class FastGradientMethod(Attack):
         Generate symbolic graph for adversarial examples and return.
         """
         if self.back == 'tf':
-            from .attacks_tf import fgsm
+            from .attacks_tf import fgm as fgsm
         else:
             from .attacks_th import fgsm
 
