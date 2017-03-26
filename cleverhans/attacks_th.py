@@ -1,9 +1,10 @@
+import numpy as np
 import theano
 import theano.tensor as T
 from cleverhans import utils_th
 
 
-def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None,
+def fgsm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
          clip_max=None):
     """
     Theano implementation of the Fast Gradient
@@ -21,6 +22,7 @@ def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None,
                     value for components of the example returned
     :return: a tensor for the adversarial example
     """
+    assert ord == np.inf, "Theano implementation not available for this norm."
 
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
@@ -32,8 +34,6 @@ def fgsm(x, predictions, y=None, eps=0.3, ord='inf', clip_min=None,
 
     # Define gradient of loss wrt input
     grad = T.grad(loss, x)
-
-    # TODO: make use of 'ord' parameter
 
     # Take sign of gradient
     signed_grad = T.sgn(grad)
