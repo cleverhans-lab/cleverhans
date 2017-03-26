@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import keras
 from keras import backend
-
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
@@ -82,13 +82,10 @@ def main(argv=None):
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM).
     # Initialize the attack object.
-    attack = FastGradientMethod(
-        x, predictions, backend='tf', clip_min=0.,
-        clip_max=1., other_params={'eps': 0.3, 'ord': 'inf'}
-    )
+    FGSM = FastGradientMethod(x, predictions, sess=sess, clip_min=0.,
+                              clip_max=1., params={'eps': 0.3, 'ord': np.inf})
     # Generate the sample.
-    X_test_adv = attack.generate_numpy(X_test, sess=sess,
-                                       batch_size=FLAGS.batch_size)
+    X_test_adv = FGSM.craft(X_test)
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
@@ -101,27 +98,23 @@ def main(argv=None):
     # Redefine TF model graph
     model_2 = cnn_model()
     predictions_2 = model_2(x)
-    attack_2 = FastGradientMethod(
-        x, predictions_2, backend='tf', clip_min=0.,
-        clip_max=1., other_params={'eps': 0.3, 'ord': 'inf'}
-    )
-    predictions_2_adv = model_2(attack_2.generate_symbolic())
+    FGSM2 = FastGradientMethod(x, predictions_2, sess=sess, clip_min=0.,
+                               clip_max=1., params={'eps': 0.3, 'ord': np.inf})
+    predictions_2_adv = model_2(FGSM2.generate_symbolic())
 
     def evaluate_2():
-        # Evaluate the accuracy of the adversarialy trained MNIST model on
-        # legitimate test examples
+        # Accuracy of adversarially trained model on legitimate test inputs
         eval_params = {'batch_size': FLAGS.batch_size}
         accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test,
                               args=eval_params)
         print('Test accuracy on legitimate test examples: %0.4f' % accuracy)
 
-        # Evaluate the accuracy of the adversarially trained MNIST model on
-        # adversarial examples
+        # Accuracy of the adversarially trained model on adversarial examples
         accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test,
                                   Y_test, args=eval_params)
         print('Test accuracy on adversarial examples: %0.4f' % accuracy_adv)
 
-    # Perform adversarial training
+    # Perform and evaluate adversarial training
     model_train(sess, x, y, predictions_2, X_train, Y_train,
                 predictions_adv=predictions_2_adv, evaluate=evaluate_2,
                 args=train_params)
