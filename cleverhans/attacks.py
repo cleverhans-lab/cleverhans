@@ -7,9 +7,7 @@ from .utils import random_targets
 
 class Attack:
     """
-    Abstract base class for all attack classes. All attacks must override the
-    `craft` method that returns adversarial examples corresponding to the input
-    data. However, the `generate_symbolic` method is optional.
+    Abstract base class for all attack classes.
     """
     __metaclass__ = ABCMeta
 
@@ -39,7 +37,7 @@ class Attack:
     def generate_symbolic(self):
         """
         Generate the attack's symbolic graph for adversarial examples. This
-        method should be overwritten in any child class that implements an
+        method should be overriden in any child class that implements an
         attack that is expressable symbolically.
         :return: A symbolic representation of the adversarial examples.
         """
@@ -49,7 +47,9 @@ class Attack:
     @abstractmethod
     def craft(self, X, params={}):
         """
-        Generate adversarial examples and return them as a Numpy array.
+        Generate adversarial examples and return them as a Numpy array. This
+        method should be overriden in any child class that implements an attack
+        that is not fully expressed symbolically.
         :param X: A Numpy array with the original inputs.
         :param params: Parameter dictionary used by child classes.
         :return: A Numpy array holding the adversarial examples.
