@@ -8,12 +8,20 @@ import numpy as np
 from six.moves import xrange
 import sys
 import tensorflow as tf
+import warnings
 
 from . import utils_tf
 from . import utils
 
 from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
+
+
+def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
+    warnings.warn("attacks_tf.fgsm is deprecated and will be removed on "
+                  " 09-27-17. Use attacks.fgm instead.")
+    return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,
+               clip_max=clip_max)
 
 
 def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
