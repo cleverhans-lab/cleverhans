@@ -1,11 +1,20 @@
 import numpy as np
 import theano
 import theano.tensor as T
-from cleverhans import utils_th
+import warnings
+
+from . import utils_th
 
 
-def fgsm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
-         clip_max=None):
+def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
+    warnings.warn("attacks_th.fgsm is deprecated and will be removed on "
+                  " 09-27-17. Use attacks_th.fgm instead.")
+    return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,
+               clip_max=clip_max)
+
+
+def fgm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
+        clip_max=None):
     """
     Theano implementation of the Fast Gradient
     Sign method.
