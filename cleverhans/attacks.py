@@ -32,13 +32,12 @@ class Attack:
         self.nb_calls_generate = 0
         self.default_graph = None
 
-    def generate(self, x, params={}):
+    def generate(self, x):
         """
         Generate the attack's symbolic graph for adversarial examples. This
         method should be overriden in any child class that implements an
         attack that is expressable symbolically.
         :param x: The model's symbolic inputs.
-        :param params: Parameter dictionary used by child classes.
         :return: A symbolic representation of the adversarial examples.
         """
         # Keep track of the number of calls to warn when more than one default
@@ -57,7 +56,7 @@ class Attack:
             # TODO()
             return False
 
-    def generate_np(self, X, params={}):
+    def generate_np(self, X, params={'batch_size': 128}):
         """
         Generate adversarial examples and return them as a Numpy array. This
         method should be overriden in any child class that implements an attack
@@ -75,7 +74,7 @@ class Attack:
 
         if self.back == 'tf':
             from .utils_tf import batch_eval
-            eval_params = {'batch_size': 128}
+            eval_params = {'batch_size': params['batch_size']}
             X_adv, = batch_eval(self.sess, [self.x], [self.default_graph], [X],
                                 args=eval_params)
             return X_adv
@@ -92,16 +91,17 @@ class FastGradientMethod(Attack):
     the Fast Gradient Method.
     Paper link: https://arxiv.org/abs/1412.6572
     """
-    def __init__(self, x, pred, back='tf', sess=None, clip_min=None,
-                 clip_max=None, params={'eps': 0.3,
-                                        'ord': 'np.inf',
-                                        'y': None}):
+    def __init__(self, pred, back='tf', sess=None, params={'eps': 0.3,
+                                                           'ord': 'np.inf',
+                                                           'y': None,
+                                                           'clip_min': None,
+                                                           'clip_max': None}):
         """
         Create a FastGradientMethod instance.
 
         Attack-specific parameters:
         :param eps: (required float) attack step size (input variation)
-        :param ord: (required) Order of the norm (mimics Numpy).
+        :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
         :param y: (optional) A placeholder for the model labels. Only provide
                   this parameter if you'd like to use true labels when crafting
@@ -109,15 +109,16 @@ class FastGradientMethod(Attack):
                   labels to avoid the label leaking effect (explained in this
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
         """
-        super(FastGradientMethod, self).__init__(x, pred, back, sess, clip_min,
-                                                 clip_max, params)
+        super(FastGradientMethod, self).__init__(pred, back, sess, params)
 
         # Check that all required attack specific parameters are defined
-        assert 'eps' in params and 'ord' in params
+        assert 'eps' in params
 
         # Check if order of the norm is acceptable given current implementation
-        if params['ord'] not in [np.inf, int(1), int(2)]:
+        if 'ord' in params and params['ord'] not in [np.inf, int(1), int(2)]:
             raise Exception("Norm order must be either np.inf, 1, or 2.")
         if back == 'th' and params['ord'] != np.inf:
             raise NotImplementedError("The only FastGradientMethod norm "
@@ -125,32 +126,40 @@ class FastGradientMethod(Attack):
 
         # Save attack-specific parameters
         self.eps = params['eps']
-        self.ord = params['ord']
-        if 'y' in params:
-            self.y = params['y']
-        else:
-            self.y = None
+        self.ord = params['ord'] if 'ord' in params else np.inf
+        self.y = params['y'] if 'y' in params else None
+        self.clip_min = params['clip_min'] if 'clip_min' in params else None
+        self.clip_max = params['clip_max'] if 'clip_max' in params else None
 
-        # Create symbolic graph defining adversarial examples
-        self.x_adv = self.generate_symbolic()
-
-    def generate_symbolic(self):
+    def generate(self, x):
         """
         Generate symbolic graph for adversarial examples and return.
         """
+        self.nb_calls_generate += 1
+        if self.nb_calls_generate == 1:
+            self.x = x
+
         if self.back == 'tf':
             from .attacks_tf import fgm as fgsm
         else:
             from .attacks_th import fgsm
 
-        return fgsm(self.x, self.pred, self.y, self.eps, self.ord,
-                    self.clip_min, self.clip_max)
+        graph = fgsm(x, self.pred, self.y, self.eps, self.ord, self.clip_min,
+                     self.clip_max)
+        if self.nb_calls_generate == 1:
+            self.default_graph = graph
+        return graph
 
-    def craft(self, X, params={'Y': None, 'batch_size': 128}):
+    def generate_np(self, X, params={'Y': None, 'batch_size': 128}):
         """
         Generate adversarial samples and return them in a Numpy array.
         """
-        super(FastGradientMethod, self).craft(X, params)
+        if self.default_graph is None:
+            error_string = "The attack symbolic graph was not generated."
+            raise NotImplementedError(error_string)
+        if self.nb_calls_generate > 1:
+            warnings.warn("Attack was generated symbolically multiple "
+                          "times, using graph defined by first call.")
 
         # Verify label placeholder was defined previously if using true labels
         if params['Y'] is not None:
@@ -167,11 +176,12 @@ class FastGradientMethod(Attack):
         # Run symbolic graph without or with true labels
         # TODO(This will not work with Theano because of sess)
         if params['Y'] is None:
-            X_adv, = batch_eval(self.sess, [self.x], [self.x_adv], [X],
+            X_adv, = batch_eval(self.sess, [self.x], [self.default_graph], [X],
                                 args=eval_params)
         else:
-            X_adv, = batch_eval(self.sess, [self.x, self.y], [self.x_adv],
-                                [X, params['Y']], args=eval_params)
+            X_adv, = batch_eval(self.sess, [self.x, self.y],
+                                [self.default_graph], [X, params['Y']],
+                                args=eval_params)
 
         return X_adv
 
