@@ -80,8 +80,8 @@ class Attack:
                                 args=eval_params)
             return X_adv
         else:
-            # TODO()
-            return False
+            error_string = "Theano version of generate_np not yet implemented"
+            raise NotImplementedError(error_string)
 
 
 class FastGradientMethod(Attack):
