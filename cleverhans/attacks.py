@@ -11,9 +11,8 @@ class Attack:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, x, pred, back='tf', sess=None, params={}):
+    def __init__(self, pred, back='tf', sess=None, params={}):
         """
-        :param x: The model's symbolic inputs.
         :param pred: The model's symbolic output.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param params: Parameter dictionary used by child classes.
@@ -26,19 +25,19 @@ class Attack:
             raise Exception("A session should not be provided when using th.")
 
         # Prepare attributes
-        self.x = x
+        self.x = None
         self.pred = pred
         self.back = back
         self.sess = sess
         self.nb_calls_generate = 0
         self.default_graph = None
-        self.loop_detect = False
 
-    def generate(self, params={}):
+    def generate(self, x, params={}):
         """
         Generate the attack's symbolic graph for adversarial examples. This
         method should be overriden in any child class that implements an
         attack that is expressable symbolically.
+        :param x: The model's symbolic inputs.
         :param params: Parameter dictionary used by child classes.
         :return: A symbolic representation of the adversarial examples.
         """
@@ -46,16 +45,11 @@ class Attack:
         # graph to run if generating adversarial examples numerically
         self.nb_calls_generate += 1
 
+        self.x = x
+
         if self.back == 'tf':
-            if not self.loop_detect:
-                self.loop_detect = True
-            else:
-                error_string = "This attack is not implemented symbolically" \
-                               " or numerically."
-                raise NotImplementedError(error_string)
             import tensorflow as tf
             wrapper = tf.py_func(self.generate_np, [self.x], tf.float32)
-            self.loop_detect = False
             if self.nb_calls_generate == 1:
                 self.default_graph = wrapper
             return wrapper
@@ -73,18 +67,12 @@ class Attack:
         :return: A Numpy array holding the adversarial examples.
         """
         if self.default_graph is None:
-            if not self.loop_detect:
-                self.loop_detect = True
-            else:
-                error_string = "This attack is not implemented symbolically" \
-                               " or numerically."
-                raise NotImplementedError(error_string)
-            self.default_graph = self.generate()
-            self.loop_detect = False
-        else:
-            if self.nb_calls_generate > 1:
-                warnings.warn("Attack was generated symbolically multiple "
-                              "times, using graph defined by first call.")
+            error_string = "The attack symbolic graph was not generated."
+            raise NotImplementedError(error_string)
+        if self.nb_calls_generate > 1:
+            warnings.warn("Attack was generated symbolically multiple "
+                          "times, using graph defined by first call.")
+
         if self.back == 'tf':
             from .utils_tf import batch_eval
             eval_params = {'batch_size': 128}
