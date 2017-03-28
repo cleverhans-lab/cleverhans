@@ -290,6 +290,22 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
 
 def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
                nb_classes, targets=None):
+    """
+    Applies the JSMA to a batch of inputs
+    :param sess: TF session
+    :param x: the input placeholder
+    :param pred: the model's symbolic output
+    :param grads: symbolic gradients
+    :param X: numpy array with sample inputs
+    :param theta: delta for each feature adjustment
+    :param gamma: a float between 0 - 1 indicating the maximum distortion
+        percentage
+    :param clip_min: minimum value for components of the example returned
+    :param clip_max: maximum value for components of the example returned
+    :param nb_classes: number of model output classes
+    :param targets: target class for sample input
+    :return: adversarial examples
+    """
     X_adv = np.zeros(X.shape)
 
     for ind, val in enumerate(X):
