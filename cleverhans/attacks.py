@@ -365,7 +365,9 @@ class SaliencyMapMethod(Attack):
 
     def generate_np(self, X, params={'batch_size': 128, 'targets': None}):
         """
-        Generate adversarial samples and return them in a Numpy array.
+        Attack-specific parameters:
+        :param batch_size: (optional) Batch size when running the graph
+        :param targets: (optional) Target values if the attack is targeted
         """
         if self.default_graph is None:
             error_string = "The attack symbolic graph was not generated."
