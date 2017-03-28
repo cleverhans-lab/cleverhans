@@ -163,11 +163,7 @@ def jacobian(sess, x, grads, target, X, nb_features, nb_classes):
     :return: matrix of forward derivatives flattened into vectors
     """
     # Prepare feeding dictionary for all gradient computations
-    if 'keras' in sys.modules:
-        import keras
-        feed_dict = {x: X, keras.backend.learning_phase(): 0}
-    else:
-        feed_dict = {x: X}
+    feed_dict = {x: X}
 
     # Initialize a numpy array to hold the Jacobian component values
     jacobian_val = np.zeros((nb_classes, nb_features), dtype=np.float32)
@@ -220,10 +216,8 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
     :param theta: delta for each feature adjustment
     :param gamma: a float between 0 - 1 indicating the maximum distortion
         percentage
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
+    :param clip_min: minimum value for components of the example returned
+    :param clip_max: maximum value for components of the example returned
     :return: an adversarial sample
     """
 
@@ -289,11 +283,32 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
     # Report success when the adversarial example is misclassified in the
     # target class
     if current == target:
-        print('Successful')
         return np.reshape(adv_x, original_shape), 1, percent_perturbed
     else:
-        print('Unsuccesful')
         return np.reshape(adv_x, original_shape), 0, percent_perturbed
+
+
+def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
+               nb_classes, targets=None):
+    X_adv = np.zeros(X.shape)
+
+    for ind, val in enumerate(X):
+        val = np.expand_dims(val, axis=0)
+        if targets is None:
+            # No targets provided, randomly choose from other classes
+            from .utils_tf import model_argmax
+            gt = model_argmax(sess, x, pred, val)
+
+            # Randomly choose from the incorrect classes for each sample
+            from .utils import random_targets
+            target = random_targets(gt, nb_classes)[0]
+        else:
+            target = targets[ind]
+
+        X_adv[ind], _, _ = jsma(sess, x, pred, grads, val, np.argmax(target),
+                                theta, gamma, clip_min, clip_max)
+
+    return np.asarray(X_adv, dtype=np.float32)
 
 
 def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
@@ -311,12 +326,17 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
                   at the previous iteration
     :param grads: Jacobian symbolic graph for the substitute
                   (should be generated using attacks_tf.jacobian_graph)
-    :param keras_phase: if not None, contains keras.backend.learning_phase()
+    :param keras_phase: (depracated) if not None, holds keras learning_phase
     :return: augmented substitute data (will need to be labeled by oracle)
     """
     assert len(x.get_shape()) == len(np.shape(X_sub_prev))
     assert len(grads) >= np.max(Y_sub) + 1
     assert len(X_sub_prev) == len(Y_sub)
+
+    if keras_phase is not None:
+        warnings.warn("keras_phase argument is depracated and will be removed"
+                      " on 09-28-17. Instead, use K.set_learning_phase(0) at "
+                      "the start of your script and serve with tensorflow.")
 
     # Prepare input_shape (outside loop) for feeding dictionary below
     input_shape = list(x.get_shape())
@@ -333,8 +353,6 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
 
         # Prepare feeding dictionary
         feed_dict = {x: np.reshape(input, input_shape)}
-        if keras_phase is not None:
-            feed_dict[keras_phase] = 0
 
         # Compute sign matrix
         grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
