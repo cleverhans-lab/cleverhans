@@ -36,7 +36,8 @@ class Attack:
         """
         Generate the attack's symbolic graph for adversarial examples. This
         method should be overriden in any child class that implements an
-        attack that is expressable symbolically.
+        attack that is expressable symbolically. Otherwise, it will wrap the
+        numerical implementation as a symbolic operator.
         :param x: The model's symbolic inputs.
         :return: A symbolic representation of the adversarial examples.
         """
