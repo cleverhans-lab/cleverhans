@@ -51,8 +51,7 @@ class Attack:
                 self.default_graph = wrapper
             return wrapper
         else:
-            # TODO()
-            return False
+            raise NotImplementedError('Theano version not implemented.')
 
     def generate_np(self, X, params={'batch_size': 128}):
         """
