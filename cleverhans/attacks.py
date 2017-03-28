@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 import numpy as np
 import warnings
 
@@ -11,14 +11,11 @@ class Attack:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, x, pred, back='tf', sess=None, clip_min=None,
-                 clip_max=None, params={}):
+    def __init__(self, x, pred, back='tf', sess=None, params={}):
         """
         :param x: The model's symbolic inputs.
         :param pred: The model's symbolic output.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
-        :param clip_min: Minimum float value for adversarial example components
-        :param clip_max: Maximum float value for adversarial example components
         :param params: Parameter dictionary used by child classes.
         """
         if not back == 'tf' or back == 'th':
@@ -27,25 +24,46 @@ class Attack:
             raise Exception("A tf session was not provided in sess argument.")
         if back == 'th' and sess is not None:
             raise Exception("A session should not be provided when using th.")
+
+        # Prepare attributes
         self.x = x
         self.pred = pred
         self.back = back
         self.sess = sess
-        self.clip_min = clip_min
-        self.clip_max = clip_max
+        self.nb_calls_generate = 0
+        self.default_graph = None
+        self.loop_detect = False
 
-    def generate_symbolic(self):
+    def generate(self, params={}):
         """
         Generate the attack's symbolic graph for adversarial examples. This
         method should be overriden in any child class that implements an
         attack that is expressable symbolically.
+        :param params: Parameter dictionary used by child classes.
         :return: A symbolic representation of the adversarial examples.
         """
-        error_string = "This attack is not (yet) implemented symbolically."
-        raise NotImplementedError(error_string)
+        # Keep track of the number of calls to warn when more than one default
+        # graph to run if generating adversarial examples numerically
+        self.nb_calls_generate += 1
 
-    @abstractmethod
-    def craft(self, X, params={}):
+        if self.back == 'tf':
+            if not self.loop_detect:
+                self.loop_detect = True
+            else:
+                error_string = "This attack is not implemented symbolically" \
+                               " or numerically."
+                raise NotImplementedError(error_string)
+            import tensorflow as tf
+            wrapper = tf.py_func(self.generate_np, [self.x], tf.float32)
+            self.loop_detect = False
+            if self.nb_calls_generate == 1:
+                self.default_graph = wrapper
+            return wrapper
+        else:
+            # TODO()
+            return False
+
+    def generate_np(self, X, params={}):
         """
         Generate adversarial examples and return them as a Numpy array. This
         method should be overriden in any child class that implements an attack
@@ -54,6 +72,28 @@ class Attack:
         :param params: Parameter dictionary used by child classes.
         :return: A Numpy array holding the adversarial examples.
         """
+        if self.default_graph is None:
+            if not self.loop_detect:
+                self.loop_detect = True
+            else:
+                error_string = "This attack is not implemented symbolically" \
+                               " or numerically."
+                raise NotImplementedError(error_string)
+            self.default_graph = self.generate()
+            self.loop_detect = False
+        else:
+            if self.nb_calls_generate > 1:
+                warnings.warn("Attack was generated symbolically multiple "
+                              "times, using graph defined by first call.")
+        if self.back == 'tf':
+            from .utils_tf import batch_eval
+            eval_params = {'batch_size': 128}
+            X_adv, = batch_eval(self.sess, [self.x], [self.default_graph], [X],
+                                args=eval_params)
+            return X_adv
+        else:
+            # TODO()
+            return False
 
 
 class FastGradientMethod(Attack):
