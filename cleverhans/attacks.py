@@ -202,8 +202,7 @@ class BasicIterativeMethod(Attack):
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
-    def __init__(self, pred, back='tf', sess=None, params={'eps': 0.3,
-                                                           'eps_iter': 0.05,
+    def __init__(self, pred, back='tf', sess=None, params={'eps': 0.05,
                                                            'nb_iter': 10,
                                                            'model': None,
                                                            'y': None,
@@ -214,8 +213,7 @@ class BasicIterativeMethod(Attack):
         Create a BasicIterativeMethod instance.
 
         Attack-specific parameters:
-        :param eps: (required float) attack step size (input variation)
-        :param eps_iter: (required float) step size for each attack iteration
+        :param eps: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
         :param model: (required function) Model function returning the output
               placeholder for an input placeholder.
@@ -228,7 +226,7 @@ class BasicIterativeMethod(Attack):
         super(BasicIterativeMethod, self).__init__(pred, back, sess, params)
 
         # Check that all required attack specific parameters are defined
-        req = ('eps', 'eps_iter', 'nb_iter', 'y')
+        req = ('eps', 'nb_iter', 'y')
         if not all(k in params for k in req):
             raise Exception("Attack requires label placeholder.")
         if 'model' not in params:
@@ -237,7 +235,6 @@ class BasicIterativeMethod(Attack):
 
         # Save attack-specific parameters
         self.eps = params['eps']
-        self.eps_iter = params['eps_iter']
         self.nb_iter = params['nb_iter']
         self.model = params['model']
         self.y = params['y']
@@ -264,7 +261,7 @@ class BasicIterativeMethod(Attack):
             model_preds = self.model(adv_x)
             FGSM = FastGradientMethod(model_preds, back=self.back,
                                       sess=self.sess,
-                                      params={'eps': self.eps_iter,
+                                      params={'eps': self.eps,
                                               'clip_min': self.clip_min,
                                               'clip_max': self.clip_max,
                                               'y': y})
