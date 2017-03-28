@@ -2,8 +2,6 @@ from abc import ABCMeta
 import numpy as np
 import warnings
 
-from .utils import random_targets
-
 
 class Attack:
     """
@@ -45,12 +43,11 @@ class Attack:
         # graph to run if generating adversarial examples numerically
         self.nb_calls_generate += 1
 
-        self.x = x
-
         if self.back == 'tf':
             import tensorflow as tf
             wrapper = tf.py_func(self.generate_np, [self.x], tf.float32)
             if self.nb_calls_generate == 1:
+                self.x = x
                 self.default_graph = wrapper
             return wrapper
         else:
@@ -68,7 +65,7 @@ class Attack:
         """
         if self.default_graph is None:
             error_string = "The attack symbolic graph was not generated."
-            raise NotImplementedError(error_string)
+            raise Exception(error_string)
         if self.nb_calls_generate > 1:
             warnings.warn("Attack was generated symbolically multiple "
                           "times, using graph defined by first call.")
@@ -166,7 +163,7 @@ class FastGradientMethod(Attack):
         """
         if self.default_graph is None:
             error_string = "The attack symbolic graph was not generated."
-            raise NotImplementedError(error_string)
+            raise Exception(error_string)
         if self.nb_calls_generate > 1:
             warnings.warn("Attack was generated symbolically multiple "
                           "times, using graph defined by first call.")
@@ -284,10 +281,11 @@ class SaliencyMapMethod(Attack):
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    def __init__(self, x, pred, back='tf', sess=None, clip_min=None,
-                 clip_max=None, params={'theta': 1.,
-                                        'gamma': np.inf,
-                                        'nb_classes': 2}):
+    def __init__(self, pred, back='tf', sess=None, params={'theta': 1.,
+                                                           'gamma': np.inf,
+                                                           'nb_classes': 10,
+                                                           'clip_min': 0.,
+                                                           'clip_max': 1.}):
         """
         Create a SaliencyMapMethod instance.
 
@@ -297,70 +295,104 @@ class SaliencyMapMethod(Attack):
         :param gamma: (required float) Maximum percentage of perturbed features
         :param nb_classes: (required int) Number of model output classes
         """
-        super(SaliencyMapMethod, self).__init__(x, pred, back, sess,
-                                                clip_min, clip_max,
-                                                params)
+        super(SaliencyMapMethod, self).__init__(pred, back, sess, params)
 
         # Check that all required attack specific parameters are defined
-        required_params = ('theta', 'gamma', 'nb_classes')
-        assert all(k in params for k in required_params)
+        required_params = ('theta', 'gamma', 'nb_classes', 'clip_min',
+                           'clip_max')
+        if not all(k in params for k in required_params):
+            raise Exception("The JSMA attack must be instantiated with the "
+                            "following parameters: " + str(required_params))
 
         self.theta = params['theta']
         self.gamma = params['gamma']
         self.nb_classes = params['nb_classes']
+        self.clip_min = params['clip_min']
+        self.clip_max = params['clip_max']
 
+        self.x = None
+        self.pred = pred
+        self.targeted = None
+
+    def generate(self, x, params={'targets': None}):
         if self.back == 'tf':
-            from .attacks_tf import jacobian_graph
+            self.nb_calls_generate += 1
+
+            from .attacks_tf import jacobian_graph, jsma_batch
+            grads = jacobian_graph(self.pred, x, self.nb_classes)
+
+            import tensorflow as tf
+            if params['targets'] is not None:
+                def jsma_wrap(X, targets):
+                    return jsma_batch(self.sess, x, self.pred, grads, X,
+                                      self.theta, self.gamma, self.clip_min,
+                                      self.clip_max, self.nb_classes, 
+                                      targets=targets)
+
+                jsma_wrap_args = [x, params['targets']]
+                wrap = tf.py_func(jsma_wrap, jsma_wrap_args, tf.float32)
+            else:
+                def jsma_wrap(X):
+                    return jsma_batch(self.sess, x, self.pred, grads, X,
+                                      self.theta, self.gamma, self.clip_min,
+                                      self.clip_max, self.nb_classes, 
+                                      targets=None)
+
+                wrap = tf.py_func(jsma_wrap, [x], tf.float32)
+
+            if self.nb_calls_generate == 1:
+                self.x = x
+                self.default_graph = wrap
+                self.targeted = params['targets']
+
+            return wrap
         else:
             raise NotImplementedError('Theano version of SaliencyMapMethod not'
                                       ' currently implemented.')
 
-        self.grads = jacobian_graph(pred, x, params['nb_classes'])
-
-    def craft(self, X, params={'Y': None,
-                               'batch_size': 128,
-                               'targets': None}):
+    def generate_np(self, X, params={'batch_size': 128, 'targets': None}):
         """
         Generate adversarial samples and return them in a Numpy array.
         """
-        super(SaliencyMapMethod, self).craft(X, params)
+        if self.default_graph is None:
+            error_string = "The attack symbolic graph was not generated."
+            raise Exception(error_string)
+        if self.nb_calls_generate > 1:
+            warnings.warn("Attack was generated symbolically multiple "
+                          "times, using graph defined by first call.")
+
+        # If not all parameters were given, set default values
+        if not 'batch_size' in params:
+            params['batch_size'] = 128
+        if not 'targets' in params:
+            params['targets'] = None
 
         # If targets were specified, make sure we have as many as the inputs
+        # and that the graph was generated in a targeted way.
         if params['targets'] is not None:
             if len(params['targets'].shape) > 1:
                 nb_targets = len(params['targets'])
             else:
                 nb_targets = 1
-        if params['targets'] is not None and nb_targets != len(X):
-            raise Exception("Must specify exactly one target per input.")
+            if nb_targets != len(X):
+                raise Exception("Must specify exactly one target per input.")
+            if self.targeted is None:
+                raise Exception("Attack graph was generated untargeted.")
 
-        X_adv = np.zeros(X.shape)
-
-        # TODO(Optimize underlying functions to remove this loop: issue #)
-        for ind, val in enumerate(X):
-            val = np.expand_dims(val, axis=0)
-            if params['targets'] is None:
-                # No targets provided, randomly choose from incorrect classes
-                if params['Y'] is None:
-                    # No true labels given: use model pred as ground truth
-                    from .utils_tf import model_argmax
-                    gt = model_argmax(self.sess, self.x, self.pred, val)
-                else:
-                    # True labels were provided
-                    gt = np.argmax(params['Y'][ind], axis=1)
-
-                # Randomly choose from the incorrect classes for each sample
-                target = random_targets(gt, self.nb_classes)[0]
+        if self.back == 'tf':
+            from .utils_tf import batch_eval
+            eval_params = {'batch_size': params['batch_size']}
+            if params['targets'] is not None:
+                X_adv, = batch_eval(self.sess, [self.x, self.targeted],
+                                    [self.default_graph],
+                                    [X, params['targets']], args=eval_params)
             else:
-                target = params['targets'][ind]
-
-            from .attacks_tf import jsma
-            X_adv[ind], _, _ = jsma(self.sess, self.x, self.pred, self.grads,
-                                    val, np.argmax(target), self.theta,
-                                    self.gamma, self.clip_min, self.clip_max)
-
-        return X_adv
-
+                X_adv, = batch_eval(self.sess, [self.x], [self.default_graph],
+                                    [X], args=eval_params)
+            return X_adv
+        else:
+            raise NotImplementedError('Theano version of SaliencyMapMethod not'
+                                      ' currently implemented.')
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """

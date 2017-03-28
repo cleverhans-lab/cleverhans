@@ -41,6 +41,8 @@ def main(argv=None):
     MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
     :return:
     """
+    # Disable Keras learning phase since we will be serving through tensorflow
+    keras.layers.core.K.set_learning_phase(0)
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
@@ -70,7 +72,7 @@ def main(argv=None):
 
     # Define TF model graph
     model = cnn_model()
-    predictions = model(x)
+    preds = model(x)
     print("Defined TensorFlow model graph.")
 
     ###########################################################################
@@ -88,13 +90,13 @@ def main(argv=None):
             'batch_size': FLAGS.batch_size,
             'learning_rate': FLAGS.learning_rate
         }
-        model_train(sess, x, y, predictions, X_train, Y_train,
+        model_train(sess, x, y, preds, X_train, Y_train,
                     args=train_params)
         saver.save(sess, save_path)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': FLAGS.batch_size}
-    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
+    accuracy = model_eval(sess, x, y, preds, X_test, Y_test,
                           args=eval_params)
     assert X_test.shape[0] == 10000, X_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
@@ -123,9 +125,10 @@ def main(argv=None):
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Define the attack instance
-    attack_params = {'theta': 1., 'gamma': 0.1, 'nb_classes': FLAGS.nb_classes}
-    attack = SaliencyMapMethod(x, predictions, back='tf', sess=sess,
-                               clip_min=0., clip_max=1., params=attack_params)
+    JSMA_params = {'theta': 1., 'gamma': 0.1, 'nb_classes': FLAGS.nb_classes,
+                   'clip_min': 0., 'clip_max': 1.}
+    JSMA = SaliencyMapMethod(preds, back='tf', sess=sess, params=JSMA_params)
+    JSMA.generate(x, params={'targets': y})
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
@@ -139,11 +142,6 @@ def main(argv=None):
                 X_test[sample_ind:(sample_ind+1)],
                 (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
 
-        # Try the untargeted attack; target class will be randomly selected
-        print('--------------------------------------')
-        print('Crafting untargeted adv. example')
-        attack.craft(X_test[sample_ind:(sample_ind+1)])
-
         # Loop over all target classes
         for target in target_classes:
             print('--------------------------------------')
@@ -152,11 +150,11 @@ def main(argv=None):
             # This call runs the Jacobian-based saliency map approach
             one_hot_target = np.zeros((1, FLAGS.nb_classes), dtype=np.float32)
             one_hot_target[0, target] = 1
-            adv_x = attack.craft(X_test[sample_ind:(sample_ind+1)],
-                                 params={'targets': one_hot_target})
+            adv_x = JSMA.generate_np(X_test[sample_ind:(sample_ind+1)],
+                                     params={'targets': one_hot_target})
 
             # Check if success was achieved
-            predicted_label = model_argmax(sess, x, predictions, adv_x)
+            predicted_label = model_argmax(sess, x, preds, adv_x)
             res = int(predicted_label == target)
 
             # Computer number of modified features
@@ -191,16 +189,16 @@ def main(argv=None):
     # Compute the number of adversarial examples that were successfuly found
     nb_targets_tried = ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
     succ_rate = float(np.sum(results)) / nb_targets_tried
-    print('Avg. rate of successful adv. examples {0:.2f}'.format(succ_rate))
+    print('Avg. rate of successful adv. examples {0:.4f}'.format(succ_rate))
 
     # Compute the average distortion introduced by the algorithm
     percent_perturbed = np.mean(perturbations)
-    print('Avg. rate of perturbed features {0:.2f}'.format(percent_perturbed))
+    print('Avg. rate of perturbed features {0:.4f}'.format(percent_perturbed))
 
     # Compute the average distortion introduced for successful samples only
     percent_perturb_succ = np.mean(perturbations * (results == 1))
     print('Avg. rate of perturbed features for successful '
-          'adversarial examples {0:.2f}'.format(percent_perturb_succ))
+          'adversarial examples {0:.4f}'.format(percent_perturb_succ))
 
     # Close TF session
     sess.close()

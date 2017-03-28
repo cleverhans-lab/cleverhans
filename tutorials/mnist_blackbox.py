@@ -167,8 +167,7 @@ def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
             print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
             X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
-                                          FLAGS.lmbda, keras_phase=keras.
-                                          backend.learning_phase())
+                                          FLAGS.lmbda)
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
@@ -190,6 +189,7 @@ def main(argv=None):
     MNIST cleverhans tutorial
     :return:
     """
+    keras.layers.core.K.set_learning_phase(0)
 
     # Perform tutorial setup
     assert setup_tutorial()
