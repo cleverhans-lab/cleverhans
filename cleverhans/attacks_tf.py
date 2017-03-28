@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import copy
 import numpy as np
 from six.moves import xrange
-import sys
 import tensorflow as tf
 import warnings
 
