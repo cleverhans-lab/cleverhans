@@ -30,13 +30,14 @@ class Attack:
         self.nb_calls_generate = 0
         self.default_graph = None
 
-    def generate(self, x):
+    def generate(self, x, params={}):
         """
         Generate the attack's symbolic graph for adversarial examples. This
         method should be overriden in any child class that implements an
         attack that is expressable symbolically. Otherwise, it will wrap the
         numerical implementation as a symbolic operator.
         :param x: The model's symbolic inputs.
+        :param params: Parameter dictionary used by child classes.
         :return: A symbolic representation of the adversarial examples.
         """
         # Keep track of the number of calls to warn when more than one default
