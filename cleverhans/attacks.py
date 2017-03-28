@@ -17,7 +17,7 @@ class Attack:
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param params: Parameter dictionary used by child classes.
         """
-        if not back == 'tf' or back == 'th':
+        if not(back == 'tf' or back == 'th'):
             raise Exception("Backend argument must either be 'tf' or 'th'.")
         if back == 'tf' and sess is None:
             raise Exception("A tf session was not provided in sess argument.")
@@ -73,15 +73,23 @@ class Attack:
             warnings.warn("Attack was generated symbolically multiple "
                           "times, using graph defined by first call.")
 
+        # Define batch_eval function common to both backends
+        eval_params = {'batch_size': params['batch_size']}
         if self.back == 'tf':
             from .utils_tf import batch_eval
-            eval_params = {'batch_size': params['batch_size']}
-            X_adv, = batch_eval(self.sess, [self.x], [self.default_graph], [X],
-                                args=eval_params)
-            return X_adv
+
+            def batch_eval_com(in_sym, out_sym, inputs):
+                return batch_eval(self.sess, in_sym, out_sym, inputs,
+                                  args=eval_params)
         else:
-            error_string = "Theano version of generate_np not yet implemented"
-            raise NotImplementedError(error_string)
+            from .utils_th import batch_eval
+
+            def batch_eval_com(in_sym, out_sym, inputs):
+                return batch_eval(in_sym, out_sym, inputs, args=eval_params)
+
+        X_adv, = batch_eval_com([self.x], [self.default_graph], [X],
+                                args=eval_params)
+        return X_adv
 
 
 class FastGradientMethod(Attack):
@@ -118,19 +126,19 @@ class FastGradientMethod(Attack):
         # Check that all required attack specific parameters are defined
         assert 'eps' in params
 
-        # Check if order of the norm is acceptable given current implementation
-        if 'ord' in params and params['ord'] not in [np.inf, int(1), int(2)]:
-            raise Exception("Norm order must be either np.inf, 1, or 2.")
-        if back == 'th' and params['ord'] != np.inf:
-            raise NotImplementedError("The only FastGradientMethod norm "
-                                      "implemented for Theano is np.inf.")
-
         # Save attack-specific parameters
         self.eps = params['eps']
         self.ord = params['ord'] if 'ord' in params else np.inf
         self.y = params['y'] if 'y' in params else None
         self.clip_min = params['clip_min'] if 'clip_min' in params else None
         self.clip_max = params['clip_max'] if 'clip_max' in params else None
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.ord not in [np.inf, int(1), int(2)]:
+            raise Exception("Norm order must be either np.inf, 1, or 2.")
+        if back == 'th' and self.ord != np.inf:
+            raise NotImplementedError("The only FastGradientMethod norm "
+                                      "implemented for Theano is np.inf.")
 
     def generate(self, x):
         """
@@ -141,12 +149,13 @@ class FastGradientMethod(Attack):
             self.x = x
 
         if self.back == 'tf':
-            from .attacks_tf import fgm as fgsm
+            from .attacks_tf import fgm
         else:
-            from .attacks_th import fgsm
+            from .attacks_th import fgm
 
-        graph = fgsm(x, self.pred, self.y, self.eps, self.ord, self.clip_min,
-                     self.clip_max)
+        graph = fgm(x, self.pred, y=self.y, eps=self.eps, ord=self.ord,
+                    clip_min=self.clip_min, clip_max=self.clip_max)
+
         if self.nb_calls_generate == 1:
             self.default_graph = graph
         return graph
@@ -167,22 +176,26 @@ class FastGradientMethod(Attack):
             error = "True labels given but label placeholder missing in _init_"
             assert self.y is not None, error
 
-        # Define appropriate batch_eval function for chosen backend
+        # Define batch_eval function common to both backends
+        eval_params = {'batch_size': params['batch_size']}
         if self.back == 'tf':
             from .utils_tf import batch_eval
+
+            def batch_eval_com(in_sym, out_sym, inputs):
+                return batch_eval(self.sess, in_sym, out_sym, inputs,
+                                  args=eval_params)
         else:
             from .utils_th import batch_eval
-        eval_params = {'batch_size': params['batch_size']}
+
+            def batch_eval_com(in_sym, out_sym, inputs):
+                return batch_eval(in_sym, out_sym, inputs, args=eval_params)
 
         # Run symbolic graph without or with true labels
-        # TODO(This will not work with Theano because of sess)
         if params['Y'] is None:
-            X_adv, = batch_eval(self.sess, [self.x], [self.default_graph], [X],
-                                args=eval_params)
+            X_adv, = batch_eval_com([self.x], [self.default_graph], [X])
         else:
-            X_adv, = batch_eval(self.sess, [self.x, self.y],
-                                [self.default_graph], [X, params['Y']],
-                                args=eval_params)
+            X_adv, = batch_eval_com([self.x, self.y], [self.default_graph],
+                                    [X, params['Y']])
 
         return X_adv
 
