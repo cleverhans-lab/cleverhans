@@ -126,9 +126,9 @@ def main(argv=None):
 
     # Define the attack instance
     JSMA_params = {'theta': 1., 'gamma': 0.1, 'nb_classes': FLAGS.nb_classes,
-                   'clip_min': 0., 'clip_max': 1.}
-    JSMA = SaliencyMapMethod(preds, back='tf', sess=sess, params=JSMA_params)
-    JSMA.generate(x, params={'targets': y})
+                   'clip_min': 0., 'clip_max': 1., 'targets': y}
+    JSMA = SaliencyMapMethod(model, back='tf', sess=sess, params=JSMA_params)
+    JSMA.generate(x)
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
