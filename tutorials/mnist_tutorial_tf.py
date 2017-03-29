@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import keras
 from keras import backend
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
