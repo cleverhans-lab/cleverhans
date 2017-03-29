@@ -132,6 +132,8 @@ def main(argv=None):
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
+        print('--------------------------------------')
+        print('Attacking input %i/%i' % (sample_ind + 1, FLAGS.source_samples))
         # We want to find an adversarial example for each possible target class
         # (i.e. all classes that differ from the label given in the dataset)
         current_class = int(np.argmax(Y_test[sample_ind]))
@@ -144,8 +146,7 @@ def main(argv=None):
 
         # Loop over all target classes
         for target in target_classes:
-            print('--------------------------------------')
-            print('Crafting adv. example for target class %i' % target)
+            print('Generating adv. example for target class %i' % target)
 
             # This call runs the Jacobian-based saliency map approach
             one_hot_target = np.zeros((1, FLAGS.nb_classes), dtype=np.float32)
@@ -185,6 +186,8 @@ def main(argv=None):
             # Update the arrays for later analysis
             results[target, sample_ind] = res
             perturbations[target, sample_ind] = percent_perturb
+
+    print('--------------------------------------')
 
     # Compute the number of adversarial examples that were successfuly found
     nb_targets_tried = ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
