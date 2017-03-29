@@ -3,15 +3,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import os
+from distutils.version import LooseVersion
 import keras
-import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-if int(keras.__version__[0]) >= 2:
+if LooseVersion(keras.__version__[0]) >= LooseVersion('2.0.0'):
     from keras.layers import Conv2D
 else:
     from keras.layers import Convolution2D
+import matplotlib.pyplot as plt
+import os
 
 
 class _ArgsWrapper(object):
@@ -116,6 +117,21 @@ def other_classes(nb_classes, class_ind):
     return other_classes_list
 
 
+def conv_wrap(filters, kernel, strides, padding):
+    """
+    A wrapper that defines the right convolutional layer according to the
+    version of Keras that is installed.
+    :return: the Keras layer
+    """
+    if LooseVersion(keras.__version__[0]) >= LooseVersion('2.0.0'):
+        return Conv2D(filters=filters, kernel_size=kernel, strides=strides,
+                      padding=padding)
+    else:
+        return Convolution2D(filters, kernel[0], kernel[1], subsample=strides,
+                             border_mode=padding)
+
+
+
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
               channels=1, nb_filters=64, nb_classes=10):
     """
@@ -133,7 +149,6 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
     :param nb_classes: the number of output classes
     :return:
     """
-    keras_v = int(keras.__version__[0])
     model = Sequential()
 
     # Define the layers successively (convolution layers are version dependent)
@@ -142,30 +157,16 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
     else:
         input_shape = (img_rows, img_cols, channels)
 
-    layers = [Dropout(0.2, input_shape=input_shape)]
-    if keras_v >= 2:
-        layers.append(Conv2D(filters=nb_filters, kernel_size=(8, 8),
-                             strides=(2, 2), padding="same"))
-    else:
-        layers.append(Convolution2D(nb_filters, 8, 8, subsample=(2, 2),
-                                    border_mode="same"))
-    layers.append(Activation('relu'))
-    if keras_v >= 2:
-        layers.append(Conv2D(filters=(nb_filters * 2), kernel_size=(6, 6),
-                             strides=(2, 2), padding="valid"))
-    else:
-        layers.append(Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
-                                    border_mode="valid"))
-    layers.append(Activation('relu'))
-    if keras_v >= 2:
-        layers.append(Conv2D(filters=(nb_filters * 2), kernel_size=(5, 5),
-                             strides=(1, 1)))
-    else:
-        layers.append(Convolution2D(nb_filters * 2, 5, 5, subsample=(1, 1)))
-    layers.append(Activation('relu'))
-    layers.append(Dropout(0.5))
-    layers.append(Flatten())
-    layers.append(Dense(nb_classes))
+    layers = [Dropout(0.2, input_shape=input_shape),
+              conv_wrap(nb_filters, (8, 8), (2, 2), "same"),
+              Activation('relu'),
+              conv_wrap((nb_filters * 2), (6, 6), (2, 2), "valid"),
+              Activation('relu'),
+              conv_wrap((nb_filters * 2), (5, 5), (1, 1), "valid"),
+              Activation('relu'),
+              Dropout(0.5),
+              Flatten(),
+              Dense(nb_classes)]
 
     for layer in layers:
         model.add(layer)
