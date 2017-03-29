@@ -11,7 +11,7 @@ import warnings
 from . import utils
 
 
-def data_mnist():
+def data_mnist(testing=False):
     """
     Preprocess MNIST dataset
     :return:
@@ -42,6 +42,13 @@ def data_mnist():
     # convert class vectors to binary class matrices
     Y_train = np_utils.to_categorical(y_train, nb_classes)
     Y_test = np_utils.to_categorical(y_test, nb_classes)
+
+    if testing:
+        X_train = X_train[:10000]
+        Y_train = Y_train[:10000]
+        X_test = X_test[:2000]
+        Y_test = Y_test[:2000]
+
     return X_train, Y_train, X_test, Y_test
 
 
