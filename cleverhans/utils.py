@@ -7,12 +7,13 @@ from distutils.version import LooseVersion
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
+import matplotlib.pyplot as plt
+import os
+
 if LooseVersion(keras.__version__[0]) >= LooseVersion('2.0.0'):
     from keras.layers import Conv2D
 else:
     from keras.layers import Convolution2D
-import matplotlib.pyplot as plt
-import os
 
 
 class _ArgsWrapper(object):
@@ -129,7 +130,6 @@ def conv_wrap(filters, kernel, strides, padding):
     else:
         return Convolution2D(filters, kernel[0], kernel[1], subsample=strides,
                              border_mode=padding)
-
 
 
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
