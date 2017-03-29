@@ -8,7 +8,10 @@ import keras
 import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D
+if int(keras.__version__[0]) >= 2:
+    from keras.layers import Conv2D
+else:
+    from keras.layers import Convolution2D
 
 
 class _ArgsWrapper(object):
@@ -130,26 +133,43 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
     :param nb_classes: the number of output classes
     :return:
     """
+    keras_v = int(keras.__version__[0])
     model = Sequential()
 
+    # Define the layers successively (convolution layers are version dependent)
     if keras.backend.image_dim_ordering() == 'th':
         input_shape = (channels, img_rows, img_cols)
     else:
         input_shape = (img_rows, img_cols, channels)
 
-    layers = [Dropout(0.2, input_shape=input_shape),
-              Conv2D(filters=nb_filters, kernel_size=(8, 8), strides=(2, 2), padding="same"),
-              Activation('relu'),
-              Conv2D(filters=(nb_filters * 2), kernel_size=(6, 6), strides=(2, 2), padding="valid"),
-              Activation('relu'),
-              Conv2D(filters=(nb_filters * 2), kernel_size=(5, 5), strides=(1, 1)),
-              Activation('relu'),
-              Dropout(0.5),
-              Flatten(),
-              Dense(nb_classes)]
+    layers = [Dropout(0.2, input_shape=input_shape)]
+    if keras_v >= 2:
+        layers.append(Conv2D(filters=nb_filters, kernel_size=(8, 8),
+                             strides=(2, 2), padding="same"))
+    else:
+        layers.append(Convolution2D(nb_filters, 8, 8, subsample=(2, 2),
+                                    border_mode="same"))
+    layers.append(Activation('relu'))
+    if keras_v >= 2:
+        layers.append(Conv2D(filters=(nb_filters * 2), kernel_size=(6, 6),
+                             strides=(2, 2), padding="valid"))
+    else:
+        layers.append(Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
+                                    border_mode="valid"))
+    layers.append(Activation('relu'))
+    if keras_v >= 2:
+        layers.append(Conv2D(filters=(nb_filters * 2), kernel_size=(5, 5),
+                             strides=(1, 1)))
+    else:
+        layers.append(Convolution2D(nb_filters * 2, 5, 5, subsample=(1, 1)))
+    layers.append(Activation('relu'))
+    layers.append(Dropout(0.5))
+    layers.append(Flatten())
+    layers.append(Dense(nb_classes))
 
     for layer in layers:
         model.add(layer)
+
     if logits:
         logits_tensor = model(input_ph)
     model.add(Activation('softmax'))
