@@ -200,10 +200,12 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
 
             # The last batch may be smaller than all others, so we need to
             # account for variable batch size here
-            accuracy += cur_batch_size * acc_value.eval(
+            cur_acc = acc_value.eval(
                 feed_dict={x: X_test[start:end],
                            y: Y_test[start:end],
                            keras.backend.learning_phase(): 0})
+
+            accuracy += (cur_batch_size * cur_acc).mean()
         assert end >= len(X_test)
 
         # Divide by number of examples to get final value
