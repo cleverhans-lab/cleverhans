@@ -8,7 +8,7 @@ import keras
 import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Convolution2D
+from keras.layers import Conv2D
 
 
 class _ArgsWrapper(object):
@@ -138,19 +138,16 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
         input_shape = (img_rows, img_cols, channels)
 
     layers = [Dropout(0.2, input_shape=input_shape),
-              Convolution2D(nb_filters, 8, 8,
-                            subsample=(2, 2),
-                            border_mode="same"
-                            ),
+              Conv2D(filters=nb_filters, kernel_size=(8, 8), strides=(2, 2), padding="same"),
               Activation('relu'),
-              Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
-                            border_mode="valid"),
+              Conv2D(filters=(nb_filters * 2), kernel_size=(6, 6), strides=(2, 2), padding="valid"),
               Activation('relu'),
-              Convolution2D(nb_filters * 2, 5, 5, subsample=(1, 1)),
+              Conv2D(filters=(nb_filters * 2), kernel_size=(5, 5), strides=(1, 1)),
               Activation('relu'),
               Dropout(0.5),
               Flatten(),
               Dense(nb_classes)]
+
     for layer in layers:
         model.add(layer)
     if logits:
