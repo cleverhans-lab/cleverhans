@@ -9,9 +9,10 @@ class Attack:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, pred, back='tf', sess=None, params={}):
+    def __init__(self, model, back='tf', sess=None, params={}):
         """
-        :param pred: The model's symbolic output.
+        :param pred: A function that takes a symbolic input and returns the
+                     symbolic output for the model's predictions.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param params: Parameter dictionary used by child classes.
         """
@@ -23,12 +24,9 @@ class Attack:
             raise Exception("A session should not be provided when using th.")
 
         # Prepare attributes
-        self.x = None
-        self.pred = pred
+        self.model = model
         self.back = back
         self.sess = sess
-        self.nb_calls_generate = 0
-        self.default_graph = None
 
     def generate(self, x, params={}):
         """
@@ -40,21 +38,13 @@ class Attack:
         :param params: Parameter dictionary used by child classes.
         :return: A symbolic representation of the adversarial examples.
         """
-        # Keep track of the number of calls to warn when more than one default
-        # graph to run if generating adversarial examples numerically
-        self.nb_calls_generate += 1
-
-        if self.back == 'tf':
-            import tensorflow as tf
-            wrapper = tf.py_func(self.generate_np, [self.x], tf.float32)
-            if self.nb_calls_generate == 1:
-                self.x = x
-                self.default_graph = wrapper
-            return wrapper
-        else:
+        if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
 
-    def generate_np(self, X, params={'batch_size': 128}):
+        import tensorflow as tf
+        return tf.py_func(self.generate_np, [x], tf.float32)
+
+    def generate_np(self, X, params={}):
         """
         Generate adversarial examples and return them as a Numpy array. This
         method should be overriden in any child class that implements an attack
@@ -63,29 +53,24 @@ class Attack:
         :param params: Parameter dictionary used by child classes.
         :return: A Numpy array holding the adversarial examples.
         """
-        if self.default_graph is None:
-            error_string = "The attack symbolic graph was not generated."
-            raise Exception(error_string)
-        if self.nb_calls_generate > 1:
-            warnings.warn("Attack was generated symbolically multiple "
-                          "times, using graph defined by first call.")
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
 
-        # Define batch_eval function common to both backends
-        eval_params = {'batch_size': params['batch_size']}
-        if self.back == 'tf':
-            from .utils_tf import batch_eval
+        import tensorflow as tf
 
-            def batch_eval_com(in_sym, out_sym, inputs):
-                return batch_eval(self.sess, in_sym, out_sym, inputs,
-                                  args=eval_params)
-        else:
-            from .utils_th import batch_eval
+        # Generate this attack's graph if it hasn't been done previously
+        if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
+            input_shape = list(X.shape)
+            input_shape[0] = None
+            self._x = tf.placeholder(tf.float32, shape=input_shape)
+            self._x_adv = self.generate(self._x)
 
-            def batch_eval_com(in_sym, out_sym, inputs):
-                return batch_eval(in_sym, out_sym, inputs, args=eval_params)
+        # This indicates loop calls between generate and generate_np
+        if hasattr(self, "_x") and not hasattr(self, "_x_adv"):
+            error_string = "No symbolic or numeric implementation of attack."
+            raise NotImplementedError(error_string)
 
-        X_adv, = batch_eval_com([self.x], [self.default_graph], [X])
-        return X_adv
+        return self.sess.run(self._x_adv, feed_dict={self._x: X})
 
 
 class FastGradientMethod(Attack):
@@ -96,11 +81,11 @@ class FastGradientMethod(Attack):
     the Fast Gradient Method.
     Paper link: https://arxiv.org/abs/1412.6572
     """
-    def __init__(self, pred, back='tf', sess=None, params={'eps': 0.3,
-                                                           'ord': 'np.inf',
-                                                           'y': None,
-                                                           'clip_min': None,
-                                                           'clip_max': None}):
+    def __init__(self, model, back='tf', sess=None, params={'eps': 0.3,
+                                                            'ord': 'np.inf',
+                                                            'y': None,
+                                                            'clip_min': None,
+                                                            'clip_max': None}):
         """
         Create a FastGradientMethod instance.
 
@@ -117,7 +102,7 @@ class FastGradientMethod(Attack):
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
-        super(FastGradientMethod, self).__init__(pred, back, sess, params)
+        super(FastGradientMethod, self).__init__(model, back, sess, params)
 
         # Check that all required attack specific parameters are defined
         assert 'eps' in params
@@ -136,64 +121,45 @@ class FastGradientMethod(Attack):
             raise NotImplementedError("The only FastGradientMethod norm "
                                       "implemented for Theano is np.inf.")
 
-    def generate(self, x):
+    def generate(self, x, params={}):
         """
         Generate symbolic graph for adversarial examples and return.
         """
-        self.nb_calls_generate += 1
-        if self.nb_calls_generate == 1:
-            self.x = x
-
         if self.back == 'tf':
             from .attacks_tf import fgm
         else:
             from .attacks_th import fgm
 
-        graph = fgm(x, self.pred, y=self.y, eps=self.eps, ord=self.ord,
-                    clip_min=self.clip_min, clip_max=self.clip_max)
+        return fgm(x, self.model(x), y=self.y, eps=self.eps, ord=self.ord,
+                   clip_min=self.clip_min, clip_max=self.clip_max)
 
-        if self.nb_calls_generate == 1:
-            self.default_graph = graph
-        return graph
-
-    def generate_np(self, X, params={'Y': None, 'batch_size': 128}):
+    def generate_np(self, X, params={'Y': None}):
         """
         Generate adversarial samples and return them in a Numpy array.
         """
-        if self.default_graph is None:
-            error_string = "The attack symbolic graph was not generated."
-            raise Exception(error_string)
-        if self.nb_calls_generate > 1:
-            warnings.warn("Attack was generated symbolically multiple "
-                          "times, using graph defined by first call.")
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
 
         # Verify label placeholder was defined previously if using true labels
-        if params['Y'] is not None:
+        if params['Y'] is not None and self.y is None:
             error = "True labels given but label placeholder missing in _init_"
-            assert self.y is not None, error
+            raise Exception(error)
 
-        # Define batch_eval function common to both backends
-        eval_params = {'batch_size': params['batch_size']}
-        if self.back == 'tf':
-            from .utils_tf import batch_eval
+        import tensorflow as tf
 
-            def batch_eval_com(in_sym, out_sym, inputs):
-                return batch_eval(self.sess, in_sym, out_sym, inputs,
-                                  args=eval_params)
-        else:
-            from .utils_th import batch_eval
-
-            def batch_eval_com(in_sym, out_sym, inputs):
-                return batch_eval(in_sym, out_sym, inputs, args=eval_params)
+        # Generate this attack's graph if it hasn't been done previously
+        if not hasattr(self, "_x"):
+            input_shape = list(X.shape)
+            input_shape[0] = None
+            self._x = tf.placeholder(tf.float32, shape=input_shape)
+            self._x_adv = self.generate(self._x)
 
         # Run symbolic graph without or with true labels
         if params['Y'] is None:
-            X_adv, = batch_eval_com([self.x], [self.default_graph], [X])
+            feed_dict = {self._x: X}
         else:
-            X_adv, = batch_eval_com([self.x, self.y], [self.default_graph],
-                                    [X, params['Y']])
-
-        return X_adv
+            feed_dict = {self._x: X, self.y: params['Y']}
+        return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
 
 class BasicIterativeMethod(Attack):
