@@ -10,7 +10,7 @@ import warnings
 from . import utils
 
 
-def data_mnist(datadir='/tmp/'):
+def data_mnist(datadir='/tmp/', testing=False):
     """
     Load and preprocess MNIST dataset
     :return:
@@ -54,6 +54,12 @@ def data_mnist(datadir='/tmp/'):
     print('X_train shape:', X_train.shape)
     print(X_train.shape[0], 'train samples')
     print(X_test.shape[0], 'test samples')
+
+    if testing:
+        X_train = X_train[:10000]
+        Y_train = Y_train[:10000]
+        X_test = X_test[:2000]
+        Y_test = Y_test[:2000]
 
     return X_train, Y_train, X_test, Y_test
 

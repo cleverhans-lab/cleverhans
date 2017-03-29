@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import keras
 from keras import backend
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
@@ -21,12 +22,20 @@ flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
 
-def main(argv=None):
+def mnist_tutorial(testing=False):
     """
     MNIST cleverhans tutorial
+    :param testing: only used internally for cleverhans testing purposes
     :return:
     """
     keras.layers.core.K.set_learning_phase(0)
+
+    # Used for cleverhans testing purposes only. Content returned must be:
+    # [0] accuracy of model on clean data
+    # [1] accuracy of model on adversarial examples
+    # [2] accuracy of adversarially trained model on clean data
+    # [3] accuracy of adversarially trained model on adversarial examples
+    test = np.zeros(4, dtype=np.float32)
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
@@ -46,7 +55,7 @@ def main(argv=None):
     keras.backend.set_session(sess)
 
     # Get MNIST test data
-    X_train, Y_train, X_test, Y_test = data_mnist()
+    X_train, Y_train, X_test, Y_test = data_mnist(testing=testing)
 
     assert Y_train.shape[1] == 10.
     label_smooth = .1
@@ -66,8 +75,10 @@ def main(argv=None):
         eval_params = {'batch_size': FLAGS.batch_size}
         accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
                               args=eval_params)
-        assert X_test.shape[0] == 10000, X_test.shape
-        print('Test accuracy on legitimate test examples: %0.4f' % accuracy)
+        test[0] = accuracy  # Used for cleverhans testing purposes only.
+        if not testing:
+            assert X_test.shape[0] == 10000, X_test.shape
+        print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
     # Train an MNIST model
     train_params = {
@@ -87,7 +98,8 @@ def main(argv=None):
     # Evaluate the accuracy of the MNIST model on adversarial examples
     eval_par = {'batch_size': FLAGS.batch_size}
     accuracy = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
-    print('Test accuracy on adversarial examples: %0.4f\n' % accuracy)
+    test[1] = accuracy  # Used for cleverhans testing purposes only.
+    print('Test accuracy on adversarial examples: ' + str(accuracy))
 
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
@@ -101,18 +113,26 @@ def main(argv=None):
         eval_params = {'batch_size': FLAGS.batch_size}
         accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test,
                               args=eval_params)
-        print('Test accuracy on legitimate test examples: %0.4f' % accuracy)
+        test[2] = accuracy  # Used for cleverhans testing purposes only.
+        print('Test accuracy on legitimate test examples: ' + str(accuracy))
 
         # Accuracy of the adversarially trained model on adversarial examples
         accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test,
                                   Y_test, args=eval_params)
-        print('Test accuracy on adversarial examples: %0.4f' % accuracy_adv)
+        test[3] = accuracy_adv  # Used for cleverhans testing purposes only.
+        print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
 
     # Perform and evaluate adversarial training
     model_train(sess, x, y, predictions_2, X_train, Y_train,
                 predictions_adv=predictions_2_adv, evaluate=evaluate_2,
                 args=train_params)
 
+    # Used for cleverhans testing purposes only.
+    return test
+
+
+def main(argv=None):
+    mnist_tutorial()
 
 if __name__ == '__main__':
     app.run()
