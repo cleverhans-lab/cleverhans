@@ -117,26 +117,22 @@ def other_classes(nb_classes, class_ind):
 
 def random_targets(gt, nb_classes):
     """
-    Take in the correct labels for each sample and randomly choose
-    target labels from the others
-    :param gt: TODO
+    Take in the correct labels for each sample and randomly choose target
+    labels from the others
+    :param gt: the correct labels
     :param nb_classes: The number of classes for this model
     :return: A numpy array holding the randomly-selected target classes
     """
-    # TODO(This functionality implementation can be improved.)
-
     if len(gt.shape) > 1:
         gt = np.argmax(gt, axis=1)
 
-    def f(label):
-        random_label = np.random.choice(other_classes(nb_classes, label))
-        random_label = np.expand_dims(random_label, axis=0)
-        return np_utils.to_categorical(np.asarray(random_label), nb_classes)
+    result = np.zeros(gt.shape)
 
-    if type(gt) is np.int64:
-        return f(gt)
-    else:
-        return np.asarray([f(label) for label in gt])
+    for class_ind in xrange(nb_classes):
+        in_cl = gt == class_ind
+        result[in_cl] = np.random.choice(other_classes(nb_classes, class_ind))
+
+    return np_utils.to_categorical(np.asarray(result), nb_classes)
 
 
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
