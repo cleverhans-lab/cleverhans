@@ -95,7 +95,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test):
     print('Test accuracy of black-box on legitimate test '
           'examples: ' + str(accuracy))
 
-    return predictions
+    return model, predictions
 
 
 def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
@@ -131,7 +131,7 @@ def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     return model
 
 
-def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
+def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub):
     """
     This function creates the substitute by alternatively
     augmenting the training data and training the substitute.
@@ -181,7 +181,7 @@ def train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub):
             # by the black-box model
             Y_sub[int(len(X_sub)/2):] = np.argmax(bbox_val, axis=1)
 
-    return preds_sub
+    return model_sub, preds_sub
 
 
 def main(argv=None):
@@ -216,22 +216,22 @@ def main(argv=None):
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
     print("Preparing the black-box model.")
-    bbox_preds = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test)
+    model, bbox_preds = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test)
 
     print("Training the substitute model.")
     # Train substitute using method from https://arxiv.org/abs/1602.02697
-    substitute_preds = train_substitute(sess, x, y, bbox_preds, X_sub, Y_sub)
+    model_sub, preds_sub = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
-    FGSM = FastGradientMethod(x, substitute_preds, sess=sess, clip_min=0.,
-                              clip_max=1., params={'eps': 0.3, 'ord': np.inf})
+    FGSM_par = {'eps': 0.3, 'ord': np.inf, 'clip_min': 0., 'clip_max': 1.}
+    FGSM = FastGradientMethod(model_sub, sess=sess, params=FGSM_par)
 
     # Craft adversarial examples using the substitute
     eval_params = {'batch_size': FLAGS.batch_size}
-    X_test_adv = FGSM.craft(X_test)
+    x_adv_sub = FGSM.generate(x)
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
-    accuracy = model_eval(sess, x, y, bbox_preds, X_test_adv, Y_test,
+    accuracy = model_eval(sess, x, y, model(x_adv_sub), X_test, Y_test,
                           args=eval_params)
     print('Test accuracy of oracle on adversarial examples generated '
           'using the substitute: ' + str(accuracy))
