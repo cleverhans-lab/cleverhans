@@ -168,41 +168,34 @@ class BasicIterativeMethod(Attack):
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
-    def __init__(self, pred, back='tf', sess=None, params={'eps': 0.05,
-                                                           'nb_iter': 10,
-                                                           'model': None,
-                                                           'y': None,
-                                                           'ord': 'np.inf',
-                                                           'clip_min': None,
-                                                           'clip_max': None}):
+    def __init__(self, model, back='tf', sess=None, params={'eps': 0.05,
+                                                            'nb_iter': 10,
+                                                            'y': None,
+                                                            'ord': 'np.inf',
+                                                            'clip_min': None,
+                                                            'clip_max': None}):
         """
         Create a BasicIterativeMethod instance.
 
         Attack-specific parameters:
         :param eps: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
-        :param model: (required function) Model function returning the output
-              placeholder for an input placeholder.
         :param y: (required) A placeholder for the model labels.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
-        super(BasicIterativeMethod, self).__init__(pred, back, sess, params)
+        super(BasicIterativeMethod, self).__init__(model, back, sess, params)
 
         # Check that all required attack specific parameters are defined
         req = ('eps', 'nb_iter', 'y')
         if not all(k in params for k in req):
             raise Exception("Attack requires label placeholder.")
-        if 'model' not in params:
-            raise Exception("Attack requires a model function returning the"
-                            " output placeholder for an input placeholder.")
 
         # Save attack-specific parameters
         self.eps = params['eps']
         self.nb_iter = params['nb_iter']
-        self.model = params['model']
         self.y = params['y']
         self.ord = params['ord'] if 'ord' in params else np.inf
         self.clip_min = params['clip_min'] if 'clip_min' in params else None
@@ -216,16 +209,15 @@ class BasicIterativeMethod(Attack):
             raise NotImplementedError(error_string)
 
     def generate(self, x, params={}):
-        self.nb_calls_generate += 1
         import tensorflow as tf
 
         # Initialize loop variables
         adv_x = x
         y = None
+        model_preds = self.model(adv_x)
 
         for i in range(self.nb_iter):
-            model_preds = self.model(adv_x)
-            FGSM = FastGradientMethod(model_preds, back=self.back,
+            FGSM = FastGradientMethod(self.model, back=self.back,
                                       sess=self.sess,
                                       params={'eps': self.eps,
                                               'clip_min': self.clip_min,
@@ -237,9 +229,6 @@ class BasicIterativeMethod(Attack):
             if i == 0:
                 preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
                 y = tf.to_float(tf.equal(model_preds, preds_max))
-        if self.nb_calls_generate == 1:
-            self.x = x
-            self.default_graph = adv_x
         return adv_x
 
 
@@ -248,7 +237,7 @@ class SaliencyMapMethod(Attack):
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    def __init__(self, pred, back='tf', sess=None, params={'theta': 1.,
+    def __init__(self, model, back='tf', sess=None, params={'theta': 1.,
                                                            'gamma': np.inf,
                                                            'nb_classes': 10,
                                                            'clip_min': 0.,
@@ -264,7 +253,7 @@ class SaliencyMapMethod(Attack):
         :param clip_min: (required float) Minimum component value for clipping
         :param clip_max: (required float) Maximum component value for clipping
         """
-        super(SaliencyMapMethod, self).__init__(pred, back, sess, params)
+        super(SaliencyMapMethod, self).__init__(model, back, sess, params)
 
         # Check that all required attack specific parameters are defined
         req = ('theta', 'gamma', 'nb_classes', 'clip_min', 'clip_max')
@@ -277,8 +266,6 @@ class SaliencyMapMethod(Attack):
         self.clip_min = params['clip_min']
         self.clip_max = params['clip_max']
 
-        self.x = None
-        self.pred = pred
         self.targeted = None  # Target placeholder if the attack is targeted
 
     def generate(self, x, params={'targets': None}):
