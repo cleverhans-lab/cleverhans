@@ -17,8 +17,6 @@ FLAGS = flags.FLAGS
 
 
 def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
-    warnings.warn("attacks_tf.fgsm is deprecated and will be removed on "
-                  " 09-27-17. Use attacks_tf.fgm instead.")
     return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,
                clip_max=clip_max)
 
