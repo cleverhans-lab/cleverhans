@@ -23,8 +23,8 @@ def fgm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
     :param y: the output placeholder. Use None (the default) to avoid the
             label leaking effect.
     :param eps: the epsilon (input variation parameter)
-    :param ord: string with the norm order to use when computing gradients.
-                This should be either 'inf', 'L1' or 'L2'.
+    :param ord: (optional) Order of the norm (mimics Numpy).
+                Possible values: np.inf (other norms not implemented yet).
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
