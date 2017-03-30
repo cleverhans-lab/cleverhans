@@ -346,7 +346,7 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
                   at the previous iteration
     :param grads: Jacobian symbolic graph for the substitute
                   (should be generated using attacks_tf.jacobian_graph)
-    :param keras_phase: (depracated) if not None, holds keras learning_phase
+    :param keras_phase: (deprecated) if not None, holds keras learning_phase
     :return: augmented substitute data (will need to be labeled by oracle)
     """
     assert len(x.get_shape()) == len(np.shape(X_sub_prev))
@@ -354,7 +354,7 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     assert len(X_sub_prev) == len(Y_sub)
 
     if keras_phase is not None:
-        warnings.warn("keras_phase argument is depracated and will be removed"
+        warnings.warn("keras_phase argument is deprecated and will be removed"
                       " on 09-28-17. Instead, use K.set_learning_phase(0) at "
                       "the start of your script and serve with tensorflow.")
 
