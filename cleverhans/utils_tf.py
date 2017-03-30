@@ -176,7 +176,10 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
     assert args.batch_size, "Batch size was not given in args dict"
 
     # Define symbol for accuracy
-    acc_value = keras.metrics.categorical_accuracy(y, model)
+    # Keras 2.0 categorical_accuracy no longer calculates the mean internally
+    # tf.reduce_mean is called in here and is backward compatible with previous
+    # versions of Keras
+    acc_value = tf.reduce_mean(keras.metrics.categorical_accuracy(y, model))
 
     # Init result var
     accuracy = 0.0
@@ -204,7 +207,7 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
                            y: Y_test[start:end],
                            keras.backend.learning_phase(): 0})
 
-            accuracy += (cur_batch_size * cur_acc).mean()
+            accuracy += (cur_batch_size * cur_acc)
         assert end >= len(X_test)
 
         # Divide by number of examples to get final value
