@@ -11,9 +11,10 @@ class Attack:
 
     def __init__(self, model, back='tf', sess=None, params={}):
         """
-        :param pred: A function that takes a symbolic input and returns the
-                     symbolic output for the model's predictions.
+        :param model: A function that takes a symbolic input and returns the
+                      symbolic output for the model's predictions.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
+        :param sess: The tf session to run graphs in (use None for Theano)
         :param params: Parameter dictionary used by child classes.
         """
         if not(back == 'tf' or back == 'th'):
