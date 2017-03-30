@@ -116,9 +116,9 @@ def main(argv=None):
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Define the SaliencyMapMethod attack object
-    JSMA_params = {'theta': 1., 'gamma': 0.1, 'nb_classes': FLAGS.nb_classes,
+    jsma_params = {'theta': 1., 'gamma': 0.1, 'nb_classes': FLAGS.nb_classes,
                    'clip_min': 0., 'clip_max': 1., 'targets': y}
-    JSMA = SaliencyMapMethod(model, back='tf', sess=sess, params=JSMA_params)
+    jsma = SaliencyMapMethod(model, back='tf', sess=sess, params=jsma_params)
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
@@ -142,7 +142,7 @@ def main(argv=None):
             # This call runs the Jacobian-based saliency map approach
             one_hot_target = np.zeros((1, FLAGS.nb_classes), dtype=np.float32)
             one_hot_target[0, target] = 1
-            adv_x = JSMA.generate_np(X_test[sample_ind:(sample_ind+1)],
+            adv_x = jsma.generate_np(X_test[sample_ind:(sample_ind+1)],
                                      params={'targets': one_hot_target})
 
             # Check if success was achieved
