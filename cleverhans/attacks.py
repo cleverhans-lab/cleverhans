@@ -96,7 +96,7 @@ class FastGradientMethod(Attack):
         :param y: (optional) A placeholder for the model labels. Only provide
                   this parameter if you'd like to use true labels when crafting
                   adversarial samples. Otherwise, model predictions are used as
-                  labels to avoid the label leaking effect (explained in this
+                  labels to avoid the "label leaking" effect (explained in this
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
