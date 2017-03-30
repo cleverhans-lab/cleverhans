@@ -74,8 +74,8 @@ def main():
                    Y_train, evaluate=evaluate, args=args)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
-    FGSM = FastGradientMethod(model, back='th', params={'eps': 0.3})
-    adv_x = FGSM.generate(x)
+    fgsm = FastGradientMethod(model, back='th', params={'eps': 0.3})
+    adv_x = fgsm.generate(x)
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
     accuracy = th_model_eval(x, y, model(adv_x), X_test, Y_test, args=args)
@@ -86,8 +86,8 @@ def main():
     model_2 = cnn_model()
     model_2.build(x_shape)
     preds_2 = model_2(x)
-    FGSM = FastGradientMethod(model_2, back='th', params={'eps': 0.3})
-    preds_2_adv = model_2(FGSM.generate(x))
+    fgsm = FastGradientMethod(model_2, back='th', params={'eps': 0.3})
+    preds_2_adv = model_2(fgsm.generate(x))
 
     def evaluate_2():
         # Evaluate the accuracy of the adversarialy trained MNIST model on
