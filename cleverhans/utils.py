@@ -118,7 +118,7 @@ def other_classes(nb_classes, class_ind):
     return other_classes_list
 
 
-def conv_wrap(filters, kernel, strides, padding):
+def conv_2d(filters, kernel, strides, padding):
     """
     A wrapper that defines the right convolutional layer according to the
     version of Keras that is installed.
@@ -158,11 +158,11 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
         input_shape = (img_rows, img_cols, channels)
 
     layers = [Dropout(0.2, input_shape=input_shape),
-              conv_wrap(nb_filters, (8, 8), (2, 2), "same"),
+              conv_2d(nb_filters, (8, 8), (2, 2), "same"),
               Activation('relu'),
-              conv_wrap((nb_filters * 2), (6, 6), (2, 2), "valid"),
+              conv_2d((nb_filters * 2), (6, 6), (2, 2), "valid"),
               Activation('relu'),
-              conv_wrap((nb_filters * 2), (5, 5), (1, 1), "valid"),
+              conv_2d((nb_filters * 2), (5, 5), (1, 1), "valid"),
               Activation('relu'),
               Dropout(0.5),
               Flatten(),
