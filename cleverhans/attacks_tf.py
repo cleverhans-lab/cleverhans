@@ -28,7 +28,12 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
     TensorFlow implementation of the Fast Gradient Method.
     :param x: the input placeholder
     :param preds: the model's output tensor
-    :param y: the output placeholder. Use None (default) to avoid label leaking
+    :param y: (optional) A placeholder for the model labels. Only provide
+              this parameter if you'd like to use true labels when crafting
+              adversarial samples. Otherwise, model predictions are used as
+              labels to avoid the "label leaking" effect (explained in this
+              paper: https://arxiv.org/abs/1611.01236). Default is None.
+              Labels should be one-hot-encoded.
     :param eps: the epsilon (input variation parameter)
     :param ord: (optional) Order of the norm (mimics Numpy).
                 Possible values: np.inf, 1 or 2.
