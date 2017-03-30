@@ -215,7 +215,11 @@ class BasicIterativeMethod(Attack):
         # Initialize loop variables
         adv_x = x
         y = None
+
+        # Fix labels to the first model predictions for loss computation
         model_preds = self.model(adv_x)
+        preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
+        y = tf.to_float(tf.equal(model_preds, preds_max))
 
         for i in range(self.nb_iter):
             FGSM = FastGradientMethod(self.model, back=self.back,
@@ -225,11 +229,6 @@ class BasicIterativeMethod(Attack):
                                               'clip_max': self.clip_max,
                                               'y': y})
             adv_x = FGSM.generate(adv_x)
-            # After first iteration, we fix the labels to the first model
-            # predictions when computing the model loss wrt labels
-            if i == 0:
-                preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
-                y = tf.to_float(tf.equal(model_preds, preds_max))
         return adv_x
 
 
