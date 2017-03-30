@@ -30,8 +30,8 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
     :param preds: the model's output tensor
     :param y: the output placeholder. Use None (default) to avoid label leaking
     :param eps: the epsilon (input variation parameter)
-    :param ord: string with the norm order to use when computing gradients.
-                This should be either np.inf, 1 or 2.
+    :param ord: (optional) Order of the norm (mimics Numpy).
+                Possible values: np.inf, 1 or 2.
     :param clip_min: Minimum float value for adversarial example components
     :param clip_max: Maximum float value for adversarial example components
     :return: a tensor for the adversarial example
