@@ -10,7 +10,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 import matplotlib.pyplot as plt
 import os
 
-if LooseVersion(keras.__version__[0]) >= LooseVersion('2.0.0'):
+if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
     from keras.layers import Conv2D
 else:
     from keras.layers import Convolution2D
@@ -124,7 +124,7 @@ def conv_wrap(filters, kernel, strides, padding):
     version of Keras that is installed.
     :return: the Keras layer
     """
-    if LooseVersion(keras.__version__[0]) >= LooseVersion('2.0.0'):
+    if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
         return Conv2D(filters=filters, kernel_size=kernel, strides=strides,
                       padding=padding)
     else:
