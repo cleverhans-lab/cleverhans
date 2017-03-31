@@ -118,10 +118,19 @@ def other_classes(nb_classes, class_ind):
     return other_classes_list
 
 
-def conv_2d(filters, kernel, strides, padding):
+def conv_2d(filters, kernel_shape, strides, padding):
     """
-    A wrapper that defines the right convolutional layer according to the
+    Defines the right convolutional layer according to the
     version of Keras that is installed.
+    :param filters: (required integer) the dimensionality of the output
+                    space (i.e. the number output of filters in the
+                    convolution)
+    :param kernel_shape: (required tuple or list of 2 integers) specifies
+                         the strides of the convolution along the width and
+                         height.
+    :param padding: (required string) can be either 'valid' (no padding around
+                    input or feature map) or 'same' (pad to ensure that the
+                    output feature map size is identical to the layer input)
     :return: the Keras layer
     """
     if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
