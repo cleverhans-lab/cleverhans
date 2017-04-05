@@ -134,11 +134,11 @@ def conv_2d(filters, kernel_shape, strides, padding):
     :return: the Keras layer
     """
     if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-        return Conv2D(filters=filters, kernel_size=kernel, strides=strides,
-                      padding=padding)
+        return Conv2D(filters=filters, kernel_size=kernel_shape,
+                      strides=strides, padding=padding)
     else:
-        return Convolution2D(filters, kernel[0], kernel[1], subsample=strides,
-                             border_mode=padding)
+        return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
+                             subsample=strides, border_mode=padding)
 
 
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
