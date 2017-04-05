@@ -145,8 +145,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             save_path = os.path.join(args.train_dir, args.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            print("Completed model training and model saved at:"
-                  + str(save_path))
+            print("Completed model training and saved at:" + str(save_path))
         else:
             print("Completed model training.")
 
@@ -177,7 +176,10 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
     assert args.batch_size, "Batch size was not given in args dict"
 
     # Define symbol for accuracy
-    acc_value = keras.metrics.categorical_accuracy(y, model)
+    # Keras 2.0 categorical_accuracy no longer calculates the mean internally
+    # tf.reduce_mean is called in here and is backward compatible with previous
+    # versions of Keras
+    acc_value = tf.reduce_mean(keras.metrics.categorical_accuracy(y, model))
 
     # Init result var
     accuracy = 0.0
@@ -200,10 +202,12 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
 
             # The last batch may be smaller than all others, so we need to
             # account for variable batch size here
-            accuracy += cur_batch_size * acc_value.eval(
+            cur_acc = acc_value.eval(
                 feed_dict={x: X_test[start:end],
                            y: Y_test[start:end],
                            keras.backend.learning_phase(): 0})
+
+            accuracy += (cur_batch_size * cur_acc)
         assert end >= len(X_test)
 
         # Divide by number of examples to get final value
