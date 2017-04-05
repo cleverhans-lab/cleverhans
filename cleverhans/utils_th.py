@@ -167,6 +167,10 @@ def th_model_eval(x, y, model, X_test, Y_test, args=None):
 
     # Define symbol for accuracy
     acc_value = keras.metrics.categorical_accuracy(y, model)
+    # Keras 2.0 categorical_accuracy no longer calculates the mean internally
+    # T.mean is called in here and is backward compatible with previous
+    # versions of Keras
+    acc_value = T.mean(acc_value)
 
     # Init result var
     accuracy = 0.0

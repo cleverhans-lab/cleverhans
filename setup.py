@@ -7,7 +7,7 @@ setup(name='cleverhans',
       url='https://github.com/openai/cleverhans',
       license='MIT',
       install_requires=[
-          'keras==1.2',
+          'keras',
           'nose',
           'pycodestyle',
           'theano',
