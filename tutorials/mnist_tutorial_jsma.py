@@ -39,7 +39,7 @@ def main(argv=None):
     :return:
     """
     # Disable Keras learning phase since we will be serving through tensorflow
-    keras.layers.core.K.set_learning_phase(0)
+    # keras.layers.core.K.set_learning_phase(0)
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
