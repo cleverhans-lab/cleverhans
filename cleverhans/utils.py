@@ -3,14 +3,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import os
+from distutils.version import LooseVersion
 import keras
 from keras.utils import np_utils
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Convolution2D
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
+if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
+    from keras.layers import Conv2D
+else:
+    from keras.layers import Convolution2D
 
 
 class _ArgsWrapper(object):
@@ -135,6 +140,29 @@ def random_targets(gt, nb_classes):
     return np_utils.to_categorical(np.asarray(result), nb_classes)
 
 
+def conv_2d(filters, kernel_shape, strides, padding):
+    """
+    Defines the right convolutional layer according to the
+    version of Keras that is installed.
+    :param filters: (required integer) the dimensionality of the output
+                    space (i.e. the number output of filters in the
+                    convolution)
+    :param kernel_shape: (required tuple or list of 2 integers) specifies
+                         the strides of the convolution along the width and
+                         height.
+    :param padding: (required string) can be either 'valid' (no padding around
+                    input or feature map) or 'same' (pad to ensure that the
+                    output feature map size is identical to the layer input)
+    :return: the Keras layer
+    """
+    if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
+        return Conv2D(filters=filters, kernel_size=kernel_shape,
+                      strides=strides, padding=padding)
+    else:
+        return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
+                             subsample=strides, border_mode=padding)
+
+
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
               channels=1, nb_filters=64, nb_classes=10):
     """
@@ -154,27 +182,26 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
     """
     model = Sequential()
 
+    # Define the layers successively (convolution layers are version dependent)
     if keras.backend.image_dim_ordering() == 'th':
         input_shape = (channels, img_rows, img_cols)
     else:
         input_shape = (img_rows, img_cols, channels)
 
     layers = [Dropout(0.2, input_shape=input_shape),
-              Convolution2D(nb_filters, 8, 8,
-                            subsample=(2, 2),
-                            border_mode="same"
-                            ),
+              conv_2d(nb_filters, (8, 8), (2, 2), "same"),
               Activation('relu'),
-              Convolution2D(nb_filters * 2, 6, 6, subsample=(2, 2),
-                            border_mode="valid"),
+              conv_2d((nb_filters * 2), (6, 6), (2, 2), "valid"),
               Activation('relu'),
-              Convolution2D(nb_filters * 2, 5, 5, subsample=(1, 1)),
+              conv_2d((nb_filters * 2), (5, 5), (1, 1), "valid"),
               Activation('relu'),
               Dropout(0.5),
               Flatten(),
               Dense(nb_classes)]
+
     for layer in layers:
         model.add(layer)
+
     if logits:
         logits_tensor = model(input_ph)
     model.add(Activation('softmax'))
