@@ -169,7 +169,8 @@ class BasicIterativeMethod(Attack):
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
-    def __init__(self, model, back='tf', sess=None, params={'eps': 0.05,
+    def __init__(self, model, back='tf', sess=None, params={'eps': 0.3,
+                                                            'eps_iter': 0.05,
                                                             'nb_iter': 10,
                                                             'y': None,
                                                             'ord': 'np.inf',
@@ -179,7 +180,9 @@ class BasicIterativeMethod(Attack):
         Create a BasicIterativeMethod instance.
 
         Attack-specific parameters:
-        :param eps: (required float) step size for each attack iteration
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
         :param y: (required) A placeholder for the model labels.
         :param ord: (optional) Order of the norm (mimics Numpy).
@@ -190,12 +193,13 @@ class BasicIterativeMethod(Attack):
         super(BasicIterativeMethod, self).__init__(model, back, sess, params)
 
         # Check that all required attack specific parameters are defined
-        req = ('eps', 'nb_iter', 'y')
+        req = ('eps', 'eps_iter', 'nb_iter', 'y')
         if not all(k in params for k in req):
             raise Exception("Attack requires label placeholder.")
 
         # Save attack-specific parameters
         self.eps = params['eps']
+        self.eps_iter = params['eps_iter']
         self.nb_iter = params['nb_iter']
         self.y = params['y']
         self.ord = params['ord'] if 'ord' in params else np.inf
@@ -213,22 +217,41 @@ class BasicIterativeMethod(Attack):
         import tensorflow as tf
 
         # Initialize loop variables
-        adv_x = x
-        y = None
+        eta = 0
 
         # Fix labels to the first model predictions for loss computation
-        model_preds = self.model(adv_x)
+        model_preds = self.model(x)
         preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
         y = tf.to_float(tf.equal(model_preds, preds_max))
 
         for i in range(self.nb_iter):
             FGSM = FastGradientMethod(self.model, back=self.back,
                                       sess=self.sess,
-                                      params={'eps': self.eps,
-                                              'clip_min': self.clip_min,
-                                              'clip_max': self.clip_max,
+                                      params={'eps': self.eps_iter,
                                               'y': y})
-            adv_x = FGSM.generate(adv_x)
+            # Compute this step's perturbation
+            eta = FGSM.generate(x + eta) - x
+
+            # Clipping perturbation eta to self.ord norm ball
+            if self.ord == np.inf:
+                eta = tf.clip_by_value(eta, -self.eps, self.eps)
+            elif self.ord in [1, 2]:
+                reduc_ind = list(xrange(1, len(eta.get_shape())))
+                if self.ord == 1:
+                    norm = tf.reduce_sum(tf.abs(eta),
+                                         reduction_indices=reduc_ind,
+                                         keep_dims=True)
+                elif self.ord == 2:
+                    norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
+                                                 reduction_indices=reduc_ind,
+                                                 keep_dims=True))
+                eta = eta * self.eps / norm
+
+        # Define adversarial example (and clip if necessary)
+        adv_x = x + eta
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(x + eta, self.clip_min, self.clip_max)
+
         return adv_x
 
 
