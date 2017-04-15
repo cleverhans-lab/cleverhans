@@ -16,7 +16,7 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
+def fgsm(x, predictions, eps, clip_min=None, clip_max=None, ord=np.inf):
     """
     TensorFlow implementation of the Fast Gradient
     Sign method.
@@ -27,6 +27,9 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
+    :param ord: order of norm according to which perturbation is minimized
+                 by default, the FGSM minimizes the Linf norm (ord=np.inf)
+                 other possible value is 1 for the L1 norm, 2 for the L2 norm
     :return: a tensor for the adversarial example
     """
 
@@ -39,8 +42,22 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
 
-    # Take sign of gradient
-    signed_grad = tf.sign(grad)
+    # Process gradient according to norm we are optimizing
+    if ord == np.inf:
+        signed_grad = tf.sign(grad)
+    elif ord == 1:
+        reduc_ind = list(xrange(1, len(x.get_shape())))
+        signed_grad = grad / tf.reduce_sum(tf.abs(grad),
+                                           reduction_indices=reduc_ind,
+                                           keep_dims=True)
+    elif ord == 2:
+        reduc_ind = list(xrange(1, len(x.get_shape())))
+        signed_grad = grad / tf.sqrt(tf.reduce_sum(tf.square(grad),
+                                                   reduction_indices=reduc_ind,
+                                                   keep_dims=True))
+    else:
+        raise NotImplementedError("The norm (FGSM ord param) given has not "
+                                  "been implemented yet.")
 
     # Multiply by constant epsilon
     scaled_signed_grad = eps * signed_grad
