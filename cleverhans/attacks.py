@@ -28,6 +28,7 @@ class Attack:
         self.model = model
         self.back = back
         self.sess = sess
+        self.inf_loop = False
 
     def generate(self, x, params={}):
         """
@@ -42,8 +43,15 @@ class Attack:
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
 
-        import tensorflow as tf
-        return tf.py_func(self.generate_np, [x], tf.float32)
+        if not self.inf_loop:
+                self.inf_loop = True
+                import tensorflow as tf
+                graph = tf.py_func(self.generate_np, [x], tf.float32)
+                self.inf_loop = False
+                return graph
+        else:
+                error = "No symbolic or numeric implementation of attack."
+                raise NotImplementedError(error)
 
     def generate_np(self, X, params={}):
         """
@@ -57,19 +65,20 @@ class Attack:
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
 
-        import tensorflow as tf
+        if not self.inf_loop:
+                self.inf_loop = True
+                import tensorflow as tf
 
-        # Generate this attack's graph if it hasn't been done previously
-        if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
-            input_shape = list(X.shape)
-            input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x)
-
-        # This indicates loop calls between generate and generate_np
-        if hasattr(self, "_x") and not hasattr(self, "_x_adv"):
-            error_string = "No symbolic or numeric implementation of attack."
-            raise NotImplementedError(error_string)
+                # Generate this attack's graph if not done previously
+                if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
+                        input_shape = list(X.shape)
+                        input_shape[0] = None
+                        self._x = tf.placeholder(tf.float32, shape=input_shape)
+                        self._x_adv = self.generate(self._x)
+                self.inf_loop = False
+        else:
+                error = "No symbolic or numeric implementation of attack."
+                raise NotImplementedError(error)
 
         return self.sess.run(self._x_adv, feed_dict={self._x: X})
 
