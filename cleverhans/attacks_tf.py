@@ -121,8 +121,8 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
     p1, p2 = best % nf, best // nf
 
     # Remove used pixels from our search domain
-    search_domain.remove(p1)
-    search_domain.remove(p2)
+    search_domain.discard(p1)
+    search_domain.discard(p2)
 
     return p1, p2, search_domain
 
