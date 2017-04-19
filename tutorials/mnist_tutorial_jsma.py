@@ -116,9 +116,7 @@ def main(argv=None):
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Define the SaliencyMapMethod attack object
-    jsma_params = {'theta': 1., 'gamma': 0.1, 'nb_classes': FLAGS.nb_classes,
-                   'clip_min': 0., 'clip_max': 1., 'targets': y}
-    jsma = SaliencyMapMethod(model, back='tf', sess=sess, params=jsma_params)
+    jsma = SaliencyMapMethod(model, back='tf', sess=sess)
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, FLAGS.source_samples):
@@ -132,8 +130,8 @@ def main(argv=None):
 
         # For the grid visualization, keep original images along the diagonal
         grid_viz_data[current_class, current_class, :, :, :] = np.reshape(
-                X_test[sample_ind:(sample_ind+1)],
-                (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
+            X_test[sample_ind:(sample_ind+1)],
+            (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
 
         # Loop over all target classes
         for target in target_classes:
@@ -142,8 +140,12 @@ def main(argv=None):
             # This call runs the Jacobian-based saliency map approach
             one_hot_target = np.zeros((1, FLAGS.nb_classes), dtype=np.float32)
             one_hot_target[0, target] = 1
+            jsma_params = {'theta': 1., 'gamma': 0.1,
+                           'nb_classes': FLAGS.nb_classes, 'clip_min': 0.,
+                           'clip_max': 1., 'targets': y,
+                           'Y': one_hot_target}
             adv_x = jsma.generate_np(X_test[sample_ind:(sample_ind+1)],
-                                     params={'targets': one_hot_target})
+                                     params=jsma_params)
 
             # Check if success was achieved
             res = int(model_argmax(sess, x, preds, adv_x) == target)
@@ -157,21 +159,21 @@ def main(argv=None):
             # Display the original and adversarial images side-by-side
             if FLAGS.viz_enabled:
                 if 'figure' not in vars():
-                        figure = pair_visual(
-                                np.reshape(X_test[sample_ind:(sample_ind+1)],
-                                           (FLAGS.img_rows, FLAGS.img_cols)),
-                                np.reshape(adv_x,
-                                           (FLAGS.img_rows, FLAGS.img_cols)))
+                    figure = pair_visual(
+                        np.reshape(X_test[sample_ind:(sample_ind+1)],
+                                   (FLAGS.img_rows, FLAGS.img_cols)),
+                        np.reshape(adv_x,
+                                   (FLAGS.img_rows, FLAGS.img_cols)))
                 else:
                     figure = pair_visual(
-                            np.reshape(X_test[sample_ind:(sample_ind+1)],
-                                       (FLAGS.img_rows, FLAGS.img_cols)),
-                            np.reshape(adv_x, (FLAGS.img_rows,
-                                       FLAGS.img_cols)), figure)
+                        np.reshape(X_test[sample_ind:(sample_ind+1)],
+                                   (FLAGS.img_rows, FLAGS.img_cols)),
+                        np.reshape(adv_x, (FLAGS.img_rows,
+                                   FLAGS.img_cols)), figure)
 
             # Add our adversarial example to our grid data
             grid_viz_data[target, current_class, :, :, :] = np.reshape(
-                    adv_x, (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
+                adv_x, (FLAGS.img_rows, FLAGS.img_cols, FLAGS.nb_channels))
 
             # Update the arrays for later analysis
             results[target, sample_ind] = res

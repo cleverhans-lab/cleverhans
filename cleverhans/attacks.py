@@ -45,6 +45,7 @@ class Attack:
 
         if not self.inf_loop:
                 self.inf_loop = True
+                assert self.parse_params(params)
                 import tensorflow as tf
                 graph = tf.py_func(self.generate_np, [x], tf.float32)
                 self.inf_loop = False
@@ -74,13 +75,22 @@ class Attack:
                         input_shape = list(X.shape)
                         input_shape[0] = None
                         self._x = tf.placeholder(tf.float32, shape=input_shape)
-                        self._x_adv = self.generate(self._x)
+                        self._x_adv = self.generate(self._x, params=params)
                 self.inf_loop = False
         else:
                 error = "No symbolic or numeric implementation of attack."
                 raise NotImplementedError(error)
 
         return self.sess.run(self._x_adv, feed_dict={self._x: X})
+
+    def parse_params(self, params):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+        :param params: a dictionary of attack-specific parameters
+        :return: True when parsing was successful
+        """
+        return True
 
 
 class FastGradientMethod(Attack):
@@ -91,50 +101,19 @@ class FastGradientMethod(Attack):
     the Fast Gradient Method.
     Paper link: https://arxiv.org/abs/1412.6572
     """
-    def __init__(self, model, back='tf', sess=None, params={'eps': 0.3,
-                                                            'ord': 'np.inf',
-                                                            'y': None,
-                                                            'clip_min': None,
-                                                            'clip_max': None}):
+    def __init__(self, model, back='tf', sess=None, params={}):
         """
         Create a FastGradientMethod instance.
-
-        Attack-specific parameters:
-        :param eps: (required float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics Numpy).
-                    Possible values: np.inf, 1 or 2.
-        :param y: (optional) A placeholder for the model labels. Only provide
-                  this parameter if you'd like to use true labels when crafting
-                  adversarial samples. Otherwise, model predictions are used as
-                  labels to avoid the "label leaking" effect (explained in this
-                  paper: https://arxiv.org/abs/1611.01236). Default is None.
-                  Labels should be one-hot-encoded.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
         """
         super(FastGradientMethod, self).__init__(model, back, sess, params)
-
-        # Check that all required attack specific parameters are defined
-        assert 'eps' in params
-
-        # Save attack-specific parameters
-        self.eps = params['eps']
-        self.ord = params['ord'] if 'ord' in params else np.inf
-        self.y = params['y'] if 'y' in params else None
-        self.clip_min = params['clip_min'] if 'clip_min' in params else None
-        self.clip_max = params['clip_max'] if 'clip_max' in params else None
-
-        # Check if order of the norm is acceptable given current implementation
-        if self.ord not in [np.inf, int(1), int(2)]:
-            raise ValueError("Norm order must be either np.inf, 1, or 2.")
-        if back == 'th' and self.ord != np.inf:
-            raise NotImplementedError("The only FastGradientMethod norm "
-                                      "implemented for Theano is np.inf.")
 
     def generate(self, x, params={}):
         """
         Generate symbolic graph for adversarial examples and return.
         """
+        # Parse and save attack-specific parameters
+        assert self.parse_params(params)
+
         if self.back == 'tf':
             from .attacks_tf import fgm
         else:
@@ -150,11 +129,6 @@ class FastGradientMethod(Attack):
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
 
-        # Verify label placeholder was defined previously if using true labels
-        if params['Y'] is not None and self.y is None:
-            error = "True labels given but label placeholder missing in _init_"
-            raise Exception(error)
-
         import tensorflow as tf
 
         # Generate this attack's graph if it hasn't been done previously
@@ -162,14 +136,58 @@ class FastGradientMethod(Attack):
             input_shape = list(X.shape)
             input_shape[0] = None
             self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x)
+            self._x_adv = self.generate(self._x, params=params)
 
         # Run symbolic graph without or with true labels
         if params['Y'] is None:
             feed_dict = {self._x: X}
         else:
+            # Verify label placeholder was given in params if using true labels
+            if self.y is None:
+                error = "True labels given but label placeholder not given."
+                raise Exception(error)
             feed_dict = {self._x: X, self.y: params['Y']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
+
+    def parse_params(self, params={'eps': 0.3,
+                                   'ord': 'np.inf',
+                                   'y': None,
+                                   'clip_min': None,
+                                   'clip_max': None}):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param eps: (required float) attack step size (input variation)
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param y: (optional) A placeholder for the model labels. Only provide
+                  this parameter if you'd like to use true labels when crafting
+                  adversarial samples. Otherwise, model predictions are used as
+                  labels to avoid the "label leaking" effect (explained in this
+                  paper: https://arxiv.org/abs/1611.01236). Default is None.
+                  Labels should be one-hot-encoded.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        # Check that all required attack specific parameters are defined
+        assert 'eps' in params
+
+        # Save attack-specific parameters
+        self.eps = params['eps']
+        self.ord = params['ord'] if 'ord' in params else np.inf
+        self.y = params['y'] if 'y' in params else None
+        self.clip_min = params['clip_min'] if 'clip_min' in params else None
+        self.clip_max = params['clip_max'] if 'clip_max' in params else None
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.ord not in [np.inf, int(1), int(2)]:
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
+        if self.back == 'th' and self.ord != np.inf:
+            raise NotImplementedError("The only FastGradientMethod norm "
+                                      "implemented for Theano is np.inf.")
+        return True
 
 
 class BasicIterativeMethod(Attack):
@@ -178,52 +196,17 @@ class BasicIterativeMethod(Attack):
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
-    def __init__(self, model, back='tf', sess=None, params={'eps': 0.3,
-                                                            'eps_iter': 0.05,
-                                                            'nb_iter': 10,
-                                                            'y': None,
-                                                            'ord': 'np.inf',
-                                                            'clip_min': None,
-                                                            'clip_max': None}):
+    def __init__(self, model, back='tf', sess=None, params={}):
         """
         Create a BasicIterativeMethod instance.
-
-        Attack-specific parameters:
-        :param eps: (required float) maximum distortion of adversarial example
-                    compared to original input
-        :param eps_iter: (required float) step size for each attack iteration
-        :param nb_iter: (required int) Number of attack iterations.
-        :param y: (required) A placeholder for the model labels.
-        :param ord: (optional) Order of the norm (mimics Numpy).
-                    Possible values: np.inf, 1 or 2.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
         """
         super(BasicIterativeMethod, self).__init__(model, back, sess, params)
 
-        # Check that all required attack specific parameters are defined
-        req = ('eps', 'eps_iter', 'nb_iter', 'y')
-        if not all(k in params for k in req):
-            raise Exception("Attack requires label placeholder.")
-
-        # Save attack-specific parameters
-        self.eps = params['eps']
-        self.eps_iter = params['eps_iter']
-        self.nb_iter = params['nb_iter']
-        self.y = params['y']
-        self.ord = params['ord'] if 'ord' in params else np.inf
-        self.clip_min = params['clip_min'] if 'clip_min' in params else None
-        self.clip_max = params['clip_max'] if 'clip_max' in params else None
-
-        # Check if order of the norm is acceptable given current implementation
-        if self.ord not in [np.inf, 1, 2]:
-            raise ValueError("Norm order must be either np.inf, 1, or 2.")
-        if back == 'th':
-            error_string = "BasicIterativeMethod is not implemented in Theano"
-            raise NotImplementedError(error_string)
-
     def generate(self, x, params={}):
         import tensorflow as tf
+
+        # Parse and save attack-specific parameters
+        assert self.parse_params(params)
 
         # Initialize loop variables
         eta = 0
@@ -232,14 +215,13 @@ class BasicIterativeMethod(Attack):
         model_preds = self.model(x)
         preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
         y = tf.to_float(tf.equal(model_preds, preds_max))
+        fgsm_params = {'eps': self.eps_iter, 'y': y}
 
         for i in range(self.nb_iter):
             FGSM = FastGradientMethod(self.model, back=self.back,
-                                      sess=self.sess,
-                                      params={'eps': self.eps_iter,
-                                              'y': y})
+                                      sess=self.sess)
             # Compute this step's perturbation
-            eta = FGSM.generate(x + eta) - x
+            eta = FGSM.generate(x + eta, params=fgsm_params) - x
 
             # Clipping perturbation eta to self.ord norm ball
             if self.ord == np.inf:
@@ -263,29 +245,61 @@ class BasicIterativeMethod(Attack):
 
         return adv_x
 
+    def parse_params(self, params={'eps': 0.3,
+                                   'eps_iter': 0.05,
+                                   'nb_iter': 10,
+                                   'y': None,
+                                   'ord': 'np.inf',
+                                   'clip_min': None,
+                                   'clip_max': None}):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (required) A placeholder for the model labels.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        # Check that all required attack specific parameters are defined
+        req = ('eps', 'eps_iter', 'nb_iter', 'y')
+        if not all(k in params for k in req):
+            raise Exception("Attack requires eps, eps_iter, nb_iter, y"
+                            " parameters (see docstring for details).")
+
+        # Save attack-specific parameters
+        self.eps = params['eps']
+        self.eps_iter = params['eps_iter']
+        self.nb_iter = params['nb_iter']
+        self.y = params['y']
+        self.ord = params['ord'] if 'ord' in params else np.inf
+        self.clip_min = params['clip_min'] if 'clip_min' in params else None
+        self.clip_max = params['clip_max'] if 'clip_max' in params else None
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.ord not in [np.inf, 1, 2]:
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
+        if self.back == 'th':
+            error_string = "BasicIterativeMethod is not implemented in Theano"
+            raise NotImplementedError(error_string)
+
+        return True
+
 
 class SaliencyMapMethod(Attack):
     """
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    def __init__(self, model, back='tf', sess=None, params={'theta': 1.,
-                                                            'gamma': np.inf,
-                                                            'nb_classes': 10,
-                                                            'clip_min': 0.,
-                                                            'clip_max': 1.,
-                                                            'targets': None}):
+    def __init__(self, model, back='tf', sess=None, params={}):
         """
         Create a SaliencyMapMethod instance.
-
-        Attack-specific parameters:
-        :param theta: (required float) Perturbation introduced to modified
-                      components (can be positive or negative)
-        :param gamma: (required float) Maximum percentage of perturbed features
-        :param nb_classes: (required int) Number of model output classes
-        :param clip_min: (required float) Minimum component value for clipping
-        :param clip_max: (required float) Maximum component value for clipping
-        :param targets: (optional) Target placeholder if the attack is targeted
         """
         super(SaliencyMapMethod, self).__init__(model, back, sess, params)
 
@@ -293,24 +307,15 @@ class SaliencyMapMethod(Attack):
             error = "Theano version of SaliencyMapMethod not implemented."
             raise NotImplementedError(error)
 
-        # Check that all required attack specific parameters are defined
-        req = ('theta', 'gamma', 'nb_classes', 'clip_min', 'clip_max')
-        if not all(key in params for key in req):
-            raise Exception("JSMA must be instantiated w/ params: " + str(req))
-
-        self.theta = params['theta']
-        self.gamma = params['gamma']
-        self.nb_classes = params['nb_classes']
-        self.clip_min = params['clip_min']
-        self.clip_max = params['clip_max']
-        self.targets = params['targets'] if 'targets' in params else None
-
     def generate(self, x, params={}):
         """
         Attack-specific parameters:
         """
         import tensorflow as tf
         from .attacks_tf import jacobian_graph, jsma_batch
+
+        # Parse and save attack-specific parameters
+        assert self.parse_params(params)
 
         # Define Jacobian graph wrt to this input placeholder
         preds = self.model(x)
@@ -336,39 +341,71 @@ class SaliencyMapMethod(Attack):
 
         return wrap
 
-    def generate_np(self, X, params={'targets': None}):
+    def generate_np(self, X, params={'Y': None}):
         """
         Attack-specific parameters:
         :param batch_size: (optional) Batch size when running the graph
         :param targets: (optional) Target values if the attack is targeted
         """
-        if 'targets' in params and params['targets'] is not None:
-            if self.targets is None:
-                raise Exception("This attack was instantiated untargeted.")
-            else:
-                if len(params['targets'].shape) > 1:
-                    nb_targets = len(params['targets'])
-                else:
-                    nb_targets = 1
-                if nb_targets != len(X):
-                    raise Exception("Specify exactly one target per input.")
-        else:
-            params['targets'] = None
-
         import tensorflow as tf
         # Generate this attack's graph if it hasn't been done previously
         if not hasattr(self, "_x"):
             input_shape = list(X.shape)
             input_shape[0] = None
             self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x)
+            self._x_adv = self.generate(self._x, params=params)
+
+        if 'Y' not in params:
+            params['Y'] = None
 
         # Run symbolic graph without or with true labels
-        if params['targets'] is None:
+        if params['Y'] is None:
             feed_dict = {self._x: X}
         else:
-            feed_dict = {self._x: X, self.targets: params['targets']}
+            if self.targets is None:
+                raise Exception("This attack was instantiated untargeted.")
+            else:
+                if len(params['Y'].shape) > 1:
+                    nb_targets = len(params['Y'])
+                else:
+                    nb_targets = 1
+                if nb_targets != len(X):
+                    raise Exception("Specify exactly one target per input.")
+            feed_dict = {self._x: X, self.targets: params['Y']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
+
+    def parse_params(self, params={'theta': 1.,
+                                   'gamma': np.inf,
+                                   'nb_classes': 10,
+                                   'clip_min': 0.,
+                                   'clip_max': 1.,
+                                   'targets': None}):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param theta: (required float) Perturbation introduced to modified
+                      components (can be positive or negative)
+        :param gamma: (required float) Maximum percentage of perturbed features
+        :param nb_classes: (required int) Number of model output classes
+        :param clip_min: (required float) Minimum component value for clipping
+        :param clip_max: (required float) Maximum component value for clipping
+        :param targets: (optional) Target placeholder if the attack is targeted
+        """
+        # Check that all required attack specific parameters are defined
+        req = ('theta', 'gamma', 'nb_classes', 'clip_min', 'clip_max')
+        if not all(key in params for key in req):
+            raise Exception("JSMA must be instantiated w/ params: " + str(req))
+
+        self.theta = params['theta']
+        self.gamma = params['gamma']
+        self.nb_classes = params['nb_classes']
+        self.clip_min = params['clip_min']
+        self.clip_max = params['clip_max']
+        self.targets = params['targets'] if 'targets' in params else None
+
+        return True
 
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
