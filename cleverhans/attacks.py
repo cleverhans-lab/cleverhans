@@ -54,12 +54,12 @@ class Attack:
                 error = "No symbolic or numeric implementation of attack."
                 raise NotImplementedError(error)
 
-    def generate_np(self, X, params={}):
+    def generate_np(self, x_val, params={}):
         """
         Generate adversarial examples and return them as a Numpy array. This
         method should be overriden in any child class that implements an attack
         that is not fully expressed symbolically.
-        :param X: A Numpy array with the original inputs.
+        :param x_val: A Numpy array with the original inputs.
         :param params: Parameter dictionary used by child classes.
         :return: A Numpy array holding the adversarial examples.
         """
@@ -72,7 +72,7 @@ class Attack:
 
                 # Generate this attack's graph if not done previously
                 if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
-                        input_shape = list(X.shape)
+                        input_shape = list(x_val.shape)
                         input_shape[0] = None
                         self._x = tf.placeholder(tf.float32, shape=input_shape)
                         self._x_adv = self.generate(self._x, params=params)
@@ -81,7 +81,7 @@ class Attack:
                 error = "No symbolic or numeric implementation of attack."
                 raise NotImplementedError(error)
 
-        return self.sess.run(self._x_adv, feed_dict={self._x: X})
+        return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
 
     def parse_params(self, params):
         """
@@ -122,7 +122,7 @@ class FastGradientMethod(Attack):
         return fgm(x, self.model(x), y=self.y, eps=self.eps, ord=self.ord,
                    clip_min=self.clip_min, clip_max=self.clip_max)
 
-    def generate_np(self, X, params={'Y': None}):
+    def generate_np(self, x_val, params={'Y': None}):
         """
         Generate adversarial samples and return them in a Numpy array.
         """
@@ -133,20 +133,20 @@ class FastGradientMethod(Attack):
 
         # Generate this attack's graph if it hasn't been done previously
         if not hasattr(self, "_x"):
-            input_shape = list(X.shape)
+            input_shape = list(x_val.shape)
             input_shape[0] = None
             self._x = tf.placeholder(tf.float32, shape=input_shape)
             self._x_adv = self.generate(self._x, params=params)
 
         # Run symbolic graph without or with true labels
         if params['Y'] is None:
-            feed_dict = {self._x: X}
+            feed_dict = {self._x: x_val}
         else:
             # Verify label placeholder was given in params if using true labels
             if self.y is None:
                 error = "True labels given but label placeholder not given."
                 raise Exception(error)
-            feed_dict = {self._x: X, self.y: params['Y']}
+            feed_dict = {self._x: x_val, self.y: params['Y']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def parse_params(self, params={'eps': 0.3,
@@ -323,25 +323,27 @@ class SaliencyMapMethod(Attack):
 
         # Define appropriate graph (targeted / random target labels)
         if self.targets is not None:
-            def jsma_wrap(X, targets):
-                return jsma_batch(self.sess, x, preds, grads, X, self.theta,
-                                  self.gamma, self.clip_min, self.clip_max,
-                                  self.nb_classes, targets=targets)
+            def jsma_wrap(x_val, targets):
+                return jsma_batch(self.sess, x, preds, grads, x_val,
+                                  self.theta, self.gamma, self.clip_min,
+                                  self.clip_max, self.nb_classes,
+                                  targets=targets)
 
             # Attack is targeted, target placeholder will need to be fed
             wrap = tf.py_func(jsma_wrap, [x, self.targets], tf.float32)
         else:
-            def jsma_wrap(X):
-                return jsma_batch(self.sess, x, preds, grads, X, self.theta,
-                                  self.gamma, self.clip_min, self.clip_max,
-                                  self.nb_classes, targets=None)
+            def jsma_wrap(x_val):
+                return jsma_batch(self.sess, x, preds, grads, x_val,
+                                  self.theta, self.gamma, self.clip_min,
+                                  self.clip_max, self.nb_classes,
+                                  targets=None)
 
             # Attack is untargeted, target values will be chosen at random
             wrap = tf.py_func(jsma_wrap, [x], tf.float32)
 
         return wrap
 
-    def generate_np(self, X, params={'Y': None}):
+    def generate_np(self, x_val, params={'Y': None}):
         """
         Attack-specific parameters:
         :param batch_size: (optional) Batch size when running the graph
@@ -350,7 +352,7 @@ class SaliencyMapMethod(Attack):
         import tensorflow as tf
         # Generate this attack's graph if it hasn't been done previously
         if not hasattr(self, "_x"):
-            input_shape = list(X.shape)
+            input_shape = list(x_val.shape)
             input_shape[0] = None
             self._x = tf.placeholder(tf.float32, shape=input_shape)
             self._x_adv = self.generate(self._x, params=params)
@@ -360,7 +362,7 @@ class SaliencyMapMethod(Attack):
 
         # Run symbolic graph without or with true labels
         if params['Y'] is None:
-            feed_dict = {self._x: X}
+            feed_dict = {self._x: x_val}
         else:
             if self.targets is None:
                 raise Exception("This attack was instantiated untargeted.")
@@ -369,9 +371,9 @@ class SaliencyMapMethod(Attack):
                     nb_targets = len(params['Y'])
                 else:
                     nb_targets = 1
-                if nb_targets != len(X):
+                if nb_targets != len(x_val):
                     raise Exception("Specify exactly one target per input.")
-            feed_dict = {self._x: X, self.targets: params['Y']}
+            feed_dict = {self._x: x_val, self.targets: params['Y']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def parse_params(self, params={'theta': 1.,
