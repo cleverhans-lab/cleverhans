@@ -215,7 +215,7 @@ class BasicIterativeMethod(Attack):
         model_preds = self.model(x)
         preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
         y = tf.to_float(tf.equal(model_preds, preds_max))
-        fgsm_params = {'eps': self.eps_iter, 'y': y}
+        fgsm_params = {'eps': self.eps_iter, 'y': y, 'ord': self.ord}
 
         for i in range(self.nb_iter):
             FGSM = FastGradientMethod(self.model, back=self.back,
