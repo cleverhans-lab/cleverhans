@@ -18,7 +18,7 @@ class Attack:
         :param params: Parameter dictionary used by child classes.
         """
         if not(back == 'tf' or back == 'th'):
-            raise Exception("Backend argument must either be 'tf' or 'th'.")
+            raise ValueError("Backend argument must either be 'tf' or 'th'.")
         if back == 'tf' and sess is None:
             raise Exception("A tf session was not provided in sess argument.")
         if back == 'th' and sess is not None:
@@ -126,7 +126,7 @@ class FastGradientMethod(Attack):
 
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, int(1), int(2)]:
-            raise Exception("Norm order must be either np.inf, 1, or 2.")
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
         if back == 'th' and self.ord != np.inf:
             raise NotImplementedError("The only FastGradientMethod norm "
                                       "implemented for Theano is np.inf.")
@@ -217,7 +217,7 @@ class BasicIterativeMethod(Attack):
 
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
-            raise Exception("Norm order must be either np.inf, 1, or 2.")
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
         if back == 'th':
             error_string = "BasicIterativeMethod is not implemented in Theano"
             raise NotImplementedError(error_string)
