@@ -353,8 +353,8 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
 
     if keras_phase is not None:
         warnings.warn("keras_phase argument is deprecated and will be removed"
-                      " on 09-28-17. Instead, use K.set_learning_phase(0) at "
-                      "the start of your script and serve with tensorflow.")
+                      " on 2017-09-28. Instead, use K.set_learning_phase(0) at"
+                      " the start of your script and serve with tensorflow.")
 
     # Prepare input_shape (outside loop) for feeding dictionary below
     input_shape = list(x.get_shape())

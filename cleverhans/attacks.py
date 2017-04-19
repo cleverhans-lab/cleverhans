@@ -432,8 +432,8 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
                     value for components of the example returned
     :return: a tensor for the adversarial example
     """
-    warnings.warn("attacks.fgsm is deprecated and will be removed on 09-27-17."
-                  " Instantiate an attack object from FastGradientMethod.")
+    warnings.warn("attacks.fgsm is deprecated and will be removed on "
+                  "2017-09-27. Instantiate an object from FastGradientMethod.")
     if back == 'tf':
         # Compute FGSM using TensorFlow
         from .attacks_tf import fgm
@@ -469,8 +469,8 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
                     value for components of the example returned
     :return: an adversarial sample
     """
-    warnings.warn("attacks.jsma is deprecated and will be removed on 09-27-17."
-                  " Instantiate an attack object from SaliencyMapMethod.")
+    warnings.warn("attacks.jsma is deprecated and will be removed on "
+                  "2017-09-27. Instantiate an object from SaliencyMapMethod.")
     if back == 'tf':
         # Compute Jacobian-based saliency map attack using TensorFlow
         from .attacks_tf import jsma
