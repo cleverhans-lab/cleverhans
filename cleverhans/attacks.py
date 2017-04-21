@@ -70,19 +70,19 @@ class Attack:
             raise NotImplementedError('Theano version not implemented.')
 
         if not self.inf_loop:
-                self.inf_loop = True
-                import tensorflow as tf
+            self.inf_loop = True
+            import tensorflow as tf
 
-                # Generate this attack's graph if not done previously
-                if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
-                        input_shape = list(x_val.shape)
-                        input_shape[0] = None
-                        self._x = tf.placeholder(tf.float32, shape=input_shape)
-                        self._x_adv = self.generate(self._x, params=params)
-                self.inf_loop = False
+            # Generate this attack's graph if not done previously
+            if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
+                    input_shape = list(x_val.shape)
+                    input_shape[0] = None
+                    self._x = tf.placeholder(tf.float32, shape=input_shape)
+                    self._x_adv = self.generate(self._x, params=params)
+            self.inf_loop = False
         else:
-                error = "No symbolic or numeric implementation of attack."
-                raise NotImplementedError(error)
+            error = "No symbolic or numeric implementation of attack."
+            raise NotImplementedError(error)
 
         return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
 
