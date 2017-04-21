@@ -40,5 +40,45 @@ class TestAttackClassInitArguments(unittest.TestCase):
         self.assertTrue(context.exception)
 
 
+class TestAttackGenerate(unittest.TestCase):
+    def test_inf_loop(self):
+        def model(x):
+            return x
+
+        import tensorflow as tf
+        sess = tf.Session()
+        x = tf.placeholder(tf.float32, shape=(2,))
+
+        test_attack = Attack(model, back='tf', sess=sess)
+        test_attack.generate(x)
+
+
+class TestAttackGenerateNp(unittest.TestCase):
+    def test_inf_loop(self):
+        def model(x):
+            return x
+
+        import tensorflow as tf
+        sess = tf.Session()
+        x = tf.placeholder(tf.float32, shape=(2,))
+
+        test_attack = Attack(model, back='tf', sess=sess)
+        with self.assertRaises(Exception) as context:
+            test_attack.generate_np(x)
+        self.assertTrue(context.exception)
+
+
+class TestParseParams(unittest.TestCase):
+    def test_parse(self):
+        def model():
+            return True
+
+        import tensorflow as tf
+        sess = tf.Session()
+
+        test_attack = Attack(model, back='tf', sess=sess)
+        self.assertTrue(test_attack.parse_params({}))
+
+
 if __name__ == '__main__':
     unittest.main()
