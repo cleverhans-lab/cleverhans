@@ -44,15 +44,15 @@ class Attack:
             raise NotImplementedError('Theano version not implemented.')
 
         if not self.inf_loop:
-                self.inf_loop = True
-                assert self.parse_params(params)
-                import tensorflow as tf
-                graph = tf.py_func(self.generate_np, [x], tf.float32)
-                self.inf_loop = False
-                return graph
+            self.inf_loop = True
+            assert self.parse_params(params)
+            import tensorflow as tf
+            graph = tf.py_func(self.generate_np, [x], tf.float32)
+            self.inf_loop = False
+            return graph
         else:
-                error = "No symbolic or numeric implementation of attack."
-                raise NotImplementedError(error)
+            error = "No symbolic or numeric implementation of attack."
+            raise NotImplementedError(error)
 
     def generate_np(self, x_val, params={}):
         """
@@ -241,7 +241,7 @@ class BasicIterativeMethod(Attack):
         # Define adversarial example (and clip if necessary)
         adv_x = x + eta
         if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(x + eta, self.clip_min, self.clip_max)
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
         return adv_x
 
