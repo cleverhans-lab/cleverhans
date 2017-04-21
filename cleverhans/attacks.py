@@ -75,10 +75,10 @@ class Attack:
 
             # Generate this attack's graph if not done previously
             if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
-                    input_shape = list(x_val.shape)
-                    input_shape[0] = None
-                    self._x = tf.placeholder(tf.float32, shape=input_shape)
-                    self._x_adv = self.generate(self._x, params=params)
+                input_shape = list(x_val.shape)
+                input_shape[0] = None
+                self._x = tf.placeholder(tf.float32, shape=input_shape)
+                self._x_adv = self.generate(self._x, params=params)
             self.inf_loop = False
         else:
             error = "No symbolic or numeric implementation of attack."
