@@ -45,12 +45,17 @@ class TestAttackGenerate(unittest.TestCase):
         def model(x):
             return x
 
+        import numpy as np
         import tensorflow as tf
         sess = tf.Session()
-        x = tf.placeholder(tf.float32, shape=(2,))
+        x = tf.placeholder(tf.float32, shape=(1,))
 
         test_attack = Attack(model, back='tf', sess=sess)
-        test_attack.generate(x)
+        adv_x = test_attack.generate(x)
+
+        with self.assertRaises(Exception) as context:
+            sess.run(adv_x, feed_dict={x: np.asarray(1.0).reshape((1,))})
+        self.assertTrue(context.exception)
 
 
 class TestAttackGenerateNp(unittest.TestCase):
