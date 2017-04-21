@@ -24,7 +24,7 @@ class Attack:
         if back == 'th' and sess is not None:
             raise Exception("A session should not be provided when using th.")
         if not hasattr(model, '__call__'):
-            raise ValueError("model argument must be a function that returnsi "
+            raise ValueError("model argument must be a function that returns "
                              "the symbolic output when given an input tensor.")
 
         # Prepare attributes
