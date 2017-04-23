@@ -143,7 +143,7 @@ def main(argv=None):
             jsma_params = {'theta': 1., 'gamma': 0.1,
                            'nb_classes': FLAGS.nb_classes, 'clip_min': 0.,
                            'clip_max': 1., 'targets': y,
-                           'Y': one_hot_target}
+                           'y_val': one_hot_target}
             adv_x = jsma.generate_np(X_test[sample_ind:(sample_ind+1)],
                                      params=jsma_params)
 
