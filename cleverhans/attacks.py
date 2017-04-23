@@ -125,7 +125,7 @@ class FastGradientMethod(Attack):
         return fgm(x, self.model(x), y=self.y, eps=self.eps, ord=self.ord,
                    clip_min=self.clip_min, clip_max=self.clip_max)
 
-    def generate_np(self, x_val, params={'Y': None}):
+    def generate_np(self, x_val, params={'y_val': None}):
         """
         Generate adversarial samples and return them in a Numpy array.
         """
@@ -142,14 +142,14 @@ class FastGradientMethod(Attack):
             self._x_adv = self.generate(self._x, params=params)
 
         # Run symbolic graph without or with true labels
-        if params['Y'] is None:
+        if params['y_val'] is None:
             feed_dict = {self._x: x_val}
         else:
             # Verify label placeholder was given in params if using true labels
             if self.y is None:
                 error = "True labels given but label placeholder not given."
                 raise Exception(error)
-            feed_dict = {self._x: x_val, self.y: params['Y']}
+            feed_dict = {self._x: x_val, self.y: params['y_val']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def parse_params(self, params={'eps': 0.3,
@@ -346,7 +346,7 @@ class SaliencyMapMethod(Attack):
 
         return wrap
 
-    def generate_np(self, x_val, params={'Y': None}):
+    def generate_np(self, x_val, params={'y_val': None}):
         """
         Attack-specific parameters:
         :param batch_size: (optional) Batch size when running the graph
@@ -360,23 +360,23 @@ class SaliencyMapMethod(Attack):
             self._x = tf.placeholder(tf.float32, shape=input_shape)
             self._x_adv = self.generate(self._x, params=params)
 
-        if 'Y' not in params:
-            params['Y'] = None
+        if 'y_val' not in params:
+            params['y_val'] = None
 
         # Run symbolic graph without or with true labels
-        if params['Y'] is None:
+        if params['y_val'] is None:
             feed_dict = {self._x: x_val}
         else:
             if self.targets is None:
                 raise Exception("This attack was instantiated untargeted.")
             else:
-                if len(params['Y'].shape) > 1:
-                    nb_targets = len(params['Y'])
+                if len(params['y_val'].shape) > 1:
+                    nb_targets = len(params['y_val'])
                 else:
                     nb_targets = 1
                 if nb_targets != len(x_val):
                     raise Exception("Specify exactly one target per input.")
-            feed_dict = {self._x: x_val, self.targets: params['Y']}
+            feed_dict = {self._x: x_val, self.targets: params['y_val']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def parse_params(self, params={'theta': 1.,
