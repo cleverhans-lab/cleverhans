@@ -47,15 +47,15 @@ To train our MNIST model, we run the following:
 X_train, Y_train, X_test, Y_test = data_mnist()
 
 # Train an MNIST model
-tf_model_train(sess, x, y, predictions, X_train, Y_train)
+model_train(sess, x, y, predictions, X_train, Y_train)
 ```
 
 We can then evaluate the performance of this model
-using `tf_model_eval` included in `cleverhans.utils_tf`:
+using `model_eval` included in `cleverhans.utils_tf`:
 
 ```python
 # Evaluate the accuracy of the MNIST model on legitimate test examples
-accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
+accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
 assert X_test.shape[0] == 10000, X_test.shape
 print 'Test accuracy on legitimate test examples: ' + str(accuracy)
 ```

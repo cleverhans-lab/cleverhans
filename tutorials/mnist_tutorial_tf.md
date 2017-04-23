@@ -55,15 +55,15 @@ To train our MNIST model, we run the following:
 X_train, Y_train, X_test, Y_test = data_mnist()
 
 # Train an MNIST model
-tf_model_train(sess, x, y, predictions, X_train, Y_train)
+model_train(sess, x, y, predictions, X_train, Y_train)
 ```
 
 We can then evaluate the performance of this model
-using `tf_model_eval` included in `cleverhans.utils_tf`:
+using `model_eval` included in `cleverhans.utils_tf`:
 
 ```python
 # Evaluate the accuracy of the MNIST model on legitimate test examples
-accuracy = tf_model_eval(sess, x, y, predictions, X_test, Y_test)
+accuracy = model_eval(sess, x, y, predictions, X_test, Y_test)
 assert X_test.shape[0] == 10000, X_test.shape
 print 'Test accuracy on legitimate test examples: ' + str(accuracy)
 ```
@@ -87,7 +87,7 @@ X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test])
 assert X_test_adv.shape[0] == 10000, X_test_adv.shape
 
 # Evaluate the accuracy of the MNIST model on adversarial examples
-accuracy = tf_model_eval(sess, x, y, predictions, X_test_adv, Y_test)
+accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test)
 print'Test accuracy on adversarial examples: ' + str(accuracy)
 ```
 
@@ -102,7 +102,7 @@ significantly lower than the previous accuracy you obtained.
 One defense strategy to mitigate adversarial examples is to use
 adversarial training, i.e. train the model with both the
 original data and adversarially modified data (with correct
-labels). You can use the training function `utils_tf.tf_model_train`
+labels). You can use the training function `utils_tf.model_train`
 with the optional argument `predictions_adv` set to the result
 of `cleverhans.attacks.fgsm` in order to perform adversarial
 training.
@@ -119,7 +119,7 @@ adv_x_2 = fgsm(x, predictions_2, eps=0.3)
 predictions_2_adv = model_2(adv_x_2)
 
 # Perform adversarial training
-tf_model_train(sess, x, y, predictions_2, X_train, Y_train, predictions_adv=predictions_2_adv)
+model_train(sess, x, y, predictions_2, X_train, Y_train, predictions_adv=predictions_2_adv)
 ```
 
 We can then verify that (1) its accuracy on legitimate data is
@@ -129,7 +129,7 @@ generated adversarial examples is higher.
 ```python
 # Evaluate the accuracy of the adversarialy trained MNIST model on
 # legitimate test examples
-accuracy = tf_model_eval(sess, x, y, predictions_2, X_test, Y_test)
+accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test)
 print 'Test accuracy on legitimate test examples: ' + str(accuracy)
 
 # Craft adversarial examples using Fast Gradient Sign Method (FGSM) on
@@ -139,7 +139,7 @@ assert X_test_adv_2.shape[0] == 10000, X_test_adv_2.shape
 
 # Evaluate the accuracy of the adversarially trained MNIST model on
 # adversarial examples
-accuracy_adv = tf_model_eval(sess, x, y, predictions_2, X_test_adv_2, Y_test)
+accuracy_adv = model_eval(sess, x, y, predictions_2, X_test_adv_2, Y_test)
 print'Test accuracy on adversarial examples: ' + str(accuracy_adv)
 ```
 
