@@ -1,9 +1,12 @@
 import numpy as np
 
+import theano
 from theano import gradient, tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from . import utils_th
+
+floatX = theano.config.floatX
 
 
 def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
@@ -32,6 +35,7 @@ def fgm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
     warnings.warn("cleverhans support for Theano is deprecated and "
                   "will be dropped on 2017-11-08.")
     assert ord == np.inf, "Theano implementation not available for this norm."
+    eps = np.asarray(eps, dtype=floatX)
 
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
@@ -61,7 +65,7 @@ def fgm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
 
 
 def vatm(model, x, predictions, eps, num_iterations=1, xi=1e-6,
-         clip_min=None, clip_max=None, seed=1234):
+         clip_min=None, clip_max=None, seed=12345):
     """
     Theano implementation of the perturbation method used for virtual
     adversarial training: https://arxiv.org/abs/1507.00677
@@ -78,6 +82,8 @@ def vatm(model, x, predictions, eps, num_iterations=1, xi=1e-6,
     :param seed: the seed for random generator
     :return: a tensor for the adversarial example
     """
+    eps = np.asarray(eps, dtype=floatX)
+    xi = np.asarray(xi, dtype=floatX)
     rng = RandomStreams(seed=seed)
     d = rng.normal(size=x.shape, dtype=x.dtype)
     for i in range(num_iterations):
