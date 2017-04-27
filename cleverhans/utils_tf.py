@@ -9,6 +9,8 @@ import numpy as np
 import os
 import six
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
+from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
 
@@ -336,3 +338,42 @@ def model_argmax(sess, x, predictions, samples):
         return np.argmax(probabilities)
     else:
         return np.argmax(probabilities, axis=1)
+
+
+def l2_normalize(x, dim, epsilon=1e-12, name=None):
+    """Helper function that normalizes vector to unit norm
+    :param x: the input placeholder
+    :param axis: axis to normalizes
+    :param epsilon: stabilizes division
+    :return: the l2 normalized vector
+    """
+    with tf.name_scope(name, "l2_normalize", [x]) as name:
+        x = tf.convert_to_tensor(x, name="x")
+        x /= (epsilon + tf.reduce_max(tf.abs(x), dim, keep_dims=True))
+        square_sum = tf.reduce_sum(tf.square(x), dim, keep_dims=True)
+        x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
+        return tf.multiply(x, x_inv_norm, name)
+
+
+def normalize_perturbation(x, name=None):
+    """Helper function to normalize feature perturbation
+    """
+    with tf.name_scope(name, "normalize_perturbation") as name:
+        x_shape = tf.shape(x)
+        x = slim.flatten(x)
+        x_norm = l2_normalize(x, 1)
+        return tf.reshape(x_norm, x_shape, name)
+
+
+def kl_with_logits(q_logits, p_logits, scope=None,
+                   loss_collection=tf.GraphKeys.REGULARIZATION_LOSSES):
+    """Helper function to compute kl-divergence KL(q || p)
+    """
+    with tf.name_scope(scope, "kl_divergence") as name:
+        q = tf.nn.softmax(q_logits)
+        q_log = tf.nn.log_softmax(q_logits)
+        p_log = tf.nn.log_softmax(p_logits)
+        loss = tf.reduce_mean(tf.reduce_sum(q * (q_log - p_log), axis=1),
+                              name=name)
+        add_loss(loss, loss_collection)
+        return loss
