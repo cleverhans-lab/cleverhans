@@ -450,6 +450,40 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
         return fgm(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
 
 
+def vatm(model, x, predictions, eps, back='tf', num_iterations=1, xi=1e-6,
+         clip_min=None, clip_max=None):
+    """
+    A wrapper for the perturbation methods used for virtual adversarial
+    training : https://arxiv.org/abs/1507.00677
+    It calls the right function, depending on the
+    user's backend.
+    :param model: the model which returns the network unnormalized logits
+    :param x: the input placeholder
+    :param predictions: the model's unnormalized output tensor
+    :param eps: the epsilon (input variation parameter)
+    :param num_iterations: the number of iterations
+    :param xi: the finite difference parameter
+    :param clip_min: optional parameter that can be used to set a minimum
+                    value for components of the example returned
+    :param clip_max: optional parameter that can be used to set a maximum
+                    value for components of the example returned
+    :return: a tensor for the adversarial example
+
+    """
+    if back == 'tf':
+        # Compute FGSM using TensorFlow
+        from .attacks_tf import vatm as vatm_tf
+        return vatm_tf(model, x, predictions, eps,
+                       num_iterations=num_iterations, xi=xi,
+                       clip_min=clip_min, clip_max=clip_max)
+    elif back == 'th':
+        # Compute FGSM using Theano
+        from .attacks_th import vatm as vatm_th
+        return vatm_th(model, x, predictions, eps,
+                       num_iterations=num_iterations, xi=xi,
+                       clip_min=clip_min, clip_max=clip_max)
+
+
 def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
          increase=True, back='tf', clip_min=None, clip_max=None):
     """
