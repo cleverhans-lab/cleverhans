@@ -1,7 +1,7 @@
 import numpy as np
-import theano
-import theano.tensor as T
-import warnings
+
+from theano import gradient, tensor as T
+from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from . import utils_th
 
@@ -51,10 +51,43 @@ def fgm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
     scaled_signed_grad = eps * signed_grad
 
     # Add perturbation to original example to obtain adversarial example
-    adv_x = theano.gradient.disconnected_grad(x + scaled_signed_grad)
+    adv_x = gradient.disconnected_grad(x + scaled_signed_grad)
 
     # If clipping is needed, reset all values outside of [clip_min, clip_max]
     if (clip_min is not None) and (clip_max is not None):
         adv_x = T.clip(adv_x, clip_min, clip_max)
 
+    return adv_x
+
+
+def vatm(model, x, predictions, eps, num_iterations=1, xi=1e-6,
+         clip_min=None, clip_max=None, seed=1234):
+    """
+    Theano implementation of the perturbation method used for virtual
+    adversarial training: https://arxiv.org/abs/1507.00677
+    :param model: the model which returns the network unnormalized logits
+    :param x: the input placeholder
+    :param predictions: the model's unnormalized output tensor
+    :param eps: the epsilon (input variation parameter)
+    :param num_iterations: the number of iterations
+    :param xi: the finite difference parameter
+    :param clip_min: optional parameter that can be used to set a minimum
+                    value for components of the example returned
+    :param clip_max: optional parameter that can be used to set a maximum
+                    value for components of the example returned
+    :param seed: the seed for random generator
+    :return: a tensor for the adversarial example
+    """
+    rng = RandomStreams(seed=seed)
+    d = rng.normal(size=x.shape, dtype=x.dtype)
+    for i in range(num_iterations):
+        d = xi * utils_th.normalize_perturbation(d)
+        predictions_d = model(x + d)
+        kl = utils_th.kl_with_logits(predictions, predictions_d)
+        Hd = T.grad(kl.sum(), d)
+        d = gradient.disconnected_grad(Hd)
+    d = eps * utils_th.normalize_perturbation(d)
+    adv_x = gradient.disconnected_grad(x + d)
+    if (clip_min is not None) and (clip_max is not None):
+        adv_x = T.clip(adv_x, clip_min, clip_max)
     return adv_x

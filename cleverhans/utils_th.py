@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import math
 import numpy as np
-import os
 import six
 import time
 import warnings
@@ -299,3 +298,35 @@ def model_argmax(x, predictions, sample):
     )(x)
 
     return np.argmax(probabilities)
+
+
+def l2_normalize(x, axis, epsilon=1e-12):
+    """Helper function that normalizes vector to unit norm
+    :param x: the input placeholder
+    :param axis: axis to normalizes
+    :param epsilon: stabilizes division
+    :return: the l2 normalized vector
+    """
+    x /= (epsilon + T.max(T.abs_(x), axis, keepdims=True))
+    square_sum = T.sum(T.sqr(x), axis, keepdims=True)
+    x /= T.sqrt(np.sqrt(epsilon) + square_sum)
+    return x
+
+
+def normalize_perturbation(x):
+    """Helper function to normalize feature perturbation
+    """
+    x_shape = x.shape
+    x = T.reshape(x, (x.shape[0], -1))
+    x_norm = l2_normalize(x, axis=1)
+    return x_norm.reshape(x_shape)
+
+
+def kl_with_logits(q_logits, p_logits):
+    """Helper function to compute kl-divergence KL(q || p)
+    """
+    q = T.nnet.softmax(q_logits)
+    q_log = T.nnet.logsoftmax(q_logits)
+    p_log = T.nnet.logsoftmax(p_logits)
+    loss = T.sum(q * (q_log - p_log), axis=1)
+    return loss
