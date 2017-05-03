@@ -176,7 +176,7 @@ class FastGradientMethod(Attack):
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
-                     clip_max=None):
+                     clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -222,11 +222,11 @@ class BasicIterativeMethod(Attack):
         """
         super(BasicIterativeMethod, self).__init__(model, back, sess)
 
-    def generate(self, x, params={}):
+    def generate(self, x, **kwargs):
         import tensorflow as tf
 
         # Parse and save attack-specific parameters
-        assert self.parse_params(params)
+        assert self.parse_params(**kwargs)
 
         # Initialize loop variables
         eta = 0
@@ -241,7 +241,7 @@ class BasicIterativeMethod(Attack):
             FGSM = FastGradientMethod(self.model, back=self.back,
                                       sess=self.sess)
             # Compute this step's perturbation
-            eta = FGSM.generate(x + eta, params=fgsm_params) - x
+            eta = FGSM.generate(x + eta, **fgsm_params) - x
 
             # Clipping perturbation eta to self.ord norm ball
             if self.ord == np.inf:
@@ -265,13 +265,8 @@ class BasicIterativeMethod(Attack):
 
         return adv_x
 
-    def parse_params(self, params={'eps': 0.3,
-                                   'eps_iter': 0.05,
-                                   'nb_iter': 10,
-                                   'y': None,
-                                   'ord': 'np.inf',
-                                   'clip_min': None,
-                                   'clip_max': None}):
+    def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
+                     ord=np.inf, clip_min=None, clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -287,20 +282,15 @@ class BasicIterativeMethod(Attack):
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
-        # Check that all required attack specific parameters are defined
-        req = ('eps', 'eps_iter', 'nb_iter', 'y')
-        if not all(k in params for k in req):
-            raise Exception("Attack requires eps, eps_iter, nb_iter, y"
-                            " parameters (see docstring for details).")
 
         # Save attack-specific parameters
-        self.eps = params['eps']
-        self.eps_iter = params['eps_iter']
-        self.nb_iter = params['nb_iter']
-        self.y = params['y']
-        self.ord = params['ord'] if 'ord' in params else np.inf
-        self.clip_min = params['clip_min'] if 'clip_min' in params else None
-        self.clip_max = params['clip_max'] if 'clip_max' in params else None
+        self.eps = eps
+        self.eps_iter = eps_iter
+        self.nb_iter = nb_iter
+        self.y = y
+        self.ord = ord
+        self.clip_min = clip_min
+        self.clip_max = clip_max
 
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
@@ -327,7 +317,7 @@ class SaliencyMapMethod(Attack):
             error = "Theano version of SaliencyMapMethod not implemented."
             raise NotImplementedError(error)
 
-    def generate(self, x, params={}):
+    def generate(self, x, **kwargs):
         """
         Attack-specific parameters:
         """
@@ -335,7 +325,7 @@ class SaliencyMapMethod(Attack):
         from .attacks_tf import jacobian_graph, jsma_batch
 
         # Parse and save attack-specific parameters
-        assert self.parse_params(params)
+        assert self.parse_params(**kwargs)
 
         # Define Jacobian graph wrt to this input placeholder
         preds = self.model(x)
@@ -363,7 +353,7 @@ class SaliencyMapMethod(Attack):
 
         return wrap
 
-    def generate_np(self, x_val, params={'y_val': None}):
+    def generate_np(self, x_val, **kwargs):
         """
         Attack-specific parameters:
         :param batch_size: (optional) Batch size when running the graph
@@ -375,57 +365,46 @@ class SaliencyMapMethod(Attack):
             input_shape = list(x_val.shape)
             input_shape[0] = None
             self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x, params=params)
-
-        if 'y_val' not in params:
-            params['y_val'] = None
+            self._x_adv = self.generate(self._x, **kwargs)
 
         # Run symbolic graph without or with true labels
-        if params['y_val'] is None:
+        if 'y_val' not in kwargs or kwargs['y_val'] is None:
             feed_dict = {self._x: x_val}
         else:
             if self.targets is None:
                 raise Exception("This attack was instantiated untargeted.")
             else:
-                if len(params['y_val'].shape) > 1:
-                    nb_targets = len(params['y_val'])
+                if len(kwargs['y_val'].shape) > 1:
+                    nb_targets = len(kwargs['y_val'])
                 else:
                     nb_targets = 1
                 if nb_targets != len(x_val):
                     raise Exception("Specify exactly one target per input.")
-            feed_dict = {self._x: x_val, self.targets: params['y_val']}
+            feed_dict = {self._x: x_val, self.targets: kwargs['y_val']}
         return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
-    def parse_params(self, params={'theta': 1.,
-                                   'gamma': np.inf,
-                                   'nb_classes': 10,
-                                   'clip_min': 0.,
-                                   'clip_max': 1.,
-                                   'targets': None}):
+    def parse_params(self, theta=1., gamma=np.inf, nb_classes=10, clip_min=0.,
+                     clip_max=1., targets=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
 
         Attack-specific parameters:
-        :param theta: (required float) Perturbation introduced to modified
+        :param theta: (optional float) Perturbation introduced to modified
                       components (can be positive or negative)
-        :param gamma: (required float) Maximum percentage of perturbed features
-        :param nb_classes: (required int) Number of model output classes
-        :param clip_min: (required float) Minimum component value for clipping
-        :param clip_max: (required float) Maximum component value for clipping
+        :param gamma: (optional float) Maximum percentage of perturbed features
+        :param nb_classes: (optional int) Number of model output classes
+        :param clip_min: (optional float) Minimum component value for clipping
+        :param clip_max: (optional float) Maximum component value for clipping
         :param targets: (optional) Target placeholder if the attack is targeted
         """
-        # Check that all required attack specific parameters are defined
-        req = ('theta', 'gamma', 'nb_classes', 'clip_min', 'clip_max')
-        if not all(key in params for key in req):
-            raise Exception("JSMA must be instantiated w/ params: " + str(req))
 
-        self.theta = params['theta']
-        self.gamma = params['gamma']
-        self.nb_classes = params['nb_classes']
-        self.clip_min = params['clip_min']
-        self.clip_max = params['clip_max']
-        self.targets = params['targets'] if 'targets' in params else None
+        self.theta = theta
+        self.gamma = gamma
+        self.nb_classes = nb_classes
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+        self.targets = targets
 
         return True
 
