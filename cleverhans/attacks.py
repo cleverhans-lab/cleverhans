@@ -32,14 +32,14 @@ class Attack:
         self.sess = sess
         self.inf_loop = False
 
-    def generate(self, x, params={}):
+    def generate(self, x, **kwargs):
         """
         Generate the attack's symbolic graph for adversarial examples. This
         method should be overriden in any child class that implements an
         attack that is expressable symbolically. Otherwise, it will wrap the
         numerical implementation as a symbolic operator.
         :param x: The model's symbolic inputs.
-        :param params: Parameter dictionary used by child classes.
+        :param **kwargs: optional parameters used by child classes.
         :return: A symbolic representation of the adversarial examples.
         """
         if self.back == 'th':
@@ -47,7 +47,7 @@ class Attack:
 
         if not self.inf_loop:
             self.inf_loop = True
-            assert self.parse_params(params)
+            assert self.parse_params(**kwargs)
             import tensorflow as tf
             graph = tf.py_func(self.generate_np, [x], tf.float32)
             self.inf_loop = False
@@ -56,13 +56,13 @@ class Attack:
             error = "No symbolic or numeric implementation of attack."
             raise NotImplementedError(error)
 
-    def generate_np(self, x_val, params={}):
+    def generate_np(self, x_val, **kwargs):
         """
         Generate adversarial examples and return them as a Numpy array. This
         method should be overriden in any child class that implements an attack
         that is not fully expressed symbolically.
         :param x_val: A Numpy array with the original inputs.
-        :param params: Parameter dictionary used by child classes.
+        :param **kwargs: optional parameters used by child classes.
         :return: A Numpy array holding the adversarial examples.
         """
         if self.back == 'th':
@@ -77,7 +77,7 @@ class Attack:
                 input_shape = list(x_val.shape)
                 input_shape[0] = None
                 self._x = tf.placeholder(tf.float32, shape=input_shape)
-                self._x_adv = self.generate(self._x, params=params)
+                self._x_adv = self.generate(self._x, **kwargs)
             self.inf_loop = False
         else:
             error = "No symbolic or numeric implementation of attack."
@@ -85,7 +85,7 @@ class Attack:
 
         return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
 
-    def parse_params(self, params):
+    def parse_params(self, params=None):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -109,12 +109,24 @@ class FastGradientMethod(Attack):
         """
         super(FastGradientMethod, self).__init__(model, back, sess)
 
-    def generate(self, x, params={}):
+    def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param eps: (optional float) attack step size (input variation)
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param y: (optional) A placeholder for the model labels. Only provide
+                  this parameter if you'd like to use true labels when crafting
+                  adversarial samples. Otherwise, model predictions are used as
+                  labels to avoid the "label leaking" effect (explained in this
+                  paper: https://arxiv.org/abs/1611.01236). Default is None.
+                  Labels should be one-hot-encoded.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
         """
         # Parse and save attack-specific parameters
-        assert self.parse_params(params)
+        assert self.parse_params(**kwargs)
 
         if self.back == 'tf':
             from .attacks_tf import fgm
@@ -124,43 +136,10 @@ class FastGradientMethod(Attack):
         return fgm(x, self.model(x), y=self.y, eps=self.eps, ord=self.ord,
                    clip_min=self.clip_min, clip_max=self.clip_max)
 
-    def generate_np(self, x_val, params={'y_val': None}):
+    def generate_np(self, x_val, **kwargs):
         """
         Generate adversarial samples and return them in a Numpy array.
-        """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
-
-        import tensorflow as tf
-
-        # Generate this attack's graph if it hasn't been done previously
-        if not hasattr(self, "_x"):
-            input_shape = list(x_val.shape)
-            input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x, params=params)
-
-        # Run symbolic graph without or with true labels
-        if params['y_val'] is None:
-            feed_dict = {self._x: x_val}
-        else:
-            # Verify label placeholder was given in params if using true labels
-            if self.y is None:
-                error = "True labels given but label placeholder not given."
-                raise Exception(error)
-            feed_dict = {self._x: x_val, self.y: params['y_val']}
-        return self.sess.run(self._x_adv, feed_dict=feed_dict)
-
-    def parse_params(self, params={'eps': 0.3,
-                                   'ord': 'np.inf',
-                                   'y': None,
-                                   'clip_min': None,
-                                   'clip_max': None}):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks
-        before saving them as attributes.
-
-        Attack-specific parameters:
+        :param x_val: (required) A Numpy array with the original inputs.
         :param eps: (required float) attack step size (input variation)
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
@@ -173,15 +152,54 @@ class FastGradientMethod(Attack):
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
-        # Check that all required attack specific parameters are defined
-        assert 'eps' in params
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
 
+        import tensorflow as tf
+
+        # Generate this attack's graph if it hasn't been done previously
+        if not hasattr(self, "_x"):
+            input_shape = list(x_val.shape)
+            input_shape[0] = None
+            self._x = tf.placeholder(tf.float32, shape=input_shape)
+            self._x_adv = self.generate(self._x, **kwargs)
+
+        # Run symbolic graph without or with true labels
+        if 'y_val' not in kwargs or kwargs['y_val'] is None:
+            feed_dict = {self._x: x_val}
+        else:
+            # Verify label placeholder was given in params if using true labels
+            if self.y is None:
+                error = "True labels given but label placeholder not given."
+                raise Exception(error)
+            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
+        return self.sess.run(self._x_adv, feed_dict=feed_dict)
+
+    def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
+                     clip_max=None):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param eps: (optional float) attack step size (input variation)
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param y: (optional) A placeholder for the model labels. Only provide
+                  this parameter if you'd like to use true labels when crafting
+                  adversarial samples. Otherwise, model predictions are used as
+                  labels to avoid the "label leaking" effect (explained in this
+                  paper: https://arxiv.org/abs/1611.01236). Default is None.
+                  Labels should be one-hot-encoded.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
         # Save attack-specific parameters
-        self.eps = params['eps']
-        self.ord = params['ord'] if 'ord' in params else np.inf
-        self.y = params['y'] if 'y' in params else None
-        self.clip_min = params['clip_min'] if 'clip_min' in params else None
-        self.clip_max = params['clip_max'] if 'clip_max' in params else None
+        self.eps = eps
+        self.ord = ord
+        self.y = y
+        self.clip_min = clip_min
+        self.clip_max = clip_max
 
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, int(1), int(2)]:
