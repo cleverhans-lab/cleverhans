@@ -224,7 +224,7 @@ def main(argv=None):
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
     fgsm_par = {'eps': 0.3, 'ord': np.inf, 'clip_min': 0., 'clip_max': 1.}
-    fgsm = FastGradientMethod(model_sub, sess=sess, params=fgsm_par)
+    fgsm = FastGradientMethod(model_sub, sess=sess, **fgsm_par)
 
     # Craft adversarial examples using the substitute
     eval_params = {'batch_size': FLAGS.batch_size}

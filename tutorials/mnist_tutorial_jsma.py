@@ -145,7 +145,7 @@ def main(argv=None):
                            'clip_max': 1., 'targets': y,
                            'y_val': one_hot_target}
             adv_x = jsma.generate_np(X_test[sample_ind:(sample_ind+1)],
-                                     params=jsma_params)
+                                     **jsma_params)
 
             # Check if success was achieved
             res = int(model_argmax(sess, x, preds, adv_x) == target)
