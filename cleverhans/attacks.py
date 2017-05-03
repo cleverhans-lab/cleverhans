@@ -9,13 +9,12 @@ class Attack:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, model, back='tf', sess=None, params={}):
+    def __init__(self, model, back='tf', sess=None):
         """
         :param model: A function that takes a symbolic input and returns the
                       symbolic output for the model's predictions.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param sess: The tf session to run graphs in (use None for Theano)
-        :param params: Parameter dictionary used by child classes.
         """
         if not(back == 'tf' or back == 'th'):
             raise ValueError("Backend argument must either be 'tf' or 'th'.")
@@ -104,11 +103,11 @@ class FastGradientMethod(Attack):
     the Fast Gradient Method.
     Paper link: https://arxiv.org/abs/1412.6572
     """
-    def __init__(self, model, back='tf', sess=None, params={}):
+    def __init__(self, model, back='tf', sess=None):
         """
         Create a FastGradientMethod instance.
         """
-        super(FastGradientMethod, self).__init__(model, back, sess, params)
+        super(FastGradientMethod, self).__init__(model, back, sess)
 
     def generate(self, x, params={}):
         """
@@ -199,11 +198,11 @@ class BasicIterativeMethod(Attack):
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
-    def __init__(self, model, back='tf', sess=None, params={}):
+    def __init__(self, model, back='tf', sess=None):
         """
         Create a BasicIterativeMethod instance.
         """
-        super(BasicIterativeMethod, self).__init__(model, back, sess, params)
+        super(BasicIterativeMethod, self).__init__(model, back, sess)
 
     def generate(self, x, params={}):
         import tensorflow as tf
@@ -300,11 +299,11 @@ class SaliencyMapMethod(Attack):
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
-    def __init__(self, model, back='tf', sess=None, params={}):
+    def __init__(self, model, back='tf', sess=None):
         """
         Create a SaliencyMapMethod instance.
         """
-        super(SaliencyMapMethod, self).__init__(model, back, sess, params)
+        super(SaliencyMapMethod, self).__init__(model, back, sess)
 
         if self.back == 'th':
             error = "Theano version of SaliencyMapMethod not implemented."
