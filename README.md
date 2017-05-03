@@ -1,4 +1,3 @@
-
 # cleverhans (v1.0.0)
 
 <img src="https://github.com/openai/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
