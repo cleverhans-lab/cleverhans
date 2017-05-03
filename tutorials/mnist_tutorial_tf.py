@@ -5,14 +5,13 @@ from __future__ import unicode_literals
 
 import keras
 from keras import backend
-
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval, batch_eval
-from cleverhans.attacks import fgsm
+from cleverhans.utils_tf import model_train, model_eval
+from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import cnn_model
 
 FLAGS = flags.FLAGS
@@ -27,6 +26,7 @@ def main(argv=None):
     MNIST cleverhans tutorial
     :return:
     """
+    keras.layers.core.K.set_learning_phase(0)
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
@@ -67,7 +67,7 @@ def main(argv=None):
         accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
                               args=eval_params)
         assert X_test.shape[0] == 10000, X_test.shape
-        print('Test accuracy on legitimate test examples: ' + str(accuracy))
+        print('Test accuracy on legitimate test examples: %0.4f' % accuracy)
 
     # Train an MNIST model
     train_params = {
@@ -78,39 +78,37 @@ def main(argv=None):
     model_train(sess, x, y, predictions, X_train, Y_train,
                 evaluate=evaluate, args=train_params)
 
-    # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    adv_x = fgsm(x, predictions, eps=0.3)
-    eval_params = {'batch_size': FLAGS.batch_size}
-    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], args=eval_params)
-    assert X_test_adv.shape[0] == 10000, X_test_adv.shape
+    # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
+    fgsm = FastGradientMethod(model, sess=sess)
+    fgsm_params = {'eps': 0.3}
+    adv_x = fgsm.generate(x, **fgsm_params)
+    preds_adv = model(adv_x)
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
-    accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test,
-                          args=eval_params)
-    print('Test accuracy on adversarial examples: ' + str(accuracy))
+    eval_par = {'batch_size': FLAGS.batch_size}
+    accuracy = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
+    print('Test accuracy on adversarial examples: %0.4f\n' % accuracy)
 
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
     model_2 = cnn_model()
     predictions_2 = model_2(x)
-    adv_x_2 = fgsm(x, predictions_2, eps=0.3)
-    predictions_2_adv = model_2(adv_x_2)
+    fgsm2 = FastGradientMethod(model_2, sess=sess)
+    predictions_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
 
     def evaluate_2():
-        # Evaluate the accuracy of the adversarialy trained MNIST model on
-        # legitimate test examples
+        # Accuracy of adversarially trained model on legitimate test inputs
         eval_params = {'batch_size': FLAGS.batch_size}
         accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test,
                               args=eval_params)
-        print('Test accuracy on legitimate test examples: ' + str(accuracy))
+        print('Test accuracy on legitimate test examples: %0.4f' % accuracy)
 
-        # Evaluate the accuracy of the adversarially trained MNIST model on
-        # adversarial examples
+        # Accuracy of the adversarially trained model on adversarial examples
         accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test,
                                   Y_test, args=eval_params)
-        print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
+        print('Test accuracy on adversarial examples: %0.4f' % accuracy_adv)
 
-    # Perform adversarial training
+    # Perform and evaluate adversarial training
     model_train(sess, x, y, predictions_2, X_train, Y_train,
                 predictions_adv=predictions_2_adv, evaluate=evaluate_2,
                 args=train_params)
