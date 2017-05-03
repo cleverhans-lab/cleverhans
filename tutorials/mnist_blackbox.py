@@ -224,11 +224,11 @@ def main(argv=None):
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
     fgsm_par = {'eps': 0.3, 'ord': np.inf, 'clip_min': 0., 'clip_max': 1.}
-    fgsm = FastGradientMethod(model_sub, sess=sess, **fgsm_par)
+    fgsm = FastGradientMethod(model_sub, sess=sess)
 
     # Craft adversarial examples using the substitute
     eval_params = {'batch_size': FLAGS.batch_size}
-    x_adv_sub = fgsm.generate(x)
+    x_adv_sub = fgsm.generate(x, **fgsm_par)
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
     accuracy = model_eval(sess, x, y, model(x_adv_sub), X_test, Y_test,
