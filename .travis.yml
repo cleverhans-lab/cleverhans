@@ -29,7 +29,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib pandas h5py
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py
   - source activate test-environment
   # install TensorFlow
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then

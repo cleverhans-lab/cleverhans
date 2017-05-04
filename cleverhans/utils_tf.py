@@ -131,8 +131,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
                 # Perform one training step
                 train_step.run(feed_dict={x: X_train[start:end],
-                                          y: Y_train[start:end],
-                                          keras.backend.learning_phase(): 1})
+                                          y: Y_train[start:end]})
             assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
             if verbose:
@@ -204,10 +203,10 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
             # account for variable batch size here
             cur_acc = acc_value.eval(
                 feed_dict={x: X_test[start:end],
-                           y: Y_test[start:end],
-                           keras.backend.learning_phase(): 0})
+                           y: Y_test[start:end]})
 
             accuracy += (cur_batch_size * cur_acc)
+
         assert end >= len(X_test)
 
         # Divide by number of examples to get final value
@@ -273,7 +272,6 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, args=None):
                 assert e.shape[0] == cur_batch_size
 
             feed_dict = dict(zip(tf_inputs, numpy_input_batches))
-            feed_dict[keras.backend.learning_phase()] = 0
             numpy_output_batches = sess.run(tf_outputs, feed_dict=feed_dict)
             for e in numpy_output_batches:
                 assert e.shape[0] == cur_batch_size, e.shape
@@ -286,17 +284,19 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, args=None):
     return out
 
 
-def model_argmax(sess, x, predictions, sample):
+def model_argmax(sess, x, predictions, samples):
     """
     Helper function that computes the current class prediction
     :param sess: TF session
     :param x: the input placeholder
     :param predictions: the model's symbolic output
-    :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
+    :param samples: numpy array with input samples (dims must match x)
     :return: the argmax output of predictions, i.e. the current predicted class
     """
-
-    feed_dict = {x: sample, keras.backend.learning_phase(): 0}
+    feed_dict = {x: samples}
     probabilities = sess.run(predictions, feed_dict)
 
-    return np.argmax(probabilities)
+    if samples.shape[0] == 1:
+        return np.argmax(probabilities)
+    else:
+        return np.argmax(probabilities, axis=1)

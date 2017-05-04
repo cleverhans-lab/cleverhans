@@ -3,11 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys
 import copy
 import numpy as np
-import tensorflow as tf
 from six.moves import xrange
+import tensorflow as tf
+import warnings
 
 from . import utils_tf
 from . import utils
@@ -16,31 +16,58 @@ from tensorflow.python.platform import flags
 FLAGS = flags.FLAGS
 
 
-def fgsm(x, predictions, eps, clip_min=None, clip_max=None):
+def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
+    return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,
+               clip_max=clip_max)
+
+
+def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
     """
-    TensorFlow implementation of the Fast Gradient
-    Sign method.
+    TensorFlow implementation of the Fast Gradient Method.
     :param x: the input placeholder
-    :param predictions: the model's output tensor
+    :param preds: the model's output tensor
+    :param y: (optional) A placeholder for the model labels. Only provide
+              this parameter if you'd like to use true labels when crafting
+              adversarial samples. Otherwise, model predictions are used as
+              labels to avoid the "label leaking" effect (explained in this
+              paper: https://arxiv.org/abs/1611.01236). Default is None.
+              Labels should be one-hot-encoded.
     :param eps: the epsilon (input variation parameter)
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
+    :param ord: (optional) Order of the norm (mimics Numpy).
+                Possible values: np.inf, 1 or 2.
+    :param clip_min: Minimum float value for adversarial example components
+    :param clip_max: Maximum float value for adversarial example components
     :return: a tensor for the adversarial example
     """
 
-    # Compute loss
-    y = tf.to_float(
-        tf.equal(predictions, tf.reduce_max(predictions, 1, keep_dims=True)))
+    if y is None:
+        # Using model predictions as ground truth to avoid label leaking
+        preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+        y = tf.to_float(tf.equal(preds, preds_max))
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
-    loss = utils_tf.model_loss(y, predictions, mean=False)
+
+    # Compute loss
+    loss = utils_tf.model_loss(y, preds, mean=False)
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
 
-    # Take sign of gradient
-    signed_grad = tf.sign(grad)
+    if ord == np.inf:
+        # Take sign of gradient
+        signed_grad = tf.sign(grad)
+    elif ord == 1:
+        reduc_ind = list(xrange(1, len(x.get_shape())))
+        signed_grad = grad / tf.reduce_sum(tf.abs(grad),
+                                           reduction_indices=reduc_ind,
+                                           keep_dims=True)
+    elif ord == 2:
+        reduc_ind = list(xrange(1, len(x.get_shape())))
+        signed_grad = grad / tf.sqrt(tf.reduce_sum(tf.square(grad),
+                                                   reduction_indices=reduc_ind,
+                                                   keep_dims=True))
+    else:
+        raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                                  "currently implemented.")
 
     # Multiply by constant epsilon
     scaled_signed_grad = eps * signed_grad
@@ -138,11 +165,7 @@ def jacobian(sess, x, grads, target, X, nb_features, nb_classes):
     :return: matrix of forward derivatives flattened into vectors
     """
     # Prepare feeding dictionary for all gradient computations
-    if 'keras' in sys.modules:
-        import keras
-        feed_dict = {x: X, keras.backend.learning_phase(): 0}
-    else:
-        feed_dict = {x: X}
+    feed_dict = {x: X}
 
     # Initialize a numpy array to hold the Jacobian component values
     jacobian_val = np.zeros((nb_classes, nb_features), dtype=np.float32)
@@ -166,6 +189,7 @@ def jacobian_graph(predictions, x, nb_classes):
     :param predictions: the model's symbolic output (linear output,
         pre-softmax)
     :param x: the input placeholder
+    :param nb_classes: the number of classes the model has
     :return:
     """
     # This function will return a list of TF gradients
@@ -179,8 +203,8 @@ def jacobian_graph(predictions, x, nb_classes):
     return list_derivatives
 
 
-def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
-            increase, clip_min, clip_max):
+def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
+         clip_max):
     """
     TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
     for details about the algorithm design choices).
@@ -188,16 +212,14 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
     :param x: the input placeholder
     :param predictions: the model's symbolic output (linear output,
         pre-softmax)
+    :param grads: symbolic gradients
     :param sample: numpy array with sample input
     :param target: target class for sample input
     :param theta: delta for each feature adjustment
     :param gamma: a float between 0 - 1 indicating the maximum distortion
         percentage
-    :param increase: boolean; true if we are increasing pixels, false otherwise
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
+    :param clip_min: minimum value for components of the example returned
+    :param clip_max: maximum value for components of the example returned
     :return: an adversarial sample
     """
 
@@ -212,7 +234,8 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
     adv_x = np.reshape(adv_x, (1, nb_features))
     # compute maximum number of iterations
     max_iters = np.floor(nb_features * gamma / 2)
-    print('Maximum number of iterations: {0}'.format(max_iters))
+
+    increase = bool(theta > 0)
 
     # Compute our initial search domain. We optimize the initial search domain
     # by removing all features that are already at their maximum values (if
@@ -256,22 +279,54 @@ def jsma_tf(sess, x, predictions, grads, sample, target, theta, gamma,
         # Update loop variables
         iteration = iteration + 1
 
-        # This process may take a while, so outputting progress regularly
-        if iteration % 5 == 0:
-            msg = 'Current iteration: {0} - Current Prediction: {1}'
-            print(msg.format(iteration, current))
-
     # Compute the ratio of pixels perturbed by the algorithm
     percent_perturbed = float(iteration * 2) / nb_features
 
     # Report success when the adversarial example is misclassified in the
     # target class
     if current == target:
-        print('Successful')
         return np.reshape(adv_x, original_shape), 1, percent_perturbed
     else:
-        print('Unsuccesful')
         return np.reshape(adv_x, original_shape), 0, percent_perturbed
+
+
+def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
+               nb_classes, targets=None):
+    """
+    Applies the JSMA to a batch of inputs
+    :param sess: TF session
+    :param x: the input placeholder
+    :param pred: the model's symbolic output
+    :param grads: symbolic gradients
+    :param X: numpy array with sample inputs
+    :param theta: delta for each feature adjustment
+    :param gamma: a float between 0 - 1 indicating the maximum distortion
+        percentage
+    :param clip_min: minimum value for components of the example returned
+    :param clip_max: maximum value for components of the example returned
+    :param nb_classes: number of model output classes
+    :param targets: target class for sample input
+    :return: adversarial examples
+    """
+    X_adv = np.zeros(X.shape)
+
+    for ind, val in enumerate(X):
+        val = np.expand_dims(val, axis=0)
+        if targets is None:
+            # No targets provided, randomly choose from other classes
+            from .utils_tf import model_argmax
+            gt = model_argmax(sess, x, pred, val)
+
+            # Randomly choose from the incorrect classes for each sample
+            from .utils import random_targets
+            target = random_targets(gt, nb_classes)[0]
+        else:
+            target = targets[ind]
+
+        X_adv[ind], _, _ = jsma(sess, x, pred, grads, val, np.argmax(target),
+                                theta, gamma, clip_min, clip_max)
+
+    return np.asarray(X_adv, dtype=np.float32)
 
 
 def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
@@ -289,12 +344,17 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
                   at the previous iteration
     :param grads: Jacobian symbolic graph for the substitute
                   (should be generated using attacks_tf.jacobian_graph)
-    :param keras_phase: if not None, contains keras.backend.learning_phase()
+    :param keras_phase: (deprecated) if not None, holds keras learning_phase
     :return: augmented substitute data (will need to be labeled by oracle)
     """
     assert len(x.get_shape()) == len(np.shape(X_sub_prev))
     assert len(grads) >= np.max(Y_sub) + 1
     assert len(X_sub_prev) == len(Y_sub)
+
+    if keras_phase is not None:
+        warnings.warn("keras_phase argument is deprecated and will be removed"
+                      " on 2017-09-28. Instead, use K.set_learning_phase(0) at"
+                      " the start of your script and serve with tensorflow.")
 
     # Prepare input_shape (outside loop) for feeding dictionary below
     input_shape = list(x.get_shape())
@@ -311,8 +371,6 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
 
         # Prepare feeding dictionary
         feed_dict = {x: np.reshape(input, input_shape)}
-        if keras_phase is not None:
-            feed_dict[keras_phase] = 0
 
         # Compute sign matrix
         grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
