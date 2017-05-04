@@ -11,14 +11,12 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval, batch_eval
-from cleverhans.attacks import fgsm
+from cleverhans.utils_tf import model_train, model_eval
+from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import cnn_model
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('train_dir', '/tmp', 'Directory storing the saved model.')
-flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
 flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
 flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
@@ -36,6 +34,8 @@ def mnist_tutorial(testing=False):
     # [2] accuracy of adversarially trained model on clean data
     # [3] accuracy of adversarially trained model on adversarial examples
     test = np.zeros(4, dtype=np.float32)
+    keras.layers.core.K.set_learning_phase(0)
+
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
@@ -78,7 +78,7 @@ def mnist_tutorial(testing=False):
         test[0] = accuracy  # Used for cleverhans testing purposes only.
         if not testing:
             assert X_test.shape[0] == 10000, X_test.shape
-        print('Test accuracy on legitimate test examples: ' + str(accuracy))
+        print('Test accuracy on legitimate test examples: %0.4f' % accuracy)
 
     # Train an MNIST model
     train_params = {
@@ -89,42 +89,40 @@ def mnist_tutorial(testing=False):
     model_train(sess, x, y, predictions, X_train, Y_train,
                 evaluate=evaluate, args=train_params)
 
-    # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    adv_x = fgsm(x, predictions, eps=0.3)
-    eval_params = {'batch_size': FLAGS.batch_size}
-    X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], args=eval_params)
-    assert X_test_adv.shape[0] == 10000, X_test_adv.shape
+    # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
+    fgsm = FastGradientMethod(model, sess=sess)
+    fgsm_params = {'eps': 0.3}
+    adv_x = fgsm.generate(x, **fgsm_params)
+    preds_adv = model(adv_x)
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
-    accuracy = model_eval(sess, x, y, predictions, X_test_adv, Y_test,
-                          args=eval_params)
+    eval_par = {'batch_size': FLAGS.batch_size}
+    accuracy = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
     test[1] = accuracy  # Used for cleverhans testing purposes only.
-    print('Test accuracy on adversarial examples: ' + str(accuracy))
+    print('Test accuracy on adversarial examples: %0.4f\n' % accuracy)
 
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
     model_2 = cnn_model()
     predictions_2 = model_2(x)
-    adv_x_2 = fgsm(x, predictions_2, eps=0.3)
-    predictions_2_adv = model_2(adv_x_2)
+    fgsm2 = FastGradientMethod(model_2, sess=sess)
+    predictions_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
 
     def evaluate_2():
-        # Evaluate the accuracy of the adversarialy trained MNIST model on
-        # legitimate test examples
+        # Accuracy of adversarially trained model on legitimate test inputs
         eval_params = {'batch_size': FLAGS.batch_size}
         accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test,
                               args=eval_params)
         test[2] = accuracy  # Used for cleverhans testing purposes only.
-        print('Test accuracy on legitimate test examples: ' + str(accuracy))
+        print('Test accuracy on legitimate test examples: %0.4f' % accuracy)
 
-        # Evaluate the accuracy of the adversarially trained MNIST model on
-        # adversarial examples
+        # Accuracy of the adversarially trained model on adversarial examples
         accuracy_adv = model_eval(sess, x, y, predictions_2_adv, X_test,
                                   Y_test, args=eval_params)
         test[3] = accuracy_adv  # Used for cleverhans testing purposes only.
-        print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
+        print('Test accuracy on adversarial examples: %0.4f' % accuracy_adv)
 
-    # Perform adversarial training
+    # Perform and evaluate adversarial training
     model_train(sess, x, y, predictions_2, X_train, Y_train,
                 predictions_adv=predictions_2_adv, evaluate=evaluate_2,
                 args=train_params)
