@@ -124,8 +124,9 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
 
     # Remove the already-used input features from the search space
     invalid = list(set(range(nf)) - search_domain)
-    grads_target[invalid] = - (2 * int(increase) - 1) * np.max(grads_target)
-    grads_other[invalid] = - (2 * int(increase) - 1) * np.min(grads_other)
+    increase_coef = (2 * int(increase) - 1)
+    grads_target[invalid] = - increase_coef * np.max(np.abs(grads_target))
+    grads_other[invalid] = increase_coef * np.max(np.abs(grads_other))
 
     # Create a 2D numpy array of the sum of grads_target and grads_other
     target_sum = grads_target.reshape((1, nf)) + grads_target.reshape((nf, 1))
