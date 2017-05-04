@@ -24,6 +24,8 @@ flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
 
 def main(argv=None):
+    keras.layers.core.K.set_learning_phase(0)
+
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 

@@ -5,9 +5,11 @@ from __future__ import unicode_literals
 
 from distutils.version import LooseVersion
 import keras
+from keras.utils import np_utils
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 
 if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
@@ -118,7 +120,27 @@ def other_classes(nb_classes, class_ind):
     return other_classes_list
 
 
-def conv_2d(filters, kernel_shape, strides, padding):
+def random_targets(gt, nb_classes):
+    """
+    Take in the correct labels for each sample and randomly choose target
+    labels from the others
+    :param gt: the correct labels
+    :param nb_classes: The number of classes for this model
+    :return: A numpy array holding the randomly-selected target classes
+    """
+    if len(gt.shape) > 1:
+        gt = np.argmax(gt, axis=1)
+
+    result = np.zeros(gt.shape)
+
+    for class_ind in xrange(nb_classes):
+        in_cl = gt == class_ind
+        result[in_cl] = np.random.choice(other_classes(nb_classes, class_ind))
+
+    return np_utils.to_categorical(np.asarray(result), nb_classes)
+
+
+def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
     """
     Defines the right convolutional layer according to the
     version of Keras that is installed.
@@ -131,14 +153,26 @@ def conv_2d(filters, kernel_shape, strides, padding):
     :param padding: (required string) can be either 'valid' (no padding around
                     input or feature map) or 'same' (pad to ensure that the
                     output feature map size is identical to the layer input)
+    :param input_shape: (optional) give input shape if this is the first
+                        layer of the model
     :return: the Keras layer
     """
     if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-        return Conv2D(filters=filters, kernel_size=kernel_shape,
-                      strides=strides, padding=padding)
+        if input_shape is not None:
+            return Conv2D(filters=filters, kernel_size=kernel_shape,
+                          strides=strides, padding=padding,
+                          input_shape=input_shape)
+        else:
+            return Conv2D(filters=filters, kernel_size=kernel_shape,
+                          strides=strides, padding=padding)
     else:
-        return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
-                             subsample=strides, border_mode=padding)
+        if input_shape is not None:
+            return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
+                                 subsample=strides, border_mode=padding,
+                                 input_shape=input_shape)
+        else:
+            return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
+                                 subsample=strides, border_mode=padding)
 
 
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
@@ -166,14 +200,13 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
     else:
         input_shape = (img_rows, img_cols, channels)
 
-    layers = [Dropout(0.2, input_shape=input_shape),
-              conv_2d(nb_filters, (8, 8), (2, 2), "same"),
+    layers = [conv_2d(nb_filters, (8, 8), (2, 2), "same",
+                      input_shape=input_shape),
               Activation('relu'),
               conv_2d((nb_filters * 2), (6, 6), (2, 2), "valid"),
               Activation('relu'),
               conv_2d((nb_filters * 2), (5, 5), (1, 1), "valid"),
               Activation('relu'),
-              Dropout(0.5),
               Flatten(),
               Dense(nb_classes)]
 
