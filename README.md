@@ -37,25 +37,13 @@ setting the Keras backend [on this page](https://keras.io/backend/).
 Installing `TensorFlow` or `Theano` will
 take care of all other dependencies like `numpy` and `scipy`.
 
-### Cloning the repository
+### Installing
 
-Once dependencies have been taken care of, you simply need to clone
-this repository into a folder of your choice.
-
-```
-git clone https://github.com/openai/cleverhans
-```
-
-### Updating the `PYTHONPATH` environment variable
-
-On UNIX machines, it is recommended to add your clone of this repository to the
-`PYTHONPATH` variable so as to be able to import `cleverhans` from any folder.
+You can install `cleverhans` using pip from the Github repo:
 
 ```
-export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
+pip install -e git+git@github.com:openai/cleverhans.git#egg=cleverhans
 ```
-
-You may want to make that change permanent through your shell's profile.
 
 ## Tutorials
 
