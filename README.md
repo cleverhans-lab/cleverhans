@@ -118,10 +118,10 @@ adversarial attack using v1.0.0 of `cleverhans`. On a test set modified by the
 
 Contributions are welcomed! We ask that new efforts and features be coordinated
 on the mailing list for `cleverhans` development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
-Bug fixes can be initiated through Github pull requests.
-
 When making contributions to `cleverhans`, we ask that you follow the
 `PEP8` coding style in your pull requests.
+
+Bug fixes can be initiated through Github pull requests.
 
 ## Citing this work
 
