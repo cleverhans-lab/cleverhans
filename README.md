@@ -91,7 +91,11 @@ will prove useful in the meanwhile.
 * **MNIST using a black-box attack** ([code](tutorials/mnist_blackbox.py)):
 this tutorial implements the black-box
 attack described in this [paper](https://arxiv.org/abs/1602.02697).
-* more to come soon...
+The adversary train a substitute model: a copy that imitates the black-box
+model by observing the labels that the black-box model assigns to inputs chosen
+carefully by the adversary. The adversary then uses the substitute
+model’s gradients to find adversarial examples that are misclassified by the
+black-box model as well.
 
 ## Examples
 
