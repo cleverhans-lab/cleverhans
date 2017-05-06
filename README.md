@@ -123,12 +123,6 @@ Bug fixes can be initiated through Github pull requests.
 When making contributions to `cleverhans`, we ask that you follow the
 `PEP8` coding style in your pull requests.
 
-### Setup for contributing
-
-- `pip3 install -r requirements.txt`
-- `sudo python3 setup.py install`
-- `python3 examples/ex_cifar10_tf.py`
-
 ## Citing this work
 
 If you use `cleverhans` for academic research, you are highly encouraged
