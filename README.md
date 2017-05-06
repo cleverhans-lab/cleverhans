@@ -39,11 +39,33 @@ take care of all other dependencies like `numpy` and `scipy`.
 
 ### Installing
 
-You can install `cleverhans` using pip from the Github repo:
+Once dependencies have been taken care of, you can install `cleverhans` using
+`pip` or by cloning the Github repository.
+
+#### `pip` installation
+
+You can install `cleverhans` using `pip`:
 
 ```
 pip install -e git+git@github.com:openai/cleverhans.git#egg=cleverhans
 ```
+
+#### Manual installation
+
+You simply need to clone this repository into a folder of your choice.
+
+```
+git clone https://github.com/openai/cleverhans
+```
+
+On UNIX machines, it is recommended to add your clone of this repository to the
+`PYTHONPATH` variable so as to be able to import `cleverhans` from any folder.
+
+```
+export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
+```
+
+You may want to make that change permanent through your shell's profile.
 
 ## Tutorials
 
