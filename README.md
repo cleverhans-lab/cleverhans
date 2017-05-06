@@ -70,8 +70,8 @@ You may want to make that change permanent through your shell's profile.
 
 ## Tutorials
 
-To help you get started with the functionalities provided by this library, it
-comes with the following tutorials:
+To help you get started with the functionalities provided by this library, the
+`tutorials/' folder comes with the following tutorials:
 * **MNIST with FGSM using the TensorFlow backend** ([code](tutorials/mnist_tutorial_tf.py), [tutorial](tutorials/mnist_tutorial_tf.md)): this first
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
