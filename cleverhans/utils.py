@@ -7,10 +7,9 @@ from distutils.version import LooseVersion
 import keras
 from keras.utils import np_utils
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.layers import Dense, Activation, Flatten
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 
 if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
     from keras.layers import Conv2D
