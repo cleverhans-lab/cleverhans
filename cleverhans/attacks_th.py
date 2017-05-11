@@ -29,6 +29,8 @@ def fgm(x, predictions, y=None, eps=0.3, ord=np.inf, clip_min=None,
                     value for components of the example returned
     :return: a tensor for the adversarial example
     """
+    warnings.warn("cleverhans support for Theano is deprecated and "
+                  "will be dropped on 2017-11-08.")
     assert ord == np.inf, "Theano implementation not available for this norm."
 
     if y is None:

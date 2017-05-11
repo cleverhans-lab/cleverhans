@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import keras
 import math
 import numpy as np
 import os
@@ -207,11 +206,9 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
 
     assert args.batch_size, "Batch size was not given in args dict"
 
-    # Define symbol for accuracy
-    # Keras 2.0 categorical_accuracy no longer calculates the mean internally
-    # tf.reduce_mean is called in here and is backward compatible with previous
-    # versions of Keras
-    acc_value = tf.reduce_mean(keras.metrics.categorical_accuracy(y, model))
+    # Define accuracy symbolically
+    correct_preds = tf.equal(tf.argmax(y, axis=-1), tf.argmax(model, axis=-1))
+    acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
     accuracy = 0.0
