@@ -160,7 +160,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub):
             'learning_rate': FLAGS.learning_rate
         }
         model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
-                    verbose=False, args=train_params)
+                    init_all=False, verbose=False, args=train_params)
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < FLAGS.data_aug - 1:
