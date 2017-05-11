@@ -235,6 +235,9 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
     # compute maximum number of iterations
     max_iters = np.floor(nb_features * gamma / 2)
 
+    # Find number of classes based on grads
+    nb_classes = len(grads)
+
     increase = bool(theta > 0)
 
     # Compute our initial search domain. We optimize the initial search domain
@@ -261,7 +264,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
         # Compute the Jacobian components
         grads_target, grads_others = jacobian(sess, x, grads, target,
                                               adv_x_original_shape,
-                                              nb_features, FLAGS.nb_classes)
+                                              nb_features, nb_classes)
 
         # Compute the saliency map for each of our target classes
         # and return the two best candidate features for perturbation
