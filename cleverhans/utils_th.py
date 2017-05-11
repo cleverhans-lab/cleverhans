@@ -8,6 +8,7 @@ import numpy as np
 import os
 import six
 import time
+import warnings
 
 from collections import OrderedDict
 
@@ -73,6 +74,8 @@ def model_loss(y, model, mean=True):
     :return: return mean of loss if True, otherwise return vector with per
              sample loss
     """
+    warnings.warn("cleverhans support for Theano is deprecated and "
+                  "will be dropped on 2017-11-08.")
 
     from_logits = "softmax" not in str(model).lower()
 
@@ -104,6 +107,9 @@ def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
                  `batch_size`
     :return: True if model trained
     """
+    warnings.warn("cleverhans support for Theano is deprecated and "
+                  "will be dropped on 2017-11-08.")
+
     args = _ArgsWrapper(args or {})
 
     print("Starting model training using Theano.")
@@ -163,6 +169,9 @@ def th_model_eval(x, y, model, X_test, Y_test, args=None):
                  Should contain `batch_size`
     :return: a float with the accuracy value
     """
+    warnings.warn("cleverhans support for Theano is deprecated and "
+                  "will be dropped on 2017-11-08.")
+
     args = _ArgsWrapper(args or {})
 
     # Define symbol for accuracy
@@ -220,6 +229,9 @@ def batch_eval(th_inputs, th_outputs, numpy_inputs, args=None):
     :param args: dict or argparse `Namespace` object.
                  Should contain `batch_size`
     """
+    warnings.warn("cleverhans support for Theano is deprecated and "
+                  "will be dropped on 2017-11-08.")
+
     args = _ArgsWrapper(args or {})
 
     n = len(numpy_inputs)
@@ -275,6 +287,8 @@ def model_argmax(x, predictions, sample):
     :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
     :return: the argmax output of predictions, i.e. the current predicted class
     """
+    warnings.warn("cleverhans support for Theano is deprecated and "
+                  "will be dropped on 2017-11-08.")
 
     probabilities = theano.function(
         inputs=[x],

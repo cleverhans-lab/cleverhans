@@ -29,13 +29,13 @@ flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
 # Flags related to oracle
-flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
+flags.DEFINE_integer('nb_epochs', 10, 'Number of epochs to train model')
 
 # Flags related to substitute
-flags.DEFINE_integer('holdout', 100, 'Test set holdout for adversary')
+flags.DEFINE_integer('holdout', 150, 'Test set holdout for adversary')
 flags.DEFINE_integer('data_aug', 6, 'Nb of times substitute data augmented')
-flags.DEFINE_integer('nb_epochs_s', 6, 'Training epochs for each substitute')
-flags.DEFINE_float('lmbda', 0.2, 'Lambda in https://arxiv.org/abs/1602.02697')
+flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for each substitute')
+flags.DEFINE_float('lmbda', 0.1, 'Lambda in https://arxiv.org/abs/1602.02697')
 
 
 def setup_tutorial():
@@ -160,7 +160,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub):
             'learning_rate': FLAGS.learning_rate
         }
         model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
-                    verbose=False, args=train_params)
+                    init_all=False, verbose=False, args=train_params)
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < FLAGS.data_aug - 1:
