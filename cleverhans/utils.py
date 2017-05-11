@@ -8,7 +8,6 @@ import keras
 from keras.utils import np_utils
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 
@@ -231,6 +230,7 @@ def pair_visual(original, adversarial, figure=None):
     :param figure: if we've already displayed images, use the same plot
     :return: the matplot figure to reuse for future samples
     """
+    import matplotlib.pyplot as plt
 
     # Ensure our inputs are of proper shape
     assert(len(original.shape) == 2 or len(original.shape) == 3)
@@ -268,6 +268,7 @@ def grid_visual(data):
         [nb_classes : nb_classes : img_rows : img_cols : nb_channels]
     :return: if necessary, the matplot figure to reuse
     """
+    import matplotlib.pyplot as plt
 
     # Ensure interactive mode is disabled and initialize our graph
     plt.ioff()
