@@ -37,16 +37,27 @@ setting the Keras backend [on this page](https://keras.io/backend/).
 Installing `TensorFlow` or `Theano` will
 take care of all other dependencies like `numpy` and `scipy`.
 
-### Cloning the repository
+### Installing
 
-Once dependencies have been taken care of, you simply need to clone
-this repository into a folder of your choice.
+Once dependencies have been taken care of, you can install `cleverhans` using
+`pip` or by cloning the Github repository.
+
+#### `pip` installation
+
+If you are installing `cleverhans` using `pip`, run the following command:
+
+```
+pip install -e git+git@github.com:openai/cleverhans.git#egg=cleverhans
+```
+
+#### Manual installation
+
+If you are installing `cleverhans` manually, you simply need to clone this
+repository into a folder of your choice.
 
 ```
 git clone https://github.com/openai/cleverhans
 ```
-
-### Updating the `PYTHONPATH` environment variable
 
 On UNIX machines, it is recommended to add your clone of this repository to the
 `PYTHONPATH` variable so as to be able to import `cleverhans` from any folder.
@@ -59,8 +70,8 @@ You may want to make that change permanent through your shell's profile.
 
 ## Tutorials
 
-To help you get started with the functionalities provided by this library, it
-comes with the following tutorials:
+To help you get started with the functionalities provided by this library, the
+`tutorials/' folder comes with the following tutorials:
 * **MNIST with FGSM using the TensorFlow backend** ([code](tutorials/mnist_tutorial_tf.py), [tutorial](tutorials/mnist_tutorial_tf.md)): this first
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
@@ -80,7 +91,11 @@ will prove useful in the meanwhile.
 * **MNIST using a black-box attack** ([code](tutorials/mnist_blackbox.py)):
 this tutorial implements the black-box
 attack described in this [paper](https://arxiv.org/abs/1602.02697).
-* more to come soon...
+The adversary train a substitute model: a copy that imitates the black-box
+model by observing the labels that the black-box model assigns to inputs chosen
+carefully by the adversary. The adversary then uses the substitute
+model’s gradients to find adversarial examples that are misclassified by the
+black-box model as well.
 
 ## Examples
 
@@ -103,16 +118,10 @@ adversarial attack using v1.0.0 of `cleverhans`. On a test set modified by the
 
 Contributions are welcomed! We ask that new efforts and features be coordinated
 on the mailing list for `cleverhans` development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
-Bug fixes can be initiated through Github pull requests.
-
 When making contributions to `cleverhans`, we ask that you follow the
 `PEP8` coding style in your pull requests.
 
-### Setup for contributing
-
-- `pip3 install -r requirements.txt`
-- `sudo python3 setup.py install`
-- `python3 examples/ex_cifar10_tf.py`
+Bug fixes can be initiated through Github pull requests.
 
 ## Citing this work
 

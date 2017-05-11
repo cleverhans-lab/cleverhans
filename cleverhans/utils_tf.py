@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import keras
 import math
 import numpy as np
 import os
@@ -60,6 +59,29 @@ def model_loss(y, model, mean=True):
     return out
 
 
+def initialize_uninitialized_global_variables(sess):
+    """
+    Only initializes the variables of a TensorFlow session that were not
+    already initialized.
+    :param sess: the TensorFlow session
+    :return:
+    """
+    # List all global variables
+    global_vars = tf.global_variables()
+
+    # Find initialized status for all variables
+    is_var_init = [tf.is_variable_initialized(var) for var in global_vars]
+    is_initialized = sess.run(is_var_init)
+
+    # List all variables that were not initialized previously
+    not_initialized_vars = [var for (var, init) in
+                            zip(global_vars, is_initialized) if not init]
+
+    # Initialize all uninitialized variables found, if any
+    if len(not_initialized_vars):
+        sess.run(tf.variables_initializer(not_initialized_vars))
+
+
 def tf_model_train(*args, **kwargs):
     warnings.warn("`tf_model_train` is deprecated. Switch to `model_train`."
                   "`tf_model_train` will be removed after 2017-07-18.")
@@ -67,7 +89,8 @@ def tf_model_train(*args, **kwargs):
 
 
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                predictions_adv=None, evaluate=None, verbose=True, args=None):
+                predictions_adv=None, init_all=True, evaluate=None,
+                verbose=True, args=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -76,9 +99,15 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param predictions: model output predictions
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
-    :param save: boolean controling the save operation
+    :param save: boolean controlling the save operation
     :param predictions_adv: if set with the adversarial example tensor,
                             will run adversarial training
+    :param init_all: (boolean) If set to true, all TF variables in the session
+                     are (re)initialized, otherwise only previously
+                     uninitialized variables are initialized before training.
+    :param evaluate: function that is run after each training iteration
+                     (typically to display the test/validation accuracy).
+    :param verbose: (boolean) all print statements disabled when set to False.
     :param args: dict or argparse `Namespace` object.
                  Should contain `nb_epochs`, `learning_rate`,
                  `batch_size`
@@ -108,7 +137,10 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
-            tf.global_variables_initializer().run()
+            if init_all:
+                tf.global_variables_initializer().run()
+            else:
+                initialize_uninitialized_global_variables(sess)
         else:
             warnings.warn("Update your copy of tensorflow; future versions of "
                           "cleverhans may drop support for this version.")
@@ -174,11 +206,9 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
 
     assert args.batch_size, "Batch size was not given in args dict"
 
-    # Define symbol for accuracy
-    # Keras 2.0 categorical_accuracy no longer calculates the mean internally
-    # tf.reduce_mean is called in here and is backward compatible with previous
-    # versions of Keras
-    acc_value = tf.reduce_mean(keras.metrics.categorical_accuracy(y, model))
+    # Define accuracy symbolically
+    correct_preds = tf.equal(tf.argmax(y, axis=-1), tf.argmax(model, axis=-1))
+    acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
     accuracy = 0.0
