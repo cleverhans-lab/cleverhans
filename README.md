@@ -47,7 +47,7 @@ Once dependencies have been taken care of, you can install `cleverhans` using
 If you are installing `cleverhans` using `pip`, run the following command:
 
 ```
-pip install -e git+git@github.com:openai/cleverhans.git#egg=cleverhans
+pip install -e git+http://github.com/openai/cleverhans.git#egg=cleverhans
 ```
 
 #### Manual installation
