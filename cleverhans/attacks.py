@@ -471,13 +471,13 @@ def vatm(model, x, predictions, eps, back='tf', num_iterations=1, xi=1e-6,
 
     """
     if back == 'tf':
-        # Compute FGSM using TensorFlow
+        # Compute VATM using TensorFlow
         from .attacks_tf import vatm as vatm_tf
         return vatm_tf(model, x, predictions, eps,
                        num_iterations=num_iterations, xi=xi,
                        clip_min=clip_min, clip_max=clip_max)
     elif back == 'th':
-        # Compute FGSM using Theano
+        # Compute VATM using Theano
         from .attacks_th import vatm as vatm_th
         return vatm_th(model, x, predictions, eps,
                        num_iterations=num_iterations, xi=xi,
