@@ -103,12 +103,12 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,
     with tf.name_scope(scope, "virtual_adversarial_perturbation"):
         d = tf.random_normal(tf.shape(x))
         for i in range(num_iterations):
-            d = xi * utils_tf.normalize_perturbation(d)
+            d = xi * utils_tf.l2_batch_normalize(d)
             logits_d = model(x + d)
             kl = utils_tf.kl_with_logits(logits, logits_d)
             Hd = tf.gradients(kl, d)[0]
             d = tf.stop_gradient(Hd)
-        d = eps * utils_tf.normalize_perturbation(d)
+        d = eps * utils_tf.l2_batch_normalize(d)
         adv_x = tf.stop_gradient(x + d)
         if (clip_min is not None) and (clip_max is not None):
             adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
