@@ -300,27 +300,20 @@ def model_argmax(x, predictions, sample):
     return np.argmax(probabilities)
 
 
-def l2_normalize(x, axis, epsilon=1e-12):
-    """Helper function that normalizes vector to unit norm
+def l2_batch_normalize(x, epsilon=1e-12):
+    """
+    Helper function to normalize a batch of vectors.
     :param x: the input placeholder
-    :param axis: axis to normalizes
     :param epsilon: stabilizes division
-    :return: the l2 normalized vector
+    :return: the batch of l2 normalized vector
     """
     epsilon = np.asarray(epsilon, dtype=floatX)
-    x /= (epsilon + T.max(T.abs_(x), axis, keepdims=True))
-    square_sum = T.sum(T.sqr(x), axis, keepdims=True)
-    x /= T.sqrt(np.sqrt(epsilon) + square_sum)
-    return x
-
-
-def normalize_perturbation(x):
-    """Helper function to normalize feature perturbation
-    """
     x_shape = x.shape
     x = T.reshape(x, (x.shape[0], -1))
-    x_norm = l2_normalize(x, axis=1)
-    return x_norm.reshape(x_shape)
+    x /= (epsilon + T.max(T.abs_(x), 1, keepdims=True))
+    square_sum = T.sum(T.sqr(x), 1, keepdims=True)
+    x /= T.sqrt(np.sqrt(epsilon) + square_sum)
+    return x.reshape(x_shape)
 
 
 def kl_with_logits(q_logits, p_logits):
