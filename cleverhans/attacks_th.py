@@ -88,8 +88,8 @@ def vatm(model, x, predictions, eps, num_iterations=1, xi=1e-6,
     d = rng.normal(size=x.shape, dtype=x.dtype)
     for i in range(num_iterations):
         d = xi * utils_th.normalize_perturbation(d)
-        predictions_d = model(x + d)
-        kl = utils_th.kl_with_logits(predictions, predictions_d)
+        logits_d = model(x + d)
+        kl = utils_th.kl_with_logits(predictions, logits_d)
         Hd = T.grad(kl.sum(), d)
         d = gradient.disconnected_grad(Hd)
     d = eps * utils_th.normalize_perturbation(d)

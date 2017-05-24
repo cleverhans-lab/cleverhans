@@ -82,14 +82,14 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
     return adv_x
 
 
-def vatm(model, x, predictions, eps, num_iterations=1, xi=1e-6,
+def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,
          clip_min=None, clip_max=None, scope=None):
     """
     Tensorflow implementation of the perturbation method used for virtual
     adversarial training: https://arxiv.org/abs/1507.00677
     :param model: the model which returns the network unnormalized logits
     :param x: the input placeholder
-    :param predictions: the model's unnormalized output tensor
+    :param logits: the model's unnormalized output tensor
     :param eps: the epsilon (input variation parameter)
     :param num_iterations: the number of iterations
     :param xi: the finite difference parameter
@@ -104,8 +104,8 @@ def vatm(model, x, predictions, eps, num_iterations=1, xi=1e-6,
         d = tf.random_normal(tf.shape(x))
         for i in range(num_iterations):
             d = xi * utils_tf.normalize_perturbation(d)
-            predictions_d = model(x + d)
-            kl = utils_tf.kl_with_logits(predictions, predictions_d)
+            logits_d = model(x + d)
+            kl = utils_tf.kl_with_logits(logits, logits_d)
             Hd = tf.gradients(kl, d)[0]
             d = tf.stop_gradient(Hd)
         d = eps * utils_tf.normalize_perturbation(d)
