@@ -170,4 +170,4 @@ The following authors contributed (ordered according to the GitHub contributors 
 
 ## Copyright
 
-Copyright 2017 - OpenAI and Pennsylvania State University.
+Copyright 2017 - Google Inc., OpenAI and Pennsylvania State University.
