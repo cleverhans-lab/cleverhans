@@ -158,7 +158,7 @@ other inputs.
 
 ## Authors
 
-This library is managed and maintained by Ian Goodfellow (OpenAI),
+This library is managed and maintained by Ian Goodfellow (Google Brain),
 Nicolas Papernot (Pennsylvania State University), and
 Ryan Sheatsley (Pennsylvania State University).
 
