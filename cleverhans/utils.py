@@ -9,6 +9,7 @@ from keras.utils import np_utils
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
 import numpy as np
+from six.moves import xrange
 
 if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
     from keras.layers import Conv2D
