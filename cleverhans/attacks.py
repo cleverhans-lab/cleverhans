@@ -1,5 +1,6 @@
 from abc import ABCMeta
 import numpy as np
+from six.moves import xrange
 import warnings
 
 
