@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import keras
 from keras import backend
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
@@ -27,9 +26,14 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     :param train_end: index of last training set example
     :param test_start: index of first test set example
     :param test_end: index of last test set example
+    :param nb_epochs: number of epochs to train model
+    :param batch_size: size of training batches
+    :param learning_rate: learning rate for training
     :return: an AccuracyReport object
     """
     keras.layers.core.K.set_learning_phase(0)
+
+    # Object used to keep track of (and return) key accuracies
     report = AccuracyReport()
 
     # Set TF random seed to improve reproducibility
@@ -55,6 +59,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
+    # Use label smoothing
     assert Y_train.shape[1] == 10.
     label_smooth = .1
     Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
@@ -65,17 +70,16 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Define TF model graph
     model = cnn_model()
-    predictions = model(x)
+    preds = model(x)
     print("Defined TensorFlow model graph.")
 
     def evaluate():
         # Evaluate the accuracy of the MNIST model on legitimate test examples
         eval_params = {'batch_size': batch_size}
-        accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
-                              args=eval_params)
-        report.clean_train_clean_eval = accuracy
+        acc = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
+        report.clean_train_clean_eval = acc
         assert X_test.shape[0] == test_end - test_start, X_test.shape
-        print('Test accuracy on legitimate examples: %0.4f' % accuracy)
+        print('Test accuracy on legitimate examples: %0.4f' % acc)
 
     # Train an MNIST model
     train_params = {
@@ -83,8 +87,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    model_train(sess, x, y, predictions, X_train, Y_train,
-                evaluate=evaluate, args=train_params)
+    model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
+                args=train_params)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     fgsm = FastGradientMethod(model, sess=sess)
@@ -101,27 +105,27 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
     model_2 = cnn_model()
-    predictions_2 = model_2(x)
+    preds_2 = model_2(x)
     fgsm2 = FastGradientMethod(model_2, sess=sess)
-    predictions_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
+    preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
 
     def evaluate_2():
         # Accuracy of adversarially trained model on legitimate test inputs
         eval_params = {'batch_size': batch_size}
-        accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test,
+        accuracy = model_eval(sess, x, y, preds_2, X_test, Y_test,
                               args=eval_params)
         print('Test accuracy on legitimate examples: %0.4f' % accuracy)
         report.adv_train_clean_eval = accuracy
 
         # Accuracy of the adversarially trained model on adversarial examples
-        accuracy = model_eval(sess, x, y, predictions_2_adv, X_test,
+        accuracy = model_eval(sess, x, y, preds_2_adv, X_test,
                               Y_test, args=eval_params)
         print('Test accuracy on adversarial examples: %0.4f' % accuracy)
         report.adv_train_adv_eval = accuracy
 
     # Perform and evaluate adversarial training
-    model_train(sess, x, y, predictions_2, X_train, Y_train,
-                predictions_adv=predictions_2_adv, evaluate=evaluate_2,
+    model_train(sess, x, y, preds_2, X_train, Y_train,
+                predictions_adv=preds_2_adv, evaluate=evaluate_2,
                 args=train_params)
 
     return report
