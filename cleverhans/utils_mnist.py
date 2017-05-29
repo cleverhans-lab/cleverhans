@@ -22,10 +22,10 @@ def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
     :return: tuple of four arrays containing training data, training labels,
              testing data and testing labels.
     """
-    assert isinstance(train_start, (int, long))
-    assert isinstance(train_end, (int, long))
-    assert isinstance(test_start, (int, long))
-    assert isinstance(test_end, (int, long))
+    assert isinstance(train_start, int)
+    assert isinstance(train_end, int)
+    assert isinstance(test_start, int)
+    assert isinstance(test_end, int)
 
     if 'tensorflow' in sys.modules:
         from tensorflow.examples.tutorials.mnist import input_data
