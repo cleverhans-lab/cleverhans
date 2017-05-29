@@ -59,6 +59,9 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     :param Y_train: the training labels for the oracle
     :param X_test: the testing data for the oracle
     :param Y_test: the testing labels for the oracle
+    :param nb_epochs: number of epochs to train model
+    :param batch_size: size of training batches
+    :param learning_rate: learning rate for training
     :return:
     """
 
@@ -73,8 +76,8 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    model_train(sess, x, y, predictions, X_train, Y_train,
-                verbose=False, args=train_params)
+    model_train(sess, x, y, predictions, X_train, Y_train, verbose=False,
+                args=train_params)
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
@@ -130,6 +133,12 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
     :param bbox_preds: output of black-box model predictions
     :param X_sub: initial substitute training data
     :param Y_sub: initial substitute training labels
+    :param nb_classes: number of output classes
+    :param nb_epochs_s: number of epochs to train substitute model
+    :param batch_size: size of training batches
+    :param learning_rate: learning rate for training
+    :param data_aug: number of times substitute training data is augmented
+    :param lmbda: lambda from arxiv.org/abs/1602.02697
     :return:
     """
     # Define TF model graph (for the black-box model)
@@ -155,8 +164,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
         if rho < data_aug - 1:
             print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
-            X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
-                                          lmbda)
+            X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads, lmbda)
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
@@ -190,6 +198,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                from the substitute model
     """
     keras.layers.core.K.set_learning_phase(0)
+
+    # Dictionary used to keep track and return key accuracies
     accuracies = {}
 
     # Perform tutorial setup
@@ -224,8 +234,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                               nb_epochs, batch_size, learning_rate)
     model, bbox_preds, accuracies['bbox'] = prep_bbox_out
 
-    print("Training the substitute model.")
     # Train substitute using method from https://arxiv.org/abs/1602.02697
+    print("Training the substitute model.")
     train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
                               nb_classes, nb_epochs_s, batch_size,
                               learning_rate, data_aug, lmbda)

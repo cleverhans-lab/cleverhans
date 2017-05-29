@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import keras
 import numpy as np
-import os
 from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import app
@@ -30,14 +29,21 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     :param train_end: index of last training set example
     :param test_start: index of first test set example
     :param test_end: index of last test set example
+    :param viz_enabled: (boolean) activate plots of adversarial examples
+    :param nb_epochs: number of epochs to train model
+    :param batch_size: size of training batches
+    :param nb_classes: number of output classes
+    :param source_samples: number of test inputs to attack
+    :param learning_rate: learning rate for training
     :return: an AccuracyReport object
     """
+    # Object used to keep track of (and return) key accuracies
     report = AccuracyReport()
 
-    # MNIST dimensions
+    # MNIST-specific dimensions
     img_rows = 28
     img_cols = 28
-    nb_channels = 1
+    channels = 1
 
     # Disable Keras learning phase since we will be serving through tensorflow
     keras.layers.core.K.set_learning_phase(0)
@@ -93,31 +99,31 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(source_samples) + ' * ' +
-          str(nb_classes-1) + ' adversarial examples')
+    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1)
+          + ' adversarial examples')
 
     # Keep track of success (adversarial example classified in target)
     results = np.zeros((nb_classes, source_samples), dtype='i')
 
     # Rate of perturbed features for each test set example and target class
-    perturbations = np.zeros((nb_classes, source_samples),
-                             dtype='f')
+    perturbations = np.zeros((nb_classes, source_samples), dtype='f')
 
     # Initialize our array for grid visualization
-    grid_shape = (nb_classes,
-                  nb_classes,
-                  img_rows,
-                  img_cols,
-                  nb_channels)
+    grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-    # Define the SaliencyMapMethod attack object
+    # Instantiate a SaliencyMapMethod attack object
     jsma = SaliencyMapMethod(model, back='tf', sess=sess)
+    jsma_params = {'theta': 1., 'gamma': 0.1,
+                   'nb_classes': nb_classes, 'clip_min': 0.,
+                   'clip_max': 1., 'targets': y,
+                   'y_val': None}
 
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, source_samples):
         print('--------------------------------------')
         print('Attacking input %i/%i' % (sample_ind + 1, source_samples))
+        sample = X_test[sample_ind:(sample_ind+1)]
 
         # We want to find an adversarial example for each possible target class
         # (i.e. all classes that differ from the label given in the dataset)
@@ -126,8 +132,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
 
         # For the grid visualization, keep original images along the diagonal
         grid_viz_data[current_class, current_class, :, :, :] = np.reshape(
-            X_test[sample_ind:(sample_ind+1)],
-            (img_rows, img_cols, nb_channels))
+            sample, (img_rows, img_cols, channels))
 
         # Loop over all target classes
         for target in target_classes:
@@ -136,12 +141,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
             # This call runs the Jacobian-based saliency map approach
             one_hot_target = np.zeros((1, nb_classes), dtype=np.float32)
             one_hot_target[0, target] = 1
-            jsma_params = {'theta': 1., 'gamma': 0.1,
-                           'nb_classes': nb_classes, 'clip_min': 0.,
-                           'clip_max': 1., 'targets': y,
-                           'y_val': one_hot_target}
-            adv_x = jsma.generate_np(X_test[sample_ind:(sample_ind+1)],
-                                     **jsma_params)
+            jsma_params['y_val'] = one_hot_target
+            adv_x = jsma.generate_np(sample, **jsma_params)
 
             # Check if success was achieved
             res = int(model_argmax(sess, x, preds, adv_x) == target)
@@ -156,20 +157,16 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
             if viz_enabled:
                 if 'figure' not in vars():
                     figure = pair_visual(
-                        np.reshape(X_test[sample_ind:(sample_ind+1)],
-                                   (img_rows, img_cols)),
-                        np.reshape(adv_x,
-                                   (img_rows, img_cols)))
+                        np.reshape(sample, (img_rows, img_cols)),
+                        np.reshape(adv_x, (img_rows, img_cols)))
                 else:
                     figure = pair_visual(
-                        np.reshape(X_test[sample_ind:(sample_ind+1)],
-                                   (img_rows, img_cols)),
-                        np.reshape(adv_x, (img_rows,
-                                   img_cols)), figure)
+                        np.reshape(sample, (img_rows, img_cols)),
+                        np.reshape(adv_x, (img_rows, img_cols)), figure)
 
             # Add our adversarial example to our grid data
             grid_viz_data[target, current_class, :, :, :] = np.reshape(
-                adv_x, (img_rows, img_cols, nb_channels))
+                adv_x, (img_rows, img_cols, channels))
 
             # Update the arrays for later analysis
             results[target, sample_ind] = res
@@ -212,10 +209,10 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_boolean('viz_enabled', True, 'Enable sample visualization.')
+    flags.DEFINE_boolean('viz_enabled', True, 'Visualize adversarial ex.')
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_integer('nb_classes', 10, 'Number of classification classes')
+    flags.DEFINE_integer('nb_classes', 10, 'Number of output classes')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
     flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
