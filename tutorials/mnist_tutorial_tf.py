@@ -13,7 +13,7 @@ from tensorflow.python.platform import flags
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.utils import cnn_model
+from cleverhans.utils import cnn_model, AccuracyReport
 
 FLAGS = flags.FLAGS
 
@@ -37,7 +37,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
              * accuracy of adversarially trained model on adversarial examples
     """
     keras.layers.core.K.set_learning_phase(0)
-    accuracies = np.zeros(4, dtype=np.float32)
+    report = AccuracyReport()
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
@@ -78,10 +78,11 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     def evaluate():
         # Evaluate the accuracy of the MNIST model on legitimate test examples
         eval_params = {'batch_size': FLAGS.batch_size}
-        accuracies[0] = model_eval(sess, x, y, predictions, X_test, Y_test,
-                                   args=eval_params)
+        accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
+                              args=eval_params)
+        report.clean_train_clean_eval = accuracy
         assert X_test.shape[0] == test_end - test_start, X_test.shape
-        print('Test accuracy on legitimate examples: %0.4f' % accuracies[0])
+        print('Test accuracy on legitimate examples: %0.4f' % accuracy)
 
     # Train an MNIST model
     train_params = {
@@ -100,9 +101,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
     eval_par = {'batch_size': FLAGS.batch_size}
-    accuracies[1] = model_eval(sess, x, y, preds_adv, X_test, Y_test,
-                               args=eval_par)
-    print('Test accuracy on adversarial examples: %0.4f\n' % accuracies[1])
+    acc = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
+    print('Test accuracy on adversarial examples: %0.4f\n' % acc)
+    report.clean_train_adv_eval = acc
 
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
@@ -114,21 +115,23 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     def evaluate_2():
         # Accuracy of adversarially trained model on legitimate test inputs
         eval_params = {'batch_size': FLAGS.batch_size}
-        accuracies[2] = model_eval(sess, x, y, predictions_2, X_test, Y_test,
-                                   args=eval_params)
-        print('Test accuracy on legitimate examples: %0.4f' % accuracies[2])
+        accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test,
+                              args=eval_params)
+        print('Test accuracy on legitimate examples: %0.4f' % accuracy)
+        report.adv_train_clean_eval = accuracy
 
         # Accuracy of the adversarially trained model on adversarial examples
-        accuracies[3] = model_eval(sess, x, y, predictions_2_adv, X_test,
-                                   Y_test, args=eval_params)
-        print('Test accuracy on adversarial examples: %0.4f' % accuracies[3])
+        accuracy = model_eval(sess, x, y, predictions_2_adv, X_test,
+                              Y_test, args=eval_params)
+        print('Test accuracy on adversarial examples: %0.4f' % accuracy)
+        report.adv_train_adv_eval = accuracy
 
     # Perform and evaluate adversarial training
     model_train(sess, x, y, predictions_2, X_train, Y_train,
                 predictions_adv=predictions_2_adv, evaluate=evaluate_2,
                 args=train_params)
 
-    return tuple(accuracies)
+    return report
 
 
 def main(argv=None):
