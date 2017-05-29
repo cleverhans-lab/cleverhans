@@ -30,11 +30,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     :param train_end: index of last training set example
     :param test_start: index of first test set example
     :param test_end: index of last test set example
-    :return: a list of accuracies in the following order:
-             * accuracy of model on clean data
-             * accuracy of model on adversarial examples
-             * accuracy of adversarially trained model on clean data
-             * accuracy of adversarially trained model on adversarial examples
+    :return: an AccuracyReport object
     """
     keras.layers.core.K.set_learning_phase(0)
     report = AccuracyReport()

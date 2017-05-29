@@ -9,7 +9,7 @@ if __name__ == '__main__':
                             'test_end': 1666}
     report = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
 
-    # Check accuracy values
+    # Check accuracy values contained in the AccuracyReport object
     assert report.clean_train_clean_eval > 0.85
     assert report.clean_train_adv_eval < 0.06
     assert report.adv_train_clean_eval > 0.85
