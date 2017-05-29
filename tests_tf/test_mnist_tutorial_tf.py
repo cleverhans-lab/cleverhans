@@ -1,21 +1,16 @@
-from inspect import getsourcefile
-import os
-import sys
-
-# Import the tutorial after evaluating its relative path
-current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
-current_dir = current_dir[:current_dir.rfind(os.path.sep)]
-tutorial_dir = os.path.join(current_dir, 'tutorials')
-sys.path.insert(0, tutorial_dir)
-import mnist_tutorial_tf
-sys.path.pop(0)
+from tutorials import mnist_tutorial_tf
 
 
 if __name__ == '__main__':
+    # Run the MNIST tutorial on a dataset of reduced size
+    test_dataset_indices = {'train_start': 0,
+                            'train_end': 10000,
+                            'test_start': 0,
+                            'test_end': 1666}
+    test_results = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
 
-    test_results = mnist_tutorial_tf.mnist_tutorial(testing=True)
-
+    # Check accuracy values
     assert test_results[0] > 0.85
-    assert test_results[1] < 0.05
+    assert test_results[1] < 0.06
     assert test_results[2] > 0.85
-    assert test_results[3] > 0.25
+    assert test_results[3] > 0.190

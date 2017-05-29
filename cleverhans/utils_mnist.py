@@ -10,11 +10,22 @@ import warnings
 from . import utils
 
 
-def data_mnist(datadir='/tmp/', testing=False):
+def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
+               test_end=10000):
     """
     Load and preprocess MNIST dataset
-    :return:
+    :param datadir: path to folder where data should be stored
+    :param train_start: index of first training set example
+    :param train_end: index of last training set example
+    :param test_start: index of first test set example
+    :param test_end: index of last test set example
+    :return: tuple of four arrays containing training data, training labels,
+             testing data and testing labels.
     """
+    assert isinstance(train_start, (int, long))
+    assert isinstance(train_end, (int, long))
+    assert isinstance(test_start, (int, long))
+    assert isinstance(test_end, (int, long))
 
     if 'tensorflow' in sys.modules:
         from tensorflow.examples.tutorials.mnist import input_data
@@ -52,14 +63,12 @@ def data_mnist(datadir='/tmp/', testing=False):
         Y_test = np_utils.to_categorical(y_test, nb_classes)
 
     print('X_train shape:', X_train.shape)
-    print(X_train.shape[0], 'train samples')
-    print(X_test.shape[0], 'test samples')
+    print('X_test shape:', X_test.shape)
 
-    if testing:
-        X_train = X_train[:10000]
-        Y_train = Y_train[:10000]
-        X_test = X_test[:2000]
-        Y_test = Y_test[:2000]
+    X_train = X_train[train_start:train_end]
+    Y_train = Y_train[train_start:train_end]
+    X_test = X_test[test_start:test_end]
+    Y_test = Y_test[test_start:test_end]
 
     return X_train, Y_train, X_test, Y_test
 
