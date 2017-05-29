@@ -12,7 +12,8 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.attacks import SaliencyMapMethod
-from cleverhans.utils import other_classes, cnn_model, pair_visual, grid_visual
+from cleverhans.utils import other_classes, cnn_model
+from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
 
@@ -33,11 +34,18 @@ flags.DEFINE_integer('source_samples', 10, 'Nb of test set examples to attack')
 flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
 
 
-def main(argv=None):
+def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
+                        test_end=10000):
     """
     MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
-    :return:
+    :param train_start: index of first training set example
+    :param train_end: index of last training set example
+    :param test_start: index of first test set example
+    :param test_end: index of last test set example
+    :return: an AccuracyReport object
     """
+    report = AccuracyReport()
+
     # Disable Keras learning phase since we will be serving through tensorflow
     keras.layers.core.K.set_learning_phase(0)
 
@@ -56,8 +64,10 @@ def main(argv=None):
     print("Created TensorFlow session and set Keras backend.")
 
     # Get MNIST test data
-    X_train, Y_train, X_test, Y_test = data_mnist()
-    print("Loaded MNIST test data.")
+    X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
+                                                  train_end=train_end,
+                                                  test_start=test_start,
+                                                  test_end=test_end)
 
     # Define input TF placeholder
     x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
@@ -72,27 +82,20 @@ def main(argv=None):
     # Training the model using TensorFlow
     ###########################################################################
 
-    # Train an MNIST model if it does not exist in the train_dir folder
-    saver = tf.train.Saver()
-    save_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
-    if os.path.isfile(save_path):
-        saver.restore(sess, os.path.join(FLAGS.train_dir, FLAGS.filename))
-    else:
-        train_params = {
-            'nb_epochs': FLAGS.nb_epochs,
-            'batch_size': FLAGS.batch_size,
-            'learning_rate': FLAGS.learning_rate
-        }
-        model_train(sess, x, y, preds, X_train, Y_train,
-                    args=train_params)
-        saver.save(sess, save_path)
+    # Train an MNIST model
+    train_params = {
+        'nb_epochs': FLAGS.nb_epochs,
+        'batch_size': FLAGS.batch_size,
+        'learning_rate': FLAGS.learning_rate
+    }
+    model_train(sess, x, y, preds, X_train, Y_train, args=train_params)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': FLAGS.batch_size}
-    accuracy = model_eval(sess, x, y, preds, X_test, Y_test,
-                          args=eval_params)
-    assert X_test.shape[0] == 10000, X_test.shape
+    accuracy = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
+    assert X_test.shape[0] == test_end - test_start, X_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
+    report.clean_train_clean_eval = accuracy
 
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
@@ -185,6 +188,7 @@ def main(argv=None):
     nb_targets_tried = ((FLAGS.nb_classes - 1) * FLAGS.source_samples)
     succ_rate = float(np.sum(results)) / nb_targets_tried
     print('Avg. rate of successful adv. examples {0:.4f}'.format(succ_rate))
+    report.clean_train_adv_eval = 1. - succ_rate
 
     # Compute the average distortion introduced by the algorithm
     percent_perturbed = np.mean(perturbations)
@@ -201,6 +205,13 @@ def main(argv=None):
     # Finally, block & display a grid of all the adversarial examples
     if FLAGS.viz_enabled:
         _ = grid_visual(grid_viz_data)
+
+    return report
+
+
+def main(argv=None):
+    mnist_tutorial_jsma()
+
 
 if __name__ == '__main__':
     app.run()
