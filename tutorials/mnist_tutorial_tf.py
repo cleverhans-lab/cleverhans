@@ -17,13 +17,10 @@ from cleverhans.utils import cnn_model, AccuracyReport
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
-flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
-
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
-                   test_end=10000):
+                   test_end=10000, nb_epochs=6, batch_size=128,
+                   learning_rate=0.1):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -73,7 +70,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     def evaluate():
         # Evaluate the accuracy of the MNIST model on legitimate test examples
-        eval_params = {'batch_size': FLAGS.batch_size}
+        eval_params = {'batch_size': batch_size}
         accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
                               args=eval_params)
         report.clean_train_clean_eval = accuracy
@@ -82,9 +79,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Train an MNIST model
     train_params = {
-        'nb_epochs': FLAGS.nb_epochs,
-        'batch_size': FLAGS.batch_size,
-        'learning_rate': FLAGS.learning_rate
+        'nb_epochs': nb_epochs,
+        'batch_size': batch_size,
+        'learning_rate': learning_rate
     }
     model_train(sess, x, y, predictions, X_train, Y_train,
                 evaluate=evaluate, args=train_params)
@@ -96,7 +93,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     preds_adv = model(adv_x)
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
-    eval_par = {'batch_size': FLAGS.batch_size}
+    eval_par = {'batch_size': batch_size}
     acc = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
     print('Test accuracy on adversarial examples: %0.4f\n' % acc)
     report.clean_train_adv_eval = acc
@@ -110,7 +107,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     def evaluate_2():
         # Accuracy of adversarially trained model on legitimate test inputs
-        eval_params = {'batch_size': FLAGS.batch_size}
+        eval_params = {'batch_size': batch_size}
         accuracy = model_eval(sess, x, y, predictions_2, X_test, Y_test,
                               args=eval_params)
         print('Test accuracy on legitimate examples: %0.4f' % accuracy)
@@ -131,8 +128,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
-    mnist_tutorial()
+    mnist_tutorial(nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
+                   learning_rate=FLAGS.learning_rate)
 
 
 if __name__ == '__main__':
+    flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
+    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
+    flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+
     app.run()
