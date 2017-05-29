@@ -3,6 +3,7 @@ from tensorflow.python.platform import flags
 
 FLAGS = flags.FLAGS
 
+
 if __name__ == '__main__':
     # Reduce number of data augmentations for faster runtime
     FLAGS.data_aug = 4
