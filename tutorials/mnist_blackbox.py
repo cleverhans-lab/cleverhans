@@ -96,7 +96,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test):
     print('Test accuracy of black-box on legitimate test '
           'examples: ' + str(accuracy))
 
-    return model, predictions
+    return model, predictions, accuracy
 
 
 def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
@@ -185,12 +185,22 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub):
     return model_sub, preds_sub
 
 
-def main(argv=None):
+def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
+                   test_end=10000):
     """
-    MNIST cleverhans tutorial
-    :return:
+    MNIST tutorial for the black-box attack from arxiv.org/abs/1602.02697
+    :param train_start: index of first training set example
+    :param train_end: index of last training set example
+    :param test_start: index of first test set example
+    :param test_end: index of last test set example
+    :return: a dictionary with:
+             * black-box model accuracy on test set
+             * substitute model accuracy on test set
+             * black-box model accuracy on adversarial examples transferred
+               from the substitute model
     """
     keras.layers.core.K.set_learning_phase(0)
+    accuracies = {}
 
     # Perform tutorial setup
     assert setup_tutorial()
@@ -200,7 +210,10 @@ def main(argv=None):
     keras.backend.set_session(sess)
 
     # Get MNIST data
-    X_train, Y_train, X_test, Y_test = data_mnist()
+    X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
+                                                  train_end=train_end,
+                                                  test_start=test_start,
+                                                  test_end=test_end)
 
     # Initialize substitute training set reserved for adversary
     X_sub = X_test[:FLAGS.holdout]
@@ -217,11 +230,18 @@ def main(argv=None):
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
     print("Preparing the black-box model.")
-    model, bbox_preds = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test)
+    prep_bbox_out = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test)
+    model, bbox_preds, accuracies['bbox'] = prep_bbox_out
 
     print("Training the substitute model.")
     # Train substitute using method from https://arxiv.org/abs/1602.02697
-    model_sub, preds_sub = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub)
+    train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub)
+    model_sub, preds_sub = train_sub_out
+
+    # Evaluate the substitute model on clean test examples
+    eval_params = {'batch_size': FLAGS.batch_size}
+    acc = model_eval(sess, x, y, preds_sub, X_test, Y_test, args=eval_params)
+    accuracies['sub'] = acc
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
     fgsm_par = {'eps': 0.3, 'ord': np.inf, 'clip_min': 0., 'clip_max': 1.}
@@ -236,6 +256,13 @@ def main(argv=None):
                           args=eval_params)
     print('Test accuracy of oracle on adversarial examples generated '
           'using the substitute: ' + str(accuracy))
+    accuracies['bbox_on_sub_adv_ex'] = accuracy
+
+    return accuracies
+
+
+def main(argv=None):
+    mnist_blackbox()
 
 
 if __name__ == '__main__':

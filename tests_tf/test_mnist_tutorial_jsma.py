@@ -6,7 +6,6 @@ FLAGS = flags.FLAGS
 
 if __name__ == '__main__':
     # Disable visualization for test
-
     FLAGS.viz_enabled = False
 
     # Run the MNIST tutorial on a dataset of reduced size
