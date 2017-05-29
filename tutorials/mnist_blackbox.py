@@ -24,20 +24,6 @@ from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
 FLAGS = flags.FLAGS
 
-# General flags
-flags.DEFINE_integer('nb_classes', 10, 'Number of classes in problem')
-flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
-
-# Flags related to oracle
-flags.DEFINE_integer('nb_epochs', 10, 'Number of epochs to train model')
-
-# Flags related to substitute
-flags.DEFINE_integer('holdout', 150, 'Test set holdout for adversary')
-flags.DEFINE_integer('data_aug', 6, 'Nb of times substitute data augmented')
-flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for each substitute')
-flags.DEFINE_float('lmbda', 0.1, 'Lambda in https://arxiv.org/abs/1602.02697')
-
 
 def setup_tutorial():
     """
@@ -61,7 +47,8 @@ def setup_tutorial():
     return True
 
 
-def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test):
+def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
+              nb_epochs, batch_size, learning_rate):
     """
     Define and train a model that simulates the "remote"
     black-box oracle described in the original paper.
@@ -82,15 +69,15 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test):
 
     # Train an MNIST model
     train_params = {
-        'nb_epochs': FLAGS.nb_epochs,
-        'batch_size': FLAGS.batch_size,
-        'learning_rate': FLAGS.learning_rate
+        'nb_epochs': nb_epochs,
+        'batch_size': batch_size,
+        'learning_rate': learning_rate
     }
     model_train(sess, x, y, predictions, X_train, Y_train,
                 verbose=False, args=train_params)
 
     # Print out the accuracy on legitimate data
-    eval_params = {'batch_size': FLAGS.batch_size}
+    eval_params = {'batch_size': batch_size}
     accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
                           args=eval_params)
     print('Test accuracy of black-box on legitimate test '
@@ -132,7 +119,8 @@ def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     return model
 
 
-def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub):
+def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
+              nb_epochs_s, batch_size, learning_rate, data_aug, lmbda):
     """
     This function creates the substitute by alternatively
     augmenting the training data and training the substitute.
@@ -150,31 +138,31 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub):
     print("Defined TensorFlow model graph for the substitute.")
 
     # Define the Jacobian symbolically using TensorFlow
-    grads = jacobian_graph(preds_sub, x, FLAGS.nb_classes)
+    grads = jacobian_graph(preds_sub, x, nb_classes)
 
     # Train the substitute and augment dataset alternatively
-    for rho in xrange(FLAGS.data_aug):
+    for rho in xrange(data_aug):
         print("Substitute training epoch #" + str(rho))
         train_params = {
-            'nb_epochs': FLAGS.nb_epochs_s,
-            'batch_size': FLAGS.batch_size,
-            'learning_rate': FLAGS.learning_rate
+            'nb_epochs': nb_epochs_s,
+            'batch_size': batch_size,
+            'learning_rate': learning_rate
         }
         model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
                     init_all=False, verbose=False, args=train_params)
 
         # If we are not at last substitute training iteration, augment dataset
-        if rho < FLAGS.data_aug - 1:
+        if rho < data_aug - 1:
             print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
             X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
-                                          FLAGS.lmbda)
+                                          lmbda)
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
             Y_sub = np.hstack([Y_sub, Y_sub])
             X_sub_prev = X_sub[int(len(X_sub)/2):]
-            eval_params = {'batch_size': FLAGS.batch_size}
+            eval_params = {'batch_size': batch_size}
             bbox_val = batch_eval(sess, [x], [bbox_preds], [X_sub_prev],
                                   args=eval_params)[0]
             # Note here that we take the argmax because the adversary
@@ -186,7 +174,9 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub):
 
 
 def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
-                   test_end=10000):
+                   test_end=10000, nb_classes=10, batch_size=128,
+                   learning_rate=0.1, nb_epochs=10, holdout=150, data_aug=6,
+                   nb_epochs_s=10, lmbda=0.1):
     """
     MNIST tutorial for the black-box attack from arxiv.org/abs/1602.02697
     :param train_start: index of first training set example
@@ -216,12 +206,12 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                                                   test_end=test_end)
 
     # Initialize substitute training set reserved for adversary
-    X_sub = X_test[:FLAGS.holdout]
-    Y_sub = np.argmax(Y_test[:FLAGS.holdout], axis=1)
+    X_sub = X_test[:holdout]
+    Y_sub = np.argmax(Y_test[:holdout], axis=1)
 
     # Redefine test set as remaining samples unavailable to adversaries
-    X_test = X_test[FLAGS.holdout:]
-    Y_test = Y_test[FLAGS.holdout:]
+    X_test = X_test[holdout:]
+    Y_test = Y_test[holdout:]
 
     # Define input and output TF placeholders
     x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
@@ -230,16 +220,19 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
     print("Preparing the black-box model.")
-    prep_bbox_out = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test)
+    prep_bbox_out = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
+                              nb_epochs, batch_size, learning_rate)
     model, bbox_preds, accuracies['bbox'] = prep_bbox_out
 
     print("Training the substitute model.")
     # Train substitute using method from https://arxiv.org/abs/1602.02697
-    train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub)
+    train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
+                              nb_classes, nb_epochs_s, batch_size,
+                              learning_rate, data_aug, lmbda)
     model_sub, preds_sub = train_sub_out
 
     # Evaluate the substitute model on clean test examples
-    eval_params = {'batch_size': FLAGS.batch_size}
+    eval_params = {'batch_size': batch_size}
     acc = model_eval(sess, x, y, preds_sub, X_test, Y_test, args=eval_params)
     accuracies['sub'] = acc
 
@@ -248,7 +241,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     fgsm = FastGradientMethod(model_sub, sess=sess)
 
     # Craft adversarial examples using the substitute
-    eval_params = {'batch_size': FLAGS.batch_size}
+    eval_params = {'batch_size': batch_size}
     x_adv_sub = fgsm.generate(x, **fgsm_par)
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
@@ -262,8 +255,26 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
-    mnist_blackbox()
+    mnist_blackbox(nb_classes=FLAGS.nb_classes, batch_size=FLAGS.batch_size,
+                   learning_rate=FLAGS.learning_rate,
+                   nb_epochs=FLAGS.nb_epochs, holdout=FLAGS.holdout,
+                   data_aug=FLAGS.data_aug, nb_epochs_s=FLAGS.nb_epochs_s,
+                   lmbda=FLAGS.lmbda)
 
 
 if __name__ == '__main__':
+    # General flags
+    flags.DEFINE_integer('nb_classes', 10, 'Number of classes in problem')
+    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
+    flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+
+    # Flags related to oracle
+    flags.DEFINE_integer('nb_epochs', 10, 'Number of epochs to train model')
+
+    # Flags related to substitute
+    flags.DEFINE_integer('holdout', 150, 'Test set holdout for adversary')
+    flags.DEFINE_integer('data_aug', 6, 'Nb of substitute data augmentations')
+    flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for substitute')
+    flags.DEFINE_float('lmbda', 0.1, 'Lambda from arxiv.org/abs/1602.02697')
+
     app.run()
