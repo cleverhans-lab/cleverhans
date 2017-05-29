@@ -7,10 +7,10 @@ if __name__ == '__main__':
                             'train_end': 10000,
                             'test_start': 0,
                             'test_end': 1666}
-    test_results = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
+    report = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
 
     # Check accuracy values
-    assert test_results[0] > 0.85
-    assert test_results[1] < 0.06
-    assert test_results[2] > 0.85
-    assert test_results[3] > 0.190
+    assert report.clean_train_clean_eval > 0.85
+    assert report.clean_train_adv_eval < 0.06
+    assert report.adv_train_clean_eval > 0.85
+    assert report.adv_train_adv_eval > 0.190
