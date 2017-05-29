@@ -1,7 +1,7 @@
 from tutorials import mnist_tutorial_tf
 
 
-if __name__ == '__main__':
+def test_mnist_tutorial_tf():
     # Run the MNIST tutorial on a dataset of reduced size
     test_dataset_indices = {'train_start': 0,
                             'train_end': 10000,
@@ -14,3 +14,7 @@ if __name__ == '__main__':
     assert report.clean_train_adv_eval < 0.06
     assert report.adv_train_clean_eval > 0.85
     assert report.adv_train_adv_eval > 0.190
+
+
+if __name__ == '__main__':
+    test_mnist_tutorial_tf()
