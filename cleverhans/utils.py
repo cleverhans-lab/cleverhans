@@ -30,6 +30,19 @@ class _ArgsWrapper(object):
         return self.args.get(name)
 
 
+class AccuracyReport(object):
+    """
+    An object summarizing the accuracy results for experiments involving
+    training on clean examples or adversarial examples, then evaluating
+    on clean or adversarial examples.
+    """
+    def __init__(self):
+        self.clean_train_clean_eval = 0.
+        self.clean_train_adv_eval = 0.
+        self.adv_train_clean_eval = 0.
+        self.adv_train_adv_eval = 0.
+
+
 def batch_indices(batch_nb, data_length, batch_size):
     """
     This helper function computes a batch start and end index
