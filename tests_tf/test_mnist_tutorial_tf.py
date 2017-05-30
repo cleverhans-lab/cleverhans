@@ -1,7 +1,7 @@
 import unittest
 
 
-class TestAttackClassInitArguments(unittest.TestCase):
+class TestMNISTTutorialTF(unittest.TestCase):
     def test_mnist_tutorial_tf(self):
         from tutorials import mnist_tutorial_tf
 
@@ -16,7 +16,7 @@ class TestAttackClassInitArguments(unittest.TestCase):
         self.assertTrue(report.clean_train_clean_eval > 0.85)
         self.assertTrue(report.clean_train_adv_eval < 0.06)
         self.assertTrue(report.adv_train_clean_eval > 0.8)
-        self.assertTrue(report.adv_train_adv_eval > 0.2)
+        self.assertTrue(report.adv_train_adv_eval > 0.15)
 
 
 if __name__ == '__main__':
