@@ -14,7 +14,7 @@ class TestMNISTTutorialTF(unittest.TestCase):
 
         # Check accuracy values contained in the AccuracyReport object
         self.assertTrue(report.clean_train_clean_eval > 0.85)
-        self.assertTrue(report.clean_train_adv_eval < 0.06)
+        self.assertTrue(report.clean_train_adv_eval < 0.07)
         self.assertTrue(report.adv_train_clean_eval > 0.8)
         self.assertTrue(report.adv_train_adv_eval > 0.15)
 
