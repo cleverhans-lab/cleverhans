@@ -1,7 +1,7 @@
 import unittest
 
 
-class TestAttackClassInitArguments(unittest.TestCase):
+class TestMNISTTutorialJSMA(unittest.TestCase):
     def test_mnist_tutorial_jsma(self):
         from tutorials import mnist_tutorial_jsma
 
