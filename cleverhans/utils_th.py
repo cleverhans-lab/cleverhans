@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import math
 import numpy as np
-import os
 import six
 import time
 import warnings
@@ -299,3 +298,29 @@ def model_argmax(x, predictions, sample):
     )(x)
 
     return np.argmax(probabilities)
+
+
+def l2_batch_normalize(x, epsilon=1e-12):
+    """
+    Helper function to normalize a batch of vectors.
+    :param x: the input placeholder
+    :param epsilon: stabilizes division
+    :return: the batch of l2 normalized vector
+    """
+    epsilon = np.asarray(epsilon, dtype=floatX)
+    x_shape = x.shape
+    x = T.reshape(x, (x.shape[0], -1))
+    x /= (epsilon + T.max(T.abs_(x), 1, keepdims=True))
+    square_sum = T.sum(T.sqr(x), 1, keepdims=True)
+    x /= T.sqrt(np.sqrt(epsilon) + square_sum)
+    return x.reshape(x_shape)
+
+
+def kl_with_logits(q_logits, p_logits):
+    """Helper function to compute kl-divergence KL(q || p)
+    """
+    q = T.nnet.softmax(q_logits)
+    q_log = T.nnet.logsoftmax(q_logits)
+    p_log = T.nnet.logsoftmax(p_logits)
+    loss = T.sum(q * (q_log - p_log), axis=1)
+    return loss

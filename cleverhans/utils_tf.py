@@ -9,6 +9,8 @@ import numpy as np
 import os
 import six
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
+from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
 
@@ -336,3 +338,34 @@ def model_argmax(sess, x, predictions, samples):
         return np.argmax(probabilities)
     else:
         return np.argmax(probabilities, axis=1)
+
+
+def l2_batch_normalize(x, epsilon=1e-12, scope=None):
+    """
+    Helper function to normalize a batch of vectors.
+    :param x: the input placeholder
+    :param epsilon: stabilizes division
+    :return: the batch of l2 normalized vector
+    """
+    with tf.name_scope(scope, "l2_batch_normalize") as scope:
+        x_shape = tf.shape(x)
+        x = slim.flatten(x)
+        x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keep_dims=True))
+        square_sum = tf.reduce_sum(tf.square(x), 1, keep_dims=True)
+        x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
+        x_norm = tf.multiply(x, x_inv_norm)
+        return tf.reshape(x_norm, x_shape, scope)
+
+
+def kl_with_logits(q_logits, p_logits, scope=None,
+                   loss_collection=tf.GraphKeys.REGULARIZATION_LOSSES):
+    """Helper function to compute kl-divergence KL(q || p)
+    """
+    with tf.name_scope(scope, "kl_divergence") as name:
+        q = tf.nn.softmax(q_logits)
+        q_log = tf.nn.log_softmax(q_logits)
+        p_log = tf.nn.log_softmax(p_logits)
+        loss = tf.reduce_mean(tf.reduce_sum(q * (q_log - p_log), axis=1),
+                              name=name)
+        add_loss(loss, loss_collection)
+        return loss
