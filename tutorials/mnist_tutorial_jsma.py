@@ -51,7 +51,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
-    # Image dimensions ordering should follow the Theano convention
+    # Image dimensions ordering should follow the TensorFlow convention
     if keras.backend.image_dim_ordering() != 'tf':
         keras.backend.set_image_dim_ordering('tf')
         print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
