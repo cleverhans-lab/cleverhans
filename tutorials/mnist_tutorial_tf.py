@@ -21,7 +21,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
                    learning_rate=0.1):
     """
-    MNIST cleverhans tutorial
+    MNIST CleverHans tutorial
     :param train_start: index of first training set example
     :param train_end: index of last training set example
     :param test_start: index of first test set example
