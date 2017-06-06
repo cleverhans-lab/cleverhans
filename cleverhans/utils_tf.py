@@ -280,18 +280,19 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
     return accuracy
 
 
-def tf_model_load(sess):
+def tf_model_load(sess, file_path=None):
     """
 
-    :param sess:
-    :param x:
-    :param y:
-    :param model:
+    :param sess: the session object to restore
+    :param file_path: path to the restored session, if None is
+                      taken from FLAGS.train_dir and FLAGS.filename
     :return:
     """
     with sess.as_default():
         saver = tf.train.Saver()
-        saver.restore(sess, os.path.join(FLAGS.train_dir, FLAGS.filename))
+        if file_path == None:
+            file_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
+        saver.restore(sess, file_path)
 
     return True
 
