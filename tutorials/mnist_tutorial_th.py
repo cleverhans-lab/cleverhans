@@ -16,7 +16,7 @@ from cleverhans.attacks import FastGradientMethod
 
 def main():
     """
-    MNIST cleverhans tutorial
+    MNIST CleverHans tutorial
     :return:
     """
 
