@@ -12,6 +12,7 @@ from tensorflow.python.platform import flags
 
 import sys
 sys.path = [".."]+sys.path
+import os
 from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.utils import other_classes, cnn_model
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
@@ -92,8 +93,11 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'filename': 'mnist'
         
     }
-    #model_train(sess, x, y, preds, X_train, Y_train, args=train_params, save=True)
-    tf_model_load(sess, "models/mnist")
+    if os.path.exists("models/mnist.meta"):
+        tf_model_load(sess, "models/mnist")
+    else:
+        model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
+                    save=os.path.exists("models"))
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
@@ -103,16 +107,10 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     report.clean_train_clean_eval = accuracy
 
     ###########################################################################
-    # Craft adversarial examples using the Jacobian-based saliency map approach
+    # Craft adversarial examples using Carlini and Wagner's approach
     ###########################################################################
     print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1)
           + ' adversarial examples')
-
-    # Keep track of success (adversarial example classified in target)
-    results = np.zeros((nb_classes, source_samples), dtype='i')
-
-    # Rate of perturbed features for each test set example and target class
-    perturbations = np.zeros((nb_classes, source_samples), dtype='f')
 
     # Initialize our array for grid visualization
     grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
@@ -120,7 +118,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     # Instantiate a SaliencyMapMethod attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
-    cw_params = {'binary_search_steps':3, 'max_iterations':10000,
+    cw_params = {'binary_search_steps':3, 'max_iterations':1000,
                    'learning_rate':0.01, 'targeted':True, 'batch_size':100}
 
     # Loop over the samples we want to perturb into adversarial examples
@@ -132,14 +130,12 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         return r
 
     idxs = [np.where(np.argmax(Y_test,axis=1)==i)[0][0] for i in range(10)]
-    print(idxs)
+    adv_inputs = np.array([[x]*10 for x in X_test[idxs]]).reshape((100,28,28,1))
+    adv_ys = np.array([onehot(range(10),10) for x in range(10)]).reshape((100,10))
+    adv = cw.generate_np(adv_inputs, adv_ys, **cw_params)
 
-    adv = cw.generate_np(np.array([[x]*10 for x in X_test[idxs]]).reshape((100,28,28,1)),
-                         np.array([onehot(range(10),10) for x in range(10)]).reshape((100,10)),
-                         **cw_params)
+    adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys, args={'batch_size': 100})
 
-
-    print(adv.shape)
     for j in range(10):
         for i in range(10):
             grid_viz_data[i,j] = adv[i*10+j]
@@ -147,19 +143,12 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     print('--------------------------------------')
 
     # Compute the number of adversarial examples that were successfully found
-    nb_targets_tried = ((nb_classes - 1) * source_samples)
-    succ_rate = float(np.sum(results)) / nb_targets_tried
-    print('Avg. rate of successful adv. examples {0:.4f}'.format(succ_rate))
-    report.clean_train_adv_eval = 1. - succ_rate
+    print('Avg. rate of successful adv. examples {0:.4f}'.format(adv_accuracy))
+    report.clean_train_adv_eval = adv_accuracy
 
     # Compute the average distortion introduced by the algorithm
-    percent_perturbed = np.mean(perturbations)
-    print('Avg. rate of perturbed features {0:.4f}'.format(percent_perturbed))
-
-    # Compute the average distortion introduced for successful samples only
-    percent_perturb_succ = np.mean(perturbations * (results == 1))
-    print('Avg. rate of perturbed features for successful '
-          'adversarial examples {0:.4f}'.format(percent_perturb_succ))
+    percent_perturbed = np.mean(np.sum((adv-adv_inputs)**2,axis=(1,2,3))**.5)
+    print('Avg. L_2 norm of perturbations {0:.4f}'.format(percent_perturbed))
 
     # Close TF session
     sess.close()

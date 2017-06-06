@@ -589,7 +589,7 @@ class CarliniWagnerL2(Attack):
     def generate_np(self, x_val, y_val=None, nb_classes=10,
                     batch_size=1, confidence=0,
                     targeted=True, learning_rate=1e-3,
-                    binary_search_steps=10, max_iterations=1e3,
+                    binary_search_steps=10, max_iterations=100,
                     abort_early=True, initial_const=1e-2,
                     clip_min=0, clip_max=1):
 
@@ -636,7 +636,10 @@ class CarliniWagnerL2(Attack):
         attack = CarliniL2(self.sess, Wrap(), batch_size, confidence, targeted,
                            learning_rate, binary_search_steps, max_iterations,
                            abort_early, 1e4)
-        return attack.attack(x_val-0.5, y_val)+0.5 # todo assumes y_val
+        res = attack.attack(x_val-0.5, y_val)+0.5 # todo assumes y_val
+        print('qq',np.argmax(model.predict(x_val),axis=1))
+        print('qq',np.argmax(model.predict(res),axis=1))
+        return res
     
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
