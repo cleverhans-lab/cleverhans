@@ -10,7 +10,9 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from cleverhans.attacks import SaliencyMapMethod
+import sys
+sys.path = [".."]+sys.path
+from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.utils import other_classes, cnn_model
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
@@ -117,11 +119,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Instantiate a SaliencyMapMethod attack object
-    jsma = SaliencyMapMethod(model, back='tf', sess=sess)
-    jsma_params = {'theta': 1., 'gamma': 0.1,
-                   'nb_classes': nb_classes, 'clip_min': 0.,
-                   'clip_max': 1., 'targets': y,
-                   'y_val': None}
+    jsma = CarliniWagnerL2(model, back='tf', sess=sess)
+    jsma_params = {'binary_search_steps':1, 'max_iterations':100,
+                   'learning_rate':0.1, 'targeted':True}
 
     figure = None
     # Loop over the samples we want to perturb into adversarial examples
