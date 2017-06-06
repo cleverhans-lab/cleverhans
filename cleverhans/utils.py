@@ -3,24 +3,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from distutils.version import LooseVersion
-import keras
-from keras.utils import np_utils
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
 import numpy as np
+import warnings
 from six.moves import xrange
-
-if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-    from keras.layers import Conv2D
-else:
-    from keras.layers import Convolution2D
 
 
 class _ArgsWrapper(object):
+
     """
     Wrapper that allows attribute access to dictionaries
     """
+
     def __init__(self, args):
         if not isinstance(args, dict):
             args = vars(args)
@@ -31,11 +24,13 @@ class _ArgsWrapper(object):
 
 
 class AccuracyReport(object):
+
     """
     An object summarizing the accuracy results for experiments involving
     training on clean examples or adversarial examples, then evaluating
     on clean or adversarial examples.
     """
+
     def __init__(self):
         self.clean_train_clean_eval = 0.
         self.clean_train_adv_eval = 0.
@@ -99,89 +94,6 @@ def random_targets(gt, nb_classes):
     return np_utils.to_categorical(np.asarray(result), nb_classes)
 
 
-def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
-    """
-    Defines the right convolutional layer according to the
-    version of Keras that is installed.
-    :param filters: (required integer) the dimensionality of the output
-                    space (i.e. the number output of filters in the
-                    convolution)
-    :param kernel_shape: (required tuple or list of 2 integers) specifies
-                         the strides of the convolution along the width and
-                         height.
-    :param padding: (required string) can be either 'valid' (no padding around
-                    input or feature map) or 'same' (pad to ensure that the
-                    output feature map size is identical to the layer input)
-    :param input_shape: (optional) give input shape if this is the first
-                        layer of the model
-    :return: the Keras layer
-    """
-    if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-        if input_shape is not None:
-            return Conv2D(filters=filters, kernel_size=kernel_shape,
-                          strides=strides, padding=padding,
-                          input_shape=input_shape)
-        else:
-            return Conv2D(filters=filters, kernel_size=kernel_shape,
-                          strides=strides, padding=padding)
-    else:
-        if input_shape is not None:
-            return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
-                                 subsample=strides, border_mode=padding,
-                                 input_shape=input_shape)
-        else:
-            return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
-                                 subsample=strides, border_mode=padding)
-
-
-def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
-              channels=1, nb_filters=64, nb_classes=10):
-    """
-    Defines a CNN model using Keras sequential model
-    :param logits: If set to False, returns a Keras model, otherwise will also
-                    return logits tensor
-    :param input_ph: The TensorFlow tensor for the input
-                    (needed if returning logits)
-                    ("ph" stands for placeholder but it need not actually be a
-                    placeholder)
-    :param img_rows: number of row in the image
-    :param img_cols: number of columns in the image
-    :param channels: number of color channels (e.g., 1 for MNIST)
-    :param nb_filters: number of convolutional filters per layer
-    :param nb_classes: the number of output classes
-    :return:
-    """
-    model = Sequential()
-
-    # Define the layers successively (convolution layers are version dependent)
-    if keras.backend.image_dim_ordering() == 'th':
-        input_shape = (channels, img_rows, img_cols)
-    else:
-        input_shape = (img_rows, img_cols, channels)
-
-    layers = [conv_2d(nb_filters, (8, 8), (2, 2), "same",
-                      input_shape=input_shape),
-              Activation('relu'),
-              conv_2d((nb_filters * 2), (6, 6), (2, 2), "valid"),
-              Activation('relu'),
-              conv_2d((nb_filters * 2), (5, 5), (1, 1), "valid"),
-              Activation('relu'),
-              Flatten(),
-              Dense(nb_classes)]
-
-    for layer in layers:
-        model.add(layer)
-
-    if logits:
-        logits_tensor = model(input_ph)
-    model.add(Activation('softmax'))
-
-    if logits:
-        return model, logits_tensor
-    else:
-        return model
-
-
 def pair_visual(original, adversarial, figure=None):
     """
     This function displays two images: the original and the adversarial sample
@@ -242,7 +154,7 @@ def grid_visual(data):
     current_row = 0
     for y in xrange(num_rows):
         for x in xrange(num_cols):
-            figure.add_subplot(num_cols, num_rows, (x+1)+(y*num_rows))
+            figure.add_subplot(num_cols, num_rows, (x + 1) + (y * num_rows))
             plt.axis('off')
 
             if num_channels == 1:
@@ -253,3 +165,17 @@ def grid_visual(data):
     # Draw the plot and return
     plt.show()
     return figure
+
+
+def conv_2d(*args, **kwargs):
+    from cleverhans.utils_keras import conv_2d
+    warnings.warn("utils.conv_2d is deprecated and may be removed on or after"
+                  " 2018-01-05. Switch to utils_keras.conv_2d.")
+    return conv_2d(*args, **kwargs)
+
+
+def cnn_model(*args, **kwargs):
+    from cleverhans.utils_keras import cnn_model
+    warnings.warn("utils.cnn_model is deprecated and may be removed on or"
+                  "after 2018-01-05. Switch to utils_keras.conv_2d.")
+    return cnn_model(*args, **kwargs)
