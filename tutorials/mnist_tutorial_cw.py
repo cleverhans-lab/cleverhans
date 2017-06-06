@@ -119,59 +119,31 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Instantiate a SaliencyMapMethod attack object
-    jsma = CarliniWagnerL2(model, back='tf', sess=sess)
-    jsma_params = {'binary_search_steps':1, 'max_iterations':100,
-                   'learning_rate':0.1, 'targeted':True}
+    cw = CarliniWagnerL2(model, back='tf', sess=sess)
+    cw_params = {'binary_search_steps':3, 'max_iterations':10000,
+                   'learning_rate':0.01, 'targeted':True, 'batch_size':100}
 
-    figure = None
     # Loop over the samples we want to perturb into adversarial examples
-    for sample_ind in xrange(0, source_samples):
-        print('--------------------------------------')
-        print('Attacking input %i/%i' % (sample_ind + 1, source_samples))
-        sample = X_test[sample_ind:(sample_ind+1)]
 
-        # We want to find an adversarial example for each possible target class
-        # (i.e. all classes that differ from the label given in the dataset)
-        current_class = int(np.argmax(Y_test[sample_ind]))
-        target_classes = other_classes(nb_classes, current_class)
+    def onehot(a,b):
+        r = [[0]*b for _ in a]
+        for i,aa in enumerate(a):
+            r[i][aa] = 1
+        return r
 
-        # For the grid visualization, keep original images along the diagonal
-        grid_viz_data[current_class, current_class, :, :, :] = np.reshape(
-            sample, (img_rows, img_cols, channels))
+    idxs = [np.where(np.argmax(Y_test,axis=1)==i)[0][0] for i in range(10)]
+    print(idxs)
 
-        # Loop over all target classes
-        for target in target_classes:
-            print('Generating adv. example for target class %i' % target)
+    adv = cw.generate_np(np.array([[x]*10 for x in X_test[idxs]]).reshape((100,28,28,1)),
+                         np.array([onehot(range(10),10) for x in range(10)]).reshape((100,10)),
+                         **cw_params)
 
-            # This call runs the Jacobian-based saliency map approach
-            one_hot_target = np.zeros((1, nb_classes), dtype=np.float32)
-            one_hot_target[0, target] = 1
-            jsma_params['y_val'] = one_hot_target
-            adv_x = jsma.generate_np(sample, **jsma_params)
 
-            # Check if success was achieved
-            res = int(model_argmax(sess, x, preds, adv_x) == target)
-
-            # Computer number of modified features
-            adv_x_reshape = adv_x.reshape(-1)
-            test_in_reshape = X_test[sample_ind].reshape(-1)
-            nb_changed = np.where(adv_x_reshape != test_in_reshape)[0].shape[0]
-            percent_perturb = float(nb_changed) / adv_x.reshape(-1).shape[0]
-
-            # Display the original and adversarial images side-by-side
-            if viz_enabled:
-                figure = pair_visual(
-                    np.reshape(sample, (img_rows, img_cols)),
-                    np.reshape(adv_x, (img_rows, img_cols)), figure)
-
-            # Add our adversarial example to our grid data
-            grid_viz_data[target, current_class, :, :, :] = np.reshape(
-                adv_x, (img_rows, img_cols, channels))
-
-            # Update the arrays for later analysis
-            results[target, sample_ind] = res
-            perturbations[target, sample_ind] = percent_perturb
-
+    print(adv.shape)
+    for j in range(10):
+        for i in range(10):
+            grid_viz_data[i,j] = adv[i*10+j]
+    
     print('--------------------------------------')
 
     # Compute the number of adversarial examples that were successfully found
@@ -195,7 +167,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     # Finally, block & display a grid of all the adversarial examples
     if viz_enabled:
         import matplotlib.pyplot as plt
-        plt.close(figure)
         _ = grid_visual(grid_viz_data)
 
     return report
