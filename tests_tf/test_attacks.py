@@ -70,6 +70,12 @@ class TestParseParams(unittest.TestCase):
 
 
 class CleverHansTest(unittest.TestCase):
+import sys
+sys.path = [".."]+sys.path
+from cleverhans.attacks import VirtualAdversarialMethod, CarliniWagnerL2
+
+"""
+class TestVirtualAdversarialMethod:#(unittest.TestCase):
     def setUp(self):
         self.test_start = time.time()
         # seed the randomness
@@ -114,7 +120,39 @@ class TestVirtualAdversarialMethod(CleverHansTest):
         perturbation_norm = np.sqrt(np.sum(perturbation**2, axis=1))
         # test perturbation norm
         self.assertTrue(np.allclose(perturbation_norm, self.attack.eps))
+        """
 
+class TestCarliniWagner(unittest.TestCase):
+    def setUp(self):
+        import tensorflow as tf
+        import tensorflow.contrib.slim as slim
+
+        def dummy_model(x):
+            net = slim.fully_connected(x, 60)
+            return slim.fully_connected(net, 10, activation_fn=None)
+
+        self.sess = tf.Session()
+        self.sess.as_default()
+        self.model = tf.make_template('dummy_modelq', dummy_model)
+        self.attack = CarliniWagnerL2(self.model, sess=self.sess)
+
+        # initialize model
+        with tf.name_scope('dummy_modelq'):
+            self.model(tf.placeholder(tf.float32, shape=(None, 100)))
+        self.sess.run(tf.initialize_all_variables())
+        
+    def test_targeted_attack_returns_correct_target(self):
+        x_val = np.random.rand(10, 100)
+        y_val = np.zeros((10, 10))
+        y_val[np.arange(10), np.random.random_integers(0,9,10)] = 1
+        adversarial_example = self.attack.generate_np(x_val, y_val, batch_size=10,
+                                                      initial_const=1, binary_search_steps=3)
+        preds = self.sess.run(self.model(np.array(adversarial_example, dtype=np.float32)))
+        print(np.argmax(preds,axis=1))
+        print(np.argmax(y_val,axis=1))
+        
+        
+        
 
 class TestFastGradientMethod(CleverHansTest):
     def setUp(self):

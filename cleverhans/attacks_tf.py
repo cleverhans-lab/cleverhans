@@ -482,7 +482,7 @@ class CarliniL2:
           the initial constant is not important.
         """
 
-        image_size, num_channels, num_labels = model.image_size, model.num_channels, model.num_labels
+        num_labels = model.num_labels
         self.sess = sess
         self.TARGETED = targeted
         self.LEARNING_RATE = learning_rate
@@ -495,7 +495,7 @@ class CarliniL2:
 
         self.repeat = binary_search_steps >= 10
 
-        shape = (batch_size,image_size,image_size,num_channels)
+        shape = tuple([batch_size]+list(model.shape))
         
         # the variable we're going to optimize over
         modifier = tf.Variable(np.zeros(shape,dtype=np.float32))
@@ -517,7 +517,8 @@ class CarliniL2:
         self.output = model.predict(self.newimg)
         
         # distance to the input data
-        self.l2dist = tf.reduce_sum(tf.square(self.newimg-tf.tanh(self.timg)/2),[1,2,3])
+        self.l2dist = tf.reduce_sum(tf.square(self.newimg-tf.tanh(self.timg)/2),
+                                    list(range(1,len(shape))))
         
         # compute the probability of the label class versus the maximum other
         real = tf.reduce_sum((self.tlab)*self.output,1)
@@ -595,7 +596,7 @@ class CarliniL2:
         o_bestattack = [np.zeros(imgs[0].shape)]*batch_size
         
         for outer_step in range(self.BINARY_SEARCH_STEPS):
-            print(o_bestl2)
+            #print(o_bestl2)
             # completely reset adam's internal state.
             self.sess.run(self.init)
             batch = imgs[:batch_size]
