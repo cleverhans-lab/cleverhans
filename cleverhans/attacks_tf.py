@@ -561,6 +561,7 @@ class CarliniL2:
         print('go up to',len(imgs))
         for i in range(0,len(imgs),self.batch_size):
             print('tick',i)
+            print(imgs.shape, targets.shape)
             r.extend(self.attack_batch(imgs[i:i+self.batch_size], targets[i:i+self.batch_size]))
         return np.array(r)
 
@@ -619,6 +620,7 @@ class CarliniL2:
                                                          self.l2dist, self.output, 
                                                          self.newimg])
 
+                
                 # print out the losses every 10%
                 if iteration%(self.MAX_ITERATIONS//10) == 0:
                     print(iteration,self.sess.run((self.loss,self.loss1,self.loss2)))
