@@ -570,6 +570,74 @@ class VirtualAdversarialMethod(Attack):
         self.clip_max = clip_max
         return True
 
+class CarliniWagnerL2(Attack):
+    """
+    This attack was originally proposed by Carlini and Wagner. It is an 
+    iterative attack that finds adversarial examples on many defenses that
+    are robust to other attacks.
+    Paper link: https://arxiv.org/abs/1608.04644
+
+    """
+    def __init__(self, model, back='tf', sess=None):
+        super(CarliniWagnerL2, self).__init__(model, back, sess)
+
+    def generate(self, x, **kwargs):
+        # for now, let's just raise an error that it's not implemented
+        # TODO: fix this so that it wraps the numpy method correctly.
+        raise NotImplementedError('This attack is not symbolic.')
+
+    def generate_np(self, x_val, y_val=None, nb_classes=10,
+                    batch_size=1, confidence=0,
+                    targeted=True, learning_rate=1e-3,
+                    binary_search_steps=10, max_iterations=1e3,
+                    abort_early=True, initial_const=1e-2,
+                    clip_min=0, clip_max=1):
+
+        """
+        Generate adversarial samples and return them in a Numpy array.
+
+        :param x_val: (required) A Numpy array with the original inputs.
+        :param y_val: (required) A Numpy array with the labels that we either
+                      should target (if targeted=True) or avoid (if target=False).
+        :param confidence: Confidence of adversarial examples: higher produces examples
+                           that are farther away, but more strongly classified as adversarial.
+        :param batch_size: Number of attacks to run simultaneously.
+        :param targeted: True if we should perform a targetted attack, False otherwise.
+        :param learning_rate: The learning rate for the attack algorithm. Smaller values
+                              produce better results but are slower to converge.
+        :param binary_search_steps: The number of times we perform binary search to
+          find the optimal tradeoff-constant between distance and confidence. 
+        :param max_iterations: The maximum number of iterations. Larger values are more
+                               accurate; setting too small will require a large learning 
+                               rate and will produce poor results.
+        :param abort_early: If true, allows early aborts if gradient descent gets stuck.
+        :param initial_const: The initial tradeoff-constant to use to tune the relative
+                              importance of distance and confidence. If binary_search_steps 
+                              is large, the initial constant is not important.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+
+        import tensorflow as tf
+        from .attacks_tf import CarliniL2
+
+        model = self.model
+        class Wrap:
+            image_size = 28
+            num_labels = 10
+            num_channels = 1
+            def predict(self, xs):
+                return model(xs)
+        
+        # todo save this to re-use the graph
+        # todo don't operate on the range [-0.5, 0.5]
+        attack = CarliniL2(self.sess, Wrap(), batch_size, confidence, targeted,
+                           learning_rate, binary_search_steps, max_iterations,
+                           abort_early, 1e4)
+        return attack.attack(x_val-0.5, y_val)+0.5 # todo assumes y_val
+    
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
