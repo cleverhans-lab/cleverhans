@@ -51,7 +51,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
-    # Image dimensions ordering should follow the Theano convention
+    # Image dimensions ordering should follow the TensorFlow convention
     if keras.backend.image_dim_ordering() != 'tf':
         keras.backend.set_image_dim_ordering('tf')
         print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
@@ -119,6 +119,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
                    'clip_max': 1., 'targets': y,
                    'y_val': None}
 
+    figure = None
     # Loop over the samples we want to perturb into adversarial examples
     for sample_ind in xrange(0, source_samples):
         print('--------------------------------------')
@@ -155,14 +156,9 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
 
             # Display the original and adversarial images side-by-side
             if viz_enabled:
-                if 'figure' not in vars():
-                    figure = pair_visual(
-                        np.reshape(sample, (img_rows, img_cols)),
-                        np.reshape(adv_x, (img_rows, img_cols)))
-                else:
-                    figure = pair_visual(
-                        np.reshape(sample, (img_rows, img_cols)),
-                        np.reshape(adv_x, (img_rows, img_cols)), figure)
+                figure = pair_visual(
+                    np.reshape(sample, (img_rows, img_cols)),
+                    np.reshape(adv_x, (img_rows, img_cols)), figure)
 
             # Add our adversarial example to our grid data
             grid_viz_data[target, current_class, :, :, :] = np.reshape(
@@ -194,6 +190,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
 
     # Finally, block & display a grid of all the adversarial examples
     if viz_enabled:
+        import matplotlib.pyplot as plt
+        plt.close(figure)
         _ = grid_visual(grid_viz_data)
 
     return report
