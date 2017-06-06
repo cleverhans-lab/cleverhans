@@ -10,7 +10,7 @@ examples. We assume basic knowledge of TensorFlow.
 First, make sure that you have [TensorFlow](https://www.tensorflow.org/versions/r0.10/get_started/os_setup.html#download-and-setup)
 and [Keras](https://keras.io/#installation) installed on
 your machine and then clone the `CleverHans`
-[repository](https://github.com/openai/cleverhans).
+[repository](https://github.com/tensorflow/cleverhans).
 Also, add the path of the repository clone to your
 `PYTHONPATH` environment variable.
 ```bash
@@ -30,7 +30,7 @@ and TensorFlow to train it. The model is a Keras
 [`Sequential` model](https://keras.io/models/sequential/):
 it is made up of multiple convolutional and ReLU layers.
 You can find the model definition in the
-[`utils_mnist` CleverHans module](https://github.com/openai/cleverhans/blob/master/cleverhans/utils_mnist.py).
+[`utils_mnist` CleverHans module](https://github.com/tensorflow/cleverhans/blob/master/cleverhans/utils_mnist.py).
 
 ```python
 # Define input TF placeholder

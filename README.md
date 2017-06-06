@@ -1,8 +1,8 @@
 # CleverHans (v1.0.0)
 
-<img src="https://github.com/openai/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
+<img src="https://github.com/tensorflow/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
 
-[![Build Status](https://travis-ci.org/openai/cleverhans.svg?branch=master)](https://travis-ci.org/openai/cleverhans)
+[![Build Status](https://travis-ci.org/tensorflow/cleverhans.svg?branch=master)](https://travis-ci.org/tensorflow/cleverhans)
 
 This repository contains the source code for `CleverHans`, a Python library to
 benchmark machine learning systems' vulnerability to
@@ -11,7 +11,7 @@ You can learn more about such vulnerabilities on the accompanying [blog](http://
 
 The `CleverHans` library is under continual development, always welcoming
 contributions of the latest attacks and defenses.
-In particular, we always welcome help towards resolving the [issues](https://github.com/openai/cleverhans/issues)
+In particular, we always welcome help towards resolving the [issues](https://github.com/tensorflow/cleverhans/issues)
 currently open.
 
 ## Setting up `CleverHans`
@@ -47,7 +47,7 @@ Once dependencies have been taken care of, you can install `CleverHans` using
 If you are installing `CleverHans` using `pip`, run the following command:
 
 ```
-pip install -e git+http://github.com/openai/cleverhans.git#egg=cleverhans
+pip install -e git+http://github.com/tensorflow/cleverhans.git#egg=cleverhans
 ```
 
 #### Manual installation
@@ -56,7 +56,7 @@ If you are installing `CleverHans` manually, you simply need to clone this
 repository into a folder of your choice.
 
 ```
-git clone https://github.com/openai/cleverhans
+git clone https://github.com/tensorflow/cleverhans
 ```
 
 On UNIX machines, it is recommended to add your clone of this repository to the
@@ -105,7 +105,7 @@ of the `CleverHans` library.
 ## Reporting benchmarks
 
 When reporting benchmarks, please:
-* Use a versioned release of `CleverHans`. You can find a list of released versions [here](https://github.com/openai/cleverhans/releases).
+* Use a versioned release of `CleverHans`. You can find a list of released versions [here](https://github.com/tensorflow/cleverhans/releases).
 * Either use the latest version, or, if comparing to an earlier publication, use the same version as the earlier publication.
 * Report which attack method was used.
 * Report any configuration variables used to determine the behavior of the attack.

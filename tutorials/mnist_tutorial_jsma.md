@@ -9,7 +9,7 @@ getting `CleverHans` installed before getting started,
 you may find our [MNIST tutorial on the fast gradient sign method](mnist_tutorial.md)
 to be useful.
 
-The tutorial's [complete script](https://github.com/openai/cleverhans/blob/master/tutorials/mnist_tutorial_jsma.py)
+The tutorial's [complete script](https://github.com/tensorflow/cleverhans/blob/master/tutorials/mnist_tutorial_jsma.py)
 is provided in the `tutorial` folder of the
 `CleverHans` repository. Please be sure to
 add `CleverHans` to your `PYTHONPATH` environment variable
@@ -22,7 +22,7 @@ and TensorFlow to train it. The model is a Keras
 [`Sequential` model](https://keras.io/models/sequential/):
 it is made up of multiple convolutional and ReLU layers.
 You can find the model definition in the
-[`utils_mnist` CleverHans module](https://github.com/openai/cleverhans/blob/master/cleverhans/utils_mnist.py).
+[`utils_mnist` CleverHans module](https://github.com/tensorflow/cleverhans/blob/master/cleverhans/utils_mnist.py).
 
 ```python
 # Define input TF placeholder
@@ -223,4 +223,4 @@ to remain between 0 and 1 in the case of MNIST).
 
 ## Code
 
-The complete code for this tutorial is available [here](https://github.com/openai/cleverhans/blob/master/tutorials/mnist_tutorial_jsma.py).
+The complete code for this tutorial is available [here](https://github.com/tensorflow/cleverhans/blob/master/tutorials/mnist_tutorial_jsma.py).
