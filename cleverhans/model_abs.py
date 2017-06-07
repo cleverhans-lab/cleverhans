@@ -101,3 +101,38 @@ class KerasModelWrapper(Model):
         self.model_dict[layer] = new_model
 
         return new_model(x)
+
+    def _get_softmax_layer(self):
+        """
+        Looks for a softmax layer and if found returns the output right before
+        the softmax activation.
+
+        :return: Softmax layer name
+        """
+        for i, layer in enumerate(self.model.layers):
+            cfg = layer.get_config()
+            if 'activation' in cfg and cfg['activation'] == 'softmax':
+                return cfg.name
+
+        raise Exception("No softmax layers found")
+
+    def get_logits(self, x):
+        """
+        :param x: A symbolic representation of the network input.
+        :return: A symbolic representation of the logits
+        """
+        softmax_name = self._get_softmax_layer()
+        softmax_layer = self.model.get_layer(softmax_name)
+        node = softmax_layer.inbound_nodes[0]
+        logits_name = node.inbound_layers[0]
+
+        return self.fprop(x, logits_name)
+
+    def get_probs(self, x):
+        """
+        :param x: A symbolic representation of the network input.
+        :return: A symbolic representation of the probs
+        """
+        name = self._get_softmax_layer()
+
+        return self.fprop(x, name)
