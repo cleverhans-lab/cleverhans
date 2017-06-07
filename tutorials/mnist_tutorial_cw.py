@@ -15,7 +15,7 @@ from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.utils import other_classes, cnn_model
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval,
+from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.utils_tf import model_argmax, tf_model_load
 
 FLAGS = flags.FLAGS
@@ -150,8 +150,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
     adv_ys = np.array([onehot] * 10, dtype=np.float32).reshape((100, 10))
 
-    adv = sess.run(cw.generate(tf.constant(adv_inputs), tf.constant(adv_ys),
-                               **cw_params))
+    adv = cw.generate_np(adv_inputs, adv_ys,
+                         **cw_params)
 
     adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys,
                               args={'batch_size': 100})
