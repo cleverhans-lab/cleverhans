@@ -448,7 +448,7 @@ class CarliniL2:
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
                  abort_early, initial_const,
-                 clip_min, clip_max):
+                 clip_min, clip_max, num_labels, shape):
         """
         This attack was originally proposed by Carlini and Wagner. It is an 
         iterative attack that finds adversarial examples on many defenses that
@@ -472,9 +472,10 @@ class CarliniL2:
                               is large, the initial constant is not important.
         :param clip_min: Minimum input component value
         :param clip_max: Maximum input component value
+        :param num_labels: The number of different classes for the classifier
+        :param shape: The shape of the input tensor, without the number of batches
         """
 
-        num_labels = model.num_labels
         self.sess = sess
         self.TARGETED = targeted
         self.LEARNING_RATE = learning_rate
@@ -487,10 +488,9 @@ class CarliniL2:
         self.clip_min = clip_min
         self.clip_max = clip_max
         
-        
         self.repeat = binary_search_steps >= 10
 
-        shape = tuple([batch_size]+list(model.shape))
+        shape = tuple([batch_size]+list(shape))
         
         # the variable we're going to optimize over
         modifier = tf.Variable(np.zeros(shape,dtype=np.float32))
@@ -509,7 +509,7 @@ class CarliniL2:
         self.newimg = (tf.tanh(modifier + self.timg)+1)/2*(clip_max-clip_min)+clip_min
         
         # prediction BEFORE-SOFTMAX of the model
-        self.output = model.predict(self.newimg)
+        self.output = model(self.newimg)
         
         # distance to the input data
         self.l2dist = tf.reduce_sum(tf.square(self.newimg-(tf.tanh(self.timg)+1)/2*(clip_max-clip_min)+clip_min),

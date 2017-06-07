@@ -622,18 +622,12 @@ class CarliniWagnerL2(Attack):
 
         import tensorflow as tf
         from .attacks_tf import CarliniL2
-
-        model = self.model
-        class Wrap:
-            shape = x_val.shape[1:]
-            num_labels = y_val.shape[1] # todo assumes y_val
-            def predict(self, xs):
-                return model(xs)
         
         # todo save this to re-use the graph
-        attack = CarliniL2(self.sess, Wrap(), batch_size, confidence, targeted,
+        attack = CarliniL2(self.sess, self.model, batch_size, confidence, targeted,
                            learning_rate, binary_search_steps, max_iterations,
-                           abort_early, initial_const, clip_min, clip_max)
+                           abort_early, initial_const, clip_min, clip_max,
+                           nb_classes, x_val.shape[1:])
         res = attack.attack(x_val, y_val) # todo assumes y_val
         return res
     
