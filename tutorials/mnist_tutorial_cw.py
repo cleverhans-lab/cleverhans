@@ -113,17 +113,27 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1)
           + ' adversarial examples')
+    print("This could take some time ...")
 
     # Initialize our array for grid visualization
     grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
+
+    # by default, we have softmax after a CNN, remove it here
+    model.layers.pop()
+    last = model.layers[-1]
+    last.outbound_nodes = []
+    model.outputs = [last.output]
+    model.built = False
+    
     # Instantiate a CW attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
-    cw_params = {'binary_search_steps':1, 'max_iterations':100,
-                   'learning_rate':0.1, 'targeted':True, 'batch_size':100,
-                 'initial_const': 100}
+    cw_params = {'binary_search_steps':3, 'max_iterations':100,
+                 'learning_rate':0.1, 'targeted':True, 'batch_size':100,
+                 'initial_const': 1}
 
+    # todo fix this
     def onehot(a,b):
         r = [[0]*b for _ in a]
         for i,aa in enumerate(a):
@@ -131,9 +141,10 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         return r
 
     idxs = [np.where(np.argmax(Y_test,axis=1)==i)[0][0] for i in range(10)]
-    adv_inputs = np.array([[x]*10 for x in X_test[idxs]]).reshape((100,28,28,1))
-    adv_ys = np.array([onehot(range(10),10) for x in range(10)]).reshape((100,10))
-    adv = cw.generate_np(adv_inputs, adv_ys, **cw_params)
+    adv_inputs = np.array([[x]*10 for x in X_test[idxs]], dtype=np.float32).reshape((100,28,28,1))
+    adv_ys = np.array([onehot(range(10),10) for x in range(10)], dtype=np.float32).reshape((100,10))
+
+    adv = sess.run(cw.generate(tf.constant(adv_inputs), tf.constant(adv_ys), **cw_params))
 
     adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys, args={'batch_size': 100})
 
