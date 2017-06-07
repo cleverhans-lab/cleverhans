@@ -4,22 +4,21 @@ from keras.models import Model
 
 class ModelAbstraction:
     """
-    An abstract interface for a model that exposes hidden activations.
+    An abstract interface for a model that exposes the required functionalities
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, model, layer):
+    def __init__(self, model):
         """
         :param model: A function that takes a symbolic input and returns the
                       symbolic output for the model's predictions.
-        :param layer: The name of the hidden layer to compute features at.
         """
         raise NotImplementedError('Model abstraction not implementated.')
 
-    def compute_feat(self, x):
+    def get_hidden(self, layer):
         """
-        :param x: The model's symbolic inputs
         :return: A symbolic representation of the hidden features
+        :param layer: The name of the hidden layer to return features at.
         """
         error = 'Feature extraction for hidden layers not implemented'
         raise NotImplementedError(error)
@@ -41,22 +40,27 @@ class ModelAbstraction:
         raise NotImplementedError(error)
 
 
-class KerasModel(ModelAbstraction):
+class KerasModelWrapper(ModelAbstraction):
     """
     An implementation of FeatureExposer that wrapps a Keras model.
     """
 
-    def __init__(self, model, layer):
+    def __init__(self, model):
         """
-        Create a feature exposer from a Keras model
+        Create a wrapper from a Keras model
         :param model: A Keras model
-        :param layer: The name of the hidden layer
         """
-        super(KerasModel, self).__init__(model)
+        super(KerasModelWrapper, self).__init__(model)
 
         # Initialize attributes
         self.model = model
-        self.layer = layer
+
+    def get_hidden(self, layer):
+        """
+        :param layer: The name of the hidden layer
+        :return: A symbolic representation of the hidden features
+        """
+        model = self.model
 
         # Create an extra model that exposes the hidden layer representation
         # Get input
@@ -64,11 +68,6 @@ class KerasModel(ModelAbstraction):
         # Find the layer to connect
         target_feat = model.get_layer(layer).output
         # Build a new model
-        self.model_feat = Model(new_input, target_feat)
+        h = Model(new_input, target_feat)
 
-    def compute_feat(self, x):
-        """
-        :param x: The model's symbolic inputs
-        :return: A symbolic representation of the hidden features
-        """
-        return self.model_feat(x)
+        return h
