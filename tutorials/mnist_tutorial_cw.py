@@ -23,7 +23,7 @@ FLAGS = flags.FLAGS
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                         test_end=10000, viz_enabled=True, nb_epochs=6,
                         batch_size=128, nb_classes=10, source_samples=10,
-                        learning_rate=0.1):
+                        learning_rate=0.1, model_path=os.path.join("models","mnist")):
     """
     MNIST tutorial for Carlini and Wagner's attack
     :param train_start: index of first training set example
@@ -87,17 +87,17 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'nb_epochs': nb_epochs,
         'batch_size': batch_size,
         'learning_rate': learning_rate,
-        'train_dir': os.path.join(*os.path.split(FLAGS.model_path)[:-1]),
-        'filename': os.path.split(FLAGS.model_path)[-1]
+        'train_dir': os.path.join(*os.path.split(model_path)[:-1]),
+        'filename': os.path.split(model_path)[-1]
         
     }
 
     # check if we've trained before, and if we have, use that pre-trained model
-    if os.path.exists(FLAGS.model_path+".meta"):
-        tf_model_load(sess, FLAGS.model_path)
+    if os.path.exists(model_path+".meta"):
+        tf_model_load(sess, model_path)
     else:
         model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
-                    save=os.path.exists("models"))
+                save=os.path.exists("models"))
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
@@ -177,11 +177,12 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
 def main(argv=None):
     mnist_tutorial_cw(viz_enabled=FLAGS.viz_enabled,
-                        nb_epochs=FLAGS.nb_epochs,
-                        batch_size=FLAGS.batch_size,
-                        nb_classes=FLAGS.nb_classes,
-                        source_samples=FLAGS.source_samples,
-                        learning_rate=FLAGS.learning_rate)
+                      nb_epochs=FLAGS.nb_epochs,
+                      batch_size=FLAGS.batch_size,
+                      nb_classes=FLAGS.nb_classes,
+                      source_samples=FLAGS.source_samples,
+                      learning_rate=FLAGS.learning_rate,
+                      model_path=FLAGS.model_path)
 
 
 if __name__ == '__main__':
