@@ -625,17 +625,16 @@ class CarliniWagnerL2(Attack):
 
         model = self.model
         class Wrap:
-            shape = (100,)
-            num_labels = 10
+            shape = x_val.shape[1:]
+            num_labels = y_val.shape[1] # todo assumes y_val
             def predict(self, xs):
                 return model(xs)
         
         # todo save this to re-use the graph
-        # todo don't operate on the range [-0.5, 0.5]
         attack = CarliniL2(self.sess, Wrap(), batch_size, confidence, targeted,
                            learning_rate, binary_search_steps, max_iterations,
-                           abort_early, initial_const)
-        res = attack.attack(x_val-0.5, y_val)+0.5 # todo assumes y_val
+                           abort_early, initial_const, clip_min, clip_max)
+        res = attack.attack(x_val, y_val) # todo assumes y_val
         return res
     
 
