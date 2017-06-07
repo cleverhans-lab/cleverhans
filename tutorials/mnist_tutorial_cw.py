@@ -10,8 +10,6 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-import sys
-sys.path = [".."]+sys.path
 import os
 from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.utils import other_classes, cnn_model
