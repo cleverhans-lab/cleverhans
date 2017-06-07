@@ -3,11 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from distutils.version import LooseVersion
 import math
 import numpy as np
 import os
 import six
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
+from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
 
@@ -207,7 +210,12 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
     assert args.batch_size, "Batch size was not given in args dict"
 
     # Define accuracy symbolically
-    correct_preds = tf.equal(tf.argmax(y, axis=-1), tf.argmax(model, axis=-1))
+    if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
+        correct_preds = tf.equal(tf.argmax(y, axis=-1),
+                                 tf.argmax(model, axis=-1))
+    else:
+        correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
+                                 tf.argmax(model, axis=tf.rank(model) - 1))
     acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
@@ -330,3 +338,34 @@ def model_argmax(sess, x, predictions, samples):
         return np.argmax(probabilities)
     else:
         return np.argmax(probabilities, axis=1)
+
+
+def l2_batch_normalize(x, epsilon=1e-12, scope=None):
+    """
+    Helper function to normalize a batch of vectors.
+    :param x: the input placeholder
+    :param epsilon: stabilizes division
+    :return: the batch of l2 normalized vector
+    """
+    with tf.name_scope(scope, "l2_batch_normalize") as scope:
+        x_shape = tf.shape(x)
+        x = slim.flatten(x)
+        x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keep_dims=True))
+        square_sum = tf.reduce_sum(tf.square(x), 1, keep_dims=True)
+        x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
+        x_norm = tf.multiply(x, x_inv_norm)
+        return tf.reshape(x_norm, x_shape, scope)
+
+
+def kl_with_logits(q_logits, p_logits, scope=None,
+                   loss_collection=tf.GraphKeys.REGULARIZATION_LOSSES):
+    """Helper function to compute kl-divergence KL(q || p)
+    """
+    with tf.name_scope(scope, "kl_divergence") as name:
+        q = tf.nn.softmax(q_logits)
+        q_log = tf.nn.log_softmax(q_logits)
+        p_log = tf.nn.log_softmax(p_logits)
+        loss = tf.reduce_mean(tf.reduce_sum(q * (q_log - p_log), axis=1),
+                              name=name)
+        add_loss(loss, loss_collection)
+        return loss
