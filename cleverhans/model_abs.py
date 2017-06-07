@@ -2,7 +2,7 @@ from abc import ABCMeta
 from keras.models import Model
 
 
-class FeatureExposer:
+class ModelAbstraction:
     """
     An abstract interface for a model that exposes hidden activations.
     """
@@ -41,7 +41,7 @@ class FeatureExposer:
         raise NotImplementedError(error)
 
 
-class KerasFeatureExposer(FeatureExposer):
+class KerasModel(ModelAbstraction):
     """
     An implementation of FeatureExposer that wrapps a Keras model.
     """
@@ -52,7 +52,7 @@ class KerasFeatureExposer(FeatureExposer):
         :param model: A Keras model
         :param layer: The name of the hidden layer
         """
-        super(KerasFeatureExposer, self).__init__(model)
+        super(KerasModel, self).__init__(model)
 
         # Initialize attributes
         self.model = model
