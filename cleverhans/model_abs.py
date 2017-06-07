@@ -1,10 +1,14 @@
 from abc import ABCMeta
-from keras.models import Model
 
 
 class ModelAbstraction:
     """
-    An abstract interface for a model that exposes the required functionalities
+    An abstract interface for model wrappers that exposes model symbols
+    needed for making an attack. This abstraction removes the dependency on
+    any specific neural network package (e.g. Keras) from the core
+    code of CleverHans. It can also simplify exposing the hidden features of a
+    model when a specific package does not directly expose them (needed by
+    "features adversaries").
     """
     __metaclass__ = ABCMeta
 
@@ -17,8 +21,8 @@ class ModelAbstraction:
 
     def get_hidden(self, layer):
         """
-        :return: A symbolic representation of the hidden features
         :param layer: The name of the hidden layer to return features at.
+        :return: A symbolic representation of the hidden features
         """
         error = 'Feature extraction for hidden layers not implemented'
         raise NotImplementedError(error)
@@ -26,15 +30,15 @@ class ModelAbstraction:
     def get_logits(self):
         """
         :return: A symbolic representation of the output logits, values before
-        softmax
+                 softmax.
         """
         error = 'get_logits not implemented'
         raise NotImplementedError(error)
 
     def get_probs(self):
         """
-        :return: A symbolic representation of the output logits, values before
-        softmax
+        :return: A symbolic representation of the output probabilities, values
+                 after softmax.
         """
         error = 'get_probs not implemented'
         raise NotImplementedError(error)
@@ -42,12 +46,14 @@ class ModelAbstraction:
 
 class KerasModelWrapper(ModelAbstraction):
     """
-    An implementation of FeatureExposer that wrapps a Keras model.
+    An implementation of ModelAbstraction that wraps a Keras model. It
+    specifically exposes the hidden features of a model.
     """
 
     def __init__(self, model):
         """
         Create a wrapper from a Keras model
+
         :param model: A Keras model
         """
         super(KerasModelWrapper, self).__init__(model)
@@ -61,6 +67,8 @@ class KerasModelWrapper(ModelAbstraction):
         :return: A symbolic representation of the hidden features
         """
         model = self.model
+
+        from keras.models import Model
 
         # Create an extra model that exposes the hidden layer representation
         # Get input
