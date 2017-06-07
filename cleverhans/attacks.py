@@ -27,7 +27,7 @@ class Attack:
             raise ValueError("model argument must be a function that returns "
                              "the symbolic output when given an input tensor.")
         if back == 'th':
-            warnings.warn("cleverhans support for Theano is deprecated and "
+            warnings.warn("CleverHans support for Theano is deprecated and "
                           "will be dropped on 2017-11-08.")
 
         # Prepare attributes

@@ -61,7 +61,7 @@ def data_cifar10():
 
 def main(argv=None):
     """
-    CIFAR10 cleverhans tutorial
+    CIFAR10 CleverHans tutorial
     :return:
     """
 
