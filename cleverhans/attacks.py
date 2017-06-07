@@ -1,5 +1,6 @@
 from abc import ABCMeta
 import numpy as np
+from six.moves import xrange
 import warnings
 
 
@@ -412,6 +413,79 @@ class SaliencyMapMethod(Attack):
         return True
 
 
+class VirtualAdversarialMethod(Attack):
+    """
+    This attack was originally proposed by Miyato et al. (2016) and was used
+    for virtual adversarial training.
+    Paper link: https://arxiv.org/abs/1507.00677
+
+    """
+    def __init__(self, model, back='tf', sess=None):
+        super(VirtualAdversarialMethod, self).__init__(model, back, sess)
+
+    def generate(self, x, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param eps: (optional float ) the epsilon (input variation parameter)
+        :param num_iterations: (optional) the number of iterations
+        :param xi: (optional float) the finite difference parameter
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        return vatm(self.model, x, self.model(x), eps=self.eps,
+                    num_iterations=self.num_iterations, xi=self.xi,
+                    clip_min=self.clip_min, clip_max=self.clip_max)
+
+    def generate_np(self, x_val, **kwargs):
+        """
+        Generate adversarial samples and return them in a Numpy array.
+        :param x_val: (required) A Numpy array with the original inputs.
+        :param eps: (optional float )the epsilon (input variation parameter)
+        :param num_iterations: (optional) the number of iterations
+        :param xi: (optional float) the finite difference parameter
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+
+        import tensorflow as tf
+
+        # Generate this attack's graph if it hasn't been done previously
+        if not hasattr(self, "_x"):
+            input_shape = list(x_val.shape)
+            input_shape[0] = None
+            self._x = tf.placeholder(tf.float32, shape=input_shape)
+            self._x_adv = self.generate(self._x, **kwargs)
+
+        return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
+
+    def parse_params(self, eps=2.0, num_iterations=1, xi=1e-6, clip_min=None,
+                     clip_max=None, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param eps: (optional float )the epsilon (input variation parameter)
+        :param num_iterations: (optional) the number of iterations
+        :param xi: (optional float) the finite difference parameter
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        # Save attack-specific parameters
+        self.eps = eps
+        self.num_iterations = num_iterations
+        self.xi = xi
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+        return True
+
+
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
     A wrapper for the Fast Gradient Sign Method.
@@ -447,6 +521,38 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
         # Compute FGSM using Theano
         from .attacks_th import fgm
         return fgm(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
+
+
+def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
+         clip_min=None, clip_max=None):
+    """
+    A wrapper for the perturbation methods used for virtual adversarial
+    training : https://arxiv.org/abs/1507.00677
+    It calls the right function, depending on the
+    user's backend.
+    :param model: the model which returns the network unnormalized logits
+    :param x: the input placeholder
+    :param logits: the model's unnormalized output tensor
+    :param eps: the epsilon (input variation parameter)
+    :param num_iterations: the number of iterations
+    :param xi: the finite difference parameter
+    :param clip_min: optional parameter that can be used to set a minimum
+                    value for components of the example returned
+    :param clip_max: optional parameter that can be used to set a maximum
+                    value for components of the example returned
+    :return: a tensor for the adversarial example
+
+    """
+    if back == 'tf':
+        # Compute VATM using TensorFlow
+        from .attacks_tf import vatm as vatm_tf
+        return vatm_tf(model, x, logits, eps, num_iterations=num_iterations,
+                       xi=xi, clip_min=clip_min, clip_max=clip_max)
+    elif back == 'th':
+        # Compute VATM using Theano
+        from .attacks_th import vatm as vatm_th
+        return vatm_th(model, x, logits, eps, num_iterations=num_iterations,
+                       xi=xi, clip_min=clip_min, clip_max=clip_max)
 
 
 def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
