@@ -126,23 +126,27 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     last.outbound_nodes = []
     model.outputs = [last.output]
     model.built = False
-    
+
+    # Check if we are using a GPU, and generate higher quality attacks if we are
+    try:
+        with tf.device('/gpu:0'):
+            sess.run(tf.constant(1))
+        gpu = True
+    except:
+        gpu = False
+        
     # Instantiate a CW attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
-    cw_params = {'binary_search_steps':3, 'max_iterations':100,
+    cw_params = {'binary_search_steps':1, 'max_iterations':1000 if gpu else 100,
                  'learning_rate':0.1, 'targeted':True, 'batch_size':100,
-                 'initial_const': 1}
+                 'initial_const': 10}
 
-    # todo fix this
-    def onehot(a,b):
-        r = [[0]*b for _ in a]
-        for i,aa in enumerate(a):
-            r[i][aa] = 1
-        return r
+    onehot = np.zeros((10,10))
+    onehot[np.arange(10),np.arange(10)] = 1
 
     idxs = [np.where(np.argmax(Y_test,axis=1)==i)[0][0] for i in range(10)]
     adv_inputs = np.array([[x]*10 for x in X_test[idxs]], dtype=np.float32).reshape((100,28,28,1))
-    adv_ys = np.array([onehot(range(10),10) for x in range(10)], dtype=np.float32).reshape((100,10))
+    adv_ys = np.array([onehot]*10, dtype=np.float32).reshape((100,10))
 
     adv = sess.run(cw.generate(tf.constant(adv_inputs), tf.constant(adv_ys), **cw_params))
 
