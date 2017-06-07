@@ -114,6 +114,14 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
+    # by default, we have softmax after a CNN, remove it here
+    # JSMA takes the the logits, pre-softmax
+    model.layers.pop()
+    last = model.layers[-1]
+    last.outbound_nodes = []
+    model.outputs = [last.output]
+    model.built = False
+
     # Instantiate a SaliencyMapMethod attack object
     wrap = KerasModelWrapper(model)
     jsma = SaliencyMapMethod(wrap, back='tf', sess=sess)
