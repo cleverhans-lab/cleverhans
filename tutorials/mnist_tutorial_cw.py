@@ -27,7 +27,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                         batch_size=128, nb_classes=10, source_samples=10,
                         learning_rate=0.1):
     """
-    MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
+    MNIST tutorial for Carlini and Wagner's attack
     :param train_start: index of first training set example
     :param train_end: index of last training set example
     :param test_start: index of first test set example
@@ -89,12 +89,14 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'nb_epochs': nb_epochs,
         'batch_size': batch_size,
         'learning_rate': learning_rate,
-        'train_dir': 'models',
-        'filename': 'mnist'
+        'train_dir': os.path.join(*os.path.split(FLAGS.model_path)[:-1]),
+        'filename': os.path.split(FLAGS.model_path)[-1]
         
     }
-    if os.path.exists("models/mnist.meta"):
-        tf_model_load(sess, "models/mnist")
+
+    # check if we've trained before, and if we have, use that pre-trained model
+    if os.path.exists(FLAGS.model_path+".meta"):
+        tf_model_load(sess, FLAGS.model_path)
     else:
         model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
                     save=os.path.exists("models"))
@@ -116,13 +118,11 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-    # Instantiate a SaliencyMapMethod attack object
+    # Instantiate a CW attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
     cw_params = {'binary_search_steps':1, 'max_iterations':100,
                    'learning_rate':0.1, 'targeted':True, 'batch_size':100,
                  'initial_const': 100}
-
-    # Loop over the samples we want to perturb into adversarial examples
 
     def onehot(a,b):
         r = [[0]*b for _ in a]
@@ -178,5 +178,6 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_classes', 10, 'Number of output classes')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
     flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+    flags.DEFINE_string('model_path', os.path.join("models","mnist"), 'Path to save or load the model file')
 
     app.run()
