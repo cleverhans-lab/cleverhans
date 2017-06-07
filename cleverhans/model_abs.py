@@ -112,7 +112,7 @@ class KerasModelWrapper(Model):
         for i, layer in enumerate(self.model.layers):
             cfg = layer.get_config()
             if 'activation' in cfg and cfg['activation'] == 'softmax':
-                return cfg.name
+                return layer.name
 
         raise Exception("No softmax layers found")
 
@@ -124,7 +124,7 @@ class KerasModelWrapper(Model):
         softmax_name = self._get_softmax_layer()
         softmax_layer = self.model.get_layer(softmax_name)
         node = softmax_layer.inbound_nodes[0]
-        logits_name = node.inbound_layers[0]
+        logits_name = node.inbound_layers[0].name
 
         return self.fprop(x, logits_name)
 

@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import numpy as np
 
 from cleverhans.model_abs import Model, KerasModelWrapper
 
@@ -41,23 +42,54 @@ class TestModelClass(unittest.TestCase):
 
 
 class TestKerasModelWrapper(unittest.TestCase):
-    def test_fprop(self):
+    def setUp(self):
         from keras.models import Sequential
-        from keras.layers import Dense
+        from keras.layers import Dense, Activation
         import tensorflow as tf
 
-        # Make a dummy Keras model with 2 dense layers
-        input_shape = (100,)
-        dummy_model = Sequential([Dense(20, name='l1',
-                                        input_shape=input_shape),
-                                  Dense(10, name='l2')])
-        # Wrap Keras model
-        modelw = KerasModelWrapper(dummy_model)
-        # Get a symbolic representation for the hidden representation at l1
+        def dummy_model():
+            input_shape = (100,)
+            return Sequential([Dense(20, name='l1',
+                                     input_shape=input_shape),
+                               Dense(10, name='l2'),
+                               Activation('softmax')])
+
+        self.sess = tf.Session()
+        self.sess.as_default()
+        self.model = dummy_model()
+
+    def test_fprop(self):
+        import tensorflow as tf
+        modelw = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         h1 = modelw.fprop(x, layer='l1')
+
         # Test the dimension of the hidden represetation
         self.assertEqual(int(h1.shape[1]), 20)
+
+    def test_probs(self):
+        import tensorflow as tf
+        modelw = KerasModelWrapper(self.model)
+        x = tf.placeholder(tf.float32, shape=(None, 100))
+        preds = modelw.get_probs(x)
+
+        x_val = np.random.rand(2, 100)
+        tf.global_variables_initializer().run(session=self.sess)
+        p_val = self.sess.run(preds, feed_dict={x: x_val})
+        self.assertTrue(np.allclose(np.sum(p_val, axis=1), 1, atol=1e-6))
+
+    def test_logits(self):
+        import tensorflow as tf
+        modelw = KerasModelWrapper(self.model)
+        x = tf.placeholder(tf.float32, shape=(None, 100))
+        preds = modelw.get_probs(x)
+        logits = modelw.get_logits(x)
+
+        x_val = np.random.rand(2, 100)
+        tf.global_variables_initializer().run(session=self.sess)
+        p_val, logits = self.sess.run([preds, logits], feed_dict={x: x_val})
+        p_gt = np.exp(logits)/np.sum(np.exp(logits), axis=1, keepdims=True)
+        self.assertTrue(np.allclose(p_val, p_gt, atol=1e-6))
 
 
 if __name__ == '__main__':
