@@ -160,7 +160,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     # Compute the number of adversarial examples that were successfully found
     print('Avg. rate of successful adv. examples {0:.4f}'.format(adv_accuracy))
-    report.clean_train_adv_eval = adv_accuracy
+    report.clean_train_adv_eval = 1.-adv_accuracy
 
     # Compute the average distortion introduced by the algorithm
     percent_perturbed = np.mean(np.sum((adv-adv_inputs)**2,axis=(1,2,3))**.5)
