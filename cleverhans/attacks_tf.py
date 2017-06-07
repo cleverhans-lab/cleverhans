@@ -439,7 +439,6 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     return X_sub
 
 
-
 class CarliniWagnerL2:
     def __init__(self, sess, model, batch_size, confidence,
                  targeted, learning_rate,
@@ -447,30 +446,38 @@ class CarliniWagnerL2:
                  abort_early, initial_const,
                  clip_min, clip_max, num_labels, shape):
         """
-        This attack was originally proposed by Carlini and Wagner. It is an 
+        This attack was originally proposed by Carlini and Wagner. It is an
         iterative attack that finds adversarial examples on many defenses that
         are robust to other attacks.
         Paper link: https://arxiv.org/abs/1608.04644
 
-        :param confidence: Confidence of adversarial examples: higher produces examples
-                           that are farther away, but more strongly classified as adversarial.
+        :param confidence: Confidence of adversarial examples: higher produces
+                           examples that are farther away, but more strongly
+                           classified as adversarial.
         :param batch_size: Number of attacks to run simultaneously.
-        :param targeted: True if we should perform a targetted attack, False otherwise.
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values
-                              produce better results but are slower to converge.
-        :param binary_search_steps: The number of times we perform binary search to
-          find the optimal tradeoff-constant between distance and confidence. 
-        :param max_iterations: The maximum number of iterations. Larger values are more
-                               accurate; setting too small will require a large learning 
-                               rate and will produce poor results.
-        :param abort_early: If true, allows early aborts if gradient descent gets stuck.
-        :param initial_const: The initial tradeoff-constant to use to tune the relative
-                              importance of distance and confidence. If binary_search_steps 
-                              is large, the initial constant is not important.
+        :param targeted: True if we should perform a targetted attack, False
+                         otherwise.
+        :param learning_rate: The learning rate for the attack algorithm.
+                              Smaller values produce better results but are
+                              slower to converge.
+        :param binary_search_steps: The number of times we perform binary
+                                    search to find the optimal tradeoff-
+                                    constant between distance and confidence.
+        :param max_iterations: The maximum number of iterations. Larger values
+                               are more accurate; setting too small will
+                               require a large learning rate and will produce
+                               poor results.
+        :param abort_early: If true, allows early aborts if gradient descent
+                            gets stuck.
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of distance and confidence.
+                              If binary_search_steps is large, the initial
+                              constant is not important.
         :param clip_min: Minimum input component value
         :param clip_max: Maximum input component value
         :param num_labels: The number of different classes for the classifier
-        :param shape: The shape of the input tensor, without the number of batches
+        :param shape: The shape of the input tensor, without the number of
+                      batches
         """
 
         self.sess = sess
@@ -484,37 +491,43 @@ class CarliniWagnerL2:
         self.batch_size = batch_size
         self.clip_min = clip_min
         self.clip_max = clip_max
-        
+
         self.repeat = binary_search_steps >= 10
 
         shape = tuple([batch_size]+list(shape))
-        
+
         # the variable we're going to optimize over
-        modifier = tf.Variable(np.zeros(shape,dtype=np.float32))
+        modifier = tf.Variable(np.zeros(shape, dtype=np.float32))
 
         # these are variables to be more efficient in sending data to tf
         self.timg = tf.Variable(np.zeros(shape), dtype=tf.float32)
-        self.tlab = tf.Variable(np.zeros((batch_size,num_labels)), dtype=tf.float32)
+        self.tlab = tf.Variable(np.zeros((batch_size, num_labels)),
+                                dtype=tf.float32)
         self.const = tf.Variable(np.zeros(batch_size), dtype=tf.float32)
 
         # and here's what we use to assign them
         self.assign_timg = tf.placeholder(tf.float32, shape)
-        self.assign_tlab = tf.placeholder(tf.float32, (batch_size,num_labels))
+        self.assign_tlab = tf.placeholder(tf.float32, (batch_size, num_labels))
         self.assign_const = tf.placeholder(tf.float32, [batch_size])
-        
-        # the resulting image, tanh'd to keep bounded from clip_min to clip_max
-        self.newimg = (tf.tanh(modifier + self.timg)+1)/2*(clip_max-clip_min)+clip_min
-        
+
+        # the resulting image, tanh'd to keep bounded from clip_min
+        # to clip_max
+        self.newimg = (tf.tanh(modifier + self.timg)+1)/2
+        self.newimg = self.newimg*(clip_max-clip_min)+clip_min
+
         # prediction BEFORE-SOFTMAX of the model
         self.output = model(self.newimg)
-        
+
         # distance to the input data
-        self.l2dist = tf.reduce_sum(tf.square(self.newimg-(tf.tanh(self.timg)+1)/2*(clip_max-clip_min)+clip_min),
-                                    list(range(1,len(shape))))
-        
+        self.l2dist = tf.reduce_sum(tf.square(self.newimg -
+                                              (tf.tanh(self.timg) + 1) / 2 *
+                                              (clip_max-clip_min)+clip_min),
+                                    list(range(1, len(shape))))
+
         # compute the probability of the label class versus the maximum other
-        real = tf.reduce_sum((self.tlab)*self.output,1)
-        other = tf.reduce_max((1-self.tlab)*self.output - (self.tlab*10000),1)
+        real = tf.reduce_sum((self.tlab) * self.output, 1)
+        other = tf.reduce_max((1 - self.tlab) * self.output - self.tlab*10000,
+                              1)
 
         if self.TARGETED:
             # if targetted, optimize for making the other class most likely
@@ -527,7 +540,7 @@ class CarliniWagnerL2:
         self.loss2 = tf.reduce_sum(self.l2dist)
         self.loss1 = tf.reduce_sum(self.const*loss1)
         self.loss = self.loss1+self.loss2
-        
+
         # Setup the adam optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.AdamOptimizer(self.LEARNING_RATE)
@@ -540,26 +553,27 @@ class CarliniWagnerL2:
         self.setup.append(self.timg.assign(self.assign_timg))
         self.setup.append(self.tlab.assign(self.assign_tlab))
         self.setup.append(self.const.assign(self.assign_const))
-        
+
         self.init = tf.variables_initializer(var_list=[modifier]+new_vars)
 
     def attack(self, imgs, targets):
         """
         Perform the L_2 attack on the given images for the given targets.
 
-        If self.targeted is true, then the targets represents the target labels.
-        If self.targeted is false, then targets are the original class labels.
+        If self.targeted is true, then the targets represents the target labels
+        If self.targeted is false, then targets are the original class labels
         """
         r = []
-        for i in range(0,len(imgs),self.batch_size):
-            r.extend(self.attack_batch(imgs[i:i+self.batch_size], targets[i:i+self.batch_size]))
+        for i in range(0, len(imgs), self.batch_size):
+            r.extend(self.attack_batch(imgs[i:i+self.batch_size],
+                                       targets[i:i+self.batch_size]))
         return np.array(r)
 
     def attack_batch(self, imgs, labs):
         """
         Run the attack on a batch of images and labels.
         """
-        def compare(x,y):
+        def compare(x, y):
             if not isinstance(x, (float, int, np.int64)):
                 x = np.copy(x)
                 x[y] -= self.CONFIDENCE
@@ -571,7 +585,7 @@ class CarliniWagnerL2:
 
         batch_size = self.batch_size
 
-        # re-scale images to be within range [0,1]
+        # re-scale images to be within range [0, 1]
         imgs = (imgs-self.clip_min)/(self.clip_max-self.clip_min)
         # now convert to [-1, 1]
         imgs = (imgs*2)-1
@@ -587,59 +601,64 @@ class CarliniWagnerL2:
         o_bestl2 = [1e10]*batch_size
         o_bestscore = [-1]*batch_size
         o_bestattack = [np.zeros(imgs[0].shape)+self.clip_min]*batch_size
-        
+
         for outer_step in range(self.BINARY_SEARCH_STEPS):
             # completely reset adam's internal state.
             self.sess.run(self.init)
             batch = imgs[:batch_size]
             batchlab = labs[:batch_size]
-    
+
             bestl2 = [1e10]*batch_size
             bestscore = [-1]*batch_size
 
             # The last iteration (if we run many steps) repeat the search once.
-            if self.repeat == True and outer_step == self.BINARY_SEARCH_STEPS-1:
+            if self.repeat and outer_step == self.BINARY_SEARCH_STEPS-1:
                 CONST = upper_bound
 
             # set the variables so that we don't have to send them over again
             self.sess.run(self.setup, {self.assign_timg: batch,
                                        self.assign_tlab: batchlab,
                                        self.assign_const: CONST})
-            
+
             prev = 1e6
             for iteration in range(self.MAX_ITERATIONS):
-                # perform the attack 
-                _, l, l2s, scores, nimg = self.sess.run([self.train, self.loss, 
-                                                         self.l2dist, self.output, 
+                # perform the attack
+                _, l, l2s, scores, nimg = self.sess.run([self.train,
+                                                         self.loss,
+                                                         self.l2dist,
+                                                         self.output,
                                                          self.newimg])
 
                 # check if we should abort search if we're getting nowhere.
-                if self.ABORT_EARLY and iteration%(self.MAX_ITERATIONS//10) == 0:
+                if self.ABORT_EARLY and \
+                   iteration % (self.MAX_ITERATIONS // 10) == 0:
                     if l > prev*.9999:
                         break
                     prev = l
 
                 # adjust the best result found so far
-                for e,(l2,sc,ii) in enumerate(zip(l2s,scores,nimg)):
-                    if l2 < bestl2[e] and compare(sc, np.argmax(batchlab[e])):
+                for e, (l2, sc, ii) in enumerate(zip(l2s, scores, nimg)):
+                    lab = np.argmax(batchlab[e])
+                    if l2 < bestl2[e] and compare(sc, lab):
                         bestl2[e] = l2
                         bestscore[e] = np.argmax(sc)
-                    if l2 < o_bestl2[e] and compare(sc, np.argmax(batchlab[e])):
+                    if l2 < o_bestl2[e] and compare(sc, lab):
                         o_bestl2[e] = l2
                         o_bestscore[e] = np.argmax(sc)
                         o_bestattack[e] = ii
 
             # adjust the constant as needed
             for e in range(batch_size):
-                if compare(bestscore[e], np.argmax(batchlab[e])) and bestscore[e] != -1:
+                if compare(bestscore[e], np.argmax(batchlab[e])) and \
+                   bestscore[e] != -1:
                     # success, divide const by two
-                    upper_bound[e] = min(upper_bound[e],CONST[e])
+                    upper_bound[e] = min(upper_bound[e], CONST[e])
                     if upper_bound[e] < 1e9:
                         CONST[e] = (lower_bound[e] + upper_bound[e])/2
                 else:
                     # failure, either multiply by 10 if no solution found yet
                     #          or do binary search with the known upper bound
-                    lower_bound[e] = max(lower_bound[e],CONST[e])
+                    lower_bound[e] = max(lower_bound[e], CONST[e])
                     if upper_bound[e] < 1e9:
                         CONST[e] = (lower_bound[e] + upper_bound[e])/2
                     else:
