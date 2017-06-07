@@ -584,10 +584,25 @@ class CarliniWagnerL2(Attack):
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
 
-    def generate(self, x, **kwargs):
-        # for now, let's just raise an error that it's not implemented
-        # TODO: fix this so that it wraps the numpy method correctly.
-        raise NotImplementedError('This attack is not symbolic.')
+    def generate(self, x, y=None, nb_classes=10,
+                    batch_size=1, confidence=0,
+                    targeted=True, learning_rate=1e-3,
+                    binary_search_steps=10, max_iterations=100,
+                    abort_early=True, initial_const=1e-2,
+                    clip_min=0, clip_max=1):
+
+        import tensorflow as tf
+        from .attacks_tf import CarliniWagnerL2 as CWL2
+        
+        attack = CWL2(self.sess, self.model, batch_size, confidence, targeted,
+                                 learning_rate, binary_search_steps, max_iterations,
+                                 abort_early, initial_const, clip_min, clip_max,
+                                 nb_classes, x.get_shape().as_list()[1:])
+        def cw_wrap(x_val, y_val):
+            return np.array(attack.attack(x_val, y_val),dtype=np.float32)
+        
+        wrap = tf.py_func(cw_wrap, [x, y], tf.float32)
+        return wrap
 
     def generate_np(self, x_val, y_val=None, nb_classes=10,
                     batch_size=1, confidence=0,
@@ -621,7 +636,6 @@ class CarliniWagnerL2(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
 
-        import tensorflow as tf
         from .attacks_tf import CarliniWagnerL2 as CWL2
         
         attack = CWL2(self.sess, self.model, batch_size, confidence, targeted,
