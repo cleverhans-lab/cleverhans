@@ -4,10 +4,9 @@ from keras.models import Model
 
 class FeatureExposer:
     """
-    Abstract base class for Neural Network models that exposes
-    hidden activations.
+    An abstract interface for a model that exposes hidden activations.
     """
-    __meta_class__ = ABCMeta
+    __metaclass__ = ABCMeta
 
     def __init__(self, model, layer):
         """
@@ -25,16 +24,31 @@ class FeatureExposer:
         error = 'Feature extraction for hidden layers not implemented'
         raise NotImplementedError(error)
 
+    def get_logits(self):
+        """
+        :return: A symbolic representation of the output logits, values before
+        softmax
+        """
+        error = 'get_logits not implemented'
+        raise NotImplementedError(error)
+
+    def get_probs(self):
+        """
+        :return: A symbolic representation of the output logits, values before
+        softmax
+        """
+        error = 'get_probs not implemented'
+        raise NotImplementedError(error)
+
 
 class KerasFeatureExposer(FeatureExposer):
     """
-    This class exposes the hidden layer features for a Keras based model
-    required by the feature-adversary attack.
+    An implementation of FeatureExposer that wrapps a Keras model.
     """
 
     def __init__(self, model, layer):
         """
-        Create a model abstraction from a Keras model
+        Create a feature exposer from a Keras model
         :param model: A Keras model
         :param layer: The name of the hidden layer
         """
@@ -53,4 +67,8 @@ class KerasFeatureExposer(FeatureExposer):
         self.model_feat = Model(new_input, target_feat)
 
     def compute_feat(self, x):
+        """
+        :param x: The model's symbolic inputs
+        :return: A symbolic representation of the hidden features
+        """
         return self.model_feat(x)
