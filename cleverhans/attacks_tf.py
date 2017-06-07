@@ -443,43 +443,35 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
 ## TODO make this actually match the coding styles of cleverhans
 ## The following is a code dump directly from https://github.com/carlini/nn_robust_attacks
 
-BINARY_SEARCH_STEPS = 9  # number of times to adjust the constant with binary search
-MAX_ITERATIONS = 10000   # number of iterations to perform gradient descent
-ABORT_EARLY = True       # if we stop improving, abort gradient descent early
-LEARNING_RATE = 1e-2     # larger values converge faster to less accurate results
-TARGETED = True          # should we target one specific class? or just be wrong?
-CONFIDENCE = 0           # how strong the adversarial example should be
-INITIAL_CONST = 1e-3     # the initial constant c to pick as a first guess
-
 class CarliniL2:
-    def __init__(self, sess, model, batch_size=1, confidence = CONFIDENCE,
-                 targeted = TARGETED, learning_rate = LEARNING_RATE,
-                 binary_search_steps = BINARY_SEARCH_STEPS, max_iterations = MAX_ITERATIONS,
-                 abort_early = ABORT_EARLY, initial_const = INITIAL_CONST,
-                 clip_min = 0, clip_max = 1):
+    def __init__(self, sess, model, batch_size, confidence,
+                 targeted, learning_rate,
+                 binary_search_steps, max_iterations,
+                 abort_early, initial_const,
+                 clip_min, clip_max):
         """
-        The L_2 optimized attack. 
+        This attack was originally proposed by Carlini and Wagner. It is an 
+        iterative attack that finds adversarial examples on many defenses that
+        are robust to other attacks.
+        Paper link: https://arxiv.org/abs/1608.04644
 
-        This attack is the most efficient and should be used as the primary 
-        attack to evaluate potential defenses.
-
-        Returns adversarial examples for the supplied model.
-
-        confidence: Confidence of adversarial examples: higher produces examples
-          that are farther away, but more strongly classified as adversarial.
-        batch_size: Number of attacks to run simultaneously.
-        targeted: True if we should perform a targetted attack, False otherwise.
-        learning_rate: The learning rate for the attack algorithm. Smaller values
-          produce better results but are slower to converge.
-        binary_search_steps: The number of times we perform binary search to
+        :param confidence: Confidence of adversarial examples: higher produces examples
+                           that are farther away, but more strongly classified as adversarial.
+        :param batch_size: Number of attacks to run simultaneously.
+        :param targeted: True if we should perform a targetted attack, False otherwise.
+        :param learning_rate: The learning rate for the attack algorithm. Smaller values
+                              produce better results but are slower to converge.
+        :param binary_search_steps: The number of times we perform binary search to
           find the optimal tradeoff-constant between distance and confidence. 
-        max_iterations: The maximum number of iterations. Larger values are more
-          accurate; setting too small will require a large learning rate and will
-          produce poor results.
-        abort_early: If true, allows early aborts if gradient descent gets stuck.
-        initial_const: The initial tradeoff-constant to use to tune the relative
-          importance of distance and confidence. If binary_search_steps is large,
-          the initial constant is not important.
+        :param max_iterations: The maximum number of iterations. Larger values are more
+                               accurate; setting too small will require a large learning 
+                               rate and will produce poor results.
+        :param abort_early: If true, allows early aborts if gradient descent gets stuck.
+        :param initial_const: The initial tradeoff-constant to use to tune the relative
+                              importance of distance and confidence. If binary_search_steps 
+                              is large, the initial constant is not important.
+        :param clip_min: Minimum input component value
+        :param clip_max: Maximum input component value
         """
 
         num_labels = model.num_labels
@@ -562,10 +554,7 @@ class CarliniL2:
         If self.targeted is false, then targets are the original class labels.
         """
         r = []
-        print('go up to',len(imgs))
         for i in range(0,len(imgs),self.batch_size):
-            print('tick',i)
-            print(imgs.shape, targets.shape)
             r.extend(self.attack_batch(imgs[i:i+self.batch_size], targets[i:i+self.batch_size]))
         return np.array(r)
 
@@ -597,13 +586,12 @@ class CarliniL2:
         CONST = np.ones(batch_size)*self.initial_const
         upper_bound = np.ones(batch_size)*1e10
 
-        # the best l2, score, and image attack
+        # placeholders for the best l2, score, and image attack found so far
         o_bestl2 = [1e10]*batch_size
         o_bestscore = [-1]*batch_size
-        o_bestattack = [np.zeros(imgs[0].shape)]*batch_size
+        o_bestattack = [np.zeros(imgs[0].shape)+self.clip_min]*batch_size
         
         for outer_step in range(self.BINARY_SEARCH_STEPS):
-            #print(o_bestl2)
             # completely reset adam's internal state.
             self.sess.run(self.init)
             batch = imgs[:batch_size]
@@ -627,11 +615,6 @@ class CarliniL2:
                 _, l, l2s, scores, nimg = self.sess.run([self.train, self.loss, 
                                                          self.l2dist, self.output, 
                                                          self.newimg])
-
-                
-                # print out the losses every 10%
-                if iteration%(self.MAX_ITERATIONS//10) == 0:
-                    print(iteration,self.sess.run((self.loss,self.loss1,self.loss2)))
 
                 # check if we should abort search if we're getting nowhere.
                 if self.ABORT_EARLY and iteration%(self.MAX_ITERATIONS//10) == 0:
