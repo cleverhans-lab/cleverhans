@@ -14,6 +14,9 @@ class ModelAbstraction:
 
     def __init__(self, model):
         """
+        Init a wrapper. If `get_hidden` is going to be written, `__init__`
+        should keep track of the name of the layers.
+
         :param model: A function that takes a symbolic input and returns the
                       symbolic output for the model's predictions.
         """
@@ -21,6 +24,8 @@ class ModelAbstraction:
 
     def get_hidden(self, layer):
         """
+        Expose the hidden features of a model given a layer name.
+
         :param layer: The name of the hidden layer to return features at.
         :return: A symbolic representation of the hidden features
         """
@@ -63,6 +68,10 @@ class KerasModelWrapper(ModelAbstraction):
 
     def get_hidden(self, layer):
         """
+        Creates a new model with the same input but the output of the
+        specified layer. Keras layers can be retrieved using their names.
+        The symbolic graph is reused and so there should be little overhead.
+
         :param layer: The name of the hidden layer
         :return: A symbolic representation of the hidden features
         """
