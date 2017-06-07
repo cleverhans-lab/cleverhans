@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import theano.tensor as T
 import keras
 
-from cleverhans.utils import cnn_model
+from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_th import th_model_train, th_model_eval
 
