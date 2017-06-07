@@ -1,7 +1,7 @@
 from abc import ABCMeta
 
 
-class ModelAbstraction:
+class Model(object):
     """
     An abstract interface for model wrappers that exposes model symbols
     needed for making an attack. This abstraction removes the dependency on
@@ -14,50 +14,57 @@ class ModelAbstraction:
 
     def __init__(self, model):
         """
-        Init a wrapper. If `get_hidden` is going to be written, `__init__`
-        should keep track of the name of the layers.
+        Init a wrapper. If `fprop` is implemented, `__init__`
+        should keep track of the name of the layers or `self.model` should
+        provide a method for retrieving a layer.
 
         :param model: A function that takes a symbolic input and returns the
                       symbolic output for the model's predictions.
         """
-        raise NotImplementedError('Model abstraction not implementated.')
 
-    def get_hidden(self, layer):
+        pass
+
+    def fprop(self, x, layer=None):
         """
         Expose the hidden features of a model given a layer name.
 
+        :param x: A symbolic representation of the network input
         :param layer: The name of the hidden layer to return features at.
         :return: A symbolic representation of the hidden features
         """
         error = 'Feature extraction for hidden layers not implemented'
         raise NotImplementedError(error)
 
-    def get_logits(self):
+    def get_logits(self, x):
         """
+        :param x: A symbolic representation of the network input
         :return: A symbolic representation of the output logits, values before
                  softmax.
         """
-        error = 'get_logits not implemented'
+        error = '`get_logits` not implemented'
         raise NotImplementedError(error)
 
-    def get_probs(self):
+    def get_probs(self, x):
         """
+        :param x: A symbolic representation of the network input
         :return: A symbolic representation of the output probabilities, values
                  after softmax.
         """
-        error = 'get_probs not implemented'
+        error = '`get_probs` not implemented'
         raise NotImplementedError(error)
 
 
-class KerasModelWrapper(ModelAbstraction):
+class KerasModelWrapper(Model):
     """
     An implementation of ModelAbstraction that wraps a Keras model. It
-    specifically exposes the hidden features of a model.
+    specifically exposes the hidden features of a model by creating new models.
+    The symbolic graph is reused and so there is little overhead. Splitting
+    in-place operations can incur an overhead.
     """
 
     def __init__(self, model):
         """
-        Create a wrapper from a Keras model
+        Create a wrapper for a Keras model
 
         :param model: A Keras model
         """
@@ -65,17 +72,21 @@ class KerasModelWrapper(ModelAbstraction):
 
         # Initialize attributes
         self.model = model
+        self.model_dict = {None: model}
 
-    def get_hidden(self, layer):
+    def fprop(self, x, layer=None):
         """
-        Creates a new model with the same input but the output of the
+        Creates a new model with the `x` as the input and the output after the
         specified layer. Keras layers can be retrieved using their names.
-        The symbolic graph is reused and so there should be little overhead.
 
+        :param x: A symbolic representation of the network input
         :param layer: The name of the hidden layer
         :return: A symbolic representation of the hidden features
         """
         model = self.model
+
+        if layer in self.model_dict:
+            return self.model_dict(x)
 
         from keras.models import Model
 
@@ -85,6 +96,8 @@ class KerasModelWrapper(ModelAbstraction):
         # Find the layer to connect
         target_feat = model.get_layer(layer).output
         # Build a new model
-        h = Model(new_input, target_feat)
+        new_model = Model(new_input, target_feat)
+        # Cache the new model for further fprop calls
+        self.model_dict[layer] = new_model
 
-        return h
+        return new_model(x)
