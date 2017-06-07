@@ -118,8 +118,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     # Instantiate a SaliencyMapMethod attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
-    cw_params = {'binary_search_steps':3, 'max_iterations':1000,
-                   'learning_rate':0.01, 'targeted':True, 'batch_size':100}
+    cw_params = {'binary_search_steps':1, 'max_iterations':100,
+                   'learning_rate':0.1, 'targeted':True, 'batch_size':100,
+                 'initial_const': 100}
 
     # Loop over the samples we want to perturb into adversarial examples
 
