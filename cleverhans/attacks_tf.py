@@ -455,8 +455,8 @@ class CarliniL2:
     def __init__(self, sess, model, batch_size=1, confidence = CONFIDENCE,
                  targeted = TARGETED, learning_rate = LEARNING_RATE,
                  binary_search_steps = BINARY_SEARCH_STEPS, max_iterations = MAX_ITERATIONS,
-                 abort_early = ABORT_EARLY, 
-                 initial_const = INITIAL_CONST):
+                 abort_early = ABORT_EARLY, initial_const = INITIAL_CONST,
+                 clip_min = 0, clip_max = 1):
         """
         The L_2 optimized attack. 
 
@@ -492,7 +492,10 @@ class CarliniL2:
         self.CONFIDENCE = confidence
         self.initial_const = initial_const
         self.batch_size = batch_size
-
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+        
+        
         self.repeat = binary_search_steps >= 10
 
         shape = tuple([batch_size]+list(model.shape))
@@ -510,14 +513,14 @@ class CarliniL2:
         self.assign_tlab = tf.placeholder(tf.float32, (batch_size,num_labels))
         self.assign_const = tf.placeholder(tf.float32, [batch_size])
         
-        # the resulting image, tanh'd to keep bounded from -0.5 to 0.5
-        self.newimg = tf.tanh(modifier + self.timg)/2
+        # the resulting image, tanh'd to keep bounded from clip_min to clip_max
+        self.newimg = (tf.tanh(modifier + self.timg)+1)/2*(clip_max-clip_min)+clip_min
         
         # prediction BEFORE-SOFTMAX of the model
         self.output = model.predict(self.newimg)
         
         # distance to the input data
-        self.l2dist = tf.reduce_sum(tf.square(self.newimg-tf.tanh(self.timg)/2),
+        self.l2dist = tf.reduce_sum(tf.square(self.newimg-(tf.tanh(self.timg)+1)/2*(clip_max-clip_min)+clip_min),
                                     list(range(1,len(shape))))
         
         # compute the probability of the label class versus the maximum other
@@ -582,8 +585,12 @@ class CarliniL2:
 
         batch_size = self.batch_size
 
+        # re-scale images to be within range [0,1]
+        imgs = (imgs-self.clip_min)/(self.clip_max-self.clip_min)
+        # now convert to [-1, 1]
+        imgs = (imgs*2)-1
         # convert to tanh-space
-        imgs = np.arctanh(imgs*1.999999)
+        imgs = np.arctanh(imgs*.999999)
 
         # set the lower and upper bounds accordingly
         lower_bound = np.zeros(batch_size)
