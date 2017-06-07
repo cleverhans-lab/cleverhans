@@ -15,15 +15,17 @@ from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.utils import other_classes, cnn_model
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval, model_argmax, tf_model_load
+from cleverhans.utils_tf import model_train, model_eval,
+from cleverhans.utils_tf import model_argmax, tf_model_load
 
 FLAGS = flags.FLAGS
 
 
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
-                        test_end=10000, viz_enabled=True, nb_epochs=6,
-                        batch_size=128, nb_classes=10, source_samples=10,
-                        learning_rate=0.1, model_path=os.path.join("models","mnist")):
+                      test_end=10000, viz_enabled=True, nb_epochs=6,
+                      batch_size=128, nb_classes=10, source_samples=10,
+                      learning_rate=0.1,
+                      model_path=os.path.join("models", "mnist")):
     """
     MNIST tutorial for Carlini and Wagner's attack
     :param train_start: index of first training set example
@@ -89,7 +91,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'learning_rate': learning_rate,
         'train_dir': os.path.join(*os.path.split(model_path)[:-1]),
         'filename': os.path.split(model_path)[-1]
-        
+
     }
 
     # check if we've trained before, and if we have, use that pre-trained model
@@ -97,7 +99,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         tf_model_load(sess, model_path)
     else:
         model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
-                save=os.path.exists("models"))
+                    save=os.path.exists("models"))
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
@@ -109,14 +111,13 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     # Craft adversarial examples using Carlini and Wagner's approach
     ###########################################################################
-    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1)
-          + ' adversarial examples')
+    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1) +
+          ' adversarial examples')
     print("This could take some time ...")
 
     # Initialize our array for grid visualization
     grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
     grid_viz_data = np.zeros(grid_shape, dtype='f')
-
 
     # by default, we have softmax after a CNN, remove it here
     model.layers.pop()
@@ -125,35 +126,40 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     model.outputs = [last.output]
     model.built = False
 
-    # Check if we are using a GPU, and generate higher quality attacks if we are
+    # Check if we are using a GPU
+    # and generate higher quality attacks if we are
     try:
         with tf.device('/gpu:0'):
             sess.run(tf.constant(1))
         gpu = True
     except:
         gpu = False
-        
+
     # Instantiate a CW attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
-    cw_params = {'binary_search_steps':1, 'max_iterations':1000 if gpu else 100,
-                 'learning_rate':0.1, 'targeted':True, 'batch_size':100,
+    cw_params = {'binary_search_steps': 1,
+                 'max_iterations': 1000 if gpu else 100,
+                 'learning_rate': 0.1, 'targeted': True, 'batch_size': 100,
                  'initial_const': 10}
 
-    onehot = np.zeros((10,10))
-    onehot[np.arange(10),np.arange(10)] = 1
+    onehot = np.zeros((10, 10))
+    onehot[np.arange(10), np.arange(10)] = 1
 
-    idxs = [np.where(np.argmax(Y_test,axis=1)==i)[0][0] for i in range(10)]
-    adv_inputs = np.array([[x]*10 for x in X_test[idxs]], dtype=np.float32).reshape((100,28,28,1))
-    adv_ys = np.array([onehot]*10, dtype=np.float32).reshape((100,10))
+    idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0] for i in range(10)]
+    adv_inputs = np.array([[x] * 10 for x in X_test[idxs]], dtype=np.float32)
+    adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
+    adv_ys = np.array([onehot] * 10, dtype=np.float32).reshape((100, 10))
 
-    adv = sess.run(cw.generate(tf.constant(adv_inputs), tf.constant(adv_ys), **cw_params))
+    adv = sess.run(cw.generate(tf.constant(adv_inputs), tf.constant(adv_ys),
+                               **cw_params))
 
-    adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys, args={'batch_size': 100})
+    adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys,
+                              args={'batch_size': 100})
 
     for j in range(10):
         for i in range(10):
-            grid_viz_data[i,j] = adv[i*10+j]
-    
+            grid_viz_data[i, j] = adv[i * 10 + j]
+
     print('--------------------------------------')
 
     # Compute the number of adversarial examples that were successfully found
@@ -161,7 +167,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     report.clean_train_adv_eval = 1.-adv_accuracy
 
     # Compute the average distortion introduced by the algorithm
-    percent_perturbed = np.mean(np.sum((adv-adv_inputs)**2,axis=(1,2,3))**.5)
+    percent_perturbed = np.mean(np.sum((adv - adv_inputs)**2,
+                                       axis=(1, 2, 3))**.5)
     print('Avg. L_2 norm of perturbations {0:.4f}'.format(percent_perturbed))
 
     # Close TF session
@@ -192,6 +199,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_classes', 10, 'Number of output classes')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
     flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
-    flags.DEFINE_string('model_path', os.path.join("models","mnist"), 'Path to save or load the model file')
+    flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
+                        'Path to save or load the model file')
 
     app.run()
