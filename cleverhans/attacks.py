@@ -570,9 +570,10 @@ class VirtualAdversarialMethod(Attack):
         self.clip_max = clip_max
         return True
 
+
 class CarliniWagnerL2(Attack):
     """
-    This attack was originally proposed by Carlini and Wagner. It is an 
+    This attack was originally proposed by Carlini and Wagner. It is an
     iterative attack that finds adversarial examples on many defenses that
     are robust to other attacks.
     Paper link: https://arxiv.org/abs/1608.04644
@@ -585,22 +586,23 @@ class CarliniWagnerL2(Attack):
             raise NotImplementedError('Theano version not implemented.')
 
     def generate(self, x, y=None, nb_classes=10,
-                    batch_size=1, confidence=0,
-                    targeted=True, learning_rate=1e-3,
-                    binary_search_steps=10, max_iterations=100,
-                    abort_early=True, initial_const=1e-2,
-                    clip_min=0, clip_max=1):
+                 batch_size=1, confidence=0,
+                 targeted=True, learning_rate=1e-3,
+                 binary_search_steps=10, max_iterations=100,
+                 abort_early=True, initial_const=1e-2,
+                 clip_min=0, clip_max=1):
 
         import tensorflow as tf
         from .attacks_tf import CarliniWagnerL2 as CWL2
-        
+
         attack = CWL2(self.sess, self.model, batch_size, confidence, targeted,
-                                 learning_rate, binary_search_steps, max_iterations,
-                                 abort_early, initial_const, clip_min, clip_max,
-                                 nb_classes, x.get_shape().as_list()[1:])
+                      learning_rate, binary_search_steps, max_iterations,
+                      abort_early, initial_const, clip_min, clip_max,
+                      nb_classes, x.get_shape().as_list()[1:])
+
         def cw_wrap(x_val, y_val):
-            return np.array(attack.attack(x_val, y_val),dtype=np.float32)
-        
+            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
+
         wrap = tf.py_func(cw_wrap, [x, y], tf.float32)
         return wrap
 
@@ -616,35 +618,43 @@ class CarliniWagnerL2(Attack):
 
         :param x_val: (required) A Numpy array with the original inputs.
         :param y_val: (required) A Numpy array with the labels that we either
-                      should target (if targeted=True) or avoid (if target=False).
-        :param confidence: Confidence of adversarial examples: higher produces examples
-                           that are farther away, but more strongly classified as adversarial.
+                      should target (if targeted=True) or avoid (if
+                      target=False).
+        :param confidence: Confidence of adversarial examples: higher produces
+                           examples that are farther away, but more strongly
+                           classified as adversarial.
         :param batch_size: Number of attacks to run simultaneously.
-        :param targeted: True if we should perform a targetted attack, False otherwise.
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values
-                              produce better results but are slower to converge.
-        :param binary_search_steps: The number of times we perform binary search to
-          find the optimal tradeoff-constant between distance and confidence. 
-        :param max_iterations: The maximum number of iterations. Larger values are more
-                               accurate; setting too small will require a large learning 
-                               rate and will produce poor results.
-        :param abort_early: If true, allows early aborts if gradient descent gets stuck.
-        :param initial_const: The initial tradeoff-constant to use to tune the relative
-                              importance of distance and confidence. If binary_search_steps 
-                              is large, the initial constant is not important.
+        :param targeted: True if we should perform a targetted attack, False
+                         otherwise.
+        :param learning_rate: The learning rate for the attack algorithm.
+                              Smaller values produce better results but are
+                              slower to converge.
+        :param binary_search_steps: The number of times we perform binary
+                                    search to find the optimal tradeoff-
+                                    constant between distance and confidence.
+        :param max_iterations: The maximum number of iterations. Larger values
+                               are more accurate; setting too small will 
+                               require a large learning rate and will produce 
+                               poor results.
+        :param abort_early: If true, allows early aborts if gradient descent
+                            gets stuck.
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of distance and confidence.
+                              If binary_search_steps is large, the initial
+                              constant is not important.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
 
         from .attacks_tf import CarliniWagnerL2 as CWL2
-        
+
         attack = CWL2(self.sess, self.model, batch_size, confidence, targeted,
-                                 learning_rate, binary_search_steps, max_iterations,
-                                 abort_early, initial_const, clip_min, clip_max,
-                                 nb_classes, x_val.shape[1:])
+                      learning_rate, binary_search_steps, max_iterations,
+                      abort_early, initial_const, clip_min, clip_max,
+                      nb_classes, x_val.shape[1:])
         res = attack.attack(x_val, y_val)
         return res
-    
+
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
