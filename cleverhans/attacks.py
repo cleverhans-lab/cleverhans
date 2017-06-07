@@ -633,8 +633,8 @@ class CarliniWagnerL2(Attack):
                                     search to find the optimal tradeoff-
                                     constant between distance and confidence.
         :param max_iterations: The maximum number of iterations. Larger values
-                               are more accurate; setting too small will 
-                               require a large learning rate and will produce 
+                               are more accurate; setting too small will
+                               require a large learning rate and will produce
                                poor results.
         :param abort_early: If true, allows early aborts if gradient descent
                             gets stuck.
