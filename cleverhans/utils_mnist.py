@@ -35,7 +35,7 @@ def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
         X_test = mnist.test.images
         Y_test = mnist.test.labels
     else:
-        warnings.warn("cleverhans support for Theano is deprecated and "
+        warnings.warn("CleverHans support for Theano is deprecated and "
                       "will be dropped on 2017-11-08.")
         import keras
         from keras.datasets import mnist

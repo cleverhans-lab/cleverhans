@@ -146,7 +146,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 initialize_uninitialized_global_variables(sess)
         else:
             warnings.warn("Update your copy of tensorflow; future versions of "
-                          "cleverhans may drop support for this version.")
+                          "CleverHans may drop support for this version.")
             sess.run(tf.initialize_all_variables())
 
         for epoch in six.moves.xrange(args.nb_epochs):
