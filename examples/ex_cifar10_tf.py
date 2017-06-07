@@ -12,9 +12,9 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import fgsm
-from cleverhans.utils import cnn_model
+from cleverhans.utils_keras import cnn_model
+from cleverhans.utils_tf import model_train, model_eval, batch_eval
 
 FLAGS = flags.FLAGS
 
