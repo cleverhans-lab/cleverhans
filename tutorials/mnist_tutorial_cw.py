@@ -24,7 +24,7 @@ FLAGS = flags.FLAGS
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                       test_end=10000, viz_enabled=True, nb_epochs=6,
                       batch_size=128, nb_classes=10, source_samples=10,
-                      learning_rate=0.1,
+                      learning_rate=0.1, attack_iterations=100,
                       model_path=os.path.join("models", "mnist")):
     """
     MNIST tutorial for Carlini and Wagner's attack
@@ -93,7 +93,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'filename': os.path.split(model_path)[-1]
 
     }
-
+    
     # check if we've trained before, and if we have, use that pre-trained model
     if os.path.exists(model_path+".meta"):
         tf_model_load(sess, model_path)
@@ -125,20 +125,11 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     last.outbound_nodes = []
     model.outputs = [last.output]
     model.built = False
-
-    # Check if we are using a GPU
-    # and generate higher quality attacks if we are
-    try:
-        with tf.device('/gpu:0'):
-            sess.run(tf.constant(1))
-        gpu = True
-    except:
-        gpu = False
-
+        
     # Instantiate a CW attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
     cw_params = {'binary_search_steps': 1,
-                 'max_iterations': 1000 if gpu else 100,
+                 'max_iterations': attack_iterations,
                  'learning_rate': 0.1, 'targeted': True, 'batch_size': 100,
                  'initial_const': 10}
 
@@ -146,7 +137,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     onehot[np.arange(10), np.arange(10)] = 1
 
     idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0] for i in range(10)]
-    adv_inputs = np.array([[x] * 10 for x in X_test[idxs]], dtype=np.float32)
+    adv_inputs = np.array([[instance] * 10 for instance in X_test[idxs]],
+                          dtype=np.float32)
     adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
     adv_ys = np.array([onehot] * 10, dtype=np.float32).reshape((100, 10))
 
@@ -189,6 +181,7 @@ def main(argv=None):
                       nb_classes=FLAGS.nb_classes,
                       source_samples=FLAGS.source_samples,
                       learning_rate=FLAGS.learning_rate,
+                      attack_iterations=FLAGS.attack_iterations,
                       model_path=FLAGS.model_path)
 
 
@@ -201,5 +194,7 @@ if __name__ == '__main__':
     flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
                         'Path to save or load the model file')
+    flags.DEFINE_boolean('attack_iterations', 100,
+                         'Number of iterations to run attack; 1000 is good')
 
     app.run()
