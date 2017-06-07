@@ -440,9 +440,6 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
 
 
 
-## TODO make this actually match the coding styles of cleverhans
-## The following is a code dump directly from https://github.com/carlini/nn_robust_attacks
-
 class CarliniWagnerL2:
     def __init__(self, sess, model, batch_size, confidence,
                  targeted, learning_rate,
