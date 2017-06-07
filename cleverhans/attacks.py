@@ -5,6 +5,7 @@ import warnings
 
 
 class Attack:
+
     """
     Abstract base class for all attack classes.
     """
@@ -19,8 +20,6 @@ class Attack:
         """
         if not(back == 'tf' or back == 'th'):
             raise ValueError("Backend argument must either be 'tf' or 'th'.")
-        if back == 'tf' and sess is None:
-            raise Exception("A tf session was not provided in sess argument.")
         if back == 'th' and sess is not None:
             raise Exception("A session should not be provided when using th.")
         if not hasattr(model, '__call__'):
@@ -87,6 +86,9 @@ class Attack:
             error = "No symbolic or numeric implementation of attack."
             raise NotImplementedError(error)
 
+        if self.sess is None:
+            raise ValueError("Cannot use `generate_np` when no `sess` was"
+                             " provided")
         return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
 
     def parse_params(self, params=None):
@@ -100,6 +102,7 @@ class Attack:
 
 
 class FastGradientMethod(Attack):
+
     """
     This attack was originally implemented by Goodfellow et al. (2015) with the
     infinity norm (and is known as the "Fast Gradient Sign Method"). This
@@ -107,6 +110,7 @@ class FastGradientMethod(Attack):
     the Fast Gradient Method.
     Paper link: https://arxiv.org/abs/1412.6572
     """
+
     def __init__(self, model, back='tf', sess=None):
         """
         Create a FastGradientMethod instance.
@@ -215,11 +219,13 @@ class FastGradientMethod(Attack):
 
 
 class BasicIterativeMethod(Attack):
+
     """
     The Basic Iterative Method (Kurakin et al. 2016). The original paper used
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
+
     def __init__(self, model, back='tf', sess=None):
         """
         Create a BasicIterativeMethod instance.
@@ -307,10 +313,12 @@ class BasicIterativeMethod(Attack):
 
 
 class SaliencyMapMethod(Attack):
+
     """
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
+
     def __init__(self, model, back='tf', sess=None):
         """
         Create a SaliencyMapMethod instance.
@@ -414,12 +422,14 @@ class SaliencyMapMethod(Attack):
 
 
 class VirtualAdversarialMethod(Attack):
+
     """
     This attack was originally proposed by Miyato et al. (2016) and was used
     for virtual adversarial training.
     Paper link: https://arxiv.org/abs/1507.00677
 
     """
+
     def __init__(self, model, back='tf', sess=None):
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
 
