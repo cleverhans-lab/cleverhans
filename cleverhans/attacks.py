@@ -581,6 +581,9 @@ class CarliniWagnerL2(Attack):
     def __init__(self, model, back='tf', sess=None):
         super(CarliniWagnerL2, self).__init__(model, back, sess)
 
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+
     def generate(self, x, **kwargs):
         # for now, let's just raise an error that it's not implemented
         # TODO: fix this so that it wraps the numpy method correctly.
@@ -617,18 +620,15 @@ class CarliniWagnerL2(Attack):
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
-        from .attacks_tf import CarliniL2
+        from .attacks_tf import CarliniWagnerL2 as CWL2
         
-        # todo save this to re-use the graph
-        attack = CarliniL2(self.sess, self.model, batch_size, confidence, targeted,
-                           learning_rate, binary_search_steps, max_iterations,
-                           abort_early, initial_const, clip_min, clip_max,
-                           nb_classes, x_val.shape[1:])
-        res = attack.attack(x_val, y_val) # todo assumes y_val
+        attack = CWL2(self.sess, self.model, batch_size, confidence, targeted,
+                                 learning_rate, binary_search_steps, max_iterations,
+                                 abort_early, initial_const, clip_min, clip_max,
+                                 nb_classes, x_val.shape[1:])
+        res = attack.attack(x_val, y_val)
         return res
     
 
