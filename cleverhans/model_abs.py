@@ -42,8 +42,7 @@ class Model(object):
         :return: A symbolic representation of the output logits, values before
                  softmax.
         """
-        error = '`get_logits` not implemented'
-        raise NotImplementedError(error)
+        raise NotImplementedError('`get_logits` not implemented')
 
     def get_probs(self, x):
         """
@@ -51,8 +50,25 @@ class Model(object):
         :return: A symbolic representation of the output probabilities, values
                  after softmax.
         """
-        error = '`get_probs` not implemented'
-        raise NotImplementedError(error)
+        raise NotImplementedError('`get_probs` not implemented')
+
+    def get_layer_names(self):
+        """
+        :return: a list of names for the layers that can be exposed by this
+        model wrapper.
+        """
+        raise NotImplementedError('`get_layer_names` not implemented')
+
+    def fprop(self, x):
+        """
+        Exposes all the layers of the model that can be exposed. This can also
+        be used to expose a limited set of layers.
+
+        :param x: A symbolic representation of the network input
+        :return: A dictionary with keys being layer names and values being
+                 symbolic representation of the output o fcorresponding layer
+        """
+        raise NotImplementedError('`fprop` not implemented')
 
 
 class KerasModelWrapper(Model):
@@ -74,7 +90,9 @@ class KerasModelWrapper(Model):
         # Initialize attributes
         self.model = model
         # Model caching to create a new model only once for each hidden layer
-        self.model_dict = {}
+        self.modelw_layer = {}
+        # One model wrapper cache for `fprop`
+        self.modelw = self._create_modelw()
 
     def get_layer(self, x, layer):
         """
@@ -87,8 +105,8 @@ class KerasModelWrapper(Model):
         """
         model = self.model
 
-        if layer in self.model_dict:
-            return self.model_dict[layer](x)
+        if layer in self.modelw_layer:
+            return self.modelw_layer[layer](x)
 
         from keras.models import Model
 
@@ -100,7 +118,7 @@ class KerasModelWrapper(Model):
         # Build a new model
         new_model = Model(new_input, target_feat)
         # Cache the new model for further get_layer calls
-        self.model_dict[layer] = new_model
+        self.modelw_layer[layer] = new_model
 
         return new_model(x)
 
@@ -138,3 +156,44 @@ class KerasModelWrapper(Model):
         name = self._get_softmax_layer()
 
         return self.get_layer(x, name)
+
+    def get_layer_names(self):
+        """
+        :return: Names of all the layers kept by Keras
+        """
+        layer_names = [x.name for x in self.model.layers]
+        return layer_names
+
+    def _create_modelw(self):
+        """
+        Create the new model used by fprop that outputs all the hidden outputs
+
+        :return: A new Keras model
+        """
+        model = self.model
+
+        from keras.models import Model
+
+        # Get input
+        new_input = model.get_input_at(0)
+        # Collect the output symbols for all the layers
+        layer_names = self.get_layer_names()
+        outputs = [model.get_layer(name).output for name in layer_names]
+        # Build a new model
+        modelw = Model(new_input, outputs)
+
+        return modelw
+
+    def fprop(self, x):
+        """
+        Creates a new model with the `x` as the input and the output after the
+        specified layer. Keras layers can be retrieved using their names.
+
+        :param x: A symbolic representation of the network input
+        :return: A dictionary with keys being layer names and values being
+                 symbolic representation of the output o fcorresponding layer
+        """
+        layer_names = self.get_layer_names()
+        outputs = self.modelw(x)
+        out_dict = dict(zip(layer_names, outputs))
+        return out_dict
