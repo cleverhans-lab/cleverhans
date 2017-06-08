@@ -641,7 +641,7 @@ class CarliniWagnerL2(Attack):
 
         from .attacks_tf import CarliniWagnerL2 as CWL2
         self.parse_params(**kwargs)
-        
+
         params = (self.batch_size,
                   self.confidence, self.targeted, self.learning_rate,
                   self.binary_search_steps, self.max_iterations,
@@ -663,11 +663,11 @@ class CarliniWagnerL2(Attack):
         return res
 
     def parse_params(self, y_val=None, nb_classes=10,
-                    batch_size=1, confidence=0,
-                    targeted=True, learning_rate=5e-3,
-                    binary_search_steps=5, max_iterations=1000,
-                    abort_early=True, initial_const=1e-2,
-                    clip_min=0, clip_max=1):
+                     batch_size=1, confidence=0,
+                     targeted=True, learning_rate=5e-3,
+                     binary_search_steps=5, max_iterations=1000,
+                     abort_early=True, initial_const=1e-2,
+                     clip_min=0, clip_max=1):
 
         # ignore the y_val argument
         self.nb_classes = nb_classes
@@ -681,7 +681,7 @@ class CarliniWagnerL2(Attack):
         self.initial_const = initial_const
         self.clip_min = clip_min
         self.clip_max = clip_max
-    
+
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
