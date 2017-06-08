@@ -38,18 +38,18 @@ class TestAttackClassInitArguments(unittest.TestCase):
         Attack(model, back='tf', sess=None)
 
     def test_sess_generate_np(self):
-      def model(x):
-        return True
+        def model(x):
+            return True
 
-      class DummyAttack(Attack):
-        def generate(self, x, **kwargs):
-          return x
+        class DummyAttack(Attack):
+            def generate(self, x, **kwargs):
+                return x
 
-      attack = DummyAttack(model, back='tf', sess=None)
-      with self.assertRaises(Exception) as context:
-        attack.generate_np(0.)
-      self.assertTrue(context.exception)
-  
+        attack = DummyAttack(model, back='tf', sess=None)
+        with self.assertRaises(Exception) as context:
+            attack.generate_np(0.)
+        self.assertTrue(context.exception)
+
 
 class TestAttackGenerate(unittest.TestCase):
     def test_inf_loop(self):
