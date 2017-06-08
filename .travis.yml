@@ -5,17 +5,21 @@ language: python
 matrix:
     include:
         - python: 2.7
-          env: KERAS_BACKEND=tensorflow
-          env: TENSORFLOW_V=1.0.1
+          env:
+            - KERAS_BACKEND=tensorflow
+            - TENSORFLOW_V=1.0.1
         - python: 2.7
-          env: KERAS_BACKEND=tensorflow
-          env: TENSORFLOW_V=1.1.0
+          env:
+            - KERAS_BACKEND=tensorflow
+            - TENSORFLOW_V=1.1.0
         - python: 3.5
-          env: KERAS_BACKEND=tensorflow
-          env: TENSORFLOW_V=1.0.1
+          env:
+            - KERAS_BACKEND=tensorflow
+            - TENSORFLOW_V=1.0.1
         - python: 3.5
-          env: KERAS_BACKEND=tensorflow
-          env: TENSORFLOW_V=1.1.0
+          env:
+            - KERAS_BACKEND=tensorflow
+            - TENSORFLOW_V=1.1.0
         - python: 2.7
           env: KERAS_BACKEND=theano
         - python: 3.5
