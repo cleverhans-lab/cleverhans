@@ -14,7 +14,7 @@ class Model(object):
 
     def __init__(self, model):
         """
-        Init a wrapper. If `fprop` is implemented, `__init__`
+        Init a wrapper. If `get_layer` is implemented, `__init__`
         should keep track of the name of the layers or `self.model` should
         provide a method for retrieving a layer.
 
@@ -25,7 +25,7 @@ class Model(object):
 
         pass
 
-    def fprop(self, x, layer=None):
+    def get_layer(self, x, layer):
         """
         Expose the hidden features of a model given a layer name.
 
@@ -74,9 +74,9 @@ class KerasModelWrapper(Model):
         # Initialize attributes
         self.model = model
         # Model caching to create a new model only once for each hidden layer
-        self.model_dict = {None: model}
+        self.model_dict = {}
 
-    def fprop(self, x, layer=None):
+    def get_layer(self, x, layer):
         """
         Creates a new model with the `x` as the input and the output after the
         specified layer. Keras layers can be retrieved using their names.
@@ -99,7 +99,7 @@ class KerasModelWrapper(Model):
         target_feat = model.get_layer(layer).output
         # Build a new model
         new_model = Model(new_input, target_feat)
-        # Cache the new model for further fprop calls
+        # Cache the new model for further get_layer calls
         self.model_dict[layer] = new_model
 
         return new_model(x)
@@ -128,7 +128,7 @@ class KerasModelWrapper(Model):
         node = softmax_layer.inbound_nodes[0]
         logits_name = node.inbound_layers[0].name
 
-        return self.fprop(x, logits_name)
+        return self.get_layer(x, logits_name)
 
     def get_probs(self, x):
         """
@@ -137,4 +137,4 @@ class KerasModelWrapper(Model):
         """
         name = self._get_softmax_layer()
 
-        return self.fprop(x, name)
+        return self.get_layer(x, name)
