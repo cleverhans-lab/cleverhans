@@ -8,7 +8,7 @@ class Model(object):
     any specific neural network package (e.g. Keras) from the core
     code of CleverHans. It can also simplify exposing the hidden features of a
     model when a specific package does not directly expose them (needed by
-    "features adversaries").
+    "Features Adversaries" https://arxiv.org/abs/1511.05122).
     """
     __metaclass__ = ABCMeta
 
@@ -19,7 +19,8 @@ class Model(object):
         provide a method for retrieving a layer.
 
         :param model: A function that takes a symbolic input and returns the
-                      symbolic output for the model's predictions.
+                      symbolic output for the model's post-softmax predictions
+                      (probabilities).
         """
 
         pass
@@ -56,7 +57,7 @@ class Model(object):
 
 class KerasModelWrapper(Model):
     """
-    An implementation of ModelAbstraction that wraps a Keras model. It
+    An implementation of `Model` that wraps a Keras model. It
     specifically exposes the hidden features of a model by creating new models.
     The symbolic graph is reused and so there is little overhead. Splitting
     in-place operations can incur an overhead.
@@ -72,6 +73,7 @@ class KerasModelWrapper(Model):
 
         # Initialize attributes
         self.model = model
+        # Model caching to create a new model only once for each hidden layer
         self.model_dict = {None: model}
 
     def fprop(self, x, layer=None):
