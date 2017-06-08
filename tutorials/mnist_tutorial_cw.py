@@ -25,7 +25,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                       test_end=10000, viz_enabled=True, nb_epochs=6,
                       batch_size=128, nb_classes=10, source_samples=10,
                       learning_rate=0.1, attack_iterations=100,
-                      model_path=os.path.join("models", "mnist")):
+                      model_path=os.path.join("models", "mnist"),
+                      targeted=True):
     """
     MNIST tutorial for Carlini and Wagner's attack
     :param train_start: index of first training set example
@@ -38,6 +39,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     :param nb_classes: number of output classes
     :param source_samples: number of test inputs to attack
     :param learning_rate: learning rate for training
+    :param model_path: path to the model file
+    :param targeted: should we run a targeted attack? or untargeted?
     :return: an AccuracyReport object
     """
     # Object used to keep track of (and return) key accuracies
@@ -93,7 +96,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'filename': os.path.split(model_path)[-1]
 
     }
-    
+
     # check if we've trained before, and if we have, use that pre-trained model
     if os.path.exists(model_path+".meta"):
         tf_model_load(sess, model_path)
@@ -115,44 +118,63 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
           ' adversarial examples')
     print("This could take some time ...")
 
-    # Initialize our array for grid visualization
-    grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
-    grid_viz_data = np.zeros(grid_shape, dtype='f')
-
     # by default, we have softmax after a CNN, remove it here
     model.layers.pop()
     last = model.layers[-1]
     last.outbound_nodes = []
     model.outputs = [last.output]
     model.built = False
-        
+
     # Instantiate a CW attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
 
-    onehot = np.zeros((10, 10))
-    onehot[np.arange(10), np.arange(10)] = 1
-
     idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0] for i in range(10)]
-    adv_inputs = np.array([[instance] * 10 for instance in X_test[idxs]],
-                          dtype=np.float32)
-    adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
-    adv_ys = np.array([onehot] * 10, dtype=np.float32).reshape((100, 10))
+    if targeted:
+        # Initialize our array for grid visualization
+        grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
+        grid_viz_data = np.zeros(grid_shape, dtype='f')
+
+        onehot = np.zeros((10, 10))
+        onehot[np.arange(10), np.arange(10)] = 1
+
+        adv_inputs = np.array([[instance] * 10 for instance in X_test[idxs]],
+                              dtype=np.float32)
+        adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
+        adv_ys = np.array([onehot] * 10, dtype=np.float32).reshape((100, 10))
+    else:
+        # Initialize our array for grid visualization
+        grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
+        grid_viz_data = np.zeros(grid_shape, dtype='f')
+
+        adv_inputs = X_test[idxs]
+        adv_ys = None
 
     cw_params = {'binary_search_steps': 1,
                  'y_val': adv_ys,
                  'max_iterations': attack_iterations,
-                 'learning_rate': 0.1, 'targeted': True, 'batch_size': 100,
+                 'learning_rate': 0.1, 'targeted': targeted,
+                 'batch_size': 100 if targeted else 10,
                  'initial_const': 10}
-    
+
     adv = cw.generate_np(adv_inputs,
                          **cw_params)
 
-    adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys,
-                              args={'batch_size': 100})
+    if targeted:
+        adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys,
+                                  args={'batch_size': 10})
+    else:
+        adv_accuracy = 1-model_eval(sess, x, y, preds, adv, Y_test[idxs],
+                                    args={'batch_size': 10})
 
     for j in range(10):
-        for i in range(10):
-            grid_viz_data[i, j] = adv[i * 10 + j]
+        if targeted:
+            for i in range(10):
+                grid_viz_data[i, j] = adv[i * 10 + j]
+        else:
+            grid_viz_data[0, j] = adv_inputs[j]
+            grid_viz_data[1, j] = adv[j]
+
+    print(grid_viz_data.shape)
 
     print('--------------------------------------')
 
@@ -184,7 +206,8 @@ def main(argv=None):
                       source_samples=FLAGS.source_samples,
                       learning_rate=FLAGS.learning_rate,
                       attack_iterations=FLAGS.attack_iterations,
-                      model_path=FLAGS.model_path)
+                      model_path=FLAGS.model_path,
+                      targeted=FLAGS.targeted)
 
 
 if __name__ == '__main__':
@@ -198,5 +221,7 @@ if __name__ == '__main__':
                         'Path to save or load the model file')
     flags.DEFINE_boolean('attack_iterations', 100,
                          'Number of iterations to run attack; 1000 is good')
+    flags.DEFINE_boolean('targeted', True,
+                         'Run the tutorial in targeted mode?')
 
     app.run()
