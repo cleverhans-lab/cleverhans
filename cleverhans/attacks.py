@@ -162,6 +162,9 @@ class FastGradientMethod(Attack):
         """
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
+        if self.sess is None:
+            raise ValueError("Cannot use `generate_np` when no `sess` was"
+                             " provided")
 
         import tensorflow as tf
 
@@ -371,7 +374,12 @@ class SaliencyMapMethod(Attack):
         :param batch_size: (optional) Batch size when running the graph
         :param targets: (optional) Target values if the attack is targeted
         """
+        if self.sess is None:
+            raise ValueError("Cannot use `generate_np` when no `sess` was"
+                             " provided")
+        
         import tensorflow as tf
+
         # Generate this attack's graph if it hasn't been done previously
         if not hasattr(self, "_x"):
             input_shape = list(x_val.shape)
