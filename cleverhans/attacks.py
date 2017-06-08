@@ -584,6 +584,7 @@ class CarliniWagnerL2(Attack):
 
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
+        self.attack_objects = {}
 
     def generate(self, x, y=None, nb_classes=10,
                  batch_size=1, confidence=0,
@@ -649,10 +650,19 @@ class CarliniWagnerL2(Attack):
 
         from .attacks_tf import CarliniWagnerL2 as CWL2
 
-        attack = CWL2(self.sess, self.model, batch_size, confidence, targeted,
+        params = (batch_size, confidence, targeted,
                       learning_rate, binary_search_steps, max_iterations,
                       abort_early, initial_const, clip_min, clip_max,
-                      nb_classes, x_val.shape[1:])
+                      nb_classes, tuple(x_val.shape[1:]))
+        if params in self.attack_objects:
+            attack = self.attack_objects[params]
+        else:
+            attack = CWL2(self.sess, self.model, batch_size, confidence, targeted,
+                          learning_rate, binary_search_steps, max_iterations,
+                          abort_early, initial_const, clip_min, clip_max,
+                          nb_classes, tuple(x_val.shape[1:]))
+            self.attack_objects[params] = attack
+        
         res = attack.attack(x_val, y_val)
         return res
 
