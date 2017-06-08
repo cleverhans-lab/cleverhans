@@ -10,14 +10,14 @@ from cleverhans.model_abs import Model, KerasModelWrapper
 
 
 class TestModelClass(unittest.TestCase):
-    def test_fprop(self):
+    def test_get_layer(self):
         # Define empty model
         modelw = Model(model=None)
         x = []
 
-        # Exception is thrown when `fprop` not implemented
+        # Exception is thrown when `get_layer` not implemented
         with self.assertRaises(Exception) as context:
-            modelw.fprop(x, layer='')
+            modelw.get_layer(x, layer='')
         self.assertTrue(context.exception)
 
     def test_get_logits(self):
@@ -25,7 +25,7 @@ class TestModelClass(unittest.TestCase):
         modelw = Model(model=None)
         x = []
 
-        # Exception is thrown when `fprop` not implemented
+        # Exception is thrown when `get_layer` not implemented
         with self.assertRaises(Exception) as context:
             modelw.get_logits(x)
         self.assertTrue(context.exception)
@@ -35,7 +35,7 @@ class TestModelClass(unittest.TestCase):
         modelw = Model(model=None)
         x = []
 
-        # Exception is thrown when `fprop` not implemented
+        # Exception is thrown when `get_layer` not implemented
         with self.assertRaises(Exception) as context:
             modelw.get_probs(x)
         self.assertTrue(context.exception)
@@ -58,12 +58,12 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.sess.as_default()
         self.model = dummy_model()
 
-    def test_fprop(self):
+    def test_get_layer(self):
         import tensorflow as tf
         modelw = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
-        h1 = modelw.fprop(x, layer='l1')
-        h1_p = modelw.fprop(x, layer='l1')
+        h1 = modelw.get_layer(x, layer='l1')
+        h1_p = modelw.get_layer(x, layer='l1')
 
         # Test the dimension of the hidden represetation
         self.assertEqual(int(h1.shape[1]), 20)
