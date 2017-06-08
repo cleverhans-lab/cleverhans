@@ -601,7 +601,7 @@ class CarliniWagnerL2(Attack):
         def cw_wrap(x_val, y_val):
             return np.array(attack.attack(x_val, y_val), dtype=np.float32)
 
-        wrap = tf.py_func(cw_wrap, [x, y], tf.float32)
+        wrap = tf.py_func(cw_wrap, [x, kwargs.get('y')], tf.float32)
         return wrap
 
     def generate_np(self, x_val, **kwargs):
@@ -662,14 +662,14 @@ class CarliniWagnerL2(Attack):
         res = attack.attack(x_val, kwargs.get('y_val'))
         return res
 
-    def parse_params(self, y_val=None, nb_classes=10,
+    def parse_params(self, y=None, y_val=None, nb_classes=10,
                      batch_size=1, confidence=0,
                      targeted=True, learning_rate=5e-3,
                      binary_search_steps=5, max_iterations=1000,
                      abort_early=True, initial_const=1e-2,
                      clip_min=0, clip_max=1):
 
-        # ignore the y_val argument
+        # ignore the y and y_val argument
         self.nb_classes = nb_classes
         self.batch_size = batch_size
         self.confidence = confidence

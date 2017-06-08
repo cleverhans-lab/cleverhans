@@ -491,10 +491,11 @@ class CarliniWagnerL2:
         self.batch_size = batch_size
         self.clip_min = clip_min
         self.clip_max = clip_max
+        self.model = model
 
         self.repeat = binary_search_steps >= 10
 
-        shape = tuple([batch_size]+list(shape))
+        self.shape = shape = tuple([batch_size]+list(shape))
 
         # the variable we're going to optimize over
         modifier = tf.Variable(np.zeros(shape, dtype=np.float32))
@@ -556,6 +557,9 @@ class CarliniWagnerL2:
 
         self.init = tf.variables_initializer(var_list=[modifier]+new_vars)
 
+        self.original_in = None
+        self.original_predictions = None
+
     def attack(self, imgs, targets):
         """
         Perform the L_2 attack on the given images for the given targets.
@@ -563,6 +567,18 @@ class CarliniWagnerL2:
         If self.targeted is true, then the targets represents the target labels
         If self.targeted is false, then targets are the original class labels
         """
+
+        if targets is None:
+            if self.original_predictions is None:
+                self.original_in = tf.placeholder(tf.float32,
+                                                  [None]+list(self.shape[1:]))
+                preds = self.model(self.original_in)
+                preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+                self.original_predictions = tf.to_float(tf.equal(preds,
+                                                                 preds_max))
+
+            targets = [None]*len(imgs)
+
         r = []
         for i in range(0, len(imgs), self.batch_size):
             r.extend(self.attack_batch(imgs[i:i+self.batch_size],
@@ -582,6 +598,10 @@ class CarliniWagnerL2:
                 return x == y
             else:
                 return x != y
+
+        if labs[0] is None:
+            labs = self.sess.run(self.original_predictions,
+                                 {self.original_in: imgs})
 
         batch_size = self.batch_size
 
