@@ -4,7 +4,7 @@ from six.moves import xrange
 import warnings
 
 
-class Attack:
+class Attack(object):
 
     """
     Abstract base class for all attack classes.
