@@ -125,7 +125,7 @@ class TestKerasModelWrapper(unittest.TestCase):
         x = tf.placeholder(tf.float32, shape=(None, 100))
         out_dict = modelw.fprop(x)
 
-        self.assertEqual(out_dict.keys(), ['l1', 'l2', 'softmax'])
+        self.assertEqual(list(out_dict.keys()), ['l1', 'l2', 'softmax'])
         # Test the dimension of the hidden represetation
         self.assertEqual(int(out_dict['l1'].shape[1]), 20)
         self.assertEqual(int(out_dict['l2'].shape[1]), 10)
@@ -133,7 +133,7 @@ class TestKerasModelWrapper(unittest.TestCase):
         # Test the caching
         x2 = tf.placeholder(tf.float32, shape=(None, 100))
         out_dict2 = modelw.fprop(x2)
-        self.assertEqual(out_dict2.keys(), ['l1', 'l2', 'softmax'])
+        self.assertEqual(list(out_dict2.keys()), ['l1', 'l2', 'softmax'])
         self.assertEqual(int(out_dict2['l1'].shape[1]), 20)
 
 
