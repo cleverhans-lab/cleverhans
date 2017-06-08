@@ -377,7 +377,7 @@ class SaliencyMapMethod(Attack):
         if self.sess is None:
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
-        
+
         import tensorflow as tf
 
         # Generate this attack's graph if it hasn't been done previously
