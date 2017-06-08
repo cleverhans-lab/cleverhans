@@ -86,7 +86,7 @@ class KerasModelWrapper(Model):
         model = self.model
 
         if layer in self.model_dict:
-            return self.model_dict(x)
+            return self.model_dict[layer](x)
 
         from keras.models import Model
 

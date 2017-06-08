@@ -63,9 +63,12 @@ class TestKerasModelWrapper(unittest.TestCase):
         modelw = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         h1 = modelw.fprop(x, layer='l1')
+        h1_p = modelw.fprop(x, layer='l1')
 
         # Test the dimension of the hidden represetation
         self.assertEqual(int(h1.shape[1]), 20)
+        # Test the caching
+        self.assertEqual(int(h1_p.shape[1]), 20)
 
     def test_probs(self):
         import tensorflow as tf
