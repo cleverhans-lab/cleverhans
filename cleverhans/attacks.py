@@ -586,20 +586,17 @@ class CarliniWagnerL2(Attack):
             raise NotImplementedError('Theano version not implemented.')
         self.attack_objects = {}
 
-    def generate(self, x, y=None, nb_classes=10,
-                 batch_size=1, confidence=0,
-                 targeted=True, learning_rate=1e-3,
-                 binary_search_steps=10, max_iterations=100,
-                 abort_early=True, initial_const=1e-2,
-                 clip_min=0, clip_max=1):
-
+    def generate(self, x, **kwargs):
         import tensorflow as tf
         from .attacks_tf import CarliniWagnerL2 as CWL2
+        self.parse_params(**kwargs)
 
-        attack = CWL2(self.sess, self.model, batch_size, confidence, targeted,
-                      learning_rate, binary_search_steps, max_iterations,
-                      abort_early, initial_const, clip_min, clip_max,
-                      nb_classes, x.get_shape().as_list()[1:])
+        attack = CWL2(self.sess, self.self.model, self.batch_size,
+                      self.confidence, self.targeted, self.learning_rate,
+                      self.binary_search_steps, self.max_iterations,
+                      self.abort_early, self.initial_const,
+                      self.clip_min, self.clip_max, self.nb_classes,
+                      x.get_shape().as_list()[1:])
 
         def cw_wrap(x_val, y_val):
             return np.array(attack.attack(x_val, y_val), dtype=np.float32)
@@ -607,13 +604,7 @@ class CarliniWagnerL2(Attack):
         wrap = tf.py_func(cw_wrap, [x, y], tf.float32)
         return wrap
 
-    def generate_np(self, x_val, y_val=None, nb_classes=10,
-                    batch_size=1, confidence=0,
-                    targeted=True, learning_rate=5e-3,
-                    binary_search_steps=5, max_iterations=1000,
-                    abort_early=True, initial_const=1e-2,
-                    clip_min=0, clip_max=1):
-
+    def generate_np(self, x_val, **kwargs):
         """
         Generate adversarial samples and return them in a Numpy array.
 
@@ -649,24 +640,48 @@ class CarliniWagnerL2(Attack):
         """
 
         from .attacks_tf import CarliniWagnerL2 as CWL2
-
-        params = (batch_size, confidence, targeted,
-                  learning_rate, binary_search_steps, max_iterations,
-                  abort_early, initial_const, clip_min, clip_max,
-                  nb_classes, tuple(x_val.shape[1:]))
+        self.parse_params(**kwargs)
+        
+        params = (self.batch_size,
+                  self.confidence, self.targeted, self.learning_rate,
+                  self.binary_search_steps, self.max_iterations,
+                  self.abort_early, self.initial_const,
+                  self.clip_min, self.clip_max, self.nb_classes,
+                  tuple(x_val.shape[1:]))
         if params in self.attack_objects:
             attack = self.attack_objects[params]
         else:
-            attack = CWL2(self.sess, self.model, batch_size, confidence,
-                          targeted, learning_rate, binary_search_steps,
-                          max_iterations, abort_early, initial_const,
-                          clip_min, clip_max, nb_classes,
+            attack = CWL2(self.sess, self.model, self.batch_size,
+                          self.confidence, self.targeted, self.learning_rate,
+                          self.binary_search_steps, self.max_iterations,
+                          self.abort_early, self.initial_const,
+                          self.clip_min, self.clip_max, self.nb_classes,
                           tuple(x_val.shape[1:]))
             self.attack_objects[params] = attack
 
-        res = attack.attack(x_val, y_val)
+        res = attack.attack(x_val, kwargs.get('y_val'))
         return res
 
+    def parse_params(self, y_val=None, nb_classes=10,
+                    batch_size=1, confidence=0,
+                    targeted=True, learning_rate=5e-3,
+                    binary_search_steps=5, max_iterations=1000,
+                    abort_early=True, initial_const=1e-2,
+                    clip_min=0, clip_max=1):
+
+        # ignore the y_val argument
+        self.nb_classes = nb_classes
+        self.batch_size = batch_size
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iterations = max_iterations
+        self.abort_early = abort_early
+        self.initial_const = initial_const
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+    
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
