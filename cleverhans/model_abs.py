@@ -1,4 +1,5 @@
 from abc import ABCMeta
+from collections import OrderedDict
 
 
 class Model(object):
@@ -91,8 +92,8 @@ class KerasModelWrapper(Model):
         self.model = model
         # Model caching to create a new model only once for each hidden layer
         self.modelw_layer = {}
-        # One model wrapper cache for `fprop`
-        self.modelw = self._create_modelw()
+        # One model wrapper cache for `fprop`, init in the first call
+        self.modelw = None
 
     def get_layer(self, x, layer):
         """
@@ -193,7 +194,9 @@ class KerasModelWrapper(Model):
         :return: A dictionary with keys being layer names and values being
                  symbolic representation of the output o fcorresponding layer
         """
+        if self.modelw is None:
+            self.modelw = self._create_modelw()
         layer_names = self.get_layer_names()
         outputs = self.modelw(x)
-        out_dict = dict(zip(layer_names, outputs))
+        out_dict = OrderedDict(zip(layer_names, outputs))
         return out_dict
