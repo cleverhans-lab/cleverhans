@@ -44,9 +44,9 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py
   - source activate test-environment
   # install TensorFlow
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$KERAS_BACKEND" == "tensorflow" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-"$TENSORFLOW_V"-cp27-none-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$KERAS_BACKEND" == "tensorflow" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-"$TENSORFLOW_V"-cp35-cp35m-linux_x86_64.whl;
     fi
   - python setup.py install
