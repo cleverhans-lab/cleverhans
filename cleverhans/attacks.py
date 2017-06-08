@@ -608,8 +608,8 @@ class CarliniWagnerL2(Attack):
 
     def generate_np(self, x_val, y_val=None, nb_classes=10,
                     batch_size=1, confidence=0,
-                    targeted=True, learning_rate=1e-3,
-                    binary_search_steps=10, max_iterations=100,
+                    targeted=True, learning_rate=5e-3,
+                    binary_search_steps=5, max_iterations=1000,
                     abort_early=True, initial_const=1e-2,
                     clip_min=0, clip_max=1):
 
@@ -620,6 +620,7 @@ class CarliniWagnerL2(Attack):
         :param y_val: (required) A Numpy array with the labels that we either
                       should target (if targeted=True) or avoid (if
                       target=False).
+        :param nb_classes: The number of classes the model has.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples that are farther away, but more strongly
                            classified as adversarial.
