@@ -128,10 +128,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         
     # Instantiate a CW attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
-    cw_params = {'binary_search_steps': 1,
-                 'max_iterations': attack_iterations,
-                 'learning_rate': 0.1, 'targeted': True, 'batch_size': 100,
-                 'initial_const': 10}
 
     onehot = np.zeros((10, 10))
     onehot[np.arange(10), np.arange(10)] = 1
@@ -142,7 +138,13 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
     adv_ys = np.array([onehot] * 10, dtype=np.float32).reshape((100, 10))
 
-    adv = cw.generate_np(adv_inputs, adv_ys,
+    cw_params = {'binary_search_steps': 1,
+                 'y_val': adv_ys,
+                 'max_iterations': attack_iterations,
+                 'learning_rate': 0.1, 'targeted': True, 'batch_size': 100,
+                 'initial_const': 10}
+    
+    adv = cw.generate_np(adv_inputs,
                          **cw_params)
 
     adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys,
