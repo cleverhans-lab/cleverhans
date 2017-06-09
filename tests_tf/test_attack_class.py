@@ -50,41 +50,6 @@ class TestAttackClassInitArguments(unittest.TestCase):
             attack.generate_np(0.)
         self.assertTrue(context.exception)
 
-
-class TestAttackGenerate(unittest.TestCase):
-    def test_inf_loop(self):
-        def model(x):
-            return x
-
-        import numpy as np
-        import tensorflow as tf
-        sess = tf.Session()
-        x = tf.placeholder(tf.float32, shape=(1,))
-
-        test_attack = Attack(model, back='tf', sess=sess)
-        adv_x = test_attack.generate(x)
-
-        with self.assertRaises(Exception) as context:
-            sess.run(adv_x, feed_dict={x: np.asarray(1.0).reshape((1,))})
-        self.assertTrue(context.exception)
-
-
-class TestAttackGenerateNp(unittest.TestCase):
-    def test_inf_loop(self):
-        def model(x):
-            return x
-
-        import numpy as np
-        import tensorflow as tf
-        sess = tf.Session()
-        x_val = np.zeros((10, 5, 5, 1))
-
-        test_attack = Attack(model, back='tf', sess=sess)
-        with self.assertRaises(Exception) as context:
-            test_attack.generate_np(x_val)
-        self.assertTrue(context.exception)
-
-
 class TestParseParams(unittest.TestCase):
     def test_parse(self):
         def model():
