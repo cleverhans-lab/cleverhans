@@ -41,10 +41,9 @@ class Attack(object):
         # When calling generate_np, arguments in the following set should be
         # fed into the graph, as they are not structural changes that require
         # generating a new graph.
-        # This dict should map names of arguments to the types they should have.
+        # This dict should map names of arguments to the types they should have
         # (Usually, the target class will be a feedable keyword argument.)
         self.feedable_kwargs = {}
-        
 
     def generate(self, x, **kwargs):
         """
@@ -82,13 +81,16 @@ class Attack(object):
 
         # the set of arguments that are structural properties of the attack
         # if these arguments are different, we must construct a new graph
-        fixed = dict((k,v) for k,v in kwargs.items() if k not in self.feedable_kwargs)
+        fixed = dict((k, v) for k, v in kwargs.items()
+                     if k not in self.feedable_kwargs)
 
         # the set of arguments that are passed as placeholders to the graph
         # on each call, and can change without constructing a new graph
-        feedable = dict((k,v) for k,v in kwargs.items() if k in self.feedable_kwargs)
+        feedable = dict((k, v) for k, v in kwargs.items()
+                        if k in self.feedable_kwargs)
 
-        if not all(isinstance(value, collections.Hashable) for value in fixed.values()):
+        if not all(isinstance(value, collections.Hashable)
+                   for value in fixed.values()):
             # we have received a fixed value that isn't hashable
             # this means we can't cache this graph for later use,
             # and it will have to be discarded later
@@ -101,7 +103,7 @@ class Attack(object):
             # try our very best to create a TF placeholder for each of the
             # feedable keyword arguments by inferring the type
             num_types = (int, float, np.float16, np.float32, np.float64,
-                         np.int8, np.int16, np.int32, np.int32, np.int64, 
+                         np.int8, np.int16, np.int32, np.int32, np.int64,
                          np.uint8, np.uint16, np.uint32, np.uint64)
 
             new_kwargs = dict(x for x in fixed.items())
@@ -118,8 +120,8 @@ class Attack(object):
                     else:
                         new_kwargs[name] = tf.placeholder(given_type, shape=[])
                 else:
-                    raise ValueError("Could not identify type of argument " + name +
-                                     ": " + str(value))
+                    raise ValueError("Could not identify type of argument " +
+                                     name + ": " + str(value))
 
             # x is a special placeholder we always want to have
             x = tf.placeholder(tf.float32, shape=[None]+list(x_val.shape)[1:])
@@ -133,15 +135,15 @@ class Attack(object):
 
             if len(self.graphs) == 10:
                 warnings.warn("Calling generate_np() with multiple different "
-                              "structural paramaters is inefficient and should "
-                              "be avoided. Calling generate() is preferred.")
+                              "structural paramaters is inefficient and should"
+                              " be avoided. Calling generate() is preferred.")
 
         if hash_key is not None:
             # if it is None, we must have constructed it already
             x, new_kwargs, x_adv = self.graphs[hash_key]
-            
+
         feed_dict = {x: x_val}
-        
+
         for name in feedable:
             feed_dict[new_kwargs[name]] = feedable[name]
 
