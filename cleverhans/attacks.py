@@ -584,34 +584,18 @@ class CarliniWagnerL2(Attack):
 
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
-        self.attack_objects = {}
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'y': tf.float32}
 
     def generate(self, x, **kwargs):
-        import tensorflow as tf
-        from .attacks_tf import CarliniWagnerL2 as CWL2
-        self.parse_params(**kwargs)
-
-        attack = CWL2(self.sess, self.self.model, self.batch_size,
-                      self.confidence, self.targeted, self.learning_rate,
-                      self.binary_search_steps, self.max_iterations,
-                      self.abort_early, self.initial_const,
-                      self.clip_min, self.clip_max, self.nb_classes,
-                      x.get_shape().as_list()[1:])
-
-        def cw_wrap(x_val, y_val):
-            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
-
-        wrap = tf.py_func(cw_wrap, [x, kwargs.get('y')], tf.float32)
-        return wrap
-
-    def generate_np(self, x_val, **kwargs):
         """
         Generate adversarial samples and return them in a Numpy array.
 
-        :param x_val: (required) A Numpy array with the original inputs.
-        :param y_val: (required) A Numpy array with the labels that we either
-                      should target (if targeted=True) or avoid (if
-                      target=False).
+        :param x: (required) A Numpy array with the original inputs.
+        :param y: (optional) A Numpy array with the labels that we either
+                  should target (if targeted=True) or avoid (if
+                  target=False). If None, use labels the classifier assigns.
         :param nb_classes: The number of classes the model has.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples that are farther away, but more strongly
@@ -638,29 +622,22 @@ class CarliniWagnerL2(Attack):
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
-
+        import tensorflow as tf
         from .attacks_tf import CarliniWagnerL2 as CWL2
         self.parse_params(**kwargs)
 
-        params = (self.batch_size,
-                  self.confidence, self.targeted, self.learning_rate,
-                  self.binary_search_steps, self.max_iterations,
-                  self.abort_early, self.initial_const,
-                  self.clip_min, self.clip_max, self.nb_classes,
-                  tuple(x_val.shape[1:]))
-        if params in self.attack_objects:
-            attack = self.attack_objects[params]
-        else:
-            attack = CWL2(self.sess, self.model, self.batch_size,
-                          self.confidence, self.targeted, self.learning_rate,
-                          self.binary_search_steps, self.max_iterations,
-                          self.abort_early, self.initial_const,
-                          self.clip_min, self.clip_max, self.nb_classes,
-                          tuple(x_val.shape[1:]))
-            self.attack_objects[params] = attack
+        attack = CWL2(self.sess, self.model, self.batch_size,
+                      self.confidence, self.targeted, self.learning_rate,
+                      self.binary_search_steps, self.max_iterations,
+                      self.abort_early, self.initial_const,
+                      self.clip_min, self.clip_max, self.nb_classes,
+                      x.get_shape().as_list()[1:])
 
-        res = attack.attack(x_val, kwargs.get('y_val'))
-        return res
+        def cw_wrap(x_val, y_val):
+            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
+
+        wrap = tf.py_func(cw_wrap, [x, kwargs.get('y')], tf.float32)
+        return wrap
 
     def parse_params(self, y=None, y_val=None, nb_classes=10,
                      batch_size=1, confidence=0,
