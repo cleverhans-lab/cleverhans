@@ -254,6 +254,11 @@ class BasicIterativeMethod(Attack):
         Create a BasicIterativeMethod instance.
         """
         super(BasicIterativeMethod, self).__init__(model, back, sess)
+        self.feedable_kwargs = {'eps': np.float32,
+                                'eps_iter': np.float32,
+                                'y': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32}
 
     def generate(self, x, **kwargs):
         import tensorflow as tf
