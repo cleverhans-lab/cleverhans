@@ -5,7 +5,6 @@ import numpy as np
 
 from cleverhans.attacks import FastGradientMethod, VirtualAdversarialMethod, CarliniWagnerL2
 
-"""
 class TestVirtualAdversarialMethod(unittest.TestCase):
     def setUp(self):
         import tensorflow as tf
@@ -40,7 +39,6 @@ class TestVirtualAdversarialMethod(unittest.TestCase):
         perturbation_norm = np.sqrt(np.sum(perturbation**2, axis=1))
         # test perturbation norm
         self.assertTrue(np.allclose(perturbation_norm, self.attack.eps))
-"""
 
 class TestFastGradientMethod(unittest.TestCase):
     def setUp(self):
