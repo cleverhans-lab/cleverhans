@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 
 from cleverhans.attacks import FastGradientMethod
+from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import CarliniWagnerL2
 
@@ -149,6 +150,52 @@ class TestFastGradientMethod(unittest.TestCase):
 
         x_adv = self.attack.generate_np(x_val, eps=.5, ord=1,
                                         clip_min=-5.0, clip_max=5.0)
+
+        assert np.allclose(np.sum(np.abs(x_adv-x_val), axis=1), 0.5)
+
+        tf.gradients = old_grads
+
+        assert ok[0]
+
+class TestBasicIterativeMethod(TestFastGradientMethod):
+    def setUp(self):
+        import tensorflow as tf
+
+        # The world's simplest neural network
+        def my_model(x):
+            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
+            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
+            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
+            res = tf.nn.softmax(tf.matmul(x, W2))
+            return res
+
+        self.sess = tf.Session()
+        self.model = my_model
+        self.attack = BasicIterativeMethod(self.model, sess=self.sess)
+
+    def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
+        import tensorflow as tf
+
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
+                                        clip_min=-5.0, clip_max=5.0,
+                                        nb_iter=10)
+
+        assert np.allclose(np.max(np.abs(x_adv-x_val), axis=1), 0.5)
+
+        ok = [False]
+        old_grads = tf.gradients
+
+        def fn(*x, **y):
+            ok[0] = True
+            return old_grads(*x, **y)
+        tf.gradients = fn
+
+        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
+                                        clip_min=-5.0, clip_max=5.0,
+                                        nb_iter=11)
 
         assert np.allclose(np.sum(np.abs(x_adv-x_val), axis=1), 0.5)
 
