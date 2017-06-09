@@ -200,6 +200,5 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         assert ok[0]
 
-
 if __name__ == '__main__':
     unittest.main()
