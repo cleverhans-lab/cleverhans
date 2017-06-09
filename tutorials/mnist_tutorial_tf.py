@@ -100,7 +100,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
             print(" [*] Success to read {}".format(ckpt_name))
         else:
             print(" [!] Load failed...")    
-    #if you don't want to save the model, the save should be set with False
+    #If you don't want to save the model, the save should be set with False
     #The init_all can't be set with True when you load the model followed with the model_train 
     model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
                 args=train_params,save=True,init_all=False)
