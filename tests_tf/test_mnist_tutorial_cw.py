@@ -18,7 +18,7 @@ class TestMNISTTutorialCW(unittest.TestCase):
         self.assertTrue(report.clean_train_clean_eval > 0.85)
         self.assertTrue(report.clean_train_adv_eval == 0.00)
 
-        # There is no adversarial training in the JSMA tutorial
+        # There is no adversarial training in the CW tutorial
         self.assertTrue(report.adv_train_clean_eval == 0.)
         self.assertTrue(report.adv_train_adv_eval == 0.)
 
