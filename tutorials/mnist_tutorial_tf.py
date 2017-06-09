@@ -261,8 +261,24 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                 args=train_params)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
-    fgsm = FastGradientMethod(model, sess=sess)
-    fgsm_params = {'eps': 0.3}
+    wrap = KerasModelWrapper(model)
+    fgsm = FastGradientMethod(wrap, sess=sess)
+    fgsm_params = {'eps': 0.3,
+                   'y': Y_test}
+
+    #########
+
+    X_adv = fgsm.generate_np(X_test, **fgsm_params)
+    acc = model_eval(sess, x, y, model(x), X_adv, Y_test, args={'batch_size': 100})
+    print('now acc',acc)
+
+    fgsm_params['eps'] = .1
+    X_adv = fgsm.generate_np(X_test, **fgsm_params)
+    acc = model_eval(sess, x, y, model(x), X_adv, Y_test, args={'batch_size': 100})
+    print('now acc',acc)
+    
+    exit(0)
+    #########
     
     adv_x = fgsm.generate(x, **fgsm_params)
     preds_adv = model.get_probs(adv_x)

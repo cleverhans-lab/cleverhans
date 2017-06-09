@@ -63,8 +63,8 @@ class Attack(object):
 
     def generate_np(self, x_val, **kwargs):
         """
-        Generate adversarial examples and return them as a Numpy array. 
-        Sub classes *should not* implement this method unless they must
+        Generate adversarial examples and return them as a Numpy array.
+        Sub-classes *should not* implement this method unless they must
         perform special handling of arguments.
         :param x_val: A Numpy array with the original inputs.
         :param **kwargs: optional parameters used by child classes.
@@ -78,49 +78,69 @@ class Attack(object):
         if self.sess is None:
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
-        return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
-        print(self.feedable_kwargs)
-        
+
+        # the set of arguments that are structural properties of the attack
+        # if these arguments are different, we must construct a new graph
         fixed = dict((k,v) for k,v in kwargs.items() if k not in self.feedable_kwargs)
+
+        # the set of arguments that are passed as placeholders to the graph
+        # on each call, and can change without constructing a new graph
         feedable = dict((k,v) for k,v in kwargs.items() if k in self.feedable_kwargs)
 
-        hash_key = tuple(sorted(fixed.items()))
+        if not all(isinstance(value, collections.Hashable) for value in fixed.values()):
+            # we have received a fixed value that isn't hashable
+            # this means we can't cache this graph for later use,
+            # and it will have to be discarded later
+            hash_key = None
+        else:
+            # create a unique key for this set of fixed paramaters
+            hash_key = tuple(sorted(fixed.items()))
 
-        if not all(isinstance(value, collections.Hashable) for value in feedable.values()):
-            #TODO this is bad
-            raise
+        if hash_key not in self.graphs:
+            # try our very best to create a TF placeholder for each of the
+            # feedable keyword arguments by inferring the type
+            num_types = (int, float, np.float16, np.float32, np.float64,
+                         np.int8, np.int16, np.int32, np.int32, np.int64, 
+                         np.uint8, np.uint16, np.uint32, np.uint64)
 
-        # try our very best to create a TF placeholder for each of the
-        # feedable keyword arguments by inferring the type
+            new_kwargs = dict(x for x in fixed.items())
+            for name, value in feedable.items():
+                if isinstance(value, np.ndarray):
+                    new_shape = [None]+list(value.shape[1:])
+                    new_kwargs[name] = tf.placeholder(value.dtype, new_shape)
+                if isinstance(value, num_types):
+                    if isinstance(value, float):
+                        # can't instantiate placeholder with python float
+                        # cast it to tf.float32 as that's most likely
+                        new_kwargs[name] = tf.placeholder(tf.float32, shape=[])
+                    elif isinstance(value, int):
+                        # can't instantiate placeholder with python int
+                        # cast it to tf.int32 as that's most likely
+                        new_kwargs[name] = tf.placeholder(tf.int32, shape=[])
+                    else:
+                        new_kwargs[name] = tf.placeholder(type(value), shape=[])
 
-        num_types = [int, float, np.float16, np.float32, np.float64,
-                     np.int8, np.int16, np.int32, np.int32, np.int64, 
-                     np.uint8, np.uint16, np.uint32, np.uint64,
-                     tf.float16, tf.float32, tf.float64,
-                     tf.int8, tf.int16, tf.int32, tf.int32, tf.int64, 
-                     tf.uint8, tf.uint16]
+            # x is a special placeholder we always want to have
+            x = tf.placeholder(tf.float32, shape=[None]+list(x_val.shape)[1:])
 
-        new_kwargs = dict(x for x in fixed.items())
-        for name, value in feedable.items():
-            if isinstance(value, np.ndarray):
-                new_shape = [None]+list(value.shape[1:])
-                new_kwargs[name] = tf.placeholder(value.dtype, new_shape)
-            if any(isinstance(value, num) for num in num_types):
-                if isinstance(value, float):
-                    new_kwargs[name] = tf.placeholder(tf.float32, shape=[])
-                elif isinstance(value, int):
-                    new_kwargs[name] = tf.placeholder(tf.int32, shape=[])
-                else:
-                    new_kwargs[name] = tf.placeholder(type(value), shape=[])
-                
-        # x is a special placeholder we always want to have
-        x = tf.placeholder(tf.float32, shape=[None]+list(x_val.shape)[1:])
+            # now we generate the graph that we want
+            x_adv = self.generate(x, **new_kwargs)
 
-        # now we generate the graph that we want
-        x_adv = self.generate(x, **new_kwargs)
+            if hash_key is not None:
+                # only save the graph if every fixed element is hashable
+                self.graphs[hash_key] = (x, new_kwargs, x_adv)
 
+            if len(self.graphs) == 10:
+                warnings.warn("Calling generate_np() with multiple different "
+                              "structural paramaters is inefficient and should "
+                              "be avoided. Calling generate() is preferred.")
+
+        if hash_key is not None:
+            # if it is None, we must have constructed it already
+            x, new_kwargs, x_adv = self.graphs[hash_key]
+            
         feed_dict = {x: x_val}
-
+        
         for name in feedable:
             feed_dict[new_kwargs[name]] = feedable[name]
 
@@ -151,7 +171,7 @@ class FastGradientMethod(Attack):
         Create a FastGradientMethod instance.
         """
         super(FastGradientMethod, self).__init__(model, back, sess)
-        self.feedable_kwargs = ('eps',)
+        self.feedable_kwargs = ('eps','y','clip_min','clip_max')
 
     def generate(self, x, **kwargs):
         """
