@@ -179,11 +179,13 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
+        x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
                                         clip_min=-5.0, clip_max=5.0,
                                         nb_iter=10)
 
-        assert np.allclose(np.max(np.abs(x_adv-x_val), axis=1), 0.5)
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        assert np.mean(orig_labs*new_labs) == 0.00
 
         ok = [False]
         old_grads = tf.gradients
@@ -193,11 +195,13 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
             return old_grads(*x, **y)
         tf.gradients = fn
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
+        x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
                                         clip_min=-5.0, clip_max=5.0,
                                         nb_iter=11)
 
-        assert np.allclose(np.sum(np.abs(x_adv-x_val), axis=1), 0.5)
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        assert np.mean(orig_labs*new_labs) == 0.00
 
         tf.gradients = old_grads
 
