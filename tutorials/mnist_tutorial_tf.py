@@ -8,7 +8,7 @@ from keras import backend
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
-
+import os
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
@@ -86,10 +86,24 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     train_params = {
         'nb_epochs': nb_epochs,
         'batch_size': batch_size,
-        'learning_rate': learning_rate
+        'learning_rate': learning_rate,
+        'train_dir':FLAGS.train_dir,
+        'filename':FLAGS.filename,
+        'load_model':FLAGS.load_model        
     }
+    if FLAGS.load_model == True:
+        ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
+        if ckpt and ckpt.model_checkpoint_path:
+            ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+            saver = tf.train.Saver()
+            saver.restore(sess, os.path.join(FLAGS.train_dir, ckpt_name))
+            print(" [*] Success to read {}".format(ckpt_name))
+        else:
+            print(" [!] Load failed...")    
+    #if you don't want to save the model, the save should be set with False
+    #The init_all can't be set with True when you load the model followed with the model_train 
     model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                args=train_params)
+                args=train_params,save=True,init_all=False)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     fgsm = FastGradientMethod(model, sess=sess)
@@ -141,5 +155,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
-
+    flags.DEFINE_string('train_dir', './model', 'Directory storing the saved model.')
+    flags.DEFINE_string('filename', 'mnist.ckpt', 'Filename to save model under.')
+    flags.DEFINE_boolean('load_model', True, 'True for load, False for not load [False]')
     app.run()
