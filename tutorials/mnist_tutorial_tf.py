@@ -3,17 +3,23 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import sys
+sys.path = [".."] + sys.path
+
 import keras
 from keras import backend
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval
+from cleverhans.utils_tf import model_train, model_eval, tf_model_load
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
+
+import os
 
 FLAGS = flags.FLAGS
 
@@ -82,18 +88,41 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         assert X_test.shape[0] == test_end - test_start, X_test.shape
         print('Test accuracy on legitimate examples: %0.4f' % acc)
 
+    model_path = "models/mnist"
     # Train an MNIST model
     train_params = {
         'nb_epochs': nb_epochs,
         'batch_size': batch_size,
-        'learning_rate': learning_rate
+        'learning_rate': learning_rate,
+        'train_dir': os.path.join(*os.path.split(model_path)[:-1]),
+        'filename': os.path.split(model_path)[-1]
     }
-    model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                args=train_params)
-
+    # check if we've trained before, and if we have, use that pre-trained model
+    if os.path.exists(model_path+".meta"):
+        tf_model_load(sess, model_path)
+    else:
+        model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
+                    args=train_params,
+                    save=os.path.exists("models"))
+    
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     fgsm = FastGradientMethod(model, sess=sess)
     fgsm_params = {'eps': 0.3}
+
+    #########
+
+    X_adv = fgsm.generate_np(X_test, **fgsm_params)
+    acc = model_eval(sess, x, y, model(x), X_adv, Y_test, args={'batch_size': 100})
+    print('now acc',acc)
+
+    fgsm_params['eps'] = .1
+    X_adv = fgsm.generate_np(X_test, **fgsm_params)
+    acc = model_eval(sess, x, y, model(x), X_adv, Y_test, args={'batch_size': 100})
+    print('now acc',acc)
+    
+    exit(0)
+    #########
+    
     adv_x = fgsm.generate(x, **fgsm_params)
     preds_adv = model(adv_x)
 
