@@ -150,7 +150,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         adv_ys = None
 
     cw_params = {'binary_search_steps': 1,
-                 'y_val': adv_ys,
+                 'y': adv_ys,
                  'max_iterations': attack_iterations,
                  'learning_rate': 0.1, 'targeted': targeted,
                  'batch_size': 100 if targeted else 10,
