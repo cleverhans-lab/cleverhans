@@ -182,7 +182,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        assert np.mean(orig_labs*new_labs) == 0.00
+        assert np.mean(orig_labs*new_labs) < 0.1
 
         ok = [False]
         old_grads = tf.gradients
@@ -198,7 +198,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        assert np.mean(orig_labs*new_labs) == 0.00
+        assert np.mean(orig_labs*new_labs) < 0.1
 
         tf.gradients = old_grads
 
