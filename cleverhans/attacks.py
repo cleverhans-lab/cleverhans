@@ -41,8 +41,9 @@ class Attack(object):
         # When calling generate_np, arguments in the following set should be
         # fed into the graph, as they are not structural changes that require
         # generating a new graph.
-        # Usually, the target class will be a feedable keyword argument.
-        self.feedable_kwargs = tuple()
+        # This dict should map names of arguments to the types they should have.
+        # (Usually, the target class will be a feedable keyword argument.)
+        self.feedable_kwargs = {}
         
 
     def generate(self, x, **kwargs):
@@ -105,20 +106,20 @@ class Attack(object):
 
             new_kwargs = dict(x for x in fixed.items())
             for name, value in feedable.items():
+                given_type = self.feedable_kwargs[name]
                 if isinstance(value, np.ndarray):
                     new_shape = [None]+list(value.shape[1:])
                     new_kwargs[name] = tf.placeholder(value.dtype, new_shape)
-                if isinstance(value, num_types):
+                elif isinstance(value, num_types):
                     if isinstance(value, float):
-                        # can't instantiate placeholder with python float
-                        # cast it to tf.float32 as that's most likely
-                        new_kwargs[name] = tf.placeholder(tf.float32, shape=[])
+                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
                     elif isinstance(value, int):
-                        # can't instantiate placeholder with python int
-                        # cast it to tf.int32 as that's most likely
-                        new_kwargs[name] = tf.placeholder(tf.int32, shape=[])
+                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
                     else:
-                        new_kwargs[name] = tf.placeholder(type(value), shape=[])
+                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
+                else:
+                    raise ValueError("Could not identify type of argument " + name +
+                                     ": " + str(value))
 
             # x is a special placeholder we always want to have
             x = tf.placeholder(tf.float32, shape=[None]+list(x_val.shape)[1:])
@@ -171,7 +172,10 @@ class FastGradientMethod(Attack):
         Create a FastGradientMethod instance.
         """
         super(FastGradientMethod, self).__init__(model, back, sess)
-        self.feedable_kwargs = ('eps','y','clip_min','clip_max')
+        self.feedable_kwargs = {'eps': np.float32,
+                                'y': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32}
 
     def generate(self, x, **kwargs):
         """
