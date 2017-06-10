@@ -501,15 +501,20 @@ class CarliniWagnerL2:
         modifier = tf.Variable(np.zeros(shape, dtype=np.float32))
 
         # these are variables to be more efficient in sending data to tf
-        self.timg = tf.Variable(np.zeros(shape), dtype=tf.float32)
+        self.timg = tf.Variable(np.zeros(shape), dtype=tf.float32,
+                                name='timg')
         self.tlab = tf.Variable(np.zeros((batch_size, num_labels)),
-                                dtype=tf.float32)
-        self.const = tf.Variable(np.zeros(batch_size), dtype=tf.float32)
+                                dtype=tf.float32, name='tlab')
+        self.const = tf.Variable(np.zeros(batch_size), dtype=tf.float32,
+                                 name='const')
 
         # and here's what we use to assign them
-        self.assign_timg = tf.placeholder(tf.float32, shape)
-        self.assign_tlab = tf.placeholder(tf.float32, (batch_size, num_labels))
-        self.assign_const = tf.placeholder(tf.float32, [batch_size])
+        self.assign_timg = tf.placeholder(tf.float32, shape,
+                                          name='assign_timg')
+        self.assign_tlab = tf.placeholder(tf.float32, (batch_size, num_labels),
+                                          name='assign_tlab')
+        self.assign_const = tf.placeholder(tf.float32, [batch_size],
+                                           name='assign_const')
 
         # the resulting image, tanh'd to keep bounded from clip_min
         # to clip_max
@@ -557,9 +562,6 @@ class CarliniWagnerL2:
 
         self.init = tf.variables_initializer(var_list=[modifier]+new_vars)
 
-        self.original_in = None
-        self.original_predictions = None
-
     def attack(self, imgs, targets):
         """
         Perform the L_2 attack on the given images for the given targets.
@@ -567,17 +569,6 @@ class CarliniWagnerL2:
         If self.targeted is true, then the targets represents the target labels
         If self.targeted is false, then targets are the original class labels
         """
-
-        if targets is None:
-            if self.original_predictions is None:
-                self.original_in = tf.placeholder(tf.float32,
-                                                  [None]+list(self.shape[1:]))
-                preds = self.model(self.original_in)
-                preds_max = tf.reduce_max(preds, 1, keep_dims=True)
-                self.original_predictions = tf.to_float(tf.equal(preds,
-                                                                 preds_max))
-
-            targets = [None]*len(imgs)
 
         r = []
         for i in range(0, len(imgs), self.batch_size):
@@ -599,14 +590,11 @@ class CarliniWagnerL2:
             else:
                 return x != y
 
-        if labs[0] is None:
-            labs = self.sess.run(self.original_predictions,
-                                 {self.original_in: imgs})
-
         batch_size = self.batch_size
 
         # re-scale images to be within range [0, 1]
         imgs = (imgs-self.clip_min)/(self.clip_max-self.clip_min)
+        imgs = np.clip(imgs, 0, 1)
         # now convert to [-1, 1]
         imgs = (imgs*2)-1
         # convert to tanh-space
