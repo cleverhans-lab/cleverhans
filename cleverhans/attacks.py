@@ -79,6 +79,9 @@ class Attack(object):
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
 
+        if 'y' in kwargs and kwargs['y'] is None:
+            del kwargs['y']
+
         # the set of arguments that are structural properties of the attack
         # if these arguments are different, we must construct a new graph
         fixed = dict((k, v) for k, v in kwargs.items()
