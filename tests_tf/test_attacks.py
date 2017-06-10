@@ -8,7 +8,7 @@ from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import CarliniWagnerL2
 
-
+"""
 class TestVirtualAdversarialMethod(unittest.TestCase):
     def setUp(self):
         import tensorflow as tf
@@ -43,7 +43,7 @@ class TestVirtualAdversarialMethod(unittest.TestCase):
         perturbation_norm = np.sqrt(np.sum(perturbation**2, axis=1))
         # test perturbation norm
         self.assertTrue(np.allclose(perturbation_norm, self.attack.eps))
-
+        
 
 class TestFastGradientMethod(unittest.TestCase):
     def setUp(self):
@@ -203,6 +203,72 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         tf.gradients = old_grads
 
         assert ok[0]
+"""
 
+class TestCarliniWagner(unittest.TestCase):
+    def setUp(self):
+        import tensorflow as tf
+
+        # The world's simplest neural network
+        def my_model(x):
+            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
+            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
+            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
+            res = tf.nn.softmax(tf.matmul(x, W2))
+            return res
+
+        self.sess = tf.Session()
+        self.model = my_model
+        self.attack = CarliniWagnerL2(self.model, sess=self.sess)
+
+    def test_generate_np_untargeted_gives_adversarial_example(self):
+        x_val = np.random.rand(10, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        x_adv = self.attack.generate_np(x_val, max_iterations=100,
+                                        binary_search_steps=3,
+                                        initial_const=1, nb_classes=2,
+                                        clip_min=-5, clip_max=5,
+                                        targeted=False,
+                                        batch_size=10)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+        assert np.mean(orig_labs*new_labs) < 0.05
+
+    def test_generate_np_targeted_gives_adversarial_example(self):
+        x_val = np.random.rand(10, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        feed_labs = np.zeros((10,2))
+        feed_labs[np.arange(10), 1-orig_labs] = 1
+        x_adv = self.attack.generate_np(x_val, max_iterations=100,
+                                        binary_search_steps=3,
+                                        initial_const=1, nb_classes=2,
+                                        clip_min=-5, clip_max=5,
+                                        batch_size=10, y=feed_labs)
+        
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        
+        assert np.mean(orig_labs*new_labs) < 0.05
+
+    def test_generate_np_gives_clipped_adversarial_examples(self):
+        x_val = np.random.rand(10, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        x_adv = self.attack.generate_np(x_val, max_iterations=10,
+                                        binary_search_steps=1,
+                                        learning_rate=1e-3,
+                                        targeted=False,
+                                        initial_const=1, nb_classes=2,
+                                        clip_min=-0.2, clip_max=0.3,
+                                        batch_size=10)
+        
+        assert np.isclose(np.min(x_adv),-0.2,atol=1e-2)
+        assert np.isclose(np.max(x_adv),0.3,atol=1e-2)
+        
+        
 if __name__ == '__main__':
     unittest.main()
