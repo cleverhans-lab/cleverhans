@@ -8,19 +8,18 @@ class TestMNISTTutorialCW(unittest.TestCase):
         # Run the MNIST tutorial on a dataset of reduced size
         # and disable visualization.
         cw_tutorial_args = {'train_start': 0,
-                            'train_end': 10000,
+                            'train_end': 100,
                             'test_start': 0,
-                            'test_end': 1666,
-                            'viz_enabled': False}
+                            'test_end': 166,
+                            'viz_enabled': False,
+                            'attack_iterations': 10}
         report = mnist_tutorial_cw.mnist_tutorial_cw(**cw_tutorial_args)
 
-        # Check accuracy values contained in the AccuracyReport object
-        self.assertTrue(report.clean_train_clean_eval > 0.85)
-        self.assertTrue(report.clean_train_adv_eval == 0.00)
+        cw_tutorial_args['targeted'] = False
+        report = mnist_tutorial_cw.mnist_tutorial_cw(**cw_tutorial_args)
 
-        # There is no adversarial training in the CW tutorial
-        self.assertTrue(report.adv_train_clean_eval == 0.)
-        self.assertTrue(report.adv_train_adv_eval == 0.)
+        # just verify that it doesn't crash; the results are being tested
+        # in test_attacks.py
 
 
 if __name__ == '__main__':

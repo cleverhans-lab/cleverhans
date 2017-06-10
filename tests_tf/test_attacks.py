@@ -8,7 +8,6 @@ from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import CarliniWagnerL2
 
-"""
 class TestVirtualAdversarialMethod(unittest.TestCase):
     def setUp(self):
         import tensorflow as tf
@@ -203,9 +202,8 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         tf.gradients = old_grads
 
         assert ok[0]
-"""
 
-class TestCarliniWagner(unittest.TestCase):
+class TestCarliniWagnerL2(unittest.TestCase):
     def setUp(self):
         import tensorflow as tf
 
