@@ -636,15 +636,16 @@ class CarliniWagnerL2(Attack):
         if 'y' in kwargs:
             labels = kwargs['y']
         else:
-            if self.targeted == True:
-                raise ValueError("Must supply target labels in targeted attack.")
+            if self.targeted:
+                raise ValueError("Must supply target labels 'y'"
+                                 " in targeted attack.")
             # TODO abstract this out for other classes too
             preds = self.model(x)
             preds_max = tf.reduce_max(preds, 1, keep_dims=True)
             original_predictions = tf.to_float(tf.equal(preds,
                                                         preds_max))
             labels = original_predictions
-            
+
         def cw_wrap(x_val, y_val):
             return np.array(attack.attack(x_val, y_val), dtype=np.float32)
         wrap = tf.py_func(cw_wrap, [x, labels], tf.float32)
