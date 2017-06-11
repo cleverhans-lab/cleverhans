@@ -68,7 +68,7 @@ You may want to make that change permanent through your shell's profile.
 
 Although CleverHans is likely to work on many other machine configurations, we
 currently [test it](https://travis-ci.org/tensorflow/cleverhans) with Python
-{2.7, 3.5} and TensorFlow {1.0, 1.2} on Ubuntu 14.04.5 LTS (Trusty Tahr).
+{2.7, 3.5} and TensorFlow {1.0, 1.1} on Ubuntu 14.04.5 LTS (Trusty Tahr).
 
 ## Tutorials
 
@@ -116,7 +116,7 @@ When reporting benchmarks, please:
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v2.0.0 of CleverHans. On a test set modified by the
+adversarial attack using v1.0.0 of CleverHans. On a test set modified by the
 `fgsm` with `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Contributing
