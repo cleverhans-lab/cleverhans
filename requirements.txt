@@ -1,5 +1,4 @@
 nose
-theano
 pycodestyle
 scipy
 tensorflow
