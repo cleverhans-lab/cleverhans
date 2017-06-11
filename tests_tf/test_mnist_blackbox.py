@@ -19,7 +19,7 @@ class TestMNISTBlackboxF(unittest.TestCase):
 
         # Check accuracy values contained in the AccuracyReport object
         self.assertTrue(report['bbox'] > 0.7, report['bbox'])
-        self.assertTrue(report['sub'] > 0.3, report['sub'])
+        self.assertTrue(report['sub'] > 0.2, report['sub'])
         self.assertTrue(report['bbox_on_sub_adv_ex'] < 0.7, report['bbox_on_sub_adv_ex'])
 
 if __name__ == '__main__':
