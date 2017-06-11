@@ -179,7 +179,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             save_path = os.path.join(args.train_dir, args.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            print("Completed model training and saved at:" + str(save_path))
+            print("Completed model training and saved at: " + str(save_path))
         else:
             print("Completed model training.")
 
