@@ -192,13 +192,13 @@ def tf_model_eval(*args, **kwargs):
     return model_eval(*args, **kwargs)
 
 
-def model_eval(sess, x, y, model, X_test, Y_test, args=None):
+def model_eval(sess, x, y, preds, X_test, Y_test, args=None):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
     :param x: input placeholder
     :param y: output placeholder (for labels)
-    :param model: model output predictions
+    :param preds: model output predictions
     :param X_test: numpy array with training inputs
     :param Y_test: numpy array with training outputs
     :param args: dict or argparse `Namespace` object.
@@ -210,13 +210,12 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
     assert args.batch_size, "Batch size was not given in args dict"
 
     # Define accuracy symbolically
-    yp = model(x)
     if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
         correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                                 tf.argmax(yp, axis=-1))
+                                 tf.argmax(preds, axis=-1))
     else:
         correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
-                                 tf.argmax(yp, axis=tf.rank(yp) - 1))
+                                 tf.argmax(preds, axis=tf.rank(preds) - 1))
     acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
