@@ -210,12 +210,13 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
     assert args.batch_size, "Batch size was not given in args dict"
 
     # Define accuracy symbolically
+    yp = model(x)
     if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
         correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                                 tf.argmax(model, axis=-1))
+                                 tf.argmax(yp, axis=-1))
     else:
         correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
-                                 tf.argmax(model, axis=tf.rank(model) - 1))
+                                 tf.argmax(yp, axis=tf.rank(yp) - 1))
     acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
