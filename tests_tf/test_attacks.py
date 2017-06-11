@@ -43,6 +43,4 @@ class TestVirtualAdversarialMethod(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # t = TestVirtualAdversarialMethod("test_generate_np")
-    # t.test_generate_np()
     unittest.main()
