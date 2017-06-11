@@ -4,47 +4,42 @@
 
 [![Build Status](https://travis-ci.org/tensorflow/cleverhans.svg?branch=master)](https://travis-ci.org/tensorflow/cleverhans)
 
-This repository contains the source code for `CleverHans`, a Python library to
+This repository contains the source code for CleverHans, a Python library to
 benchmark machine learning systems' vulnerability to
 [adversarial examples](http://karpathy.github.io/2015/03/30/breaking-convnets/).
 You can learn more about such vulnerabilities on the accompanying [blog](http://cleverhans.io).
 
-The `CleverHans` library is under continual development, always welcoming
-contributions of the latest attacks and defenses.
+The CleverHans library is under continual development, always welcoming
+[contributions](https://github.com/tensorflow/cleverhans#contributing)
+of the latest attacks and defenses.
 In particular, we always welcome help towards resolving the [issues](https://github.com/tensorflow/cleverhans/issues)
 currently open.
 
-## Setting up `CleverHans`
+## Setting up CleverHans
 
 ### Dependencies
 
-This library uses `TensorFlow` or `Theano` to accelerate graph
+This library uses [TensorFlow](https://www.tensorflow.org/) to accelerate graph
 computations performed by many machine learning models.
-Installing these libraries is therefore a pre-requisite.
+Installing TensorFlow is therefore a pre-requisite.
+
 You can find instructions
-[here for Tensorflow](https://www.tensorflow.org/get_started/os_setup)
-and [here for Theano](http://deeplearning.net/software/theano/install.html).
-For better performance, it is also recommended to install the
-backend library of your choice (`TensorFlow` or `Theano`) with GPU support.
+[here](https://www.tensorflow.org/install/).
+For better performance, it is also recommended to install TensorFlow
+with GPU support (detailed instructions on how to do this are available
+in the TensorFlow installation documentation).
 
-Some models used in the tutorials are also defined using `Keras`.
-Note that you should **configure Keras to use the backend that matches
-the one used by the tutorial**. Indeed, some tutorials use `Tensorflow`
-as their backend while others use `Theano`. You
-can find instructions for
-setting the Keras backend [on this page](https://keras.io/backend/).
-
-Installing `TensorFlow` or `Theano` will
+Installing TensorFlow will
 take care of all other dependencies like `numpy` and `scipy`.
 
-### Installing
+### Installation
 
-Once dependencies have been taken care of, you can install `CleverHans` using
-`pip` or by cloning the Github repository.
+Once dependencies have been taken care of, you can install CleverHans using
+`pip` or by cloning this Github repository.
 
 #### `pip` installation
 
-If you are installing `CleverHans` using `pip`, run the following command:
+If you are installing CleverHans using `pip`, run the following command:
 
 ```
 pip install -e git+http://github.com/tensorflow/cleverhans.git#egg=cleverhans
@@ -52,8 +47,9 @@ pip install -e git+http://github.com/tensorflow/cleverhans.git#egg=cleverhans
 
 #### Manual installation
 
-If you are installing `CleverHans` manually, you simply need to clone this
-repository into a folder of your choice.
+If you are installing CleverHans manually, you need to install TensorFlow
+first. Then, run the following command to clone the CleverHans repository
+into a folder of your choice:
 
 ```
 git clone https://github.com/tensorflow/cleverhans
@@ -68,26 +64,28 @@ export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
 
 You may want to make that change permanent through your shell's profile.
 
+### Currently supported setups
+
+Although CleverHans is likely to work on many other machine configurations, we
+currently [test it](https://travis-ci.org/tensorflow/cleverhans) with Python
+{2.7, 3.5} and TensorFlow {1.0, 1.1} on Ubuntu 14.04.5 LTS (Trusty Tahr).
+
 ## Tutorials
 
 To help you get started with the functionalities provided by this library, the
 `tutorials/' folder comes with the following tutorials:
-* **MNIST with FGSM using the TensorFlow backend** ([code](tutorials/mnist_tutorial_tf.py), [tutorial](tutorials/mnist_tutorial_tf.md)): this first
+* **MNIST with FGSM** ([code](tutorials/mnist_tutorial_pure_tf.py)): this
 tutorial covers how to train a MNIST model using TensorFlow,
+craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
+and make the model more robust to adversarial examples using adversarial training.
+* **MNIST with FGSM using Keras** ([code](tutorials/mnist_tutorial_tf.py), [tutorial](tutorials/mnist_tutorial_tf.md)): this
+tutorial covers how to define a MNIST model with Keras and train it using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial
 examples using adversarial training.
-* **MNIST with JSMA using the Tensorflow backend** ([code](tutorials/mnist_tutorial_jsma.py), [tutorial](tutorials/mnist_tutorial_jsma.md)): this second
-tutorial covers how to train a MNIST model using TensorFlow and
+* **MNIST with JSMA** ([code](tutorials/mnist_tutorial_jsma.py), [tutorial](tutorials/mnist_tutorial_jsma.md)): this second
+tutorial covers how to define a MNIST model with Keras and train it using TensorFlow and
 craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528).
-* **MNIST with FGSM using the Theano backend** ([code](tutorials/mnist_tutorial_th.py)): this
-tutorial covers how to train a MNIST model using Theano,
-craft adversarial examples using the fast gradient sign
-method and make the model more robust to
-adversarial examples using adversarial training.
-Note: this script does not have a tutorial markdown
-yet, but the corresponding [tutorial](tutorials/mnist_tutorial_tf.md) in TensorFlow
-will prove useful in the meanwhile.
 * **MNIST using a black-box attack** ([code](tutorials/mnist_blackbox.py)):
 this tutorial implements the black-box
 attack described in this [paper](https://arxiv.org/abs/1602.02697).
@@ -97,35 +95,44 @@ carefully by the adversary. The adversary then uses the substitute
 model’s gradients to find adversarial examples that are misclassified by the
 black-box model as well.
 
+Some models used in the tutorials are defined using [Keras](https://keras.io),
+which should be installed before running these tutorials.
+Installation instructions for Keras can be found [here](https://keras.io/#installation)
+Note that you should configure Keras to use the TensorFlow backend. You
+can find instructions for
+setting the Keras backend [on this page](https://keras.io/backend/).
+
 ## Examples
 
 The `examples/` folder contains additional scripts to showcase different uses
-of the `CleverHans` library.
+of the CleverHans library.
 
 ## Reporting benchmarks
 
 When reporting benchmarks, please:
-* Use a versioned release of `CleverHans`. You can find a list of released versions [here](https://github.com/tensorflow/cleverhans/releases).
+* Use a versioned release of CleverHans. You can find a list of released versions [here](https://github.com/tensorflow/cleverhans/releases).
 * Either use the latest version, or, if comparing to an earlier publication, use the same version as the earlier publication.
 * Report which attack method was used.
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v1.0.0 of `CleverHans`. On a test set modified by the
+adversarial attack using v1.0.0 of CleverHans. On a test set modified by the
 `fgsm` with `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Contributing
 
-Contributions are welcomed! We ask that new efforts and features be coordinated
-on the mailing list for `CleverHans` development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
-When making contributions to `CleverHans`, we ask that you follow the
+Contributions are welcomed! To speed the code review process, we ask that:
+* New efforts and features be coordinated
+on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
+* When making code contributions to CleverHans, you follow the
 `PEP8` coding style in your pull requests.
+* When making your first pull request, you [sign the Google CLA](https://cla.developers.google.com/clas)
 
 Bug fixes can be initiated through Github pull requests.
 
 ## Citing this work
 
-If you use `CleverHans` for academic research, you are highly encouraged
+If you use CleverHans for academic research, you are highly encouraged
 (though not required) to cite the following [paper](https://arxiv.org/abs/1610.00768):
 
 ```
@@ -142,7 +149,7 @@ revision. GitHub contributors will be added to the author list.
 
 ## About the name
 
-The name `CleverHans` is a reference to a presentation by Bob Sturm titled
+The name CleverHans is a reference to a presentation by Bob Sturm titled
 “Clever Hans, Clever Algorithms: Are Your Machine Learnings Learning What You
 Think?" and the corresponding publication, ["A Simple Method to Determine if a
 Music Information Retrieval System is a
