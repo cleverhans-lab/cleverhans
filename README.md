@@ -1,4 +1,4 @@
-# CleverHans (v2.0.0)
+# CleverHans (v1.0.0)
 
 <img src="https://github.com/tensorflow/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
 
