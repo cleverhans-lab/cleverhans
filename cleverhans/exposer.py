@@ -26,28 +26,25 @@ class ModelExposer(object):
 
         pass
 
-    def expose_layer(self, x, layer):
+    def expose_layer(self, layer):
         """
         Expose the hidden features of a model given a layer name.
 
-        :param x: A symbolic representation of the network input
         :param layer: The name of the hidden layer to return features at.
         :return: A symbolic representation of the hidden features
         """
         error = 'Feature extraction for hidden layers not implemented'
         raise NotImplementedError(error)
 
-    def expose_logits(self, x):
+    def expose_logits(self):
         """
-        :param x: A symbolic representation of the network input
         :return: A symbolic representation of the output logits, values before
                  softmax.
         """
         raise NotImplementedError('`expose_logits` not implemented')
 
-    def expose_probs(self, x):
+    def expose_probs(self):
         """
-        :param x: A symbolic representation of the network input
         :return: A symbolic representation of the output probabilities, values
                  after softmax.
         """
@@ -60,12 +57,11 @@ class ModelExposer(object):
         """
         raise NotImplementedError('`get_layer_names` not implemented')
 
-    def expose_all_layers(self, x):
+    def expose_all_layers(self):
         """
         Exposes all the layers of the model that can be exposed. This can also
         be used to expose a limited set of layers.
 
-        :param x: A symbolic representation of the network input
         :return: A dictionary with keys being layer names and values being
                  symbolic representation of the output o fcorresponding layer
         """
@@ -140,7 +136,6 @@ class KerasModelExposer(ModelExposer):
 
     def expose_logits(self):
         """
-        :param x: A symbolic representation of the network input.
         :return: A symbolic representation of the logits
         """
         softmax_name = self._get_softmax_layer()
@@ -152,7 +147,6 @@ class KerasModelExposer(ModelExposer):
 
     def expose_probs(self):
         """
-        :param x: A symbolic representation of the network input.
         :return: A symbolic representation of the probs
         """
         name = self._get_softmax_layer()
