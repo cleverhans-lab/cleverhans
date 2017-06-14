@@ -18,6 +18,8 @@ from .utils import batch_indices, _ArgsWrapper
 
 from tensorflow.python.platform import flags
 
+from model_abs import Model
+
 FLAGS = flags.FLAGS
 
 
@@ -49,13 +51,16 @@ def model_loss(y, model, mean=True):
              sample loss
     """
 
-    op = model.op
-    if "softmax" in str(op).lower():
-        logits, = op.inputs
+    if isinstance(model, Model):
+        out = model.get_loss(y)
     else:
-        logits = model
+        op = model.op
+        if "softmax" in str(op).lower():
+            logits, = op.inputs
+        else:
+            logits = model
 
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+        out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
 
     if mean:
         out = tf.reduce_mean(out)
