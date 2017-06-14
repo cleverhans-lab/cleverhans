@@ -15,7 +15,7 @@ class Model(object):
 
     def __init__(self, model):
         """
-        Init a wrapper. If `get_layer` is implemented, `__init__`
+        Init a wrapper. If `fprop_layer` is implemented, `__init__`
         should keep track of the name of the layers or `self.model` should
         provide a method for retrieving a layer.
 
@@ -26,7 +26,13 @@ class Model(object):
 
         pass
 
-    def get_layer(self, x, layer):
+    def __call__(self, *args, **kwargs):
+        """
+        For compatibilty with a standard model.
+        """
+        return self.fprop_probs(*args, **kwargs)
+
+    def fprop_layer(self, x, layer):
         """
         Expose the hidden features of a model given a layer name.
 
@@ -37,21 +43,21 @@ class Model(object):
         error = 'Feature extraction for hidden layers not implemented'
         raise NotImplementedError(error)
 
-    def get_logits(self, x):
+    def fprop_logits(self, x):
         """
         :param x: A symbolic representation of the network input
         :return: A symbolic representation of the output logits, values before
                  softmax.
         """
-        raise NotImplementedError('`get_logits` not implemented')
+        raise NotImplementedError('`fprop_logits` not implemented')
 
-    def get_probs(self, x):
+    def fprop_probs(self, x):
         """
         :param x: A symbolic representation of the network input
         :return: A symbolic representation of the output probabilities, values
                  after softmax.
         """
-        raise NotImplementedError('`get_probs` not implemented')
+        raise NotImplementedError('`fprop_probs` not implemented')
 
     def get_layer_names(self):
         """
@@ -68,6 +74,18 @@ class Model(object):
         :param x: A symbolic representation of the network input
         :return: A dictionary with keys being layer names and values being
                  symbolic representation of the output o fcorresponding layer
+        """
+        raise NotImplementedError('`fprop` not implemented')
+
+    def get_loss(self, y, mean=True):
+        """
+        Define training loss used to train the model
+
+        :param y: correct labels
+        :param mean: boolean indicating whether should return mean of loss
+                     or vector of losses for each input of the batch
+        :return: return mean of loss if True, otherwise return vector with per
+                 sample loss
         """
         raise NotImplementedError('`fprop` not implemented')
 
@@ -95,7 +113,7 @@ class KerasModelWrapper(Model):
         # One model wrapper cache for `fprop`, init in the first call
         self.modelw = None
 
-    def get_layer(self, x, layer):
+    def fprop_layer(self, x, layer):
         """
         Creates a new model with the `x` as the input and the output after the
         specified layer. Keras layers can be retrieved using their names.
@@ -118,7 +136,7 @@ class KerasModelWrapper(Model):
         target_feat = model.get_layer(layer).output
         # Build a new model
         new_model = Model(new_input, target_feat)
-        # Cache the new model for further get_layer calls
+        # Cache the new model for further fprop_layer calls
         self.modelw_layer[layer] = new_model
 
         return new_model(x)
@@ -133,30 +151,36 @@ class KerasModelWrapper(Model):
         for i, layer in enumerate(self.model.layers):
             cfg = layer.get_config()
             if 'activation' in cfg and cfg['activation'] == 'softmax':
-                return layer.name
+                softmax_layer = self.model.get_layer(layer.name)
+                return softmax_layer
 
         raise Exception("No softmax layers found")
 
-    def get_logits(self, x):
+    def _get_logits_layer(self):
+        softmax_layer = self._get_softmax_layer()
+        node = softmax_layer.inbound_nodes[0]
+        logits_name = node.inbound_layers[0].name
+        logits_layer = self.get_layer(logits_name)
+
+        return logits_layer
+
+    def fprop_logits(self, x):
         """
         :param x: A symbolic representation of the network input.
         :return: A symbolic representation of the logits
         """
-        softmax_name = self._get_softmax_layer()
-        softmax_layer = self.model.get_layer(softmax_name)
-        node = softmax_layer.inbound_nodes[0]
-        logits_name = node.inbound_layers[0].name
+        logits_name = self._get_logits_name()
 
-        return self.get_layer(x, logits_name)
+        return self.fprop_layer(x, logits_name)
 
-    def get_probs(self, x):
+    def fprop_probs(self, x):
         """
         :param x: A symbolic representation of the network input.
         :return: A symbolic representation of the probs
         """
         name = self._get_softmax_layer()
 
-        return self.get_layer(x, name)
+        return self.fprop_layer(x, name)
 
     def get_layer_names(self):
         """
@@ -200,3 +224,17 @@ class KerasModelWrapper(Model):
         outputs = self.modelw(x)
         out_dict = OrderedDict(zip(layer_names, outputs))
         return out_dict
+
+    def get_loss(self, y):
+        """
+        Define the TF graph for loss. Finds the logits inside the model
+        and defines a cross-entropy loss on them.
+
+        :param y: A symbol for correct labels
+        :return: A TF graph for computing the loss
+        """
+        import tensorflow as tf
+        logits = self._get_logits_layer()
+        out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+
+        return out
