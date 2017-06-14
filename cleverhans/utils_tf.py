@@ -52,7 +52,9 @@ def model_loss(y, model, mean=True):
     """
 
     if isinstance(model, Model):
-        out = model.get_loss(y)
+        error = "Currently `model_loss` does not take x as input"
+        raise NotImplementedError(error)
+        # our = model.get_loss(x, y)
     else:
         op = model.op
         if "softmax" in str(op).lower():
