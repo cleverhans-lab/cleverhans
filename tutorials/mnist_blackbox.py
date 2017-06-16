@@ -183,7 +183,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
 
 def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_classes=10, batch_size=128,
-                   learning_rate=0.1, nb_epochs=10, holdout=150, data_aug=6,
+                   learning_rate=0.001, nb_epochs=10, holdout=150, data_aug=6,
                    nb_epochs_s=10, lmbda=0.1):
     """
     MNIST tutorial for the black-box attack from arxiv.org/abs/1602.02697
@@ -276,7 +276,7 @@ if __name__ == '__main__':
     # General flags
     flags.DEFINE_integer('nb_classes', 10, 'Number of classes in problem')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
     # Flags related to oracle
     flags.DEFINE_integer('nb_epochs', 10, 'Number of epochs to train model')
