@@ -10,7 +10,10 @@ class TestMNISTTutorialTF(unittest.TestCase):
                                 'train_end': 5000,
                                 'test_start': 0,
                                 'test_end': 333,
-                                'nb_epochs': 3}
+                                'nb_epochs': 3,
+                                'train_dir': '/tmp',
+                                'filename': 'mnist.ckpt',
+                                'load_model': False}
         report = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
 
         # Check accuracy values contained in the AccuracyReport object
