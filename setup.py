@@ -16,5 +16,5 @@ setup(name='cleverhans',
       extras_require={
         "tf": ["tensorflow>=1.0.0"],
         "tf_gpu": ["tensorflow-gpu>=1.0.0"],
-      }
+      },
       packages=find_packages())
