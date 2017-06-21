@@ -1,16 +1,10 @@
 
 # Development toolkit for participants of adversarial competition
 
-NOTE: Entire content of this directory
-[http://google3/learning/brain/research/red_team/adversarial_competition/dev_toolkit]
-is intended to be published online and to be run outside of Google3.
-Thus it does not contain build files or any google3 dependencies.
-Text of this NOTE to be removed upon publishing.
-
 [TOC]
 
-This is a development toolkit for
-[Adversarial Attacks and Defences competition](https://www.kaggle.com/nips-2017-adversarial-learning-competition)
+This is a development toolkit for the
+[Competition on Adversarial Examples and Defenses](https://www.kaggle.com/nips-2017-adversarial-learning-competition)
 which will be held as a part of NIPS'17 conference.
 
 This toolkit includes:
@@ -32,22 +26,22 @@ Following software required to use this package:
 * [Docker](https://www.docker.com/)
 
 Additionally, all provided examples are written with use of
-[TensorFlow](https://www.tensorflow.org/) package.
+the [TensorFlow](https://www.tensorflow.org/).
 Thus you may find useful to install TensorFlow to experiment with the examples,
 however this is not strictly necessary.
 
 ### Installation procedure
 
-To be able to run examples you need to download checkpoints for provided models
+To be able to run the examples you need to download checkpoints for provided models
 as well as dataset.
 
-To download dataset and all checkpoints run following:
+To download the dataset and all checkpoints run following:
 
 ```bash
 ./download_data.sh
 ```
 
-If you only need to download dataset then you can run:
+If you only need to download the dataset then you can run:
 
 ```bash
 # ${DATASET_IMAGES_DIR} is a directory to save images
@@ -62,7 +56,7 @@ This toolkit includes DEV dataset with 1000 labelled images.
 DEV dataset could be used for development and testing of adversarial attacks
 and defenses.
 
-Details about dataset could be found [here](dataset/README.md).
+Details about dataset are [here](dataset/README.md).
 
 ## Sample attacks and defenses
 
@@ -111,7 +105,7 @@ Example of `metadata.json`:
 Entry point script for a non-targeted attack should accept three arguments:
 input directory, output directory and maximum size of adversarial perturbation
 (in [infinity norm](https://en.wikipedia.org/wiki/Uniform_norm)). It will be
-invoked in a following way:
+invoked in the following way:
 
 ```bash
 attack_entry_point.sh INPUT_DIR OUTPUT_DIR MAX_SIZE_OF_PERTURBAION
