@@ -1,6 +1,6 @@
 # CleverHans (v1.0.0)
 
-<img src="https://github.com/tensorflow/cleverhans/blob/master/logo.png?raw=true" alt="cleverhans logo">
+<img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
 [![Build Status](https://travis-ci.org/tensorflow/cleverhans.svg?branch=master)](https://travis-ci.org/tensorflow/cleverhans)
 
