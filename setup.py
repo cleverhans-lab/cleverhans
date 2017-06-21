@@ -10,6 +10,11 @@ setup(name='cleverhans',
           'nose',
           'pycodestyle',
           'scipy',
-          'tensorflow',
           'matplotlib'],
+      # Explicit dependence on TensorFlow is not supported.
+      # See https://github.com/tensorflow/tensorflow/issues/7166
+      extras_require={
+        "tf": ["tensorflow>=1.0.0"],
+        "tf_gpu": ["tensorflow-gpu>=1.0.0"],
+      },
       packages=find_packages())
