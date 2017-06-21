@@ -32,18 +32,30 @@ class Model(object):
         """
         return self.fprop_probs(*args, **kwargs)
 
-    def get_logits(self):
+    def fprop_layer(self, x, layer):
         """
-        :return: A function taking a symbolic input and returning the symbolic
-                 representation of the output logits, values before softmax.
+        Expose the hidden features of a model given a layer name.
+
+        :param x: A symbolic representation of the network input
+        :param layer: The name of the hidden layer to return features at.
+        :return: A symbolic representation of the hidden features
+        """
+        error = 'Feature extraction for hidden layers not implemented'
+        raise NotImplementedError(error)
+
+    def fprop_logits(self, x):
+        """
+        :param x: A symbolic representation of the network input
+        :return: A symbolic representation of the output logits, values before
+                 softmax.
         """
         raise NotImplementedError('`fprop_logits` not implemented')
 
-    def get_probs(self):
+    def fprop_probs(self, x):
         """
-        :return: A function taking a symbolic input and returning the symbolic
-                 representation of the output probabilities, values after the
-                 softmax.
+        :param x: A symbolic representation of the network input
+        :return: A symbolic representation of the output probabilities, values
+                 after softmax.
         """
         raise NotImplementedError('`fprop_probs` not implemented')
 
@@ -54,18 +66,14 @@ class Model(object):
         """
         raise NotImplementedError('`get_layer_names` not implemented')
 
-    def fprop(self, layer=None):
+    def fprop(self, x):
         """
         Exposes all the layers of the model that can be exposed. This can also
-        be used to expose a layer identified by its name.
+        be used to expose a limited set of layers.
 
-        :param layer: (optional) The name of the hidden layer to return 
-                      features at. If set to None, a dictionary of layers
-                      will returned.
-        :return: A function that takes a symbolic input and returns a
-                 dictionary with keys being layer names and values being
-                 symbolic representation of the output of the corresponding
-                 layer.
+        :param x: A symbolic representation of the network input
+        :return: A dictionary with keys being layer names and values being
+                 symbolic representation of the output o fcorresponding layer
         """
         raise NotImplementedError('`fprop` not implemented')
 
