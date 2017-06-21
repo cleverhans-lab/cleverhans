@@ -1,0 +1,4 @@
+# ignore Tensorflow checkpoints
+*.ckpt
+# ignore dataset images
+dataset/images
