@@ -67,7 +67,7 @@ class Model(object):
         :return: A symbolic representation of the hidden features
         """
         # Return the symbolic representation for this layer.
-        return self.fprop_cache[(x, self.train)][layer]
+        return self.fprop(x)[layer]
 
     def fprop_logits(self, x):
         """
