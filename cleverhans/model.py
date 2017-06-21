@@ -23,7 +23,6 @@ class Model(object):
                       symbolic output for the model's post-softmax predictions
                       (probabilities).
         """
-
         pass
 
     def __call__(self, *args, **kwargs):
@@ -77,12 +76,13 @@ class Model(object):
         """
         raise NotImplementedError('`fprop` not implemented')
 
-    def get_loss(self, x, y):
+    def get_loss(self, x, y, logits):
         """
         Define training loss used to train the model
 
         :param x: input symbol
         :param y: correct labels
+        :param logits: A symbolic representation for the logits
         :param mean: boolean indicating whether should return mean of loss
                      or vector of losses for each input of the batch
         :return: return mean of loss if True, otherwise return vector with per
@@ -225,17 +225,17 @@ class KerasModelWrapper(Model):
         out_dict = OrderedDict(zip(layer_names, outputs))
         return out_dict
 
-    def get_loss(self, x, y):
+    def get_loss(self, x, y, logits):
         """
         Define the TF graph for loss. Finds the logits inside the model
         and defines a cross-entropy loss on them.
 
         :param x: input symbol
         :param y: A symbol for correct labels
+        :param logits: A symbolic representation for the logits
         :return: A TF graph for computing the loss
         """
         import tensorflow as tf
-        logits = self.fprop_logits(x)
         out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
 
         return out
