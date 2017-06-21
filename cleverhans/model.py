@@ -8,8 +8,9 @@ class Model(object):
     needed for making an attack. This abstraction removes the dependency on
     any specific neural network package (e.g. Keras) from the core
     code of CleverHans. It can also simplify exposing the hidden features of a
-    model when a specific package does not directly expose them (needed by
-    "Features Adversaries" https://arxiv.org/abs/1511.05122).
+    model when a specific package does not directly expose them. For an
+    example of why this is useful, see the paper "Adversarial Manipulation
+    of Deep Representations" (https://arxiv.org/abs/1511.05122).
     """
     __metaclass__ = ABCMeta
 
@@ -18,11 +19,26 @@ class Model(object):
         Init a wrapper. If `fprop_layer` is implemented, `__init__`
         should keep track of the name of the layers or `self.model` should
         provide a method for retrieving a layer.
-
         :param model: A function that takes a symbolic input and returns the
                       symbolic output for the model's post-softmax predictions
                       (probabilities).
         """
+        self.model = model
+
+        # The following is a cache to prevent the construction of increasingly
+        # large graphs after multiple calls of the fprop methods. The cache is
+        # implemented as a dictionary of the form (input, train): output_dict
+        # The key is a pair of input (the symbolic representation of the input)
+        # and train (a boolean indicating whether the graph is in training or
+        # inference mode---which changes the behavior of layers like dropout).
+        # The values output_dict are also a dictionary mapping layer names
+        # to symbolic representation of the output of that layer.
+        self.fprop_cache = {}
+
+        # By default, we assume the model is being used for inference. If the
+        # model is being trained, a call to set_train() should be made first.
+        self.train = False
+
         pass
 
     def __call__(self, *args, **kwargs):
@@ -31,55 +47,73 @@ class Model(object):
         """
         return self.fprop_probs(*args, **kwargs)
 
+    def set_train(self, train):
+        """
+        Define whether the model is currently being used for training or
+        inference. This may change its behavior (for instance, when the model
+        uses dropout layers).
+        :param state: (boolean) True if the model should be in training state
+                      or False for inference.
+        """
+        self.train = train
+        state_str = 'Training' if train else 'Inference'
+        print('Set the model to ' + state_str)
+
     def fprop_layer(self, x, layer):
         """
         Expose the hidden features of a model given a layer name.
-
         :param x: A symbolic representation of the network input
         :param layer: The name of the hidden layer to return features at.
         :return: A symbolic representation of the hidden features
         """
-        error = 'Feature extraction for hidden layers not implemented'
-        raise NotImplementedError(error)
+        # Return the symbolic representation for this layer.
+        return self.fprop_cache[(x, self.train)][layer]
 
     def fprop_logits(self, x):
         """
         :param x: A symbolic representation of the network input
-        :return: A symbolic representation of the output logits, values before
-                 softmax.
+        :return: A symbolic representation of the output logits (i.e., the
+                 values fed as inputs to the softmax layer).
         """
         raise NotImplementedError('`fprop_logits` not implemented')
 
     def fprop_probs(self, x):
         """
         :param x: A symbolic representation of the network input
-        :return: A symbolic representation of the output probabilities, values
-                 after softmax.
+        :return: A symbolic representation of the output probabilities (i.e.,
+                the output values produced by the softmax layer).
         """
         raise NotImplementedError('`fprop_probs` not implemented')
 
     def get_layer_names(self):
         """
         :return: a list of names for the layers that can be exposed by this
-        model wrapper.
+        model abstraction.
         """
         raise NotImplementedError('`get_layer_names` not implemented')
 
     def fprop(self, x):
         """
-        Exposes all the layers of the model that can be exposed. This can also
-        be used to expose a limited set of layers.
-
+        Exposes all the layers of the model returned by get_layer_names.
         :param x: A symbolic representation of the network input
-        :return: A dictionary with keys being layer names and values being
-                 symbolic representation of the output o fcorresponding layer
+        :return: A dictionary mapping layer names to the symbolic
+                 representation of their output.
         """
+        # In case of cache hit, return cached dictionary of output tensors.
+        if (x, self.train) in self.fprop_cache.keys():
+            return self.fprop_cache[(x, self.train)]
+
+        # The implementation (missing here because this is an abstract class)
+        # should populate the dictionary with all layers returned by
+        # the method self.get_layer_names()
+        assert all([layer in self.fprop_cache[(x, self.train)]
+                    for layer in self.get_layer_names()])
+
         raise NotImplementedError('`fprop` not implemented')
 
-    def get_loss(self, x, y, logits):
+    def get_loss(self, x, y, logits, mean=True):
         """
-        Define training loss used to train the model
-
+        Define the training loss used to train the model
         :param x: input symbol
         :param y: correct labels
         :param logits: A symbolic representation for the logits
