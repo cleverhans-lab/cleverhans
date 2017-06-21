@@ -140,9 +140,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    train_step = tf.train.AdadeltaOptimizer(learning_rate=args.learning_rate,
-                                            rho=0.95,
-                                            epsilon=1e-08).minimize(loss)
+    train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    train_step = train_step.minimize(loss)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
@@ -185,7 +184,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             save_path = os.path.join(args.train_dir, args.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            print("Completed model training and saved at:" + str(save_path))
+            print("Completed model training and saved at: " + str(save_path))
         else:
             print("Completed model training.")
 

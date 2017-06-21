@@ -20,7 +20,8 @@ FLAGS = flags.FLAGS
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
-                   learning_rate=0.1):
+                   learning_rate=0.001, train_dir="/tmp",
+                   filename="mnist.ckpt", load_model=False):
     """
     MNIST CleverHans tutorial
     :param train_start: index of first training set example
@@ -30,6 +31,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     :param nb_epochs: number of epochs to train model
     :param batch_size: size of training batches
     :param learning_rate: learning rate for training
+    :param train_dir: Directory storing the saved model
+    :param filename: Filename to save model under
+    :param load_model: True for load, False for not load
     :return: an AccuracyReport object
     """
     keras.layers.core.K.set_learning_phase(0)
@@ -86,10 +90,22 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     train_params = {
         'nb_epochs': nb_epochs,
         'batch_size': batch_size,
-        'learning_rate': learning_rate
+        'learning_rate': learning_rate,
+        'train_dir': train_dir,
+        'filename': filename
     }
-    model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                args=train_params)
+    ckpt = tf.train.get_checkpoint_state(train_dir)
+    ckpt_path = False if ckpt is None else ckpt.model_checkpoint_path
+
+    if load_model and ckpt_path:
+        saver = tf.train.Saver()
+        saver.restore(sess, ckpt_path)
+        print("Model loaded from: {}".format(ckpt_path))
+        evaluate()
+    else:
+        print("Model was not loaded, training from scratch.")
+        model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
+                    args=train_params, save=True)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     fgsm = FastGradientMethod(model, sess=sess)
@@ -127,19 +143,25 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Perform and evaluate adversarial training
     model_train(sess, x, y, preds_2, X_train, Y_train,
                 predictions_adv=preds_2_adv, evaluate=evaluate_2,
-                args=train_params)
+                args=train_params, save=False)
 
     return report
 
 
 def main(argv=None):
-    mnist_tutorial(nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
-                   learning_rate=FLAGS.learning_rate)
+    mnist_tutorial(nb_epochs=FLAGS.nb_epochs,
+                   batch_size=FLAGS.batch_size,
+                   learning_rate=FLAGS.learning_rate,
+                   train_dir=FLAGS.train_dir,
+                   filename=FLAGS.filename,
+                   load_model=FLAGS.load_model)
 
 
 if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
-
+    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
+    flags.DEFINE_string('train_dir', '/tmp', 'Directory where to save model.')
+    flags.DEFINE_string('filename', 'mnist.ckpt', 'Checkpoint filename.')
+    flags.DEFINE_boolean('load_model', True, 'Load saved model or train.')
     app.run()
