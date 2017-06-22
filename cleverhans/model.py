@@ -1,5 +1,4 @@
 from abc import ABCMeta
-from collections import OrderedDict
 
 
 class Model(object):
@@ -35,9 +34,10 @@ class Model(object):
         # to symbolic representation of the output of that layer.
         self.fprop_cache = {}
 
-        # By default, we assume the model is being used for inference. If the
-        # model is being trained, a call to set_train() should be made first.
-        self.train = False
+        # By default, we assume the model is being used for inference (i.e.,
+        # 'test' time). If the model is being trained, a call to set_train()
+        # should be made first.
+        self.state = 'test'
 
         pass
 
@@ -47,17 +47,18 @@ class Model(object):
         """
         return self.fprop_probs(*args, **kwargs)
 
-    def set_train(self, train):
+    def set_state(self, state):
         """
-        Define whether the model is currently being used for training or
-        inference. This may change its behavior (for instance, when the model
-        uses dropout layers).
+        Set which state the model is currently being used in. This can be any
+        string and is used to by the cache to keep different output tensors
+        for each of the states used. The default value of self.state is 'test'
+        as a reference to the inference phase, but you could set it as 'train'
+        (which would for instance mean that the model uses dropout layers).
         :param state: (boolean) True if the model should be in training state
                       or False for inference.
         """
-        self.train = train
-        state_str = 'Training' if train else 'Inference'
-        print('Set the model to ' + state_str)
+        self.state = state
+        print('The model state was set to: ' + state)
         return
 
     def fprop_layer(self, x, layer):
@@ -101,13 +102,13 @@ class Model(object):
                  representation of their output.
         """
         # In case of cache hit, return cached dictionary of output tensors.
-        if (x, self.train) in self.fprop_cache.keys():
-            return self.fprop_cache[(x, self.train)]
+        if (x, self.state) in self.fprop_cache.keys():
+            return self.fprop_cache[(x, self.state)]
 
         # The implementation (missing here because this is an abstract class)
         # should populate the dictionary with all layers returned by
         # the method self.get_layer_names()
-        # assert all([layer in self.fprop_cache[(x, self.train)]
+        # assert all([layer in self.fprop_cache[(x, self.state)]
         #             for layer in self.get_layer_names()])
 
         raise NotImplementedError('`fprop` not implemented')
@@ -146,7 +147,7 @@ class KerasModelWrapper(Model):
         # One model wrapper cache for `fprop`, init in the first call
         self.modelw = None
 
-    def set_train(self, train):
+    def set_state(self, train):
         """
         Keras has its own way to keep track of the state of the graph so we'll
         throw an exception here.
@@ -211,8 +212,8 @@ class KerasModelWrapper(Model):
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
         """
-        if (x, self.train) in self.fprop_cache.keys():
-            return self.fprop_cache[(x, self.train)]
+        if (x, self.state) in self.fprop_cache.keys():
+            return self.fprop_cache[(x, self.state)]
         else:
             from keras.models import Model as KerasModel
             fprop_dict = {}
@@ -229,7 +230,7 @@ class KerasModelWrapper(Model):
                 fprop_dict[layer] = new_model(x)
 
             # Save to cache before returning
-            self.fprop_cache[(x, self.train)] = fprop_dict
+            self.fprop_cache[(x, self.state)] = fprop_dict
             return fprop_dict
 
     def get_loss(self, x, y, logits, mean=True):

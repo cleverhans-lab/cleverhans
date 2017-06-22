@@ -13,15 +13,15 @@ class TestModelClass(unittest.TestCase):
     def test_default_graph_inference_state(self):
         # Define empty model
         model = Model(model=None)
-        self.assertTrue(not model.train)
+        self.assertTrue(model.state == 'test')
 
     def test_change_graph_to_train(self):
         # Define empty model
         model = Model(model=None)
 
         # Set graph state to inference
-        model.set_train(True)
-        self.assertTrue(model.train)
+        model.set_state('train')
+        self.assertTrue(model.state == 'train')
 
     def test_fprop_layer(self):
         # Define empty model
@@ -106,7 +106,7 @@ class TestKerasModelWrapper(unittest.TestCase):
         model = KerasModelWrapper(self.model)
         # Exception is thrown when `set_train` is called
         with self.assertRaises(NotImplementedError) as context:
-            model.set_train(True)
+            model.set_state('train')
         self.assertTrue(context.exception)
 
     def test_fprop_logits(self):
