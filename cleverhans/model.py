@@ -113,19 +113,6 @@ class Model(object):
 
         raise NotImplementedError('`fprop` not implemented')
 
-    def get_loss(self, x, y, logits, mean=True):
-        """
-        Define the training loss used to train the model
-        :param x: A symbolic representation of the network input
-        :param y: the correct labels
-        :param logits: A symbolic representation for the logits
-        :param mean: boolean indicating whether should return mean of loss
-                     or vector of losses for each input of the batch
-        :return: return mean of loss if True, otherwise return vector with per
-                 sample loss
-        """
-        raise NotImplementedError('`get_loss` not implemented')
-
 
 class KerasModelWrapper(Model):
     """
@@ -232,22 +219,3 @@ class KerasModelWrapper(Model):
             # Save to cache before returning
             self.fprop_cache[(x, self.state)] = fprop_dict
             return fprop_dict
-
-    def get_loss(self, x, y, logits, mean=True):
-        """
-        Define the training loss used to train the model.
-        :param x: A symbolic representation of the network input
-        :param y: the correct labels
-        :param logits: A symbolic representation for the logits
-        :param mean: boolean indicating whether should return mean of loss
-                     or vector of losses for each input of the batch
-        :return: return mean of loss if True, otherwise return vector with per
-                 sample loss
-        """
-        import tensorflow as tf
-        out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
-
-        if mean:
-            out = tf.reduce_mean(out)
-
-        return out
