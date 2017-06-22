@@ -277,7 +277,8 @@ def tf_model_load(sess):
     return True
 
 
-def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, feed=None, args=None):
+def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, feed=None,
+               args=None):
     """
     A helper function that computes a tensor on numpy inputs by batches.
 
