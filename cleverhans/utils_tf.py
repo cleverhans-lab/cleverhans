@@ -50,18 +50,13 @@ def model_loss(y, model, mean=True):
              sample loss
     """
 
-    if isinstance(model, Model):
-        error = "Currently `model_loss` does not take x as input"
-        raise NotImplementedError(error)
-        # our = model.get_loss(x, y)
+    op = model.op
+    if "softmax" in str(op).lower():
+        logits, = op.inputs
     else:
-        op = model.op
-        if "softmax" in str(op).lower():
-            logits, = op.inputs
-        else:
-            logits = model
+        logits = model
 
-        out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
 
     if mean:
         out = tf.reduce_mean(out)

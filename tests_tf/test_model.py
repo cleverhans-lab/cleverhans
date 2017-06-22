@@ -72,18 +72,6 @@ class TestModelClass(unittest.TestCase):
             model.fprop(x)
         self.assertTrue(context.exception)
 
-    def test_get_loss(self):
-        # Define empty model
-        model = Model(model=None)
-        x = []
-        y = []
-        logits = []
-
-        # Exception is thrown when `get_loss` not implemented
-        with self.assertRaises(Exception) as context:
-            model.get_loss(x, y, logits)
-        self.assertTrue(context.exception)
-
 
 class TestKerasModelWrapper(unittest.TestCase):
     def setUp(self):
@@ -154,35 +142,6 @@ class TestKerasModelWrapper(unittest.TestCase):
         out_dict2 = model.fprop(x2)
         self.assertEqual(set(out_dict2.keys()), set(['l1', 'l2', 'softmax']))
         self.assertEqual(int(out_dict2['l1'].shape[1]), 20)
-
-    def test_get_loss(self):
-        pass
-        # from keras.models import Sequential
-        # from keras.layers import Activation
-        # import tensorflow as tf
-        # input_shape = (2,)
-        # model = Sequential([Activation('softmax', name='softmax',
-        #                                input_shape=input_shape)])
-        # model = KerasModelWrapper(model)
-        # x = tf.placeholder(tf.float32, shape=(None, 100))
-        #
-        # logits = tf.placeholder(tf.float32, shape=(10, 2))
-        # y = tf.placeholder(tf.float32, shape=(10, 2))
-        # loss = model.get_loss(x, logits, y, mean=False)
-        #
-        # logits_val = np.array([[0, 0], [1, 0], [0, 1], [1, 1], [2, 1],
-        #                        [0, 0], [1, 0], [0, 1], [1, 1], [2, 1]])
-        # y_val = np.array([[0, 1], [0, 1], [0, 1], [0, 1], [0, 1],
-        #                   [1, 0], [1, 0], [1, 0], [1, 0], [1, 0]])
-        # loss_gt = np.array([0.69314718, 1.31326163, 0.31326166, 0.69314718,
-        #                     1.31326163, 0.69314718, 0.31326166, 1.31326163,
-        #                     0.69314718,  0.31326166])
-        #
-        # tf.global_variables_initializer().run(session=self.sess)
-        # loss_val = self.sess.run([loss],
-        #                          feed_dict={logits: logits_val, y: y_val})
-        # self.assertTrue(np.allclose(loss_val, loss_gt, atol=1e-6))
-
 
 if __name__ == '__main__':
     unittest.main()
