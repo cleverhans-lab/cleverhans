@@ -58,6 +58,7 @@ class Model(object):
         self.train = train
         state_str = 'Training' if train else 'Inference'
         print('Set the model to ' + state_str)
+        return
 
     def fprop_layer(self, x, layer):
         """
@@ -106,16 +107,16 @@ class Model(object):
         # The implementation (missing here because this is an abstract class)
         # should populate the dictionary with all layers returned by
         # the method self.get_layer_names()
-        assert all([layer in self.fprop_cache[(x, self.train)]
-                    for layer in self.get_layer_names()])
+        # assert all([layer in self.fprop_cache[(x, self.train)]
+        #             for layer in self.get_layer_names()])
 
         raise NotImplementedError('`fprop` not implemented')
 
     def get_loss(self, x, y, logits, mean=True):
         """
         Define the training loss used to train the model
-        :param x: input symbol
-        :param y: correct labels
+        :param x: A symbolic representation of the network input
+        :param y: the correct labels
         :param logits: A symbolic representation for the logits
         :param mean: boolean indicating whether should return mean of loss
                      or vector of losses for each input of the batch
@@ -136,45 +137,25 @@ class KerasModelWrapper(Model):
     def __init__(self, model):
         """
         Create a wrapper for a Keras model
-
         :param model: A Keras model
         """
         super(KerasModelWrapper, self).__init__(model)
 
-        # Initialize attributes
-        self.model = model
         # Model caching to create a new model only once for each hidden layer
         self.modelw_layer = {}
         # One model wrapper cache for `fprop`, init in the first call
         self.modelw = None
 
-    def fprop_layer(self, x, layer):
+    def set_train(self, train):
         """
-        Creates a new model with the `x` as the input and the output after the
-        specified layer. Keras layers can be retrieved using their names.
-
-        :param x: A symbolic representation of the network input
-        :param layer: The name of the hidden layer
-        :return: A symbolic representation of the hidden features
+        Keras has its own way to keep track of the state of the graph so we'll
+        throw an exception here.
         """
-        model = self.model
-
-        if layer in self.modelw_layer:
-            return self.modelw_layer[layer](x)
-
-        from keras.models import Model
-
-        # Create an extra model that exposes the hidden layer representation
-        # Get input
-        new_input = model.get_input_at(0)
-        # Find the layer to connect
-        target_feat = model.get_layer(layer).output
-        # Build a new model
-        new_model = Model(new_input, target_feat)
-        # Cache the new model for further fprop_layer calls
-        self.modelw_layer[layer] = new_model
-
-        return new_model(x)
+        raise NotImplementedError('Keras keeps track of the graph state with'
+                                  'the learning phase variable. Use the'
+                                  'learning phase variable rather than this'
+                                  'method to change the behavior of the'
+                                  'graph.')
 
     def _get_softmax_name(self):
         """
@@ -223,53 +204,49 @@ class KerasModelWrapper(Model):
         layer_names = [x.name for x in self.model.layers]
         return layer_names
 
-    def _create_modelw(self):
-        """
-        Create the new model used by fprop that outputs all the hidden outputs
-
-        :return: A new Keras model
-        """
-        model = self.model
-
-        from keras.models import Model
-
-        # Get input
-        new_input = model.get_input_at(0)
-        # Collect the output symbols for all the layers
-        layer_names = self.get_layer_names()
-        outputs = [model.get_layer(name).output for name in layer_names]
-        # Build a new model
-        modelw = Model(new_input, outputs)
-
-        return modelw
-
     def fprop(self, x):
         """
-        Creates a new model with the `x` as the input and the output after the
-        specified layer. Keras layers can be retrieved using their names.
-
+        Exposes all the layers of the model returned by get_layer_names.
         :param x: A symbolic representation of the network input
-        :return: A dictionary with keys being layer names and values being
-                 symbolic representation of the output o fcorresponding layer
+        :return: A dictionary mapping layer names to the symbolic
+                 representation of their output.
         """
-        if self.modelw is None:
-            self.modelw = self._create_modelw()
-        layer_names = self.get_layer_names()
-        outputs = self.modelw(x)
-        out_dict = OrderedDict(zip(layer_names, outputs))
-        return out_dict
+        if (x, self.train) in self.fprop_cache.keys():
+            return self.fprop_cache[(x, self.train)]
+        else:
+            from keras.models import Model as KerasModel
+            fprop_dict = {}
 
-    def get_loss(self, x, y, logits):
+            # Construct the output representation of each layer
+            for layer in self.get_layer_names():
+                # Get input
+                new_input = self.model.get_input_at(0)
+                # Find the layer to connect
+                target_feat = self.model.get_layer(layer).output
+                # Build a new model
+                new_model = KerasModel(new_input, target_feat)
+                # Add this layer's output tensor to the dictionary
+                fprop_dict[layer] = new_model(x)
+
+            # Save to cache before returning
+            self.fprop_cache[(x, self.train)] = fprop_dict
+            return fprop_dict
+
+    def get_loss(self, x, y, logits, mean=True):
         """
-        Define the TF graph for loss. Finds the logits inside the model
-        and defines a cross-entropy loss on them.
-
-        :param x: input symbol
-        :param y: A symbol for correct labels
+        Define the training loss used to train the model. 
+        :param x: A symbolic representation of the network input
+        :param y: the correct labels
         :param logits: A symbolic representation for the logits
-        :return: A TF graph for computing the loss
+        :param mean: boolean indicating whether should return mean of loss
+                     or vector of losses for each input of the batch
+        :return: return mean of loss if True, otherwise return vector with per
+                 sample loss
         """
         import tensorflow as tf
         out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+
+        if mean:
+            out = tf.reduce_mean(out)
 
         return out
