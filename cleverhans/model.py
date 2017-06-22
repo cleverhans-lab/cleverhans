@@ -234,7 +234,7 @@ class KerasModelWrapper(Model):
 
     def get_loss(self, x, y, logits, mean=True):
         """
-        Define the training loss used to train the model. 
+        Define the training loss used to train the model.
         :param x: A symbolic representation of the network input
         :param y: the correct labels
         :param logits: A symbolic representation for the logits
