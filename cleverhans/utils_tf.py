@@ -15,7 +15,6 @@ import time
 import warnings
 
 from .utils import batch_indices, _ArgsWrapper
-from .model import Model
 
 from tensorflow.python.platform import flags
 
