@@ -97,6 +97,16 @@ class TestKerasModelWrapper(unittest.TestCase):
             model.set_state('train')
         self.assertTrue(context.exception)
 
+    def test_get_softmax_name(self):
+        model = KerasModelWrapper(self.model)
+        softmax_name = model._get_softmax_name()
+        self.assertEqual(softmax_name, 'softmax')
+
+    def test_get_logits_name(self):
+        model = KerasModelWrapper(self.model)
+        logits_name = model._get_logits_name()
+        self.assertEqual(logits_name, 'l2')
+
     def test_fprop_logits(self):
         import tensorflow as tf
         model = KerasModelWrapper(self.model)
@@ -142,6 +152,7 @@ class TestKerasModelWrapper(unittest.TestCase):
         out_dict2 = model.fprop(x2)
         self.assertEqual(set(out_dict2.keys()), set(['l1', 'l2', 'softmax']))
         self.assertEqual(int(out_dict2['l1'].shape[1]), 20)
+
 
 if __name__ == '__main__':
     unittest.main()
