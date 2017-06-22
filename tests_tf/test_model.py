@@ -90,7 +90,7 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.sess.as_default()
         self.model = dummy_model()
 
-    def test_set_train(self):
+    def test_set_state(self):
         model = KerasModelWrapper(self.model)
         # Exception is thrown when `set_train` is called
         with self.assertRaises(NotImplementedError) as context:
