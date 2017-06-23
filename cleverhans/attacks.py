@@ -357,6 +357,9 @@ class SaliencyMapMethod(Attack):
             error = "Theano version of SaliencyMapMethod not implemented."
             raise NotImplementedError(error)
 
+        import tensorflow as tf
+        self.feedable_kwargs = {'targets': tf.float32}
+
     def generate(self, x, **kwargs):
         """
         Attack-specific parameters:
@@ -393,40 +396,6 @@ class SaliencyMapMethod(Attack):
 
         return wrap
 
-    def generate_np(self, x_val, **kwargs):
-        """
-        Attack-specific parameters:
-        :param batch_size: (optional) Batch size when running the graph
-        :param targets: (optional) Target values if the attack is targeted
-        """
-        if self.sess is None:
-            raise ValueError("Cannot use `generate_np` when no `sess` was"
-                             " provided")
-
-        import tensorflow as tf
-
-        # Generate this attack's graph if it hasn't been done previously
-        if not hasattr(self, "_x"):
-            input_shape = list(x_val.shape)
-            input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x, **kwargs)
-
-        # Run symbolic graph without or with true labels
-        if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val}
-        else:
-            if self.targets is None:
-                raise Exception("This attack was instantiated untargeted.")
-            else:
-                if len(kwargs['y_val'].shape) > 1:
-                    nb_targets = len(kwargs['y_val'])
-                else:
-                    nb_targets = 1
-                if nb_targets != len(x_val):
-                    raise Exception("Specify exactly one target per input.")
-            feed_dict = {self._x: x_val, self.targets: kwargs['y_val']}
-        return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def parse_params(self, theta=1., gamma=np.inf, nb_classes=10, clip_min=0.,
                      clip_max=1., targets=None, **kwargs):
