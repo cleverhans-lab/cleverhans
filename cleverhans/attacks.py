@@ -109,9 +109,12 @@ class Attack(object):
                          np.int8, np.int16, np.int32, np.int32, np.int64,
                          np.uint8, np.uint16, np.uint32, np.uint64)
 
+<<<<<<< HEAD
             # construct the new keyword arguments as a combination of
             # (a) the fixed arguments that are graph-specific
             # (b) the placeholders that correspond to the variable arguments
+=======
+>>>>>>> 5b686b0369db9a557b38a7f971f30260a520cdb0
             new_kwargs = dict(x for x in fixed.items())
             for name, value in feedable.items():
                 given_type = self.feedable_kwargs[name]
@@ -119,7 +122,16 @@ class Attack(object):
                     new_shape = [None]+list(value.shape[1:])
                     new_kwargs[name] = tf.placeholder(value.dtype, new_shape)
                 elif isinstance(value, num_types):
+<<<<<<< HEAD
                     new_kwargs[name] = tf.placeholder(given_type, shape=[])
+=======
+                    if isinstance(value, float):
+                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
+                    elif isinstance(value, int):
+                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
+                    else:
+                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
+>>>>>>> 5b686b0369db9a557b38a7f971f30260a520cdb0
                 else:
                     raise ValueError("Could not identify type of argument " +
                                      name + ": " + str(value))
@@ -617,6 +629,10 @@ class CarliniWagnerL2(Attack):
                      binary_search_steps=5, max_iterations=1000,
                      abort_early=True, initial_const=1e-2,
                      clip_min=0, clip_max=1):
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5b686b0369db9a557b38a7f971f30260a520cdb0
         # ignore the y and y_val argument
         self.nb_classes = nb_classes
         self.batch_size = batch_size
