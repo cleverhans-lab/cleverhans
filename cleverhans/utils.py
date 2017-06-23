@@ -111,7 +111,8 @@ def random_targets(gt, nb_classes):
              encoded as one-hot labels.
     """
     # If the ground truth labels are encoded as one-hot, convert to labels.
-    if len(gt.shape) == 2:
+    from keras.utils import np_utils
+    if len(gt.shape) > 1:
         gt = np.argmax(gt, axis=1)
 
     # This vector will hold the randomly selected labels.
