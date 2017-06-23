@@ -7,6 +7,7 @@ from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import CarliniWagnerL2
+from cleverhans.attacks import SaliencyMapMethod
 
 import time
 
@@ -137,7 +138,7 @@ class TestFastGradientMethod(CleverHansTest):
             orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
             new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-            assert np.mean(orig_labs*new_labs) < 0.5
+            assert np.mean(orig_labs==new_labs) < 0.3
 
     def test_generate_np_can_be_called_with_different_eps(self):
         x_val = np.random.rand(100, 2)
@@ -241,7 +242,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        assert np.mean(orig_labs*new_labs) < 0.1
+        assert np.mean(orig_labs==new_labs) < 0.1
 
         ok = [False]
         old_grads = tf.gradients
@@ -257,7 +258,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        assert np.mean(orig_labs*new_labs) < 0.1
+        assert np.mean(orig_labs==new_labs) < 0.1
 
         tf.gradients = old_grads
 
@@ -295,7 +296,7 @@ class TestCarliniWagnerL2(CleverHansTest):
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs*new_labs) < 0.05
+        assert np.mean(orig_labs==new_labs) < 0.1
 
     def test_generate_np_targeted_gives_adversarial_example(self):
         x_val = np.random.rand(100, 2)
@@ -303,7 +304,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((100, 2))
-        feed_labs[np.arange(100), 1-orig_labs] = 1
+        feed_labs[np.arange(100), np.random.randint(0,1,100)] = 1
         x_adv = self.attack.generate_np(x_val, max_iterations=100,
                                         binary_search_steps=3,
                                         initial_const=1, nb_classes=2,
@@ -312,7 +313,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs*new_labs) < 0.05
+        assert np.mean(np.argmax(feed_labs,axis=1)==new_labs) > 0.9
 
     def test_generate_gives_adversarial_example(self):
         import tensorflow as tf
@@ -335,7 +336,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs*new_labs) < 0.05
+        assert np.mean(orig_labs==new_labs) < 0.1
 
     def test_generate_np_gives_clipped_adversarial_examples(self):
         x_val = np.random.rand(100, 2)
@@ -351,6 +352,43 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         assert np.isclose(np.min(x_adv), -0.2, atol=1e-2)
         assert np.isclose(np.max(x_adv), 0.3, atol=1e-2)
+
+
+class TestSaliencyMapMethod(CleverHansTest):
+    def setUp(self):
+        super(TestSaliencyMapMethod, self).setUp()
+        import tensorflow as tf
+        import tensorflow.contrib.slim as slim
+
+        def dummy_model(x):
+            net = slim.fully_connected(x, 60)
+            return slim.fully_connected(net, 10, activation_fn=None)
+
+        self.sess = tf.Session()
+        self.sess.as_default()
+        self.model = tf.make_template('dummy_model', dummy_model)
+        self.attack = VirtualAdversarialMethod(self.model, sess=self.sess)
+
+        # initialize model
+        with tf.name_scope('dummy_model'):
+            self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
+        self.sess.run(tf.global_variables_initializer())
+
+        self.attack = SaliencyMapMethod(self.model, sess=self.sess)
+
+    def test_generate_np_targeted_gives_adversarial_example(self):
+        x_val = np.random.rand(10, 1000)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        feed_labs = np.zeros((10, 1000))
+        feed_labs[np.arange(10), np.random.randint(0,9,10)] = 1
+        x_adv = self.attack.generate_np(x_val,
+                                        clip_min=-5, clip_max=5,
+                                        targets=feed_labs, nb_classes=10)
+        new_labs = self.sess.run(self.model(x_adv))
+        
+        assert np.mean(np.argmax(feed_labs,axis=1)==np.argmax(new_labs,axis=1)) == 1.0
 
 
 if __name__ == '__main__':

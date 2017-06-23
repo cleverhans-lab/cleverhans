@@ -82,6 +82,7 @@ def random_targets(gt, nb_classes):
     :param nb_classes: The number of classes for this model
     :return: A numpy array holding the randomly-selected target classes
     """
+    from keras.utils import np_utils
     if len(gt.shape) > 1:
         gt = np.argmax(gt, axis=1)
 
