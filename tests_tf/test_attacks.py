@@ -11,14 +11,24 @@ from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import CarliniWagnerL2
 
+import time
 
-class TestVirtualAdversarialMethod(unittest.TestCase):
+class CleverHansTest(unittest.TestCase):
     def setUp(self):
+        self.test_start = time.time()
+        
+    def tearDown(self):
+        print(self.id(), "took", time.time() - self.test_start, "seconds")
+
+
+class TestVirtualAdversarialMethod(CleverHansTest):
+    def setUp(self):
+        super(TestVirtualAdversarialMethod, self).setUp()
         import tensorflow as tf
         import tensorflow.contrib.slim as slim
 
         def dummy_model(x):
-            net = slim.fully_connected(x, 600)
+            net = slim.fully_connected(x, 60)
             return slim.fully_connected(net, 10, activation_fn=None)
 
         self.sess = tf.Session()
@@ -47,9 +57,9 @@ class TestVirtualAdversarialMethod(unittest.TestCase):
         # test perturbation norm
         self.assertTrue(np.allclose(perturbation_norm, self.attack.eps))
 
-
-class TestFastGradientMethod(unittest.TestCase):
+class TestFastGradientMethod(CleverHansTest):
     def setUp(self):
+        super(TestFastGradientMethod, self).setUp()
         import tensorflow as tf
 
         # The world's simplest neural network
@@ -105,16 +115,15 @@ class TestFastGradientMethod(unittest.TestCase):
         assert np.isclose(np.min(x_adv), -0.2)
         assert np.isclose(np.max(x_adv), 0.1)
 
-    def test_generate_np_caches_graph_computation_for_eps(self):
+    def test_generate_np_caches_graph_computation_for_eps_clip_or_xi(self):
         import tensorflow as tf
 
-        x_val = np.random.rand(100, 2)
+        x_val = np.random.rand(1, 1000)
         x_val = np.array(x_val, dtype=np.float32)
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
-                                        clip_min=-5.0, clip_max=5.0)
-
-        assert np.allclose(np.max(np.abs(x_adv-x_val), axis=1), 0.5)
+        x_adv = self.attack.generate_np(x_val, eps=.3, num_iterations=10,
+                                        clip_max=-5.0, clip_min=-5.0,
+                                        xi=1e-6)
 
         old_grads = tf.gradients
 
@@ -122,23 +131,20 @@ class TestFastGradientMethod(unittest.TestCase):
             raise RuntimeError()
         tf.gradients = fn
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
-                                        clip_min=-5.0, clip_max=5.0)
-
-        assert np.allclose(np.max(np.abs(x_adv-x_val), axis=1), 0.5)
-
+        x_adv = self.attack.generate_np(x_val, eps=.2, num_iterations=10,
+                                        clip_max=-4.0, clip_min=-4.0,
+                                        xi=1e-5)
+        
         tf.gradients = old_grads
 
-    def test_generate_np_does_not_cache_graph_computation_for_ord(self):
+    def test_generate_np_does_not_cache_graph_computation_for_num_iterations(self):
         import tensorflow as tf
 
-        x_val = np.random.rand(100, 2)
+        x_val = np.random.rand(1, 1000)
         x_val = np.array(x_val, dtype=np.float32)
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
+        x_adv = self.attack.generate_np(x_val, eps=.5, num_iterations=10,
                                         clip_min=-5.0, clip_max=5.0)
-
-        assert np.allclose(np.max(np.abs(x_adv-x_val), axis=1), 0.5)
 
         ok = [False]
         old_grads = tf.gradients
@@ -148,10 +154,8 @@ class TestFastGradientMethod(unittest.TestCase):
             return old_grads(*x, **y)
         tf.gradients = fn
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=1,
+        x_adv = self.attack.generate_np(x_val, eps=.5, num_iterations=20,
                                         clip_min=-5.0, clip_max=5.0)
-
-        assert np.allclose(np.sum(np.abs(x_adv-x_val), axis=1), 0.5)
 
         tf.gradients = old_grads
 
@@ -159,6 +163,7 @@ class TestFastGradientMethod(unittest.TestCase):
 
 class TestBasicIterativeMethod(TestFastGradientMethod):
     def setUp(self):
+        super(TestBasicIterativeMethod, self).setUp()
         import tensorflow as tf
 
         # The world's simplest neural network

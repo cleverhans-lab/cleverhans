@@ -466,6 +466,15 @@ class VirtualAdversarialMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
 
+        if self.back == 'th':
+            error = "For the Theano version of VAM please call vatm directly."
+            raise NotImplementedError(error)
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'eps': tf.float32, 'xi': tf.float32,
+                                'clip_min': tf.float32,
+                                'clip_max': tf.float32}
+
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
@@ -483,29 +492,6 @@ class VirtualAdversarialMethod(Attack):
                     num_iterations=self.num_iterations, xi=self.xi,
                     clip_min=self.clip_min, clip_max=self.clip_max)
 
-    def generate_np(self, x_val, **kwargs):
-        """
-        Generate adversarial samples and return them in a Numpy array.
-        :param x_val: (required) A Numpy array with the original inputs.
-        :param eps: (optional float )the epsilon (input variation parameter)
-        :param num_iterations: (optional) the number of iterations
-        :param xi: (optional float) the finite difference parameter
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
-        """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
-
-        import tensorflow as tf
-
-        # Generate this attack's graph if it hasn't been done previously
-        if not hasattr(self, "_x"):
-            input_shape = list(x_val.shape)
-            input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x, **kwargs)
-
-        return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
 
     def parse_params(self, eps=2.0, num_iterations=1, xi=1e-6, clip_min=None,
                      clip_max=None, **kwargs):
