@@ -484,13 +484,14 @@ class VirtualAdversarialMethod(Attack):
 
 
 class CarliniWagnerL2(Attack):
+
     """
     This attack was originally proposed by Carlini and Wagner. It is an
     iterative attack that finds adversarial examples on many defenses that
     are robust to other attacks.
     Paper link: https://arxiv.org/abs/1608.04644
-
     """
+
     def __init__(self, model, back='tf', sess=None):
         super(CarliniWagnerL2, self).__init__(model, back, sess)
 

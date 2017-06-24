@@ -16,6 +16,7 @@ class TestMNISTTutorialJSMA(unittest.TestCase):
                               'nb_epochs': 2}
         report = mnist_tutorial_jsma.mnist_tutorial_jsma(**jsma_tutorial_args)
 
+        print(report.clean_train_adv_eval)
         # Check accuracy values contained in the AccuracyReport object
         self.assertTrue(report.clean_train_clean_eval > 0.75)
         self.assertTrue(report.clean_train_adv_eval < 0.05)
