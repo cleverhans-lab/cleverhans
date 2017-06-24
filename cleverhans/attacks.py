@@ -396,7 +396,6 @@ class SaliencyMapMethod(Attack):
 
         return wrap
 
-
     def parse_params(self, theta=1., gamma=np.inf, nb_classes=10, clip_min=0.,
                      clip_max=1., targets=None, **kwargs):
         """
@@ -460,7 +459,6 @@ class VirtualAdversarialMethod(Attack):
         return vatm(self.model, x, self.model(x), eps=self.eps,
                     num_iterations=self.num_iterations, xi=self.xi,
                     clip_min=self.clip_min, clip_max=self.clip_max)
-
 
     def parse_params(self, eps=2.0, num_iterations=1, xi=1e-6, clip_min=None,
                      clip_max=None, **kwargs):
