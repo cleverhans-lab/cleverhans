@@ -120,7 +120,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     jsma_params = {'theta': 1., 'gamma': 0.1,
                    'nb_classes': nb_classes, 'clip_min': 0.,
                    'clip_max': 1.,
-                   'y_val': None}
+                   'targets': None}
 
     figure = None
     # Loop over the samples we want to perturb into adversarial examples
@@ -145,7 +145,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
             # This call runs the Jacobian-based saliency map approach
             one_hot_target = np.zeros((1, nb_classes), dtype=np.float32)
             one_hot_target[0, target] = 1
-            jsma_params['y_val'] = one_hot_target
+            jsma_params['targets'] = one_hot_target
             adv_x = jsma.generate_np(sample, **jsma_params)
 
             # Check if success was achieved
