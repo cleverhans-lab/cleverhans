@@ -119,7 +119,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     jsma = SaliencyMapMethod(wrap, back='tf', sess=sess)
     jsma_params = {'theta': 1., 'gamma': 0.1,
                    'nb_classes': nb_classes, 'clip_min': 0.,
-                   'clip_max': 1., 'targets': y,
+                   'clip_max': 1.,
                    'y_val': None}
 
     figure = None
