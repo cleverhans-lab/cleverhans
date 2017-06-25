@@ -13,7 +13,7 @@ class TestModelClass(unittest.TestCase):
     def test_default_graph_inference_state(self):
         # Define empty model
         model = Model(model=None)
-        self.assertTrue(model.state == 'test')
+        self.assertTrue(model.state == 'train')
 
     def test_change_graph_to_train(self):
         # Define empty model
