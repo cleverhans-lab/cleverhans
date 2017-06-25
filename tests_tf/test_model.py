@@ -28,9 +28,9 @@ class TestModelClass(unittest.TestCase):
         model = Model(model=None)
         x = []
 
-        # Exception is thrown when `fprop_layer` not implemented
+        # Exception is thrown when `get_layer` not implemented
         with self.assertRaises(Exception) as context:
-            model.fprop_layer(x, layer='')
+            model.get_layer(x, layer='')
         self.assertTrue(context.exception)
 
     def test_fprop_logits(self):
@@ -38,9 +38,9 @@ class TestModelClass(unittest.TestCase):
         model = Model(model=None)
         x = []
 
-        # Exception is thrown when `fprop_logits` not implemented
+        # Exception is thrown when `get_logits` not implemented
         with self.assertRaises(Exception) as context:
-            model.fprop_logits(x)
+            model.get_logits(x)
         self.assertTrue(context.exception)
 
     def test_fprop_probs(self):
@@ -48,9 +48,9 @@ class TestModelClass(unittest.TestCase):
         model = Model(model=None)
         x = []
 
-        # Exception is thrown when `fprop_probs` not implemented
+        # Exception is thrown when `get_probs` not implemented
         with self.assertRaises(Exception) as context:
-            model.fprop_probs(x)
+            model.get_probs(x)
         self.assertTrue(context.exception)
 
     def test_get_layer_names(self):
@@ -111,8 +111,8 @@ class TestKerasModelWrapper(unittest.TestCase):
         import tensorflow as tf
         model = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
-        preds = model.fprop_probs(x)
-        logits = model.fprop_logits(x)
+        preds = model.get_probs(x)
+        logits = model.get_logits(x)
 
         x_val = np.random.rand(2, 100)
         tf.global_variables_initializer().run(session=self.sess)
@@ -124,7 +124,7 @@ class TestKerasModelWrapper(unittest.TestCase):
         import tensorflow as tf
         model = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
-        preds = model.fprop_probs(x)
+        preds = model.get_probs(x)
 
         x_val = np.random.rand(2, 100)
         tf.global_variables_initializer().run(session=self.sess)
