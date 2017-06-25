@@ -13,7 +13,7 @@ class Model(object):
 
     def __init__(self, model):
         """
-        Init a wrapper. If `fprop_layer` is implemented, `__init__`
+        If `fprop_layer` is implemented, `__init__`
         should keep track of the name of the layers or `self.model` should
         provide a method for retrieving a layer.
         :param model: A function that takes a symbolic input and returns the
