@@ -22,8 +22,8 @@ class Model(object):
         """
         self.model = model
 
-        # The following is a cache to prevent the construction of increasingly
-        # large graphs after multiple calls of the fprop methods. The cache is
+        # The following is a cache to prevent the re-construction of identical
+        # graphs after multiple calls of the fprop methods. The cache is
         # implemented as a dictionary of the form (input, train): output_dict
         # The key is a pair of input (the symbolic representation of the input)
         # and train (a boolean indicating whether the graph is in training or
@@ -33,8 +33,8 @@ class Model(object):
         self.fprop_cache = {}
 
         # By default, we assume the model is being used for inference (i.e.,
-        # 'test' time). If the model is being trained, a call to set_train()
-        # should be made first.
+        # 'test' time). If the model is being trained or in another state,
+        # a call to set_state() should be made first.
         self.state = 'test'
 
         pass
