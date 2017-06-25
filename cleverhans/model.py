@@ -32,10 +32,10 @@ class Model(object):
         # to symbolic representation of the output of that layer.
         self.fprop_cache = {}
 
-        # By default, we assume the model is being used for inference (i.e.,
-        # 'test' time). If the model is being trained or in another state,
-        # a call to set_state() should be made first.
-        self.state = 'test'
+        # By default, we assume the model is being used for training (i.e.,
+        # 'train' time). If the model is used for inference or in a different
+        # state, a call to set_state() should be made first.
+        self.state = 'train'
 
         pass
 
