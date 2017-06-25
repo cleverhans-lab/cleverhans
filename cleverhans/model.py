@@ -13,7 +13,7 @@ class Model(object):
 
     def __init__(self, model):
         """
-        If `fprop_layer` is implemented, `__init__`
+        If `get_layer` is implemented, `__init__`
         should keep track of the name of the layers or `self.model` should
         provide a method for retrieving a layer.
         :param model: A function that takes a symbolic input and returns the
@@ -45,7 +45,7 @@ class Model(object):
         an input tensor and returning the tensor giving the output
         of the model on that input).
         """
-        return self.fprop_probs(*args, **kwargs)
+        return self.get_probs(*args, **kwargs)
 
     def set_state(self, state):
         """
@@ -60,7 +60,7 @@ class Model(object):
         print('The model state was set to: ' + state)
         return
 
-    def fprop_layer(self, x, layer):
+    def get_layer(self, x, layer):
         """
         Expose the hidden features of a model given a layer name.
         :param x: A symbolic representation of the network input
@@ -70,21 +70,21 @@ class Model(object):
         # Return the symbolic representation for this layer.
         return self.fprop(x)[layer]
 
-    def fprop_logits(self, x):
+    def get_logits(self, x):
         """
         :param x: A symbolic representation of the network input
         :return: A symbolic representation of the output logits (i.e., the
                  values fed as inputs to the softmax layer).
         """
-        raise NotImplementedError('`fprop_logits` not implemented')
+        raise NotImplementedError('`get_logits` not implemented')
 
-    def fprop_probs(self, x):
+    def get_probs(self, x):
         """
         :param x: A symbolic representation of the network input
         :return: A symbolic representation of the output probabilities (i.e.,
                 the output values produced by the softmax layer).
         """
-        raise NotImplementedError('`fprop_probs` not implemented')
+        raise NotImplementedError('`get_probs` not implemented')
 
     def get_layer_names(self):
         """
@@ -166,23 +166,23 @@ class KerasModelWrapper(Model):
 
         return logits_name
 
-    def fprop_logits(self, x):
+    def get_logits(self, x):
         """
         :param x: A symbolic representation of the network input.
         :return: A symbolic representation of the logits
         """
         logits_name = self._get_logits_name()
 
-        return self.fprop_layer(x, logits_name)
+        return self.get_layer(x, logits_name)
 
-    def fprop_probs(self, x):
+    def get_probs(self, x):
         """
         :param x: A symbolic representation of the network input.
         :return: A symbolic representation of the probs
         """
         name = self._get_softmax_name()
 
-        return self.fprop_layer(x, name)
+        return self.get_layer(x, name)
 
     def get_layer_names(self):
         """
