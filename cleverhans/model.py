@@ -41,7 +41,9 @@ class Model(object):
 
     def __call__(self, *args, **kwargs):
         """
-        For compatibilty with a standard model.
+        For compatibility with functions used as model definitions (taking
+        an input tensor and returning the tensor giving the output
+        of the model on that input).
         """
         return self.fprop_probs(*args, **kwargs)
 
