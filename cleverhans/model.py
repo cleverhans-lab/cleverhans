@@ -128,11 +128,6 @@ class KerasModelWrapper(Model):
         """
         super(KerasModelWrapper, self).__init__(model)
 
-        # Model caching to create a new model only once for each hidden layer
-        self.modelw_layer = {}
-        # One model wrapper cache for `fprop`, init in the first call
-        self.modelw = None
-
     def set_state(self, train):
         """
         Keras has its own way to keep track of the state of the graph so we'll
