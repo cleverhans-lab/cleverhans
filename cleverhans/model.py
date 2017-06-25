@@ -7,9 +7,7 @@ class Model(object):
     needed for making an attack. This abstraction removes the dependency on
     any specific neural network package (e.g. Keras) from the core
     code of CleverHans. It can also simplify exposing the hidden features of a
-    model when a specific package does not directly expose them. For an
-    example of why this is useful, see the paper "Adversarial Manipulation
-    of Deep Representations" (https://arxiv.org/abs/1511.05122).
+    model when a specific package does not directly expose them.
     """
     __metaclass__ = ABCMeta
 
