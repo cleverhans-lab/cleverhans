@@ -52,8 +52,7 @@ class Model(object):
         for each of the states used. The default value of self.state is 'test'
         as a reference to the inference phase, but you could set it as 'train'
         (which would for instance mean that the model uses dropout layers).
-        :param state: (boolean) True if the model should be in training state
-                      or False for inference.
+        :param state: (string) A name to identify which state the model is in.
         """
         self.state = state
         print('The model state was set to: ' + state)
