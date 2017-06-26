@@ -1,6 +1,7 @@
 """
 Model construction utilities based on keras
 """
+from .model import Model
 
 import keras
 from keras.utils import np_utils
@@ -12,8 +13,6 @@ if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
     from keras.layers import Conv2D
 else:
     from keras.layers import Convolution2D
-
-from .model import Model
 
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
