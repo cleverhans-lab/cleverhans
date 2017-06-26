@@ -14,6 +14,7 @@ from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
+from cleverhans.model import KerasModelWrapper
 
 FLAGS = flags.FLAGS
 
@@ -108,7 +109,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                     args=train_params, save=True)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
-    fgsm = FastGradientMethod(model, sess=sess)
+    wrap = KerasModelWrapper(model)
+    fgsm = FastGradientMethod(wrap, sess=sess)
     fgsm_params = {'eps': 0.3}
     adv_x = fgsm.generate(x, **fgsm_params)
     preds_adv = model(adv_x)
@@ -123,7 +125,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Redefine TF model graph
     model_2 = cnn_model()
     preds_2 = model_2(x)
-    fgsm2 = FastGradientMethod(model_2, sess=sess)
+    wrap_2 = KerasModelWrapper(model_2)
+    fgsm2 = FastGradientMethod(wrap_2, sess=sess)
     preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
 
     def evaluate_2():
