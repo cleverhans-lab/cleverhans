@@ -96,28 +96,25 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.assertTrue(context.exception)
 
     def test_set_state(self):
-        model = KerasModelWrapper()
+        model = KerasModelWrapper(self.model)
         # Exception is thrown when `set_state` is called
         with self.assertRaises(NotImplementedError) as context:
             model.set_state('train')
         self.assertTrue(context.exception)
 
     def test_get_softmax_name(self):
-        model = KerasModelWrapper()
-        model.set_model(self.model)
+        model = KerasModelWrapper(self.model)
         softmax_name = model._get_softmax_name()
         self.assertEqual(softmax_name, 'softmax')
 
     def test_get_logits_name(self):
-        model = KerasModelWrapper()
-        model.set_model(self.model)
+        model = KerasModelWrapper(self.model)
         logits_name = model._get_logits_name()
         self.assertEqual(logits_name, 'l2')
 
     def test_get_logits(self):
         import tensorflow as tf
-        model = KerasModelWrapper()
-        model.set_model(self.model)
+        model = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         preds = model.get_probs(x)
         logits = model.get_logits(x)
@@ -130,8 +127,7 @@ class TestKerasModelWrapper(unittest.TestCase):
 
     def test_get_probs(self):
         import tensorflow as tf
-        model = KerasModelWrapper()
-        model.set_model(self.model)
+        model = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         preds = model.get_probs(x)
 
@@ -141,15 +137,13 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.assertTrue(np.allclose(np.sum(p_val, axis=1), 1, atol=1e-6))
 
     def test_get_layer_names(self):
-        model = KerasModelWrapper()
-        model.set_model(self.model)
+        model = KerasModelWrapper(self.model)
         layer_names = model.get_layer_names()
         self.assertEqual(layer_names, ['l1', 'l2', 'softmax'])
 
     def test_fprop(self):
         import tensorflow as tf
-        model = KerasModelWrapper()
-        model.set_model(self.model)
+        model = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         out_dict = model.fprop(x)
 
