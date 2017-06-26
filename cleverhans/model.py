@@ -11,17 +11,11 @@ class Model(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, model):
+    def __init__(self):
         """
         If `get_layer` is implemented, `__init__`
-        should keep track of the name of the layers or `self.model` should
-        provide a method for retrieving a layer.
-        :param model: A function that takes a symbolic input and returns the
-                      symbolic output for the model's post-softmax predictions
-                      (probabilities).
+        should keep track of the name of the layers.
         """
-        self.model = model
-
         # The following is a cache to prevent the re-construction of identical
         # graphs after multiple calls of the fprop methods. The cache is
         # implemented as a dictionary of the form (input, train): output_dict
@@ -121,12 +115,19 @@ class KerasModelWrapper(Model):
     in-place operations can incur an overhead.
     """
 
-    def __init__(self, model):
+    def __init__(self):
         """
         Create a wrapper for a Keras model
+        """
+        super(KerasModelWrapper, self).__init__()
+        self.model = None
+
+    def set_model(self, model):
+        """
+        Store the Keras model being wrapped as an attribute.
         :param model: A Keras model
         """
-        super(KerasModelWrapper, self).__init__(model)
+        self.model = model
 
     def set_state(self, train):
         """
@@ -141,11 +142,13 @@ class KerasModelWrapper(Model):
 
     def _get_softmax_name(self):
         """
-        Looks for a softmax layer and if found returns the output right before
-        the softmax activation.
-
+        Looks for the name of the softmax layer.
         :return: Softmax layer name
         """
+        if self.model is None:
+            raise ValueError('Call set_model() first with the Keras model '
+                             'being wrapped.')
+
         for i, layer in enumerate(self.model.layers):
             cfg = layer.get_config()
             if 'activation' in cfg and cfg['activation'] == 'softmax':
@@ -154,6 +157,14 @@ class KerasModelWrapper(Model):
         raise Exception("No softmax layers found")
 
     def _get_logits_name(self):
+        """
+        Looks for the name of the layer producing the logits.
+        :return: name of layer producing the logits
+        """
+        if self.model is None:
+            raise ValueError('Call set_model() first with the Keras model '
+                             'being wrapped.')
+
         softmax_name = self._get_softmax_name()
         softmax_layer = self.model.get_layer(softmax_name)
         node = softmax_layer.inbound_nodes[0]
@@ -166,6 +177,10 @@ class KerasModelWrapper(Model):
         :param x: A symbolic representation of the network input.
         :return: A symbolic representation of the logits
         """
+        if self.model is None:
+            raise ValueError('Call set_model() first with the Keras model '
+                             'being wrapped.')
+
         logits_name = self._get_logits_name()
 
         return self.get_layer(x, logits_name)
@@ -175,6 +190,10 @@ class KerasModelWrapper(Model):
         :param x: A symbolic representation of the network input.
         :return: A symbolic representation of the probs
         """
+        if self.model is None:
+            raise ValueError('Call set_model() first with the Keras model '
+                             'being wrapped.')
+
         name = self._get_softmax_name()
 
         return self.get_layer(x, name)
@@ -183,6 +202,10 @@ class KerasModelWrapper(Model):
         """
         :return: Names of all the layers kept by Keras
         """
+        if self.model is None:
+            raise ValueError('Call set_model() first with the Keras model '
+                             'being wrapped.')
+
         layer_names = [x.name for x in self.model.layers]
         return layer_names
 
@@ -193,6 +216,10 @@ class KerasModelWrapper(Model):
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
         """
+        if self.model is None:
+            raise ValueError('Call set_model() first with the Keras model '
+                             'being wrapped.')
+
         if (x, self.state) in self.fprop_cache.keys():
             return self.fprop_cache[(x, self.state)]
         else:
