@@ -15,6 +15,7 @@ from cleverhans.utils import other_classes, cnn_model
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
+from cleverhans.model import KerasModelWrapper
 
 FLAGS = flags.FLAGS
 
@@ -87,6 +88,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
+    sess.run(tf.global_variables_initializer())
     model_train(sess, x, y, preds, X_train, Y_train, args=train_params)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
@@ -113,7 +115,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Instantiate a SaliencyMapMethod attack object
-    jsma = SaliencyMapMethod(model, back='tf', sess=sess)
+    wrap = KerasModelWrapper(model)
+    jsma = SaliencyMapMethod(wrap, back='tf', sess=sess)
     jsma_params = {'theta': 1., 'gamma': 0.1,
                    'nb_classes': nb_classes, 'clip_min': 0.,
                    'clip_max': 1., 'targets': y,
