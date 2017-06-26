@@ -12,20 +12,20 @@ from cleverhans.model import Model, KerasModelWrapper
 class TestModelClass(unittest.TestCase):
     def test_default_graph_inference_state(self):
         # Define empty model
-        model = Model(model=None)
+        model = Model()
         self.assertTrue(model.state == 'train')
 
     def test_change_graph_to_train(self):
         # Define empty model
-        model = Model(model=None)
+        model = Model()
 
         # Set graph state to inference
         model.set_state('train')
         self.assertTrue(model.state == 'train')
 
-    def test_fprop_layer(self):
+    def test_get_layer(self):
         # Define empty model
-        model = Model(model=None)
+        model = Model()
         x = []
 
         # Exception is thrown when `get_layer` not implemented
@@ -33,9 +33,9 @@ class TestModelClass(unittest.TestCase):
             model.get_layer(x, layer='')
         self.assertTrue(context.exception)
 
-    def test_fprop_logits(self):
+    def test_get_logits(self):
         # Define empty model
-        model = Model(model=None)
+        model = Model()
         x = []
 
         # Exception is thrown when `get_logits` not implemented
@@ -43,9 +43,9 @@ class TestModelClass(unittest.TestCase):
             model.get_logits(x)
         self.assertTrue(context.exception)
 
-    def test_fprop_probs(self):
+    def test_get_probs(self):
         # Define empty model
-        model = Model(model=None)
+        model = Model()
         x = []
 
         # Exception is thrown when `get_probs` not implemented
@@ -55,7 +55,7 @@ class TestModelClass(unittest.TestCase):
 
     def test_get_layer_names(self):
         # Define empty model
-        model = Model(model=None)
+        model = Model()
 
         # Exception is thrown when `get_layer_names` not implemented
         with self.assertRaises(Exception) as context:
@@ -64,7 +64,7 @@ class TestModelClass(unittest.TestCase):
 
     def test_fprop(self):
         # Define empty model
-        model = Model(model=None)
+        model = Model()
         x = []
 
         # Exception is thrown when `fprop` not implemented
@@ -91,25 +91,46 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.model = dummy_model()
 
     def test_set_state(self):
-        model = KerasModelWrapper(self.model)
-        # Exception is thrown when `set_train` is called
+        model = KerasModelWrapper()
+        # Exception is thrown when `set_state` is called
         with self.assertRaises(NotImplementedError) as context:
             model.set_state('train')
         self.assertTrue(context.exception)
 
+    def test_model_not_set_get_softmax_name(self):
+        model = KerasModelWrapper()
+        with self.assertRaises(ValueError) as context:
+            model._get_softmax_name()
+        self.assertTrue(context.exception)
+
     def test_get_softmax_name(self):
-        model = KerasModelWrapper(self.model)
+        model = KerasModelWrapper()
+        model.set_model(self.model)
         softmax_name = model._get_softmax_name()
         self.assertEqual(softmax_name, 'softmax')
 
+    def test_model_not_set_get_logits_name(self):
+        model = KerasModelWrapper()
+        with self.assertRaises(ValueError) as context:
+            model._get_logits_name()
+        self.assertTrue(context.exception)
+
     def test_get_logits_name(self):
-        model = KerasModelWrapper(self.model)
+        model = KerasModelWrapper()
+        model.set_model(self.model)
         logits_name = model._get_logits_name()
         self.assertEqual(logits_name, 'l2')
 
-    def test_fprop_logits(self):
+    def test_model_not_set_get_logits(self):
+        model = KerasModelWrapper()
+        with self.assertRaises(ValueError) as context:
+            model.get_logits(None)
+        self.assertTrue(context.exception)
+
+    def test_get_logits(self):
         import tensorflow as tf
-        model = KerasModelWrapper(self.model)
+        model = KerasModelWrapper()
+        model.set_model(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         preds = model.get_probs(x)
         logits = model.get_logits(x)
@@ -120,9 +141,16 @@ class TestKerasModelWrapper(unittest.TestCase):
         p_gt = np.exp(logits)/np.sum(np.exp(logits), axis=1, keepdims=True)
         self.assertTrue(np.allclose(p_val, p_gt, atol=1e-6))
 
-    def test_fprop_probs(self):
+    def test_model_not_set_get_probs(self):
+        model = KerasModelWrapper()
+        with self.assertRaises(ValueError) as context:
+            model.get_probs(None)
+        self.assertTrue(context.exception)
+
+    def test_get_probs(self):
         import tensorflow as tf
-        model = KerasModelWrapper(self.model)
+        model = KerasModelWrapper()
+        model.set_model(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         preds = model.get_probs(x)
 
@@ -131,14 +159,28 @@ class TestKerasModelWrapper(unittest.TestCase):
         p_val = self.sess.run(preds, feed_dict={x: x_val})
         self.assertTrue(np.allclose(np.sum(p_val, axis=1), 1, atol=1e-6))
 
+    def test_model_not_set_get_layer_names(self):
+        model = KerasModelWrapper()
+        with self.assertRaises(ValueError) as context:
+            model.get_layer_names()
+        self.assertTrue(context.exception)
+
     def test_get_layer_names(self):
-        model = KerasModelWrapper(self.model)
+        model = KerasModelWrapper()
+        model.set_model(self.model)
         layer_names = model.get_layer_names()
         self.assertEqual(layer_names, ['l1', 'l2', 'softmax'])
 
+    def test_model_not_set_fprop(self):
+        model = KerasModelWrapper()
+        with self.assertRaises(ValueError) as context:
+            model.fprop(None)
+        self.assertTrue(context.exception)
+
     def test_fprop(self):
         import tensorflow as tf
-        model = KerasModelWrapper(self.model)
+        model = KerasModelWrapper()
+        model.set_model(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         out_dict = model.fprop(x)
 
