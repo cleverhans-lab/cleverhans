@@ -196,7 +196,7 @@ def tf_model_eval(*args, **kwargs):
     return model_eval(*args, **kwargs)
 
 
-def model_eval(sess, x, y, model, X_test, Y_test, feed=None, args=None):
+def model_eval(sess, x, y, preds, X_test, Y_test, feed=None, args=None):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
