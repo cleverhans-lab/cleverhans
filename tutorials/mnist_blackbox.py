@@ -21,7 +21,7 @@ from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
-from cleverhans.model import KerasModelWrapper
+from cleverhans.utils_keras import KerasModelWrapper
 
 FLAGS = flags.FLAGS
 
