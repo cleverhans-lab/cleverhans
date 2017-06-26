@@ -15,7 +15,7 @@ from cleverhans.utils import other_classes, cnn_model
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
-from cleverhans.model import KerasModelWrapper
+from cleverhans.utils_keras import KerasModelWrapper
 
 FLAGS = flags.FLAGS
 

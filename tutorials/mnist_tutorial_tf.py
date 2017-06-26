@@ -14,7 +14,7 @@ from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
-from cleverhans.model import KerasModelWrapper
+from cleverhans.utils_keras import KerasModelWrapper
 
 FLAGS = flags.FLAGS
 
