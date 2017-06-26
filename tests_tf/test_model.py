@@ -90,17 +90,16 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.sess.as_default()
         self.model = dummy_model()
 
+    def test_model_not_set(self):
+        with self.assertRaises(ValueError) as context:
+            model = KerasModelWrapper()
+        self.assertTrue(context.exception)
+
     def test_set_state(self):
         model = KerasModelWrapper()
         # Exception is thrown when `set_state` is called
         with self.assertRaises(NotImplementedError) as context:
             model.set_state('train')
-        self.assertTrue(context.exception)
-
-    def test_model_not_set_get_softmax_name(self):
-        model = KerasModelWrapper()
-        with self.assertRaises(ValueError) as context:
-            model._get_softmax_name()
         self.assertTrue(context.exception)
 
     def test_get_softmax_name(self):
@@ -109,23 +108,11 @@ class TestKerasModelWrapper(unittest.TestCase):
         softmax_name = model._get_softmax_name()
         self.assertEqual(softmax_name, 'softmax')
 
-    def test_model_not_set_get_logits_name(self):
-        model = KerasModelWrapper()
-        with self.assertRaises(ValueError) as context:
-            model._get_logits_name()
-        self.assertTrue(context.exception)
-
     def test_get_logits_name(self):
         model = KerasModelWrapper()
         model.set_model(self.model)
         logits_name = model._get_logits_name()
         self.assertEqual(logits_name, 'l2')
-
-    def test_model_not_set_get_logits(self):
-        model = KerasModelWrapper()
-        with self.assertRaises(ValueError) as context:
-            model.get_logits(None)
-        self.assertTrue(context.exception)
 
     def test_get_logits(self):
         import tensorflow as tf
@@ -141,12 +128,6 @@ class TestKerasModelWrapper(unittest.TestCase):
         p_gt = np.exp(logits)/np.sum(np.exp(logits), axis=1, keepdims=True)
         self.assertTrue(np.allclose(p_val, p_gt, atol=1e-6))
 
-    def test_model_not_set_get_probs(self):
-        model = KerasModelWrapper()
-        with self.assertRaises(ValueError) as context:
-            model.get_probs(None)
-        self.assertTrue(context.exception)
-
     def test_get_probs(self):
         import tensorflow as tf
         model = KerasModelWrapper()
@@ -159,23 +140,11 @@ class TestKerasModelWrapper(unittest.TestCase):
         p_val = self.sess.run(preds, feed_dict={x: x_val})
         self.assertTrue(np.allclose(np.sum(p_val, axis=1), 1, atol=1e-6))
 
-    def test_model_not_set_get_layer_names(self):
-        model = KerasModelWrapper()
-        with self.assertRaises(ValueError) as context:
-            model.get_layer_names()
-        self.assertTrue(context.exception)
-
     def test_get_layer_names(self):
         model = KerasModelWrapper()
         model.set_model(self.model)
         layer_names = model.get_layer_names()
         self.assertEqual(layer_names, ['l1', 'l2', 'softmax'])
-
-    def test_model_not_set_fprop(self):
-        model = KerasModelWrapper()
-        with self.assertRaises(ValueError) as context:
-            model.fprop(None)
-        self.assertTrue(context.exception)
 
     def test_fprop(self):
         import tensorflow as tf
