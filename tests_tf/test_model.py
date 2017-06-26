@@ -6,7 +6,8 @@ from __future__ import unicode_literals
 import unittest
 import numpy as np
 
-from cleverhans.model import Model, KerasModelWrapper
+from cleverhans.model import Model
+from cleverhans.utils_keras import KerasModelWrapper
 
 
 class TestModelClass(unittest.TestCase):
