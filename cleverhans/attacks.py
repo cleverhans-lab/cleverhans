@@ -133,7 +133,7 @@ class Attack(object):
                 # only save the graph if every fixed element is hashable
                 self.graphs[hash_key] = (x, new_kwargs, x_adv)
 
-            if len(self.graphs) == 10:
+            if len(self.graphs) >= 10:
                 warnings.warn("Calling generate_np() with multiple different "
                               "structural paramaters is inefficient and should"
                               " be avoided. Calling generate() is preferred.")
