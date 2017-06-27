@@ -608,7 +608,7 @@ class CarliniWagnerL2:
         # placeholders for the best l2, score, and image attack found so far
         o_bestl2 = [1e10]*batch_size
         o_bestscore = [-1]*batch_size
-        o_bestattack = [np.zeros(imgs[0].shape)+self.clip_min]*batch_size
+        o_bestattack = np.copy(oimgs)
 
         for outer_step in range(self.BINARY_SEARCH_STEPS):
             # completely reset adam's internal state.
