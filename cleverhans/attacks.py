@@ -39,11 +39,18 @@ class Attack(object):
         self.graphs = {}
 
         # When calling generate_np, arguments in the following set should be
-        # fed into the graph, as they are not structural changes that require
+        # fed into the graph, as they are not structural items that require
         # generating a new graph.
-        # This dict should map names of arguments to the types they should have
+        # This dict should map names of arguments to the types they should
+        # have.
         # (Usually, the target class will be a feedable keyword argument.)
         self.feedable_kwargs = {}
+
+        # When calling generate_np, arguments in the following set should NOT
+        # be fed into the graph, as they ARE structural items that require
+        # generating a new graph.
+        # This list should contain the names of the structural arguments.
+        self.structural_kwargs = []
 
     def generate(self, x, **kwargs):
         """
@@ -82,12 +89,17 @@ class Attack(object):
         # the set of arguments that are structural properties of the attack
         # if these arguments are different, we must construct a new graph
         fixed = dict((k, v) for k, v in kwargs.items()
-                     if k not in self.feedable_kwargs)
+                     if k in self.structural_kwargs)
 
         # the set of arguments that are passed as placeholders to the graph
         # on each call, and can change without constructing a new graph
         feedable = dict((k, v) for k, v in kwargs.items()
                         if k in self.feedable_kwargs)
+
+        if len(fixed)+len(feedable) < len(kwargs):
+            warnings.warn("Supplied extra keyword arguments that are not "
+                          "used in the graph computation. They have been "
+                          "ignored.")
 
         if not all(isinstance(value, collections.Hashable)
                    for value in fixed.values()):
@@ -178,6 +190,7 @@ class FastGradientMethod(Attack):
                                 'y': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
+        self.structural_kwargs = ['ord']
 
     def generate(self, x, **kwargs):
         """
@@ -259,6 +272,7 @@ class BasicIterativeMethod(Attack):
                                 'y': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
+        self.structural_kwargs = ['ord', 'nb_iter']
 
     def generate(self, x, **kwargs):
         import tensorflow as tf
@@ -359,6 +373,8 @@ class SaliencyMapMethod(Attack):
 
         import tensorflow as tf
         self.feedable_kwargs = {'targets': tf.float32}
+        self.structural_kwargs = ['theta', 'gamma', 'nb_classes',
+                                  'clip_max', 'clip_min']
 
     def generate(self, x, **kwargs):
         """
@@ -442,6 +458,7 @@ class VirtualAdversarialMethod(Attack):
         self.feedable_kwargs = {'eps': tf.float32, 'xi': tf.float32,
                                 'clip_min': tf.float32,
                                 'clip_max': tf.float32}
+        self.structural_kwargs = ['num_iterations']
 
     def generate(self, x, **kwargs):
         """
