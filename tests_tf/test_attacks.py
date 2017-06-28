@@ -350,8 +350,8 @@ class TestCarliniWagnerL2(CleverHansTest):
                                         clip_min=-0.2, clip_max=0.3,
                                         batch_size=10)
 
-        assert np.isclose(np.min(x_adv), -0.2, atol=1e-2)
-        assert np.isclose(np.max(x_adv), 0.3, atol=1e-2)
+        assert -0.201 < np.min(x_adv)
+        assert np.max(x_adv) < .301
 
 
 class TestSaliencyMapMethod(CleverHansTest):
