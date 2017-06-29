@@ -29,9 +29,17 @@ class Model(object):
         # By default, we assume the model is being used for training (i.e.,
         # 'train' time). If the model is used for inference or in a different
         # state, a call to set_state() should be made first.
-        self.state = 'train'
+        self._state = 'train'
 
         pass
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state_val):
+        self._state = state_val
 
     def __call__(self, *args, **kwargs):
         """
@@ -40,19 +48,6 @@ class Model(object):
         of the model on that input).
         """
         return self.get_probs(*args, **kwargs)
-
-    def set_state(self, state):
-        """
-        Set which state the model is currently being used in. This can be any
-        string and is used to by the cache to keep different output tensors
-        for each of the states used. The default value of self.state is 'test'
-        as a reference to the inference phase, but you could set it as 'train'
-        (which would for instance mean that the model uses dropout layers).
-        :param state: (string) A name to identify which state the model is in.
-        """
-        self.state = state
-        print('The model state was set to: ' + state)
-        return
 
     def get_layer(self, x, layer):
         """
