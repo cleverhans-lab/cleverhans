@@ -1,5 +1,4 @@
 from abc import ABCMeta
-import tensorflow as tf
 
 
 class Model(object):
@@ -77,7 +76,8 @@ class Model(object):
         if 'probs' in self.get_layer_names():
             return self.get_layer(x, 'probs')
         else:
-            return tf.nn.softmax(self.get_logits())
+            import tensorflow as tf
+            return tf.nn.softmax(self.get_logits(x))
 
     def get_layer_names(self):
         """
