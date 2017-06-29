@@ -63,7 +63,7 @@ install:
   - if [[ "$KERAS_BACKEND" == "tensorflow" ]]; then
       pip install keras;
     elif [[ "$KERAS_BACKEND" == "theano" ]]; then
-      pip install keras=1.2.2;
+      pip install keras==1.2.2;
     fi
   - python setup.py install
 
