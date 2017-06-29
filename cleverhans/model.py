@@ -1,4 +1,5 @@
 from abc import ABCMeta
+import tensorflow as tf
 
 
 class Model(object):
@@ -65,7 +66,7 @@ class Model(object):
         :return: A symbolic representation of the output logits (i.e., the
                  values fed as inputs to the softmax layer).
         """
-        raise NotImplementedError('`get_logits` not implemented')
+        return self.get_layer(x, 'logits')
 
     def get_probs(self, x):
         """
@@ -73,14 +74,17 @@ class Model(object):
         :return: A symbolic representation of the output probabilities (i.e.,
                 the output values produced by the softmax layer).
         """
-        raise NotImplementedError('`get_probs` not implemented')
+        if 'probs' in self.get_layer_names():
+            return self.get_layer(x, 'probs')
+        else:
+            return tf.nn.softmax(self.get_logits())
 
     def get_layer_names(self):
         """
         :return: a list of names for the layers that can be exposed by this
         model abstraction.
         """
-        raise NotImplementedError('`get_layer_names` not implemented')
+        raise NotImplementedError('`get_layer_names` not implemented.')
 
     def fprop(self, x):
         """
@@ -92,11 +96,10 @@ class Model(object):
         # In case of cache hit, return cached dictionary of output tensors.
         if (x, self.state) in self.fprop_cache.keys():
             return self.fprop_cache[(x, self.state)]
+        else:
+            result = self._fprop(x)
+            self.fprop_cache[(x, self.state)] = result
+            return result
 
-        # The implementation (missing here because this is an abstract class)
-        # should populate the dictionary with all layers returned by
-        # the method self.get_layer_names()
-        # assert all([layer in self.fprop_cache[(x, self.state)]
-        #             for layer in self.get_layer_names()])
-
-        raise NotImplementedError('`fprop` not implemented')
+    def _fprop(self, x):
+        raise NotImplementedError('`_fprop` not implemented.')
