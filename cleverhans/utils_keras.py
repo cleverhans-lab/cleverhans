@@ -118,7 +118,12 @@ class KerasModelWrapper(Model):
 
         self.model = model
 
-    def set_state(self, train):
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state_val):
         """
         Keras has its own way to keep track of the state of the graph so we'll
         throw an exception here.
