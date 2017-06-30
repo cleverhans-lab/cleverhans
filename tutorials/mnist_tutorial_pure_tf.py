@@ -36,12 +36,12 @@ class MLP(object):
     An example of a bare bones multilayer perceptron (MLP) class.
     """
 
-	def __init__(self, layers, input_shape):
+    def __init__(self, layers, input_shape):
         self.layers = layers
         self.input_shape = input_shape
         for layer in self.layers:
-			layer.set_input_shape(input_shape)
-			input_shape = layer.get_output_shape()
+            layer.set_input_shape(input_shape)
+            input_shape = layer.get_output_shape()
 
     def fprop(self, x, return_all=False, set_ref=False):
         states = []
