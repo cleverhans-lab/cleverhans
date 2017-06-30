@@ -53,9 +53,7 @@ class MLP(Model):
   def get_layer_names(self):
     return self.layer_names
 
-  def fprop(self, x, set_ref=False):
-    if (x, self.state) in self.fprop_cache.keys():
-      return self.fprop_cache[x, self.state]
+  def _fprop(self, x, set_ref=False):
     states = []
     for layer in self.layers:
       if set_ref:
@@ -64,7 +62,6 @@ class MLP(Model):
       assert x is not None
       states.append(x)
     states = dict(zip(self.get_layer_names(), states))
-    self.fprop_cache[x, self.state] = states
     return states
 
   def get_layer(self, x, layer):
