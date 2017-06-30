@@ -96,6 +96,6 @@ class TestKerasModelWrapper(unittest.TestCase):
         out_dict2 = model.fprop(x2)
         self.assertEqual(set(out_dict2.keys()), set(['l1', 'l2', 'softmax']))
         self.assertEqual(int(out_dict2['l1'].shape[1]), 20)
-        
+
 if __name__ == '__main__':
     unittest.main()
