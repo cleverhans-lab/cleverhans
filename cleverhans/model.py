@@ -20,10 +20,11 @@ class Model(object):
         # graphs after multiple calls of the fprop methods. The cache is
         # implemented as a dictionary of the form (input, train): output_dict
         # The key is a pair of input (the symbolic representation of the input)
-        # and train (a boolean indicating whether the graph is in training or
-        # inference mode---which changes the behavior of layers like dropout).
-        # The values output_dict are also a dictionary mapping layer names
-        # to symbolic representation of the output of that layer.
+        # and state (a string indicating whether the model is in training,
+        # inference, or some other mode --- which may change the behavior of
+        # layers like dropout).
+        # The output_dict is also a dictionary mapping layer names to symbolic
+        # representation of the output of that layer.
         self.fprop_cache = {}
 
         # By default, we assume the model is being used for training (i.e.,
