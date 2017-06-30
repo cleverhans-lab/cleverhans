@@ -183,30 +183,25 @@ class KerasModelWrapper(Model):
         layer_names = [x.name for x in self.model.layers]
         return layer_names
 
-    def fprop(self, x):
+    def _fprop(self, x):
         """
         Exposes all the layers of the model returned by get_layer_names.
         :param x: A symbolic representation of the network input
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
         """
-        if (x, self.state) in self.fprop_cache.keys():
-            return self.fprop_cache[(x, self.state)]
-        else:
-            from keras.models import Model as KerasModel
-            fprop_dict = {}
+        from keras.models import Model as KerasModel
+        fprop_dict = {}
 
-            # Construct the output representation of each layer
-            for layer in self.get_layer_names():
-                # Get input
-                new_input = self.model.get_input_at(0)
-                # Find the layer to connect
-                target_feat = self.model.get_layer(layer).output
-                # Build a new model
-                new_model = KerasModel(new_input, target_feat)
-                # Add this layer's output tensor to the dictionary
-                fprop_dict[layer] = new_model(x)
+        # Construct the output representation of each layer
+        for layer in self.get_layer_names():
+            # Get input
+            new_input = self.model.get_input_at(0)
+            # Find the layer to connect
+            target_feat = self.model.get_layer(layer).output
+            # Build a new model
+            new_model = KerasModel(new_input, target_feat)
+            # Add this layer's output tensor to the dictionary
+            fprop_dict[layer] = new_model(x)
 
-            # Save to cache before returning
-            self.fprop_cache[(x, self.state)] = fprop_dict
-            return fprop_dict
+        return fprop_dict
