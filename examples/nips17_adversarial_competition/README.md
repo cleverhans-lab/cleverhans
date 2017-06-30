@@ -1,8 +1,6 @@
 
 # Development toolkit for participants of adversarial competition
 
-[TOC]
-
 This is a development toolkit for the
 [Competition on Adversarial Examples and Defenses](https://www.kaggle.com/nips-2017-adversarial-learning-competition)
 which will be held as a part of NIPS'17 conference.
