@@ -43,9 +43,9 @@ class MLP(Model):
     self.layer_names = []
     self.layers = layers
     self.input_shape = input_shape
-    for i,layer in enumerate(self.layers):
+    for i, layer in enumerate(self.layers):
       name = layer.__class__.__name__
-      self.layer_names.append(name+"_"+str(i))
+      self.layer_names.append(name + "_" + str(i))
 
       layer.set_input_shape(input_shape)
       input_shape = layer.get_output_shape()
@@ -53,9 +53,7 @@ class MLP(Model):
   def get_layer_names(self):
     return self.layer_names
 
-  def fprop(self, x, set_ref=False):
-    if (x, self.state) in self.fprop_cache.keys():
-      return self.fprop_cache[x, self.state]
+  def _fprop(self, x, set_ref=False):
     states = []
     for layer in self.layers:
       if set_ref:
@@ -63,12 +61,12 @@ class MLP(Model):
       x = layer.fprop(x)
       assert x is not None
       states.append(x)
-    self.fprop_cache[x, self.state] = states
+    states = dict(zip(self.get_layer_names(), states))
     return states
 
   def get_layer(self, x, layer):
     layers = self.fprop(x)
-    return layers[self.get_layer_names().index(layer)]
+    return layers[layer]
 
   def get_logits(self, x):
     if isinstance(self.layers[-1], Softmax):

@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
+import time
 
 from cleverhans.utils_keras import KerasModelWrapper
 
@@ -26,7 +27,7 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.sess.as_default()
         self.model = dummy_model()
 
-    def test_model_not_set(self):
+    def test_model_not_set_raises_error(self):
         with self.assertRaises(ValueError) as context:
             model = KerasModelWrapper()
         self.assertTrue(context.exception)
@@ -38,12 +39,12 @@ class TestKerasModelWrapper(unittest.TestCase):
             model.state = 'train'
         self.assertTrue(context.exception)
 
-    def test_get_softmax_name(self):
+    def test_softmax_layer_name_is_softmax(self):
         model = KerasModelWrapper(self.model)
         softmax_name = model._get_softmax_name()
         self.assertEqual(softmax_name, 'softmax')
 
-    def test_get_logits_name(self):
+    def test_logit_layer_name_is_logits(self):
         model = KerasModelWrapper(self.model)
         logits_name = model._get_logits_name()
         self.assertEqual(logits_name, 'l2')
@@ -71,6 +72,8 @@ class TestKerasModelWrapper(unittest.TestCase):
         tf.global_variables_initializer().run(session=self.sess)
         p_val = self.sess.run(preds, feed_dict={x: x_val})
         self.assertTrue(np.allclose(np.sum(p_val, axis=1), 1, atol=1e-6))
+        self.assertTrue(np.all(p_val>=0))
+        self.assertTrue(np.all(p_val<=1))
 
     def test_get_layer_names(self):
         model = KerasModelWrapper(self.model)
@@ -93,7 +96,6 @@ class TestKerasModelWrapper(unittest.TestCase):
         out_dict2 = model.fprop(x2)
         self.assertEqual(set(out_dict2.keys()), set(['l1', 'l2', 'softmax']))
         self.assertEqual(int(out_dict2['l1'].shape[1]), 20)
-
 
 if __name__ == '__main__':
     unittest.main()
