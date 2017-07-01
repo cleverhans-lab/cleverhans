@@ -8,7 +8,7 @@ class TestMNISTTutorialJSMA(unittest.TestCase):
         # Run the MNIST tutorial on a dataset of reduced size
         # and disable visualization.
         jsma_tutorial_args = {'train_start': 0,
-                              'train_end': 100,
+                              'train_end': 1000,
                               'test_start': 0,
                               'test_end': 166,
                               'viz_enabled': False,
