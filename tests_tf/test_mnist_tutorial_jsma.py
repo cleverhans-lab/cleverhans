@@ -16,7 +16,7 @@ class TestMNISTTutorialJSMA(unittest.TestCase):
         jsma_tutorial_args = {'train_start': 0,
                               'train_end': 1000,
                               'test_start': 0,
-                              'test_end': 1666,
+                              'test_end': 166,
                               'viz_enabled': False,
                               'source_samples': 1,
                               'nb_epochs': 2}

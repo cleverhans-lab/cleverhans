@@ -525,9 +525,8 @@ class CarliniWagnerL2:
         self.output = model(self.newimg)
 
         # distance to the input data
-        self.l2dist = tf.reduce_sum(tf.square(self.newimg -
-                                              (tf.tanh(self.timg) + 1) / 2 *
-                                              (clip_max-clip_min)+clip_min),
+        self.other = (tf.tanh(self.timg) + 1) / 2*(clip_max-clip_min)+clip_min
+        self.l2dist = tf.reduce_sum(tf.square(self.newimg - self.other),
                                     list(range(1, len(shape))))
 
         # compute the probability of the label class versus the maximum other
@@ -583,7 +582,10 @@ class CarliniWagnerL2:
         def compare(x, y):
             if not isinstance(x, (float, int, np.int64)):
                 x = np.copy(x)
-                x[y] -= self.CONFIDENCE
+                if self.TARGETED:
+                    x[y] -= self.CONFIDENCE
+                else:
+                    x[y] += self.CONFIDENCE
                 x = np.argmax(x)
             if self.TARGETED:
                 return x == y
