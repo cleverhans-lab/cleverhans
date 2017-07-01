@@ -143,7 +143,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         adv_ys = np.array([onehot] * 10, dtype=np.float32).reshape((100, 10))
     else:
         # Initialize our array for grid visualization
-        grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
+        grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
         grid_viz_data = np.zeros(grid_shape, dtype='f')
 
         adv_inputs = X_test[idxs]
@@ -171,8 +171,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
             for i in range(10):
                 grid_viz_data[i, j] = adv[i * 10 + j]
         else:
-            grid_viz_data[0, j] = adv_inputs[j]
-            grid_viz_data[1, j] = adv[j]
+            grid_viz_data[j, 0] = adv_inputs[j]
+            grid_viz_data[j, 1] = adv[j]
 
     print(grid_viz_data.shape)
 
