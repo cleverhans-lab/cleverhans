@@ -8,7 +8,7 @@ class TestMNISTTutorialJSMA(unittest.TestCase):
         # Run the MNIST tutorial on a dataset of reduced size
         # and disable visualization.
         jsma_tutorial_args = {'train_start': 0,
-                              'train_end': 10000,
+                              'train_end': 1000,
                               'test_start': 0,
                               'test_end': 1666,
                               'viz_enabled': False,
@@ -16,7 +16,6 @@ class TestMNISTTutorialJSMA(unittest.TestCase):
                               'nb_epochs': 2}
         report = mnist_tutorial_jsma.mnist_tutorial_jsma(**jsma_tutorial_args)
 
-        print(report.clean_train_adv_eval)
         # Check accuracy values contained in the AccuracyReport object
         self.assertTrue(report.clean_train_clean_eval > 0.75)
         self.assertTrue(report.clean_train_adv_eval < 0.05)
