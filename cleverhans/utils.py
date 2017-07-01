@@ -205,7 +205,7 @@ def grid_visual(data):
     current_row = 0
     for y in xrange(num_rows):
         for x in xrange(num_cols):
-            figure.add_subplot(num_cols, num_rows, (x + 1) + (y * num_rows))
+            figure.add_subplot(num_rows, num_cols, (x + 1) + (y * num_cols))
             plt.axis('off')
 
             if num_channels == 1:
