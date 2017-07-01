@@ -275,7 +275,7 @@ class TestCarliniWagnerL2(CleverHansTest):
             W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
             h1 = tf.nn.sigmoid(tf.matmul(x, W1))
             W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.nn.softmax(tf.matmul(x, W2))
+            res = tf.matmul(x, W2)
             return res
 
         self.sess = tf.Session()
@@ -353,6 +353,71 @@ class TestCarliniWagnerL2(CleverHansTest):
         assert -0.201 < np.min(x_adv)
         assert np.max(x_adv) < .301
 
+    def test_generate_np_high_confidence_targeted_examples(self):
+        import tensorflow as tf
+        def trivial_model(x):
+            W1 = tf.constant([[1, -1]], dtype=tf.float32)
+            res = tf.matmul(x, W1)
+            return res
+
+        for CONFIDENCE in [0, 2.3]:
+            x_val = np.random.rand(10, 1)-.5
+            x_val = np.array(x_val, dtype=np.float32)
+
+            orig_labs = np.argmax(self.sess.run(trivial_model(x_val)), axis=1)
+            feed_labs = np.zeros((10, 2))
+            feed_labs[np.arange(10), np.random.randint(0,2,10)] = 1
+            attack = CarliniWagnerL2(trivial_model, sess=self.sess)
+            x_adv = attack.generate_np(x_val,
+                                       max_iterations=100,
+                                       binary_search_steps=2,
+                                       learning_rate=1e-2,
+                                       initial_const=1, nb_classes=2,
+                                       clip_min=-10, clip_max=10,
+                                       confidence=CONFIDENCE,
+                                       targeted=True, y=feed_labs,
+                                       batch_size=10)
+
+            new_labs = self.sess.run(trivial_model(x_adv))
+
+            good_labs = new_labs[np.arange(10),np.argmax(feed_labs,axis=1)]
+            bad_labs = new_labs[np.arange(10),1-np.argmax(feed_labs,axis=1)]
+
+            assert np.mean(np.argmax(new_labs,axis=1)==np.argmax(feed_labs,axis=1)) == 1
+            assert np.isclose(0,np.min(good_labs-(bad_labs+CONFIDENCE)), atol=1e-1)
+
+    def test_generate_np_high_confidence_untargeted_examples(self):
+        import tensorflow as tf
+        def trivial_model(x):
+            W1 = tf.constant([[1, -1]], dtype=tf.float32)
+            res = tf.matmul(x, W1)
+            return res
+
+        for CONFIDENCE in [0, 2.3]:
+            x_val = np.random.rand(10, 1)-.5
+            x_val = np.array(x_val, dtype=np.float32)
+
+            orig_labs = np.argmax(self.sess.run(trivial_model(x_val)), axis=1)
+            attack = CarliniWagnerL2(trivial_model, sess=self.sess)
+            x_adv = attack.generate_np(x_val,
+                                       max_iterations=100,
+                                       binary_search_steps=2,
+                                       learning_rate=1e-2,
+                                       initial_const=1, nb_classes=2,
+                                       clip_min=-10, clip_max=10,
+                                       confidence=CONFIDENCE,
+                                       targeted=False,
+                                       batch_size=10)
+
+            new_labs = self.sess.run(trivial_model(x_adv))
+
+            good_labs = new_labs[np.arange(10),1-orig_labs]
+            bad_labs = new_labs[np.arange(10),orig_labs]
+
+            assert np.mean(np.argmax(new_labs,axis=1)==orig_labs) == 0
+            assert np.isclose(0,np.min(good_labs-(bad_labs+CONFIDENCE)), atol=1e-1)
+
+        
 
 class TestSaliencyMapMethod(CleverHansTest):
     def setUp(self):
