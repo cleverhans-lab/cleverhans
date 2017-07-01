@@ -117,6 +117,7 @@ class KerasModelWrapper(Model):
             raise ValueError('model argument must be suplied.')
 
         self.model = model
+        self.keras_model = None
 
     @property
     def state(self):
@@ -191,17 +192,24 @@ class KerasModelWrapper(Model):
                  representation of their output.
         """
         from keras.models import Model as KerasModel
-        fprop_dict = {}
 
-        # Construct the output representation of each layer
-        for layer in self.get_layer_names():
-            # Get input
+        if self.keras_model is None:
+            # Get the input layer
             new_input = self.model.get_input_at(0)
-            # Find the layer to connect
-            target_feat = self.model.get_layer(layer).output
-            # Build a new model
-            new_model = KerasModel(new_input, target_feat)
-            # Add this layer's output tensor to the dictionary
-            fprop_dict[layer] = new_model(x)
+
+            # Make a new model that returns each of the layers as output
+            out_layers = [x.output for x in self.model.layers]
+            self.keras_model = KerasModel(new_input, out_layers)
+
+        # and get the outputs for that model on the input x
+        outputs = self.keras_model(x)
+
+        # Keras only returns a list for outputs of length >= 1, if the model
+        # is only one layer, wrap a list
+        if len(self.model.layers) == 1:
+            outputs = [outputs]
+
+        # compute the dict to return
+        fprop_dict = dict(zip(self.get_layer_names(), outputs))
 
         return fprop_dict
