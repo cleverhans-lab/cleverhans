@@ -196,13 +196,13 @@ def tf_model_eval(*args, **kwargs):
     return model_eval(*args, **kwargs)
 
 
-def model_eval(sess, x, y, model, X_test, Y_test, feed=None, args=None):
+def model_eval(sess, x, y, predictions, X_test, Y_test, feed=None, args=None):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
     :param x: input placeholder
     :param y: output placeholder (for labels)
-    :param model: model output predictions
+    :param predictions: model output predictions
     :param X_test: numpy array with training inputs
     :param Y_test: numpy array with training outputs
     :param feed: An optional dictionary that is appended to the feeding
@@ -219,10 +219,11 @@ def model_eval(sess, x, y, model, X_test, Y_test, feed=None, args=None):
     # Define accuracy symbolically
     if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
         correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                                 tf.argmax(model, axis=-1))
+                                 tf.argmax(predictions, axis=-1))
     else:
         correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
-                                 tf.argmax(model, axis=tf.rank(model) - 1))
+                                 tf.argmax(predictions,
+                                           axis=tf.rank(predictions) - 1))
     acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
