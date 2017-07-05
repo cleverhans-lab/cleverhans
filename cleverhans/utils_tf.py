@@ -219,10 +219,10 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
     assert args.batch_size, "Batch size was not given in args dict"
     if X_test is None or Y_test is None:
         raise ValueError("X_test argument and Y_test argument "
-                         "must be suplied.")
+                         "must be supplied.")
     if model is None and predictions is None:
         raise ValueError("One of model argument "
-                         "or predictions argument must be suplied.")
+                         "or predictions argument must be supplied.")
     if model is not None:
         warnings.warn("model argument is deprecated. "
                       "Switch to predictions argument. "
