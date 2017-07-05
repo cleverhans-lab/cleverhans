@@ -196,7 +196,8 @@ def tf_model_eval(*args, **kwargs):
     return model_eval(*args, **kwargs)
 
 
-def model_eval(sess, x, y, predictions, X_test, Y_test, feed=None, args=None):
+def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
+               feed=None, args=None, model=None):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
@@ -210,11 +211,25 @@ def model_eval(sess, x, y, predictions, X_test, Y_test, feed=None, args=None):
              the learning phase of a Keras model for instance.
     :param args: dict or argparse `Namespace` object.
                  Should contain `batch_size`
+    :param model: (deprecated) if not None, holds model output predictions
     :return: a float with the accuracy value
     """
     args = _FlagsWrapper(args or {})
 
     assert args.batch_size, "Batch size was not given in args dict"
+    if X_test is None or Y_test is None:
+        raise ValueError("X_test argument and Y_test argument must be suplied.")
+    if model is None and predictions is None:
+        raise ValueError("One of model argument"
+                         " or predictions argument must be suplied.")
+    if model is not None:
+        warnings.warn("model argument is deprecated. Switch to predictions argument."
+                      " model argument will be removed after 2018-01-05.")
+        if predictions is None:
+            predictions = model
+        else:
+            raise ValueError("Exactly one of model argument"
+                             " and predictions argument should be specified.")
 
     # Define accuracy symbolically
     if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
