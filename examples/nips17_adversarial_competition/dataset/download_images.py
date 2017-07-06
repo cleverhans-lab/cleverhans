@@ -24,14 +24,17 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
-import cStringIO
 import csv
 import os
 import sys
-import urllib2
 
 from PIL import Image
+from io import BytesIO
 
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib2 import urlopen
 
 def parse_args():
   """Parses command line arguments."""
@@ -53,12 +56,12 @@ def download_image(image_id, url, x1, y1, x2, y2, output_dir):
     return True
   try:
     # Download image
-    url_file = urllib2.urlopen(url)
+    url_file = urlopen(url)
     if url_file.getcode() != 200:
       return False
     image_buffer = url_file.read()
     # Crop, resize and save image
-    image = Image.open(cStringIO.StringIO(image_buffer)).convert('RGB')
+    image = Image.open(BytesIO(image_buffer)).convert('RGB')
     w = image.size[0]
     h = image.size[1]
     image = image.crop((int(x1*w), int(y1*h), int(x2*w), int(y2*h)))
