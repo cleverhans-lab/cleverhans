@@ -178,7 +178,7 @@ def make_basic_cnn(nb_filters=64, nb_classes=10,
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
-                   learning_rate=0.1):
+                   learning_rate=0.001):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -286,6 +286,6 @@ def main(argv=None):
 if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
     app.run()

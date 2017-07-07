@@ -93,7 +93,7 @@ def tf_model_train(*args, **kwargs):
 
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 predictions_adv=None, init_all=True, evaluate=None,
-                verbose=True, args=None):
+                verbose=True, feed=None, args=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -111,6 +111,9 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param evaluate: function that is run after each training iteration
                      (typically to display the test/validation accuracy).
     :param verbose: (boolean) all print statements disabled when set to False.
+    :param feed: An optional dictionary that is appended to the feeding
+                 dictionary before the session runs. Can be used to feed
+                 the learning phase of a Keras model for instance.
     :param args: dict or argparse `Namespace` object.
                  Should contain `nb_epochs`, `learning_rate`,
                  `batch_size`
@@ -134,9 +137,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    train_step = tf.train.AdadeltaOptimizer(learning_rate=args.learning_rate,
-                                            rho=0.95,
-                                            epsilon=1e-08).minimize(loss)
+    train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    train_step = train_step.minimize(loss)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
@@ -165,8 +167,10 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                     batch, len(X_train), args.batch_size)
 
                 # Perform one training step
-                train_step.run(feed_dict={x: X_train[start:end],
-                                          y: Y_train[start:end]})
+                feed_dict = {x: X_train[start:end], y: Y_train[start:end]}
+                if feed is not None:
+                    feed_dict.update(feed)
+                train_step.run(feed_dict=feed_dict)
             assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
             if verbose:
@@ -179,7 +183,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             save_path = os.path.join(args.train_dir, args.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            print("Completed model training and saved at:" + str(save_path))
+            print("Completed model training and saved at: " + str(save_path))
         else:
             print("Completed model training.")
 
@@ -192,30 +196,51 @@ def tf_model_eval(*args, **kwargs):
     return model_eval(*args, **kwargs)
 
 
-def model_eval(sess, x, y, model, X_test, Y_test, args=None):
+def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
+               feed=None, args=None, model=None):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
     :param x: input placeholder
     :param y: output placeholder (for labels)
-    :param model: model output predictions
+    :param predictions: model output predictions
     :param X_test: numpy array with training inputs
     :param Y_test: numpy array with training outputs
+    :param feed: An optional dictionary that is appended to the feeding
+             dictionary before the session runs. Can be used to feed
+             the learning phase of a Keras model for instance.
     :param args: dict or argparse `Namespace` object.
                  Should contain `batch_size`
+    :param model: (deprecated) if not None, holds model output predictions
     :return: a float with the accuracy value
     """
     args = _FlagsWrapper(args or {})
 
     assert args.batch_size, "Batch size was not given in args dict"
+    if X_test is None or Y_test is None:
+        raise ValueError("X_test argument and Y_test argument "
+                         "must be supplied.")
+    if model is None and predictions is None:
+        raise ValueError("One of model argument "
+                         "or predictions argument must be supplied.")
+    if model is not None:
+        warnings.warn("model argument is deprecated. "
+                      "Switch to predictions argument. "
+                      "model argument will be removed after 2018-01-05.")
+        if predictions is None:
+            predictions = model
+        else:
+            raise ValueError("Exactly one of model argument"
+                             " and predictions argument should be specified.")
 
     # Define accuracy symbolically
     if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
         correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                                 tf.argmax(model, axis=-1))
+                                 tf.argmax(predictions, axis=-1))
     else:
         correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
-                                 tf.argmax(model, axis=tf.rank(model) - 1))
+                                 tf.argmax(predictions,
+                                           axis=tf.rank(predictions) - 1))
     acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
@@ -239,9 +264,10 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
 
             # The last batch may be smaller than all others, so we need to
             # account for variable batch size here
-            cur_acc = acc_value.eval(
-                feed_dict={x: X_test[start:end],
-                           y: Y_test[start:end]})
+            feed_dict = {x: X_test[start:end], y: Y_test[start:end]}
+            if feed is not None:
+                feed_dict.update(feed)
+            cur_acc = acc_value.eval(feed_dict=feed_dict)
 
             accuracy += (cur_batch_size * cur_acc)
 
@@ -269,7 +295,8 @@ def tf_model_load(sess):
     return True
 
 
-def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, args=None):
+def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, feed=None,
+               args=None):
     """
     A helper function that computes a tensor on numpy inputs by batches.
 
@@ -277,6 +304,9 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, args=None):
     :param tf_inputs:
     :param tf_outputs:
     :param numpy_inputs:
+    :param feed: An optional dictionary that is appended to the feeding
+             dictionary before the session runs. Can be used to feed
+             the learning phase of a Keras model for instance.
     :param args: dict or argparse `Namespace` object.
                  Should contain `batch_size`
     """
@@ -310,6 +340,8 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, args=None):
                 assert e.shape[0] == cur_batch_size
 
             feed_dict = dict(zip(tf_inputs, numpy_input_batches))
+            if feed is not None:
+                feed_dict.update(feed)
             numpy_output_batches = sess.run(tf_outputs, feed_dict=feed_dict)
             for e in numpy_output_batches:
                 assert e.shape[0] == cur_batch_size, e.shape
@@ -322,16 +354,21 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, args=None):
     return out
 
 
-def model_argmax(sess, x, predictions, samples):
+def model_argmax(sess, x, predictions, samples, feed=None):
     """
     Helper function that computes the current class prediction
     :param sess: TF session
     :param x: the input placeholder
     :param predictions: the model's symbolic output
     :param samples: numpy array with input samples (dims must match x)
+    :param feed: An optional dictionary that is appended to the feeding
+             dictionary before the session runs. Can be used to feed
+             the learning phase of a Keras model for instance.
     :return: the argmax output of predictions, i.e. the current predicted class
     """
     feed_dict = {x: samples}
+    if feed is not None:
+        feed_dict.update(feed)
     probabilities = sess.run(predictions, feed_dict)
 
     if samples.shape[0] == 1:

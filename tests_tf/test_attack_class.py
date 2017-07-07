@@ -34,9 +34,20 @@ class TestAttackClassInitArguments(unittest.TestCase):
         def model():
             return True
 
-        # Exception is thrown when no session provided with TF
+        # Test that it is permitted to provide no session
+        Attack(model, back='tf', sess=None)
+
+    def test_sess_generate_np(self):
+        def model(x):
+            return True
+
+        class DummyAttack(Attack):
+            def generate(self, x, **kwargs):
+                return x
+
+        attack = DummyAttack(model, back='tf', sess=None)
         with self.assertRaises(Exception) as context:
-            Attack(model, back='tf', sess=None)
+            attack.generate_np(0.)
         self.assertTrue(context.exception)
 
 
