@@ -119,22 +119,6 @@ class KerasModelWrapper(Model):
         self.model = model
         self.keras_model = None
 
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, state_val):
-        """
-        Keras has its own way to keep track of the state of the graph so we'll
-        throw an exception here.
-        """
-        raise NotImplementedError('Keras keeps track of the graph state with'
-                                  'the learning phase variable. Use the'
-                                  'learning phase variable rather than this'
-                                  'method to change the behavior of the'
-                                  'graph.')
-
     def _get_softmax_name(self):
         """
         Looks for the name of the softmax layer.
