@@ -22,7 +22,7 @@ FLAGS = flags.FLAGS
 def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
                         test_end=10000, viz_enabled=True, nb_epochs=6,
                         batch_size=128, nb_classes=10, source_samples=10,
-                        learning_rate=0.1):
+                        learning_rate=0.001):
     """
     MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
     :param train_start: index of first training set example
@@ -212,6 +212,6 @@ if __name__ == '__main__':
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_integer('nb_classes', 10, 'Number of output classes')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
-    flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
     app.run()

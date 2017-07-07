@@ -9,7 +9,7 @@ from nose.plugins.skip import SkipTest
 import re
 import sys
 
-from theano.compat import six
+import six
 
 
 class Reader(object):
