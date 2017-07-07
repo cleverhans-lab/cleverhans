@@ -12,31 +12,7 @@ class Model(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        # The following is a cache to prevent the re-construction of identical
-        # graphs after multiple calls of the fprop methods. The cache is
-        # implemented as a dictionary of the form (input, train): output_dict
-        # The key is a pair of input (the symbolic representation of the input)
-        # and state (a string indicating whether the model is in training,
-        # inference, or some other mode --- which may change the behavior of
-        # layers like dropout).
-        # The output_dict is also a dictionary mapping layer names to symbolic
-        # representation of the output of that layer.
-        self.fprop_cache = {}
-
-        # By default, we assume the model is being used for training (i.e.,
-        # 'train' time). If the model is used for inference or in a different
-        # state, a call to set_state() should be made first.
-        self._state = 'train'
-
         pass
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, state_val):
-        self._state = state_val
 
     def __call__(self, *args, **kwargs):
         """
@@ -90,13 +66,4 @@ class Model(object):
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
         """
-        # In case of cache hit, return cached dictionary of output tensors.
-        if (x, self.state) in self.fprop_cache.keys():
-            return self.fprop_cache[(x, self.state)]
-        else:
-            result = self._fprop(x)
-            self.fprop_cache[(x, self.state)] = result
-            return result
-
-    def _fprop(self, x):
         raise NotImplementedError('`_fprop` not implemented.')

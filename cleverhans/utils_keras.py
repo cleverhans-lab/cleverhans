@@ -184,7 +184,7 @@ class KerasModelWrapper(Model):
         layer_names = [x.name for x in self.model.layers]
         return layer_names
 
-    def _fprop(self, x):
+    def fprop(self, x):
         """
         Exposes all the layers of the model returned by get_layer_names.
         :param x: A symbolic representation of the network input
