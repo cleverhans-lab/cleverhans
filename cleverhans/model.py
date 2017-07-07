@@ -12,10 +12,6 @@ class Model(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        """
-        If `get_layer` is implemented, `__init__`
-        should keep track of the name of the layers.
-        """
         # The following is a cache to prevent the re-construction of identical
         # graphs after multiple calls of the fprop methods. The cache is
         # implemented as a dictionary of the form (input, train): output_dict
