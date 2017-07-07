@@ -74,7 +74,7 @@ script:
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
   - nosetests -v cleverhans
   - if [[ "$KERAS_BACKEND" == "tensorflow" ]]; then
-      nosetests -v tests_tf/;
+      TF_CPP_MIN_LOG_LEVEL=1 nosetests -v tests_tf/;
     else
       nosetests -v tests_th/;
     fi

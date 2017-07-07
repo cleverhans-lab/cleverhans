@@ -196,13 +196,14 @@ def tf_model_eval(*args, **kwargs):
     return model_eval(*args, **kwargs)
 
 
-def model_eval(sess, x, y, preds, X_test, Y_test, feed=None, args=None):
+def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
+               feed=None, args=None, model=None):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
     :param x: input placeholder
     :param y: output placeholder (for labels)
-    :param preds: model output predictions
+    :param predictions: model output predictions
     :param X_test: numpy array with training inputs
     :param Y_test: numpy array with training outputs
     :param feed: An optional dictionary that is appended to the feeding
@@ -210,19 +211,37 @@ def model_eval(sess, x, y, preds, X_test, Y_test, feed=None, args=None):
              the learning phase of a Keras model for instance.
     :param args: dict or argparse `Namespace` object.
                  Should contain `batch_size`
+    :param model: (deprecated) if not None, holds model output predictions
     :return: a float with the accuracy value
     """
     args = _FlagsWrapper(args or {})
 
     assert args.batch_size, "Batch size was not given in args dict"
+    if X_test is None or Y_test is None:
+        raise ValueError("X_test argument and Y_test argument "
+                         "must be supplied.")
+    if model is None and predictions is None:
+        raise ValueError("One of model argument "
+                         "or predictions argument must be supplied.")
+    if model is not None:
+        warnings.warn("model argument is deprecated. "
+                      "Switch to predictions argument. "
+                      "model argument will be removed after 2018-01-05.")
+        if predictions is None:
+            predictions = model
+        else:
+            raise ValueError("Exactly one of model argument"
+                             " and predictions argument should be specified.")
 
     # Define accuracy symbolically
     if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
         correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                                 tf.argmax(preds, axis=-1))
+                                 tf.argmax(predictions, axis=-1))
     else:
         correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
-                                 tf.argmax(preds, axis=tf.rank(preds) - 1))
+                                 tf.argmax(predictions,
+                                           axis=tf.rank(predictions) - 1))
+        
     acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
