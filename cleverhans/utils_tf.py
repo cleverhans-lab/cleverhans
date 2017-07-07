@@ -241,7 +241,7 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
         correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
                                  tf.argmax(predictions,
                                            axis=tf.rank(predictions) - 1))
-        
+
     acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
