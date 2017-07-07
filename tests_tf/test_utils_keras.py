@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
-import time
 
 from cleverhans.utils_keras import KerasModelWrapper
 
@@ -26,18 +25,6 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.sess = tf.Session()
         self.sess.as_default()
         self.model = dummy_model()
-
-    def test_model_not_set_raises_error(self):
-        with self.assertRaises(ValueError) as context:
-            model = KerasModelWrapper()
-        self.assertTrue(context.exception)
-
-    def test_set_state(self):
-        model = KerasModelWrapper(self.model)
-        # Exception is thrown when `set_state` is called
-        with self.assertRaises(NotImplementedError) as context:
-            model.state = 'train'
-        self.assertTrue(context.exception)
 
     def test_softmax_layer_name_is_softmax(self):
         model = KerasModelWrapper(self.model)

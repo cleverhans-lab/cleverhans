@@ -9,19 +9,6 @@ from cleverhans.model import Model
 
 
 class TestModelClass(unittest.TestCase):
-    def test_default_graph_inference_state(self):
-        # Define empty model
-        model = Model()
-        self.assertTrue(model.state == 'train')
-
-    def test_change_graph_to_train(self):
-        # Define empty model
-        model = Model()
-
-        # Set graph state to inference
-        model.state = 'train'
-        self.assertTrue(model.state == 'train')
-
     def test_get_layer(self):
         # Define empty model
         model = Model()
