@@ -447,7 +447,7 @@ def compute_and_save_scores_and_ranking(attacks_output,
   # higher scores are better.
   defense_scores = (np.sum(accuracy_on_attacks, axis=0)
                     + np.sum(accuracy_on_targeted_attacks, axis=0))
-  attack_scores = (attacks_output.dataset_image_count
+  attack_scores = (attacks_output.dataset_image_count * len(defenses_output)
                    - np.sum(accuracy_on_attacks, axis=1))
   targeted_attack_scores = np.sum(hit_target_class, axis=1)
   write_ranking(os.path.join(output_dir, 'defense_ranking.csv'),
@@ -475,7 +475,6 @@ def compute_and_save_scores_and_ranking(attacks_output,
 
 def main():
   args = parse_args()
-  print(args)
   attacks_output_dir = os.path.join(args.intermediate_results_dir,
                                     'attacks_output')
   targeted_attacks_output_dir = os.path.join(args.intermediate_results_dir,
