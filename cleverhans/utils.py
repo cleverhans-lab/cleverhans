@@ -90,18 +90,29 @@ def random_targets(gt, nb_classes):
     :return: A numpy array holding the randomly-selected target classes
              encoded as one-hot labels.
     """
-    # The ground truth labels are encoded as one-hot labels.
+    # If the ground truth labels are encoded as one-hot, convert to labels.
     if len(gt.shape) == 2:
         gt = np.argmax(gt, axis=1)
 
     # This vector will hold the randomly selected labels.
-    result = np.zeros(gt.shape)
+    result = np.zeros(gt.shape, dtype=np.int32)
 
     for class_ind in xrange(nb_classes):
+        # Compute all indices in that class.
         in_cl = gt == class_ind
-        result[in_cl] = np.random.choice(other_classes(nb_classes, class_ind))
+        size = np.sum(in_cl)
 
-    return tf.contrib.keras.utils.to_categorical(result, nb_classes)
+        # Compute the set of potential targets for this class.
+        potential_targets = other_classes(nb_classes, class_ind)
+
+        # Draw with replacement random targets among the potential targets.
+        result[in_cl] = np.random.choice(potential_targets, size=size)
+
+    # Encode vector of random labels as one-hot labels.
+    result = tf.contrib.keras.utils.to_categorical(result, nb_classes)
+    result = result.astype(np.int32)
+
+    return result
 
 
 def pair_visual(original, adversarial, figure=None):
