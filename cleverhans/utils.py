@@ -4,8 +4,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import warnings
 from six.moves import xrange
+import warnings
 
 
 class _ArgsWrapper(object):
