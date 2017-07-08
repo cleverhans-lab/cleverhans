@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 
+from cleverhans import utils
 from cleverhans.utils_tf import kl_with_logits, l2_batch_normalize
 
 
@@ -18,6 +19,21 @@ def numpy_kl_with_logits(q_logits, p_logits):
 
 
 class TestUtils(unittest.TestCase):
+    def test_other_classes_neg_class_ind(self):
+        with self.assertRaises(Exception) as context:
+            utils.other_classes(10, -1)
+        self.assertTrue(context.exception)
+
+    def test_other_classes_invalid_class_ind(self):
+        with self.assertRaises(Exception) as context:
+            utils.other_classes(5, 8)
+        self.assertTrue(context.exception)
+
+    def test_other_classes_return_val(self):
+        res = utils.other_classes(5, 2)
+        res_expected = [0, 1, 3, 4]
+        self.assertTrue(res == res_expected)
+
     def test_l2_batch_normalize(self):
         import tensorflow as tf
         with tf.Session() as sess:
