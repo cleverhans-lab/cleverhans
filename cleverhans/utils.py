@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import numpy as np
 from six.moves import xrange
+import tensorflow as tf
 import warnings
 
 
@@ -91,7 +92,7 @@ def random_targets(gt, nb_classes):
         in_cl = gt == class_ind
         result[in_cl] = np.random.choice(other_classes(nb_classes, class_ind))
 
-    return np_utils.to_categorical(np.asarray(result), nb_classes)
+    return tf.contrib.keras.utils.to_categorical(result, nb_classes)
 
 
 def pair_visual(original, adversarial, figure=None):
