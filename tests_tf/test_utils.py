@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 
+from cleverhans import utils
 from cleverhans.utils_tf import kl_with_logits, l2_batch_normalize
 
 
@@ -18,6 +19,48 @@ def numpy_kl_with_logits(q_logits, p_logits):
 
 
 class TestUtils(unittest.TestCase):
+    def test_random_targets_vector(self):
+        # Test utils.random_targets with a vector of labels as the input
+        gt_labels = np.asarray([0, 1, 2, 3])
+        rt = utils.random_targets(gt_labels, 5)
+
+        # Make sure random_targets returns a one-hot encoded labels
+        self.assertTrue(len(rt.shape) == 2)
+        rt_labels = np.argmax(rt, axis=1)
+
+        # Make sure all labels are different from the correct labels
+        self.assertTrue(np.all(rt_labels != gt_labels))
+
+    def test_random_targets_one_hot(self):
+        # Test utils.random_targets with one-hot encoded labels as the input
+        gt = np.asarray([[0, 0, 1, 0, 0],
+                                [1, 0, 0, 0, 0],
+                                [0, 0, 0, 1, 0],
+                                [1, 0, 0, 0, 0]])
+        gt_labels = np.argmax(gt, axis=1)
+        rt = utils.random_targets(gt, 5)
+
+        # Make sure random_targets returns a one-hot encoded labels
+        self.assertTrue(len(rt.shape) == 2)
+        rt_labels = np.argmax(rt, axis=1)
+
+        # Make sure all labels are different from the correct labels
+        self.assertTrue(np.all(rt_labels != gt_labels))
+
+    def test_random_targets_one_hot_single_label(self):
+        # Test utils.random_targets with a single one-hot encoded label
+        gt = np.asarray([0, 0, 1, 0, 0])
+        gt = gt.reshape((1, 5))
+        gt_labels = np.argmax(gt, axis=1)
+        rt = utils.random_targets(gt, 5)
+
+        # Make sure random_targets returns a one-hot encoded labels
+        self.assertTrue(len(rt.shape) == 2)
+        rt_labels = np.argmax(rt, axis=1)
+
+        # Make sure all labels are different from the correct labels
+        self.assertTrue(np.all(rt_labels != gt_labels))
+
     def test_l2_batch_normalize(self):
         import tensorflow as tf
         with tf.Session() as sess:
