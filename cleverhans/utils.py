@@ -77,15 +77,24 @@ def other_classes(nb_classes, class_ind):
 
 def random_targets(gt, nb_classes):
     """
-    Take in the correct labels for each sample and randomly choose target
-    labels from the others
-    :param gt: the correct labels
-    :param nb_classes: The number of classes for this model
+    Take in an array of correct labels and randomly select a different label
+    for each label in the array. This is typically used to randomly select a
+    target class in targeted adversarial examples attacks (i.e., when the
+    search algorithm takes in both a source class and target class to compute
+    the adversarial example).
+    :param gt: the ground truth (correct) labels. They can be provided as a
+               1D vector or 2D array of one-hot encoded labels.
+    :param nb_classes: The number of classes for this task. The random class
+                       will be chosen between 0 and nb_classes such that it
+                       is different from the correct class.
     :return: A numpy array holding the randomly-selected target classes
+             encoded as one-hot labels.
     """
-    if len(gt.shape) > 1:
+    # The ground truth labels are encoded as one-hot labels.
+    if len(gt.shape) == 2:
         gt = np.argmax(gt, axis=1)
 
+    # This vector will hold the randomly selected labels.
     result = np.zeros(gt.shape)
 
     for class_ind in xrange(nb_classes):
