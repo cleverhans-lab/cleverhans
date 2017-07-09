@@ -23,7 +23,7 @@ class TestVirtualAdversarialMethod(unittest.TestCase):
         # initialize model
         with tf.name_scope('dummy_model'):
             self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
-        self.sess.run(tf.initialize_all_variables())
+        self.sess.run(tf.global_variables_initializer())
 
     def test_parse_params(self):
         self.attack.parse_params()
