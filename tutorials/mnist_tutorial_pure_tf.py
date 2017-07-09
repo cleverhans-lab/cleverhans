@@ -43,9 +43,17 @@ class MLP(Model):
     self.layer_names = []
     self.layers = layers
     self.input_shape = input_shape
+    if isinstance(layers[-1], Softmax):
+        layers[-1].name = 'probs'
+        layers[-2].name = 'logits'
+    else:
+        layers[-1].name = 'logits'
     for i, layer in enumerate(self.layers):
-      name = layer.__class__.__name__
-      self.layer_names.append(name + "_" + str(i))
+      if hasattr(layer, 'name'):
+          name = layer.name
+      else:
+          name = layer.__class__.__name__ + str(i)
+      self.layer_names.append(name)
 
       layer.set_input_shape(input_shape)
       input_shape = layer.get_output_shape()
@@ -64,25 +72,10 @@ class MLP(Model):
     states = dict(zip(self.get_layer_names(), states))
     return states
 
-  def get_layer(self, x, layer):
-    layers = self.fprop(x)
-    return layers[layer]
-
-  def get_logits(self, x):
-    if isinstance(self.layers[-1], Softmax):
-      idx = -2
-    else:
-      idx = -1
-    return self.get_layer(x, self.get_layer_names()[idx])
-
-  def get_probs(self, x):
-    out = self.get_layer(x, self.get_layer_names()[-1])
-    if not isinstance(self.layers[-1], Softmax):
-      out = tf.nn.softmax(out)
-    return out
 
 
 class Layer(object):
+
   def get_output_shape(self):
     return self.output_shape
 
