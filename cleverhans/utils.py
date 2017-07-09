@@ -4,8 +4,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import warnings
 from six.moves import xrange
+import warnings
 
 
 class _ArgsWrapper(object):
@@ -77,24 +77,62 @@ def other_classes(nb_classes, class_ind):
     return other_classes_list
 
 
+def to_categorical(y, num_classes=None):
+    """
+    Converts a class vector (integers) to binary class matrix.
+    This is adapted from the Keras function with the same name.
+    :param y: class vector to be converted into a matrix
+              (integers from 0 to num_classes).
+    :param num_classes: num_classes: total number of classes.
+    :return: A binary matrix representation of the input.
+    """
+    y = np.array(y, dtype='int').ravel()
+    if not num_classes:
+        num_classes = np.max(y) + 1
+    n = y.shape[0]
+    categorical = np.zeros((n, num_classes))
+    categorical[np.arange(n), y] = 1
+    return categorical
+
+
 def random_targets(gt, nb_classes):
     """
-    Take in the correct labels for each sample and randomly choose target
-    labels from the others
-    :param gt: the correct labels
-    :param nb_classes: The number of classes for this model
+    Take in an array of correct labels and randomly select a different label
+    for each label in the array. This is typically used to randomly select a
+    target class in targeted adversarial examples attacks (i.e., when the
+    search algorithm takes in both a source class and target class to compute
+    the adversarial example).
+    :param gt: the ground truth (correct) labels. They can be provided as a
+               1D vector or 2D array of one-hot encoded labels.
+    :param nb_classes: The number of classes for this task. The random class
+                       will be chosen between 0 and nb_classes such that it
+                       is different from the correct class.
     :return: A numpy array holding the randomly-selected target classes
+             encoded as one-hot labels.
     """
-    if len(gt.shape) > 1:
+    # If the ground truth labels are encoded as one-hot, convert to labels.
+    if len(gt.shape) == 2:
         gt = np.argmax(gt, axis=1)
 
-    result = np.zeros(gt.shape)
+    # This vector will hold the randomly selected labels.
+    result = np.zeros(gt.shape, dtype=np.int32)
 
     for class_ind in xrange(nb_classes):
+        # Compute all indices in that class.
         in_cl = gt == class_ind
-        result[in_cl] = np.random.choice(other_classes(nb_classes, class_ind))
+        size = np.sum(in_cl)
 
-    return np_utils.to_categorical(np.asarray(result), nb_classes)
+        # Compute the set of potential targets for this class.
+        potential_targets = other_classes(nb_classes, class_ind)
+
+        # Draw with replacement random targets among the potential targets.
+        result[in_cl] = np.random.choice(potential_targets, size=size)
+
+    # Encode vector of random labels as one-hot labels.
+    result = to_categorical(result, nb_classes)
+    result = result.astype(np.int32)
+
+    return result
 
 
 def pair_visual(original, adversarial, figure=None):
