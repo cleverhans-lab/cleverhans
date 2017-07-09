@@ -13,10 +13,11 @@ from cleverhans.attacks import SaliencyMapMethod
 
 import time
 
+
 class CleverHansTest(unittest.TestCase):
     def setUp(self):
         self.test_start = time.time()
-        
+
     def tearDown(self):
         print(self.id(), "took", time.time() - self.test_start, "seconds")
 
@@ -57,6 +58,7 @@ class TestVirtualAdversarialMethod(CleverHansTest):
         # test perturbation norm
         self.assertTrue(np.allclose(perturbation_norm, self.attack.eps))
 
+
 class TestFastGradientMethod(CleverHansTest):
     def setUp(self):
         super(TestFastGradientMethod, self).setUp()
@@ -83,17 +85,17 @@ class TestFastGradientMethod(CleverHansTest):
                                             clip_min=-5, clip_max=5)
 
             if ord == np.inf:
-                self.assertTrue(np.allclose(np.max(np.abs(x_adv-x_val), axis=1), 0.5))
+                delta = np.max(np.abs(x_adv-x_val), axis=1)
             elif ord == 1:
-                self.assertTrue(np.allclose(np.sum(np.abs(x_adv-x_val), axis=1), 0.5))
+                delta = np.sum(np.abs(x_adv-x_val), axis=1)
             elif ord == 2:
-                self.assertTrue(np.allclose(np.sum(np.square(x_adv-x_val), axis=1)**.5,
-                                            0.5))
+                delta = np.sum(np.square(x_adv-x_val), axis=1)**.5
+            self.assertTrue(np.allclose(delta, 0.5))
 
             orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
             new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-            self.assertTrue(np.mean(orig_labs==new_labs) < 0.5)
+            self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
 
     def test_generate_np_can_be_called_with_different_eps(self):
         x_val = np.random.rand(100, 2)
@@ -103,7 +105,8 @@ class TestFastGradientMethod(CleverHansTest):
             x_adv = self.attack.generate_np(x_val, eps=eps, ord=np.inf,
                                             clip_min=-5.0, clip_max=5.0)
 
-            self.assertTrue(np.allclose(np.max(np.abs(x_adv-x_val), axis=1), eps))
+            delta = np.max(np.abs(x_adv-x_val), axis=1)
+            self.assertTrue(np.allclose(delta, eps))
 
     def test_generate_np_clip_works_as_expected(self):
         x_val = np.random.rand(100, 2)
@@ -134,7 +137,7 @@ class TestFastGradientMethod(CleverHansTest):
         x_adv = self.attack.generate_np(x_val, eps=.2, num_iterations=10,
                                         clip_max=-4.0, clip_min=-4.0,
                                         xi=1e-5)
-        
+
         tf.gradients = old_grads
 
 
@@ -167,7 +170,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        self.assertTrue(np.mean(orig_labs==new_labs) < 0.1)
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
         ok = [False]
         old_grads = tf.gradients
@@ -183,7 +186,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        self.assertTrue(np.mean(orig_labs==new_labs) < 0.1)
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
         tf.gradients = old_grads
 
@@ -218,7 +221,7 @@ class TestSaliencyMapMethod(CleverHansTest):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((10, 1000))
-        feed_labs[np.arange(10), np.random.randint(0,9,10)] = 1
+        feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
         x_adv = self.attack.generate_np(x_val,
                                         clip_min=-5, clip_max=5,
                                         targets=feed_labs, nb_classes=10)
