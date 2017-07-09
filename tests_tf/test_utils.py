@@ -3,20 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
 import unittest
 
 from cleverhans import utils
-
-
-def numpy_kl_with_logits(q_logits, p_logits):
-    def numpy_softmax(logits):
-        exp_logits = np.exp(logits)
-        return exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
-
-    q = numpy_softmax(q_logits)
-    p = numpy_softmax(p_logits)
-    return (q * (np.log(q) - np.log(p))).sum(axis=1).mean()
 
 
 class TestUtils(unittest.TestCase):
