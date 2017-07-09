@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def list_files(suffix=""):
     """
-    Returns a list of all files in pylearn2 with the given suffix.
+    Returns a list of all files in CleverHans with the given suffix.
 
     Parameters
     ----------
@@ -24,21 +24,26 @@ def list_files(suffix=""):
     -------
 
     file_list : list
-        A list of all files in pylearn2 whose filepath ends with `suffix`
+        A list of all files in CleverHans whose filepath ends with `suffix`
     """
 
     cleverhans_path, = cleverhans.__path__
 
     file_list = _list_files(cleverhans_path, suffix)
 
+    repo_path = os.path.abspath(os.path.join(cleverhans_path, os.pardir))
+    tutorials_path = os.path.join(repo_path, "tutorials")
+    tutorials_files = _list_files(tutorials_path, suffix)
+    tutorials_files = [os.path.join(os.pardir, path) for path in tutorials_files]
+
+    file_list = file_list + tutorials_files
+
     return file_list
 
 
 def _list_files(path, suffix=""):
     """
-    .. todo::
-
-        WRITEME
+    Returns a list of all files ending in `suffix` contained within `path`.
 
     Parameters
     ----------
