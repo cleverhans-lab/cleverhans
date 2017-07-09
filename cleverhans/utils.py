@@ -43,6 +43,7 @@ class AccuracyReport(object):
         self.train_adv_train_clean_eval = 0.
         self.train_adv_train_adv_eval = 0.
 
+
 def batch_indices(batch_nb, data_length, batch_size):
     """
     This helper function computes a batch start and end index

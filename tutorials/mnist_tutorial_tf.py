@@ -275,7 +275,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Calculate training error
     if testing:
         eval_par = {'batch_size': batch_size}
-        acc = model_eval(sess, x, y, preds_adv, X_train, Y_train, args=eval_par)
+        acc = model_eval(sess, x, y, preds_adv, X_train,
+                         Y_train, args=eval_par)
         report.train_clean_train_adv_eval = acc
 
     print("Repeating the process, using adversarial training")
@@ -313,7 +314,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         accuracy = model_eval(sess, x, y, preds_2_adv, X_train,
                               Y_train, args=eval_params)
         report.train_adv_train_adv_eval = accuracy
-
 
     return report
 
