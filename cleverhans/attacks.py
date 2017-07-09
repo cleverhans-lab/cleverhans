@@ -2,6 +2,7 @@ from abc import ABCMeta
 import numpy as np
 from six.moves import xrange
 import warnings
+import collections
 
 
 class Attack(object):
@@ -33,7 +34,23 @@ class Attack(object):
         self.model = model
         self.back = back
         self.sess = sess
-        self.inf_loop = False
+
+        # We are going to keep track of old graphs and cache them.
+        self.graphs = {}
+
+        # When calling generate_np, arguments in the following set should be
+        # fed into the graph, as they are not structural items that require
+        # generating a new graph.
+        # This dict should map names of arguments to the types they should
+        # have.
+        # (Usually, the target class will be a feedable keyword argument.)
+        self.feedable_kwargs = {}
+
+        # When calling generate_np, arguments in the following set should NOT
+        # be fed into the graph, as they ARE structural items that require
+        # generating a new graph.
+        # This list should contain the names of the structural arguments.
+        self.structural_kwargs = []
 
     def generate(self, x, **kwargs):
         """
@@ -48,22 +65,14 @@ class Attack(object):
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
 
-        if not self.inf_loop:
-            self.inf_loop = True
-            assert self.parse_params(**kwargs)
-            import tensorflow as tf
-            graph = tf.py_func(self.generate_np, [x], tf.float32)
-            self.inf_loop = False
-            return graph
-        else:
-            error = "No symbolic or numeric implementation of attack."
-            raise NotImplementedError(error)
+        error = "Sub-classes must implement generate."
+        raise NotImplementedError(error)
 
     def generate_np(self, x_val, **kwargs):
         """
-        Generate adversarial examples and return them as a Numpy array. This
-        method should be overriden in any child class that implements an attack
-        that is not fully expressed symbolically.
+        Generate adversarial examples and return them as a Numpy array.
+        Sub-classes *should not* implement this method unless they must
+        perform special handling of arguments.
         :param x_val: A Numpy array with the original inputs.
         :param **kwargs: optional parameters used by child classes.
         :return: A Numpy array holding the adversarial examples.
@@ -71,25 +80,87 @@ class Attack(object):
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
 
-        if not self.inf_loop:
-            self.inf_loop = True
-            import tensorflow as tf
-
-            # Generate this attack's graph if not done previously
-            if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
-                input_shape = list(x_val.shape)
-                input_shape[0] = None
-                self._x = tf.placeholder(tf.float32, shape=input_shape)
-                self._x_adv = self.generate(self._x, **kwargs)
-            self.inf_loop = False
-        else:
-            error = "No symbolic or numeric implementation of attack."
-            raise NotImplementedError(error)
+        import tensorflow as tf
 
         if self.sess is None:
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
-        return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
+
+        if 'y' in kwargs and kwargs['y'] is None:
+            del kwargs['y']
+
+        # the set of arguments that are structural properties of the attack
+        # if these arguments are different, we must construct a new graph
+        fixed = dict((k, v) for k, v in kwargs.items()
+                     if k in self.structural_kwargs)
+
+        # the set of arguments that are passed as placeholders to the graph
+        # on each call, and can change without constructing a new graph
+        feedable = dict((k, v) for k, v in kwargs.items()
+                        if k in self.feedable_kwargs)
+
+        if len(fixed)+len(feedable) < len(kwargs):
+            warnings.warn("Supplied extra keyword arguments that are not "
+                          "used in the graph computation. They have been "
+                          "ignored.")
+
+        if not all(isinstance(value, collections.Hashable)
+                   for value in fixed.values()):
+            # we have received a fixed value that isn't hashable
+            # this means we can't cache this graph for later use,
+            # and it will have to be discarded later
+            hash_key = None
+        else:
+            # create a unique key for this set of fixed paramaters
+            hash_key = tuple(sorted(fixed.items()))
+
+        if hash_key not in self.graphs:
+            # try our very best to create a TF placeholder for each of the
+            # feedable keyword arguments by inferring the type
+            num_types = (int, float, np.float16, np.float32, np.float64,
+                         np.int8, np.int16, np.int32, np.int32, np.int64,
+                         np.uint8, np.uint16, np.uint32, np.uint64)
+
+            # construct the new keyword arguments as a combination of
+            # (a) the fixed arguments that are graph-specific
+            # (b) the placeholders that correspond to the variable arguments
+            new_kwargs = dict(x for x in fixed.items())
+            for name, value in feedable.items():
+                given_type = self.feedable_kwargs[name]
+                if isinstance(value, np.ndarray):
+                    new_shape = [None]+list(value.shape[1:])
+                    new_kwargs[name] = tf.placeholder(value.dtype, new_shape)
+                elif isinstance(value, num_types):
+                    new_kwargs[name] = tf.placeholder(given_type, shape=[])
+                else:
+                    raise ValueError("Could not identify type of argument " +
+                                     name + ": " + str(value))
+
+            # x is a special placeholder we always want to have
+            x = tf.placeholder(tf.float32, shape=[None]+list(x_val.shape)[1:])
+
+            # now we generate the graph that we want
+            x_adv = self.generate(x, **new_kwargs)
+
+            if hash_key is not None:
+                # only save the graph if every fixed element is hashable
+                self.graphs[hash_key] = (x, new_kwargs, x_adv)
+
+            if len(self.graphs) >= 10:
+                warnings.warn("Calling generate_np() with multiple different "
+                              "structural paramaters is inefficient and should"
+                              " be avoided. Calling generate() is preferred.")
+
+        if hash_key is not None:
+            # if it is None, we must have constructed it already
+            x, new_kwargs, x_adv = self.graphs[hash_key]
+
+        feed_dict = {x: x_val}
+
+        for name in feedable:
+            feed_dict[new_kwargs[name]] = feedable[name]
+
+        return self.sess.run(x_adv, feed_dict)
 
     def parse_params(self, params=None):
         """
@@ -116,6 +187,11 @@ class FastGradientMethod(Attack):
         Create a FastGradientMethod instance.
         """
         super(FastGradientMethod, self).__init__(model, back, sess)
+        self.feedable_kwargs = {'eps': np.float32,
+                                'y': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32}
+        self.structural_kwargs = ['ord']
 
     def generate(self, x, **kwargs):
         """
@@ -143,48 +219,6 @@ class FastGradientMethod(Attack):
 
         return fgm(x, self.model(x), y=self.y, eps=self.eps, ord=self.ord,
                    clip_min=self.clip_min, clip_max=self.clip_max)
-
-    def generate_np(self, x_val, **kwargs):
-        """
-        Generate adversarial samples and return them in a Numpy array.
-        :param x_val: (required) A Numpy array with the original inputs.
-        :param eps: (required float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics Numpy).
-                    Possible values: np.inf, 1 or 2.
-        :param y: (optional) A placeholder for the model labels. Only provide
-                  this parameter if you'd like to use true labels when crafting
-                  adversarial samples. Otherwise, model predictions are used as
-                  labels to avoid the "label leaking" effect (explained in this
-                  paper: https://arxiv.org/abs/1611.01236). Default is None.
-                  Labels should be one-hot-encoded.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
-        """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
-        if self.sess is None:
-            raise ValueError("Cannot use `generate_np` when no `sess` was"
-                             " provided")
-
-        import tensorflow as tf
-
-        # Generate this attack's graph if it hasn't been done previously
-        if not hasattr(self, "_x"):
-            input_shape = list(x_val.shape)
-            input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x, **kwargs)
-
-        # Run symbolic graph without or with true labels
-        if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val}
-        else:
-            # Verify label placeholder was given in params if using true labels
-            if self.y is None:
-                error = "True labels given but label placeholder not given."
-                raise Exception(error)
-            feed_dict = {self._x: x_val, self.y: kwargs['y_val']}
-        return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
                      clip_max=None, **kwargs):
@@ -234,6 +268,12 @@ class BasicIterativeMethod(Attack):
         Create a BasicIterativeMethod instance.
         """
         super(BasicIterativeMethod, self).__init__(model, back, sess)
+        self.feedable_kwargs = {'eps': np.float32,
+                                'eps_iter': np.float32,
+                                'y': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32}
+        self.structural_kwargs = ['ord', 'nb_iter']
 
     def generate(self, x, **kwargs):
         import tensorflow as tf
@@ -332,6 +372,11 @@ class SaliencyMapMethod(Attack):
             error = "Theano version of SaliencyMapMethod not implemented."
             raise NotImplementedError(error)
 
+        import tensorflow as tf
+        self.feedable_kwargs = {'targets': tf.float32}
+        self.structural_kwargs = ['theta', 'gamma', 'nb_classes',
+                                  'clip_max', 'clip_min']
+
     def generate(self, x, **kwargs):
         """
         Attack-specific parameters:
@@ -367,41 +412,6 @@ class SaliencyMapMethod(Attack):
             wrap = tf.py_func(jsma_wrap, [x], tf.float32)
 
         return wrap
-
-    def generate_np(self, x_val, **kwargs):
-        """
-        Attack-specific parameters:
-        :param batch_size: (optional) Batch size when running the graph
-        :param targets: (optional) Target values if the attack is targeted
-        """
-        if self.sess is None:
-            raise ValueError("Cannot use `generate_np` when no `sess` was"
-                             " provided")
-
-        import tensorflow as tf
-
-        # Generate this attack's graph if it hasn't been done previously
-        if not hasattr(self, "_x"):
-            input_shape = list(x_val.shape)
-            input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x, **kwargs)
-
-        # Run symbolic graph without or with true labels
-        if 'y_val' not in kwargs or kwargs['y_val'] is None:
-            feed_dict = {self._x: x_val}
-        else:
-            if self.targets is None:
-                raise Exception("This attack was instantiated untargeted.")
-            else:
-                if len(kwargs['y_val'].shape) > 1:
-                    nb_targets = len(kwargs['y_val'])
-                else:
-                    nb_targets = 1
-                if nb_targets != len(x_val):
-                    raise Exception("Specify exactly one target per input.")
-            feed_dict = {self._x: x_val, self.targets: kwargs['y_val']}
-        return self.sess.run(self._x_adv, feed_dict=feed_dict)
 
     def parse_params(self, theta=1., gamma=np.inf, nb_classes=10, clip_min=0.,
                      clip_max=1., targets=None, **kwargs):
@@ -441,6 +451,16 @@ class VirtualAdversarialMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
 
+        if self.back == 'th':
+            error = "For the Theano version of VAM please call vatm directly."
+            raise NotImplementedError(error)
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'eps': tf.float32, 'xi': tf.float32,
+                                'clip_min': tf.float32,
+                                'clip_max': tf.float32}
+        self.structural_kwargs = ['num_iterations']
+
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
@@ -457,30 +477,6 @@ class VirtualAdversarialMethod(Attack):
         return vatm(self.model, x, self.model(x), eps=self.eps,
                     num_iterations=self.num_iterations, xi=self.xi,
                     clip_min=self.clip_min, clip_max=self.clip_max)
-
-    def generate_np(self, x_val, **kwargs):
-        """
-        Generate adversarial samples and return them in a Numpy array.
-        :param x_val: (required) A Numpy array with the original inputs.
-        :param eps: (optional float )the epsilon (input variation parameter)
-        :param num_iterations: (optional) the number of iterations
-        :param xi: (optional float) the finite difference parameter
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
-        """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
-
-        import tensorflow as tf
-
-        # Generate this attack's graph if it hasn't been done previously
-        if not hasattr(self, "_x"):
-            input_shape = list(x_val.shape)
-            input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
-            self._x_adv = self.generate(self._x, **kwargs)
-
-        return self.sess.run(self._x_adv, feed_dict={self._x: x_val})
 
     def parse_params(self, eps=2.0, num_iterations=1, xi=1e-6, clip_min=None,
                      clip_max=None, **kwargs):
@@ -502,6 +498,114 @@ class VirtualAdversarialMethod(Attack):
         self.clip_min = clip_min
         self.clip_max = clip_max
         return True
+
+
+class CarliniWagnerL2(Attack):
+
+    """
+    This attack was originally proposed by Carlini and Wagner. It is an
+    iterative attack that finds adversarial examples on many defenses that
+    are robust to other attacks.
+    Paper link: https://arxiv.org/abs/1608.04644
+    """
+
+    def __init__(self, model, back='tf', sess=None):
+        super(CarliniWagnerL2, self).__init__(model, back, sess)
+
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'y': tf.float32}
+        self.structural_kwargs = ['nb_classes',
+                                  'batch_size', 'confidence',
+                                  'targeted', 'learning_rate',
+                                  'binary_search_steps', 'max_iterations',
+                                  'abort_early', 'initial_const',
+                                  'clip_min', 'clip_max']
+
+    def generate(self, x, **kwargs):
+        """
+        Generate adversarial samples and return them in a Numpy array.
+
+        :param x: (required) A Numpy array with the original inputs.
+        :param y: (optional) A Numpy array with the labels that we either
+                  should target (if targeted=True) or avoid (if
+                  target=False). If None, use labels the classifier assigns.
+        :param nb_classes: The number of classes the model has.
+        :param confidence: Confidence of adversarial examples: higher produces
+                           examples that are farther away, but more strongly
+                           classified as adversarial.
+        :param batch_size: Number of attacks to run simultaneously.
+        :param targeted: True if we should perform a targetted attack, False
+                         otherwise.
+        :param learning_rate: The learning rate for the attack algorithm.
+                              Smaller values produce better results but are
+                              slower to converge.
+        :param binary_search_steps: The number of times we perform binary
+                                    search to find the optimal tradeoff-
+                                    constant between distance and confidence.
+        :param max_iterations: The maximum number of iterations. Larger values
+                               are more accurate; setting too small will
+                               require a large learning rate and will produce
+                               poor results.
+        :param abort_early: If true, allows early aborts if gradient descent
+                            gets stuck.
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of distance and confidence.
+                              If binary_search_steps is large, the initial
+                              constant is not important.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+        from .attacks_tf import CarliniWagnerL2 as CWL2
+        self.parse_params(**kwargs)
+
+        attack = CWL2(self.sess, self.model, self.batch_size,
+                      self.confidence, self.targeted, self.learning_rate,
+                      self.binary_search_steps, self.max_iterations,
+                      self.abort_early, self.initial_const,
+                      self.clip_min, self.clip_max, self.nb_classes,
+                      x.get_shape().as_list()[1:])
+
+        if 'y' in kwargs:
+            labels = kwargs['y']
+        else:
+            if self.targeted:
+                raise ValueError("Must supply target labels 'y'"
+                                 " in targeted attack.")
+            # TODO abstract this out for other classes too
+            preds = self.model(x)
+            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+            original_predictions = tf.to_float(tf.equal(preds,
+                                                        preds_max))
+            labels = original_predictions
+
+        def cw_wrap(x_val, y_val):
+            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
+        wrap = tf.py_func(cw_wrap, [x, labels], tf.float32)
+
+        return wrap
+
+    def parse_params(self, y=None, y_val=None, nb_classes=10,
+                     batch_size=1, confidence=0,
+                     targeted=True, learning_rate=5e-3,
+                     binary_search_steps=5, max_iterations=1000,
+                     abort_early=True, initial_const=1e-2,
+                     clip_min=0, clip_max=1):
+        # ignore the y and y_val argument
+        self.nb_classes = nb_classes
+        self.batch_size = batch_size
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iterations = max_iterations
+        self.abort_early = abort_early
+        self.initial_const = initial_const
+        self.clip_min = clip_min
+        self.clip_max = clip_max
 
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):

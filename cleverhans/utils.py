@@ -85,6 +85,7 @@ def random_targets(gt, nb_classes):
     :param nb_classes: The number of classes for this model
     :return: A numpy array holding the randomly-selected target classes
     """
+    from keras.utils import np_utils
     if len(gt.shape) > 1:
         gt = np.argmax(gt, axis=1)
 
@@ -157,7 +158,7 @@ def grid_visual(data):
     current_row = 0
     for y in xrange(num_rows):
         for x in xrange(num_cols):
-            figure.add_subplot(num_cols, num_rows, (x + 1) + (y * num_rows))
+            figure.add_subplot(num_rows, num_cols, (x + 1) + (y * num_cols))
             plt.axis('off')
 
             if num_channels == 1:
