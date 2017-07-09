@@ -7,8 +7,13 @@ source project. In return, they should reciprocate that respect in
 addressing your issue, assessing changes, and helping you finalize
 your pull requests.
 
-Improving documentation, bug triaging, or writing tutorials are all
+Adding new features, improving documentation, bug triaging, or
+writing tutorials are all
 examples of helpful contributions.
+Furthermore, if you are publishing a new attack or defense,
+we strongly encourage you to add it to CleverHans so that others
+may evaluate it fairly in their own work.
+
 To speed the code review process, we ask that:
 
 * New efforts and features be coordinated
