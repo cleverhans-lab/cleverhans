@@ -6,6 +6,8 @@ import collections
 
 import cleverhans.utils as utils
 
+from cleverhans.model import Model, WrapCallable
+
 
 class Attack(object):
 
@@ -16,8 +18,10 @@ class Attack(object):
 
     def __init__(self, model, back='tf', sess=None):
         """
-        :param model: A function that takes a symbolic input and returns the
-                      symbolic output for the model's predictions.
+        :param model: An instance of the cleverhans.Model class, or optionally
+                      (but not recommended) a function that takes a symbolic 
+                      input and returns the symbolic output for the model's 
+                      predictions.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param sess: The tf session to run graphs in (use None for Theano)
         """
@@ -25,9 +29,14 @@ class Attack(object):
             raise ValueError("Backend argument must either be 'tf' or 'th'.")
         if back == 'th' and sess is not None:
             raise Exception("A session should not be provided when using th.")
-        if not hasattr(model, '__call__'):
-            raise ValueError("model argument must be a function that returns "
-                             "the symbolic output when given an input tensor.")
+        if not isinstance(model, Model):
+            if hasattr(model, '__call__'):
+                warnings.warn("The model argument should be an instance of the"
+                              " cleverhans.Model class; otherwise the oytput"
+                              " layer will be inferred by the attack.")
+            else:
+                raise ValueError("model argument must be a function that returns "
+                                 "the symbolic output when given an input tensor.")
         if back == 'th':
             warnings.warn("CleverHans support for Theano is deprecated and "
                           "will be dropped on 2017-11-08.")
@@ -188,6 +197,9 @@ class FastGradientMethod(Attack):
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord']
 
+        if not isinstance(self.model, Model):
+            self.model = WrapCallable(self.model, 'probs')
+
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
@@ -269,6 +281,9 @@ class BasicIterativeMethod(Attack):
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter']
+
+        if not isinstance(self.model, Model):
+            self.model = WrapCallable(self.model, 'probs')
 
     def generate(self, x, **kwargs):
         import tensorflow as tf
@@ -363,6 +378,9 @@ class SaliencyMapMethod(Attack):
         """
         super(SaliencyMapMethod, self).__init__(model, back, sess)
 
+        if not isinstance(self.model, Model):
+            self.model = WrapCallable(self.model, 'probs')
+
         if self.back == 'th':
             error = "Theano version of SaliencyMapMethod not implemented."
             raise NotImplementedError(error)
@@ -455,6 +473,9 @@ class VirtualAdversarialMethod(Attack):
                                 'clip_min': tf.float32,
                                 'clip_max': tf.float32}
         self.structural_kwargs = ['num_iterations']
+
+        if not isinstance(self.model, Model):
+            self.model = WrapCallable(self.model, 'logits')
 
     def generate(self, x, **kwargs):
         """
