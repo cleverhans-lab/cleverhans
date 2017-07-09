@@ -12,7 +12,7 @@ from cleverhans import utils_tf
 
 def numpy_kl_with_logits(p_logits, q_logits):
     def numpy_softmax(logits):
-        logits = (logits.transpose() - np.max(logits, axis=1)).transpose()
+        logits -= np.max(logits, axis=1, keepdims=True)
         exp_logits = np.exp(logits)
         return exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
 
