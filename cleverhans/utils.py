@@ -62,11 +62,14 @@ def batch_indices(batch_nb, data_length, batch_size):
 
 def other_classes(nb_classes, class_ind):
     """
-    Heper function that returns a list of class indices without one class
-    :param nb_classes: number of classes in total
+    Returns a list of class indices excluding the class indexed by class_ind
+    :param nb_classes: number of classes in the task
     :param class_ind: the class index to be omitted
-    :return: list of class indices without one class
+    :return: list of class indices excluding the class indexed by class_ind
     """
+    if class_ind < 0 or class_ind >= nb_classes:
+        error_str = "class_ind must be within the range (0, nb_classes - 1)"
+        raise ValueError(error_str)
 
     other_classes_list = list(range(nb_classes))
     other_classes_list.remove(class_ind)
