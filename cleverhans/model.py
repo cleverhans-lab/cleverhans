@@ -68,7 +68,7 @@ class Model(object):
         """
         raise NotImplementedError('`_fprop` not implemented.')
 
-class WrapCallable(Model):
+class CallableModelWrapper(Model):
     def __init__(self, callable_fn, output_layer):
         """
         Wrap a callable function that takes a tensor as input and returns

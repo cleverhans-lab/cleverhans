@@ -6,7 +6,7 @@ import collections
 
 import cleverhans.utils as utils
 
-from cleverhans.model import Model, WrapCallable
+from cleverhans.model import Model, CallableModelWrapper
 
 
 class Attack(object):
@@ -198,7 +198,7 @@ class FastGradientMethod(Attack):
         self.structural_kwargs = ['ord']
 
         if not isinstance(self.model, Model):
-            self.model = WrapCallable(self.model, 'probs')
+            self.model = CallableModelWrapper(self.model, 'probs')
 
     def generate(self, x, **kwargs):
         """
@@ -283,7 +283,7 @@ class BasicIterativeMethod(Attack):
         self.structural_kwargs = ['ord', 'nb_iter']
 
         if not isinstance(self.model, Model):
-            self.model = WrapCallable(self.model, 'probs')
+            self.model = CallableModelWrapper(self.model, 'probs')
 
     def generate(self, x, **kwargs):
         import tensorflow as tf
@@ -379,7 +379,7 @@ class SaliencyMapMethod(Attack):
         super(SaliencyMapMethod, self).__init__(model, back, sess)
 
         if not isinstance(self.model, Model):
-            self.model = WrapCallable(self.model, 'probs')
+            self.model = CallableModelWrapper(self.model, 'probs')
 
         if self.back == 'th':
             error = "Theano version of SaliencyMapMethod not implemented."
@@ -475,7 +475,7 @@ class VirtualAdversarialMethod(Attack):
         self.structural_kwargs = ['num_iterations']
 
         if not isinstance(self.model, Model):
-            self.model = WrapCallable(self.model, 'logits')
+            self.model = CallableModelWrapper(self.model, 'logits')
 
     def generate(self, x, **kwargs):
         """
