@@ -9,7 +9,6 @@ import numpy as np
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
-from cleverhans.attacks import CarliniWagnerL2
 
 import time
 
