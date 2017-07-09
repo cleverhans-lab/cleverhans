@@ -19,14 +19,15 @@ class TestMNISTTutorialKerasTF(unittest.TestCase):
                                 'nb_epochs': 3,
                                 'train_dir': '/tmp',
                                 'filename': 'mnist.ckpt',
-                                'load_model': False}
+                                'load_model': False,
+                                'testing': True}
         report = mnist_tutorial_keras_tf.mnist_tutorial(**test_dataset_indices)
 
         # Check accuracy values contained in the AccuracyReport object
-        self.assertTrue(report.clean_train_clean_eval > 0.90)
-        self.assertTrue(report.clean_train_adv_eval < 0.05)
-        self.assertTrue(report.adv_train_clean_eval > 0.90)
-        self.assertTrue(report.adv_train_adv_eval > 0.30)
+        self.assertTrue(report.train_clean_train_clean_eval > 0.90)
+        self.assertTrue(report.train_clean_train_adv_eval < 0.05)
+        self.assertTrue(report.train_adv_train_clean_eval > 0.90)
+        self.assertTrue(report.train_adv_train_adv_eval > 0.30)
 
 
 if __name__ == '__main__':
