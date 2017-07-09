@@ -17,8 +17,9 @@ def numpy_kl_with_logits(p_logits, q_logits):
         return exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
 
     p = numpy_softmax(p_logits)
-    q = numpy_softmax(q_logits)
-    return (p * (np.log(p) - np.log(q))).sum(axis=1).mean()
+    log_p = p_logits - np.log(np.sum(np.exp(p_logits), axis=1, keepdims=True))
+    log_q = q_logits - np.log(np.sum(np.exp(q_logits), axis=1, keepdims=True))
+    return (p * (log_p - log_q)).sum(axis=1).mean()
 
 
 class TestUtilsTF(unittest.TestCase):
