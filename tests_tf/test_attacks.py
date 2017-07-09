@@ -1,4 +1,7 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import unittest
 import numpy as np
@@ -23,7 +26,7 @@ class TestVirtualAdversarialMethod(unittest.TestCase):
         # initialize model
         with tf.name_scope('dummy_model'):
             self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
-        self.sess.run(tf.initialize_all_variables())
+        self.sess.run(tf.global_variables_initializer())
 
     def test_parse_params(self):
         self.attack.parse_params()
