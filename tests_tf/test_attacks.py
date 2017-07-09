@@ -137,29 +137,6 @@ class TestFastGradientMethod(CleverHansTest):
         
         tf.gradients = old_grads
 
-    def test_generate_np_does_not_cache_graph_computation_for_num_iterations(self):
-        import tensorflow as tf
-
-        x_val = np.random.rand(1, 2)
-        x_val = np.array(x_val, dtype=np.float32)
-
-        x_adv = self.attack.generate_np(x_val, eps=.5, num_iterations=10,
-                                        clip_min=-5.0, clip_max=5.0)
-
-        ok = [False]
-        old_grads = tf.gradients
-
-        def fn(*x, **y):
-            ok[0] = True
-            return old_grads(*x, **y)
-        tf.gradients = fn
-
-        x_adv = self.attack.generate_np(x_val, eps=.5, num_iterations=20,
-                                        clip_min=-5.0, clip_max=5.0)
-
-        tf.gradients = old_grads
-
-        assert ok[0]
 
 class TestBasicIterativeMethod(TestFastGradientMethod):
     def setUp(self):
