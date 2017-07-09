@@ -83,17 +83,17 @@ class TestFastGradientMethod(CleverHansTest):
                                             clip_min=-5, clip_max=5)
 
             if ord == np.inf:
-                assert np.allclose(np.max(np.abs(x_adv-x_val), axis=1), 0.5)
+                self.assertTrue(np.allclose(np.max(np.abs(x_adv-x_val), axis=1), 0.5))
             elif ord == 1:
-                assert np.allclose(np.sum(np.abs(x_adv-x_val), axis=1), 0.5)
+                self.assertTrue(np.allclose(np.sum(np.abs(x_adv-x_val), axis=1), 0.5))
             elif ord == 2:
-                assert np.allclose(np.sum(np.square(x_adv-x_val), axis=1)**.5,
-                                   0.5)
+                self.assertTrue(np.allclose(np.sum(np.square(x_adv-x_val), axis=1)**.5,
+                                            0.5))
 
             orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
             new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-            assert np.mean(orig_labs==new_labs) < 0.5
+            self.assertTrue(np.mean(orig_labs==new_labs) < 0.5)
 
     def test_generate_np_can_be_called_with_different_eps(self):
         x_val = np.random.rand(100, 2)
@@ -103,7 +103,7 @@ class TestFastGradientMethod(CleverHansTest):
             x_adv = self.attack.generate_np(x_val, eps=eps, ord=np.inf,
                                             clip_min=-5.0, clip_max=5.0)
 
-            assert np.allclose(np.max(np.abs(x_adv-x_val), axis=1), eps)
+            self.assertTrue(np.allclose(np.max(np.abs(x_adv-x_val), axis=1), eps))
 
     def test_generate_np_clip_works_as_expected(self):
         x_val = np.random.rand(100, 2)
@@ -112,8 +112,8 @@ class TestFastGradientMethod(CleverHansTest):
         x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
                                         clip_min=-0.2, clip_max=0.1)
 
-        assert np.isclose(np.min(x_adv), -0.2)
-        assert np.isclose(np.max(x_adv), 0.1)
+        self.assertTrue(np.isclose(np.min(x_adv), -0.2))
+        self.assertTrue(np.isclose(np.max(x_adv), 0.1))
 
     def test_generate_np_caches_graph_computation_for_eps_clip_or_xi(self):
         import tensorflow as tf
@@ -167,7 +167,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        assert np.mean(orig_labs==new_labs) < 0.1
+        self.assertTrue(np.mean(orig_labs==new_labs) < 0.1)
 
         ok = [False]
         old_grads = tf.gradients
@@ -183,11 +183,11 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        assert np.mean(orig_labs==new_labs) < 0.1
+        self.assertTrue(np.mean(orig_labs==new_labs) < 0.1)
 
         tf.gradients = old_grads
 
-        assert ok[0]
+        self.assertTrue(ok[0])
 
 
 class TestSaliencyMapMethod(CleverHansTest):
@@ -224,7 +224,7 @@ class TestSaliencyMapMethod(CleverHansTest):
                                         targets=feed_labs, nb_classes=10)
         new_labs = self.sess.run(self.model(x_adv))
         
-        assert np.mean(np.argmax(feed_labs,axis=1)==np.argmax(new_labs,axis=1)) == 1.0
+        self.assertTrue(np.mean(np.argmax(feed_labs,axis=1)==np.argmax(new_labs,axis=1)) == 1.0)
 
 
 if __name__ == '__main__':
