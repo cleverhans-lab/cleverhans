@@ -238,7 +238,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     print("Defined TensorFlow model graph.")
 
     def evaluate():
-                # Evaluate the accuracy of the MNIST model on legitimate test examples
+        # Evaluate the accuracy of the MNIST model on legitimate test examples
         eval_params = {'batch_size': batch_size}
         acc = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
         report.clean_train_clean_eval = acc

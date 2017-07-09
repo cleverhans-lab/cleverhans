@@ -34,7 +34,8 @@ def list_files(suffix=""):
     repo_path = os.path.abspath(os.path.join(cleverhans_path, os.pardir))
     tutorials_path = os.path.join(repo_path, "tutorials")
     tutorials_files = _list_files(tutorials_path, suffix)
-    tutorials_files = [os.path.join(os.pardir, path) for path in tutorials_files]
+    tutorials_files = [os.path.join(os.pardir, path) for path in
+                       tutorials_files]
 
     file_list = file_list + tutorials_files
 
