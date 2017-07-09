@@ -10,14 +10,14 @@ import tensorflow as tf
 from cleverhans import utils_tf
 
 
-def numpy_kl_with_logits(q_logits, p_logits):
+def numpy_kl_with_logits(p_logits, q_logits):
     def numpy_softmax(logits):
         exp_logits = np.exp(logits)
         return exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
 
-    q = numpy_softmax(q_logits)
     p = numpy_softmax(p_logits)
-    return (q * (np.log(q) - np.log(p))).sum(axis=1).mean()
+    q = numpy_softmax(q_logits)
+    return (p * (np.log(p) - np.log(q))).sum(axis=1).mean()
 
 
 class TestUtilsTF(unittest.TestCase):
@@ -29,15 +29,15 @@ class TestUtilsTF(unittest.TestCase):
                 np.allclose(np.sum(x_norm**2, axis=1), 1, atol=1e-6))
 
     def test_kl_with_logits(self):
-        q_logits = tf.placeholder(tf.float32, shape=(100, 20))
         p_logits = tf.placeholder(tf.float32, shape=(100, 20))
-        q_logits_np = np.random.normal(0, 10, size=(100, 20))
+        q_logits = tf.placeholder(tf.float32, shape=(100, 20))
         p_logits_np = np.random.normal(0, 10, size=(100, 20))
+        q_logits_np = np.random.normal(0, 10, size=(100, 20))
         with tf.Session() as sess:
-            kl_div_tf = sess.run(utils_tf.kl_with_logits(q_logits, p_logits),
-                                 feed_dict={q_logits: q_logits_np,
-                                            p_logits: p_logits_np})
-        kl_div_ref = numpy_kl_with_logits(q_logits_np, p_logits_np)
+            kl_div_tf = sess.run(utils_tf.kl_with_logits(p_logits, q_logits),
+                                 feed_dict={p_logits: p_logits_np,
+                                            q_logits: q_logits_np})
+        kl_div_ref = numpy_kl_with_logits(p_logits_np, q_logits_np)
         self.assertTrue(np.allclose(kl_div_ref, kl_div_tf))
 
 
