@@ -75,6 +75,24 @@ def other_classes(nb_classes, class_ind):
     return other_classes_list
 
 
+def to_categorical(y, num_classes=None):
+    """
+    Converts a class vector (integers) to binary class matrix.
+    This is adapted from the Keras function with the same name.
+    :param y: class vector to be converted into a matrix
+              (integers from 0 to num_classes).
+    :param num_classes: num_classes: total number of classes.
+    :return: A binary matrix representation of the input.
+    """
+    y = np.array(y, dtype='int').ravel()
+    if not num_classes:
+        num_classes = np.max(y) + 1
+    n = y.shape[0]
+    categorical = np.zeros((n, num_classes))
+    categorical[np.arange(n), y] = 1
+    return categorical
+
+
 def random_targets(gt, nb_classes):
     """
     Take in an array of correct labels and randomly select a different label
@@ -109,7 +127,7 @@ def random_targets(gt, nb_classes):
         result[in_cl] = np.random.choice(potential_targets, size=size)
 
     # Encode vector of random labels as one-hot labels.
-    result = tf.contrib.keras.utils.to_categorical(result, nb_classes)
+    result = to_categorical(result, nb_classes)
     result = result.astype(np.int32)
 
     return result

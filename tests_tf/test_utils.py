@@ -19,6 +19,18 @@ def numpy_kl_with_logits(q_logits, p_logits):
 
 
 class TestUtils(unittest.TestCase):
+    def test_to_categorical_no_nb_classes_arg(self):
+        vec = np.asarray([0, 1, 2])
+        cat = np.asarray([[1, 0, 0],
+                          [0, 1, 0],
+                          [0, 0, 1]])
+        self.assertTrue(np.all(utils.to_categorical(vec) == cat))
+
+    def test_to_categorical_with_nb_classes_arg(self):
+        vec = np.asarray([0])
+        cat = np.asarray([[1, 0, 0]])
+        self.assertTrue(np.all(utils.to_categorical(vec, 3) == cat))
+
     def test_random_targets_vector(self):
         # Test utils.random_targets with a vector of labels as the input
         gt_labels = np.asarray([0, 1, 2, 3])
@@ -34,9 +46,9 @@ class TestUtils(unittest.TestCase):
     def test_random_targets_one_hot(self):
         # Test utils.random_targets with one-hot encoded labels as the input
         gt = np.asarray([[0, 0, 1, 0, 0],
-                                [1, 0, 0, 0, 0],
-                                [0, 0, 0, 1, 0],
-                                [1, 0, 0, 0, 0]])
+                         [1, 0, 0, 0, 0],
+                         [0, 0, 0, 1, 0],
+                         [1, 0, 0, 0, 0]])
         gt_labels = np.argmax(gt, axis=1)
         rt = utils.random_targets(gt, 5)
 
