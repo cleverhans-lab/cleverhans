@@ -206,7 +206,7 @@ class TestSaliencyMapMethod(CleverHansTest):
         self.sess = tf.Session()
         self.sess.as_default()
         self.model = tf.make_template('dummy_model', dummy_model)
-        self.attack = VirtualAdversarialMethod(self.model, sess=self.sess)
+        self.attack = SaliencyMapMethod(self.model, sess=self.sess)
 
         # initialize model
         with tf.name_scope('dummy_model'):
@@ -225,9 +225,10 @@ class TestSaliencyMapMethod(CleverHansTest):
         x_adv = self.attack.generate_np(x_val,
                                         clip_min=-5, clip_max=5,
                                         targets=feed_labs, nb_classes=10)
-        new_labs = self.sess.run(self.model(x_adv))
-        
-        self.assertTrue(np.mean(np.argmax(feed_labs,axis=1)==np.argmax(new_labs,axis=1)) == 1.0)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+        worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
+        self.assertTrue(worked > .9)
 
 
 if __name__ == '__main__':
