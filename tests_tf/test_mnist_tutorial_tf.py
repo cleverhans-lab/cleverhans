@@ -1,8 +1,14 @@
 import unittest
+import numpy as np
 
 
 class TestMNISTTutorialTF(unittest.TestCase):
     def test_mnist_tutorial_tf(self):
+
+        np.random.seed(42)
+        import tensorflow as tf
+        tf.set_random_seed(42)
+
         from tutorials import mnist_tutorial_tf
 
         # Run the MNIST tutorial on a dataset of reduced size

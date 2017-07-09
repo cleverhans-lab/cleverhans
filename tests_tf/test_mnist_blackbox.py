@@ -1,9 +1,14 @@
 import unittest
+import numpy as np
 
 
 class TestMNISTBlackboxF(unittest.TestCase):
     def test_mnist_blackbox(self):
         from tutorials import mnist_blackbox
+
+        np.random.seed(42)
+        import tensorflow as tf
+        tf.set_random_seed(42)
 
         # Run the MNIST tutorial on a dataset of reduced size, reduced number
         # of data augmentations, increased substitute holdout for faster runtime.
