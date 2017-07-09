@@ -20,6 +20,7 @@ from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
+from cleverhans.model import Model
 
 FLAGS = flags.FLAGS
 
@@ -31,19 +32,28 @@ you might build.
 """
 
 
-class MLP(object):
+class MLP(Model):
   """
   An example of a bare bones multilayer perceptron (MLP) class.
   """
 
   def __init__(self, layers, input_shape):
+    super(MLP, self).__init__()
+
+    self.layer_names = []
     self.layers = layers
     self.input_shape = input_shape
-    for layer in self.layers:
+    for i, layer in enumerate(self.layers):
+      name = layer.__class__.__name__
+      self.layer_names.append(name + "_" + str(i))
+
       layer.set_input_shape(input_shape)
       input_shape = layer.get_output_shape()
 
-  def fprop(self, x, return_all=False, set_ref=False):
+  def get_layer_names(self):
+    return self.layer_names
+
+  def fprop(self, x, set_ref=False):
     states = []
     for layer in self.layers:
       if set_ref:
@@ -51,12 +61,25 @@ class MLP(object):
       x = layer.fprop(x)
       assert x is not None
       states.append(x)
-    if return_all:
-      return states
-    return x
+    states = dict(zip(self.get_layer_names(), states))
+    return states
 
-  def __call__(self, x):
-    return self.fprop(x)
+  def get_layer(self, x, layer):
+    layers = self.fprop(x)
+    return layers[layer]
+
+  def get_logits(self, x):
+    if isinstance(self.layers[-1], Softmax):
+      idx = -2
+    else:
+      idx = -1
+    return self.get_layer(x, self.get_layer_names()[idx])
+
+  def get_probs(self, x):
+    out = self.get_layer(x, self.get_layer_names()[-1])
+    if not isinstance(self.layers[-1], Softmax):
+      out = tf.nn.softmax(out)
+    return out
 
 
 class Layer(object):
@@ -217,7 +240,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Define TF model graph
     model = make_basic_cnn()
-    preds = model.fprop(x)
+    preds = model.get_probs(x)
     print("Defined TensorFlow model graph.")
 
     def evaluate():
@@ -241,7 +264,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     fgsm = FastGradientMethod(model, sess=sess)
     fgsm_params = {'eps': 0.3}
     adv_x = fgsm.generate(x, **fgsm_params)
-    preds_adv = model.fprop(adv_x)
+    preds_adv = model.get_probs(adv_x)
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
     eval_par = {'batch_size': batch_size}

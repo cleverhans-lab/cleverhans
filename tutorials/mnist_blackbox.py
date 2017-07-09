@@ -21,6 +21,7 @@ from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
+from cleverhans.utils_keras import KerasModelWrapper
 
 FLAGS = flags.FLAGS
 
@@ -248,7 +249,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
     fgsm_par = {'eps': 0.3, 'ord': np.inf, 'clip_min': 0., 'clip_max': 1.}
-    fgsm = FastGradientMethod(model_sub, sess=sess)
+    wrap = KerasModelWrapper(model_sub)
+    fgsm = FastGradientMethod(wrap, sess=sess)
 
     # Craft adversarial examples using the substitute
     eval_params = {'batch_size': batch_size}
