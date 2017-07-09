@@ -118,7 +118,7 @@ class TestFastGradientMethod(CleverHansTest):
     def test_generate_np_caches_graph_computation_for_eps_clip_or_xi(self):
         import tensorflow as tf
 
-        x_val = np.random.rand(1, 1000)
+        x_val = np.random.rand(1, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
         x_adv = self.attack.generate_np(x_val, eps=.3, num_iterations=10,
@@ -140,7 +140,7 @@ class TestFastGradientMethod(CleverHansTest):
     def test_generate_np_does_not_cache_graph_computation_for_num_iterations(self):
         import tensorflow as tf
 
-        x_val = np.random.rand(1, 1000)
+        x_val = np.random.rand(1, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
         x_adv = self.attack.generate_np(x_val, eps=.5, num_iterations=10,
