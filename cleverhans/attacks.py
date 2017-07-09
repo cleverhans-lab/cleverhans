@@ -113,7 +113,8 @@ class Attack(object):
 
         if hash_key not in self.graphs:
             # try our very best to create a TF placeholder for each of the
-            # feedable keyword arguments by inferring the type
+            # feedable keyword arguments, and check the types are one of
+            # the allowed types
             num_types = (int, float, np.float16, np.float32, np.float64,
                          np.int8, np.int16, np.int32, np.int32, np.int64,
                          np.uint8, np.uint16, np.uint32, np.uint64)
@@ -123,14 +124,9 @@ class Attack(object):
                 given_type = self.feedable_kwargs[name]
                 if isinstance(value, np.ndarray):
                     new_shape = [None]+list(value.shape[1:])
-                    new_kwargs[name] = tf.placeholder(value.dtype, new_shape)
+                    new_kwargs[name] = tf.placeholder(given_type, new_shape)
                 elif isinstance(value, num_types):
-                    if isinstance(value, float):
-                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
-                    elif isinstance(value, int):
-                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
-                    else:
-                        new_kwargs[name] = tf.placeholder(given_type, shape=[])
+                    new_kwargs[name] = tf.placeholder(given_type, shape=[])
                 else:
                     raise ValueError("Could not identify type of argument " +
                                      name + ": " + str(value))
