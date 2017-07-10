@@ -258,7 +258,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     fgsm = FastGradientMethod(model, sess=sess)
     fgsm_params = {'eps': 0.3}
-    
+
     adv_x = fgsm.generate(x, **fgsm_params)
     preds_adv = model.get_probs(adv_x)
 
