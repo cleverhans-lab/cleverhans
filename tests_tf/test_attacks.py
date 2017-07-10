@@ -138,7 +138,6 @@ class TestFastGradientMethod(CleverHansTest):
         for ord in [np.inf, 1, 2]:
             x_adv = self.attack.generate_np(x_val, eps=.5, ord=ord,
                                             clip_min=-5, clip_max=5)
-
             if ord == np.inf:
                 delta = np.max(np.abs(x_adv - x_val), axis=1)
             elif ord == 1:
