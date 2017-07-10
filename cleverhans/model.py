@@ -90,4 +90,4 @@ class CallableModelWrapper(Model):
         return [self.output_layer]
 
     def fprop(self, x):
-        return {self.output_layer: self.callable_fn}
+        return {self.output_layer: self.callable_fn(x)}
