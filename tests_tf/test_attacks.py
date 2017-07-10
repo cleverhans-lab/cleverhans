@@ -131,25 +131,32 @@ class TestFastGradientMethod(CleverHansTest):
         self.model = my_model
         self.attack = FastGradientMethod(self.model, sess=self.sess)
 
-    def test_generate_np_gives_adversarial_example(self):
+    def help_test_generate_np_gives_adversarial_example(self, ord):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        for ord in [np.inf, 1, 2]:
-            x_adv = self.attack.generate_np(x_val, eps=.5, ord=ord,
-                                            clip_min=-5, clip_max=5)
-            if ord == np.inf:
-                delta = np.max(np.abs(x_adv - x_val), axis=1)
-            elif ord == 1:
-                delta = np.sum(np.abs(x_adv - x_val), axis=1)
-            elif ord == 2:
-                delta = np.sum(np.square(x_adv - x_val), axis=1)**.5
-            self.assertTrue(np.allclose(delta, 0.5))
+        x_adv = self.attack.generate_np(x_val, eps=.5, ord=ord,
+                                        clip_min=-5, clip_max=5)
+        if ord == np.inf:
+            delta = np.max(np.abs(x_adv - x_val), axis=1)
+        elif ord == 1:
+            delta = np.sum(np.abs(x_adv - x_val), axis=1)
+        elif ord == 2:
+            delta = np.sum(np.square(x_adv - x_val), axis=1)**.5
+        self.assertTrue(np.allclose(delta, 0.5))
 
-            orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-            new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
 
-            self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
+    def test_generate_np_gives_adversarial_example_linfinity(self):
+        self.help_test_generate_np_gives_adversarial_example(np.infty)
+
+    def test_generate_np_gives_adversarial_example_l1(self):
+        self.help_test_generate_np_gives_adversarial_example(1)
+
+    def test_generate_np_gives_adversarial_example_l2(self):
+        self.help_test_generate_np_gives_adversarial_example(2)
 
     def test_generate_np_can_be_called_with_different_eps(self):
         x_val = np.random.rand(100, 2)
