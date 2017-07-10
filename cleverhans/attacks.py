@@ -96,7 +96,7 @@ class Attack(object):
         feedable = dict((k, v) for k, v in kwargs.items()
                         if k in self.feedable_kwargs)
 
-        if len(fixed)+len(feedable) < len(kwargs):
+        if len(fixed) + len(feedable) < len(kwargs):
             warnings.warn("Supplied extra keyword arguments that are not "
                           "used in the graph computation. They have been "
                           "ignored.")
@@ -123,7 +123,7 @@ class Attack(object):
             for name, value in feedable.items():
                 given_type = self.feedable_kwargs[name]
                 if isinstance(value, np.ndarray):
-                    new_shape = [None]+list(value.shape[1:])
+                    new_shape = [None] + list(value.shape[1:])
                     new_kwargs[name] = tf.placeholder(given_type, new_shape)
                 elif isinstance(value, num_types):
                     new_kwargs[name] = tf.placeholder(given_type, shape=[])
@@ -132,7 +132,8 @@ class Attack(object):
                                      name + ": " + str(value))
 
             # x is a special placeholder we always want to have
-            x = tf.placeholder(tf.float32, shape=[None]+list(x_val.shape)[1:])
+            x_shape = [None] + list(x_val.shape)[1:]
+            x = tf.placeholder(tf.float32, shape=x_shape)
 
             # now we generate the graph that we want
             x_adv = self.generate(x, **new_kwargs)
