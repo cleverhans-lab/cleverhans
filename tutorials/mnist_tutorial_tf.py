@@ -10,7 +10,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from keras import backend
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
@@ -257,8 +256,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                 args=train_params)
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
-    wrap = KerasModelWrapper(model)
-    fgsm = FastGradientMethod(wrap, sess=sess)
+    fgsm = FastGradientMethod(model, sess=sess)
     fgsm_params = {'eps': 0.3}
     
     adv_x = fgsm.generate(x, **fgsm_params)
