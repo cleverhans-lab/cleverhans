@@ -85,11 +85,11 @@ class TestFastGradientMethod(CleverHansTest):
                                             clip_min=-5, clip_max=5)
 
             if ord == np.inf:
-                delta = np.max(np.abs(x_adv-x_val), axis=1)
+                delta = np.max(np.abs(x_adv - x_val), axis=1)
             elif ord == 1:
-                delta = np.sum(np.abs(x_adv-x_val), axis=1)
+                delta = np.sum(np.abs(x_adv - x_val), axis=1)
             elif ord == 2:
-                delta = np.sum(np.square(x_adv-x_val), axis=1)**.5
+                delta = np.sum(np.square(x_adv - x_val), axis=1)**.5
             self.assertTrue(np.allclose(delta, 0.5))
 
             orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
@@ -105,7 +105,7 @@ class TestFastGradientMethod(CleverHansTest):
             x_adv = self.attack.generate_np(x_val, eps=eps, ord=np.inf,
                                             clip_min=-5.0, clip_max=5.0)
 
-            delta = np.max(np.abs(x_adv-x_val), axis=1)
+            delta = np.max(np.abs(x_adv - x_val), axis=1)
             self.assertTrue(np.allclose(delta, eps))
 
     def test_generate_np_clip_works_as_expected(self):
