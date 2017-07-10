@@ -19,8 +19,8 @@ class Attack(object):
     def __init__(self, model, back='tf', sess=None):
         """
         :param model: An instance of the cleverhans.Model class, or optionally
-                      (but not recommended) a function that takes a symbolic 
-                      input and returns the symbolic output for the model's 
+                      (but not recommended) a function that takes a symbolic
+                      input and returns the symbolic output for the model's
                       predictions.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param sess: The tf session to run graphs in (use None for Theano)
@@ -35,8 +35,9 @@ class Attack(object):
                               " cleverhans.Model class; otherwise the oytput"
                               " layer will be inferred by the attack.")
             else:
-                raise ValueError("model argument must be a function that returns "
-                                 "the symbolic output when given an input tensor.")
+                raise ValueError("model argument must be a function that "
+                                 "returns the symbolic output when given an "
+                                 "input tensor.")
         if back == 'th':
             warnings.warn("CleverHans support for Theano is deprecated and "
                           "will be dropped on 2017-11-08.")
@@ -224,8 +225,9 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        return fgm(x, self.model.get_logits(x), y=self.y, eps=self.eps, ord=self.ord,
-                   clip_min=self.clip_min, clip_max=self.clip_max)
+        return fgm(x, self.model.get_logits(x), y=self.y, eps=self.eps,
+                   ord=self.ord, clip_min=self.clip_min,
+                   clip_max=self.clip_max)
 
     def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
                      clip_max=None, **kwargs):
