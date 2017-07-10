@@ -104,7 +104,7 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,
         d = tf.random_normal(tf.shape(x))
         for i in range(num_iterations):
             d = xi * utils_tf.l2_batch_normalize(d)
-            logits_d = model(x + d)
+            logits_d = model.get_logits(x + d)
             kl = utils_tf.kl_with_logits(logits, logits_d)
             Hd = tf.gradients(kl, d)[0]
             d = tf.stop_gradient(Hd)

@@ -224,7 +224,7 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        return fgm(x, self.model(x), y=self.y, eps=self.eps, ord=self.ord,
+        return fgm(x, self.model.get_logits(x), y=self.y, eps=self.eps, ord=self.ord,
                    clip_min=self.clip_min, clip_max=self.clip_max)
 
     def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
@@ -295,7 +295,7 @@ class BasicIterativeMethod(Attack):
         eta = 0
 
         # Fix labels to the first model predictions for loss computation
-        model_preds = self.model(x)
+        model_preds = self.model.get_probs(x)
         preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
         y = tf.to_float(tf.equal(model_preds, preds_max))
         fgsm_params = {'eps': self.eps_iter, 'y': y, 'ord': self.ord}
@@ -401,7 +401,7 @@ class SaliencyMapMethod(Attack):
         assert self.parse_params(**kwargs)
 
         # Define Jacobian graph wrt to this input placeholder
-        preds = self.model(x)
+        preds = self.model.get_probs(x)
         grads = jacobian_graph(preds, x, self.nb_classes)
 
         # Define appropriate graph (targeted / random target labels)
@@ -490,7 +490,7 @@ class VirtualAdversarialMethod(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        return vatm(self.model, x, self.model(x), eps=self.eps,
+        return vatm(self.model, x, self.model.get_logits(x), eps=self.eps,
                     num_iterations=self.num_iterations, xi=self.xi,
                     clip_min=self.clip_min, clip_max=self.clip_max)
 
