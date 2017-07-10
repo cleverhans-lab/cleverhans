@@ -114,7 +114,7 @@ class KerasModelWrapper(Model):
         super(KerasModelWrapper, self).__init__()
 
         if model is None:
-            raise ValueError('model argument must be suplied.')
+            raise ValueError('model argument must be supplied.')
 
         self.model = model
         self.keras_model = None
