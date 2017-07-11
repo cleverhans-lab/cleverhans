@@ -28,9 +28,9 @@ class Attack(object):
             raise Exception("A session should not be provided when using th.")
         if not isinstance(model, Model):
             if hasattr(model, '__call__'):
-                warnings.warn("The model argument should be an instance of the"
-                              " Model class; otherwise the output layer will"
-                              " be inferred by the attack.")
+                warnings.warn("CleverHans support for supplying a callable"
+                              " instead of an instance of the Model class is"
+                              " deprecated and will be dropped on 2018-01-11.")
             else:
                 raise ValueError("The model argument should be an instance of"
                                  " the Model class.")
