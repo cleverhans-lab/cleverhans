@@ -18,10 +18,7 @@ class Attack(object):
 
     def __init__(self, model, back='tf', sess=None):
         """
-        :param model: An instance of the cleverhans.Model class, or optionally
-                      (but not recommended) a function that takes a symbolic
-                      input and returns the symbolic output for the model's
-                      predictions.
+        :param model: An instance of the Model class.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param sess: The tf session to run graphs in (use None for Theano)
         """
@@ -32,8 +29,8 @@ class Attack(object):
         if not isinstance(model, Model):
             if hasattr(model, '__call__'):
                 warnings.warn("The model argument should be an instance of the"
-                              " cleverhans.Model class; otherwise the oytput"
-                              " layer will be inferred by the attack.")
+                              " Model class; otherwise the output layer will"
+                              " be inferred by the attack.")
             else:
                 raise ValueError("model argument must be a function that "
                                  "returns the symbolic output when given an "
