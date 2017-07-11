@@ -131,7 +131,13 @@ class TestFastGradientMethod(CleverHansTest):
         self.model = my_model
         self.attack = FastGradientMethod(self.model, sess=self.sess)
 
-    def help_test_generate_np_gives_adversarial_example(self, ord):
+    def help_test_generate_np_gives_adversarial_example(self, ord=None):
+        if ord == None:
+            # THIS IS A BIG HACK
+            # nosetests apparently runs all functions in a class, not just
+            # the ones that begin with test_. So detect if it's doing that
+            # and just skip over this test.
+            return
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
