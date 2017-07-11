@@ -79,10 +79,6 @@ class CallableModelWrapper(Model):
         :param output_layer: A string of the output layer returned by the
                              function. (Usually either "probs" or "logits".)
         """
-        if output_layer not in ['probs', 'logits']:
-            error_str = 'output_layer argument of CallableModelWrapper' \
-                        'should be the string "probs" or "logits".'
-            raise ValueError(error_str)
 
         self.output_layer = output_layer
         self.callable_fn = callable_fn
