@@ -76,8 +76,8 @@ class CallableModelWrapper(Model):
         a tensor as output with the given layer name.
         :param callable_fn: The callable function taking a tensor and
                             returning a given layer as output.
-        :param output_layer: A string of either "probs" or "logits",
-                             corresponding to the output of the callable.
+        :param output_layer: A string of the output layer returned by the
+                             function. (Usually either "probs" or "logits".)
         """
         if output_layer not in ['probs', 'logits']:
             error_str = 'output_layer argument of CallableModelWrapper' \
