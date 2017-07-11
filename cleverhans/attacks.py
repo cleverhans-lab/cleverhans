@@ -4,6 +4,8 @@ from six.moves import xrange
 import warnings
 import collections
 
+import cleverhans.utils as utils
+
 
 class Attack(object):
 
@@ -68,6 +70,38 @@ class Attack(object):
         error = "Sub-classes must implement generate."
         raise NotImplementedError(error)
 
+    def construct_graph(self, fixed, feedable, x_val, hash_key):
+        # try our very best to create a TF placeholder for each of the
+        # feedable keyword arguments, and check the types are one of
+        # the allowed types
+        import tensorflow as tf
+
+        new_kwargs = dict(x for x in fixed.items())
+        for name, value in feedable.items():
+            given_type = self.feedable_kwargs[name]
+            if isinstance(value, np.ndarray):
+                new_shape = [None] + list(value.shape[1:])
+                new_kwargs[name] = tf.placeholder(given_type, new_shape)
+            elif isinstance(value, utils.known_number_types):
+                new_kwargs[name] = tf.placeholder(given_type, shape=[])
+            else:
+                raise ValueError("Could not identify type of argument " +
+                                 name + ": " + str(value))
+
+        # x is a special placeholder we always want to have
+        x_shape = [None] + list(x_val.shape)[1:]
+        x = tf.placeholder(tf.float32, shape=x_shape)
+
+        # now we generate the graph that we want
+        x_adv = self.generate(x, **new_kwargs)
+
+        self.graphs[hash_key] = (x, new_kwargs, x_adv)
+
+        if len(self.graphs) >= 10:
+            warnings.warn("Calling generate_np() with multiple different "
+                          "structural paramaters is inefficient and should"
+                          " be avoided. Calling generate() is preferred.")
+
     def generate_np(self, x_val, **kwargs):
         """
         Generate adversarial examples and return them as a Numpy array.
@@ -112,44 +146,9 @@ class Attack(object):
             hash_key = tuple(sorted(fixed.items()))
 
         if hash_key not in self.graphs:
-            # try our very best to create a TF placeholder for each of the
-            # feedable keyword arguments, and check the types are one of
-            # the allowed types
-            num_types = (int, float, np.float16, np.float32, np.float64,
-                         np.int8, np.int16, np.int32, np.int32, np.int64,
-                         np.uint8, np.uint16, np.uint32, np.uint64)
+            self.construct_graph(fixed, feedable, x_val, hash_key)
 
-            new_kwargs = dict(x for x in fixed.items())
-            for name, value in feedable.items():
-                given_type = self.feedable_kwargs[name]
-                if isinstance(value, np.ndarray):
-                    new_shape = [None] + list(value.shape[1:])
-                    new_kwargs[name] = tf.placeholder(given_type, new_shape)
-                elif isinstance(value, num_types):
-                    new_kwargs[name] = tf.placeholder(given_type, shape=[])
-                else:
-                    raise ValueError("Could not identify type of argument " +
-                                     name + ": " + str(value))
-
-            # x is a special placeholder we always want to have
-            x_shape = [None] + list(x_val.shape)[1:]
-            x = tf.placeholder(tf.float32, shape=x_shape)
-
-            # now we generate the graph that we want
-            x_adv = self.generate(x, **new_kwargs)
-
-            if hash_key is not None:
-                # only save the graph if every fixed element is hashable
-                self.graphs[hash_key] = (x, new_kwargs, x_adv)
-
-            if len(self.graphs) >= 10:
-                warnings.warn("Calling generate_np() with multiple different "
-                              "structural paramaters is inefficient and should"
-                              " be avoided. Calling generate() is preferred.")
-
-        if hash_key is not None:
-            # if it is None, we must have constructed it already
-            x, new_kwargs, x_adv = self.graphs[hash_key]
+        x, new_kwargs, x_adv = self.graphs[hash_key]
 
         feed_dict = {x: x_val}
 
