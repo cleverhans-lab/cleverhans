@@ -150,13 +150,13 @@ class TestFastGradientMethod(CleverHansTest):
         self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
 
     def test_generate_np_gives_adversarial_example_linfinity(self):
-        self.help_test_generate_np_gives_adversarial_example(np.infty)
+        self.help_generate_np_gives_adversarial_example(np.infty)
 
     def test_generate_np_gives_adversarial_example_l1(self):
-        self.help_test_generate_np_gives_adversarial_example(1)
+        self.help_generate_np_gives_adversarial_example(1)
 
     def test_generate_np_gives_adversarial_example_l2(self):
-        self.help_test_generate_np_gives_adversarial_example(2)
+        self.help_generate_np_gives_adversarial_example(2)
 
     def test_generate_np_can_be_called_with_different_eps(self):
         x_val = np.random.rand(100, 2)
