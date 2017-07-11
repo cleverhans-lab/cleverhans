@@ -32,9 +32,8 @@ class Attack(object):
                               " Model class; otherwise the output layer will"
                               " be inferred by the attack.")
             else:
-                raise ValueError("model argument must be a function that "
-                                 "returns the symbolic output when given an "
-                                 "input tensor.")
+                raise ValueError("The model argument should be an instance of"
+                                 " the Model class.")
         if back == 'th':
             warnings.warn("CleverHans support for Theano is deprecated and "
                           "will be dropped on 2017-11-08.")
