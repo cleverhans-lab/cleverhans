@@ -1,6 +1,7 @@
 """
 Model construction utilities based on keras
 """
+from .model import Model
 
 import keras
 from keras.utils import np_utils
@@ -95,3 +96,104 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
         return model, logits_tensor
     else:
         return model
+
+
+class KerasModelWrapper(Model):
+    """
+    An implementation of `Model` that wraps a Keras model. It
+    specifically exposes the hidden features of a model by creating new models.
+    The symbolic graph is reused and so there is little overhead. Splitting
+    in-place operations can incur an overhead.
+    """
+
+    def __init__(self, model=None):
+        """
+        Create a wrapper for a Keras model
+        :param model: A Keras model
+        """
+        super(KerasModelWrapper, self).__init__()
+
+        if model is None:
+            raise ValueError('model argument must be supplied.')
+
+        self.model = model
+        self.keras_model = None
+
+    def _get_softmax_name(self):
+        """
+        Looks for the name of the softmax layer.
+        :return: Softmax layer name
+        """
+        for i, layer in enumerate(self.model.layers):
+            cfg = layer.get_config()
+            if 'activation' in cfg and cfg['activation'] == 'softmax':
+                return layer.name
+
+        raise Exception("No softmax layers found")
+
+    def _get_logits_name(self):
+        """
+        Looks for the name of the layer producing the logits.
+        :return: name of layer producing the logits
+        """
+        softmax_name = self._get_softmax_name()
+        softmax_layer = self.model.get_layer(softmax_name)
+        node = softmax_layer.inbound_nodes[0]
+        logits_name = node.inbound_layers[0].name
+
+        return logits_name
+
+    def get_logits(self, x):
+        """
+        :param x: A symbolic representation of the network input.
+        :return: A symbolic representation of the logits
+        """
+        logits_name = self._get_logits_name()
+
+        return self.get_layer(x, logits_name)
+
+    def get_probs(self, x):
+        """
+        :param x: A symbolic representation of the network input.
+        :return: A symbolic representation of the probs
+        """
+        name = self._get_softmax_name()
+
+        return self.get_layer(x, name)
+
+    def get_layer_names(self):
+        """
+        :return: Names of all the layers kept by Keras
+        """
+        layer_names = [x.name for x in self.model.layers]
+        return layer_names
+
+    def fprop(self, x):
+        """
+        Exposes all the layers of the model returned by get_layer_names.
+        :param x: A symbolic representation of the network input
+        :return: A dictionary mapping layer names to the symbolic
+                 representation of their output.
+        """
+        from keras.models import Model as KerasModel
+
+        if self.keras_model is None:
+            # Get the input layer
+            new_input = self.model.get_input_at(0)
+
+            # Make a new model that returns each of the layers as output
+            out_layers = [x_layer.output for x_layer in self.model.layers]
+            self.keras_model = KerasModel(new_input, out_layers)
+
+        # and get the outputs for that model on the input x
+        outputs = self.keras_model(x)
+
+        # Keras only returns a list for outputs of length >= 1, if the model
+        # is only one layer, wrap a list
+        if len(self.model.layers) == 1:
+            outputs = [outputs]
+
+        # compute the dict to return
+        fprop_dict = dict(zip(self.get_layer_names(), outputs))
+
+        return fprop_dict

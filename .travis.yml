@@ -72,9 +72,9 @@ script:
   # set up keras backend
   - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
-  - nosetests -v cleverhans
+  - nosetests -v --nologcapture cleverhans
   - if [[ "$KERAS_BACKEND" == "tensorflow" ]]; then
-      TF_CPP_MIN_LOG_LEVEL=1 nosetests -v tests_tf/;
+    nosetests --nologcapture -v tests_tf/;
     else
       nosetests -v tests_th/;
     fi
