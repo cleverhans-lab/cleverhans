@@ -241,6 +241,7 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
         correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
                                  tf.argmax(predictions,
                                            axis=tf.rank(predictions) - 1))
+
     acc_value = tf.reduce_mean(tf.to_float(correct_preds))
 
     # Init result var
@@ -394,15 +395,15 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
         return tf.reshape(x_norm, x_shape, scope)
 
 
-def kl_with_logits(q_logits, p_logits, scope=None,
+def kl_with_logits(p_logits, q_logits, scope=None,
                    loss_collection=tf.GraphKeys.REGULARIZATION_LOSSES):
-    """Helper function to compute kl-divergence KL(q || p)
+    """Helper function to compute kl-divergence KL(p || q)
     """
     with tf.name_scope(scope, "kl_divergence") as name:
-        q = tf.nn.softmax(q_logits)
-        q_log = tf.nn.log_softmax(q_logits)
+        p = tf.nn.softmax(p_logits)
         p_log = tf.nn.log_softmax(p_logits)
-        loss = tf.reduce_mean(tf.reduce_sum(q * (q_log - p_log), axis=1),
+        q_log = tf.nn.log_softmax(q_logits)
+        loss = tf.reduce_mean(tf.reduce_sum(p * (p_log - q_log), axis=1),
                               name=name)
         add_loss(loss, loss_collection)
         return loss

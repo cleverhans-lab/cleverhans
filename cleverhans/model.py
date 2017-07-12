@@ -1,0 +1,69 @@
+from abc import ABCMeta
+
+
+class Model(object):
+    """
+    An abstract interface for model wrappers that exposes model symbols
+    needed for making an attack. This abstraction removes the dependency on
+    any specific neural network package (e.g. Keras) from the core
+    code of CleverHans. It can also simplify exposing the hidden features of a
+    model when a specific package does not directly expose them.
+    """
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        """
+        For compatibility with functions used as model definitions (taking
+        an input tensor and returning the tensor giving the output
+        of the model on that input).
+        """
+        return self.get_probs(*args, **kwargs)
+
+    def get_layer(self, x, layer):
+        """
+        Expose the hidden features of a model given a layer name.
+        :param x: A symbolic representation of the network input
+        :param layer: The name of the hidden layer to return features at.
+        :return: A symbolic representation of the hidden features
+        """
+        # Return the symbolic representation for this layer.
+        return self.fprop(x)[layer]
+
+    def get_logits(self, x):
+        """
+        :param x: A symbolic representation of the network input
+        :return: A symbolic representation of the output logits (i.e., the
+                 values fed as inputs to the softmax layer).
+        """
+        return self.get_layer(x, 'logits')
+
+    def get_probs(self, x):
+        """
+        :param x: A symbolic representation of the network input
+        :return: A symbolic representation of the output probabilities (i.e.,
+                the output values produced by the softmax layer).
+        """
+        if 'probs' in self.get_layer_names():
+            return self.get_layer(x, 'probs')
+        else:
+            import tensorflow as tf
+            return tf.nn.softmax(self.get_logits(x))
+
+    def get_layer_names(self):
+        """
+        :return: a list of names for the layers that can be exposed by this
+        model abstraction.
+        """
+        raise NotImplementedError('`get_layer_names` not implemented.')
+
+    def fprop(self, x):
+        """
+        Exposes all the layers of the model returned by get_layer_names.
+        :param x: A symbolic representation of the network input
+        :return: A dictionary mapping layer names to the symbolic
+                 representation of their output.
+        """
+        raise NotImplementedError('`_fprop` not implemented.')
