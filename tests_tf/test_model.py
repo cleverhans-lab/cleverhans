@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import unittest
 
-from cleverhans.model import Model
+from cleverhans.model import Model, CallableModelWrapper
 
 
 class TestModelClass(unittest.TestCase):
