@@ -59,7 +59,7 @@ class Model(object):
         """
 
         if hasattr(self, 'layer_names'):
-          return self.layer_names
+            return self.layer_names
 
         raise NotImplementedError('`get_layer_names` not implemented.')
 
