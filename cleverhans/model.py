@@ -57,6 +57,10 @@ class Model(object):
         :return: a list of names for the layers that can be exposed by this
         model abstraction.
         """
+
+        if hasattr(self, 'layer_names'):
+            return self.layer_names
+
         raise NotImplementedError('`get_layer_names` not implemented.')
 
     def fprop(self, x):
