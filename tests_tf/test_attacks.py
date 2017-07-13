@@ -13,8 +13,6 @@ from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import SaliencyMapMethod
 
-from cleverhans.model import CallableModelWrapper
-
 
 class TestAttackClassInitArguments(unittest.TestCase):
     def test_model(self):
@@ -292,19 +290,6 @@ class TestSaliencyMapMethod(CleverHansTest):
 
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
         self.assertTrue(worked > .9)
-
-class TestCallableModelWrapperInitArguments(unittest.TestCase):
-    def test_output_layer(self):
-        def model():
-            return True
-
-        # The following two calls should not raise Exceptions
-        wrap = CallableModelWrapper(model, 'probs')
-        wrap = CallableModelWrapper(model, 'logits')
-
-        with self.assertRaises(Exception) as context:
-            wrap = CallableModelWrapper(model, 'dummy')
-        self.assertTrue(context.exception)
 
 
 if __name__ == '__main__':
