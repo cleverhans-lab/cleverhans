@@ -59,9 +59,6 @@ class MLP(Model):
             layer.set_input_shape(input_shape)
             input_shape = layer.get_output_shape()
 
-    def get_layer_names(self):
-        return self.layer_names
-
     def fprop(self, x, set_ref=False):
         states = []
         for layer in self.layers:
