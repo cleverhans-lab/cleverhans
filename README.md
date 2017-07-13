@@ -74,11 +74,11 @@ currently [test it](https://travis-ci.org/tensorflow/cleverhans) with Python
 
 To help you get started with the functionalities provided by this library, the
 `tutorials/' folder comes with the following tutorials:
-* **MNIST with FGSM** ([code](tutorials/mnist_tutorial_pure_tf.py)): this
+* **MNIST with FGSM** ([code](tutorials/mnist_tutorial_tf.py)): this
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial examples using adversarial training.
-* **MNIST with FGSM using Keras** ([code](tutorials/mnist_tutorial_tf.py), [tutorial](tutorials/mnist_tutorial_tf.md)): this
+* **MNIST with FGSM using Keras** ([code](tutorials/mnist_tutorial_keras_tf.py), [tutorial](tutorials/mnist_tutorial_keras_tf.md)): this
 tutorial covers how to define a MNIST model with Keras and train it using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial
