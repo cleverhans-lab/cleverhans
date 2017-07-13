@@ -221,7 +221,7 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        return fgm(x, self.model.get_logits(x), y=self.y, eps=self.eps,
+        return fgm(x, self.model.get_probs(x), y=self.y, eps=self.eps,
                    ord=self.ord, clip_min=self.clip_min,
                    clip_max=self.clip_max)
 
