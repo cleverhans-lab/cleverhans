@@ -6,6 +6,8 @@ import collections
 
 import cleverhans.utils as utils
 
+from cleverhans.model import Model, CallableModelWrapper
+
 
 class Attack(object):
 
@@ -16,8 +18,7 @@ class Attack(object):
 
     def __init__(self, model, back='tf', sess=None):
         """
-        :param model: A function that takes a symbolic input and returns the
-                      symbolic output for the model's predictions.
+        :param model: An instance of the Model class.
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param sess: The tf session to run graphs in (use None for Theano)
         """
@@ -25,9 +26,14 @@ class Attack(object):
             raise ValueError("Backend argument must either be 'tf' or 'th'.")
         if back == 'th' and sess is not None:
             raise Exception("A session should not be provided when using th.")
-        if not hasattr(model, '__call__'):
-            raise ValueError("model argument must be a function that returns "
-                             "the symbolic output when given an input tensor.")
+        if not isinstance(model, Model):
+            if hasattr(model, '__call__'):
+                warnings.warn("CleverHans support for supplying a callable"
+                              " instead of an instance of the Model class is"
+                              " deprecated and will be dropped on 2018-01-11.")
+            else:
+                raise ValueError("The model argument should be an instance of"
+                                 " the Model class.")
         if back == 'th':
             warnings.warn("CleverHans support for Theano is deprecated and "
                           "will be dropped on 2017-11-08.")
@@ -188,6 +194,9 @@ class FastGradientMethod(Attack):
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord']
 
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'probs')
+
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
@@ -212,8 +221,9 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        return fgm(x, self.model(x), y=self.y, eps=self.eps, ord=self.ord,
-                   clip_min=self.clip_min, clip_max=self.clip_max)
+        return fgm(x, self.model.get_probs(x), y=self.y, eps=self.eps,
+                   ord=self.ord, clip_min=self.clip_min,
+                   clip_max=self.clip_max)
 
     def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
                      clip_max=None, **kwargs):
@@ -270,6 +280,9 @@ class BasicIterativeMethod(Attack):
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter']
 
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'probs')
+
     def generate(self, x, **kwargs):
         import tensorflow as tf
 
@@ -280,7 +293,7 @@ class BasicIterativeMethod(Attack):
         eta = 0
 
         # Fix labels to the first model predictions for loss computation
-        model_preds = self.model(x)
+        model_preds = self.model.get_probs(x)
         preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
         y = tf.to_float(tf.equal(model_preds, preds_max))
         fgsm_params = {'eps': self.eps_iter, 'y': y, 'ord': self.ord}
@@ -363,6 +376,9 @@ class SaliencyMapMethod(Attack):
         """
         super(SaliencyMapMethod, self).__init__(model, back, sess)
 
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'probs')
+
         if self.back == 'th':
             error = "Theano version of SaliencyMapMethod not implemented."
             raise NotImplementedError(error)
@@ -383,7 +399,7 @@ class SaliencyMapMethod(Attack):
         assert self.parse_params(**kwargs)
 
         # Define Jacobian graph wrt to this input placeholder
-        preds = self.model(x)
+        preds = self.model.get_probs(x)
         grads = jacobian_graph(preds, x, self.nb_classes)
 
         # Define appropriate graph (targeted / random target labels)
@@ -456,6 +472,9 @@ class VirtualAdversarialMethod(Attack):
                                 'clip_max': tf.float32}
         self.structural_kwargs = ['num_iterations']
 
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'logits')
+
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
@@ -469,7 +488,7 @@ class VirtualAdversarialMethod(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        return vatm(self.model, x, self.model(x), eps=self.eps,
+        return vatm(self.model, x, self.model.get_logits(x), eps=self.eps,
                     num_iterations=self.num_iterations, xi=self.xi,
                     clip_min=self.clip_min, clip_max=self.clip_max)
 

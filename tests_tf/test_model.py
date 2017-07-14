@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import unittest
 
-from cleverhans.model import Model
+from cleverhans.model import Model, CallableModelWrapper
 
 
 class TestModelClass(unittest.TestCase):
@@ -57,6 +57,16 @@ class TestModelClass(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             model.fprop(x)
         self.assertTrue(context.exception)
+
+
+class TestCallableModelWrapperInitArguments(unittest.TestCase):
+    def test_output_layer(self):
+        def model():
+            return True
+
+        # The following two calls should not raise Exceptions
+        wrap = CallableModelWrapper(model, 'probs')
+        wrap = CallableModelWrapper(model, 'logits')
 
 
 if __name__ == '__main__':
