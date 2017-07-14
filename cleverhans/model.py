@@ -71,3 +71,24 @@ class Model(object):
                  representation of their output.
         """
         raise NotImplementedError('`_fprop` not implemented.')
+
+
+class CallableModelWrapper(Model):
+    def __init__(self, callable_fn, output_layer):
+        """
+        Wrap a callable function that takes a tensor as input and returns
+        a tensor as output with the given layer name.
+        :param callable_fn: The callable function taking a tensor and
+                            returning a given layer as output.
+        :param output_layer: A string of the output layer returned by the
+                             function. (Usually either "probs" or "logits".)
+        """
+
+        self.output_layer = output_layer
+        self.callable_fn = callable_fn
+
+    def get_layer_names(self):
+        return [self.output_layer]
+
+    def fprop(self, x):
+        return {self.output_layer: self.callable_fn(x)}
