@@ -90,7 +90,7 @@ def main(_):
   with tf.Graph().as_default():
     x_input = tf.placeholder(tf.float32, shape=batch_shape)
     noisy_images = x_input + eps * tf.sign(tf.random_normal(batch_shape))
-    x_output = noisy_images + tf.clip_by_value(noisy_images, 0.0, 1.0)
+    x_output = tf.clip_by_value(noisy_images, 0.0, 1.0)
 
     with tf.Session(FLAGS.master) as sess:
       for filenames, images in load_images(FLAGS.input_dir, batch_shape):
