@@ -587,7 +587,7 @@ class CarliniWagnerL2(Attack):
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32}
-        
+
         self.structural_kwargs = ['nb_classes',
                                   'batch_size', 'confidence',
                                   'targeted', 'learning_rate',
