@@ -17,9 +17,9 @@ MAX_EPSILON=16
 # In particular copy attacks defenses and dataset, so originals won't
 # be overwritten.
 if [[ "$OSTYPE" == "darwin"* ]]; then
-	WORKING_DIR="/private"$(mktemp -d)
+    WORKING_DIR="/private"$(mktemp -d)
 else
-	WORKING_DIR=$(mktemp -d)
+    WORKING_DIR=$(mktemp -d)
 fi
 echo "Preparing working directory: ${WORKING_DIR}"
 mkdir "${WORKING_DIR}/attacks"
