@@ -133,13 +133,13 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
         grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-        onehot = np.zeros((10, 10))
-        onehot[np.arange(10), np.arange(10)] = 1
+        one_hot = np.zeros((10, 10))
+        one_hot[np.arange(10), np.arange(10)] = 1
 
         adv_inputs = np.array([[instance] * 10 for instance in X_test[idxs]],
                               dtype=np.float32)
         adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
-        adv_ys = np.array([onehot] * 10, dtype=np.float32).reshape((100, 10))
+        adv_ys = np.array([one_hot] * 10, dtype=np.float32).reshape((100, 10))
     else:
         # Initialize our array for grid visualization
         grid_shape = (nb_classes, 2, img_rows, img_cols, channels)

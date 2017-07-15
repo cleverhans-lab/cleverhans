@@ -115,7 +115,7 @@ class TestVirtualAdversarialMethod(CleverHansTest):
         perturbation_norm = np.sqrt(np.sum(perturbation**2, axis=1))
         # test perturbation norm
         self.assertTrue(np.allclose(perturbation_norm, self.attack.eps))
-        
+
 
 class TestFastGradientMethod(CleverHansTest):
     def setUp(self):
