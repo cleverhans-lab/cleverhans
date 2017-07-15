@@ -12,6 +12,7 @@ from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import SaliencyMapMethod
+from cleverhans.attacks import CarliniWagnerL2
 
 
 class TestAttackClassInitArguments(unittest.TestCase):
@@ -70,11 +71,6 @@ class TestParseParams(unittest.TestCase):
 
 
 class CleverHansTest(unittest.TestCase):
-import sys
-sys.path = [".."]+sys.path
-from cleverhans.attacks import VirtualAdversarialMethod, CarliniWagnerL2
-
-class TestVirtualAdversarialMethod(unittest.TestCase):
     def setUp(self):
         self.test_start = time.time()
         # seed the randomness

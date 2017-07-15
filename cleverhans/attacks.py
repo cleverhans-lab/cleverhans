@@ -587,6 +587,13 @@ class CarliniWagnerL2(Attack):
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32}
+        
+        self.structural_kwargs = ['nb_classes',
+                                  'batch_size', 'confidence',
+                                  'targeted', 'learning_rate',
+                                  'binary_search_steps', 'max_iterations',
+                                  'abort_early', 'initial_const',
+                                  'clip_min', 'clip_max']
 
     def generate(self, x, **kwargs):
         """

@@ -94,7 +94,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'learning_rate': learning_rate,
         'train_dir': os.path.join(*os.path.split(model_path)[:-1]),
         'filename': os.path.split(model_path)[-1]
-
     }
 
     # check if we've trained before, and if we have, use that pre-trained model
