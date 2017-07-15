@@ -594,6 +594,8 @@ class CarliniWagnerL2:
 
         batch_size = self.batch_size
 
+        oimgs = np.clip(imgs, self.clip_min, self.clip_max)
+
         # re-scale images to be within range [0, 1]
         imgs = (imgs-self.clip_min)/(self.clip_max-self.clip_min)
         imgs = np.clip(imgs, 0, 1)
