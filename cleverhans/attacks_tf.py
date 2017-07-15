@@ -36,7 +36,7 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
               paper: https://arxiv.org/abs/1611.01236). Default is None.
               Labels should be one-hot-encoded.
     :param eps: the epsilon (input variation parameter)
-    :param ord: (optional) Order of the norm (mimics Numpy).
+    :param ord: (optional) Order of the norm (mimics NumPy).
                 Possible values: np.inf, 1 or 2.
     :param clip_min: Minimum float value for adversarial example components
     :param clip_max: Maximum float value for adversarial example components
@@ -522,7 +522,7 @@ class CarliniWagnerL2:
         self.newimg = self.newimg*(clip_max-clip_min)+clip_min
 
         # prediction BEFORE-SOFTMAX of the model
-        self.output = model(self.newimg)
+        self.output = model.get_logits(self.newimg)
 
         # distance to the input data
         self.other = (tf.tanh(self.timg) + 1) / 2*(clip_max-clip_min)+clip_min
