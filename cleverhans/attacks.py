@@ -110,12 +110,12 @@ class Attack(object):
 
     def generate_np(self, x_val, **kwargs):
         """
-        Generate adversarial examples and return them as a Numpy array.
+        Generate adversarial examples and return them as a NumPy array.
         Sub-classes *should not* implement this method unless they must
         perform special handling of arguments.
-        :param x_val: A Numpy array with the original inputs.
+        :param x_val: A NumPy array with the original inputs.
         :param **kwargs: optional parameters used by child classes.
-        :return: A Numpy array holding the adversarial examples.
+        :return: A NumPy array holding the adversarial examples.
         """
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
@@ -200,7 +200,7 @@ class FastGradientMethod(Attack):
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
         :param eps: (optional float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics Numpy).
+        :param ord: (optional) Order of the norm (mimics NumPy).
                     Possible values: np.inf, 1 or 2.
         :param y: (optional) A tensor with the model labels. Only provide
                   this parameter if you'd like to use true labels when crafting
@@ -240,7 +240,7 @@ class FastGradientMethod(Attack):
 
         Attack-specific parameters:
         :param eps: (optional float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics Numpy).
+        :param ord: (optional) Order of the norm (mimics NumPy).
                     Possible values: np.inf, 1 or 2.
         :param y: (optional) A tensor with the model labels. Only provide
                   this parameter if you'd like to use true labels when crafting
@@ -380,7 +380,7 @@ class BasicIterativeMethod(Attack):
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
-        :param y: (required) A tensor with the model labels.
+        :param y: (optional) A tensor with the model labels.
         :param y_target: (optional) A tensor with the labels to target. Leave
                          y_target=None if y is also set. Labels should be
                          one-hot-encoded.
@@ -578,6 +578,10 @@ class CarliniWagnerL2(Attack):
     are robust to other attacks.
     Paper link: https://arxiv.org/abs/1608.04644
 
+    At a high level, this attack is an iterative attack using Adam and
+    a specially-chosen loss function to find adversarial examples with
+    lower distortion than other attacks. This comes at the cost of speed,
+    as this attack is often much slower than others.
     """
     def __init__(self, model, back='tf', sess=None):
         super(CarliniWagnerL2, self).__init__(model, back, sess)
@@ -597,35 +601,41 @@ class CarliniWagnerL2(Attack):
 
     def generate(self, x, **kwargs):
         """
-        Generate adversarial samples and return them in a Numpy array.
+        Return a tensor that consturcts adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
 
-        :param x: (required) A Numpy array with the original inputs.
-        :param y: (optional) A Numpy array with the labels that we either
+        :param x: (required) A tensor with the original inputs.
+        :param y: (optional) A tensor with the labels that we either
                   should target (if targeted=True) or avoid (if
-                  target=False). If None, use labels the classifier assigns.
+                  targeted=False). If None, use labels the classifier assigns.
         :param nb_classes: The number of classes the model has.
         :param confidence: Confidence of adversarial examples: higher produces
-                           examples that are farther away, but more strongly
-                           classified as adversarial.
+                           examples with larger l2 distortion, but more 
+                           strongly classified as adversarial.
         :param batch_size: Number of attacks to run simultaneously.
-        :param targeted: True if we should perform a targetted attack, False
+        :param targeted: True if we should perform a targeted attack, False
                          otherwise.
         :param learning_rate: The learning rate for the attack algorithm.
                               Smaller values produce better results but are
                               slower to converge.
         :param binary_search_steps: The number of times we perform binary
                                     search to find the optimal tradeoff-
-                                    constant between distance and confidence.
-        :param max_iterations: The maximum number of iterations. Larger values
-                               are more accurate; setting too small will
-                               require a large learning rate and will produce
-                               poor results.
+                                    constant between norm of the purturbation
+                                    and confidence of the classification.
+        :param max_iterations: The maximum number of iterations. Setting this
+                               to a larger value will produce lower distortion
+                               results. Using only a few iterations requires
+                               a larger learning rate, and will produce larger
+                               distortion results.
         :param abort_early: If true, allows early aborts if gradient descent
-                            gets stuck.
+                            is unable to make progress (i.e., gets stuck in
+                            a local minimum).
         :param initial_const: The initial tradeoff-constant to use to tune the
-                              relative importance of distance and confidence.
+                              relative importance of size of the pururbation 
+                              and confidence of classification.
                               If binary_search_steps is large, the initial
-                              constant is not important.
+                              constant is not important. A smaller value of
+                              this constant gives lower distortion results.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -647,7 +657,7 @@ class CarliniWagnerL2(Attack):
                 raise ValueError("Must supply target labels 'y'"
                                  " in targeted attack.")
             # TODO abstract this out for other classes too
-            preds = self.model(x)
+            preds = self.model.get_probs(x)
             preds_max = tf.reduce_max(preds, 1, keep_dims=True)
             original_predictions = tf.to_float(tf.equal(preds,
                                                         preds_max))
