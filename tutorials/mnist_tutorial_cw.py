@@ -24,7 +24,7 @@ FLAGS = flags.FLAGS
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                       test_end=10000, viz_enabled=True, nb_epochs=6,
                       batch_size=128, nb_classes=10, source_samples=10,
-                      learning_rate=0.1, attack_iterations=100,
+                      learning_rate=0.001, attack_iterations=100,
                       model_path=os.path.join("models", "mnist"),
                       targeted=True):
     """
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_integer('nb_classes', 10, 'Number of output classes')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
-    flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
                         'Path to save or load the model file')
     flags.DEFINE_boolean('attack_iterations', 100,
