@@ -599,6 +599,9 @@ class CarliniWagnerL2(Attack):
                                   'abort_early', 'initial_const',
                                   'clip_min', 'clip_max']
 
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'logits')
+        
     def generate(self, x, **kwargs):
         """
         Return a tensor that consturcts adversarial examples for the given
@@ -610,7 +613,7 @@ class CarliniWagnerL2(Attack):
                   targeted=False). If None, use labels the classifier assigns.
         :param nb_classes: The number of classes the model has.
         :param confidence: Confidence of adversarial examples: higher produces
-                           examples with larger l2 distortion, but more 
+                           examples with larger l2 distortion, but more
                            strongly classified as adversarial.
         :param batch_size: Number of attacks to run simultaneously.
         :param targeted: True if we should perform a targeted attack, False
@@ -631,7 +634,7 @@ class CarliniWagnerL2(Attack):
                             is unable to make progress (i.e., gets stuck in
                             a local minimum).
         :param initial_const: The initial tradeoff-constant to use to tune the
-                              relative importance of size of the pururbation 
+                              relative importance of size of the pururbation
                               and confidence of classification.
                               If binary_search_steps is large, the initial
                               constant is not important. A smaller value of
