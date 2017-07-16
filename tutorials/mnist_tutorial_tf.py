@@ -59,9 +59,6 @@ class MLP(Model):
             layer.set_input_shape(input_shape)
             input_shape = layer.get_output_shape()
 
-    def get_layer_names(self):
-        return self.layer_names
-
     def fprop(self, x, set_ref=False):
         states = []
         for layer in self.layers:
@@ -195,7 +192,7 @@ def make_basic_cnn(nb_filters=64, nb_classes=10,
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
-                   learning_rate=0.001):
+                   learning_rate=0.001, testing=False):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -205,6 +202,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     :param nb_epochs: number of epochs to train model
     :param batch_size: size of training batches
     :param learning_rate: learning rate for training
+    :param testing: if true, test error is calculated
     :return: an AccuracyReport object
     """
 
@@ -255,6 +253,12 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
                 args=train_params)
 
+    # Calculate training error
+    if testing:
+        eval_params = {'batch_size': batch_size}
+        acc = model_eval(sess, x, y, preds, X_train, Y_train, args=eval_params)
+        report.train_clean_train_clean_eval = acc
+
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     fgsm = FastGradientMethod(model, sess=sess)
     fgsm_params = {'eps': 0.3}
@@ -267,6 +271,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     acc = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
     print('Test accuracy on adversarial examples: %0.4f\n' % acc)
     report.clean_train_adv_eval = acc
+
+    # Calculate training error
+    if testing:
+        eval_par = {'batch_size': batch_size}
+        acc = model_eval(sess, x, y, preds_adv, X_train,
+                         Y_train, args=eval_par)
+        report.train_clean_train_adv_eval = acc
 
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
@@ -293,6 +304,16 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     model_train(sess, x, y, preds_2, X_train, Y_train,
                 predictions_adv=preds_2_adv, evaluate=evaluate_2,
                 args=train_params)
+
+    # Calculate training errors
+    if testing:
+        eval_params = {'batch_size': batch_size}
+        accuracy = model_eval(sess, x, y, preds_2, X_train, Y_train,
+                              args=eval_params)
+        report.train_adv_train_clean_eval = accuracy
+        accuracy = model_eval(sess, x, y, preds_2_adv, X_train,
+                              Y_train, args=eval_params)
+        report.train_adv_train_adv_eval = accuracy
 
     return report
 

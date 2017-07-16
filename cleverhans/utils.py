@@ -41,6 +41,12 @@ class AccuracyReport(object):
         self.adv_train_clean_eval = 0.
         self.adv_train_adv_eval = 0.
 
+        # Training data accuracy results to be used by tutorials
+        self.train_clean_train_clean_eval = 0.
+        self.train_clean_train_adv_eval = 0.
+        self.train_adv_train_clean_eval = 0.
+        self.train_adv_train_adv_eval = 0.
+
 
 def batch_indices(batch_nb, data_length, batch_size):
     """
