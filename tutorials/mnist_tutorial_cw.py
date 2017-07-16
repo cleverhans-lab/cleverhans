@@ -17,6 +17,7 @@ from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.utils_tf import model_argmax, tf_model_load
+from cleverhans.utils_keras import KerasModelWrapper
 
 FLAGS = flags.FLAGS
 
@@ -117,15 +118,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
           ' adversarial examples')
     print("This could take some time ...")
 
-    # by default, we have softmax after a CNN, remove it here
-    model.layers.pop()
-    last = model.layers[-1]
-    last.outbound_nodes = []
-    model.outputs = [last.output]
-    model.built = False
-
     # Instantiate a CW attack object
-    cw = CarliniWagnerL2(model, back='tf', sess=sess)
+    wrap = KerasModelWrapper(model)
+    cw = CarliniWagnerL2(wrap, back='tf', sess=sess)
 
     idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0] for i in range(10)]
     if targeted:
