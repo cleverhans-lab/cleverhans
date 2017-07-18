@@ -284,6 +284,19 @@ class BasicIterativeMethod(Attack):
             self.model = CallableModelWrapper(self.model, 'probs')
 
     def generate(self, x, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (required) A placeholder for the model labels.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
         import tensorflow as tf
 
         # Parse and save attack-specific parameters
@@ -390,7 +403,15 @@ class SaliencyMapMethod(Attack):
 
     def generate(self, x, **kwargs):
         """
-        Attack-specific parameters:
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param theta: (optional float) Perturbation introduced to modified
+                      components (can be positive or negative)
+        :param gamma: (optional float) Maximum percentage of perturbed features
+        :param nb_classes: (optional int) Number of model output classes
+        :param clip_min: (optional float) Minimum component value for clipping
+        :param clip_max: (optional float) Maximum component value for clipping
+        :param targets: (optional) Target placeholder if the attack is targeted
         """
         import tensorflow as tf
         from .attacks_tf import jacobian_graph, jsma_batch
