@@ -46,7 +46,7 @@ def load_images(input_dir, batch_shape):
 
   Yields:
     filenames: list file names without path of each image
-      Lenght of this list could be less than batch_size, in this case only
+      Length of this list could be less than batch_size, in this case only
       first few images of the result are elements of the minibatch.
     images: array with all images from this batch
   """
