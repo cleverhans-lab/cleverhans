@@ -27,7 +27,10 @@ import argparse
 import csv
 import os
 import sys
+import multiprocessing
 
+from functools import partial
+from multiprocessing.dummy import Pool as ThreadPool
 from PIL import Image
 from io import BytesIO
 
@@ -45,8 +48,21 @@ def parse_args():
                         help='Location of dataset.csv')
     parser.add_argument('--output_dir', required=True,
                         help='Output path to download images')
+    parser.add_argument('--threads', default=multiprocessing.cpu_count() + 1,
+                        help='Number of threads to use')
     args = parser.parse_args()
-    return args.input_file, args.output_dir
+    return args.input_file, args.output_dir, int(args.threads)
+
+
+def get_images(row, output_dir):
+    if not download_image(image_id=row[0],
+                          url=row[1],
+                          x1=float(row[2]),
+                          y1=float(row[3]),
+                          x2=float(row[4]),
+                          y2=float(row[5]),
+                          output_dir=output_dir):
+        print("Download failed: " + str(row[0]))
 
 
 def download_image(image_id, url, x1, y1, x2, y2, output_dir):
@@ -74,36 +90,48 @@ def download_image(image_id, url, x1, y1, x2, y2, output_dir):
 
 
 def main():
-    input_filename, output_dir = parse_args()
+    input_filename, output_dir, n_threads = parse_args()
 
-    if not os.path.isdir(os.getcwd() + '/' + output_dir):
+    absolute_path_not_existing = os.path.isabs(output_dir) and not os.path.isdir(output_dir)
+    relative_path_not_existing = not os.path.isabs(output_dir) and not os.path.isdir(os.getcwd() + '/' + output_dir)
+    if absolute_path_not_existing or relative_path_not_existing:
         print("Output directory {} does not exist".format(output_dir))
         sys.exit()
 
-    failed_to_download = set()
     with open(input_filename) as input_file:
         reader = csv.reader(input_file)
         header_row = next(reader)
-        try:
-            row_idx_image_id = header_row.index('ImageId')
-            row_idx_url = header_row.index('URL')
-            row_idx_x1 = header_row.index('x1')
-            row_idx_y1 = header_row.index('y1')
-            row_idx_x2 = header_row.index('x2')
-            row_idx_y2 = header_row.index('y2')
-        except ValueError as e:
-            print('One of the columns was not found in the source file: ', e.message)
+        rows = list(reader)
+    try:
+        row_idx_image_id = header_row.index('ImageId')
+        row_idx_url = header_row.index('URL')
+        row_idx_x1 = header_row.index('x1')
+        row_idx_y1 = header_row.index('y1')
+        row_idx_x2 = header_row.index('x2')
+        row_idx_y2 = header_row.index('y2')
+    except ValueError as e:
+        print('One of the columns was not found in the source file: ', e.message)
 
-        for idx, row in enumerate(reader):
-            if len(row) < len(header_row):
-                # skip partial or empty lines
-                continue
-            if not download_image(image_id=row[row_idx_image_id],
-                                  url=row[row_idx_url],
-                                  x1=float(row[row_idx_x1]),
-                                  y1=float(row[row_idx_y1]),
-                                  x2=float(row[row_idx_x2]),
-                                  y2=float(row[row_idx_y2]),
+    rows = [(row[row_idx_image_id], row[row_idx_url], float(row[row_idx_x1]), float(row[row_idx_y1]),
+             float(row[row_idx_x2]), float(row[row_idx_y2])) for row in rows]
+
+    if n_threads > 1:
+        pool = ThreadPool(n_threads)
+        partial_get_images = partial(get_images, output_dir=output_dir)
+        for i, _ in enumerate(pool.imap_unordered(partial_get_images, rows), 1):
+            sys.stderr.write('\rDownloaded {0} images'.format(i + 1))
+        pool.close()
+        pool.join()
+    else:
+        failed_to_download = set()
+        for idx in range(len(rows)):
+            row = rows[idx]
+            if not download_image(image_id=row[0],
+                                  url=row[1],
+                                  x1=float(row[2]),
+                                  y1=float(row[3]),
+                                  x2=float(row[4]),
+                                  y2=float(row[5]),
                                   output_dir=output_dir):
                 failed_to_download.add(row[row_idx_image_id])
             sys.stdout.write('\rDownloaded {0} images'.format(idx + 1))
