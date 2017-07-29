@@ -211,6 +211,9 @@ class FastGradientMethod(Attack):
                   labels to avoid the "label leaking" effect (explained in this
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
+        :param y_target: (optional) A tensor with the labels to target. Do not
+                         set y_target if y is also set. Labels should be
+                         one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -222,7 +225,10 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        y = self.y or self.y_target
+        if self.y is not None:
+            y = self.y
+        else:
+            y = self.y_target
 
         return fgm(x, self.model.get_probs(x), y=y, eps=self.eps,
                    ord=self.ord, clip_min=self.clip_min,
@@ -286,6 +292,7 @@ class BasicIterativeMethod(Attack):
         self.feedable_kwargs = {'eps': np.float32,
                                 'eps_iter': np.float32,
                                 'y': np.float32,
+                                'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter']
@@ -301,7 +308,10 @@ class BasicIterativeMethod(Attack):
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
-        :param y: (required) A tensor with the model labels.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Do not
+                         set y_target if y is also set. Labels should be
+                         one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
@@ -318,14 +328,25 @@ class BasicIterativeMethod(Attack):
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model.get_probs(x)
         preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
-        y = tf.to_float(tf.equal(model_preds, preds_max))
-        fgsm_params = {'eps': self.eps_iter, 'y': y, 'ord': self.ord}
+        if self.y_target is not None:
+            y = self.y_target
+            targeted = True
+        elif self.y is not None:
+            y = self.y
+            targeted = False
+        else:
+            y = tf.to_float(tf.equal(model_preds, preds_max))
+            targeted = False
+
+        y_kwarg = 'y_target' if targeted else 'y'
+        fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord}
+        print(fgm_params)
 
         for i in range(self.nb_iter):
-            FGSM = FastGradientMethod(self.model, back=self.back,
+            FGM = FastGradientMethod(self.model, back=self.back,
                                       sess=self.sess)
             # Compute this step's perturbation
-            eta = FGSM.generate(x + eta, **fgsm_params) - x
+            eta = FGM.generate(x + eta, **fgm_params) - x
 
             # Clipping perturbation eta to self.ord norm ball
             if self.ord == np.inf:
@@ -350,7 +371,8 @@ class BasicIterativeMethod(Attack):
         return adv_x
 
     def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
-                     ord=np.inf, clip_min=None, clip_max=None, **kwargs):
+                     ord=np.inf, clip_min=None, clip_max=None,
+                     y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -361,6 +383,9 @@ class BasicIterativeMethod(Attack):
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
         :param y: (required) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Do not
+                         set y_target if y is also set. Labels should be
+                         one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
@@ -372,10 +397,13 @@ class BasicIterativeMethod(Attack):
         self.eps_iter = eps_iter
         self.nb_iter = nb_iter
         self.y = y
+        self.y_target = y_target
         self.ord = ord
         self.clip_min = clip_min
         self.clip_max = clip_max
 
+        if self.y != None and self.y_target != None:
+            raise ValueError("Must not set both y and y_target")
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
