@@ -332,7 +332,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
 
 
 def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
-               nb_classes, targets=None, feed=None):
+               nb_classes, y_target=None, feed=None):
     """
     Applies the JSMA to a batch of inputs
     :param sess: TF session
@@ -346,15 +346,15 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
     :param clip_min: minimum value for components of the example returned
     :param clip_max: maximum value for components of the example returned
     :param nb_classes: number of model output classes
-    :param targets: target class for sample input
+    :param y_target: target class for sample input
     :return: adversarial examples
     """
     X_adv = np.zeros(X.shape)
 
     for ind, val in enumerate(X):
         val = np.expand_dims(val, axis=0)
-        if targets is None:
-            # No targets provided, randomly choose from other classes
+        if y_target is None:
+            # No y_target provided, randomly choose from other classes
             from .utils_tf import model_argmax
             gt = model_argmax(sess, x, pred, val, feed=feed)
 
@@ -362,7 +362,7 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
             from .utils import random_targets
             target = random_targets(gt, nb_classes)[0]
         else:
-            target = targets[ind]
+            target = y_target[ind]
 
         X_adv[ind], _, _ = jsma(sess, x, pred, grads, val, np.argmax(target),
                                 theta, gamma, clip_min, clip_max, feed=feed)
