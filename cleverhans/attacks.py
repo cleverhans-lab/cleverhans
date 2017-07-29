@@ -245,13 +245,13 @@ class FastGradientMethod(Attack):
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
         :param y_target: (optional) A tensor with the labels to target. Do not
-                         set y_target if y is also set. Labels should be 
+                         set y_target if y is also set. Labels should be
                          one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
         # Save attack-specific parameters
-            
+
         self.eps = eps
         self.ord = ord
         self.y = y

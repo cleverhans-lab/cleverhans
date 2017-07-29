@@ -176,7 +176,7 @@ class TestFastGradientMethod(CleverHansTest):
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
         self.assertTrue(np.mean(random_labs == new_labs) > 0.7)
 
-        
+
     def test_generate_np_can_be_called_with_different_eps(self):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
