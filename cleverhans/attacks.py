@@ -190,6 +190,7 @@ class FastGradientMethod(Attack):
         super(FastGradientMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'y': np.float32,
+                                'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord']
@@ -221,12 +222,14 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        return fgm(x, self.model.get_probs(x), y=self.y, eps=self.eps,
-                   ord=self.ord, clip_min=self.clip_min,
-                   clip_max=self.clip_max)
+        y = self.y or self.y_target
 
-    def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
-                     clip_max=None, **kwargs):
+        return fgm(x, self.model.get_probs(x), y=y, eps=self.eps,
+                   ord=self.ord, clip_min=self.clip_min,
+                   clip_max=self.clip_max, targeted=(self.y_target != None))
+
+    def parse_params(self, eps=0.3, ord=np.inf, y=None, y_target=None,
+                     clip_min=None, clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -241,16 +244,23 @@ class FastGradientMethod(Attack):
                   labels to avoid the "label leaking" effect (explained in this
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
+        :param y_target: (optional) A tensor with the labels to target. Do not
+                         set y_target if y is also set. Labels should be 
+                         one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
         # Save attack-specific parameters
+            
         self.eps = eps
         self.ord = ord
         self.y = y
+        self.y_target = y_target
         self.clip_min = clip_min
         self.clip_max = clip_max
 
+        if self.y != None and self.y_target != None:
+            raise ValueError("Must not set both y and y_target")
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, int(1), int(2)]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")

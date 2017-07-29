@@ -21,12 +21,15 @@ def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
                clip_max=clip_max)
 
 
-def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
+def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
+        clip_min=None, clip_max=None,
+        targeted=False):
     """
     TensorFlow implementation of the Fast Gradient Method.
     :param x: the input placeholder
     :param preds: the model's output tensor
-    :param y: (optional) A placeholder for the model labels. Only provide
+    :param y: (optional) A placeholder for the model labels. If targeted
+              is true, then provide the target label. Otherwise, only provide
               this parameter if you'd like to use true labels when crafting
               adversarial samples. Otherwise, model predictions are used as
               labels to avoid the "label leaking" effect (explained in this
@@ -37,6 +40,10 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
                 Possible values: np.inf, 1 or 2.
     :param clip_min: Minimum float value for adversarial example components
     :param clip_max: Maximum float value for adversarial example components
+    :param targeted: Is the attack targeted or untargeted? Untargeted, the
+                     default, will try to make the label incorrect. Targeted
+                     will instead try to move in the direction of being more
+                     like y.
     :return: a tensor for the adversarial example
     """
 
@@ -48,6 +55,8 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
 
     # Compute loss
     loss = utils_tf.model_loss(y, preds, mean=False)
+    if targeted:
+        loss = -loss
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
