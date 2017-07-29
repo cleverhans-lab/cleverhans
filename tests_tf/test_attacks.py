@@ -285,7 +285,7 @@ class TestSaliencyMapMethod(CleverHansTest):
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
         x_adv = self.attack.generate_np(x_val,
                                         clip_min=-5, clip_max=5,
-                                        targets=feed_labs, nb_classes=10)
+                                        y_target=feed_labs, nb_classes=10)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
