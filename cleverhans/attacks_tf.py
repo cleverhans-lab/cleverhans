@@ -188,7 +188,7 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
     return p1, p2, search_domain
 
 
-def jacobian(sess, x, grads, target, X, nb_features, nb_classes):
+def jacobian(sess, x, grads, target, X, nb_features, nb_classes, feed=None):
     """
     TensorFlow implementation of the foward derivative / Jacobian
     :param x: the input placeholder
@@ -200,6 +200,8 @@ def jacobian(sess, x, grads, target, X, nb_features, nb_classes):
     """
     # Prepare feeding dictionary for all gradient computations
     feed_dict = {x: X}
+    if feed is not None:
+        feed_dict.update(feed)
 
     # Initialize a numpy array to hold the Jacobian component values
     jacobian_val = np.zeros((nb_classes, nb_features), dtype=np.float32)
@@ -238,7 +240,7 @@ def jacobian_graph(predictions, x, nb_classes):
 
 
 def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
-         clip_max):
+         clip_max, feed=None):
     """
     TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
     for details about the algorithm design choices).
@@ -287,7 +289,8 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
     # Initialize the loop variables
     iteration = 0
     adv_x_original_shape = np.reshape(adv_x, original_shape)
-    current = utils_tf.model_argmax(sess, x, predictions, adv_x_original_shape)
+    current = utils_tf.model_argmax(sess, x, predictions, adv_x_original_shape,
+                                    feed=feed)
 
     # Repeat this main loop until we have achieved misclassification
     while (current != target and iteration < max_iters and
@@ -298,7 +301,8 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
         # Compute the Jacobian components
         grads_target, grads_others = jacobian(sess, x, grads, target,
                                               adv_x_original_shape,
-                                              nb_features, nb_classes)
+                                              nb_features, nb_classes,
+                                              feed=feed)
 
         # Compute the saliency map for each of our target classes
         # and return the two best candidate features for perturbation
@@ -311,7 +315,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
 
         # Update our current prediction by querying the model
         current = utils_tf.model_argmax(sess, x, predictions,
-                                        adv_x_original_shape)
+                                        adv_x_original_shape, feed=feed)
 
         # Update loop variables
         iteration = iteration + 1
@@ -328,7 +332,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
 
 
 def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
-               nb_classes, targets=None):
+               nb_classes, targets=None, feed=None):
     """
     Applies the JSMA to a batch of inputs
     :param sess: TF session
@@ -352,7 +356,7 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
         if targets is None:
             # No targets provided, randomly choose from other classes
             from .utils_tf import model_argmax
-            gt = model_argmax(sess, x, pred, val)
+            gt = model_argmax(sess, x, pred, val, feed=feed)
 
             # Randomly choose from the incorrect classes for each sample
             from .utils import random_targets
@@ -361,13 +365,13 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
             target = targets[ind]
 
         X_adv[ind], _, _ = jsma(sess, x, pred, grads, val, np.argmax(target),
-                                theta, gamma, clip_min, clip_max)
+                                theta, gamma, clip_min, clip_max, feed=feed)
 
     return np.asarray(X_adv, dtype=np.float32)
 
 
 def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
-                          keras_phase=None):
+                          keras_phase=None, feed=None):
     """
     Augment an adversary's substitute training set using the Jacobian
     of a substitute model to generate new synthetic inputs.
@@ -408,6 +412,8 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
 
         # Prepare feeding dictionary
         feed_dict = {x: np.reshape(input, input_shape)}
+        if feed is not None:
+            feed_dict.update(feed)
 
         # Compute sign matrix
         grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
