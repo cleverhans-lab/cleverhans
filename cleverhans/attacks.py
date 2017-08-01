@@ -108,12 +108,13 @@ class Attack(object):
                           "structural paramaters is inefficient and should"
                           " be avoided. Calling generate() is preferred.")
 
-    def generate_np(self, x_val, **kwargs):
+    def generate_np(self, x_val, feed=None, **kwargs):
         """
         Generate adversarial examples and return them as a Numpy array.
         Sub-classes *should not* implement this method unless they must
         perform special handling of arguments.
         :param x_val: A Numpy array with the original inputs.
+        :param feed: optional extra feed parameters for tensorflow
         :param **kwargs: optional parameters used by child classes.
         :return: A Numpy array holding the adversarial examples.
         """
@@ -160,6 +161,9 @@ class Attack(object):
 
         for name in feedable:
             feed_dict[new_kwargs[name]] = feedable[name]
+
+        if feed is not None:
+            feed_dict.update(feed)
 
         return self.sess.run(x_adv, feed_dict)
 
@@ -401,7 +405,7 @@ class SaliencyMapMethod(Attack):
         self.structural_kwargs = ['theta', 'gamma', 'nb_classes',
                                   'clip_max', 'clip_min']
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, feed=None, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
@@ -412,6 +416,7 @@ class SaliencyMapMethod(Attack):
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
         :param targets: (optional) Target tensor if the attack is targeted
+        :param feed: (optional) extra feed parameters for tensorflow
         """
         import tensorflow as tf
         from .attacks_tf import jacobian_graph, jsma_batch
@@ -429,7 +434,7 @@ class SaliencyMapMethod(Attack):
                 return jsma_batch(self.sess, x, preds, grads, x_val,
                                   self.theta, self.gamma, self.clip_min,
                                   self.clip_max, self.nb_classes,
-                                  targets=targets)
+                                  targets=targets, feed=feed)
 
             # Attack is targeted, target placeholder will need to be fed
             wrap = tf.py_func(jsma_wrap, [x, self.targets], tf.float32)
@@ -438,7 +443,7 @@ class SaliencyMapMethod(Attack):
                 return jsma_batch(self.sess, x, preds, grads, x_val,
                                   self.theta, self.gamma, self.clip_min,
                                   self.clip_max, self.nb_classes,
-                                  targets=None)
+                                  targets=None, feed=feed)
 
             # Attack is untargeted, target values will be chosen at random
             wrap = tf.py_func(jsma_wrap, [x], tf.float32)
@@ -446,7 +451,7 @@ class SaliencyMapMethod(Attack):
         return wrap
 
     def parse_params(self, theta=1., gamma=np.inf, nb_classes=10, clip_min=0.,
-                     clip_max=1., targets=None, **kwargs):
+                     clip_max=1., targets=None, feed=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -605,7 +610,7 @@ def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
 
 
 def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
-         increase=True, back='tf', clip_min=None, clip_max=None):
+         increase=True, back='tf', clip_min=None, clip_max=None, feed=None):
     """
     A wrapper for the Jacobian-based saliency map approach.
     It calls the right function, depending on the
@@ -626,6 +631,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
                     value for components of the example returned
+    :param feed: optional parameter for passing extra feed_dict values to TF
     :return: an adversarial sample
     """
     warnings.warn("attacks.jsma is deprecated and will be removed on "
@@ -634,6 +640,6 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
         # Compute Jacobian-based saliency map attack using TensorFlow
         from .attacks_tf import jsma
         return jsma(sess, x, predictions, grads, sample, target, theta, gamma,
-                    clip_min, clip_max)
+                    clip_min, clip_max, feed=feed)
     elif back == 'th':
         raise NotImplementedError("Theano jsma not implemented.")
