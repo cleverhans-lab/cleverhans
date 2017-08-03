@@ -341,7 +341,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
 
 
 def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
-               nb_classes, y_target=None, feed=None):
+               nb_classes, y_target=None, feed=None, **kwargs):
     """
     Applies the JSMA to a batch of inputs
     :param sess: TF session
@@ -358,6 +358,11 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
     :param y_target: target class for sample input
     :return: adversarial examples
     """
+    if 'targets' in kwargs:
+        warnings.warn('The targets parameter is deprecated, use y_target.'
+                      'targets will be removed on 2018-02-03.')
+        y_target = kwargs['targets']
+
     X_adv = np.zeros(X.shape)
 
     for ind, val in enumerate(X):
