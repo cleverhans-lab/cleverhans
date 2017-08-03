@@ -232,7 +232,8 @@ class FastGradientMethod(Attack):
 
         return fgm(x, self.model.get_probs(x), y=y, eps=self.eps,
                    ord=self.ord, clip_min=self.clip_min,
-                   clip_max=self.clip_max, targeted=(self.y_target is not None))
+                   clip_max=self.clip_max,
+                   targeted=(self.y_target is not None))
 
     def parse_params(self, eps=0.3, ord=np.inf, y=None, y_target=None,
                      clip_min=None, clip_max=None, **kwargs):
