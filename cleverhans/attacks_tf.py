@@ -21,12 +21,15 @@ def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
                clip_max=clip_max)
 
 
-def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
+def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
+        clip_min=None, clip_max=None,
+        targeted=False):
     """
     TensorFlow implementation of the Fast Gradient Method.
     :param x: the input placeholder
     :param preds: the model's output tensor
-    :param y: (optional) A placeholder for the model labels. Only provide
+    :param y: (optional) A placeholder for the model labels. If targeted
+              is true, then provide the target label. Otherwise, only provide
               this parameter if you'd like to use true labels when crafting
               adversarial samples. Otherwise, model predictions are used as
               labels to avoid the "label leaking" effect (explained in this
@@ -37,6 +40,10 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
                 Possible values: np.inf, 1 or 2.
     :param clip_min: Minimum float value for adversarial example components
     :param clip_max: Maximum float value for adversarial example components
+    :param targeted: Is the attack targeted or untargeted? Untargeted, the
+                     default, will try to make the label incorrect. Targeted
+                     will instead try to move in the direction of being more
+                     like y.
     :return: a tensor for the adversarial example
     """
 
@@ -48,6 +55,8 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
 
     # Compute loss
     loss = utils_tf.model_loss(y, preds, mean=False)
+    if targeted:
+        loss = -loss
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
@@ -332,7 +341,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
 
 
 def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
-               nb_classes, targets=None, feed=None):
+               nb_classes, y_target=None, feed=None, **kwargs):
     """
     Applies the JSMA to a batch of inputs
     :param sess: TF session
@@ -346,15 +355,20 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
     :param clip_min: minimum value for components of the example returned
     :param clip_max: maximum value for components of the example returned
     :param nb_classes: number of model output classes
-    :param targets: target class for sample input
+    :param y_target: target class for sample input
     :return: adversarial examples
     """
+    if 'targets' in kwargs:
+        warnings.warn('The targets parameter is deprecated, use y_target.'
+                      'targets will be removed on 2018-02-03.')
+        y_target = kwargs['targets']
+
     X_adv = np.zeros(X.shape)
 
     for ind, val in enumerate(X):
         val = np.expand_dims(val, axis=0)
-        if targets is None:
-            # No targets provided, randomly choose from other classes
+        if y_target is None:
+            # No y_target provided, randomly choose from other classes
             from .utils_tf import model_argmax
             gt = model_argmax(sess, x, pred, val, feed=feed)
 
@@ -362,7 +376,7 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
             from .utils import random_targets
             target = random_targets(gt, nb_classes)[0]
         else:
-            target = targets[ind]
+            target = y_target[ind]
 
         X_adv[ind], _, _ = jsma(sess, x, pred, grads, val, np.argmax(target),
                                 theta, gamma, clip_min, clip_max, feed=feed)

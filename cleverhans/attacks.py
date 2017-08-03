@@ -119,9 +119,6 @@ class Attack(object):
         """
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
-
-        import tensorflow as tf
-
         if self.sess is None:
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
@@ -190,6 +187,7 @@ class FastGradientMethod(Attack):
         super(FastGradientMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'y': np.float32,
+                                'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord']
@@ -210,6 +208,9 @@ class FastGradientMethod(Attack):
                   labels to avoid the "label leaking" effect (explained in this
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -221,12 +222,18 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        return fgm(x, self.model.get_probs(x), y=self.y, eps=self.eps,
-                   ord=self.ord, clip_min=self.clip_min,
-                   clip_max=self.clip_max)
+        if self.y is not None:
+            y = self.y
+        else:
+            y = self.y_target
 
-    def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
-                     clip_max=None, **kwargs):
+        return fgm(x, self.model.get_probs(x), y=y, eps=self.eps,
+                   ord=self.ord, clip_min=self.clip_min,
+                   clip_max=self.clip_max,
+                   targeted=(self.y_target is not None))
+
+    def parse_params(self, eps=0.3, ord=np.inf, y=None, y_target=None,
+                     clip_min=None, clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -241,16 +248,23 @@ class FastGradientMethod(Attack):
                   labels to avoid the "label leaking" effect (explained in this
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
         # Save attack-specific parameters
+
         self.eps = eps
         self.ord = ord
         self.y = y
+        self.y_target = y_target
         self.clip_min = clip_min
         self.clip_max = clip_max
 
+        if self.y is not None and self.y_target is not None:
+            raise ValueError("Must not set both y and y_target")
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, int(1), int(2)]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
@@ -276,6 +290,7 @@ class BasicIterativeMethod(Attack):
         self.feedable_kwargs = {'eps': np.float32,
                                 'eps_iter': np.float32,
                                 'y': np.float32,
+                                'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter']
@@ -291,7 +306,10 @@ class BasicIterativeMethod(Attack):
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
-        :param y: (required) A tensor with the model labels.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
@@ -308,14 +326,25 @@ class BasicIterativeMethod(Attack):
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model.get_probs(x)
         preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
-        y = tf.to_float(tf.equal(model_preds, preds_max))
-        fgsm_params = {'eps': self.eps_iter, 'y': y, 'ord': self.ord}
+        if self.y_target is not None:
+            y = self.y_target
+            targeted = True
+        elif self.y is not None:
+            y = self.y
+            targeted = False
+        else:
+            y = tf.to_float(tf.equal(model_preds, preds_max))
+            targeted = False
+
+        y_kwarg = 'y_target' if targeted else 'y'
+        fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord}
+        print(fgm_params)
 
         for i in range(self.nb_iter):
-            FGSM = FastGradientMethod(self.model, back=self.back,
-                                      sess=self.sess)
+            FGM = FastGradientMethod(self.model, back=self.back,
+                                     sess=self.sess)
             # Compute this step's perturbation
-            eta = FGSM.generate(x + eta, **fgsm_params) - x
+            eta = FGM.generate(x + eta, **fgm_params) - x
 
             # Clipping perturbation eta to self.ord norm ball
             if self.ord == np.inf:
@@ -340,7 +369,8 @@ class BasicIterativeMethod(Attack):
         return adv_x
 
     def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
-                     ord=np.inf, clip_min=None, clip_max=None, **kwargs):
+                     ord=np.inf, clip_min=None, clip_max=None,
+                     y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -351,6 +381,9 @@ class BasicIterativeMethod(Attack):
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
         :param y: (required) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
@@ -362,10 +395,13 @@ class BasicIterativeMethod(Attack):
         self.eps_iter = eps_iter
         self.nb_iter = nb_iter
         self.y = y
+        self.y_target = y_target
         self.ord = ord
         self.clip_min = clip_min
         self.clip_max = clip_max
 
+        if self.y is not None and self.y_target is not None:
+            raise ValueError("Must not set both y and y_target")
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
@@ -397,7 +433,7 @@ class SaliencyMapMethod(Attack):
             raise NotImplementedError(error)
 
         import tensorflow as tf
-        self.feedable_kwargs = {'targets': tf.float32}
+        self.feedable_kwargs = {'y_target': tf.float32}
         self.structural_kwargs = ['theta', 'gamma', 'nb_classes',
                                   'clip_max', 'clip_min']
 
@@ -411,7 +447,7 @@ class SaliencyMapMethod(Attack):
         :param nb_classes: (optional int) Number of model output classes
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
-        :param targets: (optional) Target tensor if the attack is targeted
+        :param y_target: (optional) Target tensor if the attack is targeted
         """
         import tensorflow as tf
         from .attacks_tf import jacobian_graph, jsma_batch
@@ -424,21 +460,21 @@ class SaliencyMapMethod(Attack):
         grads = jacobian_graph(preds, x, self.nb_classes)
 
         # Define appropriate graph (targeted / random target labels)
-        if self.targets is not None:
-            def jsma_wrap(x_val, targets):
+        if self.y_target is not None:
+            def jsma_wrap(x_val, y_target):
                 return jsma_batch(self.sess, x, preds, grads, x_val,
                                   self.theta, self.gamma, self.clip_min,
                                   self.clip_max, self.nb_classes,
-                                  targets=targets)
+                                  y_target=y_target)
 
             # Attack is targeted, target placeholder will need to be fed
-            wrap = tf.py_func(jsma_wrap, [x, self.targets], tf.float32)
+            wrap = tf.py_func(jsma_wrap, [x, self.y_target], tf.float32)
         else:
             def jsma_wrap(x_val):
                 return jsma_batch(self.sess, x, preds, grads, x_val,
                                   self.theta, self.gamma, self.clip_min,
                                   self.clip_max, self.nb_classes,
-                                  targets=None)
+                                  y_target=None)
 
             # Attack is untargeted, target values will be chosen at random
             wrap = tf.py_func(jsma_wrap, [x], tf.float32)
@@ -446,7 +482,7 @@ class SaliencyMapMethod(Attack):
         return wrap
 
     def parse_params(self, theta=1., gamma=np.inf, nb_classes=10, clip_min=0.,
-                     clip_max=1., targets=None, **kwargs):
+                     clip_max=1., y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -458,7 +494,7 @@ class SaliencyMapMethod(Attack):
         :param nb_classes: (optional int) Number of model output classes
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
-        :param targets: (optional) Target tensor if the attack is targeted
+        :param y_target: (optional) Target tensor if the attack is targeted
         """
 
         self.theta = theta
@@ -466,7 +502,7 @@ class SaliencyMapMethod(Attack):
         self.nb_classes = nb_classes
         self.clip_min = clip_min
         self.clip_max = clip_max
-        self.targets = targets
+        self.y_target = y_target
 
         return True
 
