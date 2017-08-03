@@ -72,6 +72,8 @@ class TestParseParams(unittest.TestCase):
 class CleverHansTest(unittest.TestCase):
     def setUp(self):
         self.test_start = time.time()
+        # seed the randomness
+        np.random.seed(1234)
 
     def tearDown(self):
         print(self.id(), "took", time.time() - self.test_start, "seconds")
@@ -157,6 +159,25 @@ class TestFastGradientMethod(CleverHansTest):
 
     def test_generate_np_gives_adversarial_example_l2(self):
         self.help_generate_np_gives_adversarial_example(2)
+
+    def test_targeted_generate_np_gives_adversarial_example(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+        random_labs = np.random.random_integers(0,1,100)
+        random_labs_one_hot = np.zeros((100,2))
+        random_labs_one_hot[np.arange(100), random_labs] = 1
+
+        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
+                                        clip_min=-5, clip_max=5,
+                                        y_target=random_labs_one_hot)
+
+        delta = np.max(np.abs(x_adv - x_val), axis=1)
+        self.assertTrue(np.allclose(delta, 0.5))
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        self.assertTrue(np.mean(random_labs == new_labs) > 0.7)
+
 
     def test_generate_np_can_be_called_with_different_eps(self):
         x_val = np.random.rand(100, 2)
@@ -285,7 +306,7 @@ class TestSaliencyMapMethod(CleverHansTest):
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
         x_adv = self.attack.generate_np(x_val,
                                         clip_min=-5, clip_max=5,
-                                        targets=feed_labs, nb_classes=10)
+                                        y_target=feed_labs, nb_classes=10)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
