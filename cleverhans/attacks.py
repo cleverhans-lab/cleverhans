@@ -119,9 +119,6 @@ class Attack(object):
         """
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
-
-        import tensorflow as tf
-
         if self.sess is None:
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
