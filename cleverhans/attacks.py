@@ -338,7 +338,6 @@ class BasicIterativeMethod(Attack):
 
         y_kwarg = 'y_target' if targeted else 'y'
         fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord}
-        print(fgm_params)
 
         for i in range(self.nb_iter):
             FGM = FastGradientMethod(self.model, back=self.back,
@@ -590,7 +589,8 @@ class CarliniWagnerL2(Attack):
             raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
-        self.feedable_kwargs = {'y': tf.float32}
+        self.feedable_kwargs = {'y': tf.float32,
+                                'y_target': tf.float32}
 
         self.structural_kwargs = ['nb_classes',
                                   'batch_size', 'confidence',
@@ -608,16 +608,17 @@ class CarliniWagnerL2(Attack):
         input. Generate uses tf.py_func in order to operate over tensors.
 
         :param x: (required) A tensor with the original inputs.
-        :param y: (optional) A tensor with the labels that we either
-                  should target (if targeted=True) or avoid (if
-                  targeted=False). If None, use labels the classifier assigns.
+        :param y: (optional) A tensor with the true labels for an untargeted
+                  attack. If None (and y_target is None) then use the
+                  original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the true labels for an 
+                  untargeted attack. If None (and y_target is None) then use 
+                  the original labels the classifier assigns.
         :param nb_classes: The number of classes the model has.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
                            strongly classified as adversarial.
         :param batch_size: Number of attacks to run simultaneously.
-        :param targeted: True if we should perform a targeted attack, False
-                         otherwise.
         :param learning_rate: The learning rate for the attack algorithm.
                               Smaller values produce better results but are
                               slower to converge.
@@ -647,18 +648,19 @@ class CarliniWagnerL2(Attack):
         self.parse_params(**kwargs)
 
         attack = CWL2(self.sess, self.model, self.batch_size,
-                      self.confidence, self.targeted, self.learning_rate,
-                      self.binary_search_steps, self.max_iterations,
-                      self.abort_early, self.initial_const,
-                      self.clip_min, self.clip_max, self.nb_classes,
-                      x.get_shape().as_list()[1:])
+                      self.confidence, 'y_target' in kwargs,
+                      self.learning_rate, self.binary_search_steps,
+                      self.max_iterations, self.abort_early,
+                      self.initial_const, self.clip_min, self.clip_max,
+                      self.nb_classes, x.get_shape().as_list()[1:])
 
-        if 'y' in kwargs:
+        if 'y' in kwargs and 'y_target' in kwargs:
+            raise ValueError("Can not send both 'y' and 'y_target'.")
+        elif 'y' in kwargs:
             labels = kwargs['y']
+        elif 'y_target' in kwargs:
+            labels = kwargs['y_target']
         else:
-            if self.targeted:
-                raise ValueError("Must supply target labels 'y'"
-                                 " in targeted attack.")
             # TODO abstract this out for other classes too
             preds = self.model.get_probs(x)
             preds_max = tf.reduce_max(preds, 1, keep_dims=True)
@@ -672,9 +674,9 @@ class CarliniWagnerL2(Attack):
 
         return wrap
 
-    def parse_params(self, y=None, y_val=None, nb_classes=10,
+    def parse_params(self, y=None, y_target=None, nb_classes=10,
                      batch_size=1, confidence=0,
-                     targeted=True, learning_rate=5e-3,
+                     learning_rate=5e-3,
                      binary_search_steps=5, max_iterations=1000,
                      abort_early=True, initial_const=1e-2,
                      clip_min=0, clip_max=1):
@@ -683,7 +685,6 @@ class CarliniWagnerL2(Attack):
         self.nb_classes = nb_classes
         self.batch_size = batch_size
         self.confidence = confidence
-        self.targeted = targeted
         self.learning_rate = learning_rate
         self.binary_search_steps = binary_search_steps
         self.max_iterations = max_iterations
