@@ -307,8 +307,8 @@ class BasicIterativeMethod(Attack):
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
         :param y: (optional) A tensor with the model labels.
-        :param y_target: (optional) A tensor with the labels to target. Do not
-                         set y_target if y is also set. Labels should be
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
                          one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
@@ -381,8 +381,8 @@ class BasicIterativeMethod(Attack):
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
         :param y: (required) A tensor with the model labels.
-        :param y_target: (optional) A tensor with the labels to target. Do not
-                         set y_target if y is also set. Labels should be
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
                          one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
