@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import numpy as np
 import unittest
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
 
 from cleverhans import attacks_tf
 
@@ -17,17 +16,18 @@ class TestAttacksTF(unittest.TestCase):
 
             # construct a simple graph that will require extra placeholders
             x = tf.placeholder('float', shape=(None, 13))
-            b = tf.placeholder('bool')
-            logits = slim.dropout(slim.fully_connected(x, 10),
-                                  is_training=b)
-
+            keep_prob = tf.placeholder('float')
+            W = tf.Variable(tf.random_normal([13, 10]))
+            b = tf.Variable(tf.random_normal([10]))
+            logits = tf.nn.dropout(tf.add(tf.matmul(x, W), b),
+                                   keep_prob=keep_prob)
             sess.run(tf.global_variables_initializer())
-            
+
             # jsma should work without generating an error
             jacobian = attacks_tf.jacobian_graph(logits, x, 10)
             attacks_tf.jsma_batch(sess, x, logits, jacobian, X, theta=1.,
                                   gamma=0.25, clip_min=0, clip_max=1,
-                                  nb_classes=10, feed={b: False})
+                                  nb_classes=10, feed={keep_prob: 1.0})
 
 if __name__ == '__main__':
     unittest.main()
