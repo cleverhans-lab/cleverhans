@@ -72,6 +72,8 @@ class TestParseParams(unittest.TestCase):
 class CleverHansTest(unittest.TestCase):
     def setUp(self):
         self.test_start = time.time()
+        # seed the randomness
+        np.random.seed(1234)
 
     def tearDown(self):
         print(self.id(), "took", time.time() - self.test_start, "seconds")
