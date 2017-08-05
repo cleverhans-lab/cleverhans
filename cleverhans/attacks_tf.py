@@ -439,45 +439,50 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     return X_sub
 
 
-class CarliniWagnerL2:
+class CarliniWagnerL2(object):
     def __init__(self, sess, model, batch_size, confidence,
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
                  abort_early, initial_const,
                  clip_min, clip_max, num_labels, shape):
         """
-        This attack was originally proposed by Carlini and Wagner. It is an
-        iterative attack that finds adversarial examples on many defenses that
-        are robust to other attacks.
-        Paper link: https://arxiv.org/abs/1608.04644
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
 
+        :param x: (required) A tensor with the inputs.
+        :param y: (optional) A tensor with the true labels for an untargeted
+                  attack. If None (and y_target is None) then use the
+                  original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the target labels for a
+                  targeted attack.
+        :param nb_classes: The number of classes the model has.
         :param confidence: Confidence of adversarial examples: higher produces
-                           examples that are farther away, but more strongly
-                           classified as adversarial.
+                           examples with larger l2 distortion, but more
+                           strongly classified as adversarial.
         :param batch_size: Number of attacks to run simultaneously.
-        :param targeted: True if we should perform a targetted attack, False
-                         otherwise.
         :param learning_rate: The learning rate for the attack algorithm.
                               Smaller values produce better results but are
                               slower to converge.
         :param binary_search_steps: The number of times we perform binary
                                     search to find the optimal tradeoff-
-                                    constant between distance and confidence.
-        :param max_iterations: The maximum number of iterations. Larger values
-                               are more accurate; setting too small will
-                               require a large learning rate and will produce
-                               poor results.
+                                    constant between norm of the purturbation
+                                    and confidence of the classification.
+        :param max_iterations: The maximum number of iterations. Setting this
+                               to a larger value will produce lower distortion
+                               results. Using only a few iterations requires
+                               a larger learning rate, and will produce larger
+                               distortion results.
         :param abort_early: If true, allows early aborts if gradient descent
-                            gets stuck.
+                            is unable to make progress (i.e., gets stuck in
+                            a local minimum).
         :param initial_const: The initial tradeoff-constant to use to tune the
-                              relative importance of distance and confidence.
+                              relative importance of size of the pururbation
+                              and confidence of classification.
                               If binary_search_steps is large, the initial
-                              constant is not important.
-        :param clip_min: Minimum input component value
-        :param clip_max: Maximum input component value
-        :param num_labels: The number of different classes for the classifier
-        :param shape: The shape of the input tensor, without the number of
-                      batches
+                              constant is not important. A smaller value of
+                              this constant gives lower distortion results.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
         """
 
         self.sess = sess
@@ -535,7 +540,7 @@ class CarliniWagnerL2:
                               1)
 
         if self.TARGETED:
-            # if targetted, optimize for making the other class most likely
+            # if targeted, optimize for making the other class most likely
             loss1 = tf.maximum(0.0, other-real+self.CONFIDENCE)
         else:
             # if untargeted, optimize for making this class least likely.

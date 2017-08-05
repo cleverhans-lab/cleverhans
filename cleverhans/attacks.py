@@ -601,19 +601,18 @@ class CarliniWagnerL2(Attack):
 
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'logits')
-        
+
     def generate(self, x, **kwargs):
         """
-        Return a tensor that consturcts adversarial examples for the given
+        Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
 
-        :param x: (required) A tensor with the original inputs.
+        :param x: (required) A tensor with the inputs.
         :param y: (optional) A tensor with the true labels for an untargeted
                   attack. If None (and y_target is None) then use the
                   original labels the classifier assigns.
-        :param y_target: (optional) A tensor with the true labels for an 
-                  untargeted attack. If None (and y_target is None) then use 
-                  the original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the target labels for a
+                  targeted attack.
         :param nb_classes: The number of classes the model has.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
@@ -655,13 +654,12 @@ class CarliniWagnerL2(Attack):
                       self.nb_classes, x.get_shape().as_list()[1:])
 
         if 'y' in kwargs and 'y_target' in kwargs:
-            raise ValueError("Can not send both 'y' and 'y_target'.")
+            raise ValueError("Can not set both 'y' and 'y_target'.")
         elif 'y' in kwargs:
             labels = kwargs['y']
         elif 'y_target' in kwargs:
             labels = kwargs['y_target']
         else:
-            # TODO abstract this out for other classes too
             preds = self.model.get_probs(x)
             preds_max = tf.reduce_max(preds, 1, keep_dims=True)
             original_predictions = tf.to_float(tf.equal(preds,
@@ -681,7 +679,7 @@ class CarliniWagnerL2(Attack):
                      abort_early=True, initial_const=1e-2,
                      clip_min=0, clip_max=1):
 
-        # ignore the y and y_val argument
+        # ignore the y and y_target argument
         self.nb_classes = nb_classes
         self.batch_size = batch_size
         self.confidence = confidence
