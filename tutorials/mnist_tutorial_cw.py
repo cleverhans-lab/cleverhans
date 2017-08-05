@@ -135,6 +135,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                               dtype=np.float32)
         adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
         adv_ys = np.array([one_hot] * 10, dtype=np.float32).reshape((100, 10))
+        yname = "y_target"
     else:
         # Initialize our array for grid visualization
         grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
@@ -142,11 +143,12 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
         adv_inputs = X_test[idxs]
         adv_ys = None
+        yname = "y"
 
     cw_params = {'binary_search_steps': 1,
-                 'y': adv_ys,
+                 yname: adv_ys,
                  'max_iterations': attack_iterations,
-                 'learning_rate': 0.1, 'targeted': targeted,
+                 'learning_rate': 0.1,
                  'batch_size': 100 if targeted else 10,
                  'initial_const': 10}
 
