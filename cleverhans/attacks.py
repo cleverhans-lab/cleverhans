@@ -82,6 +82,12 @@ class Attack(object):
         # the allowed types
         import tensorflow as tf
 
+        # remove the None arguments, they are just left blank
+        for k in list(feedable.keys()):
+            if feedable[k] is None:
+                del feedable[k]
+
+        # process all of the rest and create placeholders for them
         new_kwargs = dict(x for x in fixed.items())
         for name, value in feedable.items():
             given_type = self.feedable_kwargs[name]
