@@ -8,13 +8,10 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 import warnings
+import logging
 
 from . import utils_tf
 from . import utils
-
-from tensorflow.python.platform import flags
-FLAGS = flags.FLAGS
-
 
 def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
     return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,

@@ -5,9 +5,7 @@ import warnings
 import collections
 
 import cleverhans.utils as utils
-
 from cleverhans.model import Model, CallableModelWrapper
-
 
 class Attack(object):
 
