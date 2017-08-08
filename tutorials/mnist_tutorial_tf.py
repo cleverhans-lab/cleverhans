@@ -34,6 +34,7 @@ you might build.
 
 
 class MLP(Model):
+
     """
     An example of a bare bones multilayer perceptron (MLP) class.
     """
@@ -234,8 +235,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
-
-
     model_path = "models/mnist"
     # Train an MNIST model
     train_params = {
@@ -246,44 +245,48 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     fgsm_params = {'eps': 0.3}
 
     if clean_train:
-      def evaluate():
-          # Evaluate the accuracy of the MNIST model on legitimate test examples
-          eval_params = {'batch_size': batch_size}
-          acc = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
-          report.clean_train_clean_eval = acc
-          assert X_test.shape[0] == test_end - test_start, X_test.shape
-          print('Test accuracy on legitimate examples: %0.4f' % acc)
-      model = make_basic_cnn()
-      preds = model.get_probs(x)
-      model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                  args=train_params)
+        def evaluate():
+            # Evaluate the accuracy of the MNIST model on legitimate test
+            # examples
+            eval_params = {'batch_size': batch_size}
+            acc = model_eval(
+                sess, x, y, preds, X_test, Y_test, args=eval_params)
+            report.clean_train_clean_eval = acc
+            assert X_test.shape[0] == test_end - test_start, X_test.shape
+            print('Test accuracy on legitimate examples: %0.4f' % acc)
+        model = make_basic_cnn()
+        preds = model.get_probs(x)
+        model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
+                    args=train_params)
 
-      # Calculate training error
-      if testing:
-          eval_params = {'batch_size': batch_size}
-          acc = model_eval(sess, x, y, preds, X_train, Y_train, args=eval_params)
-          report.train_clean_train_clean_eval = acc
+        # Calculate training error
+        if testing:
+            eval_params = {'batch_size': batch_size}
+            acc = model_eval(
+                sess, x, y, preds, X_train, Y_train, args=eval_params)
+            report.train_clean_train_clean_eval = acc
 
-      # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
-      fgsm = FastGradientMethod(model, sess=sess)
+        # Initialize the Fast Gradient Sign Method (FGSM) attack object and
+        # graph
+        fgsm = FastGradientMethod(model, sess=sess)
 
-      adv_x = fgsm.generate(x, **fgsm_params)
-      preds_adv = model.get_probs(adv_x)
+        adv_x = fgsm.generate(x, **fgsm_params)
+        preds_adv = model.get_probs(adv_x)
 
-      # Evaluate the accuracy of the MNIST model on adversarial examples
-      eval_par = {'batch_size': batch_size}
-      acc = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
-      print('Test accuracy on adversarial examples: %0.4f\n' % acc)
-      report.clean_train_adv_eval = acc
+        # Evaluate the accuracy of the MNIST model on adversarial examples
+        eval_par = {'batch_size': batch_size}
+        acc = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
+        print('Test accuracy on adversarial examples: %0.4f\n' % acc)
+        report.clean_train_adv_eval = acc
 
-      # Calculate training error
-      if testing:
-          eval_par = {'batch_size': batch_size}
-          acc = model_eval(sess, x, y, preds_adv, X_train,
-                           Y_train, args=eval_par)
-          report.train_clean_train_adv_eval = acc
+        # Calculate training error
+        if testing:
+            eval_par = {'batch_size': batch_size}
+            acc = model_eval(sess, x, y, preds_adv, X_train,
+                             Y_train, args=eval_par)
+            report.train_clean_train_adv_eval = acc
 
-      print("Repeating the process, using adversarial training")
+        print("Repeating the process, using adversarial training")
     # Redefine TF model graph
     model_2 = make_basic_cnn()
     preds_2 = model_2(x)
