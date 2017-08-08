@@ -13,6 +13,8 @@ import logging
 from . import utils_tf
 from . import utils
 
+_logger = utils.create_logger("cleverhans.attacks.tf")
+
 def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
     return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,
                clip_max=clip_max)
