@@ -245,6 +245,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     fgsm_params = {'eps': 0.3}
 
     if clean_train:
+        model = make_basic_cnn()
+        preds = model.get_probs(x)
+
         def evaluate():
             # Evaluate the accuracy of the MNIST model on legitimate test
             # examples
@@ -254,8 +257,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
             report.clean_train_clean_eval = acc
             assert X_test.shape[0] == test_end - test_start, X_test.shape
             print('Test accuracy on legitimate examples: %0.4f' % acc)
-        model = make_basic_cnn()
-        preds = model.get_probs(x)
         model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
                     args=train_params)
 
