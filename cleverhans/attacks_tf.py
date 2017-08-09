@@ -300,6 +300,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
     current = utils_tf.model_argmax(sess, x, predictions, adv_x_original_shape,
                                     feed=feed)
 
+    _logger.debug("Starting JSMA attack up to {} iterations".format(max_iters))
     # Repeat this main loop until we have achieved misclassification
     while (current != target and iteration < max_iters and
            len(search_domain) > 1):
@@ -312,6 +313,8 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
                                               nb_features, nb_classes,
                                               feed=feed)
 
+        if iteration%((max_iters+1)//10) == 0 and iteration > 0:
+            _logger.debug("Iteration {} of {}".format(iteration, max_iters))
         # Compute the saliency map for each of our target classes
         # and return the two best candidate features for perturbation
         i, j, search_domain = saliency_map(
@@ -328,6 +331,11 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
         # Update loop variables
         iteration = iteration + 1
 
+    if current == target:
+        _logger.info("Succeeded attack using {} iterations".format(iteration))
+    else:
+        _logger.info("Failed to find adversarial example after {} iterations".format(iteration))
+        
     # Compute the ratio of pixels perturbed by the algorithm
     percent_perturbed = float(iteration * 2) / nb_features
 
@@ -575,6 +583,8 @@ class CarliniWagnerL2(object):
 
         r = []
         for i in range(0, len(imgs), self.batch_size):
+            _logger.debug(("Running CWL2 attack on image " +
+                           "{} of {}").format(i, len(imgs)))
             r.extend(self.attack_batch(imgs[i:i+self.batch_size],
                                        targets[i:i+self.batch_size]))
         return np.array(r)
@@ -626,6 +636,8 @@ class CarliniWagnerL2(object):
 
             bestl2 = [1e10]*batch_size
             bestscore = [-1]*batch_size
+            _logger.debug("  Binary search step {} of {}".
+                          format(outer_step, self.BINARY_SEARCH_STEPS))
 
             # The last iteration (if we run many steps) repeat the search once.
             if self.repeat and outer_step == self.BINARY_SEARCH_STEPS-1:
@@ -645,10 +657,16 @@ class CarliniWagnerL2(object):
                                                          self.output,
                                                          self.newimg])
 
+                if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
+                    _logger.debug("    Iteration {} of {}: loss={} l2={} f={}"
+                                  .format(iteration, self.MAX_ITERATIONS,
+                                          l, np.mean(l2s), np.mean(scores)))
+                
                 # check if we should abort search if we're getting nowhere.
                 if self.ABORT_EARLY and \
-                   iteration % (self.MAX_ITERATIONS // 10) == 0:
+                   iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
                     if l > prev*.9999:
+                        _logger.debug("    Failed to make progress; stop early")
                         break
                     prev = l
 
@@ -679,6 +697,11 @@ class CarliniWagnerL2(object):
                         CONST[e] = (lower_bound[e] + upper_bound[e])/2
                     else:
                         CONST[e] *= 10
+            _logger.debug("  Successfully generated adversarial examples " +
+                          "on {} of {} instances.".
+                          format(sum(upper_bound<1e9), batch_size))
+            _logger.debug("   Mean distortion: {}".format(np.mean(o_bestl2)))
+                                 
 
         # return the best solution found
         o_bestl2 = np.array(o_bestl2)

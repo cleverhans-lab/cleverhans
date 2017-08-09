@@ -232,11 +232,13 @@ def cnn_model(*args, **kwargs):
                   " after 2018-01-05. Switch to utils_keras.cnn_model.")
     return cnn_model(*args, **kwargs)
 
+_logger = logging.getLogger("cleverhans")
+_logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+formatter = logging.Formatter('[%(levelname)s %(asctime)s %(name)s] %(message)s')
+ch.setFormatter(formatter)
+_logger.addHandler(ch)
+
 def create_logger(name):
     _logger = logging.getLogger(name)
-    _logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    formatter = logging.Formatter('[%(levelname)s %(asctime)s %(name)s] %(message)s')
-    ch.setFormatter(formatter)
-    _logger.addHandler(ch)
     return _logger
