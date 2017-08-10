@@ -334,7 +334,8 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
     if current == target:
         _logger.info("Succeeded attack using {} iterations".format(iteration))
     else:
-        _logger.info("Failed to find adversarial example after {} iterations".format(iteration))
+        _logger.info(("Failed to find adversarial example " +
+                      "after {} iterations").format(iteration))
         
     # Compute the ratio of pixels perturbed by the algorithm
     percent_perturbed = float(iteration * 2) / nb_features
@@ -658,7 +659,8 @@ class CarliniWagnerL2(object):
                                                          self.newimg])
 
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
-                    _logger.debug("    Iteration {} of {}: loss={} l2={} f={}"
+                    _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
+                                   "l2={:.3g} f={:.3g}")
                                   .format(iteration, self.MAX_ITERATIONS,
                                           l, np.mean(l2s), np.mean(scores)))
                 
@@ -700,7 +702,8 @@ class CarliniWagnerL2(object):
             _logger.debug("  Successfully generated adversarial examples " +
                           "on {} of {} instances.".
                           format(sum(upper_bound<1e9), batch_size))
-            _logger.debug("   Mean distortion: {}".format(np.mean(o_bestl2)))
+            mean = np.mean(np.sqrt(o_bestl2))
+            _logger.debug("   Mean distortion: {:.4g}".format(mean))
                                  
 
         # return the best solution found
