@@ -164,8 +164,8 @@ class TestFastGradientMethod(CleverHansTest):
     def test_targeted_generate_np_gives_adversarial_example(self):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
-        random_labs = np.random.random_integers(0,1,100)
-        random_labs_one_hot = np.zeros((100,2))
+        random_labs = np.random.random_integers(0, 1, 100)
+        random_labs_one_hot = np.zeros((100, 2))
         random_labs_one_hot[np.arange(100), random_labs] = 1
 
         x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
@@ -178,7 +178,6 @@ class TestFastGradientMethod(CleverHansTest):
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
         self.assertTrue(np.mean(random_labs == new_labs) > 0.7)
-
 
     def test_generate_np_can_be_called_with_different_eps(self):
         x_val = np.random.rand(100, 2)
@@ -306,7 +305,7 @@ class TestCarliniWagnerL2(CleverHansTest):
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs==new_labs) < 0.1
+        assert np.mean(orig_labs == new_labs) < 0.1
 
     def test_generate_np_targeted_gives_adversarial_example(self):
         x_val = np.random.rand(100, 2)
@@ -314,7 +313,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((100, 2))
-        feed_labs[np.arange(100), np.random.randint(0,1,100)] = 1
+        feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
         x_adv = self.attack.generate_np(x_val, max_iterations=100,
                                         binary_search_steps=3,
                                         initial_const=1, nb_classes=2,
@@ -323,7 +322,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(np.argmax(feed_labs,axis=1)==new_labs) > 0.9
+        assert np.mean(np.argmax(feed_labs, axis=1) == new_labs) > 0.9
 
     def test_generate_gives_adversarial_example(self):
         import tensorflow as tf
@@ -346,7 +345,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs==new_labs) < 0.1
+        assert np.mean(orig_labs == new_labs) < 0.1
 
     def test_generate_np_gives_clipped_adversarial_examples(self):
         x_val = np.random.rand(100, 2)
@@ -364,18 +363,19 @@ class TestCarliniWagnerL2(CleverHansTest):
 
     def test_generate_np_high_confidence_targeted_examples(self):
         import tensorflow as tf
+
         def trivial_model(x):
             W1 = tf.constant([[1, -1]], dtype=tf.float32)
             res = tf.matmul(x, W1)
             return res
 
         for CONFIDENCE in [0, 2.3]:
-            x_val = np.random.rand(10, 1)-.5
+            x_val = np.random.rand(10, 1) - .5
             x_val = np.array(x_val, dtype=np.float32)
 
             orig_labs = np.argmax(self.sess.run(trivial_model(x_val)), axis=1)
             feed_labs = np.zeros((10, 2))
-            feed_labs[np.arange(10), np.random.randint(0,2,10)] = 1
+            feed_labs[np.arange(10), np.random.randint(0, 2, 10)] = 1
             attack = CarliniWagnerL2(trivial_model, sess=self.sess)
             x_adv = attack.generate_np(x_val,
                                        max_iterations=100,
@@ -389,21 +389,25 @@ class TestCarliniWagnerL2(CleverHansTest):
 
             new_labs = self.sess.run(trivial_model(x_adv))
 
-            good_labs = new_labs[np.arange(10),np.argmax(feed_labs,axis=1)]
-            bad_labs = new_labs[np.arange(10),1-np.argmax(feed_labs,axis=1)]
+            good_labs = new_labs[np.arange(10), np.argmax(feed_labs, axis=1)]
+            bad_labs = new_labs[np.arange(
+                10), 1 - np.argmax(feed_labs, axis=1)]
 
-            assert np.isclose(0,np.min(good_labs-(bad_labs+CONFIDENCE)), atol=1e-1)
-            assert np.mean(np.argmax(new_labs,axis=1)==np.argmax(feed_labs,axis=1)) > .9
+            assert np.isclose(
+                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1)
+            assert np.mean(np.argmax(new_labs, axis=1) ==
+                           np.argmax(feed_labs, axis=1)) > .9
 
     def test_generate_np_high_confidence_untargeted_examples(self):
         import tensorflow as tf
+
         def trivial_model(x):
             W1 = tf.constant([[1, -1]], dtype=tf.float32)
             res = tf.matmul(x, W1)
             return res
 
         for CONFIDENCE in [0, 2.3]:
-            x_val = np.random.rand(10, 1)-.5
+            x_val = np.random.rand(10, 1) - .5
             x_val = np.array(x_val, dtype=np.float32)
 
             orig_labs = np.argmax(self.sess.run(trivial_model(x_val)), axis=1)
@@ -419,12 +423,12 @@ class TestCarliniWagnerL2(CleverHansTest):
 
             new_labs = self.sess.run(trivial_model(x_adv))
 
-            good_labs = new_labs[np.arange(10),1-orig_labs]
-            bad_labs = new_labs[np.arange(10),orig_labs]
+            good_labs = new_labs[np.arange(10), 1 - orig_labs]
+            bad_labs = new_labs[np.arange(10), orig_labs]
 
-            assert np.mean(np.argmax(new_labs,axis=1)==orig_labs) == 0
-            assert np.isclose(0,np.min(good_labs-(bad_labs+CONFIDENCE)), atol=1e-1)
-
+            assert np.mean(np.argmax(new_labs, axis=1) == orig_labs) == 0
+            assert np.isclose(
+                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1)
 
 
 class TestSaliencyMapMethod(CleverHansTest):
