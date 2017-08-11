@@ -63,6 +63,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     keras.backend.set_session(sess)
     print("Created TensorFlow session and set Keras backend.")
 
+    set_log_level(logging.DEBUG)
+
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
