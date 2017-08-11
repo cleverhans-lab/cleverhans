@@ -11,6 +11,7 @@ import logging
 
 _logger = utils.create_logger("cleverhans.attacks")
 
+
 class Attack(object):
 
     """
