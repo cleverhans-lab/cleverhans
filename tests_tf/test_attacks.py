@@ -240,6 +240,23 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         self.model = my_model
         self.attack = BasicIterativeMethod(self.model, sess=self.sess)
 
+    def test_attack_strength(self):
+        """
+        If clipping is not done at each iteration (not passing clip_min and
+        clip_max to fgm), this attack fails by
+        np.mean(orig_labels == new_labels) == .39.
+        """
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
+                                        clip_min=0.5, clip_max=0.7,
+                                        nb_iter=5)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
+
     def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
         import tensorflow as tf
 
