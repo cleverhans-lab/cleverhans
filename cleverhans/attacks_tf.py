@@ -15,6 +15,7 @@ from . import utils
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
+
 def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
     return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,
                clip_max=clip_max)
@@ -313,7 +314,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
                                               nb_features, nb_classes,
                                               feed=feed)
 
-        if iteration%((max_iters+1)//10) == 0 and iteration > 0:
+        if iteration % ((max_iters+1)//10) == 0 and iteration > 0:
             _logger.debug("Iteration {} of {}".format(iteration,
                                                       int(max_iters)))
         # Compute the saliency map for each of our target classes
@@ -337,7 +338,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
     else:
         _logger.info(("Failed to find adversarial example " +
                       "after {} iterations").format(iteration))
-        
+
     # Compute the ratio of pixels perturbed by the algorithm
     percent_perturbed = float(iteration * 2) / nb_features
 
@@ -664,12 +665,13 @@ class CarliniWagnerL2(object):
                                    "l2={:.3g} f={:.3g}")
                                   .format(iteration, self.MAX_ITERATIONS,
                                           l, np.mean(l2s), np.mean(scores)))
-                
+
                 # check if we should abort search if we're getting nowhere.
                 if self.ABORT_EARLY and \
                    iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
                     if l > prev*.9999:
-                        _logger.debug("    Failed to make progress; stop early")
+                        msg = "    Failed to make progress; stop early"
+                        _logger.debug(msg)
                         break
                     prev = l
 
@@ -702,10 +704,9 @@ class CarliniWagnerL2(object):
                         CONST[e] *= 10
             _logger.debug("  Successfully generated adversarial examples " +
                           "on {} of {} instances.".
-                          format(sum(upper_bound<1e9), batch_size))
+                          format(sum(upper_bound < 1e9), batch_size))
             mean = np.mean(np.sqrt(o_bestl2))
             _logger.debug("   Mean distortion: {:.4g}".format(mean))
-                                 
 
         # return the best solution found
         o_bestl2 = np.array(o_bestl2)
