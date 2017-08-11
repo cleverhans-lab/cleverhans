@@ -314,7 +314,8 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
                                               feed=feed)
 
         if iteration%((max_iters+1)//10) == 0 and iteration > 0:
-            _logger.debug("Iteration {} of {}".format(iteration, max_iters))
+            _logger.debug("Iteration {} of {}".format(iteration,
+                                                      int(max_iters)))
         # Compute the saliency map for each of our target classes
         # and return the two best candidate features for perturbation
         i, j, search_domain = saliency_map(
