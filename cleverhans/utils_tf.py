@@ -23,6 +23,7 @@ FLAGS = flags.FLAGS
 
 _logger = create_logger("cleverhans.utils.tf")
 
+
 class _FlagsWrapper(_ArgsWrapper):
     """
     Wrapper that tries to find missing parameters in TensorFlow FLAGS
@@ -185,7 +186,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             save_path = os.path.join(args.train_dir, args.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            _logger.info("Completed model training and saved at: " + str(save_path))
+            _logger.info("Completed model training and saved at: " +
+                         str(save_path))
         else:
             _logger.info("Completed model training.")
 
