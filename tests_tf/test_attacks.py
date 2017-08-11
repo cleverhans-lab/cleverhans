@@ -127,7 +127,7 @@ class TestFastGradientMethod(CleverHansTest):
             W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
             h1 = tf.nn.sigmoid(tf.matmul(x, W1))
             W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.nn.softmax(tf.matmul(x, W2))
+            res = tf.nn.softmax(tf.matmul(h1, W2))
             return res
 
         self.sess = tf.Session()
@@ -234,7 +234,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
             W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
             h1 = tf.nn.sigmoid(tf.matmul(x, W1))
             W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.nn.softmax(tf.matmul(x, W2))
+            res = tf.nn.softmax(tf.matmul(h1, W2))
             return res
 
         self.sess = tf.Session()
@@ -425,7 +425,7 @@ class TestCarliniWagnerL2(CleverHansTest):
             assert np.mean(np.argmax(new_labs,axis=1)==orig_labs) == 0
             assert np.isclose(0,np.min(good_labs-(bad_labs+CONFIDENCE)), atol=1e-1)
 
-        
+
 
 class TestSaliencyMapMethod(CleverHansTest):
     def setUp(self):
