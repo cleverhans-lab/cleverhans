@@ -237,7 +237,7 @@ def set_log_level(level, name="cleverhans"):
     logging.getLogger(name).setLevel(level)
 
 
-    def create_logger(name):
+def create_logger(name):
     """
     Create a logger object with the given name.
 
