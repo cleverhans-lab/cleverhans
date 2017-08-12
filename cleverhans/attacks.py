@@ -254,12 +254,9 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        if self.y is not None:
-            y = self.y
-        else:
-            y = self.y_target
+        labels, nb_classes = self.get_labels(x, kwargs)
 
-        return fgm(x, self.model.get_probs(x), y=y, eps=self.eps,
+        return fgm(x, self.model.get_probs(x), y=labels, eps=self.eps,
                    ord=self.ord, clip_min=self.clip_min,
                    clip_max=self.clip_max,
                    targeted=(self.y_target is not None))
