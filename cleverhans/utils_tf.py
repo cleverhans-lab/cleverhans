@@ -135,10 +135,10 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         assert args.train_dir, "Directory for save was not given in args dict"
         assert args.filename, "Filename for save was not given in args dict"
 
-    if verbose == False:
+    if verbose is False:
         warnings.warn("verbose argument is deprecated and will be removed"
                       " on 2018-02-11. Instead, use utils.set_log_level().")
-    
+
     # Define loss
     loss = model_loss(y, predictions)
     if predictions_adv is not None:
