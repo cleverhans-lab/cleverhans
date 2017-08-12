@@ -172,6 +172,26 @@ class Attack(object):
 
         return self.sess.run(x_adv, feed_dict)
 
+    def get_labels(self, x, kwargs):
+        if 'y' in kwargs and 'y_target' in kwargs:
+            raise ValueError("Can not set both 'y' and 'y_target'.")
+        elif 'y' in kwargs:
+            labels = kwargs['y']
+        elif 'y_target' in kwargs:
+            labels = kwargs['y_target']
+        else:
+            preds = self.model.get_probs(x)
+            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+            original_predictions = tf.to_float(tf.equal(preds,
+                                                        preds_max))
+            labels = original_predictions
+        if isinstance(labels, np.ndarray):
+            nb_classes = labels.shape[1]
+        else:
+            nb_classes = labels.get_shape().as_list()[1]
+        return labels, nb_classes
+
+    
     def parse_params(self, params=None):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -605,8 +625,7 @@ class CarliniWagnerL2(Attack):
         self.feedable_kwargs = {'y': tf.float32,
                                 'y_target': tf.float32}
 
-        self.structural_kwargs = ['nb_classes',
-                                  'batch_size', 'confidence',
+        self.structural_kwargs = ['batch_size', 'confidence',
                                   'targeted', 'learning_rate',
                                   'binary_search_steps', 'max_iterations',
                                   'abort_early', 'initial_const',
@@ -626,7 +645,6 @@ class CarliniWagnerL2(Attack):
                   original labels the classifier assigns.
         :param y_target: (optional) A tensor with the target labels for a
                   targeted attack.
-        :param nb_classes: The number of classes the model has.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
                            strongly classified as adversarial.
@@ -659,25 +677,14 @@ class CarliniWagnerL2(Attack):
         from .attacks_tf import CarliniWagnerL2 as CWL2
         self.parse_params(**kwargs)
 
+        labels, nb_classes = self.get_labels(x, kwargs)
+
         attack = CWL2(self.sess, self.model, self.batch_size,
                       self.confidence, 'y_target' in kwargs,
                       self.learning_rate, self.binary_search_steps,
                       self.max_iterations, self.abort_early,
                       self.initial_const, self.clip_min, self.clip_max,
-                      self.nb_classes, x.get_shape().as_list()[1:])
-
-        if 'y' in kwargs and 'y_target' in kwargs:
-            raise ValueError("Can not set both 'y' and 'y_target'.")
-        elif 'y' in kwargs:
-            labels = kwargs['y']
-        elif 'y_target' in kwargs:
-            labels = kwargs['y_target']
-        else:
-            preds = self.model.get_probs(x)
-            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
-            original_predictions = tf.to_float(tf.equal(preds,
-                                                        preds_max))
-            labels = original_predictions
+                      nb_classes, x.get_shape().as_list()[1:])
 
         def cw_wrap(x_val, y_val):
             return np.array(attack.attack(x_val, y_val), dtype=np.float32)
@@ -685,7 +692,7 @@ class CarliniWagnerL2(Attack):
 
         return wrap
 
-    def parse_params(self, y=None, y_target=None, nb_classes=10,
+    def parse_params(self, y=None, y_target=None, nb_classes=None,
                      batch_size=1, confidence=0,
                      learning_rate=5e-3,
                      binary_search_steps=5, max_iterations=1000,
@@ -693,7 +700,9 @@ class CarliniWagnerL2(Attack):
                      clip_min=0, clip_max=1):
 
         # ignore the y and y_target argument
-        self.nb_classes = nb_classes
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
         self.batch_size = batch_size
         self.confidence = confidence
         self.learning_rate = learning_rate
