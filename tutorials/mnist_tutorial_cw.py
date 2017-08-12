@@ -54,7 +54,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
-    # Create TF session and set as Keras backend session
+    # Create TF session
     sess = tf.Session()
     print("Created TensorFlow session.")
 
