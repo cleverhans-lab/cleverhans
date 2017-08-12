@@ -343,7 +343,8 @@ class BasicIterativeMethod(Attack):
             targeted = False
 
         y_kwarg = 'y_target' if targeted else 'y'
-        fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord}
+        fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord,
+                      'clip_min': self.clip_min, 'clip_max': self.clip_max}
 
         for i in range(self.nb_iter):
             FGM = FastGradientMethod(self.model, back=self.back,
