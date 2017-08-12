@@ -531,7 +531,7 @@ class CarliniWagnerL2(object):
         self.assign_const = tf.placeholder(tf.float32, [batch_size],
                                            name='assign_const')
 
-        # the resulting image, tanh'd to keep bounded from clip_min
+        # the resulting instance, tanh'd to keep bounded from clip_min
         # to clip_max
         self.newimg = (tf.tanh(modifier + self.timg)+1)/2
         self.newimg = self.newimg*(clip_max-clip_min)+clip_min
@@ -578,7 +578,7 @@ class CarliniWagnerL2(object):
 
     def attack(self, imgs, targets):
         """
-        Perform the L_2 attack on the given images for the given targets.
+        Perform the L_2 attack on the given instance for the given targets.
 
         If self.targeted is true, then the targets represents the target labels
         If self.targeted is false, then targets are the original class labels
@@ -586,7 +586,7 @@ class CarliniWagnerL2(object):
 
         r = []
         for i in range(0, len(imgs), self.batch_size):
-            _logger.debug(("Running CWL2 attack on image " +
+            _logger.debug(("Running CWL2 attack on instance " +
                            "{} of {}").format(i, len(imgs)))
             r.extend(self.attack_batch(imgs[i:i+self.batch_size],
                                        targets[i:i+self.batch_size]))
@@ -594,7 +594,7 @@ class CarliniWagnerL2(object):
 
     def attack_batch(self, imgs, labs):
         """
-        Run the attack on a batch of images and labels.
+        Run the attack on a batch of instance and labels.
         """
         def compare(x, y):
             if not isinstance(x, (float, int, np.int64)):
@@ -613,7 +613,7 @@ class CarliniWagnerL2(object):
 
         oimgs = np.clip(imgs, self.clip_min, self.clip_max)
 
-        # re-scale images to be within range [0, 1]
+        # re-scale instances to be within range [0, 1]
         imgs = (imgs-self.clip_min)/(self.clip_max-self.clip_min)
         imgs = np.clip(imgs, 0, 1)
         # now convert to [-1, 1]
@@ -626,7 +626,7 @@ class CarliniWagnerL2(object):
         CONST = np.ones(batch_size)*self.initial_const
         upper_bound = np.ones(batch_size)*1e10
 
-        # placeholders for the best l2, score, and image attack found so far
+        # placeholders for the best l2, score, and instance attack found so far
         o_bestl2 = [1e10]*batch_size
         o_bestscore = [-1]*batch_size
         o_bestattack = np.copy(oimgs)
