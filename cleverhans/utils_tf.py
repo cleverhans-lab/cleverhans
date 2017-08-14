@@ -15,7 +15,7 @@ import time
 import warnings
 import logging
 
-from .utils import batch_indices, _ArgsWrapper, create_logger
+from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
 
 from tensorflow.python.platform import flags
 
@@ -135,9 +135,11 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         assert args.train_dir, "Directory for save was not given in args dict"
         assert args.filename, "Filename for save was not given in args dict"
 
-    if verbose is False:
+    if not verbose:
+        set_log_level(30)
         warnings.warn("verbose argument is deprecated and will be removed"
-                      " on 2018-02-11. Instead, use utils.set_log_level().")
+                      " on 2018-02-11. Instead, use utils.set_log_level()."
+                      "For backward compatibility, log_level was set to 30.")
 
     # Define loss
     loss = model_loss(y, predictions)
@@ -159,9 +161,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             sess.run(tf.initialize_all_variables())
 
         for epoch in six.moves.xrange(args.nb_epochs):
-            if verbose:
-                _logger.info("Epoch " + str(epoch))
-
             # Compute number of batches
             nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
             assert nb_batches * args.batch_size >= len(X_train)
@@ -181,7 +180,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
             if verbose:
-                _logger.info("\tEpoch took " + str(cur - prev) + " seconds")
+                _logger.info("Epoch " + str(epoch) + " took " +
+                             str(cur - prev) + " seconds")
             prev = cur
             if evaluate is not None:
                 evaluate()
