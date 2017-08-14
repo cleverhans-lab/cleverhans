@@ -9,13 +9,14 @@ from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
+import logging
 
 from cleverhans.attacks import SaliencyMapMethod
-from cleverhans.utils import other_classes, cnn_model
+from cleverhans.utils import other_classes, set_log_level
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
-from cleverhans.utils_keras import KerasModelWrapper
+from cleverhans.utils_keras import KerasModelWrapper, cnn_model
 
 FLAGS = flags.FLAGS
 
@@ -63,6 +64,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     keras.backend.set_session(sess)
     print("Created TensorFlow session and set Keras backend.")
 
+    set_log_level(logging.DEBUG)
+
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
@@ -101,8 +104,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1)
-          + ' adversarial examples')
+    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1) +
+          ' adversarial examples')
 
     # Keep track of success (adversarial example classified in target)
     results = np.zeros((nb_classes, source_samples), dtype='i')

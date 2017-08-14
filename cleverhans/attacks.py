@@ -5,8 +5,11 @@ import warnings
 import collections
 
 import cleverhans.utils as utils
-
 from cleverhans.model import Model, CallableModelWrapper
+
+import logging
+
+_logger = utils.create_logger("cleverhans.attacks")
 
 
 class Attack(object):
@@ -81,6 +84,9 @@ class Attack(object):
         # feedable keyword arguments, and check the types are one of
         # the allowed types
         import tensorflow as tf
+
+        class_name = str(self.__class__).split(".")[-1][:-2]
+        _logger.info("Constructing new graph for attack " + class_name)
 
         # remove the None arguments, they are just left blank
         for k in list(feedable.keys()):

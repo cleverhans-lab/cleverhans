@@ -10,14 +10,13 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
+import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
-from cleverhans.utils import other_classes, cnn_model
-from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
+from cleverhans.utils import grid_visual, AccuracyReport, set_log_level
+from cleverhans.utils_keras import cnn_model, KerasModelWrapper
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval
-from cleverhans.utils_tf import model_argmax, tf_model_load
-from cleverhans.utils_keras import KerasModelWrapper
+from cleverhans.utils_tf import model_train, model_eval, tf_model_load
 
 FLAGS = flags.FLAGS
 
@@ -68,6 +67,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     sess = tf.Session()
     keras.backend.set_session(sess)
     print("Created TensorFlow session and set Keras backend.")
+
+    set_log_level(logging.DEBUG)
 
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
