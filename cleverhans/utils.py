@@ -234,6 +234,12 @@ def cnn_model(*args, **kwargs):
 
 
 def set_log_level(level, name="cleverhans"):
+    """
+    Sets the threshold for the cleverhans logger to level
+    :param level: the logger threshold. You can find values here:
+                  https://docs.python.org/2/library/logging.html#levels
+    :param name: the name used for the cleverhans logger
+    """
     logging.getLogger(name).setLevel(level)
 
 
