@@ -182,7 +182,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             if verbose:
                 _logger.info("Epoch " + str(epoch) + " took " +
                              str(cur - prev) + " seconds")
-            prev = cur
             if evaluate is not None:
                 evaluate()
 
