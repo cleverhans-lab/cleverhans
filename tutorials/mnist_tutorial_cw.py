@@ -13,11 +13,11 @@ from tensorflow.python.platform import flags
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
-from cleverhans.utils import other_classes, cnn_model, set_log_level
-from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
+from cleverhans.utils import cnn_model, set_log_level
+from cleverhans.utils import grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
-from cleverhans.utils_tf import model_argmax, tf_model_load
+from cleverhans.utils_tf import tf_model_load
 from cleverhans.utils_keras import KerasModelWrapper
 
 FLAGS = flags.FLAGS
