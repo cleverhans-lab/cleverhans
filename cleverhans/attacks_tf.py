@@ -314,7 +314,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
                                               nb_features, nb_classes,
                                               feed=feed)
 
-        if iteration % ((max_iters+1)//10) == 0 and iteration > 0:
+        if iteration % ((max_iters+1)//5) == 0 and iteration > 0:
             _logger.debug("Iteration {} of {}".format(iteration,
                                                       int(max_iters)))
         # Compute the saliency map for each of our target classes
