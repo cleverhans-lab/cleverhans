@@ -94,6 +94,7 @@ class CallableModelWrapper(Model):
     def fprop(self, x):
         return {self.output_layer: self.callable_fn(x)}
 
+
 class MLP(Model):
     """
     An example of a bare bones multilayer perceptron (MLP) class.
