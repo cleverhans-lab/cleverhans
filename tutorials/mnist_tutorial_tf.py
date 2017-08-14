@@ -2,7 +2,7 @@
 This tutorial shows how to generate some simple adversarial examples
 and train a model using adversarial training using nothing but pure
 TensorFlow.
-It is very similar to mnist_tutorial_keras_tf.py, which does the same 
+It is very similar to mnist_tutorial_keras_tf.py, which does the same
 thing but with a dependence on keras.
 """
 from __future__ import absolute_import
@@ -31,6 +31,7 @@ Users may apply CleverHans to many different kinds of models.
 In this tutorial, we show you an example of the kind of model
 you might build.
 """
+
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
