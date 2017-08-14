@@ -334,7 +334,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
         iteration = iteration + 1
 
     if current == target:
-        _logger.info("Succeeded attack using {} iterations".format(iteration))
+        _logger.info("Attack succeeded using {} iterations".format(iteration))
     else:
         _logger.info(("Failed to find adversarial example " +
                       "after {} iterations").format(iteration))
