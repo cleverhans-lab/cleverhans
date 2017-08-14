@@ -172,7 +172,17 @@ class Attack(object):
 
         return self.sess.run(x_adv, feed_dict)
 
-    def get_labels(self, x, kwargs):
+    def get_or_guess_labels(self, x, kwargs):
+        """
+        Get the label to use in generating an adversarial example for x.
+        The kwargs are fed directly from the kwargs of the attack.
+        If 'y' is in kwargs, then assume it's an untargeted attack and
+        use that as the label.
+        If 'y_target' is in kwargs, then assume it's a targeted attack and
+        use that as the label.
+        Otherwise, use the model's prediction as the label and perform an
+        untargeted attack.
+        """
         import tensorflow as tf
 
         if 'y' in kwargs and 'y_target' in kwargs:
@@ -255,7 +265,7 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        labels, nb_classes = self.get_labels(x, kwargs)
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
         return fgm(x, self.model.get_probs(x), y=labels, eps=self.eps,
                    ord=self.ord, clip_min=self.clip_min,
@@ -677,7 +687,7 @@ class CarliniWagnerL2(Attack):
         from .attacks_tf import CarliniWagnerL2 as CWL2
         self.parse_params(**kwargs)
 
-        labels, nb_classes = self.get_labels(x, kwargs)
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
         attack = CWL2(self.sess, self.model, self.batch_size,
                       self.confidence, 'y_target' in kwargs,
