@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import numpy as np
 from six.moves import xrange
 import warnings
+import logging
 
 known_number_types = (int, float, np.float16, np.float32, np.float64,
                       np.int8, np.int16, np.int32, np.int32, np.int64,
@@ -230,3 +231,31 @@ def cnn_model(*args, **kwargs):
     warnings.warn("utils.cnn_model is deprecated and may be removed on or"
                   " after 2018-01-05. Switch to utils_keras.cnn_model.")
     return cnn_model(*args, **kwargs)
+
+
+def set_log_level(level, name="cleverhans"):
+    """
+    Sets the threshold for the cleverhans logger to level
+    :param level: the logger threshold. You can find values here:
+                  https://docs.python.org/2/library/logging.html#levels
+    :param name: the name used for the cleverhans logger
+    """
+    logging.getLogger(name).setLevel(level)
+
+
+def create_logger(name):
+    """
+    Create a logger object with the given name.
+
+    If this is the first time that we call this method, then initialize the
+    formatter.
+    """
+    base = logging.getLogger("cleverhans")
+    if len(base.handlers) == 0:
+        ch = logging.StreamHandler()
+        formatter = logging.Formatter('[%(levelname)s %(asctime)s %(name)s] ' +
+                                      '%(message)s')
+        ch.setFormatter(formatter)
+        base.addHandler(ch)
+
+    return base

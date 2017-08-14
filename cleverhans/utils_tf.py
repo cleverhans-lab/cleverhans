@@ -13,12 +13,15 @@ import tensorflow.contrib.slim as slim
 from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
+import logging
 
-from .utils import batch_indices, _ArgsWrapper
+from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
 
 from tensorflow.python.platform import flags
 
 FLAGS = flags.FLAGS
+
+_logger = create_logger("cleverhans.utils.tf")
 
 
 class _FlagsWrapper(_ArgsWrapper):
@@ -132,6 +135,12 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         assert args.train_dir, "Directory for save was not given in args dict"
         assert args.filename, "Filename for save was not given in args dict"
 
+    if not verbose:
+        set_log_level(logging.WARNING)
+        warnings.warn("verbose argument is deprecated and will be removed"
+                      " on 2018-02-11. Instead, use utils.set_log_level()."
+                      "For backward compatibility, log_level was set to 30.")
+
     # Define loss
     loss = model_loss(y, predictions)
     if predictions_adv is not None:
@@ -152,9 +161,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             sess.run(tf.initialize_all_variables())
 
         for epoch in six.moves.xrange(args.nb_epochs):
-            if verbose:
-                print("Epoch " + str(epoch))
-
             # Compute number of batches
             nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
             assert nb_batches * args.batch_size >= len(X_train)
@@ -174,8 +180,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
             if verbose:
-                print("\tEpoch took " + str(cur - prev) + " seconds")
-            prev = cur
+                _logger.info("Epoch " + str(epoch) + " took " +
+                             str(cur - prev) + " seconds")
             if evaluate is not None:
                 evaluate()
 
@@ -183,9 +189,10 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             save_path = os.path.join(args.train_dir, args.filename)
             saver = tf.train.Saver()
             saver.save(sess, save_path)
-            print("Completed model training and saved at: " + str(save_path))
+            _logger.info("Completed model training and saved at: " +
+                         str(save_path))
         else:
-            print("Completed model training.")
+            _logger.info("Completed model training.")
 
     return True
 
@@ -254,7 +261,7 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
 
         for batch in range(nb_batches):
             if batch % 100 == 0 and batch > 0:
-                print("Batch " + str(batch))
+                _logger.debug("Batch " + str(batch))
 
             # Must not use the `batch_indices` function here, because it
             # repeats some examples.
@@ -329,7 +336,7 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, feed=None,
         for start in six.moves.xrange(0, m, args.batch_size):
             batch = start // args.batch_size
             if batch % 100 == 0 and batch > 0:
-                print("Batch " + str(batch))
+                _logger.debug("Batch " + str(batch))
 
             # Compute batch start and end indices
             start = batch * args.batch_size
