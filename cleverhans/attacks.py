@@ -173,6 +173,8 @@ class Attack(object):
         return self.sess.run(x_adv, feed_dict)
 
     def get_labels(self, x, kwargs):
+        import tensorflow as tf
+
         if 'y' in kwargs and 'y_target' in kwargs:
             raise ValueError("Can not set both 'y' and 'y_target'.")
         elif 'y' in kwargs:
@@ -191,7 +193,6 @@ class Attack(object):
             nb_classes = labels.get_shape().as_list()[1]
         return labels, nb_classes
 
-    
     def parse_params(self, params=None):
         """
         Take in a dictionary of parameters and applies attack-specific checks
