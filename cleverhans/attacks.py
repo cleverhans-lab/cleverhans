@@ -85,7 +85,7 @@ class Attack(object):
         # the allowed types
         import tensorflow as tf
 
-        class_name = str(self.__class__).split(".")[0][:-2]
+        class_name = str(self.__class__).split(".")[-1][:-2]
         _logger.info("Constructing new graph for attack " + class_name)
 
         # remove the None arguments, they are just left blank
