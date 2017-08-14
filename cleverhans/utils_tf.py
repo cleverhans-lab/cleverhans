@@ -136,7 +136,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         assert args.filename, "Filename for save was not given in args dict"
 
     if not verbose:
-        set_log_level(30)
+        set_log_level(logging.WARNING)
         warnings.warn("verbose argument is deprecated and will be removed"
                       " on 2018-02-11. Instead, use utils.set_log_level()."
                       "For backward compatibility, log_level was set to 30.")
