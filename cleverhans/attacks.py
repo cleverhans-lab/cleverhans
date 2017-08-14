@@ -463,7 +463,7 @@ class SaliencyMapMethod(Attack):
 
         import tensorflow as tf
         self.feedable_kwargs = {'y_target': tf.float32}
-        self.structural_kwargs = ['theta', 'gamma', 'nb_classes',
+        self.structural_kwargs = ['theta', 'gamma',
                                   'clip_max', 'clip_min']
 
     def generate(self, x, **kwargs):
@@ -473,7 +473,6 @@ class SaliencyMapMethod(Attack):
         :param theta: (optional float) Perturbation introduced to modified
                       components (can be positive or negative)
         :param gamma: (optional float) Maximum percentage of perturbed features
-        :param nb_classes: (optional int) Number of model output classes
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
         :param y_target: (optional) Target tensor if the attack is targeted
@@ -486,14 +485,15 @@ class SaliencyMapMethod(Attack):
 
         # Define Jacobian graph wrt to this input placeholder
         preds = self.model.get_probs(x)
-        grads = jacobian_graph(preds, x, self.nb_classes)
+        nb_classes = preds.get_shape().as_list()[-1]
+        grads = jacobian_graph(preds, x, nb_classes)
 
         # Define appropriate graph (targeted / random target labels)
         if self.y_target is not None:
             def jsma_wrap(x_val, y_target):
                 return jsma_batch(self.sess, x, preds, grads, x_val,
                                   self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, self.nb_classes,
+                                  self.clip_max, nb_classes,
                                   y_target=y_target)
 
             # Attack is targeted, target placeholder will need to be fed
@@ -502,7 +502,7 @@ class SaliencyMapMethod(Attack):
             def jsma_wrap(x_val):
                 return jsma_batch(self.sess, x, preds, grads, x_val,
                                   self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, self.nb_classes,
+                                  self.clip_max, nb_classes,
                                   y_target=None)
 
             # Attack is untargeted, target values will be chosen at random
@@ -510,7 +510,7 @@ class SaliencyMapMethod(Attack):
 
         return wrap
 
-    def parse_params(self, theta=1., gamma=np.inf, nb_classes=10, clip_min=0.,
+    def parse_params(self, theta=1., gamma=np.inf, nb_classes=None, clip_min=0.,
                      clip_max=1., y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -526,9 +526,11 @@ class SaliencyMapMethod(Attack):
         :param y_target: (optional) Target tensor if the attack is targeted
         """
 
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
         self.theta = theta
         self.gamma = gamma
-        self.nb_classes = nb_classes
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.y_target = y_target
