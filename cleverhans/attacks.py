@@ -22,7 +22,9 @@ class Attack(object):
     def __init__(self, model, back='tf', sess=None):
         """
         :param model: An instance of the Model class.
-        :param back: The backend to use. Either 'tf' (default) or 'th'.
+        :param back: The backend to use. Either 'tf' (default) or 'th'
+                     (support for Theano is however deprecated and will
+                     be removed on 2017-11-08).
         :param sess: The tf session to run graphs in (use None for Theano)
         """
         if not(back == 'tf' or back == 'th'):
@@ -80,6 +82,14 @@ class Attack(object):
         raise NotImplementedError(error)
 
     def construct_graph(self, fixed, feedable, x_val, hash_key):
+        """
+        Construct the graph required to run the attack through generate_np.
+        :param fixed: Structural elements that require defining a new graph.
+        :param feedable: Arguments that can be fed to the same graph when
+                         they take different values.
+        :param x_val: symbolic adversarial example
+        :param hash_key: the key used to store this graph in our cache
+        """
         # try our very best to create a TF placeholder for each of the
         # feedable keyword arguments, and check the types are one of
         # the allowed types
@@ -226,6 +236,9 @@ class FastGradientMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a FastGradientMethod instance.
+        Note: the model parameter should be an instance of the Model
+        abstraction provided by CleverHans or a callable that returns
+        the model's *probabilities* (i.e., the output of the softmax).
         """
         super(FastGradientMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
@@ -325,6 +338,9 @@ class BasicIterativeMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a BasicIterativeMethod instance.
+        Note: the model parameter should be an instance of the Model
+        abstraction provided by CleverHans or a callable that returns
+        the model's *probabilities* (i.e., the output of the softmax).
         """
         super(BasicIterativeMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
@@ -462,6 +478,9 @@ class SaliencyMapMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a SaliencyMapMethod instance.
+        Note: the model parameter should be an instance of the Model
+        abstraction provided by CleverHans or a callable that returns
+        the model's *probabilities* (i.e., the output of the softmax).
         """
         super(SaliencyMapMethod, self).__init__(model, back, sess)
 
@@ -559,6 +578,11 @@ class VirtualAdversarialMethod(Attack):
     """
 
     def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the Model
+        abstraction provided by CleverHans or a callable that returns
+        the model's *logits* (i.e., the inputs of the softmax).
+        """
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
 
         if self.back == 'th':
@@ -626,6 +650,11 @@ class CarliniWagnerL2(Attack):
     as this attack is often much slower than others.
     """
     def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the Model
+        abstraction provided by CleverHans or a callable that returns
+        the model's *logits* (i.e., the inputs of the softmax).
+        """
         super(CarliniWagnerL2, self).__init__(model, back, sess)
 
         if self.back == 'th':
