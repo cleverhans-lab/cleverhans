@@ -75,7 +75,8 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
 
 def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     """
-    Defines the model architecture to be used by the substitute
+    Defines the model architecture to be used by the substitute. Use
+    the example model interface.
     :param img_rows: number of rows in input
     :param img_cols: number of columns in input
     :param nb_classes: number of classes in output
