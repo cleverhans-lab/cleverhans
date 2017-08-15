@@ -14,7 +14,7 @@ from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
-from tutorial_models import make_basic_cnn
+from tutorials.tutorial_models import make_basic_cnn
 
 FLAGS = flags.FLAGS
 
