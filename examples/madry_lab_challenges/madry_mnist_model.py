@@ -12,6 +12,7 @@ from __future__ import print_function
 from collections import OrderedDict
 import tensorflow as tf
 from cleverhans.model import Model
+from cleverhans.utils import deterministic_dict
 
 
 class MadryMNIST(Model):
@@ -49,11 +50,8 @@ class MadryMNIST(Model):
         # output layer
         logits = tf.matmul(h_fc1, self.W_fc2) + self.b_fc2
 
-        l = locals()
-        for key in sorted(l.keys()):
-            if key in ["self", "output"]:
-                continue
-            output[key] = l[key]
+        output = deterministic_dict(locals())
+        del output["self"]
 
         return output
 
