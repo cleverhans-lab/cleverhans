@@ -78,6 +78,7 @@ def main(argv):
         print("Took", t2 - t1, "seconds")
         print('Test accuracy on adversarial examples: %0.4f\n' % acc)
 
+
 if __name__ == '__main__':
 
     dirs = ['models', 'adv_trained']
@@ -88,9 +89,11 @@ if __name__ == '__main__':
 
     flags.DEFINE_integer('batch_size', 128, "batch size")
     flags.DEFINE_float(
-        'label_smooth', 0.1, "Amount to subtract from correct label and distribute among other labels")
+        'label_smooth', 0.1, ("Amount to subtract from correct label "
+                              "and distribute among other labels"))
     flags.DEFINE_string(
-        'attack_type', 'fgsm', "Attack type: 'fgsm'->fast gradient sign method, 'bim'->'basic iterative method'")
+        'attack_type', 'fgsm', ("Attack type: 'fgsm'->fast gradient sign"
+                                "method, 'bim'->'basic iterative method'"))
     flags.DEFINE_string('checkpoint_dir', default_checkpoint_dir,
                         'Checkpoint directory to load')
     app.run(main)
