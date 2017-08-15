@@ -62,7 +62,6 @@ class Linear(Layer):
         self.num_hid = num_hid
 
     def set_input_shape(self, input_shape):
-        import tensorflow as tf
         batch_size, dim = input_shape
         self.input_shape = [batch_size, dim]
         self.output_shape = [batch_size, self.num_hid]
@@ -73,7 +72,6 @@ class Linear(Layer):
         self.b = tf.Variable(np.zeros((self.num_hid,)).astype('float32'))
 
     def fprop(self, x):
-        import tensorflow as tf
         return tf.matmul(x, self.W) + self.b
 
 
@@ -84,7 +82,6 @@ class Conv2D(Layer):
         del self.self
 
     def set_input_shape(self, input_shape):
-        import tensorflow as tf
         batch_size, rows, cols, input_channels = input_shape
         kernel_shape = tuple(self.kernel_shape) + (input_channels,
                                                    self.output_channels)
@@ -106,7 +103,6 @@ class Conv2D(Layer):
         self.output_shape = tuple(output_shape)
 
     def fprop(self, x):
-        import tensorflow as tf
         return tf.nn.conv2d(x, self.kernels,
                             (1,) + tuple(self.strides) + (1,), self.padding)
 
@@ -124,8 +120,23 @@ class ReLU(Layer):
         return self.output_shape
 
     def fprop(self, x):
-        import tensorflow as tf
         return tf.nn.relu(x)
+
+
+class Dropout(Layer):
+
+    def __init__(self, prob):
+        self.prob = prob
+
+    def set_input_shape(self, shape):
+        self.input_shape = shape
+        self.output_shape = shape
+
+    def get_output_shape(self):
+        return self.output_shape
+
+    def fprop(self, x):
+        return tf.nn.dropout(x, self.prob)
 
 
 class Softmax(Layer):
@@ -138,7 +149,6 @@ class Softmax(Layer):
         self.output_shape = shape
 
     def fprop(self, x):
-        import tensorflow as tf
         return tf.nn.softmax(x)
 
 
@@ -156,7 +166,6 @@ class Flatten(Layer):
         self.output_shape = [None, output_width]
 
     def fprop(self, x):
-        import tensorflow as tf
         return tf.reshape(x, [-1, self.output_width])
 
 
