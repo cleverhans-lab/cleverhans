@@ -11,6 +11,7 @@ import numpy as np
 import tensorflow as tf
 from cleverhans.model import Model
 
+
 class MLP(Model):
     """
     An example of a bare bones multilayer perceptron (MLP) class.
