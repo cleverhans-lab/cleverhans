@@ -27,7 +27,8 @@ def main(argv):
     checkpoint = tf.train.latest_checkpoint(FLAGS.checkpoint_dir)
 
     if checkpoint is None:
-        raise ValueError("Couldn't load checkpoint")
+        raise ValueError("Couldn't find latest checkpoint in " +
+                         FLAGS.checkpoint_dir)
 
     train_start = 0
     train_end = 60000
@@ -84,8 +85,7 @@ if __name__ == '__main__':
     dirs = ['models', 'adv_trained']
     if "MNIST_CHALLENGE_DIR" in os.environ:
         dirs.insert(0, os.environ['MNIST_CHALLENGE_DIR'])
-    else:
-        default_checkpoint_dir = os.path.join(*dirs)
+    default_checkpoint_dir = os.path.join(*dirs)
 
     flags.DEFINE_integer('batch_size', 128, "batch size")
     flags.DEFINE_float(
