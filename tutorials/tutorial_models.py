@@ -44,7 +44,6 @@ class MLP(Model):
             if set_ref:
                 layer.ref = x
             x = layer.fprop(x)
-            print(x)
             assert x is not None
             states.append(x)
         states = dict(zip(self.get_layer_names(), states))
