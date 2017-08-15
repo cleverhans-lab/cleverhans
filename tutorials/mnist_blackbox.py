@@ -11,10 +11,12 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
+from cleverhans.utils import to_categorical
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
-from tutorials.tutorial_models import make_basic_cnn
+from tutorials.tutorial_models import make_basic_cnn, MLP
+from tutorials.tutorial_models import Flatten, Linear, ReLU, Dropout, Softmax
 
 FLAGS = flags.FLAGS
 
@@ -81,25 +83,20 @@ def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     :param nb_classes: number of classes in output
     :return: tensorflow model
     """
-    model = Sequential()
-
-    input_shape = (img_rows, img_cols, 1)
+    input_shape = (None, img_rows, img_cols, 1)
 
     # Define a fully connected model (it's different than the black-box)
-    layers = [Flatten(input_shape=input_shape),
-              Dense(200),
-              Activation('relu'),
+    layers = [Flatten(),
+              Linear(200),
+              ReLU(),
               Dropout(0.5),
-              Dense(200),
-              Activation('relu'),
+              Linear(200),
+              ReLU(),
               Dropout(0.5),
-              Dense(nb_classes),
-              Activation('softmax')]
+              Linear(nb_classes),
+              Softmax()]
 
-    for layer in layers:
-        model.add(layer)
-
-    return model
+    return MLP(layers, input_shape)
 
 
 def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
@@ -203,7 +200,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     # Define input and output TF placeholders
     x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
     y = tf.placeholder(tf.float32, shape=(None, 10))
-
+    
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
     print("Preparing the black-box model.")
