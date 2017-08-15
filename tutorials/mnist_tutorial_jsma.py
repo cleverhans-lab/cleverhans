@@ -16,7 +16,7 @@ from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
 from cleverhans.utils_keras import KerasModelWrapper, cnn_model
-from tutorial_models import make_basic_cnn
+from tutorials.tutorial_models import make_basic_cnn
 
 FLAGS = flags.FLAGS
 
