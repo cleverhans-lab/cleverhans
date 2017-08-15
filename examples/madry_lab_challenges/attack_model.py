@@ -38,7 +38,7 @@ def main(argv):
                                                   test_start=test_start,
                                                   test_end=test_end)
 
-    assert Y_train.shape[1] == 10.
+    assert Y_train.shape[1] == 10
 
     # NOTE: for compatibility with Madry Lab downloadable checkpoints,
     # we cannot enclose this in a scope or do anything else that would
