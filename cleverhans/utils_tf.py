@@ -139,7 +139,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         set_log_level(logging.WARNING)
         warnings.warn("verbose argument is deprecated and will be removed"
                       " on 2018-02-11. Instead, use utils.set_log_level()."
-                      "For backward compatibility, log_level was set to 30.")
+                      " For backward compatibility, log_level was set to"
+                      " logging.WARNING (30).")
 
     # Define loss
     loss = model_loss(y, predictions)
