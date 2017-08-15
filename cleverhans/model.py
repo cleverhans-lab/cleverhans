@@ -1,4 +1,5 @@
 from abc import ABCMeta
+import numpy as np
 
 
 class Model(object):

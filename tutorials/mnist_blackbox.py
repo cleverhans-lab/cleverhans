@@ -6,44 +6,27 @@ from __future__ import unicode_literals
 import numpy as np
 from six.moves import xrange
 
-import keras
-from keras import backend
-from keras.utils.np_utils import to_categorical
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Activation, Dropout
-
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
-from cleverhans.utils_keras import KerasModelWrapper
+from tutorials.tutorial_models import make_basic_cnn
 
 FLAGS = flags.FLAGS
 
 
 def setup_tutorial():
     """
-    Helper function to check correct configuration of tf and keras for tutorial
+    Helper function to check correct configuration of tf for tutorial
     :return: True if setup checks completed
     """
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
-
-    if not hasattr(backend, "tf"):
-        raise RuntimeError("This tutorial requires keras to be configured"
-                           " to use the TensorFlow backend.")
-
-    # Image dimensions ordering should follow the Theano convention
-    if keras.backend.image_dim_ordering() != 'tf':
-        keras.backend.set_image_dim_ordering('tf')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
-              "to 'th', temporarily setting to 'tf'")
 
     return True
 
@@ -67,7 +50,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     """
 
     # Define TF model graph (for the black-box model)
-    model = cnn_model()
+    model = make_basic_cnn()
     predictions = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -96,15 +79,11 @@ def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     :param img_rows: number of rows in input
     :param img_cols: number of columns in input
     :param nb_classes: number of classes in output
-    :return: keras model
+    :return: tensorflow model
     """
     model = Sequential()
 
-    # Find out the input shape ordering
-    if keras.backend.image_dim_ordering() == 'th':
-        input_shape = (1, img_rows, img_cols)
-    else:
-        input_shape = (img_rows, img_cols, 1)
+    input_shape = (img_rows, img_cols, 1)
 
     # Define a fully connected model (it's different than the black-box)
     layers = [Flatten(input_shape=input_shape),
@@ -198,17 +177,14 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
              * black-box model accuracy on adversarial examples transferred
                from the substitute model
     """
-    keras.layers.core.K.set_learning_phase(0)
-
     # Dictionary used to keep track and return key accuracies
     accuracies = {}
 
     # Perform tutorial setup
     assert setup_tutorial()
 
-    # Create TF session and set as Keras backend session
+    # Create TF session
     sess = tf.Session()
-    keras.backend.set_session(sess)
 
     # Get MNIST data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
@@ -249,8 +225,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
     fgsm_par = {'eps': 0.3, 'ord': np.inf, 'clip_min': 0., 'clip_max': 1.}
-    wrap = KerasModelWrapper(model_sub)
-    fgsm = FastGradientMethod(wrap, sess=sess)
+    fgsm = FastGradientMethod(model_sub, sess=sess)
 
     # Craft adversarial examples using the substitute
     eval_params = {'batch_size': batch_size}
