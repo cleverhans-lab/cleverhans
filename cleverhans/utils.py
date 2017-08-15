@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+from collections import OrderedDict
 from six.moves import xrange
 import warnings
 import logging
