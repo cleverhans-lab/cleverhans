@@ -468,7 +468,10 @@ class CarliniWagnerL2(object):
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
                            strongly classified as adversarial.
-        :param targeted:
+        :param targeted: boolean controling the behavior of the adversarial
+                         examples produced. If set to False, they will be
+                         misclassified in any wrong class. If set to True,
+                         they will be misclassified in a chosen target class.
         :param learning_rate: The learning rate for the attack algorithm.
                               Smaller values produce better results but are
                               slower to converge.
