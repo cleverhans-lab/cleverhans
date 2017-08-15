@@ -47,7 +47,7 @@ def main():
     X_train, Y_train, X_test, Y_test = data_mnist()
     print("Loaded MNIST test data.")
 
-    assert Y_train.shape[1] == 10.
+    assert Y_train.shape[1] == 10
     label_smooth = .1
     Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
 
