@@ -13,8 +13,16 @@ from cleverhans.devtools.tests.docscrape import docstring_errors
 from cleverhans.devtools.list_files import list_files
 from pycodestyle import StyleGuide
 
+# Enter a manual list of files that are allowed to violate PEP8 here
 whitelist_pep8 = [
 ]
+
+# The NIPS 2017 competition code is allowed to violate PEP8 because it
+# follows the Google style guide instead (e.g., 2 spaces instead of 4)
+whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
+                       for path in list_files()
+                       if "nips17_adversarial_competition" in path])
+
 
 whitelist_docstrings = [
 ]
