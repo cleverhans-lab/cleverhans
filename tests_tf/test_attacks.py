@@ -315,7 +315,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         x_adv = self.attack.generate_np(x_val, max_iterations=100,
                                         binary_search_steps=3,
-                                        initial_const=1, nb_classes=2,
+                                        initial_const=1,
                                         clip_min=-5, clip_max=5,
                                         batch_size=10)
 
@@ -333,7 +333,7 @@ class TestCarliniWagnerL2(CleverHansTest):
         feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
         x_adv = self.attack.generate_np(x_val, max_iterations=100,
                                         binary_search_steps=3,
-                                        initial_const=1, nb_classes=2,
+                                        initial_const=1,
                                         clip_min=-5, clip_max=5,
                                         batch_size=100, y_target=feed_labs)
 
@@ -355,7 +355,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         x_adv_p = self.attack.generate(x, max_iterations=100,
                                        binary_search_steps=3,
-                                       initial_const=1, nb_classes=2,
+                                       initial_const=1,
                                        clip_min=-5, clip_max=5,
                                        batch_size=100, y=y)
         x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
@@ -371,7 +371,7 @@ class TestCarliniWagnerL2(CleverHansTest):
         x_adv = self.attack.generate_np(x_val, max_iterations=10,
                                         binary_search_steps=1,
                                         learning_rate=1e-3,
-                                        initial_const=1, nb_classes=2,
+                                        initial_const=1,
                                         clip_min=-0.2, clip_max=0.3,
                                         batch_size=100)
 
@@ -398,7 +398,7 @@ class TestCarliniWagnerL2(CleverHansTest):
                                        max_iterations=100,
                                        binary_search_steps=2,
                                        learning_rate=1e-2,
-                                       initial_const=1, nb_classes=2,
+                                       initial_const=1,
                                        clip_min=-10, clip_max=10,
                                        confidence=CONFIDENCE,
                                        y_target=feed_labs,
@@ -433,7 +433,7 @@ class TestCarliniWagnerL2(CleverHansTest):
                                        max_iterations=100,
                                        binary_search_steps=2,
                                        learning_rate=1e-2,
-                                       initial_const=1, nb_classes=2,
+                                       initial_const=1,
                                        clip_min=-10, clip_max=10,
                                        confidence=CONFIDENCE,
                                        batch_size=10)
@@ -479,7 +479,7 @@ class TestSaliencyMapMethod(CleverHansTest):
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
         x_adv = self.attack.generate_np(x_val,
                                         clip_min=-5, clip_max=5,
-                                        y_target=feed_labs, nb_classes=10)
+                                        y_target=feed_labs)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
