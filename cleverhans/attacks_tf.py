@@ -706,7 +706,7 @@ class CarliniWagnerL2(object):
                           "on {} of {} instances.".
                           format(sum(upper_bound < 1e9), batch_size))
             o_bestl2 = np.array(o_bestl2)
-            mean = np.mean(np.sqrt(o_bestl2[o_bestl2<1e9]))
+            mean = np.mean(np.sqrt(o_bestl2[o_bestl2 < 1e9]))
             _logger.debug("   Mean successful distortion: {:.4g}".format(mean))
 
         # return the best solution found
