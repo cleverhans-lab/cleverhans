@@ -12,6 +12,7 @@ from keras.utils.np_utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Activation, Dropout
 
+import logging
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
