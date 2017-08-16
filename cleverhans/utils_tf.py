@@ -88,12 +88,6 @@ def initialize_uninitialized_global_variables(sess):
         sess.run(tf.variables_initializer(not_initialized_vars))
 
 
-def tf_model_train(*args, **kwargs):
-    warnings.warn("`tf_model_train` is deprecated. Switch to `model_train`."
-                  "`tf_model_train` will be removed after 2017-07-18.")
-    return model_train(*args, **kwargs)
-
-
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 predictions_adv=None, init_all=True, evaluate=None,
                 verbose=True, feed=None, args=None):
@@ -195,12 +189,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             _logger.info("Completed model training.")
 
     return True
-
-
-def tf_model_eval(*args, **kwargs):
-    warnings.warn("`tf_model_eval` is deprecated. Switch to `model_eval`."
-                  "`tf_model_eval` will be removed after 2017-07-18.")
-    return model_eval(*args, **kwargs)
 
 
 def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
