@@ -203,7 +203,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Set logging level to see debug information
     set_log_level(logging.DEBUG)
-    
+
     # Dictionary used to keep track and return key accuracies
     accuracies = {}
 
