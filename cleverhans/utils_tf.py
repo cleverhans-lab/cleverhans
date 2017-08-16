@@ -191,12 +191,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     return True
 
 
-def tf_model_eval(*args, **kwargs):
-    warnings.warn("`tf_model_eval` is deprecated. Switch to `model_eval`."
-                  "`tf_model_eval` will be removed after 2017-07-18.")
-    return model_eval(*args, **kwargs)
-
-
 def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
                feed=None, args=None, model=None):
     """
