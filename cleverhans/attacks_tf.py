@@ -463,7 +463,7 @@ class CarliniWagnerL2(object):
         input. Generate uses tf.py_func in order to operate over tensors.
 
         :param sess: a TF session.
-        :param model: a cleverhans.model.Model model object.
+        :param model: a cleverhans.model.Model object.
         :param batch_size: Number of attacks to run simultaneously.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
