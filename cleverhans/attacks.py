@@ -21,7 +21,7 @@ class Attack(object):
 
     def __init__(self, model, back='tf', sess=None):
         """
-        :param model: An instance of the Model class.
+        :param model: An instance of the cleverhans.model.Model class.
         :param back: The backend to use. Either 'tf' (default) or 'th'
                      (support for Theano is however deprecated and will
                      be removed on 2017-11-08).
@@ -34,11 +34,12 @@ class Attack(object):
         if not isinstance(model, Model):
             if hasattr(model, '__call__'):
                 warnings.warn("CleverHans support for supplying a callable"
-                              " instead of an instance of the Model class is"
+                              " instead of an instance of the"
+                              " cleverhans.model.Model class is"
                               " deprecated and will be dropped on 2018-01-11.")
             else:
                 raise ValueError("The model argument should be an instance of"
-                                 " the Model class.")
+                                 " the cleverhans.model.Model class.")
         if back == 'th':
             warnings.warn("CleverHans support for Theano is deprecated and "
                           "will be dropped on 2017-11-08.")
@@ -236,9 +237,8 @@ class FastGradientMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a FastGradientMethod instance.
-        Note: the model parameter should be an instance of the Model
-        abstraction provided by CleverHans or a callable that returns
-        the model's *probabilities* (i.e., the output of the softmax).
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(FastGradientMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
@@ -338,9 +338,8 @@ class BasicIterativeMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a BasicIterativeMethod instance.
-        Note: the model parameter should be an instance of the Model
-        abstraction provided by CleverHans or a callable that returns
-        the model's *probabilities* (i.e., the output of the softmax).
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(BasicIterativeMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
@@ -478,9 +477,8 @@ class SaliencyMapMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a SaliencyMapMethod instance.
-        Note: the model parameter should be an instance of the Model
-        abstraction provided by CleverHans or a callable that returns
-        the model's *probabilities* (i.e., the output of the softmax).
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(SaliencyMapMethod, self).__init__(model, back, sess)
 
@@ -579,9 +577,8 @@ class VirtualAdversarialMethod(Attack):
 
     def __init__(self, model, back='tf', sess=None):
         """
-        Note: the model parameter should be an instance of the Model
-        abstraction provided by CleverHans or a callable that returns
-        the model's *logits* (i.e., the inputs of the softmax).
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
 
@@ -651,9 +648,8 @@ class CarliniWagnerL2(Attack):
     """
     def __init__(self, model, back='tf', sess=None):
         """
-        Note: the model parameter should be an instance of the Model
-        abstraction provided by CleverHans or a callable that returns
-        the model's *logits* (i.e., the inputs of the softmax).
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(CarliniWagnerL2, self).__init__(model, back, sess)
 
