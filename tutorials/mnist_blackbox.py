@@ -22,6 +22,7 @@ from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 from cleverhans.utils_keras import KerasModelWrapper
+from cleverhans.utils import set_log_level
 
 FLAGS = flags.FLAGS
 
@@ -200,6 +201,9 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     """
     keras.layers.core.K.set_learning_phase(0)
 
+    # Set logging level to see debug information
+    set_log_level(logging.DEBUG)
+    
     # Dictionary used to keep track and return key accuracies
     accuracies = {}
 
