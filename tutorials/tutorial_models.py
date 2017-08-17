@@ -123,22 +123,6 @@ class ReLU(Layer):
         return tf.nn.relu(x)
 
 
-class Dropout(Layer):
-
-    def __init__(self, prob):
-        self.prob = prob
-
-    def set_input_shape(self, shape):
-        self.input_shape = shape
-        self.output_shape = shape
-
-    def get_output_shape(self):
-        return self.output_shape
-
-    def fprop(self, x):
-        return tf.nn.dropout(x, self.prob)
-
-
 class Softmax(Layer):
 
     def __init__(self):
