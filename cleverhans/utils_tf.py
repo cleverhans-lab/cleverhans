@@ -10,7 +10,6 @@ import os
 import six
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
 import logging
@@ -402,5 +401,5 @@ def kl_with_logits(p_logits, q_logits, scope=None,
         q_log = tf.nn.log_softmax(q_logits)
         loss = tf.reduce_mean(tf.reduce_sum(p * (p_log - q_log), axis=1),
                               name=name)
-        add_loss(loss, loss_collection)
+        tf.losses.add_loss(loss, loss_collection)
         return loss
