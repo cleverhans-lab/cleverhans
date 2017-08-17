@@ -14,7 +14,6 @@ from keras.layers import Dense, Flatten, Activation, Dropout
 
 import logging
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_keras import cnn_model
@@ -294,4 +293,4 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for substitute')
     flags.DEFINE_float('lmbda', 0.1, 'Lambda from arxiv.org/abs/1602.02697')
 
-    app.run()
+    tf.app.run()
