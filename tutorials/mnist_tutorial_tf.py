@@ -14,11 +14,12 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
+import logging
 
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.utils import AccuracyReport
+from cleverhans.utils import AccuracyReport, set_log_level
 from cleverhans.model import Model
 
 import os
@@ -216,6 +217,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
+
+    # Set logging level to see debug information
+    set_log_level(logging.DEBUG)
 
     # Create TF session
     sess = tf.Session()

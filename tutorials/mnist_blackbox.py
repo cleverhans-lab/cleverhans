@@ -12,6 +12,7 @@ from keras.utils.np_utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Activation, Dropout
 
+import logging
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
@@ -22,6 +23,7 @@ from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 from cleverhans.utils_keras import KerasModelWrapper
+from cleverhans.utils import set_log_level
 
 FLAGS = flags.FLAGS
 
@@ -92,7 +94,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
 
 def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     """
-    Defines the model architecture to be used by the substitute
+    Defines the model architecture to be used by the substitute.
     :param img_rows: number of rows in input
     :param img_cols: number of columns in input
     :param nb_classes: number of classes in output
@@ -199,6 +201,9 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                from the substitute model
     """
     keras.layers.core.K.set_learning_phase(0)
+
+    # Set logging level to see debug information
+    set_log_level(logging.DEBUG)
 
     # Dictionary used to keep track and return key accuracies
     accuracies = {}
