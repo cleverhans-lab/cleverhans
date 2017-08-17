@@ -97,7 +97,8 @@ black-box model as well.
 
 Some models used in the tutorials are defined using [Keras](https://keras.io),
 which should be installed before running these tutorials.
-Installation instructions for Keras can be found [here](https://keras.io/#installation)
+Installation instructions for Keras can be found
+[here](https://keras.io/#installation).
 Note that you should configure Keras to use the TensorFlow backend. You
 can find instructions for
 setting the Keras backend [on this page](https://keras.io/backend/).
