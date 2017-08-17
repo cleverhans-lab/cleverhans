@@ -9,7 +9,6 @@ import numpy as np
 import os
 import six
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
 import time
 import warnings
 import logging
@@ -383,7 +382,7 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
     """
     with tf.name_scope(scope, "l2_batch_normalize") as scope:
         x_shape = tf.shape(x)
-        x = slim.flatten(x)
+        x = tf.contrib.layers.flatten(x)
         x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keep_dims=True))
         square_sum = tf.reduce_sum(tf.square(x), 1, keep_dims=True)
         x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
