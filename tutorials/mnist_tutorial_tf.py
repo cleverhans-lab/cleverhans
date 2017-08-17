@@ -14,12 +14,13 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
+import logging
 
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.utils import AccuracyReport
 from tutorials.tutorial_models import make_basic_cnn
+from cleverhans.utils import AccuracyReport, set_log_level
 
 import os
 
@@ -59,6 +60,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
+    # Set logging level to see debug information
+    set_log_level(logging.DEBUG)
+
     # Create TF session
     sess = tf.Session()
 
@@ -69,7 +73,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   test_end=test_end)
 
     # Use label smoothing
-    assert Y_train.shape[1] == 10.
+    assert Y_train.shape[1] == 10
     label_smooth = .1
     Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
 

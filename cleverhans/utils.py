@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+from collections import OrderedDict
 from six.moves import xrange
 import warnings
 import logging
@@ -259,3 +260,13 @@ def create_logger(name):
         base.addHandler(ch)
 
     return base
+
+
+def deterministic_dict(normal_dict):
+    """
+    Returns a version of `normal_dict` whose iteration order is always the same
+    """
+    out = OrderedDict()
+    for key in sorted(normal_dict.keys()):
+        out[key] = normal_dict[key]
+    return out

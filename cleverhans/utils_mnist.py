@@ -71,13 +71,3 @@ def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
     print('X_test shape:', X_test.shape)
 
     return X_train, Y_train, X_test, Y_test
-
-
-def model_mnist(logits=False, input_ph=None, img_rows=28, img_cols=28,
-                nb_filters=64, nb_classes=10):
-    warnings.warn("`utils_mnist.model_mnist` is deprecated. Switch to"
-                  "`utils.cnn_model`. `utils_mnist.model_mnist` will "
-                  "be removed after 2017-08-17.")
-    return utils.cnn_model(logits=logits, input_ph=input_ph,
-                           img_rows=img_rows, img_cols=img_cols,
-                           nb_filters=nb_filters, nb_classes=nb_classes)

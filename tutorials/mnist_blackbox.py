@@ -6,15 +6,18 @@ from __future__ import unicode_literals
 import numpy as np
 from six.moves import xrange
 
+import logging
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import to_categorical
+from cleverhans.utils import set_log_level
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
+
 from tutorials.tutorial_models import make_basic_cnn, MLP
 from tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
 
@@ -173,6 +176,10 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
              * black-box model accuracy on adversarial examples transferred
                from the substitute model
     """
+
+    # Set logging level to see debug information
+    set_log_level(logging.DEBUG)
+
     # Dictionary used to keep track and return key accuracies
     accuracies = {}
 
