@@ -78,12 +78,12 @@ To help you get started with the functionalities provided by this library, the
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial examples using adversarial training.
-* **MNIST with FGSM using Keras** ([code](tutorials/mnist_tutorial_keras_tf.py), [tutorial](tutorials/mnist_tutorial_keras_tf.md)): this
+* **MNIST with FGSM using Keras** ([code](tutorials/mnist_tutorial_keras_tf.py)): this
 tutorial covers how to define a MNIST model with Keras and train it using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial
 examples using adversarial training.
-* **MNIST with JSMA** ([code](tutorials/mnist_tutorial_jsma.py), [tutorial](tutorials/mnist_tutorial_jsma.md)): this second
+* **MNIST with JSMA** ([code](tutorials/mnist_tutorial_jsma.py)): this second
 tutorial covers how to define a MNIST model with Keras and train it using TensorFlow and
 craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528).
 * **MNIST using a black-box attack** ([code](tutorials/mnist_blackbox.py)):
@@ -97,7 +97,8 @@ black-box model as well.
 
 Some models used in the tutorials are defined using [Keras](https://keras.io),
 which should be installed before running these tutorials.
-Installation instructions for Keras can be found [here](https://keras.io/#installation)
+Installation instructions for Keras can be found
+[here](https://keras.io/#installation).
 Note that you should configure Keras to use the TensorFlow backend. You
 can find instructions for
 setting the Keras backend [on this page](https://keras.io/backend/).
@@ -105,7 +106,8 @@ setting the Keras backend [on this page](https://keras.io/backend/).
 ## Examples
 
 The `examples/` folder contains additional scripts to showcase different uses
-of the CleverHans library.
+of the CleverHans library or get you started competing in different adversarial
+example contests.
 
 ## Reporting benchmarks
 
