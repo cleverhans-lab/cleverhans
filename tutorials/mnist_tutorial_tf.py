@@ -12,7 +12,6 @@ from __future__ import unicode_literals
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 import logging
 
@@ -342,4 +341,4 @@ if __name__ == '__main__':
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_bool('clean_train', True, 'Train on clean examples')
 
-    app.run()
+    tf.app.run()
