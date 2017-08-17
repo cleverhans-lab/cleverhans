@@ -7,7 +7,7 @@ from distutils.version import LooseVersion
 import math
 import numpy as np
 import os
-import six
+from six.moves import xrange
 import tensorflow as tf
 import time
 import warnings
@@ -151,7 +151,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                           "CleverHans may drop support for this version.")
             sess.run(tf.initialize_all_variables())
 
-        for epoch in six.moves.xrange(args.nb_epochs):
+        for epoch in xrange(args.nb_epochs):
             # Compute number of batches
             nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
             assert nb_batches * args.batch_size >= len(X_train)
@@ -312,13 +312,13 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, feed=None,
     assert n > 0
     assert n == len(tf_inputs)
     m = numpy_inputs[0].shape[0]
-    for i in six.moves.xrange(1, n):
+    for i in xrange(1, n):
         assert numpy_inputs[i].shape[0] == m
     out = []
     for _ in tf_outputs:
         out.append([])
     with sess.as_default():
-        for start in six.moves.xrange(0, m, args.batch_size):
+        for start in xrange(0, m, args.batch_size):
             batch = start // args.batch_size
             if batch % 100 == 0 and batch > 0:
                 _logger.debug("Batch " + str(batch))
