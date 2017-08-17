@@ -68,7 +68,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   test_end=test_end)
 
     # Use label smoothing
-    assert Y_train.shape[1] == 10.
+    assert Y_train.shape[1] == 10
     label_smooth = .1
     Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
 

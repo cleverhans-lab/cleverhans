@@ -27,7 +27,8 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
     """
     TensorFlow implementation of the Fast Gradient Method.
     :param x: the input placeholder
-    :param preds: the model's output tensor
+    :param preds: the model's output tensor (the attack expects the
+                  probabilities, i.e., the output of the softmax)
     :param y: (optional) A placeholder for the model labels. If targeted
               is true, then provide the target label. Otherwise, only provide
               this parameter if you'd like to use true labels when crafting
@@ -98,7 +99,8 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,
     adversarial training: https://arxiv.org/abs/1507.00677
     :param model: the model which returns the network unnormalized logits
     :param x: the input placeholder
-    :param logits: the model's unnormalized output tensor
+    :param logits: the model's unnormalized output tensor (the input to
+                   the softmax layer)
     :param eps: the epsilon (input variation parameter)
     :param num_iterations: the number of iterations
     :param xi: the finite difference parameter
@@ -255,8 +257,9 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
     for details about the algorithm design choices).
     :param sess: TF session
     :param x: the input placeholder
-    :param predictions: the model's symbolic output (linear output,
-        pre-softmax)
+    :param predictions: the model's symbolic output (the attack expects the
+                  probabilities, i.e., the output of the softmax, but will
+                  also work with logits typically)
     :param grads: symbolic gradients
     :param sample: numpy array with sample input
     :param target: target class for sample input
@@ -459,17 +462,16 @@ class CarliniWagnerL2(object):
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
 
-        :param x: (required) A tensor with the inputs.
-        :param y: (optional) A tensor with the true labels for an untargeted
-                  attack. If None (and y_target is None) then use the
-                  original labels the classifier assigns.
-        :param y_target: (optional) A tensor with the target labels for a
-                  targeted attack.
-        :param nb_classes: The number of classes the model has.
+        :param sess: a TF session.
+        :param model: a cleverhans.model.Model object.
+        :param batch_size: Number of attacks to run simultaneously.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
                            strongly classified as adversarial.
-        :param batch_size: Number of attacks to run simultaneously.
+        :param targeted: boolean controlling the behavior of the adversarial
+                         examples produced. If set to False, they will be
+                         misclassified in any wrong class. If set to True,
+                         they will be misclassified in a chosen target class.
         :param learning_rate: The learning rate for the attack algorithm.
                               Smaller values produce better results but are
                               slower to converge.
@@ -491,8 +493,10 @@ class CarliniWagnerL2(object):
                               If binary_search_steps is large, the initial
                               constant is not important. A smaller value of
                               this constant gives lower distortion results.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
+        :param clip_min: (optional float) Minimum input component value.
+        :param clip_max: (optional float) Maximum input component value.
+        :param num_labels: the number of classes in the model's output.
+        :param shape: the shape of the model's input tensor.
         """
 
         self.sess = sess
@@ -705,8 +709,9 @@ class CarliniWagnerL2(object):
             _logger.debug("  Successfully generated adversarial examples " +
                           "on {} of {} instances.".
                           format(sum(upper_bound < 1e9), batch_size))
-            mean = np.mean(np.sqrt(o_bestl2))
-            _logger.debug("   Mean distortion: {:.4g}".format(mean))
+            o_bestl2 = np.array(o_bestl2)
+            mean = np.mean(np.sqrt(o_bestl2[o_bestl2 < 1e9]))
+            _logger.debug("   Mean successful distortion: {:.4g}".format(mean))
 
         # return the best solution found
         o_bestl2 = np.array(o_bestl2)
