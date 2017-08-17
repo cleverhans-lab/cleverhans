@@ -106,7 +106,8 @@ setting the Keras backend [on this page](https://keras.io/backend/).
 ## Examples
 
 The `examples/` folder contains additional scripts to showcase different uses
-of the CleverHans library.
+of the CleverHans library or get you started competing in different adversarial
+example contests.
 
 ## Reporting benchmarks
 
