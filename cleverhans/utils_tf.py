@@ -15,9 +15,7 @@ import logging
 
 from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
 
-from tensorflow.python.platform import flags
-
-FLAGS = flags.FLAGS
+FLAGS = tf.app.flags.FLAGS
 
 _logger = create_logger("cleverhans.utils.tf")
 
