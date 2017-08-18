@@ -162,7 +162,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             assert nb_batches * args.batch_size >= len(X_train)
 
             # Indices to shuffle training set
-            index_shuf = range(len(X_train))
+            index_shuf = list(range(len(X_train)))
             shuffle(index_shuf)
 
             prev = time.time()
