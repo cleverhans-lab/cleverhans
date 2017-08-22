@@ -73,20 +73,20 @@ currently [test it](https://travis-ci.org/tensorflow/cleverhans) with Python
 ## Tutorials
 
 To help you get started with the functionalities provided by this library, the
-`tutorials/' folder comes with the following tutorials:
-* **MNIST with FGSM** ([code](tutorials/mnist_tutorial_tf.py)): this
+`cleverhans_tutorials/' folder comes with the following tutorials:
+* **MNIST with FGSM** ([code](cleverhans_tutorials/mnist_tutorial_tf.py)): this
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial examples using adversarial training.
-* **MNIST with FGSM using Keras** ([code](tutorials/mnist_tutorial_keras_tf.py)): this
+* **MNIST with FGSM using Keras** ([code](cleverhans_tutorials/mnist_tutorial_keras_tf.py)): this
 tutorial covers how to define a MNIST model with Keras and train it using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial
 examples using adversarial training.
-* **MNIST with JSMA** ([code](tutorials/mnist_tutorial_jsma.py)): this second
+* **MNIST with JSMA** ([code](cleverhans_tutorials/mnist_tutorial_jsma.py)): this second
 tutorial covers how to define a MNIST model with Keras and train it using TensorFlow and
 craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528).
-* **MNIST using a black-box attack** ([code](tutorials/mnist_blackbox.py)):
+* **MNIST using a black-box attack** ([code](cleverhans_tutorials/mnist_blackbox.py)):
 this tutorial implements the black-box
 attack described in this [paper](https://arxiv.org/abs/1602.02697).
 The adversary train a substitute model: a copy that imitates the black-box
