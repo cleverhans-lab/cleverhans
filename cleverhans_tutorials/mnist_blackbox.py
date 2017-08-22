@@ -18,8 +18,8 @@ from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
-from tutorials.tutorial_models import make_basic_cnn, MLP
-from tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
+from cleverhans_tutorials.tutorial_models import make_basic_cnn, MLP
+from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
 
 FLAGS = flags.FLAGS
 
