@@ -403,7 +403,7 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     Augment an adversary's substitute training set using the Jacobian
     of a substitute model to generate new synthetic inputs.
     See https://arxiv.org/abs/1602.02697 for more details.
-    See tutorials/mnist_blackbox.py for example use case
+    See cleverhans_tutorials/mnist_blackbox.py for example use case
     :param sess: TF session in which the substitute model is defined
     :param x: input TF placeholder for the substitute model
     :param X_sub_prev: substitute training data available to the adversary
