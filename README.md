@@ -1,4 +1,4 @@
-# CleverHans (v1.0.0)
+# CleverHans (v2.0.0)
 
 <img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
@@ -118,8 +118,8 @@ When reporting benchmarks, please:
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v1.0.0 of CleverHans. On a test set modified by the
-`fgsm` with `eps` of 0.3, we obtained a test set accuracy of 71.3%."
+adversarial attack using v2.0.0 of CleverHans. On a test set modified by the
+`FastGradientMethod` with a max-norm `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Contributing
 
@@ -145,9 +145,7 @@ If you use CleverHans for academic research, you are highly encouraged
   year={2016}
 }
 ```
-
-A new version of the technical report will be uploaded for each major
-revision. GitHub contributors will be added to the author list.
+There is not yet an ArXiv tech report for v2.0.0 but one will be prepared soon.
 
 ## About the name
 
@@ -171,11 +169,20 @@ This library is managed and maintained by Ian Goodfellow (Google Brain),
 Nicolas Papernot (Pennsylvania State University), and
 Ryan Sheatsley (Pennsylvania State University).
 
-The following authors contributed (ordered according to the GitHub contributors page):
-* Nicolas Papernot (Pennsylvania State University)
-* Ian Goodfellow (OpenAI)
-* Ryan Sheatsley (Pennsylvania State University)
+The following authors contributed 100 lines or more (ordered according to the GitHub contributors page):
+* Nicolas Papernot (Pennsylvania State University, Google Brain intern)
+* Nicholas Carlini (UC Berkeley)
+* Ian Goodfellow (Google Brain)
 * Reuben Feinman (Symantec)
+* Fartash Faghri (University of Toronto, Google Brain intern)
+* Alexander Matyasko (Nanyang Technological University)
+* Karen Hambardzumyan (YerevaNN)
+* Yi-Lin Juang (NTUEE)
+* Alexey Kurakin (Google Brain)
+* Ryan Sheatsley (Pennsylvania State University)
+* Abhibhav Garg (IIT Delhi)
+* Yen-Chen Lin (National Tsing Hua University)
+* Paul Hendricks
 
 ## Copyright
 
