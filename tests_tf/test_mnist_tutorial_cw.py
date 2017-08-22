@@ -3,7 +3,7 @@ import unittest
 
 class TestMNISTTutorialCW(unittest.TestCase):
     def test_mnist_tutorial_cw(self):
-        from tutorials import mnist_tutorial_cw
+        from cleverhans_tutorials import mnist_tutorial_cw
 
         # Run the MNIST tutorial on a dataset of reduced size
         # and disable visualization.
