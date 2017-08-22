@@ -4,7 +4,7 @@ import numpy as np
 
 class TestMNISTBlackboxF(unittest.TestCase):
     def test_mnist_blackbox(self):
-        from tutorials import mnist_blackbox
+        from cleverhans_tutorials import mnist_blackbox
 
         np.random.seed(42)
         import tensorflow as tf
