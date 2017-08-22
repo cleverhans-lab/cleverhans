@@ -14,7 +14,7 @@ from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
 import logging
-from random import shuffle
+import random
 
 from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
 
@@ -163,7 +163,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
             # Indices to shuffle training set
             index_shuf = list(range(len(X_train)))
-            shuffle(index_shuf)
+            random.shuffle(index_shuf)
 
             prev = time.time()
             for batch in range(nb_batches):
