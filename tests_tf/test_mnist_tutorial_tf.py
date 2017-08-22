@@ -9,7 +9,7 @@ class TestMNISTTutorialTF(unittest.TestCase):
         import tensorflow as tf
         tf.set_random_seed(42)
 
-        from tutorials import mnist_tutorial_tf
+        from cleverhans_tutorials import mnist_tutorial_tf
 
         # Run the MNIST tutorial on a dataset of reduced size
         test_dataset_indices = {'train_start': 0,
