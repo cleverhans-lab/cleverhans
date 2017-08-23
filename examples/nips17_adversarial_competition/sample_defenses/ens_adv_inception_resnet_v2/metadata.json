@@ -1,0 +1,6 @@
+{
+  "type": "defense",
+  "container": "gcr.io/tensorflow/tensorflow:1.1.0",
+  "container_gpu": "gcr.io/tensorflow/tensorflow:1.1.0-gpu",
+  "entry_point": "run_defense.sh"
+}
