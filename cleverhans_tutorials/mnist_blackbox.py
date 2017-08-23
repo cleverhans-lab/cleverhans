@@ -20,6 +20,7 @@ from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
 from cleverhans_tutorials.tutorial_models import make_basic_cnn, MLP
 from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
+import random
 
 FLAGS = flags.FLAGS
 
@@ -32,6 +33,7 @@ def setup_tutorial():
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
+    random.seed(1234)
 
     return True
 

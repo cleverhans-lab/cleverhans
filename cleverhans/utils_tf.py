@@ -14,6 +14,7 @@ from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
 import logging
+import random
 
 from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
 
@@ -160,6 +161,10 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
             assert nb_batches * args.batch_size >= len(X_train)
 
+            # Indices to shuffle training set
+            index_shuf = list(range(len(X_train)))
+            random.shuffle(index_shuf)
+
             prev = time.time()
             for batch in range(nb_batches):
 
@@ -168,7 +173,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                     batch, len(X_train), args.batch_size)
 
                 # Perform one training step
-                feed_dict = {x: X_train[start:end], y: Y_train[start:end]}
+                feed_dict = {x: X_train[index_shuf[start:end]],
+                             y: Y_train[index_shuf[start:end]]}
                 if feed is not None:
                     feed_dict.update(feed)
                 train_step.run(feed_dict=feed_dict)
