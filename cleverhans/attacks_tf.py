@@ -64,26 +64,32 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
 
     if ord == np.inf:
         # Take sign of gradient
-        signed_grad = tf.sign(grad)
+        normalized_grad = tf.sign(grad)
+        # The following line should not change the numerical results.
+        # It applies only because `normalized_grad` is the output of
+        # a `sign` op, which has zero derivative anyway.
+        # It should not be applied for the other norms, where the
+        # perturbation has a non-zero derivative.
+        normalized_grad = tf.stop_gradient(normalized_grad)
     elif ord == 1:
         reduc_ind = list(xrange(1, len(x.get_shape())))
-        signed_grad = grad / tf.reduce_sum(tf.abs(grad),
-                                           reduction_indices=reduc_ind,
-                                           keep_dims=True)
+        normalized_grad = grad / tf.reduce_sum(tf.abs(grad),
+                                               reduction_indices=reduc_ind,
+                                               keep_dims=True)
     elif ord == 2:
         reduc_ind = list(xrange(1, len(x.get_shape())))
-        signed_grad = grad / tf.sqrt(tf.reduce_sum(tf.square(grad),
-                                                   reduction_indices=reduc_ind,
-                                                   keep_dims=True))
+        normalized_grad = grad / tf.sqrt(tf.reduce_sum(tf.square(grad),
+                                                       reduction_indices=reduc_ind,
+                                                       keep_dims=True))
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
                                   "currently implemented.")
 
     # Multiply by constant epsilon
-    scaled_signed_grad = eps * signed_grad
+    scaled_grad = eps * normalized_grad
 
     # Add perturbation to original example to obtain adversarial example
-    adv_x = tf.stop_gradient(x + scaled_signed_grad)
+    adv_x = x + normalized_grad
 
     # If clipping is needed, reset all values outside of [clip_min, clip_max]
     if (clip_min is not None) and (clip_max is not None):
@@ -317,7 +323,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
                                               nb_features, nb_classes,
                                               feed=feed)
 
-        if iteration % ((max_iters+1)//5) == 0 and iteration > 0:
+        if iteration % ((max_iters + 1) // 5) == 0 and iteration > 0:
             _logger.debug("Iteration {} of {}".format(iteration,
                                                       int(max_iters)))
         # Compute the saliency map for each of our target classes
@@ -446,13 +452,14 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
         grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
 
         # Create new synthetic point in adversary substitute training set
-        X_sub[2*ind] = X_sub[ind] + lmbda * grad_val
+        X_sub[2 * ind] = X_sub[ind] + lmbda * grad_val
 
     # Return augmented training data (needs to be labeled afterwards)
     return X_sub
 
 
 class CarliniWagnerL2(object):
+
     def __init__(self, sess, model, batch_size, confidence,
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
@@ -514,7 +521,7 @@ class CarliniWagnerL2(object):
 
         self.repeat = binary_search_steps >= 10
 
-        self.shape = shape = tuple([batch_size]+list(shape))
+        self.shape = shape = tuple([batch_size] + list(shape))
 
         # the variable we're going to optimize over
         modifier = tf.Variable(np.zeros(shape, dtype=np.float32))
@@ -537,33 +544,35 @@ class CarliniWagnerL2(object):
 
         # the resulting instance, tanh'd to keep bounded from clip_min
         # to clip_max
-        self.newimg = (tf.tanh(modifier + self.timg)+1)/2
-        self.newimg = self.newimg*(clip_max-clip_min)+clip_min
+        self.newimg = (tf.tanh(modifier + self.timg) + 1) / 2
+        self.newimg = self.newimg * (clip_max - clip_min) + clip_min
 
         # prediction BEFORE-SOFTMAX of the model
         self.output = model.get_logits(self.newimg)
 
         # distance to the input data
-        self.other = (tf.tanh(self.timg) + 1) / 2*(clip_max-clip_min)+clip_min
+        self.other = (tf.tanh(self.timg) + 1) / \
+            2 * (clip_max - clip_min) + clip_min
         self.l2dist = tf.reduce_sum(tf.square(self.newimg - self.other),
                                     list(range(1, len(shape))))
 
         # compute the probability of the label class versus the maximum other
         real = tf.reduce_sum((self.tlab) * self.output, 1)
-        other = tf.reduce_max((1 - self.tlab) * self.output - self.tlab*10000,
-                              1)
+        other = tf.reduce_max(
+            (1 - self.tlab) * self.output - self.tlab * 10000,
+            1)
 
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
-            loss1 = tf.maximum(0.0, other-real+self.CONFIDENCE)
+            loss1 = tf.maximum(0.0, other - real + self.CONFIDENCE)
         else:
             # if untargeted, optimize for making this class least likely.
-            loss1 = tf.maximum(0.0, real-other+self.CONFIDENCE)
+            loss1 = tf.maximum(0.0, real - other + self.CONFIDENCE)
 
         # sum up the losses
         self.loss2 = tf.reduce_sum(self.l2dist)
-        self.loss1 = tf.reduce_sum(self.const*loss1)
-        self.loss = self.loss1+self.loss2
+        self.loss1 = tf.reduce_sum(self.const * loss1)
+        self.loss = self.loss1 + self.loss2
 
         # Setup the adam optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
@@ -578,7 +587,7 @@ class CarliniWagnerL2(object):
         self.setup.append(self.tlab.assign(self.assign_tlab))
         self.setup.append(self.const.assign(self.assign_const))
 
-        self.init = tf.variables_initializer(var_list=[modifier]+new_vars)
+        self.init = tf.variables_initializer(var_list=[modifier] + new_vars)
 
     def attack(self, imgs, targets):
         """
@@ -592,8 +601,8 @@ class CarliniWagnerL2(object):
         for i in range(0, len(imgs), self.batch_size):
             _logger.debug(("Running CWL2 attack on instance " +
                            "{} of {}").format(i, len(imgs)))
-            r.extend(self.attack_batch(imgs[i:i+self.batch_size],
-                                       targets[i:i+self.batch_size]))
+            r.extend(self.attack_batch(imgs[i:i + self.batch_size],
+                                       targets[i:i + self.batch_size]))
         return np.array(r)
 
     def attack_batch(self, imgs, labs):
@@ -618,21 +627,21 @@ class CarliniWagnerL2(object):
         oimgs = np.clip(imgs, self.clip_min, self.clip_max)
 
         # re-scale instances to be within range [0, 1]
-        imgs = (imgs-self.clip_min)/(self.clip_max-self.clip_min)
+        imgs = (imgs - self.clip_min) / (self.clip_max - self.clip_min)
         imgs = np.clip(imgs, 0, 1)
         # now convert to [-1, 1]
-        imgs = (imgs*2)-1
+        imgs = (imgs * 2) - 1
         # convert to tanh-space
-        imgs = np.arctanh(imgs*.999999)
+        imgs = np.arctanh(imgs * .999999)
 
         # set the lower and upper bounds accordingly
         lower_bound = np.zeros(batch_size)
-        CONST = np.ones(batch_size)*self.initial_const
-        upper_bound = np.ones(batch_size)*1e10
+        CONST = np.ones(batch_size) * self.initial_const
+        upper_bound = np.ones(batch_size) * 1e10
 
         # placeholders for the best l2, score, and instance attack found so far
-        o_bestl2 = [1e10]*batch_size
-        o_bestscore = [-1]*batch_size
+        o_bestl2 = [1e10] * batch_size
+        o_bestscore = [-1] * batch_size
         o_bestattack = np.copy(oimgs)
 
         for outer_step in range(self.BINARY_SEARCH_STEPS):
@@ -641,13 +650,13 @@ class CarliniWagnerL2(object):
             batch = imgs[:batch_size]
             batchlab = labs[:batch_size]
 
-            bestl2 = [1e10]*batch_size
-            bestscore = [-1]*batch_size
+            bestl2 = [1e10] * batch_size
+            bestscore = [-1] * batch_size
             _logger.debug("  Binary search step {} of {}".
                           format(outer_step, self.BINARY_SEARCH_STEPS))
 
             # The last iteration (if we run many steps) repeat the search once.
-            if self.repeat and outer_step == self.BINARY_SEARCH_STEPS-1:
+            if self.repeat and outer_step == self.BINARY_SEARCH_STEPS - 1:
                 CONST = upper_bound
 
             # set the variables so that we don't have to send them over again
@@ -673,7 +682,7 @@ class CarliniWagnerL2(object):
                 # check if we should abort search if we're getting nowhere.
                 if self.ABORT_EARLY and \
                    iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
-                    if l > prev*.9999:
+                    if l > prev * .9999:
                         msg = "    Failed to make progress; stop early"
                         _logger.debug(msg)
                         break
@@ -697,13 +706,13 @@ class CarliniWagnerL2(object):
                     # success, divide const by two
                     upper_bound[e] = min(upper_bound[e], CONST[e])
                     if upper_bound[e] < 1e9:
-                        CONST[e] = (lower_bound[e] + upper_bound[e])/2
+                        CONST[e] = (lower_bound[e] + upper_bound[e]) / 2
                 else:
                     # failure, either multiply by 10 if no solution found yet
                     #          or do binary search with the known upper bound
                     lower_bound[e] = max(lower_bound[e], CONST[e])
                     if upper_bound[e] < 1e9:
-                        CONST[e] = (lower_bound[e] + upper_bound[e])/2
+                        CONST[e] = (lower_bound[e] + upper_bound[e]) / 2
                     else:
                         CONST[e] *= 10
             _logger.debug("  Successfully generated adversarial examples " +
