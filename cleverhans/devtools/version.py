@@ -16,7 +16,7 @@ def dev_version():
     m = hashlib.md5()
     py_files = sorted(list_files(suffix=".py"))
     for filename in py_files:
-        with open(filename, 'r') as f:
-            content = f.read()
+        with open(filename, 'rb') as f:
+          content = f.read()
         m.update(content)
     return m.hexdigest()
