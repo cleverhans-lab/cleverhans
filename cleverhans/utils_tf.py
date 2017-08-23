@@ -7,10 +7,8 @@ from distutils.version import LooseVersion
 import math
 import numpy as np
 import os
-import six
+from six.moves import xrange
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
-from tensorflow.python.ops.losses.util import add_loss
 import time
 import warnings
 import logging
@@ -18,9 +16,7 @@ import random
 
 from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
 
-from tensorflow.python.platform import flags
-
-FLAGS = flags.FLAGS
+FLAGS = tf.app.flags.FLAGS
 
 _logger = create_logger("cleverhans.utils.tf")
 
@@ -156,7 +152,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                           "CleverHans may drop support for this version.")
             sess.run(tf.initialize_all_variables())
 
-        for epoch in six.moves.xrange(args.nb_epochs):
+        for epoch in xrange(args.nb_epochs):
             # Compute number of batches
             nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
             assert nb_batches * args.batch_size >= len(X_train)
@@ -322,13 +318,13 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, feed=None,
     assert n > 0
     assert n == len(tf_inputs)
     m = numpy_inputs[0].shape[0]
-    for i in six.moves.xrange(1, n):
+    for i in xrange(1, n):
         assert numpy_inputs[i].shape[0] == m
     out = []
     for _ in tf_outputs:
         out.append([])
     with sess.as_default():
-        for start in six.moves.xrange(0, m, args.batch_size):
+        for start in xrange(0, m, args.batch_size):
             batch = start // args.batch_size
             if batch % 100 == 0 and batch > 0:
                 _logger.debug("Batch " + str(batch))
@@ -390,7 +386,7 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
     """
     with tf.name_scope(scope, "l2_batch_normalize") as scope:
         x_shape = tf.shape(x)
-        x = slim.flatten(x)
+        x = tf.contrib.layers.flatten(x)
         x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keep_dims=True))
         square_sum = tf.reduce_sum(tf.square(x), 1, keep_dims=True)
         x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
@@ -408,5 +404,5 @@ def kl_with_logits(p_logits, q_logits, scope=None,
         q_log = tf.nn.log_softmax(q_logits)
         loss = tf.reduce_mean(tf.reduce_sum(p * (p_log - q_log), axis=1),
                               name=name)
-        add_loss(loss, loss_collection)
+        tf.losses.add_loss(loss, loss_collection)
         return loss

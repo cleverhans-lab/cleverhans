@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import keras
 from keras import backend
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
@@ -194,4 +193,4 @@ if __name__ == '__main__':
     flags.DEFINE_string('train_dir', '/tmp', 'Directory where to save model.')
     flags.DEFINE_string('filename', 'mnist.ckpt', 'Checkpoint filename.')
     flags.DEFINE_boolean('load_model', True, 'Load saved model or train.')
-    app.run()
+    tf.app.run()

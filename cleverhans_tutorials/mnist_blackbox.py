@@ -8,7 +8,6 @@ from six.moves import xrange
 
 import logging
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
@@ -269,4 +268,4 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for substitute')
     flags.DEFINE_float('lmbda', 0.1, 'Lambda from arxiv.org/abs/1602.02697')
 
-    app.run()
+    tf.app.run()

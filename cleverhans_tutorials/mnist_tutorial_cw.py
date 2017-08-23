@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 import logging
@@ -212,4 +211,4 @@ if __name__ == '__main__':
     flags.DEFINE_boolean('targeted', True,
                          'Run the tutorial in targeted mode?')
 
-    app.run()
+    tf.app.run()
