@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import keras
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
@@ -16,6 +15,8 @@ from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
 from cleverhans.utils_keras import KerasModelWrapper, cnn_model
+from cleverhans_tutorials.tutorial_models import make_basic_cnn
+import random
 
 FLAGS = flags.FLAGS
 
@@ -46,22 +47,13 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     img_cols = 28
     channels = 1
 
-    # Disable Keras learning phase since we will be serving through tensorflow
-    keras.layers.core.K.set_learning_phase(0)
-
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
-
-    # Image dimensions ordering should follow the TensorFlow convention
-    if keras.backend.image_dim_ordering() != 'tf':
-        keras.backend.set_image_dim_ordering('tf')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
-              "to 'th', temporarily setting to 'tf'")
+    random.seed(1234)
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
-    keras.backend.set_session(sess)
-    print("Created TensorFlow session and set Keras backend.")
+    print("Created TensorFlow session.")
 
     set_log_level(logging.DEBUG)
 
@@ -76,7 +68,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
-    model = cnn_model()
+    model = make_basic_cnn()
     preds = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -117,8 +109,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Instantiate a SaliencyMapMethod attack object
-    wrap = KerasModelWrapper(model)
-    jsma = SaliencyMapMethod(wrap, back='tf', sess=sess)
+    jsma = SaliencyMapMethod(model, back='tf', sess=sess)
     jsma_params = {'theta': 1., 'gamma': 0.1,
                    'clip_min': 0., 'clip_max': 1.,
                    'y_target': None}
