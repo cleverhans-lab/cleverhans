@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 import logging
 
@@ -210,4 +209,4 @@ if __name__ == '__main__':
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
-    app.run()
+    tf.app.run()
