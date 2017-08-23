@@ -14,6 +14,7 @@ from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
+import random
 
 FLAGS = flags.FLAGS
 
@@ -45,6 +46,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
+    random.seed(1234)
 
     if not hasattr(backend, "tf"):
         raise RuntimeError("This tutorial requires keras to be configured"
