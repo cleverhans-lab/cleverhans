@@ -17,6 +17,7 @@ from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, tf_model_load
 from cleverhans_tutorials.tutorial_models import make_basic_cnn
+import random
 
 FLAGS = flags.FLAGS
 
@@ -53,6 +54,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
+    random.seed(1234)
 
     # Create TF session
     sess = tf.Session()
