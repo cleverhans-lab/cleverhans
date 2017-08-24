@@ -69,7 +69,7 @@ Toolkit includes examples of attacks and defenses in the following directories:
     class attack. This is not particularly good targeted attack, but it
     demonstrates how targeted attack could be written.
   * `sample_targeted_attacks/iter_target_class/` - iterative target class
-    attack. This is pretty good white-box attack,
+    attack. This is a pretty good white-box attack,
     but it does not do well in black box setting.
 * `sample_defenses/` - directory with examples of defenses:
   * `sample_defenses/base_inception_model/` - baseline inception classifier,
