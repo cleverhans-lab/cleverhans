@@ -17,6 +17,6 @@ def dev_version():
     py_files = sorted(list_files(suffix=".py"))
     for filename in py_files:
         with open(filename, 'rb') as f:
-          content = f.read()
+            content = f.read()
         m.update(content)
     return m.hexdigest()
