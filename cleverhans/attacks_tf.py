@@ -89,7 +89,7 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
     scaled_grad = eps * normalized_grad
 
     # Add perturbation to original example to obtain adversarial example
-    adv_x = x + normalized_grad
+    adv_x = x + scaled_grad
 
     # If clipping is needed, reset all values outside of [clip_min, clip_max]
     if (clip_min is not None) and (clip_max is not None):
