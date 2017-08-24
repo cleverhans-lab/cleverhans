@@ -126,7 +126,7 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,
             Hd = tf.gradients(kl, d)[0]
             d = tf.stop_gradient(Hd)
         d = eps * utils_tf.l2_batch_normalize(d)
-        adv_x = tf.stop_gradient(x + d)
+        adv_x = x + d
         if (clip_min is not None) and (clip_max is not None):
             adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
         return adv_x
