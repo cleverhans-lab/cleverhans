@@ -78,7 +78,7 @@ Toolkit includes examples of attacks and defenses in the following directories:
     model from [Adversarial Machine Learning at
     Scale](https://arxiv.org/abs/1611.01236) paper.
   * `sample_defenses/ens_adv_inception_resnet_v2/` - Inception ResNet v2
-    model which is adversarially trained against ensemble of different
+    model which is adversarially trained against an ensemble of different
     kind of adversarial examples. Model is described in
     [Ensemble Adversarial Training: Attacks and
     Defenses](https://arxiv.org/abs/1705.07204) paper.
