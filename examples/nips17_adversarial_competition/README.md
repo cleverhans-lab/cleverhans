@@ -68,9 +68,20 @@ Toolkit includes examples of attacks and defenses in the following directories:
   * `sample_targeted_attacks/step_target_class/` - one step towards target
     class attack. This is not particularly good targeted attack, but it
     demonstrates how targeted attack could be written.
+  * `sample_targeted_attacks/iter_target_class/` - iterative target class
+    attack. This is pretty good white-box attack,
+    but it does not do well in black box setting.
 * `sample_defenses/` - directory with examples of defenses:
   * `sample_defenses/base_inception_model/` - baseline inception classifier,
     which actually does not provide any defense against adversarial examples.
+  * `sample_defenses/adv_inception_v3/` - adversarially trained Inception v3
+    model from [Adversarial Machine Learning at
+    Scale](https://arxiv.org/abs/1611.01236) paper.
+  * `sample_defenses/ens_adv_inception_resnet_v2/` - Inception ResNet v2
+    model which is adversarially trained against ensemble of different
+    kind of adversarial examples. Model is described in
+    [Ensemble Adversarial Training: Attacks and
+    Defenses](https://arxiv.org/abs/1705.07204) paper.
 
 ### Structure of attacks and defenses
 
