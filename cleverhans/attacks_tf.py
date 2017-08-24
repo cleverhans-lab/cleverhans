@@ -72,15 +72,16 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
         # perturbation has a non-zero derivative.
         normalized_grad = tf.stop_gradient(normalized_grad)
     elif ord == 1:
-        reduc_ind = list(xrange(1, len(x.get_shape())))
+        red_ind = list(xrange(1, len(x.get_shape())))
         normalized_grad = grad / tf.reduce_sum(tf.abs(grad),
-                                               reduction_indices=reduc_ind,
+                                               reduction_indices=red_ind,
                                                keep_dims=True)
     elif ord == 2:
-        reduc_ind = list(xrange(1, len(x.get_shape())))
-        normalized_grad = grad / tf.sqrt(tf.reduce_sum(tf.square(grad),
-                                                       reduction_indices=reduc_ind,
-                                                       keep_dims=True))
+        red_ind = list(xrange(1, len(x.get_shape())))
+        square = tf.reduce_sum(tf.square(grad),
+                               reduction_indices=red_ind,
+                               keep_dims=True)
+        normalized_grad = grad / tf.sqrt(square)
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
                                   "currently implemented.")
