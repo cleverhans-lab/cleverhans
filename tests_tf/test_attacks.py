@@ -15,7 +15,23 @@ from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.attacks import CarliniWagnerL2
 
 
-class TestAttackClassInitArguments(unittest.TestCase):
+class CleverHansTest(unittest.TestCase):
+    def setUp(self):
+        self.test_start = time.time()
+        # seed the randomness
+        np.random.seed(1234)
+
+    def tearDown(self):
+        print(self.id(), "took", time.time() - self.test_start, "seconds")
+
+    def assertClose(self, x, y):
+        # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
+        # on failure
+        assert np.allclose(x, y), (x, y)
+
+
+class TestAttackClassInitArguments(CleverHansTest):
+
     def test_model(self):
         import tensorflow as tf
         sess = tf.Session()
@@ -58,7 +74,7 @@ class TestAttackClassInitArguments(unittest.TestCase):
         self.assertTrue(context.exception)
 
 
-class TestParseParams(unittest.TestCase):
+class TestParseParams(CleverHansTest):
     def test_parse(self):
         def model():
             return True
@@ -68,16 +84,6 @@ class TestParseParams(unittest.TestCase):
 
         test_attack = Attack(model, back='tf', sess=sess)
         self.assertTrue(test_attack.parse_params({}))
-
-
-class CleverHansTest(unittest.TestCase):
-    def setUp(self):
-        self.test_start = time.time()
-        # seed the randomness
-        np.random.seed(1234)
-
-    def tearDown(self):
-        print(self.id(), "took", time.time() - self.test_start, "seconds")
 
 
 class TestVirtualAdversarialMethod(CleverHansTest):
@@ -114,7 +120,7 @@ class TestVirtualAdversarialMethod(CleverHansTest):
         perturbation = self.attack.generate_np(x_val) - x_val
         perturbation_norm = np.sqrt(np.sum(perturbation**2, axis=1))
         # test perturbation norm
-        self.assertTrue(np.allclose(perturbation_norm, self.attack.eps))
+        self.assertClose(perturbation_norm, self.attack.eps)
 
 
 class TestFastGradientMethod(CleverHansTest):
@@ -146,7 +152,7 @@ class TestFastGradientMethod(CleverHansTest):
             delta = np.sum(np.abs(x_adv - x_val), axis=1)
         elif ord == 2:
             delta = np.sum(np.square(x_adv - x_val), axis=1)**.5
-        self.assertTrue(np.allclose(delta, 0.5))
+        self.assertClose(delta, 0.5)
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -173,7 +179,7 @@ class TestFastGradientMethod(CleverHansTest):
                                         y_target=random_labs_one_hot)
 
         delta = np.max(np.abs(x_adv - x_val), axis=1)
-        self.assertTrue(np.allclose(delta, 0.5))
+        self.assertClose(delta, 0.5)
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -188,7 +194,7 @@ class TestFastGradientMethod(CleverHansTest):
                                             clip_min=-5.0, clip_max=5.0)
 
             delta = np.max(np.abs(x_adv - x_val), axis=1)
-            self.assertTrue(np.allclose(delta, eps))
+            self.assertClose(delta, eps)
 
     def test_generate_np_clip_works_as_expected(self):
         x_val = np.random.rand(100, 2)
@@ -197,8 +203,8 @@ class TestFastGradientMethod(CleverHansTest):
         x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
                                         clip_min=-0.2, clip_max=0.1)
 
-        self.assertTrue(np.isclose(np.min(x_adv), -0.2))
-        self.assertTrue(np.isclose(np.max(x_adv), 0.1))
+        self.assertClose(np.min(x_adv), -0.2)
+        self.assertClose(np.max(x_adv), 0.1)
 
     def test_generate_np_caches_graph_computation_for_eps_clip_or_xi(self):
         import tensorflow as tf

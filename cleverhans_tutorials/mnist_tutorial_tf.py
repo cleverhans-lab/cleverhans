@@ -38,7 +38,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
                    learning_rate=0.001,
                    clean_train=True,
-                   testing=False):
+                   testing=False,
+                   backprop_through_attack=False):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -119,6 +120,14 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         fgsm = FastGradientMethod(model, sess=sess)
 
         adv_x = fgsm.generate(x, **fgsm_params)
+        if not backprop_through_attack:
+            # For the fgsm attack used in this tutorial, the attack has zero
+            # gradient so enabling this flag does not change the gradient.
+            # For some other attacks, enabling this flag increases the cost of
+            # training, but gives the defender the ability to anticipate how
+            # the atacker will change their strategy in response to updates to
+            # the defender's parameters.
+            adv_x = tf.stop_gradient(adv_x)
         preds_adv = model.get_probs(adv_x)
 
         # Evaluate the accuracy of the MNIST model on adversarial examples
@@ -176,7 +185,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 def main(argv=None):
     mnist_tutorial(nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
                    learning_rate=FLAGS.learning_rate,
-                   clean_train=FLAGS.clean_train)
+                   clean_train=FLAGS.clean_train,
+                   backprop_through_attack=FLAGS.backprop_through_attack)
 
 
 if __name__ == '__main__':
@@ -184,5 +194,8 @@ if __name__ == '__main__':
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_bool('clean_train', True, 'Train on clean examples')
+    flags.DEFINE_bool('backprop_through_attack', False,
+                      ('If True, backprop through adversarial example '
+                       'construction process during adversarial training'))
 
     tf.app.run()
