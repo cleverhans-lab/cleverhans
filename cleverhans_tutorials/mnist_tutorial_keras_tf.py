@@ -122,6 +122,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     fgsm = FastGradientMethod(wrap, sess=sess)
     fgsm_params = {'eps': 0.3}
     adv_x = fgsm.generate(x, **fgsm_params)
+    # Consider the attack to be constant
+    adv_x = tf.stop_gradient(adv_x)
     preds_adv = model(adv_x)
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
