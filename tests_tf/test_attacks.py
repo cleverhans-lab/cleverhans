@@ -14,6 +14,7 @@ from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.attacks import CarliniWagnerL2
 
+
 class CleverHansTest(unittest.TestCase):
     def setUp(self):
         self.test_start = time.time()
@@ -24,9 +25,10 @@ class CleverHansTest(unittest.TestCase):
         print(self.id(), "took", time.time() - self.test_start, "seconds")
 
     def assertClose(self, x, y):
-      # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
-      # on failure
-      assert np.allclose(x, y), (x, y)
+        # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
+        # on failure
+        assert np.allclose(x, y), (x, y)
+
 
 class TestAttackClassInitArguments(CleverHansTest):
 
@@ -82,8 +84,6 @@ class TestParseParams(CleverHansTest):
 
         test_attack = Attack(model, back='tf', sess=sess)
         self.assertTrue(test_attack.parse_params({}))
-
-
 
 
 class TestVirtualAdversarialMethod(CleverHansTest):
