@@ -1,33 +1,30 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+"""Tests of cleverhans.attacks_tf
 
+"""
 import numpy as np
-import unittest
 import tensorflow as tf
+from cleverhans.attacks_tf import fgm
+from cleverhans.devtools.mocks import random_feed_dict
 
-from cleverhans import attacks_tf
 
-class TestAttacksTF(unittest.TestCase):
-    def test_jsma_batch_with_feed(self):
-        with tf.Session() as sess:
-            X = np.random.rand(1, 13)
-
-            # construct a simple graph that will require extra placeholders
-            x = tf.placeholder('float', shape=(None, 13))
-            keep_prob = tf.placeholder('float')
-            W = tf.Variable(tf.random_normal([13, 10]))
-            b = tf.Variable(tf.random_normal([10]))
-            logits = tf.nn.dropout(tf.add(tf.matmul(x, W), b),
-                                   keep_prob=keep_prob)
-            sess.run(tf.global_variables_initializer())
-
-            # jsma should work without generating an error
-            jacobian = attacks_tf.jacobian_graph(logits, x, 10)
-            attacks_tf.jsma_batch(sess, x, logits, jacobian, X, theta=1.,
-                                  gamma=0.25, clip_min=0, clip_max=1,
-                                  nb_classes=10, feed={keep_prob: 1.0})
-
-if __name__ == '__main__':
-    unittest.main()
+def test_fgm_gradient_max():
+    input_dim = 2
+    num_classes = 3
+    batch_size = 4
+    rng = np.random.RandomState([2017, 8, 23])
+    x = tf.placeholder(tf.float32, [batch_size, input_dim])
+    weights = tf.placeholder(tf.float32, [input_dim, num_classes])
+    logits = tf.matmul(x, weights)
+    probs = tf.nn.softmax(logits)
+    adv_x = fgm(x, probs)
+    random_example = rng.randint(batch_size)
+    random_feature = rng.randint(input_dim)
+    output = tf.slice(adv_x, [random_example, random_feature], [1, 1])
+    dx, = tf.gradients(output, x)
+    # The following line catches GitHub issue #243
+    assert dx is not None
+    sess = tf.Session()
+    dx = sess.run(dx, feed_dict=random_feed_dict(rng, [x, weights]))
+    ground_truth = np.zeros((batch_size, input_dim))
+    ground_truth[random_example, random_feature] = 1.
+    assert np.allclose(dx, ground_truth), (dx, ground_truth)
