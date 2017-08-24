@@ -121,13 +121,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
         adv_x = fgsm.generate(x, **fgsm_params)
         if not backprop_through_attack:
-          # For the fgsm attack used in this tutorial, the attack has zero
-          # gradient so enabling this flag does not change the gradient.
-          # For some other attacks, enabling this flag increases the cost of
-          # training, but gives the defender the ability to anticipate how the
-          # atacker will change their strategy in response to updates to the
-          # defender's parameters.
-          adv_x = tf.stop_gradient(adv_x)
+            # For the fgsm attack used in this tutorial, the attack has zero
+            # gradient so enabling this flag does not change the gradient.
+            # For some other attacks, enabling this flag increases the cost of
+            # training, but gives the defender the ability to anticipate how
+            # the atacker will change their strategy in response to updates to
+            # the defender's parameters.
+            adv_x = tf.stop_gradient(adv_x)
         preds_adv = model.get_probs(adv_x)
 
         # Evaluate the accuracy of the MNIST model on adversarial examples
