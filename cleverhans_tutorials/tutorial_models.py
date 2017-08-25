@@ -103,8 +103,8 @@ class Conv2D(Layer):
         self.output_shape = tuple(output_shape)
 
     def fprop(self, x):
-        return tf.nn.conv2d(x, self.kernels,
-                            (1,) + tuple(self.strides) + (1,), self.padding)
+        return tf.nn.conv2d(x, self.kernels, (1,) + tuple(self.strides) + (1,),
+                            self.padding) + self.b
 
 
 class ReLU(Layer):
