@@ -1,9 +1,9 @@
 
 # Submission validation tool
 
-This tool could be used to verify whether submission file is valid or not.
-It extracts submission, verifies presense and vailidty of metadata and runs
-submission on sample data.
+This tool verifies that a submission file is valid or reports an error.
+It extracts the submission, verifies presence and validity of metadata and runs
+the submission on sample data.
 
 Usage is following:
 
