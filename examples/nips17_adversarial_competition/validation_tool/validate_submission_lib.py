@@ -1,4 +1,4 @@
-"""Helper library which perform validation of the submission."""
+"""Helper library which performs validation of the submission."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -83,7 +83,7 @@ def make_directory_writable(dirname):
   Returns:
     True if operation was successfull
 
-  If you run something inside Docker contains and it writes files, then
+  If you run something inside Docker container and it writes files, then
   these files will be written as root user with restricted permissions.
   So to be able to read/modify these files outside of Docker you have to change
   permissions to be world readable and writable.
@@ -180,7 +180,7 @@ class SubmissionValidator(object):
                    'the archive', root_dir_content[0])
       root_dir = os.path.join(root_dir, root_dir_content[0])
     # Move files to self._extracted_submission_dir.
-    # At this point self._extracted_submission_dir does not exists,
+    # At this point self._extracted_submission_dir does not exist,
     # so following command will simply rename root_dir into
     # self._extracted_submission_dir
     if not shell_call(['mv', root_dir, self._extracted_submission_dir]):
