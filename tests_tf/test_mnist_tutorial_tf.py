@@ -21,10 +21,10 @@ class TestMNISTTutorialTF(unittest.TestCase):
         report = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
 
         # Check accuracy values contained in the AccuracyReport object
-        self.assertTrue(report.train_clean_train_clean_eval > 0.97)
-        self.assertTrue(report.train_clean_train_adv_eval < 0.02)
-        self.assertTrue(report.train_adv_train_clean_eval > 0.95)
-        self.assertTrue(report.train_adv_train_adv_eval > 0.5)
+        self.assertGreater(report.train_clean_train_clean_eval, 0.97)
+        self.assertLess(report.train_clean_train_adv_eval, 0.02)
+        self.assertGreater(report.train_adv_train_clean_eval, 0.95)
+        self.assertGreater(report.train_adv_train_adv_eval, 0.5)
 
 
 if __name__ == '__main__':
