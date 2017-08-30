@@ -24,7 +24,7 @@ class TestMNISTTutorialTF(unittest.TestCase):
         self.assertGreater(report.train_clean_train_clean_eval, 0.97)
         self.assertLess(report.train_clean_train_adv_eval, 0.02)
         self.assertGreater(report.train_adv_train_clean_eval, 0.95)
-        self.assertGreater(report.train_adv_train_adv_eval, 0.5)
+        self.assertGreater(report.train_adv_train_adv_eval, 0.4)
 
 
 if __name__ == '__main__':
