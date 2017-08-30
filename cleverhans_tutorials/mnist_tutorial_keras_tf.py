@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy as np
 import keras
 from keras import backend
 import tensorflow as tf
@@ -14,7 +15,6 @@ from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
-import random
 
 FLAGS = flags.FLAGS
 
@@ -46,7 +46,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
-    random.seed(1234)
 
     if not hasattr(backend, "tf"):
         raise RuntimeError("This tutorial requires keras to be configured"
@@ -101,6 +100,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     ckpt = tf.train.get_checkpoint_state(train_dir)
     ckpt_path = False if ckpt is None else ckpt.model_checkpoint_path
 
+    rng = np.random.RandomState([2017, 8, 30])
     if load_model and ckpt_path:
         saver = tf.train.Saver()
         saver.restore(sess, ckpt_path)
@@ -109,7 +109,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     else:
         print("Model was not loaded, training from scratch.")
         model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                    args=train_params, save=True)
+                    args=train_params, save=True, rng=rng)
 
     # Calculate training error
     if testing:
@@ -164,7 +164,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Perform and evaluate adversarial training
     model_train(sess, x, y, preds_2, X_train, Y_train,
                 predictions_adv=preds_2_adv, evaluate=evaluate_2,
-                args=train_params, save=False)
+                args=train_params, save=False, rng=rng)
 
     # Calculate training errors
     if testing:

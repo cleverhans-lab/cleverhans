@@ -12,7 +12,6 @@ import tensorflow as tf
 import time
 import warnings
 import logging
-import random
 
 from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
 
@@ -22,6 +21,7 @@ _logger = create_logger("cleverhans.utils.tf")
 
 
 class _FlagsWrapper(_ArgsWrapper):
+
     """
     Wrapper that tries to find missing parameters in TensorFlow FLAGS
     for backwards compatibility.
@@ -29,6 +29,7 @@ class _FlagsWrapper(_ArgsWrapper):
     Plain _ArgsWrapper should be used instead if the support for FLAGS
     is removed.
     """
+
     def __getattr__(self, name):
         val = self.args.get(name)
         if val is None:
@@ -87,7 +88,7 @@ def initialize_uninitialized_global_variables(sess):
 
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 predictions_adv=None, init_all=True, evaluate=None,
-                verbose=True, feed=None, args=None):
+                verbose=True, feed=None, args=None, rng=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -113,6 +114,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                  `batch_size`
                  If save is True, should also contain 'train_dir'
                  and 'filename'
+    :param rng: Instance of numpy.random.RandomState
     :return: True if model trained
     """
     args = _FlagsWrapper(args or {})
@@ -132,6 +134,9 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                       " on 2018-02-11. Instead, use utils.set_log_level()."
                       " For backward compatibility, log_level was set to"
                       " logging.WARNING (30).")
+
+    if rng is None:
+        rng = np.random.RandomState()
 
     # Define loss
     loss = model_loss(y, predictions)
@@ -159,7 +164,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
             # Indices to shuffle training set
             index_shuf = list(range(len(X_train)))
-            random.shuffle(index_shuf)
+            rng.shuffle(index_shuf)
 
             prev = time.time()
             for batch in range(nb_batches):

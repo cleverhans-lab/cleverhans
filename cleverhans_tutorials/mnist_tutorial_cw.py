@@ -16,7 +16,6 @@ from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, tf_model_load
 from cleverhans_tutorials.tutorial_models import make_basic_cnn
-import random
 
 FLAGS = flags.FLAGS
 
@@ -53,7 +52,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
-    random.seed(1234)
 
     # Create TF session
     sess = tf.Session()
@@ -89,12 +87,13 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'filename': os.path.split(model_path)[-1]
     }
 
+    rng = np.random.RandomState([2017, 8, 30])
     # check if we've trained before, and if we have, use that pre-trained model
     if os.path.exists(model_path+".meta"):
         tf_model_load(sess, model_path)
     else:
         model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
-                    save=os.path.exists("models"))
+                    save=os.path.exists("models"), rng=rng)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}

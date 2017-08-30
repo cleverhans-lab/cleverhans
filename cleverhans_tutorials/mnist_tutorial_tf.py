@@ -22,7 +22,6 @@ from cleverhans_tutorials.tutorial_models import make_basic_cnn
 from cleverhans.utils import AccuracyReport, set_log_level
 
 import os
-import random
 
 FLAGS = flags.FLAGS
 
@@ -60,7 +59,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
-    random.seed(1234)
 
     # Set logging level to see debug information
     set_log_level(logging.DEBUG)
@@ -91,6 +89,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'learning_rate': learning_rate
     }
     fgsm_params = {'eps': 0.3}
+    rng = np.random.RandomState([2017, 8, 30])
 
     if clean_train:
         model = make_basic_cnn()
@@ -106,7 +105,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
             assert X_test.shape[0] == test_end - test_start, X_test.shape
             print('Test accuracy on legitimate examples: %0.4f' % acc)
         model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                    args=train_params)
+                    args=train_params, rng=rng)
 
         # Calculate training error
         if testing:
@@ -167,7 +166,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Perform and evaluate adversarial training
     model_train(sess, x, y, preds_2, X_train, Y_train,
                 predictions_adv=preds_2_adv, evaluate=evaluate_2,
-                args=train_params)
+                args=train_params, rng=rng)
 
     # Calculate training errors
     if testing:
