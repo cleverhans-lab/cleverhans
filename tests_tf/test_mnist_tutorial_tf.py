@@ -28,6 +28,15 @@ class TestMNISTTutorialTF(CleverHansTest):
         self.assertGreater(report.train_adv_train_clean_eval, 0.95)
         self.assertGreater(report.train_adv_train_adv_eval, 0.4)
 
+        report_2 = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
+        self.assertClose(report.train_clean_train_clean_eval,
+                         report_2.train_clean_train_clean_eval)
+        self.assertClose(report.train_clean_train_adv_eval,
+                         report_2.train_clean_train_adv_eval)
+        self.assertClose(report.train_adv_train_clean_eval,
+                         report_2.train_adv_train_clean_eval)
+        self.assertClose(report.train_adv_train_adv_eval,
+                         report_2.train_adv_train_adv_eval)
 
 if __name__ == '__main__':
     unittest.main()
