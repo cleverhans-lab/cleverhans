@@ -5,8 +5,8 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
-import time
 
+from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.attacks import Attack
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import BasicIterativeMethod
@@ -15,19 +15,6 @@ from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.attacks import CarliniWagnerL2
 
 
-class CleverHansTest(unittest.TestCase):
-    def setUp(self):
-        self.test_start = time.time()
-        # seed the randomness
-        np.random.seed(1234)
-
-    def tearDown(self):
-        print(self.id(), "took", time.time() - self.test_start, "seconds")
-
-    def assertClose(self, x, y):
-        # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
-        # on failure
-        assert np.allclose(x, y), (x, y)
 
 
 class TestAttackClassInitArguments(CleverHansTest):

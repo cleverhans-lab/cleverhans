@@ -1,8 +1,10 @@
 import unittest
 import numpy as np
 
+from cleverhans.devtools.checks import CleverHansTest
 
-class TestMNISTTutorialTF(unittest.TestCase):
+
+class TestMNISTTutorialTF(CleverHansTest):
     def test_mnist_tutorial_tf(self):
 
         np.random.seed(42)
