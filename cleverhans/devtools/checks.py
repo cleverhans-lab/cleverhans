@@ -13,8 +13,8 @@ import time
 import unittest
 
 
-
 class CleverHansTest(unittest.TestCase):
+
     def setUp(self):
         self.test_start = time.time()
         # seed the randomness
