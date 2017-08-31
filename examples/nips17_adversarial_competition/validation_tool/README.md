@@ -20,3 +20,8 @@ python validate_submission.py \
 
 After run this tool will print whether submission is valid or not.
 If submission is invalid then log messages will contain explanation why.
+
+NOTE: This tool might not work properly if the file is located on NFS or if
+the directory containing submission file can't be mounted in Docker using `-v`
+command line argument. In such case copy file to different location and try
+again.
