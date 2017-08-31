@@ -381,6 +381,9 @@ class SubmissionValidator(object):
       logging.error('Invalid submission type: %s', submission_type)
       return False
     self._prepare_temp_dir()
+    # Convert filename to be absolute path,
+    # relative path might cause problems when monting directory in Docker
+    filename = os.path.abspath(filename)
     # extract submission
     if not self._extract_submission(filename):
       return False
