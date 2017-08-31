@@ -1,8 +1,10 @@
 import unittest
 import numpy as np
 
+from cleverhans.devtools.checks import CleverHansTest
 
-class TestMNISTTutorialTF(unittest.TestCase):
+
+class TestMNISTTutorialTF(CleverHansTest):
     def test_mnist_tutorial_tf(self):
 
         np.random.seed(42)
@@ -26,6 +28,20 @@ class TestMNISTTutorialTF(unittest.TestCase):
         self.assertGreater(report.train_adv_train_clean_eval, 0.95)
         self.assertGreater(report.train_adv_train_adv_eval, 0.4)
 
+        # Check that the tutorial is deterministic (seeded properly)
+        report_2 = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
+        self.assertClose(report.train_clean_train_clean_eval,
+                         report_2.train_clean_train_clean_eval,
+                         atol=5e-3)
+        self.assertClose(report.train_clean_train_adv_eval,
+                         report_2.train_clean_train_adv_eval,
+                         atol=5e-3)
+        self.assertClose(report.train_adv_train_clean_eval,
+                         report_2.train_adv_train_clean_eval,
+                         atol=2e-2)
+        self.assertClose(report.train_adv_train_adv_eval,
+                         report_2.train_adv_train_adv_eval,
+                         atol=2e-1)
 
 if __name__ == '__main__':
     unittest.main()
