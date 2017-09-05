@@ -71,7 +71,8 @@ class RVBCleverhansModel(cleverhans.model.Model):
                 return gradient_x
 
             def _forward_py(x):
-                predictions = self.adversarial.batch_predictions(x, strict=False)[0]
+                predictions = self.adversarial.batch_predictions(
+                    x, strict=False)[0]
                 predictions = predictions.astype(np.float32)
                 return predictions
 
