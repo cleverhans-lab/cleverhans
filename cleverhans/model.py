@@ -77,7 +77,7 @@ class Model(object):
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
         """
-        raise NotImplementedError('`_fprop` not implemented.')
+        raise NotImplementedError('`fprop` not implemented.')
 
 
 class CallableModelWrapper(Model):
