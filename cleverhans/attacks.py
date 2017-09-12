@@ -749,6 +749,76 @@ class CarliniWagnerL2(Attack):
         self.clip_max = clip_max
 
 
+class DeepFool(Attack):
+
+    """
+    DeepFool paper link: "https://arxiv.org/pdf/1511.04599.pdf"
+    """
+
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Create a DeepFool instance.
+        """
+        super(DeepFool, self).__init__(model, back, sess)
+
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+
+        import tensorflow as tf
+        #self.feedable_kwargs = {'y': tf.float32}
+        self.structural_kwargs = ['nb_candidate', 'over_shoot', 
+                                  'max_iter' 'nb_classes',
+                                  'clip_max', 'clip_min']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'logits')
+
+    def generate(self, x, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param nb_candidate: the number of classes to test against
+        :param overshoot: a termination criterion to prevent vanishing updates
+        :param max_iter: mximum number of iteration for deepfool
+        :param nb_classes: Number of model output classes
+        :param clip_min: (optional float) Minimum component value for clipping
+        :param clip_max: (optional float) Maximum component value for clipping
+        """
+        import tensorflow as tf
+        from .attacks_tf import gradient_graph, deepfool_batch
+
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        # Define graph wrt to this input placeholder
+        logits = self.model.get_logits(x)
+        preds = tf.reshape(tf.nn.top_k(logits, k=self.nb_candidate)[0], 
+                           [-1, self.nb_candidate])     
+        grads = gradient_graph(preds, x, self.nb_candidate)
+
+        # Define graph
+        def deepfool_wrap(x_val):
+             return deepfool_batch(self.sess, x, preds, logits, grads, x_val,
+                                   self.nb_candidate, self.overshoot, 
+                                   self.max_iter, self.clip_min, self.clip_max, 
+                                   self.nb_classes)
+        wrap = tf.py_func(deepfool_wrap, [x], tf.float32)
+
+        return wrap
+
+    def parse_params(self, nb_candidate=10, overshoot=0.02, max_iter=50, 
+                     nb_classes=1001, clip_min=0., clip_max=1., **kwargs):
+
+        self.nb_candidate = nb_candidate
+        self.overshoot = overshoot
+        self.max_iter = max_iter
+        self.nb_classes = nb_classes
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+        return True
+
+
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     """
     A wrapper for the Fast Gradient Sign Method.
