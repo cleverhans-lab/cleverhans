@@ -765,7 +765,6 @@ class DeepFool(Attack):
             raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
-        #self.feedable_kwargs = {'y': tf.float32}
         self.structural_kwargs = ['nb_candidate', 'over_shoot', 
                                   'max_iter' 'nb_classes',
                                   'clip_max', 'clip_min']
