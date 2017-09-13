@@ -16,8 +16,6 @@ from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.attacks import DeepFool
 
 
-
-
 class TestAttackClassInitArguments(CleverHansTest):
 
     def test_model(self):
@@ -495,13 +493,13 @@ class TestDeepFool(CleverHansTest):
 
         self.sess = tf.Session()
         self.model = my_model
-        self.attack = DeepFool(self.model, sess=self.sess) 
+        self.attack = DeepFool(self.model, sess=self.sess)
 
     def test_generate_np_gives_adversarial_example(self):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50, 
+        x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
                                         nb_candidate=2, nb_classes=2,
                                         clip_min=-5, clip_max=5)
 
@@ -519,9 +517,9 @@ class TestDeepFool(CleverHansTest):
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         x = tf.placeholder(tf.float32, x_val.shape)
 
-        x_adv_p = self.attack.generate(x, over_shoot=0.02, max_iter=50, 
-                                        nb_candidate=2, nb_classes=2,
-                                        clip_min=-5, clip_max=5)
+        x_adv_p = self.attack.generate(x, over_shoot=0.02, max_iter=50,
+                                       nb_candidate=2, nb_classes=2,
+                                       clip_min=-5, clip_max=5)
         x_adv = self.sess.run(x_adv_p, {x: x_val})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -532,13 +530,12 @@ class TestDeepFool(CleverHansTest):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50, 
+        x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
                                         nb_candidate=2, nb_classes=2,
                                         clip_min=-0.2, clip_max=0.3)
 
         assert -0.201 < np.min(x_adv)
         assert np.max(x_adv) < .301
 
-        
 if __name__ == '__main__':
     unittest.main()
