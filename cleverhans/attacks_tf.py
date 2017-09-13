@@ -731,23 +731,26 @@ class CarliniWagnerL2(object):
 def deepfool_batch(sess, x, pred, logits, grads, X, nb_candidate, overshoot,
                    max_iter, clip_min, clip_max, nb_classes, feed=None):
     """
-    Applies the deepfool to a batch of inputs
+    Applies DeepFool to a batch of inputs
     :param sess: TF session
     :param x: The input placeholder
-    :param pred: The model's symbolic output
+    :param pred: The model's sorted symbolic output of logits, only the top 
+                nb_candidate classes are contained
     :param logits: The model's unnormalized output tensor (the input to
                    the softmax layer)
-    :param grads: Symbolic gradients
+    :param grads: Symbolic gradients of the top nb_candidate classes, procuded
+                 from gradient_graph
     :param X: Numpy array with sample inputs
-    :param nb_candidate: The number of adversarial class candidates
+    :param nb_candidate: The number of classes to test against, i.e., 
+                        deepfool only consider nb_candidate classes when
+                        attacking (thus accelerate speed)
     :param overshoot: A termination criterion to prevent vanishing updates
-    :param max_iter: Maximum number of iteration for deepfool
+    :param max_iter: Maximum number of iteration for DeepFool
     :param clip_min: Minimum value for components of the example returned
     :param clip_max: Maximum value for components of the example returned
     :param nb_classes: Number of model output classes
     :return: Adversarial examples
     """
-
     X_adv = np.zeros(X.shape)
     X_adv = deepfool_attack(sess, x, pred, logits, grads, X, nb_candidate,
                             overshoot, max_iter, clip_min, clip_max, feed=feed)
@@ -758,19 +761,22 @@ def deepfool_batch(sess, x, pred, logits, grads, X, nb_candidate, overshoot,
 def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
                     overshoot, max_iter, clip_min, clip_max, feed=None):
     """
-    TensorFlow implementation of the deepfool.
+    TensorFlow implementation of DeepFool.
     Paper link: see https://arxiv.org/pdf/1511.04599.pdf
     :param sess: TF session
     :param x: The input placeholder
-    :param predictions: The model's symbolic output (linear output,
-        pre-softmax)
+    :param predictions: The model's sorted symbolic output of logits, only the
+                       top nb_candidate classes are contained
     :param logits: The model's unnormalized output tensor (the input to
                    the softmax layer)
-    :param grads: Symbolic gradients
+    :param grads: Symbolic gradients of the top nb_candidate classes, procuded
+                 from gradient_graph
     :param sample: Numpy array with sample input
-    :param nb_candidate: The number of adversarial class candidates
+    :param nb_candidate: The number of classes to test against, i.e., 
+                        deepfool only consider nb_candidate classes when
+                        attacking (thus accelerate speed)
     :param overshoot: A termination criterion to prevent vanishing updates
-    :param max_iter: Maximum number of iteration for deepfool
+    :param max_iter: Maximum number of iteration for DeepFool
     :param clip_min: Minimum value for components of the example returned
     :param clip_max: Maximum value for components of the example returned
     :return: an adversarial sample
@@ -805,7 +811,8 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
             for k in range(1, nb_candidate):
                 w_k = gradients[idx, k, ...] - gradients[idx, 0, ...]
                 f_k = f[idx, k] - f[idx, 0]
-                pert_k = (abs(f_k) + 0.00001)/np.linalg.norm(w_k.flatten())
+                # adding value 0.00001 to prevent f_k = 0
+                pert_k = (abs(f_k) + 0.00001) / np.linalg.norm(w_k.flatten())
                 if pert_k < pert:
                     pert = pert_k
                     w = w_k
@@ -834,10 +841,12 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
 def gradient_graph(predictions, x, nb_candidate):
     """
     Create the gradient graph to be ran later in a TF session
-    :param predictions: The model's symbolic output (linear output,
-        pre-softmax)
+    :param predictions: The model's sorted symbolic output of logits, only the
+                       top nb_candidate classes are contained
     :param x: The input placeholder
-    :param nb_candidate: The number of adversarial class candidates
+    :param nb_candidate: The number of classes to test against, i.e., 
+                        deepfool only consider nb_candidate classes when
+                        attacking (thus accelerate speed)
     :return: Gradient graph
     """
     import tensorflow as tf
