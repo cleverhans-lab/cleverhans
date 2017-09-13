@@ -108,7 +108,7 @@ def mnist_tutorial_deepfool(train_start=0, train_end=60000, test_start=0,
           ' adversarial examples')
     print("This could take some time ...")
 
-    # Instantiate a CW attack object
+    # Instantiate a DeepFool attack object
     deepfool = DeepFool(model, back='tf', sess=sess)
 
     idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0] for i in range(10)]
