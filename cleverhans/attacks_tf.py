@@ -733,19 +733,19 @@ def deepfool_batch(sess, x, pred, logits, grads, X, nb_candidate, overshoot,
     """
     Applies the deepfool to a batch of inputs
     :param sess: TF session
-    :param x: the input placeholder
-    :param pred: the model's symbolic output
-    :param logits: the model's unnormalized output tensor (the input to
+    :param x: The input placeholder
+    :param pred: The model's symbolic output
+    :param logits: The model's unnormalized output tensor (the input to
                    the softmax layer)
-    :param grads: symbolic gradients
-    :param X: numpy array with sample inputs
-    :param nb_candidate: the number of classes to attack
-    :param overshoot: a termination criterion to prevent vanishing updates
-    :param max_iter: mximum number of iteration for deepfool
-    :param clip_min: minimum value for components of the example returned
-    :param clip_max: maximum value for components of the example returned
-    :param nb_classes: number of model output classes
-    :return: adversarial examples
+    :param grads: Symbolic gradients
+    :param X: Numpy array with sample inputs
+    :param nb_candidate: The number of adversarial class candidates
+    :param overshoot: A termination criterion to prevent vanishing updates
+    :param max_iter: Maximum number of iteration for deepfool
+    :param clip_min: Minimum value for components of the example returned
+    :param clip_max: Maximum value for components of the example returned
+    :param nb_classes: Number of model output classes
+    :return: Adversarial examples
     """
 
     X_adv = np.zeros(X.shape)
@@ -761,18 +761,18 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     TensorFlow implementation of the deepfool.
     Paper link: see https://arxiv.org/pdf/1511.04599.pdf
     :param sess: TF session
-    :param x: the input placeholder
-    :param predictions: the model's symbolic output (linear output,
+    :param x: The input placeholder
+    :param predictions: The model's symbolic output (linear output,
         pre-softmax)
-    :param logits: the model's unnormalized output tensor (the input to
+    :param logits: The model's unnormalized output tensor (the input to
                    the softmax layer)
-    :param grads: symbolic gradients
-    :param sample: numpy array with sample input
-    :param nb_candidate: the number of classes to test against
-    :param overshoot: a termination criterion to prevent vanishing updates
-    :param max_iter: mximum number of iteration for deepfool
-    :param clip_min: minimum value for components of the example returned
-    :param clip_max: maximum value for components of the example returned
+    :param grads: Symbolic gradients
+    :param sample: Numpy array with sample input
+    :param nb_candidate: The number of adversarial class candidates
+    :param overshoot: A termination criterion to prevent vanishing updates
+    :param max_iter: Maximum number of iteration for deepfool
+    :param clip_min: Minimum value for components of the example returned
+    :param clip_max: Maximum value for components of the example returned
     :return: an adversarial sample
     """
     import copy
@@ -834,11 +834,11 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
 def gradient_graph(predictions, x, nb_candidate):
     """
     Create the gradient graph to be ran later in a TF session
-    :param predictions: the model's symbolic output (linear output,
+    :param predictions: The model's symbolic output (linear output,
         pre-softmax)
-    :param x: the input placeholder
-    :param nb_candidate: the number of classes we want to against
-    :return:
+    :param x: The input placeholder
+    :param nb_candidate: The number of adversarial class candidates
+    :return: Gradient graph
     """
     import tensorflow as tf
     # This function will return a list of TF gradients
