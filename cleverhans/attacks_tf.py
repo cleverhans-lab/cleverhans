@@ -803,14 +803,14 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
                 iteration,
                 current))
         gradients = sess.run(grads, feed_dict={x: adv_x})
-        f = sess.run(predictions, feed_dict={x: adv_x})
+        predictions_val = sess.run(predictions, feed_dict={x: adv_x})
         for idx in range(sample.shape[0]):
             pert = np.inf
             if current[idx] != original[idx]:
                 continue
             for k in range(1, nb_candidate):
                 w_k = gradients[idx, k, ...] - gradients[idx, 0, ...]
-                f_k = f[idx, k] - f[idx, 0]
+                f_k = predictions_val[idx, k] - predictions_val[idx, 0]
                 # adding value 0.00001 to prevent f_k = 0
                 pert_k = (abs(f_k) + 0.00001) / np.linalg.norm(w_k.flatten())
                 if pert_k < pert:
