@@ -765,7 +765,7 @@ class DeepFool(Attack):
             raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
-        self.structural_kwargs = ['nb_candidate', 'over_shoot', 
+        self.structural_kwargs = ['nb_candidate', 'over_shoot',
                                   'max_iter' 'nb_classes',
                                   'clip_max', 'clip_min']
 
@@ -791,21 +791,21 @@ class DeepFool(Attack):
 
         # Define graph wrt to this input placeholder
         logits = self.model.get_logits(x)
-        preds = tf.reshape(tf.nn.top_k(logits, k=self.nb_candidate)[0], 
-                           [-1, self.nb_candidate])     
+        preds = tf.reshape(tf.nn.top_k(logits, k=self.nb_candidate)[0],
+                           [-1, self.nb_candidate])
         grads = gradient_graph(preds, x, self.nb_candidate)
 
         # Define graph
         def deepfool_wrap(x_val):
-             return deepfool_batch(self.sess, x, preds, logits, grads, x_val,
-                                   self.nb_candidate, self.overshoot, 
-                                   self.max_iter, self.clip_min, self.clip_max, 
-                                   self.nb_classes)
+            return deepfool_batch(self.sess, x, preds, logits, grads, x_val,
+                                  self.nb_candidate, self.overshoot,
+                                  self.max_iter, self.clip_min, self.clip_max,
+                                  self.nb_classes)
         wrap = tf.py_func(deepfool_wrap, [x], tf.float32)
 
         return wrap
 
-    def parse_params(self, nb_candidate=10, overshoot=0.02, max_iter=50, 
+    def parse_params(self, nb_candidate=10, overshoot=0.02, max_iter=50,
                      nb_classes=1001, clip_min=0., clip_max=1., **kwargs):
 
         self.nb_candidate = nb_candidate
