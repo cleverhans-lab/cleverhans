@@ -735,9 +735,11 @@ def deepfool_batch(sess, x, pred, logits, grads, X, nb_candidate, overshoot,
     :param sess: TF session
     :param x: the input placeholder
     :param pred: the model's symbolic output
+    :param logits: the model's unnormalized output tensor (the input to
+                   the softmax layer)
     :param grads: symbolic gradients
     :param X: numpy array with sample inputs
-    :param nb_candidate: the number of classes to test against
+    :param nb_candidate: the number of classes to attack
     :param overshoot: a termination criterion to prevent vanishing updates
     :param max_iter: mximum number of iteration for deepfool
     :param clip_min: minimum value for components of the example returned
