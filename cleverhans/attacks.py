@@ -765,9 +765,9 @@ class DeepFool(Attack):
             raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
-        self.structural_kwargs = ['nb_candidate', 'over_shoot',
-                                  'max_iter' 'nb_classes',
-                                  'clip_max', 'clip_min']
+        self.structural_kwargs = ['over_shoot', 'max_iter',
+                                  'clip_max', 'clip_min',
+                                  'nb_candidate', 'nb_classes']
 
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'logits')
@@ -776,21 +776,22 @@ class DeepFool(Attack):
         """
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
-        :param nb_candidate: the number of classes to test against
-        :param overshoot: a termination criterion to prevent vanishing updates
-        :param max_iter: mximum number of iteration for deepfool
+        :param nb_candidate: The number of adversarial class candidates
+        :param overshoot: A termination criterion to prevent vanishing updates
+        :param max_iter: Maximum number of iteration for deepfool
         :param nb_classes: Number of model output classes
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
         """
-        
-        assert nb_candidate <= nb_classes,
-            'nb_candidate should not be greater than nb_classes'
+
         import tensorflow as tf
         from .attacks_tf import gradient_graph, deepfool_batch
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
+
+        assert self.nb_candidate <= self.nb_classes,\
+            'nb_candidate should not be greater than nb_classes'
 
         # Define graph wrt to this input placeholder
         logits = self.model.get_logits(x)
