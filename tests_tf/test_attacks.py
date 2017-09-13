@@ -539,5 +539,6 @@ class TestDeepFool(CleverHansTest):
         assert -0.201 < np.min(x_adv)
         assert np.max(x_adv) < .301
 
+        
 if __name__ == '__main__':
     unittest.main()
