@@ -783,6 +783,9 @@ class DeepFool(Attack):
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
         """
+        
+        assert nb_candidate <= nb_classes,
+            'nb_candidate should not be greater than nb_classes'
         import tensorflow as tf
         from .attacks_tf import gradient_graph, deepfool_batch
 
