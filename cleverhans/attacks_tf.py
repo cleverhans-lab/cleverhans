@@ -734,14 +734,14 @@ def deepfool_batch(sess, x, pred, logits, grads, X, nb_candidate, overshoot,
     Applies DeepFool to a batch of inputs
     :param sess: TF session
     :param x: The input placeholder
-    :param pred: The model's sorted symbolic output of logits, only the top 
+    :param pred: The model's sorted symbolic output of logits, only the top
                 nb_candidate classes are contained
     :param logits: The model's unnormalized output tensor (the input to
                    the softmax layer)
     :param grads: Symbolic gradients of the top nb_candidate classes, procuded
                  from gradient_graph
     :param X: Numpy array with sample inputs
-    :param nb_candidate: The number of classes to test against, i.e., 
+    :param nb_candidate: The number of classes to test against, i.e.,
                         deepfool only consider nb_candidate classes when
                         attacking (thus accelerate speed)
     :param overshoot: A termination criterion to prevent vanishing updates
@@ -772,7 +772,7 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     :param grads: Symbolic gradients of the top nb_candidate classes, procuded
                  from gradient_graph
     :param sample: Numpy array with sample input
-    :param nb_candidate: The number of classes to test against, i.e., 
+    :param nb_candidate: The number of classes to test against, i.e.,
                         deepfool only consider nb_candidate classes when
                         attacking (thus accelerate speed)
     :param overshoot: A termination criterion to prevent vanishing updates
@@ -844,7 +844,7 @@ def gradient_graph(predictions, x, nb_candidate):
     :param predictions: The model's sorted symbolic output of logits, only the
                        top nb_candidate classes are contained
     :param x: The input placeholder
-    :param nb_candidate: The number of classes to test against, i.e., 
+    :param nb_candidate: The number of classes to test against, i.e.,
                         deepfool only consider nb_candidate classes when
                         attacking (thus accelerate speed)
     :return: Gradient graph

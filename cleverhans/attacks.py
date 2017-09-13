@@ -752,7 +752,7 @@ class CarliniWagnerL2(Attack):
 class DeepFool(Attack):
 
     """
-    DeepFool is an untargeted & iterative attack which aims at finding the 
+    DeepFool is an untargeted & iterative attack which aims at finding the
     minimum adversarial perturbations in deep networks. The implementation
     here is w.r.t. the L2 norm.
     Paper link: "https://arxiv.org/pdf/1511.04599.pdf"
@@ -779,7 +779,7 @@ class DeepFool(Attack):
         """
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
-        :param nb_candidate: The number of classes to test against, i.e., 
+        :param nb_candidate: The number of classes to test against, i.e.,
                             deepfool only consider nb_candidate classes when
                             attacking (thus accelerate speed)
         :param overshoot: A termination criterion to prevent vanishing updates
@@ -815,7 +815,7 @@ class DeepFool(Attack):
     def parse_params(self, nb_candidate=10, overshoot=0.02, max_iter=50,
                      nb_classes=1001, clip_min=0., clip_max=1., **kwargs):
         """
-        :param nb_candidate: The number of classes to test against, i.e., 
+        :param nb_candidate: The number of classes to test against, i.e.,
                             deepfool only consider nb_candidate classes when
                             attacking (thus accelerate speed)
         :param overshoot: A termination criterion to prevent vanishing updates
