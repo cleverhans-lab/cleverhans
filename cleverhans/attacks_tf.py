@@ -764,6 +764,8 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     :param x: the input placeholder
     :param predictions: the model's symbolic output (linear output,
         pre-softmax)
+    :param logits: the model's unnormalized output tensor (the input to
+                   the softmax layer)
     :param grads: symbolic gradients
     :param sample: numpy array with sample input
     :param nb_candidate: the number of classes to test against
@@ -796,7 +798,6 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
                 current))
         gradients = sess.run(grads, feed_dict={x: adv_x})
         f = sess.run(predictions, feed_dict={x: adv_x})
-        # pdb.set_trace()
         for idx in range(sample.shape[0]):
             pert = np.inf
             if current[idx] != original[idx]:
