@@ -752,7 +752,10 @@ class CarliniWagnerL2(Attack):
 class DeepFool(Attack):
 
     """
-    DeepFool paper link: "https://arxiv.org/pdf/1511.04599.pdf"
+    DeepFool is an untargeted & iterative attack which aims at finding the 
+    minimum adversarial perturbations in deep networks. The implementation
+    here is w.r.t. the L2 norm.
+    Paper link: "https://arxiv.org/pdf/1511.04599.pdf"
     """
 
     def __init__(self, model, back='tf', sess=None):
@@ -776,12 +779,14 @@ class DeepFool(Attack):
         """
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
-        :param nb_candidate: The number of adversarial class candidates
+        :param nb_candidate: The number of classes to test against, i.e., 
+                            deepfool only consider nb_candidate classes when
+                            attacking (thus accelerate speed)
         :param overshoot: A termination criterion to prevent vanishing updates
         :param max_iter: Maximum number of iteration for deepfool
-        :param nb_classes: Number of model output classes
-        :param clip_min: (optional float) Minimum component value for clipping
-        :param clip_max: (optional float) Maximum component value for clipping
+        :param nb_classes: The number of model output classes
+        :param clip_min: Minimum component value for clipping
+        :param clip_max: Maximum component value for clipping
         """
 
         import tensorflow as tf
@@ -805,13 +810,20 @@ class DeepFool(Attack):
                                   self.nb_candidate, self.overshoot,
                                   self.max_iter, self.clip_min, self.clip_max,
                                   self.nb_classes)
-        wrap = tf.py_func(deepfool_wrap, [x], tf.float32)
-
-        return wrap
+        return tf.py_func(deepfool_wrap, [x], tf.float32)
 
     def parse_params(self, nb_candidate=10, overshoot=0.02, max_iter=50,
                      nb_classes=1001, clip_min=0., clip_max=1., **kwargs):
-
+        """
+        :param nb_candidate: The number of classes to test against, i.e., 
+                            deepfool only consider nb_candidate classes when
+                            attacking (thus accelerate speed)
+        :param overshoot: A termination criterion to prevent vanishing updates
+        :param max_iter: Maximum number of iteration for deepfool
+        :param nb_classes: The number of model output classes
+        :param clip_min: Minimum component value for clipping
+        :param clip_max: Maximum component value for clipping
+        """
         self.nb_candidate = nb_candidate
         self.overshoot = overshoot
         self.max_iter = max_iter
