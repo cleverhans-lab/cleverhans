@@ -91,7 +91,7 @@ def make_directory_writable(dirname):
   retval = shell_call(['docker', 'run', '-v',
                        '{0}:/output_dir'.format(dirname),
                        'busybox:1.27.2',
-                       'chmod', '-R', 'a+rwX', '/output_dir'])
+                       'chmod', '-R', 'a+rwx', '/output_dir'])
   if not retval:
     logging.error('Failed to change permissions on directory: %s', dirname)
   return retval
@@ -139,6 +139,8 @@ class SubmissionValidator(object):
     os.mkdir(self._tmp_extracted_dir)
     os.mkdir(self._sample_input_dir)
     os.mkdir(self._sample_output_dir)
+    # make output dir world writable
+    shell_call(['chmod', 'a+rwX', '-R', self._sample_output_dir])
 
   def _extract_submission(self, filename):
     """Extracts submission and moves it into self._extracted_submission_dir."""
