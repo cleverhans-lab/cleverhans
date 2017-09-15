@@ -52,6 +52,7 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
         # Using model predictions as ground truth to avoid label leaking
         preds_max = tf.reduce_max(preds, 1, keep_dims=True)
         y = tf.to_float(tf.equal(preds, preds_max))
+        y = tf.stop_gradient(y)
     y = y / tf.reduce_sum(y, 1, keep_dims=True)
 
     # Compute loss
