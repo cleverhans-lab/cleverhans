@@ -19,7 +19,6 @@ from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
 from cleverhans_tutorials.tutorial_models import make_basic_cnn, MLP
 from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
-import random
 
 FLAGS = flags.FLAGS
 
@@ -32,13 +31,13 @@ def setup_tutorial():
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
-    random.seed(1234)
 
     return True
 
 
 def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
-              nb_epochs, batch_size, learning_rate):
+              nb_epochs, batch_size, learning_rate,
+              rng):
     """
     Define and train a model that simulates the "remote"
     black-box oracle described in the original paper.
@@ -52,6 +51,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     :param nb_epochs: number of epochs to train model
     :param batch_size: size of training batches
     :param learning_rate: learning rate for training
+    :param rng: numpy.random.RandomState
     :return:
     """
 
@@ -67,7 +67,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'learning_rate': learning_rate
     }
     model_train(sess, x, y, predictions, X_train, Y_train, verbose=False,
-                args=train_params)
+                args=train_params, rng=rng)
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
@@ -103,7 +103,8 @@ def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
 
 
 def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
-              nb_epochs_s, batch_size, learning_rate, data_aug, lmbda):
+              nb_epochs_s, batch_size, learning_rate, data_aug, lmbda,
+              rng):
     """
     This function creates the substitute by alternatively
     augmenting the training data and training the substitute.
@@ -119,6 +120,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
     :param learning_rate: learning rate for training
     :param data_aug: number of times substitute training data is augmented
     :param lmbda: lambda from arxiv.org/abs/1602.02697
+    :param rng: numpy.random.RandomState instance
     :return:
     """
     # Define TF model graph (for the black-box model)
@@ -138,7 +140,8 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             'learning_rate': learning_rate
         }
         model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
-                    init_all=False, verbose=False, args=train_params)
+                    init_all=False, verbose=False, args=train_params,
+                    rng=rng)
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < data_aug - 1:
@@ -208,18 +211,22 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
+    # Seed random number generator so tutorial is reproducible
+    rng = np.random.RandomState([2017, 8, 30])
+
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
     print("Preparing the black-box model.")
     prep_bbox_out = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
-                              nb_epochs, batch_size, learning_rate)
+                              nb_epochs, batch_size, learning_rate,
+                              rng=rng)
     model, bbox_preds, accuracies['bbox'] = prep_bbox_out
 
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     print("Training the substitute model.")
     train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
                               nb_classes, nb_epochs_s, batch_size,
-                              learning_rate, data_aug, lmbda)
+                              learning_rate, data_aug, lmbda, rng=rng)
     model_sub, preds_sub = train_sub_out
 
     # Evaluate the substitute model on clean test examples
