@@ -33,6 +33,7 @@ class Attack(object):
         if back == 'th' and sess is not None:
             raise Exception("A session should not be provided when using th.")
         elif back == 'tf' and sess is None:
+            import tensorflow as tf
             warnings.warn("A session should be provided when using tf.")
             sess = tf.get_default_session()
 
