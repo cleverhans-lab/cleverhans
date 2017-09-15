@@ -16,7 +16,6 @@ from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
 from cleverhans.utils_keras import KerasModelWrapper, cnn_model
 from cleverhans_tutorials.tutorial_models import make_basic_cnn
-import random
 
 FLAGS = flags.FLAGS
 
@@ -49,7 +48,6 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
-    random.seed(1234)
 
     # Create TF session and set as Keras backend session
     sess = tf.Session()
@@ -83,7 +81,9 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
         'learning_rate': learning_rate
     }
     sess.run(tf.global_variables_initializer())
-    model_train(sess, x, y, preds, X_train, Y_train, args=train_params)
+    rng = np.random.RandomState([2017, 8, 30])
+    model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
+                rng=rng)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
