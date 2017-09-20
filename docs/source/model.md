@@ -1,4 +1,4 @@
-cleverhans\.model module
+`model` module
 ------------------------
 
 .. automodule:: cleverhans.model
