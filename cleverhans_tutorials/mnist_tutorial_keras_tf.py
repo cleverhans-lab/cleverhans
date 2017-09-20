@@ -120,7 +120,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     wrap = KerasModelWrapper(model)
     fgsm = FastGradientMethod(wrap, sess=sess)
-    fgsm_params = {'eps': 0.3}
+    fgsm_params = {'eps': 0.3,
+                   'clip_min' : 0.,
+                   'clip_max' : 1.}
     adv_x = fgsm.generate(x, **fgsm_params)
     # Consider the attack to be constant
     adv_x = tf.stop_gradient(adv_x)
