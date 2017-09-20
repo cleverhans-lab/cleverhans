@@ -9,7 +9,8 @@ CleverHans Documentation
 .. toctree::
    :maxdepth: 4
 
-   source/cleverhans
+   source/attacks
+   source/model
 
 
 Indices and tables
