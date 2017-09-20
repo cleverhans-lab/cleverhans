@@ -2,6 +2,7 @@ from abc import ABCMeta
 
 
 class Model(object):
+
     """
     An abstract interface for model wrappers that exposes model symbols
     needed for making an attack. This abstraction removes the dependency on
@@ -28,9 +29,15 @@ class Model(object):
         :param x: A symbolic representation of the network input
         :param layer: The name of the hidden layer to return features at.
         :return: A symbolic representation of the hidden features
+        :raise: NoSuchLayerError if `layer` is not in the model.
         """
         # Return the symbolic representation for this layer.
-        return self.fprop(x)[layer]
+        output = self.fprop(x)
+        try:
+            requested = output[layer]
+        except KeyError:
+            raise NoSuchLayerError()
+        return requested
 
     def get_logits(self, x):
         """
@@ -46,9 +53,9 @@ class Model(object):
         :return: A symbolic representation of the output probabilities (i.e.,
                 the output values produced by the softmax layer).
         """
-        if 'probs' in self.get_layer_names():
+        try:
             return self.get_layer(x, 'probs')
-        else:
+        except NoSuchLayerError:
             import tensorflow as tf
             return tf.nn.softmax(self.get_logits(x))
 
@@ -70,10 +77,11 @@ class Model(object):
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
         """
-        raise NotImplementedError('`_fprop` not implemented.')
+        raise NotImplementedError('`fprop` not implemented.')
 
 
 class CallableModelWrapper(Model):
+
     def __init__(self, callable_fn, output_layer):
         """
         Wrap a callable function that takes a tensor as input and returns
@@ -92,3 +100,8 @@ class CallableModelWrapper(Model):
 
     def fprop(self, x):
         return {self.output_layer: self.callable_fn(x)}
+
+
+class NoSuchLayerError(ValueError):
+
+    """Raised when a layer that does not exist is requested."""
