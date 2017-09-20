@@ -25,12 +25,6 @@ import os
 
 FLAGS = flags.FLAGS
 
-"""
-CleverHans is intended to supply attacks and defense, not models.
-Users may apply CleverHans to many different kinds of models.
-In this tutorial, we show you an example of the kind of model
-you might build.
-"""
 
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
