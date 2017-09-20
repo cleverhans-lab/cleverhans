@@ -123,16 +123,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         # Initialize the Fast Gradient Sign Method (FGSM) attack object and
         # graph
         fgsm = FastGradientMethod(model, sess=sess)
-
         adv_x = fgsm.generate(x, **fgsm_params)
-        if not backprop_through_attack:
-            # For the fgsm attack used in this tutorial, the attack has zero
-            # gradient so enabling this flag does not change the gradient.
-            # For some other attacks, enabling this flag increases the cost of
-            # training, but gives the defender the ability to anticipate how
-            # the atacker will change their strategy in response to updates to
-            # the defender's parameters.
-            adv_x = tf.stop_gradient(adv_x)
         preds_adv = model.get_probs(adv_x)
 
         # Evaluate the accuracy of the MNIST model on adversarial examples
@@ -153,7 +144,16 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     model_2 = make_basic_cnn(nb_filters=nb_filters)
     preds_2 = model_2(x)
     fgsm2 = FastGradientMethod(model_2, sess=sess)
-    preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
+    adv_x_2 = fgsm2.generate(x, **fgsm_params)
+    if not backprop_through_attack:
+        # For the fgsm attack used in this tutorial, the attack has zero
+        # gradient so enabling this flag does not change the gradient.
+        # For some other attacks, enabling this flag increases the cost of
+        # training, but gives the defender the ability to anticipate how
+        # the atacker will change their strategy in response to updates to
+        # the defender's parameters.
+        adv_x_2 = tf.stop_gradient(adv_x_2)
+    preds_2_adv = model_2(adv_x_2)
 
     def evaluate_2():
         # Accuracy of adversarially trained model on legitimate test inputs
