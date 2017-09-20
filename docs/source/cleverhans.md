@@ -1,16 +1,6 @@
 cleverhans package
 ==================
 
-Subpackages
------------
-
-.. toctree::
-
-    cleverhans.devtools
-
-Submodules
-----------
-
 cleverhans\.attacks module
 --------------------------
 
@@ -19,21 +9,6 @@ cleverhans\.attacks module
     :undoc-members:
     :show-inheritance:
 
-cleverhans\.attacks\_tf module
-------------------------------
-
-.. automodule:: cleverhans.attacks_tf
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-cleverhans\.attacks\_th module
-------------------------------
-
-.. automodule:: cleverhans.attacks_th
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 cleverhans\.model module
 ------------------------
