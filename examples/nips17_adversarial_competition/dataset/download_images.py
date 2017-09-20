@@ -25,14 +25,14 @@ from __future__ import print_function
 
 import argparse
 import csv
+import multiprocessing
 import os
 import sys
-import multiprocessing
-
 from functools import partial
-from multiprocessing.dummy import Pool as ThreadPool
-from PIL import Image
 from io import BytesIO
+from multiprocessing.dummy import Pool as ThreadPool
+
+from PIL import Image
 
 try:
     from urllib.request import urlopen
@@ -54,7 +54,9 @@ def parse_args():
     return args.input_file, args.output_dir, int(args.threads)
 
 
-def get_images(row, output_dir):
+def get_image(row, output_dir):
+    """Downloads the image that corresponds to the given row.
+    Prints a notification if the download fails."""
     if not download_image(image_id=row[0],
                           url=row[1],
                           x1=float(row[2]),
@@ -81,7 +83,8 @@ def download_image(image_id, url, x1, y1, x2, y2, output_dir):
         image = Image.open(BytesIO(image_buffer)).convert('RGB')
         w = image.size[0]
         h = image.size[1]
-        image = image.crop((int(x1 * w), int(y1 * h), int(x2 * w), int(y2 * h)))
+        image = image.crop((int(x1 * w), int(y1 * h), int(x2 * w),
+                            int(y2 * h)))
         image = image.resize((299, 299), resample=Image.ANTIALIAS)
         image.save(output_filename)
     except IOError:
@@ -92,9 +95,7 @@ def download_image(image_id, url, x1, y1, x2, y2, output_dir):
 def main():
     input_filename, output_dir, n_threads = parse_args()
 
-    absolute_path_not_existing = os.path.isabs(output_dir) and not os.path.isdir(output_dir)
-    relative_path_not_existing = not os.path.isabs(output_dir) and not os.path.isdir(os.getcwd() + '/' + output_dir)
-    if absolute_path_not_existing or relative_path_not_existing:
+    if not os.path.isdir(output_dir):
         print("Output directory {} does not exist".format(output_dir))
         sys.exit()
 
@@ -110,15 +111,18 @@ def main():
         row_idx_x2 = header_row.index('x2')
         row_idx_y2 = header_row.index('y2')
     except ValueError as e:
-        print('One of the columns was not found in the source file: ', e.message)
+        print('One of the columns was not found in the source file: ',
+              e.message)
 
-    rows = [(row[row_idx_image_id], row[row_idx_url], float(row[row_idx_x1]), float(row[row_idx_y1]),
-             float(row[row_idx_x2]), float(row[row_idx_y2])) for row in rows]
+    rows = [(row[row_idx_image_id], row[row_idx_url], float(row[row_idx_x1]),
+             float(row[row_idx_y1]), float(row[row_idx_x2]),
+             float(row[row_idx_y2])) for row in rows]
 
     if n_threads > 1:
         pool = ThreadPool(n_threads)
-        partial_get_images = partial(get_images, output_dir=output_dir)
-        for i, _ in enumerate(pool.imap_unordered(partial_get_images, rows), 1):
+        partial_get_images = partial(get_image, output_dir=output_dir)
+        for i, _ in enumerate(pool.imap_unordered(partial_get_images, rows),
+                              1):
             sys.stderr.write('\rDownloaded {0} images'.format(i + 1))
         pool.close()
         pool.join()
