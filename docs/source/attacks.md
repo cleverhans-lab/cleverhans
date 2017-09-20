@@ -1,4 +1,4 @@
-cleverhans\.attacks module
+`attacks` module
 --------------------------
 
 .. automodule:: cleverhans.attacks
