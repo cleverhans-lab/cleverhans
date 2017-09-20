@@ -6,11 +6,19 @@
 CleverHans Documentation
 ======================================
 
+
+This documentation is auto-generated from the docstrings of modules of the current `master` branch of http://github.com/tensorflow/cleverhans.
+
+To get started, you should take a look at the following modules:
+
+
 .. toctree::
    :maxdepth: 4
 
    source/attacks
    source/model
+
+
 
 
 Indices and tables
@@ -19,3 +27,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
