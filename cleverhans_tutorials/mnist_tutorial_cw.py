@@ -114,13 +114,11 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
 
     if viz_enabled:
+        assert source_samples == nb_classes
         idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0]
                 for i in range(nb_classes)]
-
     if targeted:
         if viz_enabled:
-            assert source_samples == nb_classes
-
             # Initialize our array for grid visualization
             grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
             grid_viz_data = np.zeros(grid_shape, dtype='f')
