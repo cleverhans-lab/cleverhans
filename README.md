@@ -1,4 +1,4 @@
-# CleverHans (v1.0.0)
+# CleverHans (latest release: v2.0.0)
 
 <img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
@@ -73,20 +73,20 @@ currently [test it](https://travis-ci.org/tensorflow/cleverhans) with Python
 ## Tutorials
 
 To help you get started with the functionalities provided by this library, the
-`tutorials/' folder comes with the following tutorials:
-* **MNIST with FGSM** ([code](tutorials/mnist_tutorial_tf.py)): this
+`cleverhans_tutorials/' folder comes with the following tutorials:
+* **MNIST with FGSM** ([code](cleverhans_tutorials/mnist_tutorial_tf.py)): this
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial examples using adversarial training.
-* **MNIST with FGSM using Keras** ([code](tutorials/mnist_tutorial_keras_tf.py), [tutorial](tutorials/mnist_tutorial_keras_tf.md)): this
+* **MNIST with FGSM using Keras** ([code](cleverhans_tutorials/mnist_tutorial_keras_tf.py)): this
 tutorial covers how to define a MNIST model with Keras and train it using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial
 examples using adversarial training.
-* **MNIST with JSMA** ([code](tutorials/mnist_tutorial_jsma.py), [tutorial](tutorials/mnist_tutorial_jsma.md)): this second
+* **MNIST with JSMA** ([code](cleverhans_tutorials/mnist_tutorial_jsma.py)): this second
 tutorial covers how to define a MNIST model with Keras and train it using TensorFlow and
 craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528).
-* **MNIST using a black-box attack** ([code](tutorials/mnist_blackbox.py)):
+* **MNIST using a black-box attack** ([code](cleverhans_tutorials/mnist_blackbox.py)):
 this tutorial implements the black-box
 attack described in this [paper](https://arxiv.org/abs/1602.02697).
 The adversary train a substitute model: a copy that imitates the black-box
@@ -97,7 +97,8 @@ black-box model as well.
 
 Some models used in the tutorials are defined using [Keras](https://keras.io),
 which should be installed before running these tutorials.
-Installation instructions for Keras can be found [here](https://keras.io/#installation)
+Installation instructions for Keras can be found
+[here](https://keras.io/#installation).
 Note that you should configure Keras to use the TensorFlow backend. You
 can find instructions for
 setting the Keras backend [on this page](https://keras.io/backend/).
@@ -105,7 +106,8 @@ setting the Keras backend [on this page](https://keras.io/backend/).
 ## Examples
 
 The `examples/` folder contains additional scripts to showcase different uses
-of the CleverHans library.
+of the CleverHans library or get you started competing in different adversarial
+example contests.
 
 ## Reporting benchmarks
 
@@ -116,8 +118,8 @@ When reporting benchmarks, please:
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v1.0.0 of CleverHans. On a test set modified by the
-`fgsm` with `eps` of 0.3, we obtained a test set accuracy of 71.3%."
+adversarial attack using v2.0.0 of CleverHans. On a test set modified by the
+`FastGradientMethod` with a max-norm `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Contributing
 
@@ -143,9 +145,7 @@ If you use CleverHans for academic research, you are highly encouraged
   year={2016}
 }
 ```
-
-A new version of the technical report will be uploaded for each major
-revision. GitHub contributors will be added to the author list.
+There is not yet an ArXiv tech report for v2.0.0 but one will be prepared soon.
 
 ## About the name
 
@@ -169,11 +169,20 @@ This library is managed and maintained by Ian Goodfellow (Google Brain),
 Nicolas Papernot (Pennsylvania State University), and
 Ryan Sheatsley (Pennsylvania State University).
 
-The following authors contributed (ordered according to the GitHub contributors page):
-* Nicolas Papernot (Pennsylvania State University)
-* Ian Goodfellow (OpenAI)
-* Ryan Sheatsley (Pennsylvania State University)
+The following authors contributed 100 lines or more (ordered according to the GitHub contributors page):
+* Nicolas Papernot (Pennsylvania State University, Google Brain intern)
+* Nicholas Carlini (UC Berkeley)
+* Ian Goodfellow (Google Brain)
 * Reuben Feinman (Symantec)
+* Fartash Faghri (University of Toronto, Google Brain intern)
+* Alexander Matyasko (Nanyang Technological University)
+* Karen Hambardzumyan (YerevaNN)
+* Yi-Lin Juang (NTUEE)
+* Alexey Kurakin (Google Brain)
+* Ryan Sheatsley (Pennsylvania State University)
+* Abhibhav Garg (IIT Delhi)
+* Yen-Chen Lin (National Tsing Hua University)
+* Paul Hendricks
 
 ## Copyright
 

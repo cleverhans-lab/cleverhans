@@ -3,19 +3,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import keras
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
+import logging
 
 from cleverhans.attacks import SaliencyMapMethod
-from cleverhans.utils import other_classes, cnn_model
+from cleverhans.utils import other_classes, set_log_level
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
-from cleverhans.utils_keras import KerasModelWrapper
+from cleverhans.utils_keras import KerasModelWrapper, cnn_model
+from cleverhans_tutorials.tutorial_models import make_basic_cnn
 
 FLAGS = flags.FLAGS
 
@@ -46,22 +46,14 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     img_cols = 28
     channels = 1
 
-    # Disable Keras learning phase since we will be serving through tensorflow
-    keras.layers.core.K.set_learning_phase(0)
-
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
-    # Image dimensions ordering should follow the TensorFlow convention
-    if keras.backend.image_dim_ordering() != 'tf':
-        keras.backend.set_image_dim_ordering('tf')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
-              "to 'th', temporarily setting to 'tf'")
-
     # Create TF session and set as Keras backend session
     sess = tf.Session()
-    keras.backend.set_session(sess)
-    print("Created TensorFlow session and set Keras backend.")
+    print("Created TensorFlow session.")
+
+    set_log_level(logging.DEBUG)
 
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
@@ -74,7 +66,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
-    model = cnn_model()
+    model = make_basic_cnn()
     preds = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -89,7 +81,9 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
         'learning_rate': learning_rate
     }
     sess.run(tf.global_variables_initializer())
-    model_train(sess, x, y, preds, X_train, Y_train, args=train_params)
+    rng = np.random.RandomState([2017, 8, 30])
+    model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
+                rng=rng)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
@@ -101,8 +95,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1)
-          + ' adversarial examples')
+    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1) +
+          ' adversarial examples')
 
     # Keep track of success (adversarial example classified in target)
     results = np.zeros((nb_classes, source_samples), dtype='i')
@@ -115,12 +109,10 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Instantiate a SaliencyMapMethod attack object
-    wrap = KerasModelWrapper(model)
-    jsma = SaliencyMapMethod(wrap, back='tf', sess=sess)
+    jsma = SaliencyMapMethod(model, back='tf', sess=sess)
     jsma_params = {'theta': 1., 'gamma': 0.1,
-                   'nb_classes': nb_classes, 'clip_min': 0.,
-                   'clip_max': 1.,
-                   'targets': None}
+                   'clip_min': 0., 'clip_max': 1.,
+                   'y_target': None}
 
     figure = None
     # Loop over the samples we want to perturb into adversarial examples
@@ -145,7 +137,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
             # This call runs the Jacobian-based saliency map approach
             one_hot_target = np.zeros((1, nb_classes), dtype=np.float32)
             one_hot_target[0, target] = 1
-            jsma_params['targets'] = one_hot_target
+            jsma_params['y_target'] = one_hot_target
             adv_x = jsma.generate_np(sample, **jsma_params)
 
             # Check if success was achieved
@@ -217,4 +209,4 @@ if __name__ == '__main__':
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
-    app.run()
+    tf.app.run()

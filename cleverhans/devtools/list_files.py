@@ -27,17 +27,21 @@ def list_files(suffix=""):
         A list of all files in CleverHans whose filepath ends with `suffix`
     """
 
-    cleverhans_path, = cleverhans.__path__
+    cleverhans_path = os.path.abspath(cleverhans.__path__[0])
+    repo_path = os.path.abspath(os.path.join(cleverhans_path, os.pardir))
 
     file_list = _list_files(cleverhans_path, suffix)
 
-    repo_path = os.path.abspath(os.path.join(cleverhans_path, os.pardir))
-    tutorials_path = os.path.join(repo_path, "tutorials")
+    tutorials_path = os.path.join(repo_path, "cleverhans_tutorials")
     tutorials_files = _list_files(tutorials_path, suffix)
     tutorials_files = [os.path.join(os.pardir, path) for path in
                        tutorials_files]
+    examples_path = os.path.join(repo_path, "examples")
+    examples_files = _list_files(examples_path, suffix)
+    examples_files = [os.path.join(os.pardir, path) for path in
+                      examples_files]
 
-    file_list = file_list + tutorials_files
+    file_list = file_list + tutorials_files + examples_files
 
     return file_list
 

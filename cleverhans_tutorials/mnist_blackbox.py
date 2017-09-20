@@ -6,50 +6,38 @@ from __future__ import unicode_literals
 import numpy as np
 from six.moves import xrange
 
-import keras
-from keras import backend
-from keras.utils.np_utils import to_categorical
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Activation, Dropout
-
+import logging
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_mnist import data_mnist
+from cleverhans.utils import to_categorical
+from cleverhans.utils import set_log_level
 from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
-from cleverhans.utils_keras import KerasModelWrapper
+
+from cleverhans_tutorials.tutorial_models import make_basic_cnn, MLP
+from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
 
 FLAGS = flags.FLAGS
 
 
 def setup_tutorial():
     """
-    Helper function to check correct configuration of tf and keras for tutorial
+    Helper function to check correct configuration of tf for tutorial
     :return: True if setup checks completed
     """
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
-    if not hasattr(backend, "tf"):
-        raise RuntimeError("This tutorial requires keras to be configured"
-                           " to use the TensorFlow backend.")
-
-    # Image dimensions ordering should follow the Theano convention
-    if keras.backend.image_dim_ordering() != 'tf':
-        keras.backend.set_image_dim_ordering('tf')
-        print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' "
-              "to 'th', temporarily setting to 'tf'")
-
     return True
 
 
 def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
-              nb_epochs, batch_size, learning_rate):
+              nb_epochs, batch_size, learning_rate,
+              rng):
     """
     Define and train a model that simulates the "remote"
     black-box oracle described in the original paper.
@@ -63,11 +51,12 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     :param nb_epochs: number of epochs to train model
     :param batch_size: size of training batches
     :param learning_rate: learning rate for training
+    :param rng: numpy.random.RandomState
     :return:
     """
 
     # Define TF model graph (for the black-box model)
-    model = cnn_model()
+    model = make_basic_cnn()
     predictions = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -78,7 +67,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'learning_rate': learning_rate
     }
     model_train(sess, x, y, predictions, X_train, Y_train, verbose=False,
-                args=train_params)
+                args=train_params, rng=rng)
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
@@ -92,39 +81,30 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
 
 def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     """
-    Defines the model architecture to be used by the substitute
+    Defines the model architecture to be used by the substitute. Use
+    the example model interface.
     :param img_rows: number of rows in input
     :param img_cols: number of columns in input
     :param nb_classes: number of classes in output
-    :return: keras model
+    :return: tensorflow model
     """
-    model = Sequential()
-
-    # Find out the input shape ordering
-    if keras.backend.image_dim_ordering() == 'th':
-        input_shape = (1, img_rows, img_cols)
-    else:
-        input_shape = (img_rows, img_cols, 1)
+    input_shape = (None, img_rows, img_cols, 1)
 
     # Define a fully connected model (it's different than the black-box)
-    layers = [Flatten(input_shape=input_shape),
-              Dense(200),
-              Activation('relu'),
-              Dropout(0.5),
-              Dense(200),
-              Activation('relu'),
-              Dropout(0.5),
-              Dense(nb_classes),
-              Activation('softmax')]
+    layers = [Flatten(),
+              Linear(200),
+              ReLU(),
+              Linear(200),
+              ReLU(),
+              Linear(nb_classes),
+              Softmax()]
 
-    for layer in layers:
-        model.add(layer)
-
-    return model
+    return MLP(layers, input_shape)
 
 
 def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
-              nb_epochs_s, batch_size, learning_rate, data_aug, lmbda):
+              nb_epochs_s, batch_size, learning_rate, data_aug, lmbda,
+              rng):
     """
     This function creates the substitute by alternatively
     augmenting the training data and training the substitute.
@@ -140,6 +120,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
     :param learning_rate: learning rate for training
     :param data_aug: number of times substitute training data is augmented
     :param lmbda: lambda from arxiv.org/abs/1602.02697
+    :param rng: numpy.random.RandomState instance
     :return:
     """
     # Define TF model graph (for the black-box model)
@@ -159,7 +140,8 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             'learning_rate': learning_rate
         }
         model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
-                    init_all=False, verbose=False, args=train_params)
+                    init_all=False, verbose=False, args=train_params,
+                    rng=rng)
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < data_aug - 1:
@@ -198,7 +180,9 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
              * black-box model accuracy on adversarial examples transferred
                from the substitute model
     """
-    keras.layers.core.K.set_learning_phase(0)
+
+    # Set logging level to see debug information
+    set_log_level(logging.DEBUG)
 
     # Dictionary used to keep track and return key accuracies
     accuracies = {}
@@ -206,9 +190,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     # Perform tutorial setup
     assert setup_tutorial()
 
-    # Create TF session and set as Keras backend session
+    # Create TF session
     sess = tf.Session()
-    keras.backend.set_session(sess)
 
     # Get MNIST data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
@@ -228,18 +211,22 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
+    # Seed random number generator so tutorial is reproducible
+    rng = np.random.RandomState([2017, 8, 30])
+
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
     print("Preparing the black-box model.")
     prep_bbox_out = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
-                              nb_epochs, batch_size, learning_rate)
+                              nb_epochs, batch_size, learning_rate,
+                              rng=rng)
     model, bbox_preds, accuracies['bbox'] = prep_bbox_out
 
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     print("Training the substitute model.")
     train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
                               nb_classes, nb_epochs_s, batch_size,
-                              learning_rate, data_aug, lmbda)
+                              learning_rate, data_aug, lmbda, rng=rng)
     model_sub, preds_sub = train_sub_out
 
     # Evaluate the substitute model on clean test examples
@@ -249,8 +236,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
     fgsm_par = {'eps': 0.3, 'ord': np.inf, 'clip_min': 0., 'clip_max': 1.}
-    wrap = KerasModelWrapper(model_sub)
-    fgsm = FastGradientMethod(wrap, sess=sess)
+    fgsm = FastGradientMethod(model_sub, sess=sess)
 
     # Craft adversarial examples using the substitute
     eval_params = {'batch_size': batch_size}
@@ -289,4 +275,4 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for substitute')
     flags.DEFINE_float('lmbda', 0.1, 'Lambda from arxiv.org/abs/1602.02697')
 
-    app.run()
+    tf.app.run()

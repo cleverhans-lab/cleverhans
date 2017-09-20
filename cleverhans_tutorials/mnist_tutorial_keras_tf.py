@@ -3,10 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy as np
 import keras
 from keras import backend
 import tensorflow as tf
-from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
@@ -68,7 +68,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   test_end=test_end)
 
     # Use label smoothing
-    assert Y_train.shape[1] == 10.
+    assert Y_train.shape[1] == 10
     label_smooth = .1
     Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
 
@@ -100,6 +100,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     ckpt = tf.train.get_checkpoint_state(train_dir)
     ckpt_path = False if ckpt is None else ckpt.model_checkpoint_path
 
+    rng = np.random.RandomState([2017, 8, 30])
     if load_model and ckpt_path:
         saver = tf.train.Saver()
         saver.restore(sess, ckpt_path)
@@ -108,7 +109,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     else:
         print("Model was not loaded, training from scratch.")
         model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                    args=train_params, save=True)
+                    args=train_params, save=True, rng=rng)
 
     # Calculate training error
     if testing:
@@ -121,6 +122,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     fgsm = FastGradientMethod(wrap, sess=sess)
     fgsm_params = {'eps': 0.3}
     adv_x = fgsm.generate(x, **fgsm_params)
+    # Consider the attack to be constant
+    adv_x = tf.stop_gradient(adv_x)
     preds_adv = model(adv_x)
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
@@ -161,7 +164,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Perform and evaluate adversarial training
     model_train(sess, x, y, preds_2, X_train, Y_train,
                 predictions_adv=preds_2_adv, evaluate=evaluate_2,
-                args=train_params, save=False)
+                args=train_params, save=False, rng=rng)
 
     # Calculate training errors
     if testing:
@@ -192,4 +195,4 @@ if __name__ == '__main__':
     flags.DEFINE_string('train_dir', '/tmp', 'Directory where to save model.')
     flags.DEFINE_string('filename', 'mnist.ckpt', 'Checkpoint filename.')
     flags.DEFINE_boolean('load_model', True, 'Load saved model or train.')
-    app.run()
+    tf.app.run()

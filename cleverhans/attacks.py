@@ -5,8 +5,11 @@ import warnings
 import collections
 
 import cleverhans.utils as utils
-
 from cleverhans.model import Model, CallableModelWrapper
+
+import logging
+
+_logger = utils.create_logger("cleverhans.attacks")
 
 
 class Attack(object):
@@ -18,8 +21,10 @@ class Attack(object):
 
     def __init__(self, model, back='tf', sess=None):
         """
-        :param model: An instance of the Model class.
-        :param back: The backend to use. Either 'tf' (default) or 'th'.
+        :param model: An instance of the cleverhans.model.Model class.
+        :param back: The backend to use. Either 'tf' (default) or 'th'
+                     (support for Theano is however deprecated and will
+                     be removed on 2017-11-08).
         :param sess: The tf session to run graphs in (use None for Theano)
         """
         if not(back == 'tf' or back == 'th'):
@@ -29,11 +34,12 @@ class Attack(object):
         if not isinstance(model, Model):
             if hasattr(model, '__call__'):
                 warnings.warn("CleverHans support for supplying a callable"
-                              " instead of an instance of the Model class is"
+                              " instead of an instance of the"
+                              " cleverhans.model.Model class is"
                               " deprecated and will be dropped on 2018-01-11.")
             else:
                 raise ValueError("The model argument should be an instance of"
-                                 " the Model class.")
+                                 " the cleverhans.model.Model class.")
         if back == 'th':
             warnings.warn("CleverHans support for Theano is deprecated and "
                           "will be dropped on 2017-11-08.")
@@ -77,11 +83,28 @@ class Attack(object):
         raise NotImplementedError(error)
 
     def construct_graph(self, fixed, feedable, x_val, hash_key):
+        """
+        Construct the graph required to run the attack through generate_np.
+        :param fixed: Structural elements that require defining a new graph.
+        :param feedable: Arguments that can be fed to the same graph when
+                         they take different values.
+        :param x_val: symbolic adversarial example
+        :param hash_key: the key used to store this graph in our cache
+        """
         # try our very best to create a TF placeholder for each of the
         # feedable keyword arguments, and check the types are one of
         # the allowed types
         import tensorflow as tf
 
+        class_name = str(self.__class__).split(".")[-1][:-2]
+        _logger.info("Constructing new graph for attack " + class_name)
+
+        # remove the None arguments, they are just left blank
+        for k in list(feedable.keys()):
+            if feedable[k] is None:
+                del feedable[k]
+
+        # process all of the rest and create placeholders for them
         new_kwargs = dict(x for x in fixed.items())
         for name, value in feedable.items():
             given_type = self.feedable_kwargs[name]
@@ -110,18 +133,15 @@ class Attack(object):
 
     def generate_np(self, x_val, **kwargs):
         """
-        Generate adversarial examples and return them as a Numpy array.
+        Generate adversarial examples and return them as a NumPy array.
         Sub-classes *should not* implement this method unless they must
         perform special handling of arguments.
-        :param x_val: A Numpy array with the original inputs.
+        :param x_val: A NumPy array with the original inputs.
         :param **kwargs: optional parameters used by child classes.
-        :return: A Numpy array holding the adversarial examples.
+        :return: A NumPy array holding the adversarial examples.
         """
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
-
-        import tensorflow as tf
-
         if self.sess is None:
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
@@ -163,6 +183,37 @@ class Attack(object):
 
         return self.sess.run(x_adv, feed_dict)
 
+    def get_or_guess_labels(self, x, kwargs):
+        """
+        Get the label to use in generating an adversarial example for x.
+        The kwargs are fed directly from the kwargs of the attack.
+        If 'y' is in kwargs, then assume it's an untargeted attack and
+        use that as the label.
+        If 'y_target' is in kwargs, then assume it's a targeted attack and
+        use that as the label.
+        Otherwise, use the model's prediction as the label and perform an
+        untargeted attack.
+        """
+        import tensorflow as tf
+
+        if 'y' in kwargs and 'y_target' in kwargs:
+            raise ValueError("Can not set both 'y' and 'y_target'.")
+        elif 'y' in kwargs:
+            labels = kwargs['y']
+        elif 'y_target' in kwargs:
+            labels = kwargs['y_target']
+        else:
+            preds = self.model.get_probs(x)
+            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+            original_predictions = tf.to_float(tf.equal(preds,
+                                                        preds_max))
+            labels = original_predictions
+        if isinstance(labels, np.ndarray):
+            nb_classes = labels.shape[1]
+        else:
+            nb_classes = labels.get_shape().as_list()[1]
+        return labels, nb_classes
+
     def parse_params(self, params=None):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -186,10 +237,13 @@ class FastGradientMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a FastGradientMethod instance.
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(FastGradientMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'y': np.float32,
+                                'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord']
@@ -202,7 +256,7 @@ class FastGradientMethod(Attack):
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
         :param eps: (optional float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics Numpy).
+        :param ord: (optional) Order of the norm (mimics NumPy).
                     Possible values: np.inf, 1 or 2.
         :param y: (optional) A tensor with the model labels. Only provide
                   this parameter if you'd like to use true labels when crafting
@@ -210,6 +264,9 @@ class FastGradientMethod(Attack):
                   labels to avoid the "label leaking" effect (explained in this
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -221,19 +278,22 @@ class FastGradientMethod(Attack):
         else:
             from .attacks_th import fgm
 
-        return fgm(x, self.model.get_probs(x), y=self.y, eps=self.eps,
-                   ord=self.ord, clip_min=self.clip_min,
-                   clip_max=self.clip_max)
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
-    def parse_params(self, eps=0.3, ord=np.inf, y=None, clip_min=None,
-                     clip_max=None, **kwargs):
+        return fgm(x, self.model.get_probs(x), y=labels, eps=self.eps,
+                   ord=self.ord, clip_min=self.clip_min,
+                   clip_max=self.clip_max,
+                   targeted=(self.y_target is not None))
+
+    def parse_params(self, eps=0.3, ord=np.inf, y=None, y_target=None,
+                     clip_min=None, clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
 
         Attack-specific parameters:
         :param eps: (optional float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics Numpy).
+        :param ord: (optional) Order of the norm (mimics NumPy).
                     Possible values: np.inf, 1 or 2.
         :param y: (optional) A tensor with the model labels. Only provide
                   this parameter if you'd like to use true labels when crafting
@@ -241,16 +301,23 @@ class FastGradientMethod(Attack):
                   labels to avoid the "label leaking" effect (explained in this
                   paper: https://arxiv.org/abs/1611.01236). Default is None.
                   Labels should be one-hot-encoded.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
         # Save attack-specific parameters
+
         self.eps = eps
         self.ord = ord
         self.y = y
+        self.y_target = y_target
         self.clip_min = clip_min
         self.clip_max = clip_max
 
+        if self.y is not None and self.y_target is not None:
+            raise ValueError("Must not set both y and y_target")
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, int(1), int(2)]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
@@ -271,11 +338,14 @@ class BasicIterativeMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a BasicIterativeMethod instance.
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(BasicIterativeMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'eps_iter': np.float32,
                                 'y': np.float32,
+                                'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter']
@@ -291,7 +361,10 @@ class BasicIterativeMethod(Attack):
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
-        :param y: (required) A tensor with the model labels.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
@@ -308,14 +381,25 @@ class BasicIterativeMethod(Attack):
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model.get_probs(x)
         preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
-        y = tf.to_float(tf.equal(model_preds, preds_max))
-        fgsm_params = {'eps': self.eps_iter, 'y': y, 'ord': self.ord}
+        if self.y_target is not None:
+            y = self.y_target
+            targeted = True
+        elif self.y is not None:
+            y = self.y
+            targeted = False
+        else:
+            y = tf.to_float(tf.equal(model_preds, preds_max))
+            targeted = False
+
+        y_kwarg = 'y_target' if targeted else 'y'
+        fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord,
+                      'clip_min': self.clip_min, 'clip_max': self.clip_max}
 
         for i in range(self.nb_iter):
-            FGSM = FastGradientMethod(self.model, back=self.back,
-                                      sess=self.sess)
+            FGM = FastGradientMethod(self.model, back=self.back,
+                                     sess=self.sess)
             # Compute this step's perturbation
-            eta = FGSM.generate(x + eta, **fgsm_params) - x
+            eta = FGM.generate(x + eta, **fgm_params) - x
 
             # Clipping perturbation eta to self.ord norm ball
             if self.ord == np.inf:
@@ -340,7 +424,8 @@ class BasicIterativeMethod(Attack):
         return adv_x
 
     def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
-                     ord=np.inf, clip_min=None, clip_max=None, **kwargs):
+                     ord=np.inf, clip_min=None, clip_max=None,
+                     y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -350,7 +435,10 @@ class BasicIterativeMethod(Attack):
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
-        :param y: (required) A tensor with the model labels.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
@@ -362,10 +450,13 @@ class BasicIterativeMethod(Attack):
         self.eps_iter = eps_iter
         self.nb_iter = nb_iter
         self.y = y
+        self.y_target = y_target
         self.ord = ord
         self.clip_min = clip_min
         self.clip_max = clip_max
 
+        if self.y is not None and self.y_target is not None:
+            raise ValueError("Must not set both y and y_target")
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
@@ -386,6 +477,8 @@ class SaliencyMapMethod(Attack):
     def __init__(self, model, back='tf', sess=None):
         """
         Create a SaliencyMapMethod instance.
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(SaliencyMapMethod, self).__init__(model, back, sess)
 
@@ -397,8 +490,8 @@ class SaliencyMapMethod(Attack):
             raise NotImplementedError(error)
 
         import tensorflow as tf
-        self.feedable_kwargs = {'targets': tf.float32}
-        self.structural_kwargs = ['theta', 'gamma', 'nb_classes',
+        self.feedable_kwargs = {'y_target': tf.float32}
+        self.structural_kwargs = ['theta', 'gamma',
                                   'clip_max', 'clip_min']
 
     def generate(self, x, **kwargs):
@@ -408,10 +501,9 @@ class SaliencyMapMethod(Attack):
         :param theta: (optional float) Perturbation introduced to modified
                       components (can be positive or negative)
         :param gamma: (optional float) Maximum percentage of perturbed features
-        :param nb_classes: (optional int) Number of model output classes
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
-        :param targets: (optional) Target tensor if the attack is targeted
+        :param y_target: (optional) Target tensor if the attack is targeted
         """
         import tensorflow as tf
         from .attacks_tf import jacobian_graph, jsma_batch
@@ -421,32 +513,33 @@ class SaliencyMapMethod(Attack):
 
         # Define Jacobian graph wrt to this input placeholder
         preds = self.model.get_probs(x)
-        grads = jacobian_graph(preds, x, self.nb_classes)
+        nb_classes = preds.get_shape().as_list()[-1]
+        grads = jacobian_graph(preds, x, nb_classes)
 
         # Define appropriate graph (targeted / random target labels)
-        if self.targets is not None:
-            def jsma_wrap(x_val, targets):
+        if self.y_target is not None:
+            def jsma_wrap(x_val, y_target):
                 return jsma_batch(self.sess, x, preds, grads, x_val,
                                   self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, self.nb_classes,
-                                  targets=targets)
+                                  self.clip_max, nb_classes,
+                                  y_target=y_target)
 
             # Attack is targeted, target placeholder will need to be fed
-            wrap = tf.py_func(jsma_wrap, [x, self.targets], tf.float32)
+            wrap = tf.py_func(jsma_wrap, [x, self.y_target], tf.float32)
         else:
             def jsma_wrap(x_val):
                 return jsma_batch(self.sess, x, preds, grads, x_val,
                                   self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, self.nb_classes,
-                                  targets=None)
+                                  self.clip_max, nb_classes,
+                                  y_target=None)
 
             # Attack is untargeted, target values will be chosen at random
             wrap = tf.py_func(jsma_wrap, [x], tf.float32)
 
         return wrap
 
-    def parse_params(self, theta=1., gamma=np.inf, nb_classes=10, clip_min=0.,
-                     clip_max=1., targets=None, **kwargs):
+    def parse_params(self, theta=1., gamma=np.inf, nb_classes=None,
+                     clip_min=0., clip_max=1., y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -458,15 +551,17 @@ class SaliencyMapMethod(Attack):
         :param nb_classes: (optional int) Number of model output classes
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
-        :param targets: (optional) Target tensor if the attack is targeted
+        :param y_target: (optional) Target tensor if the attack is targeted
         """
 
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
         self.theta = theta
         self.gamma = gamma
-        self.nb_classes = nb_classes
         self.clip_min = clip_min
         self.clip_max = clip_max
-        self.targets = targets
+        self.y_target = y_target
 
         return True
 
@@ -481,6 +576,10 @@ class VirtualAdversarialMethod(Attack):
     """
 
     def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
 
         if self.back == 'th':
@@ -533,6 +632,121 @@ class VirtualAdversarialMethod(Attack):
         self.clip_min = clip_min
         self.clip_max = clip_max
         return True
+
+
+class CarliniWagnerL2(Attack):
+    """
+    This attack was originally proposed by Carlini and Wagner. It is an
+    iterative attack that finds adversarial examples on many defenses that
+    are robust to other attacks.
+    Paper link: https://arxiv.org/abs/1608.04644
+
+    At a high level, this attack is an iterative attack using Adam and
+    a specially-chosen loss function to find adversarial examples with
+    lower distortion than other attacks. This comes at the cost of speed,
+    as this attack is often much slower than others.
+    """
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(CarliniWagnerL2, self).__init__(model, back, sess)
+
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'y': tf.float32,
+                                'y_target': tf.float32}
+
+        self.structural_kwargs = ['batch_size', 'confidence',
+                                  'targeted', 'learning_rate',
+                                  'binary_search_steps', 'max_iterations',
+                                  'abort_early', 'initial_const',
+                                  'clip_min', 'clip_max']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'logits')
+
+    def generate(self, x, **kwargs):
+        """
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
+
+        :param x: (required) A tensor with the inputs.
+        :param y: (optional) A tensor with the true labels for an untargeted
+                  attack. If None (and y_target is None) then use the
+                  original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the target labels for a
+                  targeted attack.
+        :param confidence: Confidence of adversarial examples: higher produces
+                           examples with larger l2 distortion, but more
+                           strongly classified as adversarial.
+        :param batch_size: Number of attacks to run simultaneously.
+        :param learning_rate: The learning rate for the attack algorithm.
+                              Smaller values produce better results but are
+                              slower to converge.
+        :param binary_search_steps: The number of times we perform binary
+                                    search to find the optimal tradeoff-
+                                    constant between norm of the purturbation
+                                    and confidence of the classification.
+        :param max_iterations: The maximum number of iterations. Setting this
+                               to a larger value will produce lower distortion
+                               results. Using only a few iterations requires
+                               a larger learning rate, and will produce larger
+                               distortion results.
+        :param abort_early: If true, allows early aborts if gradient descent
+                            is unable to make progress (i.e., gets stuck in
+                            a local minimum).
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of size of the pururbation
+                              and confidence of classification.
+                              If binary_search_steps is large, the initial
+                              constant is not important. A smaller value of
+                              this constant gives lower distortion results.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+        from .attacks_tf import CarliniWagnerL2 as CWL2
+        self.parse_params(**kwargs)
+
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+
+        attack = CWL2(self.sess, self.model, self.batch_size,
+                      self.confidence, 'y_target' in kwargs,
+                      self.learning_rate, self.binary_search_steps,
+                      self.max_iterations, self.abort_early,
+                      self.initial_const, self.clip_min, self.clip_max,
+                      nb_classes, x.get_shape().as_list()[1:])
+
+        def cw_wrap(x_val, y_val):
+            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
+        wrap = tf.py_func(cw_wrap, [x, labels], tf.float32)
+
+        return wrap
+
+    def parse_params(self, y=None, y_target=None, nb_classes=None,
+                     batch_size=1, confidence=0,
+                     learning_rate=5e-3,
+                     binary_search_steps=5, max_iterations=1000,
+                     abort_early=True, initial_const=1e-2,
+                     clip_min=0, clip_max=1):
+
+        # ignore the y and y_target argument
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
+        self.batch_size = batch_size
+        self.confidence = confidence
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iterations = max_iterations
+        self.abort_early = abort_early
+        self.initial_const = initial_const
+        self.clip_min = clip_min
+        self.clip_max = clip_max
 
 
 def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
