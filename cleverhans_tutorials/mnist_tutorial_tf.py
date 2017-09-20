@@ -38,7 +38,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    learning_rate=0.001,
                    clean_train=True,
                    testing=False,
-                   backprop_through_attack=False):
+                   backprop_through_attack=False,
+                   nb_filters=64):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -92,7 +93,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     rng = np.random.RandomState([2017, 8, 30])
 
     if clean_train:
-        model = make_basic_cnn()
+        model = make_basic_cnn(nb_filters=nb_filters)
         preds = model.get_probs(x)
 
         def evaluate():
@@ -144,7 +145,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
         print("Repeating the process, using adversarial training")
     # Redefine TF model graph
-    model_2 = make_basic_cnn()
+    model_2 = make_basic_cnn(nb_filters=nb_filters)
     preds_2 = model_2(x)
     fgsm2 = FastGradientMethod(model_2, sess=sess)
     preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
@@ -185,10 +186,12 @@ def main(argv=None):
     mnist_tutorial(nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
                    learning_rate=FLAGS.learning_rate,
                    clean_train=FLAGS.clean_train,
-                   backprop_through_attack=FLAGS.backprop_through_attack)
+                   backprop_through_attack=FLAGS.backprop_through_attack,
+                   nb_filters=FLAGS.nb_filters)
 
 
 if __name__ == '__main__':
+    flags.DEFINE_integer('nb_filters', 64, 'Model size multiplier')
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
