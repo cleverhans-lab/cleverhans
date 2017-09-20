@@ -49,8 +49,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     :param nb_epochs: number of epochs to train model
     :param batch_size: size of training batches
     :param learning_rate: learning rate for training
+    :param clean_train: perform normal training on clean examples only
+                        before performing adversarial training.
     :param testing: if true, complete an AccuracyReport for unit tests
-      to verify that performance is adequate
+                    to verify that performance is adequate
+    :param backprop_through_attack: If True, backprop through adversarial
+                                    example construction process during
+                                    adversarial training.
     :param clean_train: if true, train on clean examples
     :return: an AccuracyReport object
     """
