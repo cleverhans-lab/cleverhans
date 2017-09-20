@@ -500,8 +500,7 @@ class TestDeepFool(CleverHansTest):
         x_val = np.array(x_val, dtype=np.float32)
 
         x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
-                                        nb_candidate=2, nb_classes=2,
-                                        clip_min=-5, clip_max=5)
+                                        nb_candidate=2, clip_min=-5, clip_max=5)
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -518,8 +517,7 @@ class TestDeepFool(CleverHansTest):
         x = tf.placeholder(tf.float32, x_val.shape)
 
         x_adv_p = self.attack.generate(x, over_shoot=0.02, max_iter=50,
-                                       nb_candidate=2, nb_classes=2,
-                                       clip_min=-5, clip_max=5)
+                                       nb_candidate=2, clip_min=-5, clip_max=5)
         x_adv = self.sess.run(x_adv_p, {x: x_val})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -531,8 +529,7 @@ class TestDeepFool(CleverHansTest):
         x_val = np.array(x_val, dtype=np.float32)
 
         x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
-                                        nb_candidate=2, nb_classes=2,
-                                        clip_min=-0.2, clip_max=0.3)
+                                        nb_candidate=2, clip_min=-0.2, clip_max=0.3)
 
         assert -0.201 < np.min(x_adv)
         assert np.max(x_adv) < .301
