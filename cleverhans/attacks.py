@@ -752,9 +752,9 @@ class CarliniWagnerL2(Attack):
 class DeepFool(Attack):
 
     """
-    DeepFool is an untargeted & iterative attack which aims at finding the
-    minimum adversarial perturbations in deep networks. The implementation
-    here is w.r.t. the L2 norm.
+    DeepFool is an untargeted & iterative attack which is based on an 
+    iterative linearization of the classifier. The implementation here 
+    is w.r.t. the L2 norm.
     Paper link: "https://arxiv.org/pdf/1511.04599.pdf"
     """
 
@@ -768,9 +768,8 @@ class DeepFool(Attack):
             raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
-        self.structural_kwargs = ['over_shoot', 'max_iter',
-                                  'clip_max', 'clip_min',
-                                  'nb_candidate', 'nb_classes']
+        self.structural_kwargs = ['over_shoot', 'max_iter', 'clip_max',
+                                  'clip_min', 'nb_candidate']
 
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'logits')
@@ -781,7 +780,9 @@ class DeepFool(Attack):
         :param x: The model's symbolic inputs.
         :param nb_candidate: The number of classes to test against, i.e.,
                             deepfool only consider nb_candidate classes when
-                            attacking (thus accelerate speed)
+                            attacking (thus accelerate speed). For implementation,
+                            the nb_candidate classes are chosen according to the 
+                            prediction confidence.
         :param overshoot: A termination criterion to prevent vanishing updates
         :param max_iter: Maximum number of iteration for deepfool
         :param nb_classes: The number of model output classes
@@ -790,20 +791,20 @@ class DeepFool(Attack):
         """
 
         import tensorflow as tf
-        from .attacks_tf import gradient_graph, deepfool_batch
+        from .attacks_tf import jacobian_graph, deepfool_batch
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        assert self.nb_candidate <= self.nb_classes,\
-            'nb_candidate should not be greater than nb_classes'
-
         # Define graph wrt to this input placeholder
         logits = self.model.get_logits(x)
+        self.nb_classes = logits.get_shape().as_list()[-1]
+        assert self.nb_candidate <= self.nb_classes,\
+            'nb_candidate should not be greater than nb_classes'
         preds = tf.reshape(tf.nn.top_k(logits, k=self.nb_candidate)[0],
                            [-1, self.nb_candidate])
-        grads = gradient_graph(preds, x, self.nb_candidate)
-
+        # grads will be the shape [batch_size, nb_candidate, image_size]
+        grads = tf.stack(jacobian_graph(preds, x, self.nb_candidate), axis=1)
         # Define graph
         def deepfool_wrap(x_val):
             return deepfool_batch(self.sess, x, preds, logits, grads, x_val,
@@ -813,21 +814,25 @@ class DeepFool(Attack):
         return tf.py_func(deepfool_wrap, [x], tf.float32)
 
     def parse_params(self, nb_candidate=10, overshoot=0.02, max_iter=50,
-                     nb_classes=1001, clip_min=0., clip_max=1., **kwargs):
+                     nb_classes=None, clip_min=0., clip_max=1., **kwargs):
         """
         :param nb_candidate: The number of classes to test against, i.e.,
                             deepfool only consider nb_candidate classes when
-                            attacking (thus accelerate speed)
+                            attacking (thus accelerate speed). For implementation,
+                            the nb_candidate classes are chosen according to the 
+                            prediction confidence.
         :param overshoot: A termination criterion to prevent vanishing updates
         :param max_iter: Maximum number of iteration for deepfool
         :param nb_classes: The number of model output classes
         :param clip_min: Minimum component value for clipping
         :param clip_max: Maximum component value for clipping
         """
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
         self.nb_candidate = nb_candidate
         self.overshoot = overshoot
         self.max_iter = max_iter
-        self.nb_classes = nb_classes
         self.clip_min = clip_min
         self.clip_max = clip_max
 

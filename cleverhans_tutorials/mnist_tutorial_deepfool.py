@@ -121,7 +121,6 @@ def mnist_tutorial_deepfool(train_start=0, train_end=60000, test_start=0,
     deepfool_params = {'nb_candidate': 10,
                        'overshoot': 0.02,
                        'max_iter': attack_iterations,
-                       'nb_classes': 10,
                        'clip_min': 0.,
                        'clip_max': 1.}
 
