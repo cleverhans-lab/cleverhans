@@ -735,16 +735,17 @@ def deepfool_batch(sess, x, pred, logits, grads, X, nb_candidate, overshoot,
     :param sess: TF session
     :param x: The input placeholder
     :param pred: The model's sorted symbolic output of logits, only the top
-                nb_candidate classes are contained
+                 nb_candidate classes are contained
     :param logits: The model's unnormalized output tensor (the input to
                    the softmax layer)
     :param grads: Symbolic gradients of the top nb_candidate classes, procuded
-                 from gradient_graph
+                  from gradient_graph
     :param X: Numpy array with sample inputs
-    :param nb_candidate: The number of classes to test against, i.e., deepfool
-                        only consider nb_candidate classes when attacking (thus
-                        accelerate speed). For implementation, the nb_candidate
-                        classes are chosen according to the prediction confidence
+    :param nb_candidate: The number of classes to test against, i.e.,
+                         deepfool only consider nb_candidate classes when
+                         attacking(thus accelerate speed). The nb_candidate
+                         classes are chosen according to the prediction
+                         confidence during implementation.
     :param overshoot: A termination criterion to prevent vanishing updates
     :param max_iter: Maximum number of iteration for DeepFool
     :param clip_min: Minimum value for components of the example returned
@@ -772,10 +773,11 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     :param grads: Symbolic gradients of the top nb_candidate classes, procuded
                  from gradient_graph
     :param sample: Numpy array with sample input
-    :param nb_candidate: The number of classes to test against, i.e., deepfool
-                        only consider nb_candidate classes when attacking (thus
-                        accelerate speed). For implementation, the nb_candidate
-                        classes are chosen according to the prediction confidence
+    :param nb_candidate: The number of classes to test against, i.e.,
+                         deepfool only consider nb_candidate classes when
+                         attacking(thus accelerate speed). The nb_candidate
+                         classes are chosen according to the prediction
+                         confidence during implementation.
     :param overshoot: A termination criterion to prevent vanishing updates
     :param max_iter: Maximum number of iteration for DeepFool
     :param clip_min: Minimum value for components of the example returned
