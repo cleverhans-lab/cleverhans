@@ -89,8 +89,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'learning_rate': learning_rate
     }
     fgsm_params = {'eps': 0.3,
-                   'clip_min' : 0.,
-                   'clip_max' : 1.}
+                   'clip_min': 0.,
+                   'clip_max': 1.}
     rng = np.random.RandomState([2017, 8, 30])
 
     if clean_train:
