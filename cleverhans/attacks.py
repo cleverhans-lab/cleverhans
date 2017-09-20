@@ -29,8 +29,13 @@ class Attack(object):
         """
         if not(back == 'tf' or back == 'th'):
             raise ValueError("Backend argument must either be 'tf' or 'th'.")
+
         if back == 'th' and sess is not None:
             raise Exception("A session should not be provided when using th.")
+        elif back == 'tf' and sess is None:
+            import tensorflow as tf
+            sess = tf.get_default_session()
+
         if not isinstance(model, Model):
             if hasattr(model, '__call__'):
                 warnings.warn("CleverHans support for supplying a callable"
