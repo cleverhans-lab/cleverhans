@@ -13,7 +13,8 @@ from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
-from cleverhans.utils import get_logits_over_interval, linear_extrapolation_plot
+from cleverhans.utils import get_logits_over_interval
+from cleverhans.utils import linear_extrapolation_plot
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
 
@@ -181,8 +182,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     log_prob_adv_array = get_logits_over_interval(
         sess, wrap_2, x, adv_x, X_slice)
     linear_extrapolation_plot(log_prob_adv_array, Y_slice, 'lep_adv.png')
-
-
 
     # Calculate training errors
     if testing:

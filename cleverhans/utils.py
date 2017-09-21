@@ -230,7 +230,8 @@ def get_logits_over_interval(sess, model, x, adv_x, x_data,
         model: Model for which we wish to get logits
         x: Data tensor
         adv_x: Tensor for adversarial perturbation of x
-        x_data: Numpy array corresponding to the data slice used to generate plot
+        x_data: Numpy array corresponding to the data
+            slice used to generate plot
         min_epsilon: Minimum value of epsilon over the interval
         max_epsilon: Maximum value of epsilon over the interval
         num_points: Number of points used to interpolate
@@ -248,7 +249,9 @@ def get_logits_over_interval(sess, model, x, adv_x, x_data,
     epsilon = min_epsilon
     eta = adv_x - x
     eta = tf.nn.l2_normalize(eta, dim=0)
-    for i, epsilon in enumerate(np.linspace(min_epsilon, max_epsilon, num_points)):
+    for i, epsilon in enumerate(np.linspace(min_epsilon,
+                                            max_epsilon,
+                                            num_points)):
         with sess.as_default():
             adv_x_epsilon = x + eta * epsilon
             logits = model.get_logits(adv_x_epsilon)
