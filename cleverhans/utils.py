@@ -274,6 +274,8 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
         max_epsilon: maximum value of epsilon over the interval
         num_points: number of points used to interpolate
     """
+    import matplotlib.pyplot as plt
+
     correct_idx = np.argmax(y, axis=1)
     fig = plt.figure()
     plt.xlabel('Epsilon')
@@ -295,6 +297,7 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
             linewidth=linewidth,
             label='{}'.format(i))
     plt.legend(loc='best', fontsize=14)
+    plt.show()
     fig.savefig(file_name)
     plt.clf()
 
