@@ -227,14 +227,14 @@ def get_logits_over_interval(sess, model, x, adv_x_real, x_data,
     """Get logits when the input is perturbed in an interval in adv direction.
 
     Args:
-        sess: tf session
+        sess: Tf session
         model: Model for which we wish to get logits
-        x: tf placeholder for data (unquantized)
-        adv_x_real: tf placeholder for adv perturbation of x (unquantized)
-        x_data: np array corresponding to the data slice used to generate plot
-        min_epsilon: minimum value of epsilon over the interval
-        max_epsilon: maximum value of epsilon over the interval
-        num_points: number of points used to interpolate
+        x: Tf placeholder for data (unquantized)
+        adv_x_real: Tf placeholder for adv perturbation of x (unquantized)
+        x_data: Numpy array corresponding to the data slice used to generate plot
+        min_epsilon: Minimum value of epsilon over the interval
+        max_epsilon: Maximum value of epsilon over the interval
+        num_points: Number of points used to interpolate
 
     Returns:
         Numpy array containing log probabilities
@@ -250,7 +250,6 @@ def get_logits_over_interval(sess, model, x, adv_x_real, x_data,
     for i in xrange(num_points):
         log_prob_adv = sess.run(logits, feed_dict={x: x_data,
                                                    epsilon_t: epsilon})
-        print('epsilon = {}, log_prob_adv = {}'.format(epsilon, log_prob_adv))
         if i == 0:
             log_prob_adv_array = log_prob_adv
         else:
@@ -268,11 +267,11 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
 
     Args:
         log_prob_adv_array: Numpy array containing log probabilities
-        y: tf placeholder for the labels
-        file_name: plot filename
-        min_epsilon: minimum value of epsilon over the interval
-        max_epsilon: maximum value of epsilon over the interval
-        num_points: number of points used to interpolate
+        y: Tf placeholder for the labels
+        file_name: Plot filename
+        min_epsilon: Minimum value of epsilon over the interval
+        max_epsilon: Maximum value of epsilon over the interval
+        num_points: Number of points used to interpolate
     """
     import matplotlib.pyplot as plt
 
