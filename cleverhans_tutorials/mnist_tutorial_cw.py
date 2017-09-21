@@ -66,8 +66,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                                                   test_end=test_end)
 
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, channels))
+    y = tf.placeholder(tf.float32, shape=(None, nb_classes))
 
     # Define TF model graph
     model = make_basic_cnn()
@@ -89,7 +89,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     rng = np.random.RandomState([2017, 8, 30])
     # check if we've trained before, and if we have, use that pre-trained model
-    if os.path.exists(model_path+".meta"):
+    if os.path.exists(model_path + ".meta"):
         tf_model_load(sess, model_path)
     else:
         model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
@@ -105,33 +105,51 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     # Craft adversarial examples using Carlini and Wagner's approach
     ###########################################################################
-    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1) +
+    nb_adv_per_sample = str(nb_classes - 1) if targeted else '1'
+    print('Crafting ' + str(source_samples) + ' * ' + nb_adv_per_sample +
           ' adversarial examples')
     print("This could take some time ...")
 
     # Instantiate a CW attack object
     cw = CarliniWagnerL2(model, back='tf', sess=sess)
 
-    idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0] for i in range(10)]
+    if viz_enabled:
+        assert source_samples == nb_classes
+        idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0]
+                for i in range(nb_classes)]
     if targeted:
-        # Initialize our array for grid visualization
-        grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
-        grid_viz_data = np.zeros(grid_shape, dtype='f')
+        if viz_enabled:
+            # Initialize our array for grid visualization
+            grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
+            grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-        one_hot = np.zeros((10, 10))
-        one_hot[np.arange(10), np.arange(10)] = 1
+            adv_inputs = np.array(
+                [[instance] * nb_classes for instance in X_test[idxs]],
+                dtype=np.float32)
+        else:
+            adv_inputs = np.array(
+                [[instance] * nb_classes for
+                 instance in X_test[:source_samples]], dtype=np.float32)
 
-        adv_inputs = np.array([[instance] * 10 for instance in X_test[idxs]],
-                              dtype=np.float32)
-        adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
-        adv_ys = np.array([one_hot] * 10, dtype=np.float32).reshape((100, 10))
+        one_hot = np.zeros((nb_classes, nb_classes))
+        one_hot[np.arange(nb_classes), np.arange(nb_classes)] = 1
+
+        adv_inputs = adv_inputs.reshape(
+            (source_samples * nb_classes, img_rows, img_cols, 1))
+        adv_ys = np.array([one_hot] * source_samples,
+                          dtype=np.float32).reshape((source_samples *
+                                                     nb_classes, nb_classes))
         yname = "y_target"
     else:
-        # Initialize our array for grid visualization
-        grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
-        grid_viz_data = np.zeros(grid_shape, dtype='f')
+        if viz_enabled:
+            # Initialize our array for grid visualization
+            grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
+            grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-        adv_inputs = X_test[idxs]
+            adv_inputs = X_test[idxs]
+        else:
+            adv_inputs = X_test[:source_samples]
+
         adv_ys = None
         yname = "y"
 
@@ -139,34 +157,43 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                  yname: adv_ys,
                  'max_iterations': attack_iterations,
                  'learning_rate': 0.1,
-                 'batch_size': 100 if targeted else 10,
+                 'batch_size': source_samples * nb_classes if
+                 targeted else source_samples,
                  'initial_const': 10}
 
     adv = cw.generate_np(adv_inputs,
                          **cw_params)
 
+    eval_params = {'batch_size': np.minimum(nb_classes, source_samples)}
     if targeted:
-        adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys,
-                                  args={'batch_size': 10})
+        adv_accuracy = model_eval(
+            sess, x, y, preds, adv, adv_ys, args=eval_params)
     else:
-        adv_accuracy = 1-model_eval(sess, x, y, preds, adv, Y_test[idxs],
-                                    args={'batch_size': 10})
-
-    for j in range(10):
-        if targeted:
-            for i in range(10):
-                grid_viz_data[i, j] = adv[i * 10 + j]
+        if viz_enabled:
+            adv_accuracy = 1 - \
+                model_eval(sess, x, y, preds, adv, Y_test[
+                           idxs], args=eval_params)
         else:
-            grid_viz_data[j, 0] = adv_inputs[j]
-            grid_viz_data[j, 1] = adv[j]
+            adv_accuracy = 1 - \
+                model_eval(sess, x, y, preds, adv, Y_test[
+                           :source_samples], args=eval_params)
 
-    print(grid_viz_data.shape)
+    if viz_enabled:
+        for j in range(nb_classes):
+            if targeted:
+                for i in range(nb_classes):
+                    grid_viz_data[i, j] = adv[i * nb_classes + j]
+            else:
+                grid_viz_data[j, 0] = adv_inputs[j]
+                grid_viz_data[j, 1] = adv[j]
+
+        print(grid_viz_data.shape)
 
     print('--------------------------------------')
 
     # Compute the number of adversarial examples that were successfully found
     print('Avg. rate of successful adv. examples {0:.4f}'.format(adv_accuracy))
-    report.clean_train_adv_eval = 1.-adv_accuracy
+    report.clean_train_adv_eval = 1. - adv_accuracy
 
     # Compute the average distortion introduced by the algorithm
     percent_perturbed = np.mean(np.sum((adv - adv_inputs)**2,
