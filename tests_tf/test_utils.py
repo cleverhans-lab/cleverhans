@@ -7,6 +7,8 @@ import numpy as np
 import unittest
 
 from cleverhans import utils
+from cleverhans.utils_keras import cnn_model
+from cleverhans.utils_keras import KerasModelWrapper
 
 
 class TestUtils(unittest.TestCase):
@@ -78,6 +80,23 @@ class TestUtils(unittest.TestCase):
         res = utils.other_classes(5, 2)
         res_expected = [0, 1, 3, 4]
         self.assertTrue(res == res_expected)
+
+    def test_get_logits_over_interval(self):
+        import tensorflow as tf
+        model = cnn_model()
+        wrap = KerasModelWrapper(model)
+        x = tf.placeholder(dtype=tf.float32, shape=(1, 28, 28, 1))
+        adv_x = x
+        img = np.ones(shape=(1, 28, 28, 1))
+        with tf.Session() as sess:
+            tf.global_variables_initializer().run()
+            log_prob = utils.get_logits_over_interval(sess, wrap,
+                                                      x, adv_x, img,
+                                                      min_epsilon=-10,
+                                                      max_epsilon=10,
+                                                      num_points=21)
+            log_prob -= log_prob[0]
+            self.assertTrue(np.count_nonzero(log_prob) == 0)
 
 
 if __name__ == '__main__':
