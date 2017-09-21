@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+import tensorflow as tf
 from collections import OrderedDict
 from six.moves import xrange
 import warnings
@@ -217,6 +218,92 @@ def grid_visual(data):
 
     # Draw the plot and return
     plt.show()
+    return figure
+
+
+def get_logits_over_interval(sess, model, x, adv_x_real, x_data,
+                             min_epsilon=-10, max_epsilon=10,
+                             num_points=21):
+    """Get logits when the input is perturbed in an interval in adv direction.
+
+    Args:
+        sess: Tf session
+        model: Model for which we wish to get logits
+        x: Tf placeholder for data (unquantized)
+        adv_x_real: Tf placeholder for adv perturbation of x (unquantized)
+        x_data: Numpy array corresponding to the data slice used to generate plot
+        min_epsilon: Minimum value of epsilon over the interval
+        max_epsilon: Maximum value of epsilon over the interval
+        num_points: Number of points used to interpolate
+
+    Returns:
+        Numpy array containing log probabilities
+    """
+    delta = (max_epsilon - min_epsilon) / (num_points - 1)
+    epsilon = min_epsilon
+    eta = adv_x_real - x
+    eta_normalized = tf.nn.l2_normalize(eta, dim=0)
+
+    epsilon_t = tf.placeholder(tf.float32, shape=(), name="epsilon")
+    adv_x = x + epsilon_t * eta_normalized
+    logits = model.get_logits(adv_x)
+    for i in xrange(num_points):
+        with sess.as_default():
+            log_prob_adv = sess.run(logits, feed_dict={x: x_data, epsilon_t: epsilon})
+            if i == 0:
+                log_prob_adv_array = log_prob_adv
+            else:
+                log_prob_adv_array = np.vstack((log_prob_adv_array,
+                                                log_prob_adv))
+
+        epsilon += delta
+    return log_prob_adv_array
+
+
+def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
+                              min_epsilon=-10, max_epsilon=10,
+                              num_points=21):
+    """Generate linear extrapolation plot.
+
+    Args:
+        log_prob_adv_array: Numpy array containing log probabilities
+        y: Tf placeholder for the labels
+        file_name: Plot filename
+        min_epsilon: Minimum value of epsilon over the interval
+        max_epsilon: Maximum value of epsilon over the interval
+        num_points: Number of points used to interpolate
+    """
+    import matplotlib.pyplot as plt
+
+    # Ensure interactive mode is disabled and initialize our graph
+    plt.ioff()
+    figure = plt.figure()
+    figure.canvas.set_window_title('Cleverhans: Linear Extrapolation Plot')
+
+    correct_idx = np.argmax(y, axis=1)
+    fig = plt.figure()
+    plt.xlabel('Epsilon')
+    plt.ylabel('Log probabilities')
+    delta = (max_epsilon - min_epsilon) / (num_points - 1)
+    x_axis = np.arange(min_epsilon, max_epsilon + 1, step=delta)
+    plt.xlim(min_epsilon - 1, max_epsilon + 1)
+    for i in xrange(y.shape[1]):
+        if i == correct_idx:
+            ls = '-'
+            linewidth = 5
+        else:
+            ls = '--'
+            linewidth = 2
+        plt.plot(
+            x_axis,
+            log_prob_adv_array[:, i],
+            ls=ls,
+            linewidth=linewidth,
+            label='{}'.format(i))
+    plt.legend(loc='best', fontsize=14)
+    plt.show()
+    fig.savefig(file_name)
+    plt.clf()
     return figure
 
 
