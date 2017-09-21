@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import tensorflow as tf
 from collections import OrderedDict
 from six.moves import xrange
 import warnings
@@ -221,7 +220,7 @@ def grid_visual(data):
     return figure
 
 
-def get_logits_over_interval(sess, model, x, adv_x_real, x_data,
+def get_logits_over_interval(sess, model, x, adv_x, x_data,
                              min_epsilon=-10, max_epsilon=10,
                              num_points=21):
     """Get logits when the input is perturbed in an interval in adv direction.
@@ -229,8 +228,8 @@ def get_logits_over_interval(sess, model, x, adv_x_real, x_data,
     Args:
         sess: Tf session
         model: Model for which we wish to get logits
-        x: Tf placeholder for data (unquantized)
-        adv_x_real: Tf placeholder for adv perturbation of x (unquantized)
+        x: Tf placeholder for data
+        adv_x_real: Tf placeholder for adv perturbation of x
         x_data: Numpy array corresponding to the data slice used to generate plot
         min_epsilon: Minimum value of epsilon over the interval
         max_epsilon: Maximum value of epsilon over the interval
@@ -238,18 +237,21 @@ def get_logits_over_interval(sess, model, x, adv_x_real, x_data,
 
     Returns:
         Numpy array containing log probabilities
+
+    Raises:
+        ValueError if min_epsilon is larger than max_epsilon
     """
+    if min_epsilon > max_epsilon:
+        raise ValueError('Minimum epsilon is less than maximum epsilon')
+
     delta = (max_epsilon - min_epsilon) / (num_points - 1)
     epsilon = min_epsilon
-    eta = adv_x_real - x
-    eta_normalized = tf.nn.l2_normalize(eta, dim=0)
-
-    epsilon_t = tf.placeholder(tf.float32, shape=(), name="epsilon")
-    adv_x = x + epsilon_t * eta_normalized
-    logits = model.get_logits(adv_x)
-    for i in xrange(num_points):
+    eta = adv_x - x
+    for i, epsilon in enumerate(np.arange(min_epsilon, max_epsilon + 1, step=delta)):
         with sess.as_default():
-            log_prob_adv = sess.run(logits, feed_dict={x: x_data, epsilon_t: epsilon})
+            adv_x_epsilon = x + eta * epsilon
+            logits = model.get_logits(adv_x_epsilon)
+            log_prob_adv = sess.run(logits, feed_dict={x: x_data})
             if i == 0:
                 log_prob_adv_array = log_prob_adv
             else:
