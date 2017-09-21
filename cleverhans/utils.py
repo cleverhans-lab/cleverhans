@@ -275,6 +275,11 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
     """
     import matplotlib.pyplot as plt
 
+    # Ensure interactive mode is disabled and initialize our graph
+    plt.ioff()
+    figure = plt.figure()
+    figure.canvas.set_window_title('Cleverhans: Linear Extrapolation Plot')
+
     correct_idx = np.argmax(y, axis=1)
     fig = plt.figure()
     plt.xlabel('Epsilon')
@@ -299,6 +304,7 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
     plt.show()
     fig.savefig(file_name)
     plt.clf()
+    return figure
 
 
 def conv_2d(*args, **kwargs):
