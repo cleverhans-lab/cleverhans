@@ -3,13 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+   WARNING: This file has a markdown suffix, but is in fact .rst
+
 CleverHans Documentation
 ======================================
 
 
-This documentation is auto-generated from the docstrings of modules of the current `master` branch of http://github.com/tensorflow/cleverhans.
+This documentation is auto-generated from the docstrings of modules of the current `master` branch of `tensorflow/cleverhans
+<http://github.com/tensorflow/cleverhans/>`_.
 
-To get started, you should take a look at the following modules:
+To get started, we recommend reading the `github readme
+<https://github.com/tensorflow/cleverhans#setting-up-cleverhans>`_. Afterwards, you can learn more by looking at the following modules:
 
 
 .. toctree::
@@ -17,7 +21,6 @@ To get started, you should take a look at the following modules:
 
    source/attacks
    source/model
-
 
 
 
