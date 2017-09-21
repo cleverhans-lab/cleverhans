@@ -26,7 +26,6 @@ import os
 FLAGS = flags.FLAGS
 
 
-
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
                    learning_rate=0.001,
