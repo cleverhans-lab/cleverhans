@@ -86,17 +86,18 @@ class TestUtils(unittest.TestCase):
         model = cnn_model()
         wrap = KerasModelWrapper(model)
         x = tf.placeholder(dtype=tf.float32, shape=(1, 28, 28, 1))
-        adv_x = x
+        eps = 0.5
+        adv_x = x + eps
         img = np.ones(shape=(1, 28, 28, 1))
+        num_points = 21
         with tf.Session() as sess:
             tf.global_variables_initializer().run()
-            log_prob = utils.get_logits_over_interval(sess, wrap,
-                                                      x, adv_x, img,
-                                                      min_epsilon=-10,
-                                                      max_epsilon=10,
-                                                      num_points=21)
-            log_prob -= log_prob[0]
-            self.assertTrue(np.count_nonzero(log_prob) == 0)
+            logits = utils.get_logits_over_interval(sess, wrap,
+                                                    x, adv_x, img,
+                                                    min_epsilon=-10,
+                                                    max_epsilon=10,
+                                                    num_points=num_points)
+            self.assertEqual(logits.shape[0], num_points)
 
 
 if __name__ == '__main__':

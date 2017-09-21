@@ -228,26 +228,27 @@ def get_logits_over_interval(sess, model, x, adv_x, x_data,
     Args:
         sess: Tf session
         model: Model for which we wish to get logits
-        x: Tf placeholder for data
-        adv_x_real: Tf placeholder for adv perturbation of x
+        x: Data tensor
+        adv_x: Tensor for adversarial perturbation of x
         x_data: Numpy array corresponding to the data slice used to generate plot
         min_epsilon: Minimum value of epsilon over the interval
         max_epsilon: Maximum value of epsilon over the interval
         num_points: Number of points used to interpolate
 
     Returns:
-        Numpy array containing log probabilities
+        Numpy array containing logits
 
     Raises:
         ValueError if min_epsilon is larger than max_epsilon
     """
+    import tensorflow as tf
     if min_epsilon > max_epsilon:
         raise ValueError('Minimum epsilon is less than maximum epsilon')
 
-    delta = (max_epsilon - min_epsilon) / (num_points - 1)
     epsilon = min_epsilon
     eta = adv_x - x
-    for i, epsilon in enumerate(np.arange(min_epsilon, max_epsilon + 1, step=delta)):
+    eta = tf.nn.l2_normalize(eta, dim=0)
+    for i, epsilon in enumerate(np.linspace(min_epsilon, max_epsilon, num_points)):
         with sess.as_default():
             adv_x_epsilon = x + eta * epsilon
             logits = model.get_logits(adv_x_epsilon)
@@ -258,7 +259,6 @@ def get_logits_over_interval(sess, model, x, adv_x, x_data,
                 log_prob_adv_array = np.vstack((log_prob_adv_array,
                                                 log_prob_adv))
 
-        epsilon += delta
     return log_prob_adv_array
 
 
@@ -286,8 +286,7 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
     fig = plt.figure()
     plt.xlabel('Epsilon')
     plt.ylabel('Log probabilities')
-    delta = (max_epsilon - min_epsilon) / (num_points - 1)
-    x_axis = np.arange(min_epsilon, max_epsilon + 1, step=delta)
+    x_axis = np.linspace(min_epsilon, max_epsilon, num_points)
     plt.xlim(min_epsilon - 1, max_epsilon + 1)
     for i in xrange(y.shape[1]):
         if i == correct_idx:
