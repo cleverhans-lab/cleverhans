@@ -212,7 +212,7 @@ class Attack(object):
             preds_max = tf.reduce_max(preds, 1, keep_dims=True)
             original_predictions = tf.to_float(tf.equal(preds,
                                                         preds_max))
-            labels = original_predictions
+            labels = tf.stop_gradient(original_predictions)
         if isinstance(labels, np.ndarray):
             nb_classes = labels.shape[1]
         else:
@@ -394,6 +394,7 @@ class BasicIterativeMethod(Attack):
             targeted = False
         else:
             y = tf.to_float(tf.equal(model_preds, preds_max))
+            y = tf.stop_gradient(y)
             targeted = False
 
         y_kwarg = 'y_target' if targeted else 'y'
