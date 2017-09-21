@@ -248,15 +248,15 @@ def get_logits_over_interval(sess, model, x, adv_x_real, x_data,
     adv_x = x + epsilon_t * eta_normalized
     logits = model.get_logits(adv_x)
     for i in xrange(num_points):
-        log_prob_adv = sess.run(logits, feed_dict={x: x_data,
-                                                   epsilon_t: epsilon})
-        if i == 0:
-            log_prob_adv_array = log_prob_adv
-        else:
-            log_prob_adv_array = np.vstack((log_prob_adv_array,
-                                            log_prob_adv))
+        with sess.as_default():
+            log_prob_adv = sess.run(logits, feed_dict={x: x_data, epsilon_t: epsilon})
+            if i == 0:
+                log_prob_adv_array = log_prob_adv
+            else:
+                log_prob_adv_array = np.vstack((log_prob_adv_array,
+                                                log_prob_adv))
 
-    epsilon += delta
+        epsilon += delta
     return log_prob_adv_array
 
 
