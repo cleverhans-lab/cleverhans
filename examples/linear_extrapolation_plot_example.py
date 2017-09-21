@@ -171,9 +171,18 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     random_idx = np.random.randint(0, X_train.shape[0])
     X_slice = X_train[random_idx: random_idx + 1]
     Y_slice = Y_train[random_idx: random_idx + 1]
+
+    # Plot the linear extrapolation plot for clean model
     log_prob_adv_array = get_logits_over_interval(
         sess, wrap, x, adv_x, X_slice)
-    linear_extrapolation_plot(log_prob_adv_array, Y_slice, 'lep.png')
+    linear_extrapolation_plot(log_prob_adv_array, Y_slice, 'lep_clean.png')
+
+    # Plot the linear extrapolation plot for adv model
+    log_prob_adv_array = get_logits_over_interval(
+        sess, wrap_2, x, adv_x, X_slice)
+    linear_extrapolation_plot(log_prob_adv_array, Y_slice, 'lep_adv.png')
+
+
 
     # Calculate training errors
     if testing:
