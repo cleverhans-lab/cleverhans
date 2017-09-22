@@ -8,7 +8,7 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 import warnings
-import logging
+# import logging
 
 from . import utils_tf
 from . import utils
