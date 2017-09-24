@@ -468,15 +468,15 @@ class BasicIterativeMethod(Attack):
 
 
 class SaliencyMapMethod(Attack):
-
     """
-    The Jacobian-based Saliency Map Method (Papernot et al. 2016).
-    Paper link: https://arxiv.org/pdf/1511.07528.pdf
+    The Jacobian-based Saliency Map Method (Papernot et al.  2016).  Paper link:
+    https://arxiv.org/pdf/1511.07528.pdf
     """
 
     def __init__(self, model, back='tf', sess=None):
         """
         Create a SaliencyMapMethod instance.
+
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
@@ -490,80 +490,42 @@ class SaliencyMapMethod(Attack):
             raise NotImplementedError(error)
 
         import tensorflow as tf
-        self.feedable_kwargs = {'y_target': tf.float32}
-        self.structural_kwargs = ['theta', 'gamma',
+        self.feedable_kwargs = {'y_target': tf.int32}
+        self.structural_kwargs = ['theta', 'epochs', 'pair', 'min_proba',
                                   'clip_max', 'clip_min']
 
     def generate(self, x, **kwargs):
         """
-        Generate symbolic graph for adversarial examples and return.
+        Generate symbolic graph for adversarial examples.
+
         :param x: The model's symbolic inputs.
+        :param y_target: (optional) Target tensor if the attack is targeted
         :param theta: (optional float) Perturbation introduced to modified
-                      components (can be positive or negative)
-        :param gamma: (optional float) Maximum percentage of perturbed features
+            components (can be positive or negative)
+        :param epochs: (optional, int or float) maximum epochs to run.  If this
+            is a floating number between [0, 1], then it is treated as gamma,
+            the distortion factor in the paper, and the max epochs is
+            automatically calculated.
+        :param pair: If true, add noise to two pixels at a time.  Otherwise one
+            pixel at a time.
+        :param min_proba: The minimum desired probability that a model will
+            wrongly classify the adversarials.
         :param clip_min: (optional float) Minimum component value for clipping
         :param clip_max: (optional float) Maximum component value for clipping
-        :param y_target: (optional) Target tensor if the attack is targeted
-        """
-        import tensorflow as tf
-        from .attacks_tf import jacobian_graph, jsma_batch
-
-        # Parse and save attack-specific parameters
-        assert self.parse_params(**kwargs)
-
-        # Define Jacobian graph wrt to this input placeholder
-        preds = self.model.get_probs(x)
-        nb_classes = preds.get_shape().as_list()[-1]
-        grads = jacobian_graph(preds, x, nb_classes)
-
-        # Define appropriate graph (targeted / random target labels)
-        if self.y_target is not None:
-            def jsma_wrap(x_val, y_target):
-                return jsma_batch(self.sess, x, preds, grads, x_val,
-                                  self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, nb_classes,
-                                  y_target=y_target)
-
-            # Attack is targeted, target placeholder will need to be fed
-            wrap = tf.py_func(jsma_wrap, [x, self.y_target], tf.float32)
-        else:
-            def jsma_wrap(x_val):
-                return jsma_batch(self.sess, x, preds, grads, x_val,
-                                  self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, nb_classes,
-                                  y_target=None)
-
-            # Attack is untargeted, target values will be chosen at random
-            wrap = tf.py_func(jsma_wrap, [x], tf.float32)
-
-        return wrap
-
-    def parse_params(self, theta=1., gamma=np.inf, nb_classes=None,
-                     clip_min=0., clip_max=1., y_target=None, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks
-        before saving them as attributes.
-
-        Attack-specific parameters:
-        :param theta: (optional float) Perturbation introduced to modified
-                      components (can be positive or negative)
-        :param gamma: (optional float) Maximum percentage of perturbed features
-        :param nb_classes: (optional int) Number of model output classes
-        :param clip_min: (optional float) Minimum component value for clipping
-        :param clip_max: (optional float) Maximum component value for clipping
-        :param y_target: (optional) Target tensor if the attack is targeted
         """
 
-        if nb_classes is not None:
-            warnings.warn("The nb_classes argument is depricated and will "
-                          "be removed on 2018-02-11")
-        self.theta = theta
-        self.gamma = gamma
-        self.clip_min = clip_min
-        self.clip_max = clip_max
-        self.y_target = y_target
+        y = kwargs.get('y_target', 0)
+        epochs = kwargs.get('epochs', 0.2)
+        theta = kwargs.get('theta', 1.0)
+        pair = kwargs.get('pair', True)
+        min_proba = kwargs.get('min_proba', 0.0)
+        clip_min = kwargs.get('clip_min', 0.0)
+        clip_max = kwargs.get('clip_max', 1.0)
 
-        return True
+        from .attacks_tf import jsma
+
+        return jsma(self.model, x, y, epochs=epochs, eps=theta, pair=pair,
+                    min_proba=min_proba, clip_min=clip_min, clip_max=clip_max)
 
 
 class VirtualAdversarialMethod(Attack):
@@ -818,36 +780,34 @@ def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
                        xi=xi, clip_min=clip_min, clip_max=clip_max)
 
 
-def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
-         increase=True, back='tf', clip_min=None, clip_max=None):
-    """
-    A wrapper for the Jacobian-based saliency map approach.
-    It calls the right function, depending on the
-    user's backend.
-    :param sess: TF session
-    :param x: the input
-    :param predictions: the model's symbolic output (linear output,
-        pre-softmax)
-    :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
-    :param target: target class for input sample
-    :param theta: delta for each feature adjustment
-    :param gamma: a float between 0 - 1 indicating the maximum distortion
-        percentage
-    :param increase: boolean; true if we are increasing pixels, false otherwise
-    :param back: switch between TensorFlow ('tf') and
-                Theano ('th') implementation
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
-    :return: an adversarial sample
-    """
-    warnings.warn("attacks.jsma is deprecated and will be removed on "
-                  "2017-09-27. Instantiate an object from SaliencyMapMethod.")
-    if back == 'tf':
-        # Compute Jacobian-based saliency map attack using TensorFlow
-        from .attacks_tf import jsma
-        return jsma(sess, x, predictions, grads, sample, target, theta, gamma,
-                    clip_min, clip_max)
-    elif back == 'th':
-        raise NotImplementedError("Theano jsma not implemented.")
+# def jsma(x, predictions, targets, theta, epochs, back='tf', clip_min=None,
+#          clip_max=None):
+#     """
+#     A wrapper for the Jacobian-based saliency map approach.  It calls the right
+#     function, depending on the user's backend.
+
+#     :param x: the input
+#     :param predictions: the model's symbolic output (linear output, pre-softmax)
+#     :param targets: target class for input sample
+#     :param eps: adjustment step
+#     :param epochs: maximum epochs to run.  If this is a floating number between
+#         [0, 1], then it is treated as gamma, the distortion factor in the paper,
+#         and the max epochs is automatically calculated.
+#     :param back: switch between TensorFlow ('tf') and Theano ('th')
+#         implementation
+#     :param clip_min: optional parameter that can be used to set a minimum value
+#         for components of the example returned
+#     :param clip_max: optional parameter that can be used to set a maximum value
+#         for components of the example returned
+
+#     :return: an adversarial sample
+#     """
+#     warnings.warn("attacks.jsma is deprecated and will be removed on "
+#                   "2017-09-27. Instantiate an object from SaliencyMapMethod.")
+#     if back == 'tf':
+#         # Compute Jacobian-based saliency map attack using TensorFlow
+#         from .attacks_tf import jsma
+#         return jsma(sess, x, predictions, grads, sample, target, theta, gamma,
+#                     clip_min, clip_max)
+#     elif back == 'th':
+#         raise NotImplementedError("Theano jsma not implemented.")
