@@ -834,12 +834,19 @@ class ElasticNetMethod(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
-        from .attacks_tf import ElasticNetMethod as EAD
         self.parse_params(**kwargs)
+
+        if self.decision_rule == 'EN':
+            from .attacks_tf import ElasticNetMethod_EN as EAD
+        elif self.decision_rule == 'L1':
+            from .attacks_tf import ElasticNetMethod_L1 as EAD
+        else:
+            raise NotImplementedError("Only EN and L1 decision rules "
+                                      "are implemented.")
 
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
-        attack = EAD(self.sess, self.model, self.beta, self.decision_rule,
+        attack = EAD(self.sess, self.model, self.beta,
                       self.batch_size, self.confidence,
                       'y_target' in kwargs, self.learning_rate, 
                       self.binary_search_steps, self.max_iterations, 
