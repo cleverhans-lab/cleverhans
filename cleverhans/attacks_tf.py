@@ -1052,7 +1052,7 @@ class ElasticNetMethod(object):
                 _logger.debug(" L1 Mean successful distortion: {:.4g}".format(mean))
 
         # return the best solution found
-        o_bestl2 = np.array(o_bestl2)
+        o_besten = np.array(o_besten)
         return o_bestattack
 
 
