@@ -133,10 +133,10 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,
         return adv_x
 
 
-
-def jsma(model, x, y, epochs=1.0, eps=1.0, clip_min=0.0, clip_max=1.0,
-         pair=True, min_proba=0.0):
-    """Tensorflow implementation of Jacobian-base saliency map approach.
+def jsma(model, x, y, epochs=1.0, eps=1.0, pair=True, min_proba=0.0,
+         clip_min=0.0, clip_max=1.0):
+    """
+    Tensorflow implementation of Jacobian-base saliency map approach.
 
     For details, see https://arxiv.org/abs/1511.07528.  This is the interface
     for JSMA algorithms, detailed implementations are in _jsma_impl and
@@ -146,19 +146,21 @@ def jsma(model, x, y, epochs=1.0, eps=1.0, clip_min=0.0, clip_max=1.0,
     :param x: The input placeholder, a 4d tensor of the shape (batch_size, rows,
               cols, channels).
     :param y: The desired output, either a 0d integer denoting the target class
-              or a 2d tensor of the shape (batch_size, target class).
+              or a 1d tensor of the shape (batch_size,).
     :param epochs: Number of epochs to run.  If epochs is float, then the max
         iteration is determined with floor(# of pixels / 2 * epochs).
     :param eps: The perturbation applied to image in each epoch.
-    :param clip_min: The min value for each pixel.
-    :param clip_max: The max value for each pixel.
     :param pair: Perturb two pixels at a time if true, otherwise one pixel at a
         time.  In this paper however, the author recommends to perturb two
         pixels at a time.
     :param min_proba: The minimum confidence that the model makes a desired
         (wrong) prediction.  By default it is 0, which means that as long as the
         adversarial samples can fool the model, we do not care about how strong
-        this adversarial samples are.
+        this adversarial samples are.  If you want to finish certain epochs even
+        if we already hava strong adversarial samples, set this to anything
+        larger than 1.0.
+    :param clip_min: The min value for each pixel.
+    :param clip_max: The max value for each pixel.
 
     :returns: A tensor, the adversarial samples.
     """
@@ -194,11 +196,11 @@ def jsma(model, x, y, epochs=1.0, eps=1.0, clip_min=0.0, clip_max=1.0,
                      back_prop=False, name='jsma_batch')
 
 
-def _jsma_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
-               clip_max=1.0, min_proba=0.0):
+def _jsma_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0, clip_max=1.0,
+               min_proba=1.1):
 
     def _cond(x_adv, epoch, pixel_mask):
-        ybar = tf.reshape(model(x_adv), [-1])
+        ybar = tf.reshape(model.get_probs(x_adv), [-1])
         proba = ybar[yi]
         label = tf.to_int32(tf.argmax(ybar, axis=0))
         return tf.reduce_all([tf.less(epoch, epochs),
@@ -208,7 +210,7 @@ def _jsma_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
                              name='_jsma_step_cond')
 
     def _body(x_adv, epoch, pixel_mask):
-        ybar = model(x_adv)
+        ybar = model.get_probs(x_adv)
 
         y_target = tf.slice(ybar, [0, yi], [-1, 1])
         dy_dx, = tf.gradients(ybar, x_adv)
@@ -262,7 +264,7 @@ def _jsma2_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
                 clip_max=1.0, min_proba=0.0):
 
     def _cond(x_adv, epoch, pixel_mask):
-        ybar = tf.reshape(model(x_adv), [-1])
+        ybar = tf.reshape(model.get_probs(x_adv), [-1])
         proba = ybar[yi]
         label = tf.to_int32(tf.argmax(ybar, axis=0))
         return tf.reduce_all([tf.less(epoch, epochs),
@@ -272,7 +274,7 @@ def _jsma2_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
                              name='_jsma2_step_cond')
 
     def _body(x_adv, epoch, pixel_mask):
-        ybar = model(x_adv)
+        ybar = model.get_probs(x_adv)
 
         y_target = tf.slice(ybar, [0, yi], [-1, 1])
         dy_dx, = tf.gradients(ybar, x_adv)
@@ -345,8 +347,6 @@ def _jsma2_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
 
         i = tf.to_int32(tf.gather(ind, 0))
         j = tf.to_int32(tf.gather(ind, 1))
-        v = tf.Variable(-1.)
-        start = tf.Variable(0)
 
         # Find max saliency pair in batch.  Naive iteration through the pair
         # takes O(n^2).  Vectorized implementation may speedup the running time
@@ -355,7 +355,7 @@ def _jsma2_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
         # implementation.
         i, j, _, _ = tf.while_loop(_maxpair_batch_cond,
                                    _maxpair_batch_body,
-                                   (i, j, v, start), back_prop=False)
+                                   (i, j, -1.0, 0), back_prop=False)
 
         dx = tf.scatter_nd([i], [eps], tf.shape(x_adv)) +\
              tf.scatter_nd([j], [eps], tf.shape(x_adv))
@@ -369,12 +369,11 @@ def _jsma2_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
 
         return x_adv, epoch, pixel_mask
 
-    epoch = tf.Variable(0, tf.int32)
     x_adv = tf.identity(xi)
     pixel_mask = tf.cond(tf.greater(eps, 0),
                          lambda: tf.less(xi, clip_max),
                          lambda: tf.greater(xi, clip_min))
-    x_adv, _, _ = tf.while_loop(_cond, _body, (xi, epoch, pixel_mask),
+    x_adv, _, _ = tf.while_loop(_cond, _body, (xi, 0, pixel_mask),
                                 back_prop=False, name='jsma2_step')
     return x_adv
 
