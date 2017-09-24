@@ -463,7 +463,7 @@ class TestSaliencyMapMethod(CleverHansTest):
 
         self.attack = SaliencyMapMethod(self.model, sess=self.sess)
 
-    def test_generate_np_targeted_gives_adversarial_example(self):
+    def test_generate_np_jsma_pair(self):
         x_val = np.random.rand(10, 1000)
         x_val = np.array(x_val, dtype=np.float32)
 
@@ -472,6 +472,19 @@ class TestSaliencyMapMethod(CleverHansTest):
         x_adv = self.attack.generate_np(x_val,
                                         clip_min=-5, clip_max=5,
                                         y_target=feed_labs)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+        worked = np.mean(feed_labs == new_labs)
+        self.assertTrue(worked > .9)
+
+    def test_generate_np_jsma_non_pair(self):
+        x_val = np.random.rand(10, 1000)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        feed_labs = np.random.randint(0, 10, 10)
+        x_adv = self.attack.generate_np(x_val, pair=False, clip_min=-5,
+                                        clip_max=5, y_target=feed_labs)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
         worked = np.mean(feed_labs == new_labs)
