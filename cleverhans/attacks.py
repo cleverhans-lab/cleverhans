@@ -469,8 +469,8 @@ class BasicIterativeMethod(Attack):
 
 class SaliencyMapMethod(Attack):
     """
-    The Jacobian-based Saliency Map Method (Papernot et al.  2016).  Paper link:
-    https://arxiv.org/pdf/1511.07528.pdf
+    The Jacobian-based Saliency Map Method (Papernot et al.  2016).  Paper
+    link: https://arxiv.org/pdf/1511.07528.pdf
     """
 
     def __init__(self, model, back='tf', sess=None):
@@ -502,12 +502,12 @@ class SaliencyMapMethod(Attack):
         :param y_target: (optional) Target tensor if the attack is targeted
         :param theta: (optional float) Perturbation introduced to modified
             components (can be positive or negative)
-        :param epochs: (optional, int or float) maximum epochs to run.  If this
-            is a floating number between [0, 1], then it is treated as gamma,
-            the distortion factor in the paper, and the max epochs is
+        :param epochs: (optional, int or float) maximum epochs to run.  If
+            this is a floating number between [0, 1], then it is treated as
+            gamma, the distortion factor in the paper, and the max epochs is
             automatically calculated.
-        :param pair: If true, add noise to two pixels at a time.  Otherwise one
-            pixel at a time.
+        :param pair: If true, add noise to two pixels at a time.  Otherwise
+            one pixel at a time.
         :param min_proba: The minimum desired probability that a model will
             wrongly classify the adversarials.
         :param clip_min: (optional float) Minimum component value for clipping

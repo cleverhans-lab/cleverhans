@@ -143,22 +143,22 @@ def jsma(model, x, y, epochs=1.0, eps=1.0, pair=True, min_proba=0.0,
     _jsma2_impl.
 
     :param model: A function that returns a tensor output of the model.
-    :param x: The input placeholder, a 4d tensor of the shape (batch_size, rows,
-              cols, channels).
-    :param y: The desired output, either a 0d integer denoting the target class
-              or a 1d tensor of the shape (batch_size,).
+    :param x: The input placeholder, a 4d tensor of the shape (batch_size,
+              rows, cols, channels).
+    :param y: The desired output, either a 0d integer denoting the target
+              class or a 1d tensor of the shape (batch_size,).
     :param epochs: Number of epochs to run.  If epochs is float, then the max
         iteration is determined with floor(# of pixels / 2 * epochs).
     :param eps: The perturbation applied to image in each epoch.
-    :param pair: Perturb two pixels at a time if true, otherwise one pixel at a
-        time.  In this paper however, the author recommends to perturb two
+    :param pair: Perturb two pixels at a time if true, otherwise one pixel at
+        a time.  In this paper however, the author recommends to perturb two
         pixels at a time.
     :param min_proba: The minimum confidence that the model makes a desired
-        (wrong) prediction.  By default it is 0, which means that as long as the
-        adversarial samples can fool the model, we do not care about how strong
-        this adversarial samples are.  If you want to finish certain epochs even
-        if we already hava strong adversarial samples, set this to anything
-        larger than 1.0.
+        (wrong) prediction.  By default it is 0, which means that as long as
+        the adversarial samples can fool the model, we do not care about how
+        strong this adversarial samples are.  If you want to finish certain
+        epochs even if we already hava strong adversarial samples, set this to
+        anything larger than 1.0.
     :param clip_min: The min value for each pixel.
     :param clip_max: The max value for each pixel.
 
@@ -219,7 +219,7 @@ def _jsma_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0, clip_max=1.0,
         do_dx = tf.subtract(dy_dx, dt_dx)
         score = tf.multiply(dt_dx, tf.abs(do_dx))
 
-        cond = tf.logical_and(dt_dx>=0, do_dx<=0)
+        cond = tf.logical_and(dt_dx >= 0, do_dx <= 0)
         domain = tf.logical_and(pixel_mask, cond)
         not_empty = tf.reduce_any(domain)
 
@@ -295,10 +295,10 @@ def _jsma2_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
             count = tf.reduce_min([batch_size, n-start])
             ind3 = tf.slice(ind2, [start], [count])
 
-            # Selection C(n, 2), e.g., if n=4, a=[0 0 1 0 1 2], b=[1 2 2 3 3 3],
-            # the corresponding element in each array makes a pair, i.e., the
-            # pair index are store separately.  A special case is when there is
-            # only one pixel left.
+            # Selection C(n, 2), e.g., if n=4, a=[0 0 1 0 1 2], b=[1 2 2 3 3
+            # 3], the corresponding element in each array makes a pair, i.e.,
+            # the pair index are store separately.  A special case is when
+            # there is only one pixel left.
             a, b = tf.meshgrid(ind3, ind3)
             c = tf.cond(tf.greater(count, 1),
                         lambda: tf.less(a, b),
@@ -316,7 +316,7 @@ def _jsma2_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
             t, o = ti+tj, oi+oj
 
             # increase target probability while decrease others
-            c = tf.logical_and(t>=0, o<=0)
+            c = tf.logical_and(t >= 0, o <= 0)
             not_empty = tf.reduce_any(c)
 
             # ensure that c is not empty
@@ -348,10 +348,10 @@ def _jsma2_impl(model, xi, yi, epochs, eps=1.0, clip_min=0.0,
         j = tf.to_int32(tf.gather(ind, 1))
 
         # Find max saliency pair in batch.  Naive iteration through the pair
-        # takes O(n^2).  Vectorized implementation may speedup the running time
-        # significantly, at the expense of O(n^2) space.  So Instead we find the
-        # max pair with batch max, during each batch we use vectorized
-        # implementation.
+        # takes O(n^2).  Vectorized implementation may speedup the running
+        # time significantly, at the expense of O(n^2) space.  So Instead we
+        # find the max pair with batch max, during each batch we use
+        # vectorized implementation.
         i, j, _, _ = tf.while_loop(_maxpair_batch_cond,
                                    _maxpair_batch_body,
                                    (i, j, -1.0, 0), back_prop=False)
