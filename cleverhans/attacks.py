@@ -7,8 +7,6 @@ import collections
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
 
-# import logging
-
 _logger = utils.create_logger("cleverhans.attacks")
 
 
@@ -773,7 +771,6 @@ class DeepFool(Attack):
         if self.back == 'th':
             raise NotImplementedError('Theano version not implemented.')
 
-        # import tensorflow as tf
         self.structural_kwargs = ['over_shoot', 'max_iter', 'clip_max',
                                   'clip_min', 'nb_candidate']
 
