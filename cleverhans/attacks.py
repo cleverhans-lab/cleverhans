@@ -1091,7 +1091,7 @@ class MadryEtAl(Attack):
         adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
         eta = adv_x - x
         eta = self.clip_eta(eta)
-        return x, eta, y
+        return x, eta
 
     def attack(self, x, **kwargs):
         """
@@ -1118,7 +1118,7 @@ class MadryEtAl(Attack):
         y = tf.stop_gradient(y)
 
         for i in range(self.nb_iter):
-            x, eta, y = self.attack_single_step(x, eta, y)
+            x, eta = self.attack_single_step(x, eta, y)
 
         adv_x = x + eta
         if self.clip_min is not None and self.clip_max is not None:
