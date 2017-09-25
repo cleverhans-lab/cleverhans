@@ -999,7 +999,7 @@ class MadryEtAl(Attack):
 
         return adv_x
 
-    def parse_params(self, eps=0.3, eps_iter=0.01, nb_iter=10, y=None,
+    def parse_params(self, eps=0.3, eps_iter=0.01, nb_iter=40, y=None,
                      ord=np.inf, clip_min=None, clip_max=None,
                      y_target=None, **kwargs):
         """
