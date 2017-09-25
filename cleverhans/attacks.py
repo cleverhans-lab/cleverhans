@@ -1044,6 +1044,12 @@ class MadryEtAl(Attack):
         return True
 
     def clip_eta(self, eta):
+        """
+        Clip the perturbation to epsilon l-infinity ball.
+
+        :param eta: A tensor with the current perturbation.
+        """
+
         import tensorflow as tf
 
         # Clipping perturbation eta to self.ord norm ball
@@ -1063,6 +1069,14 @@ class MadryEtAl(Attack):
         return eta
 
     def attack_single_step(self, x, eta, y):
+        """
+        Given the original image and the perturbation computed so far, computes
+        a new perturbation.
+
+        :param x: A tensor with the original input.
+        :param eta: A tensor the same shape as x that holds the perturbation.
+        :param y: A tensor with the target labels or ground-truth labels.
+        """
         import tensorflow as tf
         from utils_tf import model_loss
 
@@ -1080,6 +1094,15 @@ class MadryEtAl(Attack):
         return x, eta, y
 
     def attack(self, x, **kwargs):
+        """
+        This method creates a symbolic graph that given an input image,
+        first randomly perturbs the image. The
+        perturbation is bounded to an epsilon ball. Then multiple steps of
+        gradient descent is performed to increase the probability of a target
+        label or decrease the probability of the ground-truth label.
+
+        :param x: A tensor with the input image.
+        """
         import tensorflow as tf
 
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
