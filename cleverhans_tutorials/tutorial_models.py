@@ -58,22 +58,16 @@ class Layer(object):
 
 class Linear(Layer):
 
-    def __init__(self, num_hid, bias_init=0., weight_init=None):
+    def __init__(self, num_hid):
         self.num_hid = num_hid
-        self.bias_init = bias_init
-        self.weight_init = weight_init
 
     def set_input_shape(self, input_shape):
         batch_size, dim = input_shape
         self.input_shape = [batch_size, dim]
         self.output_shape = [batch_size, self.num_hid]
-        shape = [dim, self.num_hid]
-        if self.weight_init == 't_normal':
-            init = tf.truncated_normal(shape, stddev=0.1)
-        else:
-            init = tf.random_normal(shape, dtype=tf.float32)
-            init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
-                                                       keep_dims=True))
+        init = tf.random_normal([dim, self.num_hid], dtype=tf.float32)
+        init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
+                                                   keep_dims=True))
         self.W = tf.Variable(init)
         self.b = tf.Variable(np.zeros((self.num_hid,)).astype('float32'))
 
@@ -83,8 +77,7 @@ class Linear(Layer):
 
 class Conv2D(Layer):
 
-    def __init__(self, output_channels, kernel_shape, strides, padding,
-                 bias_init=0., weight_init=None):
+    def __init__(self, output_channels, kernel_shape, strides, padding):
         self.__dict__.update(locals())
         del self.self
 
@@ -94,16 +87,12 @@ class Conv2D(Layer):
                                                    self.output_channels)
         assert len(kernel_shape) == 4
         assert all(isinstance(e, int) for e in kernel_shape), kernel_shape
-        if self.weight_init == 't_normal':
-            init = tf.truncated_normal(kernel_shape, stddev=0.1)
-        else:
-            init = tf.random_normal(kernel_shape, dtype=tf.float32)
-            init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init),
-                                                       axis=(0, 1, 2)))
+        init = tf.random_normal(kernel_shape, dtype=tf.float32)
+        init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init),
+                                                   axis=(0, 1, 2)))
         self.kernels = tf.Variable(init)
         self.b = tf.Variable(
             np.zeros((self.output_channels,)).astype('float32'))
-        # orig_input_batch_size = input_shape[0]
         input_shape = list(input_shape)
         input_shape[0] = 1
         dummy_batch = tf.zeros(input_shape)
@@ -163,28 +152,6 @@ class Flatten(Layer):
         return tf.reshape(x, [-1, self.output_width])
 
 
-class MaxPool(Layer):
-    def __init__(self, ksize, strides, padding):
-        super(MaxPool, self).__init__()
-        self.__dict__.update(locals())
-        del self.self
-
-    def set_input_shape(self, input_shape):
-        input_shape = list(input_shape)
-        input_shape[0] = 1
-        dummy_batch = tf.zeros(input_shape)
-        dummy_output = self.fprop(dummy_batch)
-        output_shape = [int(e) for e in dummy_output.get_shape()]
-        output_shape[0] = 1
-        self.output_shape = tuple(output_shape)
-
-    def fprop(self, x):
-        return tf.nn.max_pool(x,
-                              ksize=(1,) + tuple(self.ksize) + (1,),
-                              strides=(1,) + tuple(self.strides) + (1,),
-                              padding=self.padding)
-
-
 def make_basic_cnn(nb_filters=64, nb_classes=10,
                    input_shape=(None, 28, 28, 1)):
     layers = [Conv2D(nb_filters, (8, 8), (2, 2), "SAME"),
@@ -195,25 +162,6 @@ def make_basic_cnn(nb_filters=64, nb_classes=10,
               ReLU(),
               Flatten(),
               Linear(nb_classes),
-              Softmax()]
-
-    model = MLP(layers, input_shape)
-    return model
-
-
-def make_madryetal(nb_classes=10, input_shape=(None, 28, 28, 1)):
-    layers = [Conv2D(32, (5, 5), (1, 1), "SAME", bias_init=.1,
-                     weight_init='t_normal'),
-              ReLU(),
-              MaxPool((2, 2), (2, 2), "SAME"),
-              Conv2D(64, (5, 5), (1, 1), "SAME", bias_init=.1,
-                     weight_init='t_normal'),
-              ReLU(),
-              MaxPool((2, 2), (2, 2), "SAME"),
-              Flatten(),
-              Linear(1024, bias_init=.1, weight_init='t_normal'),
-              ReLU(),
-              Linear(nb_classes, bias_init=.1, weight_init='t_normal'),
               Softmax()]
 
     model = MLP(layers, input_shape)
