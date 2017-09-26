@@ -1,5 +1,6 @@
 """
-Copy-paste of mnist_l1rbf.py
+This script adversarially trains a model using iterative attacks on multiple
+GPUs.
 """
 from __future__ import absolute_import
 from __future__ import division
