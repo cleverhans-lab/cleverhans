@@ -1,17 +1,10 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from collections import namedtuple
 
+import tensorflow as tf
 import six
 
 from cleverhans.model import Model
-from collections import OrderedDict
-
-import tensorflow as tf
-
-from model import ReLU
+from cleverhans.model import ReLU
 
 HParams = namedtuple('HParams',
                      'batch_size, num_classes, min_lrn_rate, lrn_rate, '
@@ -83,12 +76,10 @@ class ResNetTF(Model):
 
     def _build_model(self, x):
         """Build the core model within the graph."""
-        self.activations = OrderedDict()
         with tf.variable_scope('init'):
             # x = self._images
             x = self._conv('init_conv', x, 3, x.shape[3], 16,
                            self._stride_arr(1))
-            self.activations['init_conv'] = x
 
         strides = [1, 2, 2]
         activate_before_residual = [True, False, False]
@@ -204,7 +195,6 @@ class ResNetTF(Model):
 
         return train_op
 
-    # TODO(xpan): Consider batch_norm in contrib/layers/python/layers/layers.py
     def _batch_norm(self, name, x):
         """Batch normalization."""
         if self.init_layers:
