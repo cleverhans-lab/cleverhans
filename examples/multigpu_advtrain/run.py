@@ -22,6 +22,7 @@ from cleverhans.utils_tf import model_loss
 from cleverhans.utils_tf import batch_indices
 from cleverhans.utils_tf import _FlagsWrapper
 import cifar_input
+from utils import preprocess_batch
 
 from make_model import make_model
 from evaluator import Evaluator, get_attack
@@ -32,21 +33,6 @@ _data_path = {'svhn':  '/ssd1/datasets/svhn/',
               'cifar10':  '/ssd1/datasets/cifar-10/'}
 if "CIFAR10_PARDIR" in os.environ:
     _data_path['cifar10'] = os.environ['CIFAR10_PARDIR']
-
-
-def preprocess_batch(images_batch, preproc_func=None):
-    if preproc_func is None:
-        return images_batch
-
-    with tf.variable_scope('preprocess'):
-        images_list = tf.split(images_batch, int(images_batch.shape[0]))
-        result_list = []
-        for img in images_list:
-            reshaped_img = tf.reshape(img, img.shape[1:])
-            processed_img = preproc_func(reshaped_img)
-            result_list.append(tf.expand_dims(processed_img, axis=0))
-        result_images = tf.concat(result_list, axis=0)
-    return result_images
 
 
 def model_train(sess, model, x_pre, x, y, predictions, X_train, Y_train,

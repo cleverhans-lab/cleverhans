@@ -4,27 +4,13 @@ from cleverhans.utils import AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 import svhn_input
 import cifar_input
+from utils import preprocess_batch
 
 from make_model import make_model
 from evaluator import Evaluator
 
 _data_path = {'svhn':  '/ssd1/datasets/svhn/',
               'cifar10':  '/ssd1/datasets/cifar-10/'}
-
-
-def preprocess_batch(images_batch, preproc_func=None):
-    if preproc_func is None:
-        return images_batch
-
-    with tf.variable_scope('preprocess'):
-        images_list = tf.split(images_batch, int(images_batch.shape[0]))
-        result_list = []
-        for img in images_list:
-            reshaped_img = tf.reshape(img, img.shape[1:])
-            processed_img = preproc_func(reshaped_img)
-            result_list.append(tf.expand_dims(processed_img, axis=0))
-        result_images = tf.concat(result_list, axis=0)
-    return result_images
 
 
 class Manager(object):
