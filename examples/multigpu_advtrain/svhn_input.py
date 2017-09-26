@@ -31,7 +31,7 @@ from __future__ import (absolute_import, division, print_function,
 import os
 
 import numpy as np
-import tensorflow as tf  # NOQA
+import tensorflow as tf
 import scipy.io as sio
 
 # Global constants describing the SVHN data set.
