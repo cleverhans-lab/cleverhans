@@ -1080,7 +1080,7 @@ class MadryEtAl(Attack):
         import tensorflow as tf
         from utils_tf import model_loss
 
-        adv_x = tf.stop_gradient(x + eta)
+        adv_x = x + eta
         preds = self.model.get_probs(adv_x)
         loss = model_loss(y, preds)
         if self.targeted:
@@ -1123,6 +1123,5 @@ class MadryEtAl(Attack):
         adv_x = x + eta
         if self.clip_min is not None and self.clip_max is not None:
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
-        adv_x = tf.stop_gradient(adv_x)
 
         return adv_x
