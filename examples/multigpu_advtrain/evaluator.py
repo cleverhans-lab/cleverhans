@@ -1,100 +1,14 @@
 import os
 import numpy as np
 import logging
-import warnings
-import math
 
 import tensorflow as tf
 
-from cleverhans.utils_tf import _FlagsWrapper
+from cleverhans.utils_tf import model_eval
 from cleverhans.attacks import FastGradientMethod, BasicIterativeMethod
 
 from model import MLP_probs
 from target_attack import ProjectedGradientDescentMethod
-
-
-def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
-               feed=None, args=None, model=None):
-    """
-    Compute the accuracy of a TF model on some data
-    :param sess: TF session to use when training the graph
-    :param x: input placeholder
-    :param y: output placeholder (for labels)
-    :param predictions: model output predictions
-    :param X_test: numpy array with training inputs
-    :param Y_test: numpy array with training outputs
-    :param feed: An optional dictionary that is appended to the feeding
-             dictionary before the session runs. Can be used to feed
-             the learning phase of a Keras model for instance.
-    :param args: dict or argparse `Namespace` object.
-                 Should contain `batch_size`
-    :param model: (deprecated) if not None, holds model output predictions
-    :return: a float with the accuracy value
-    """
-    args = _FlagsWrapper(args or {})
-
-    assert args.batch_size, "Batch size was not given in args dict"
-    if X_test is None or Y_test is None:
-        raise ValueError("X_test argument and Y_test argument "
-                         "must be supplied.")
-    if model is None and predictions is None:
-        raise ValueError("One of model argument "
-                         "or predictions argument must be supplied.")
-    if model is not None:
-        warnings.warn("model argument is deprecated. "
-                      "Switch to predictions argument. "
-                      "model argument will be removed after 2018-01-05.")
-        if predictions is None:
-            predictions = model
-        else:
-            raise ValueError("Exactly one of model argument"
-                             " and predictions argument should be specified.")
-
-    # Define accuracy symbolically
-    correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                             tf.argmax(predictions, axis=-1))
-
-    # acc_value = tf.reduce_mean(tf.to_float(correct_preds))
-
-    # Init result var
-    accuracy = 0.0
-
-    with sess.as_default():
-        # Compute number of batches
-        nb_batches = int(math.ceil(float(len(X_test)) / args.batch_size))
-        assert nb_batches * args.batch_size >= len(X_test)
-
-        X_cur = np.zeros((args.batch_size,) + X_test.shape[1:],
-                         dtype=X_test.dtype)
-        Y_cur = np.zeros((args.batch_size,) + Y_test.shape[1:],
-                         dtype=Y_test.dtype)
-        for batch in range(nb_batches):
-            # Must not use the `batch_indices` function here, because it
-            # repeats some examples.
-            # It's acceptable to repeat during training, but not eval.
-            start = batch * args.batch_size
-            end = min(len(X_test), start + args.batch_size)
-            cur_batch_size = end - start
-            X_cur[:cur_batch_size] = X_test[start:end]
-            Y_cur[:cur_batch_size] = Y_test[start:end]
-
-            # The last batch may be smaller than all others, so we need to
-            # account for variable batch size here
-            feed_dict = {x: X_cur, y: Y_cur}
-            if feed is not None:
-                feed_dict.update(feed)
-            # cur_acc = acc_value.eval(feed_dict=feed_dict)
-            cur_corr_preds = correct_preds.eval(feed_dict=feed_dict)
-
-            # accuracy += (cur_batch_size * cur_acc)
-            accuracy += cur_corr_preds[:cur_batch_size].sum()
-
-        assert end >= len(X_test)
-
-        # Divide by number of examples to get final value
-        accuracy /= len(X_test)
-
-    return accuracy
 
 
 def get_attack(model, x, attack_type, *args, **kwargs):
