@@ -1043,31 +1043,6 @@ class MadryEtAl(Attack):
 
         return True
 
-    def clip_eta(self, eta):
-        """
-        Clip the perturbation to epsilon l-infinity ball.
-
-        :param eta: A tensor with the current perturbation.
-        """
-
-        import tensorflow as tf
-
-        # Clipping perturbation eta to self.ord norm ball
-        if self.ord == np.inf:
-            eta = tf.clip_by_value(eta, -self.eps, self.eps)
-        elif self.ord in [1, 2]:
-            reduc_ind = list(xrange(1, len(eta.get_shape())))
-            if self.ord == 1:
-                norm = tf.reduce_sum(tf.abs(eta),
-                                     reduction_indices=reduc_ind,
-                                     keep_dims=True)
-            elif self.ord == 2:
-                norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
-                                             reduction_indices=reduc_ind,
-                                             keep_dims=True))
-            eta = eta * self.eps / norm
-        return eta
-
     def attack_single_step(self, x, eta, y):
         """
         Given the original image and the perturbation computed so far, computes
@@ -1078,7 +1053,7 @@ class MadryEtAl(Attack):
         :param y: A tensor with the target labels or ground-truth labels.
         """
         import tensorflow as tf
-        from utils_tf import model_loss
+        from utils_tf import model_loss, clip_eta
 
         adv_x = x + eta
         preds = self.model.get_probs(adv_x)
@@ -1090,7 +1065,7 @@ class MadryEtAl(Attack):
         adv_x = adv_x + scaled_signed_grad
         adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
         eta = adv_x - x
-        eta = self.clip_eta(eta)
+        eta = clip_eta(eta, self.ord, self.eps)
         return x, eta
 
     def attack(self, x, **kwargs):
@@ -1104,9 +1079,10 @@ class MadryEtAl(Attack):
         :param x: A tensor with the input image.
         """
         import tensorflow as tf
+        from utils_tf import clip_eta
 
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
-        eta = self.clip_eta(eta)
+        eta = clip_eta(eta, self.ord, self.eps)
 
         if self.y is not None:
             y = self.y
