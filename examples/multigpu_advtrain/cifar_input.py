@@ -155,7 +155,8 @@ def read_CIFAR100(data_folder):
     return CIFAR100_data
 
 
-def cifar_tf_preprocess(inp, random_crop=True, random_flip=True, whiten=True):
+def cifar_tf_preprocess(inp, random_crop=True, random_flip=True, whiten=True,
+                        br_sat_con=False):
     image_size = 32
     # inp = tf.placeholder(tf.float32, [image_size, image_size, 3])
     image = inp
@@ -169,9 +170,10 @@ def cifar_tf_preprocess(inp, random_crop=True, random_flip=True, whiten=True):
         # log.info("Apply random flipping")
         image = tf.image.random_flip_left_right(image)
     # Brightness/saturation/constrast provides small gains .2%~.5% on cifar.
-    # image = tf.image.random_brightness(image, max_delta=63. / 255.)
-    # image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-    # image = tf.image.random_contrast(image, lower=0.2, upper=1.8)
+    if br_sat_con:
+        image = tf.image.random_brightness(image, max_delta=63. / 255.)
+        image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+        image = tf.image.random_contrast(image, lower=0.2, upper=1.8)
     if whiten:
         # log.info("Apply whitening")
         image = tf.image.per_image_standardization(image)
