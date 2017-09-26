@@ -84,11 +84,7 @@ class ResNetTF(Model):
         self.layer_idx = 0
         with tf.variable_scope('Resnet', reuse=self.reuse):
             logits, probs = self._build_model(x)
-        if self.Conv2D is None:
-            self.reuse = True
-        else:
-            # else my own conv is used and no reuse is needed
-            self.init_layers = False
+        self.reuse = True
         if return_all:
             return [logits, probs]
         else:
