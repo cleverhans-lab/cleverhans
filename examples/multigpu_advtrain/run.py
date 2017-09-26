@@ -88,8 +88,6 @@ def model_train(sess, model, x_pre, x, y, predictions, X_train, Y_train,
                 adv_loss = build_train_op(y, predictions_adv)
                 loss = (loss + adv_loss) / 2
 
-    loss = tf.Print(loss, [loss])
-
     if hparams.model_type == 'resnet_tf':
         train_step = model.build_train_op_from_cost(loss)
     else:
