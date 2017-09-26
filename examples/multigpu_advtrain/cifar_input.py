@@ -158,11 +158,9 @@ def read_CIFAR100(data_folder):
 def cifar_tf_preprocess(inp, random_crop=True, random_flip=True, whiten=True,
                         br_sat_con=False):
     image_size = 32
-    # inp = tf.placeholder(tf.float32, [image_size, image_size, 3])
     image = inp
-    # image = tf.cast(inp, tf.float32)
     if random_crop:
-        # log.info("Apply random cropping")
+        print("Apply random cropping")
         image = tf.image.resize_image_with_crop_or_pad(inp, image_size + 4,
                                                        image_size + 4)
         image = tf.random_crop(image, [image_size, image_size, 3])
