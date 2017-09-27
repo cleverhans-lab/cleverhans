@@ -8,9 +8,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
-from utils import ordered_union
-
-from cleverhans.model import Model
+from cleverhans_tutorials.tutorial_models import MLP, Layer
 
 from tensorflow.python.training import moving_averages
 
@@ -20,90 +18,79 @@ def clone_variable(name, x, trainable=False):
                            trainable=trainable)
 
 
-class MLP(object):
+class MLPnGPU(MLP):
     """
-    An example of a bare bones multilayer perceptron (MLP) class.
+    A multi layer perceptron that can be copied over multiple GPUs.
     """
 
     def __init__(self, layers, input_shape, name=None, **kwargs):
-        self.layers = layers
-        self.input_shape = input_shape
+        super(MLPnGPU, self).__init__(layers, input_shape)
         self.name = name
         if self.name is None:
-            self.name = 'MLP'
+            self.name = 'MLPnGPU'
         self.kwargs = kwargs
 
-    def get_params(self):
-        out = []
-        for layer in self.layers:
-            out = ordered_union(out, layer.get_params())
-        return out
-
-    def fprop(self, x, return_all=False, **kwargs):
+    def fprop(self, x, **kwargs):
         kwargs.update(self.kwargs)
         with tf.variable_scope(self.name):
-            states = []
-            for layer in self.layers:
-                x = layer.fprop(x, **kwargs)
-                assert x is not None
-                states.append(x)
-        if return_all:
-            return states
-        return x
+            states = super(MLPnGPU, self).fprop(x)
+        return states
 
     def set_device(self, device_name):
+        """
+        Set the device before the next fprop to create a new graph on the
+        specified device.
+        """
         for layer in self.layers:
             layer.device_name = device_name
 
-    def __call__(self, x):
-        return self.fprop(x)
-
     def create_sync_ops(self, host_device):
+        """
+        Return a list of assignment operations that syncs the parameters
+        of all model copies with the one on host_device.
+        :param host_device: (required str) the name of the device with latest
+                            parameters
+        """
         sync_ops = []
         for layer in self.layers:
             sync_ops += layer.create_sync_ops(host_device)
         return sync_ops
 
 
-class MLP_probs(Model):
-    def __init__(self, mlp, name=None):
-        self.mlp = mlp
-
-    def get_layer_names(self):
-        return ['probs']
-
-    def set_device(self, device_name):
-        self.mlp.set_device(device_name)
-
-    def get_probs(self, x, **kwargs):
-        return self.mlp.fprop(x, **kwargs)
-
-    def fprop(self, x, **kwargs):
-        probs = self.mlp.fprop(x, **kwargs)
-        return {'probs': probs}
-
-    def create_sync_ops(self, host_device):
-        return self.mlp.create_sync_ops(host_device)
-
-
-class Layer(object):
+class LayernGPU(Layer):
+    """
+    A layer that has separate copies of model parameters on each GPU.
+    """
     def __init__(self, input_shape=None, name=None):
+        """
+        :param input_shape: a tuple or list as the input shape to layer
+        :param name: (optional str) name of the layer
+        """
         self.input_shape = input_shape
         self.name = name
         self.params_device = {}
         self.params_names = None
-        # self.device_name = None  # '/gpu:0'
         self.device_name = '/gpu:0'
         self.training = True
 
     def get_variable(self, name, initializer):
+        """
+        Create and initialize a variable using a numpy array and set trainable.
+        :param name: (required str) name of the variable
+        :param initializer: a numpy array or a tensor
+        """
         v = tf.get_variable(name, shape=initializer.shape,
-                            initializer=lambda shape, dtype,
-                            partition_info:
-                            initializer, trainable=self.training)
+                            initializer=(lambda shape, dtype, partition_info:
+                                         initializer),
+                            trainable=self.training)
         return v
 
     def set_input_shape_ngpu(self, new_input_shape, **kwargs):
+        """
+        Create and initialize layer parameters on the device previously set.
+
+        :param new_input_shape: a list or tuple for the shape of the input.
+        """
         assert self.device_name
         device_name = self.device_name
         if self.input_shape is None:
@@ -139,9 +126,6 @@ class Layer(object):
                     sync_ops += [tf.assign(params[k], host_params[k])]
         return sync_ops
 
-    def get_output_shape(self):
-        return self.output_shape
-
     def fprop(self, x, training=False, **kwargs):
         self.training = training
         if self.name is None:
@@ -153,10 +137,10 @@ class Layer(object):
                 return self.fprop_noscope(x, **kwargs)
 
 
-class Linear(Layer):
+class LinearnGPU(LayernGPU):
 
     def __init__(self, num_hid, w_name='W', **kwargs):
-        super(Linear, self).__init__(**kwargs)
+        super(LinearnGPU, self).__init__(**kwargs)
         self.num_hid = num_hid
         self.input_shape = None
         self.w_name = w_name
@@ -176,11 +160,11 @@ class Linear(Layer):
         return tf.matmul(x, self.W) + self.b
 
 
-class Conv2D(Layer):
+class Conv2DnGPU(LayernGPU):
 
     def __init__(self, output_channels, kernel_shape, strides, padding,
                  w_name='kernels', *args, **kwargs):
-        super(Conv2D, self).__init__(*args, **kwargs)
+        super(Conv2DnGPU, self).__init__(*args, **kwargs)
         self.__dict__.update(locals())
         del self.self
         self.input_shape = None
@@ -209,52 +193,6 @@ class Conv2D(Layer):
     def fprop_noscope(self, x, **kwargs):
         return tf.nn.conv2d(x, self.kernels, (1,) + tuple(self.strides) +
                             (1,), self.padding) + self.b
-
-
-class ReLU(Layer):
-
-    def __init__(self, **kwargs):
-        super(ReLU, self).__init__(**kwargs)
-
-    def set_input_shape(self, shape, **kwargs):
-        self.input_shape = shape
-        self.output_shape = shape
-
-    def get_output_shape(self):
-        return self.output_shape
-
-    def fprop_noscope(self, x, **kwargs):
-        return tf.nn.relu(x)
-
-
-class Softmax(Layer):
-
-    def __init__(self, **kwargs):
-        super(Softmax, self).__init__(**kwargs)
-
-    def set_input_shape(self, shape, **kwargs):
-        self.input_shape = shape
-        self.output_shape = shape
-
-    def fprop_noscope(self, x, **kwargs):
-        return tf.nn.softmax(x)
-
-
-class Flatten(Layer):
-
-    def __init__(self, **kwargs):
-        super(Flatten, self).__init__(**kwargs)
-
-    def set_input_shape(self, shape, **kwargs):
-        self.input_shape = shape
-        output_width = 1
-        for factor in shape[1:]:
-            output_width *= factor
-        self.output_width = output_width
-        self.output_shape = [None, output_width]
-
-    def fprop_noscope(self, x, **kwargs):
-        return tf.reshape(x, [-1, self.output_width])
 
 
 class MaxPool(Layer):

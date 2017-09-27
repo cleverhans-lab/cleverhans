@@ -105,16 +105,16 @@ def create_train_graph_multigpu(manager):
             y2 = clone_variable('y_-1', y)
             inputs += [(x2, adv2_x, y2)]
             if not hparams.adv_train:
-                preds = model.fprop(x2, training=True, bn_training=True)
+                preds = model.get_probs(x2, training=True, bn_training=True)
                 preds_2_adv = None
             elif not hparams.only_adv_train:
-                preds = model.fprop(x2, training=True)
-                preds_2_adv = model.fprop(adv2_x, training=True,
-                                          bn_training=True)
+                preds = model.get_probs(x2, training=True)
+                preds_2_adv = model.get_probs(adv2_x, training=True,
+                                              bn_training=True)
             else:
                 preds = None
-                preds_2_adv = model.fprop(adv2_x, training=True,
-                                          bn_training=True)
+                preds_2_adv = model.get_probs(adv2_x, training=True,
+                                              bn_training=True)
             train_fetches = build_train_op(manager, preds, y2, preds_2_adv)
 
     outputs += [train_fetches]

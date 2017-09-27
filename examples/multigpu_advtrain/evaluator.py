@@ -6,7 +6,6 @@ from cleverhans.utils_tf import model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import MadryEtAl
 
-from model import MLP_probs
 from target_attacks import MadryEtAlMultiGPU
 
 
@@ -15,7 +14,7 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     Creates the symbolic graph of an adversarial example given the name of
     an attack. Default parameters are used unless a different value is given
     in kwargs.
-    :param model: ?
+    :param model: an object of Model class
     :param x: Symbolic input to the attack.
     :param attack_type: A string that is the name of an attack.
     :param sess: Tensorflow session.
@@ -42,7 +41,6 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     }
 
     with tf.variable_scope(attack_type):
-        model = MLP_probs(model)
         attack_class = attack_names[attack_type]
         params = attack_params_shared[dataset].copy()
         params.update(kwargs)
@@ -61,7 +59,7 @@ class Evaluator(object):
                  writer, hparams={}):
         """
         :param sess: Tensorflow session.
-        :param model: ?
+        :param model: an object of Model class
         :param batch_size: batch_size for evaluation.
         :param x_pre: placeholder for input before preprocessing.
         :param x: symbolic input to model.
@@ -71,7 +69,7 @@ class Evaluator(object):
         :param writer: Tensorflow summary writer.
         :param hparams: Flags to control the evaluation.
         """
-        self.preds = model.fprop(x, training=False)
+        self.preds = model.get_probs(x, training=False)
         self.sess = sess
         self.batch_size = batch_size
         self.x_pre = x_pre
@@ -100,7 +98,7 @@ class Evaluator(object):
             adv_x = create_adv_by_name(model, x, att_type, sess,
                                        dataset=hparams.dataset, y=y)
 
-            preds_adv = model.fprop(adv_x, training=False)
+            preds_adv = model.get_probs(adv_x, training=False)
             self.attacks[att_type] = (adv_x, preds_adv)
             # visualize adversarial image
             tf.summary.image(att_type, adv_x, max_outputs=10)
