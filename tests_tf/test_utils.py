@@ -85,10 +85,10 @@ class TestUtils(unittest.TestCase):
         import tensorflow as tf
         model = cnn_model()
         wrap = KerasModelWrapper(model)
-        x = tf.placeholder(dtype=tf.float32, shape=(1, 28, 28, 1))
+        x = tf.placeholder(dtype=tf.float32, shape=(None, 28, 28, 1))
         eps = 0.5
         adv_x = x + eps
-        img = np.ones(shape=(1, 28, 28, 1))
+        img = np.ones(shape=(28, 28, 1))
         num_points = 21
         with tf.Session() as sess:
             tf.global_variables_initializer().run()
