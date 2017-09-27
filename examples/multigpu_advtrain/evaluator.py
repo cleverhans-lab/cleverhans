@@ -45,7 +45,7 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     with tf.variable_scope(attack_type):
         model = MLP_probs(model)
         attack_class = attack_names[attack_type]
-        params = attack_params_shared[dataset]
+        params = attack_params_shared[dataset].copy()
         params.update(kwargs)
         attack = attack_class(model, sess=sess)
         adv_x = attack.generate(x, **params)
