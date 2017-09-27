@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import logging
 
@@ -29,11 +28,13 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     attack_names = {'FGSM': FastGradientMethod,
                     'MadryEtAl': MadryEtAl,
                     'MadryEtAl_y': MadryEtAl,
-                    'MadryEtAl_y_multigpu': MadryEtAlMultiGPU
+                    'MadryEtAl_y_multigpu': MadryEtAlMultiGPU,
                     }
 
     if attack_type not in attack_names:
         raise Exception('Attack %s not defined.' % attack_type)
+
+    # TODO: black box attacks
 
     attack_params_shared = {
         'mnist': {'eps': .3, 'eps_iter': 0.01, 'clip_min': 0., 'clip_max': 1.,
@@ -70,16 +71,6 @@ class Evaluator(object):
         # Evaluate on a fixed subsampled set of the train data
         self.eval_params = {'batch_size': batch_size}
 
-        # Load adversarial examples generated with the CleverHans tutorial
-        # model
-        bbox_path = 'bbox_%s.npy' % hparams.dataset
-        if not hparams.no_extra_tests and os.path.isfile(bbox_path):
-            self.bbox_np = np.load(bbox_path)
-        else:
-            self.bbox_np = None
-
-        self.no_extra_tests = hparams.no_extra_tests
-
         self.epoch = 0
 
         self.attack_type_train = hparams.attack_type_train
@@ -87,25 +78,17 @@ class Evaluator(object):
         for att_type in hparams.attack_type_test.split(','):
             if att_type == '':
                 continue
-            if '_multi' in att_type:
-                at = att_type.rsplit('_multi')[0]
-                self.attack_type_test += ['%s_%d' % (at, i)
-                                          for i in range(10, 100, 10)]
-            else:
-                self.attack_type_test += [att_type]
+            self.attack_type_test += [att_type]
         self.attacks = {}
 
         # Initialize the attack object and graph
         for att_type in self.attack_type_test:
             logging.info('Intializing attack %s' % att_type)
-            col_name = None
             adv_x = create_adv_by_name(model, x, att_type, sess,
                                        dataset=hparams.dataset, y=y)
-            if isinstance(adv_x, tuple):
-                adv_x, self.YY = adv_x
 
             preds_adv = model.fprop(adv_x, training=False)
-            self.attacks[att_type] = (col_name, adv_x, preds_adv)
+            self.attacks[att_type] = (adv_x, preds_adv)
             # visualize adversarial image
             tf.summary.image(att_type, adv_x, max_outputs=10)
         self.sum_op = tf.summary.merge_all()
@@ -141,8 +124,7 @@ class Evaluator(object):
         self.log_value('test_accuracy_natural', acc,
                        'Clean accuracy, natural test')
 
-    def eval_advs(self, sess, x, y, preds_adv, X_test, Y_test, att_type,
-                  col_name):
+    def eval_advs(self, sess, x, y, preds_adv, X_test, Y_test, att_type):
         # Evaluate the accuracy of the MNIST model on adversarial examples
         end = (len(X_test) // self.batch_size) * self.batch_size
 
@@ -161,13 +143,6 @@ class Evaluator(object):
                        print_only=print_only)
         return acc
 
-    def eval_trans_advs(self, sess, x, y, preds, X_test, Y_test, bbox_np):
-        # Evaluate on the transferred adversarial examples
-        acc_bbox = model_eval(sess, x, y, preds, bbox_np,
-                              Y_test[:len(bbox_np)], args=self.eval_params)
-        self.log_value('test_accuracy_trans_advs', acc_bbox,
-                       'Accuracy on transferred')
-
     def evaluate(self, inc_epoch=True):
         preds = self.preds
         sess = self.sess
@@ -179,8 +154,6 @@ class Evaluator(object):
         Y_test = self.Y_test
         writer = self.writer
 
-        bbox_np = self.bbox_np
-
         self.summary = tf.Summary()
         if not self.no_extra_tests:
             self.eval_train(sess, x, y, preds, X_train, Y_train)
@@ -188,15 +161,11 @@ class Evaluator(object):
 
         acc = {}
         if self.epoch % self.hparams.eval_iters == 0:
-            if not self.no_extra_tests:
-                if self.bbox_np is not None:
-                    self.eval_trans_advs(sess, x, y, preds, X_test, Y_test,
-                                         bbox_np)
 
             for att_type in self.attack_type_test:
-                col_name, adv_x, preds_adv = self.attacks[att_type]
+                adv_x, preds_adv = self.attacks[att_type]
                 acc[att_type] = self.eval_advs(sess, x, y, preds_adv, X_test,
-                                               Y_test, att_type, col_name)
+                                               Y_test, att_type)
         writer.add_summary(self.summary, self.epoch)
         if self.epoch % 20 == 0 and self.sum_op is not None:
             sm_val = sess.run(self.sum_op,
