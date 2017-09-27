@@ -778,8 +778,7 @@ class ElasticNetMethod(Attack):
         self.feedable_kwargs = {'y': tf.float32,
                                 'y_target': tf.float32}
 
-        self.structural_kwargs = ['beta', 'decision_rule', 
-                                  'batch_size', 'confidence',
+        self.structural_kwargs = ['beta', 'batch_size', 'confidence',
                                   'targeted', 'learning_rate',
                                   'binary_search_steps', 'max_iterations',
                                   'abort_early', 'initial_const',
@@ -863,7 +862,6 @@ class ElasticNetMethod(Attack):
             warnings.warn("The nb_classes argument is depricated and will "
                           "be removed on 2018-02-11")
         self.beta = beta
-        self.decision_rule = decision_rule
         self.batch_size = batch_size
         self.confidence = confidence
         self.learning_rate = learning_rate
