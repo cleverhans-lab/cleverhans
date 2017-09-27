@@ -15,28 +15,7 @@ import logging
 
 from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
 
-FLAGS = tf.app.flags.FLAGS
-
 _logger = create_logger("cleverhans.utils.tf")
-
-
-class _FlagsWrapper(_ArgsWrapper):
-
-    """
-    Wrapper that tries to find missing parameters in TensorFlow FLAGS
-    for backwards compatibility.
-
-    Plain _ArgsWrapper should be used instead if the support for FLAGS
-    is removed.
-    """
-
-    def __getattr__(self, name):
-        val = self.args.get(name)
-        if val is None:
-            warnings.warn('Setting parameters ({}) from TensorFlow FLAGS is '
-                          'deprecated.'.format(name))
-            val = FLAGS.__getattr__(name)
-        return val
 
 
 def model_loss(y, model, mean=True):
@@ -117,7 +96,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param rng: Instance of numpy.random.RandomState
     :return: True if model trained
     """
-    args = _FlagsWrapper(args or {})
+    args = _ArgsWrapper(args or {})
 
     # Check that necessary arguments were given (see doc above)
     assert args.nb_epochs, "Number of epochs was not given in args dict"
@@ -217,7 +196,7 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
     :param model: (deprecated) if not None, holds model output predictions
     :return: a float with the accuracy value
     """
-    args = _FlagsWrapper(args or {})
+    args = _ArgsWrapper(args or {})
 
     assert args.batch_size, "Batch size was not given in args dict"
     if X_test is None or Y_test is None:
@@ -291,6 +270,7 @@ def tf_model_load(sess, file_path=None):
                       taken from FLAGS.train_dir and FLAGS.filename
     :return:
     """
+    FLAGS = tf.app.flags.FLAGS
     with sess.as_default():
         saver = tf.train.Saver()
         if file_path is None:
@@ -315,7 +295,7 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, feed=None,
     :param args: dict or argparse `Namespace` object.
                  Should contain `batch_size`
     """
-    args = _FlagsWrapper(args or {})
+    args = _ArgsWrapper(args or {})
 
     assert args.batch_size, "Batch size was not given in args dict"
 
