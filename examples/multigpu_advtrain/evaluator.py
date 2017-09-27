@@ -5,81 +5,51 @@ import logging
 import tensorflow as tf
 
 from cleverhans.utils_tf import model_eval
-from cleverhans.attacks import FastGradientMethod, BasicIterativeMethod
+from cleverhans.attacks import FastGradientMethod
+from cleverhans.attacks import MadryEtAl
 
 from model import MLP_probs
-from target_attack import ProjectedGradientDescentMethod
+from target_attacks import MadryEtAlMultiGPU
 
 
-def get_attack(model, x, attack_type, *args, **kwargs):
-    with tf.variable_scope(attack_type):
-        return get_attack_2(model, x, attack_type, *args, **kwargs)
+def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
+    """
+    Creates the symbolic graph of an adversarial example given the name of
+    an attack. Default parameters are used unless a different value is given
+    in kwargs.
+    :param model: ?
+    :param x: Symbolic input to the attack.
+    :param attack_type: A string that is the name of an attack.
+    :param sess: Tensorflow session.
+    :param dataset: The name of the dataset as a string to use for default
+                   params.
+    :param y: (optional) a symbolic variable for the labels.
+    :param kwargs: (optional) additional parameters to be passed to the attack.
+    """
+    attack_names = {'FGSM': FastGradientMethod,
+                    'MadryEtAl': MadryEtAl,
+                    'MadryEtAl_y': MadryEtAl,
+                    'MadryEtAl_y_multigpu': MadryEtAlMultiGPU
+                    }
 
-
-def get_attack_2(model, x, attack_type, sess, batch_size=None, y=None,
-                 nb_iter=None, dataset=None, ngpu=1):
-    model = MLP_probs(model)
-    if dataset == 'mnist':
-        nb_iter0 = 40
-        eps = .3
-    else:
-        nb_iter0 = 20
-        eps = 8./255
-    if attack_type == 'FGSM':
-        fgsm_ = {'eps': eps, 'clip_min': 0., 'clip_max': 1.}
-        fgsm = FastGradientMethod(model, sess=sess)
-        adv_x = fgsm.generate(x, **fgsm_)
-    elif attack_type == 'FGSM_randeps':
-        fgsm_ = {
-            'eps': tf.abs(tf.truncated_normal((batch_size, 1, 1, 1), 0.,
-                                              .4 / 2)),
-            'clip_min': 0., 'clip_max': 1.}
-        fgsm = FastGradientMethod(model, sess=sess)
-        adv_x = fgsm.generate(x, **fgsm_)
-    elif 'FGSM_' in attack_type:
-        eps = float(attack_type.split('_')[1]) / 255.
-        fgsm_ = {'eps': eps, 'clip_min': 0., 'clip_max': 1.}
-        fgsm = FastGradientMethod(model, sess=sess)
-        adv_x = fgsm.generate(x, **fgsm_)
-    elif attack_type == 'BasicIter':
-        attack_ = {'eps': eps, 'eps_iter': eps, 'nb_iter': 10,
-                   'clip_min': 0., 'clip_max': 1.}
-        attack = BasicIterativeMethod(model, sess=sess)
-        adv_x = attack.generate(x, **attack_)
-    elif 'BasicIter_' in attack_type:
-        eps = float(attack_type.split('_')[1]) / 255.
-        eps_i = 0.1
-        nb_iter = min(30, max(1, int(eps / eps_i * 10)))
-        attack_ = {'eps': eps, 'eps_iter': eps_i, 'nb_iter': nb_iter,
-                   'clip_min': 0., 'clip_max': 1.}
-        logging.info('%s: %.4f %.4f %d' % (attack_type, eps, eps_i, nb_iter))
-        attack = BasicIterativeMethod(model, sess=sess)
-        adv_x = attack.generate(x, **attack_)
-    elif attack_type == 'PGDcl':
-        # from paper https://arxiv.org/pdf/1706.06083.pdf
-        if nb_iter is None:
-            nb_iter = 40
-        print('nb_iter: %d, eps: %.2f' % (nb_iter, eps))
-        attack_ = {'eps': eps, 'eps_iter': 0.01, 'nb_iter': nb_iter,
-                   'clip_min': 0., 'clip_max': 1., 'pgd': False}
-        attack = ProjectedGradientDescentMethod(model, sess=sess)
-        adv_x = attack.generate(x, **attack_)
-    elif 'PGDpgd' in attack_type:
-        # from paper https://arxiv.org/pdf/1706.06083.pdf
-        if nb_iter is None:
-            nb_iter = nb_iter0
-        print('nb_iter: %d, eps: %.2f' % (nb_iter, eps))
-        attack_ = {'eps': eps, 'eps_iter': 0.01, 'nb_iter': nb_iter,
-                   'clip_min': 0., 'clip_max': 1., 'pgd': True}
-        if attack_type == 'PGDpgd_y':
-            attack_['y'] = y
-        if 'multigpu' in attack_type:
-            attack_['multigpu'] = True
-            attack_['ngpu'] = ngpu
-        attack = ProjectedGradientDescentMethod(model, sess=sess)
-        adv_x = attack.generate(x, **attack_)
-    else:
+    if attack_type not in attack_names:
         raise Exception('Attack %s not defined.' % attack_type)
+
+    attack_params_shared = {
+        'mnist': {'eps': .3, 'eps_iter': 0.01, 'clip_min': 0., 'clip_max': 1.,
+                  'nb_iter': 40},
+        'cifar10': {'eps': 8./255, 'eps_iter': 0.01, 'clip_min': 0.,
+                    'clip_max': 1., 'nb_iter': 20}
+    }
+
+    with tf.variable_scope(attack_type):
+        model = MLP_probs(model)
+        attack_class = attack_names[attack_type]
+        params = attack_params_shared[dataset]
+        params.update(kwargs)
+        attack = attack_class(model, sess=sess)
+        adv_x = attack.generate(x, **params)
+
     return adv_x
 
 
@@ -129,8 +99,8 @@ class Evaluator(object):
         for att_type in self.attack_type_test:
             logging.info('Intializing attack %s' % att_type)
             col_name = None
-            adv_x = get_attack(model, x, att_type, sess, batch_size=batch_size,
-                               y=y, dataset=hparams.dataset)
+            adv_x = create_adv_by_name(model, x, att_type, sess,
+                                       dataset=hparams.dataset, y=y)
             if isinstance(adv_x, tuple):
                 adv_x, self.YY = adv_x
 

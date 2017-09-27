@@ -12,7 +12,7 @@ from cleverhans.utils_tf import batch_indices
 
 from model import clone_variable
 
-from evaluator import get_attack
+from evaluator import create_adv_by_name
 
 
 def build_train_op(manager, predictions, y, predictions_adv):
@@ -72,14 +72,13 @@ def create_train_graph_multigpu(manager):
     model = manager.model
     x_pre, x, y = manager.g0_inputs
     sess = manager.sess
-    batch_size = manager.batch_size
 
     # Generates steps on gpus 0-(ngpu-1)
     logging.info("Initializing train attack %s" % hparams.attack_type_train)
-    inputs, outputs = get_attack(model, x, hparams.attack_type_train, sess,
-                                 batch_size=batch_size, y=y,
-                                 nb_iter=hparams.attack_nb_iter_train,
-                                 dataset=hparams.dataset, ngpu=hparams.ngpu)
+    inputs, outputs = create_adv_by_name(
+        model, x, hparams.attack_type_train,
+        sess, y=y, nb_iter=hparams.attack_nb_iter_train,
+        dataset=hparams.dataset, ngpu=hparams.ngpu)
 
     assert len(inputs) == len(outputs)
     # 0

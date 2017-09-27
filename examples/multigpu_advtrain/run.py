@@ -25,7 +25,7 @@ import cifar_input
 from utils import preprocess_batch
 
 from make_model import make_model
-from evaluator import Evaluator, get_attack
+from evaluator import Evaluator, create_adv_by_name
 
 
 FLAGS = flags.FLAGS
@@ -242,10 +242,10 @@ def mnist_tutorial(hparams=None):
         evaluate = init_eval()
         logging.info("Initializing train attack %s" %
                      hparams.attack_type_train)
-        adv2_x = get_attack(model, x, hparams.attack_type_train, sess,
-                            batch_size=batch_size, y=y,
-                            nb_iter=hparams.attack_nb_iter_train,
-                            dataset=hparams.dataset)
+        adv2_x = create_adv_by_name(
+            model, x, hparams.attack_type_train, sess,
+            y=y, nb_iter=hparams.attack_nb_iter_train,
+            dataset=hparams.dataset)
         preds_2_adv = model.fprop(adv2_x, training=True, bn_training=False)
 
         # Perform and evaluate adversarial training
