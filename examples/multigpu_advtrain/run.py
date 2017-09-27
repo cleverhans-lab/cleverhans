@@ -284,8 +284,6 @@ if __name__ == '__main__':
                         FGSM|PGDpgd_y')
     flags.DEFINE_string('attack_type_test', 'FGSM',
                         'Attack type for test: FGSM|PGDpgd_y')
-    flags.DEFINE_boolean('no_extra_tests', False,
-                         'Disable some tests for debugging.')
     flags.DEFINE_string('dataset', 'mnist', 'Dataset mnist|cifar10|svhn')
     flags.DEFINE_boolean('only_adv_train', False,
                          'Do not train with clean examples when adv training.')

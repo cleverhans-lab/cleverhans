@@ -65,7 +65,7 @@ class Evaluator(object):
         :param batch_size: batch_size for evaluation.
         :param x_pre: placeholder for input before preprocessing.
         :param x: symbolic input to model.
-        :param y: symbolic tensor for the label.
+        :param y: symbolic variable for the label.
         :param data: a tuple with training and test data in the form
                      (X_train, Y_train, X_test, Y_test).
         :param writer: Tensorflow summary writer.
@@ -108,7 +108,7 @@ class Evaluator(object):
 
     def log_value(self, tag, val, desc=''):
         """
-        Log values to standard output and tensorflow summary.
+        Log values to standard output and Tensorflow summary.
 
         :param tag: summary tag.
         :param val: (required float or numpy array) value to be logged.
@@ -117,38 +117,25 @@ class Evaluator(object):
         logging.info('%s (%s): %.4f' % (desc, tag, val))
         self.summary.value.add(tag=tag, simple_value=val)
 
-    def eval_train(self, sess, x, y, preds, X_train, Y_train):
-        """
-        Evaluate the accuracy of the model on legitimate train examples
-        """
-        subsample_factor = 100
-        X_train_subsampled = X_train[::subsample_factor]
-        Y_train_subsampled = Y_train[::subsample_factor]
-        acc_train = model_eval(sess, x, y, preds, X_train_subsampled,
-                               Y_train_subsampled, args=self.eval_params)
-        self.log_value('train_accuracy_subsampled', acc_train,
-                       'Clean accuracy, subsampled train')
-
-    def eval_test(self, sess, x, y, preds, X_test, Y_test):
-        """
-        Evaluate the accuracy of the model on legitimate test examples
-        """
-        acc = model_eval(sess, x, y, preds, X_test, Y_test,
-                         args=self.eval_params)
-        self.log_value('test_accuracy_natural', acc,
-                       'Clean accuracy, natural test')
-
-    def eval_advs(self, sess, x, y, preds_adv, X_test, Y_test, att_type):
+    def eval_advs(self, x, y, preds_adv, X_test, Y_test, att_type):
         """
         Evaluate the accuracy of the model on adversarial examples
+
+        :param x: symbolic input to model.
+        :param y: symbolic variable for the label.
+        :param preds_adv: symbolic variable for the prediction on an
+                          adversarial example.
+        :param X_test: NumPy array of test set inputs.
+        :param Y_test: NumPy array of test set labels.
+        :param att_type: name of the attack.
         """
         end = (len(X_test) // self.batch_size) * self.batch_size
 
         if self.hparams.fast_tests:
             end = 10*self.batch_size
 
-        acc = model_eval(sess, x, y, preds_adv, X_test[:end], Y_test[:end],
-                         args=self.eval_params)
+        acc = model_eval(self.sess, x, y, preds_adv, X_test[:end],
+                         Y_test[:end], args=self.eval_params)
         self.log_value('test_accuracy_%s' % att_type, acc,
                        'Test accuracy on adversarial examples')
         return acc
@@ -157,8 +144,8 @@ class Evaluator(object):
         """
         Run the evaluation on multiple attacks.
         """
-        preds = self.preds
         sess = self.sess
+        preds = self.preds
         x = self.x_pre
         y = self.y
         X_train = self.X_train
@@ -168,30 +155,36 @@ class Evaluator(object):
         writer = self.writer
 
         self.summary = tf.Summary()
-        if not self.no_extra_tests:
-            self.eval_train(sess, x, y, preds, X_train, Y_train)
-        self.eval_test(sess, x, y, preds, X_test, Y_test)
 
-        acc = {}
+        # Evaluate on train set
+        subsample_factor = 100
+        X_train_subsampled = X_train[::subsample_factor]
+        Y_train_subsampled = Y_train[::subsample_factor]
+        acc_train = model_eval(sess, x, y, preds, X_train_subsampled,
+                               Y_train_subsampled, args=self.eval_params)
+        self.log_value('train_accuracy_subsampled', acc_train,
+                       'Clean accuracy, subsampled train')
+
+        # Evaluate on the test set
+        acc = model_eval(sess, x, y, preds, X_test, Y_test,
+                         args=self.eval_params)
+        self.log_value('test_accuracy_natural', acc,
+                       'Clean accuracy, natural test')
+
+        # Evaluate against adversarial attacks
         if self.epoch % self.hparams.eval_iters == 0:
-
             for att_type in self.attack_type_test:
                 adv_x, preds_adv = self.attacks[att_type]
-                acc[att_type] = self.eval_advs(sess, x, y, preds_adv, X_test,
-                                               Y_test, att_type)
-        writer.add_summary(self.summary, self.epoch)
-        if self.epoch % 20 == 0 and self.sum_op is not None:
-            sm_val = sess.run(self.sum_op,
-                              feed_dict={x: X_test[:self.batch_size],
-                                         y: Y_test[:self.batch_size]})
-            writer.add_summary(sm_val)
+                self.eval_advs(x, y, preds_adv, X_test, Y_test, att_type)
 
-            for att_type in self.attack_type_test:
-                if att_type.split('_')[-1].isdigit():
-                    at, eps = att_type.rsplit('_')
-                    acc_summary = tf.Summary()
-                    acc_summary.value.add(tag=at, simple_value=acc[att_type])
-                    writer.add_summary(acc_summary, eps)
+        writer.add_summary(self.summary, self.epoch)
+
+        # Add examples of adversarial examples to the summary
+        if self.epoch % 20 == 0 and self.sum_op is not None:
+            sm_val = self.sess.run(self.sum_op,
+                                   feed_dict={x: X_test[:self.batch_size],
+                                              y: Y_test[:self.batch_size]})
+            writer.add_summary(sm_val)
 
         self.epoch += 1 if inc_epoch else 0
 
