@@ -170,8 +170,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Get a random slice of the data for linear extrapolation plots
     random_idx = np.random.randint(0, X_train.shape[0])
-    X_slice = X_train[random_idx: random_idx + 1]
-    Y_slice = Y_train[random_idx: random_idx + 1]
+    X_slice = X_train[random_idx]
+    Y_slice = Y_train[random_idx]
 
     # Plot the linear extrapolation plot for clean model
     log_prob_adv_array = get_logits_over_interval(

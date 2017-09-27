@@ -228,10 +228,10 @@ def get_logits_over_interval(sess, model, x, adv_x, x_data,
     Args:
         sess: Tf session
         model: Model for which we wish to get logits
-        x: Data tensor
+        x: Data tensor of shape [None, height, width, channels]
         adv_x: Tensor for adversarial perturbation of x
-        x_data: Numpy array corresponding to the data
-            slice used to generate plot
+        x_data: Numpy array corresponding to single data
+                point of shape [height, width, channels].
         min_epsilon: Minimum value of epsilon over the interval
         max_epsilon: Maximum value of epsilon over the interval
         num_points: Number of points used to interpolate
@@ -246,22 +246,26 @@ def get_logits_over_interval(sess, model, x, adv_x, x_data,
     if min_epsilon > max_epsilon:
         raise ValueError('Minimum epsilon is less than maximum epsilon')
 
-    epsilon = min_epsilon
-    eta = adv_x - x
-    eta = tf.nn.l2_normalize(eta, dim=0)
-    for i, epsilon in enumerate(np.linspace(min_epsilon,
-                                            max_epsilon,
-                                            num_points)):
-        with sess.as_default():
-            adv_x_epsilon = x + eta * epsilon
-            logits = model.get_logits(adv_x_epsilon)
-            log_prob_adv = sess.run(logits, feed_dict={x: x_data})
-            if i == 0:
-                log_prob_adv_array = log_prob_adv
-            else:
-                log_prob_adv_array = np.vstack((log_prob_adv_array,
-                                                log_prob_adv))
+    eta = tf.nn.l2_normalize(adv_x - x, dim=0)
+    x_data = np.stack([x_data] * num_points, axis=0)
+    epsilon_array = np.linspace(min_epsilon, max_epsilon,
+                                num_points)
 
+    # Get the height, width and number of channels
+    shape = x.get_shape().as_list()
+    height = shape[1]
+    width = shape[2]
+    channels = shape[3]
+
+    # epsilon_array_t = tf.constant(epsilon_array, dtype=tf.float32)
+    epsilon_array_t = tf.constant(epsilon_array)
+    epsilon_array_t = tf.stack([epsilon_array_t] * height * width * channels, axis=1)
+    epsilon_array_t = tf.reshape(epsilon_array_t, shape=[num_points, height, width, channels])
+
+    adv_x_epsilon = x + eta * epsilon_array_t
+    logits = model.get_logits(adv_x_epsilon)
+    with sess.as_default():
+        log_prob_adv_array = sess.run(logits, feed_dict={x: x_data})
     return log_prob_adv_array
 
 
@@ -280,18 +284,16 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
     """
     import matplotlib.pyplot as plt
 
-    # Ensure interactive mode is disabled and initialize our graph
-    plt.ioff()
     figure = plt.figure()
     figure.canvas.set_window_title('Cleverhans: Linear Extrapolation Plot')
 
-    correct_idx = np.argmax(y, axis=1)
+    correct_idx = np.argmax(y, axis=0)
     fig = plt.figure()
     plt.xlabel('Epsilon')
     plt.ylabel('Log probabilities')
     x_axis = np.linspace(min_epsilon, max_epsilon, num_points)
     plt.xlim(min_epsilon - 1, max_epsilon + 1)
-    for i in xrange(y.shape[1]):
+    for i in xrange(y.shape[0]):
         if i == correct_idx:
             ls = '-'
             linewidth = 5
