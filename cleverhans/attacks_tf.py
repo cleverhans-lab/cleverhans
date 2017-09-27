@@ -890,7 +890,7 @@ class ElasticNetMethod(object):
 
         self.learning_rate = tf.train.polynomial_decay(self.LEARNING_RATE, self.global_step, self.MAX_ITERATIONS, 0, power=0.5) 
 
-        # Setup the adam optimizer and keep track of variables we're creating
+        # Setup the optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
         self.train = optimizer.minimize(self.loss_opt, var_list=[self.slack], global_step=self.global_step)
@@ -953,7 +953,7 @@ class ElasticNetMethod(object):
         o_bestattack = np.copy(imgs)
 
         for outer_step in range(self.BINARY_SEARCH_STEPS):
-            # completely reset adam's internal state.
+            # completely reset the optimizer's internal state.
             self.sess.run(self.init)
             batch = imgs[:batch_size]
             batchlab = labs[:batch_size]

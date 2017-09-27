@@ -802,9 +802,6 @@ class ElasticNetMethod(Attack):
         :param beta: Trades off L2 distortion with L1 distortion: higher
                      produces examples with lower L1 distortion, at the
                      cost of higher L2 (and typically Linf) distortion
-        :param decision_rule: Select final adversarial example from all
-                              successful examples based on Elastic-Net
-                              or L1 distortion relative to the input
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
                            strongly classified as adversarial.
@@ -835,15 +832,7 @@ class ElasticNetMethod(Attack):
         """
         import tensorflow as tf
         self.parse_params(**kwargs)
-        """
-        if self.decision_rule == 'EN':
-            from .attacks_tf import ElasticNetMethod_EN as EAD
-        elif self.decision_rule == 'L1':
-            from .attacks_tf import ElasticNetMethod_L1 as EAD
-        else:
-            raise NotImplementedError("Only EN and L1 decision rules "
-                                      "are implemented.")
-        """
+
         from .attacks_tf import ElasticNetMethod as EAD
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
@@ -857,12 +846,12 @@ class ElasticNetMethod(Attack):
 
         def ead_wrap(x_val, y_val):
             return np.array(attack.attack(x_val, y_val), dtype=np.float32)
-        wrap = tf.py_func(cw_wrap, [x, labels], tf.float32)
+        wrap = tf.py_func(ead_wrap, [x, labels], tf.float32)
 
         return wrap
 
-    def parse_params(self, y=None, y_target=None, nb_classes=None,
-                     beta=1e-3, decision_rule='EN',
+    def parse_params(self, y=None, y_target=None, 
+                     nb_classes=None, beta=1e-3,
                      batch_size=9, confidence=0,
                      learning_rate=1e-2,
                      binary_search_steps=9, max_iterations=1000,
