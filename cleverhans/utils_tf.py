@@ -415,3 +415,29 @@ def kl_with_logits(p_logits, q_logits, scope=None,
                               name=name)
         tf.losses.add_loss(loss, loss_collection)
         return loss
+
+
+def clip_eta(eta, ord, eps):
+    """
+    Helper function to clip the perturbation to epsilon norm ball.
+    :param eta: A tensor with the current perturbation.
+    :param ord: Order of the norm (mimics Numpy).
+                Possible values: np.inf, 1 or 2.
+    :param eps: Epilson, bound of the perturbation.
+    """
+
+    # Clipping perturbation eta to self.ord norm ball
+    if ord == np.inf:
+        eta = tf.clip_by_value(eta, -eps, eps)
+    elif ord in [1, 2]:
+        reduc_ind = list(xrange(1, len(eta.get_shape())))
+        if ord == 1:
+            norm = tf.reduce_sum(tf.abs(eta),
+                                 reduction_indices=reduc_ind,
+                                 keep_dims=True)
+        elif ord == 2:
+            norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
+                                         reduction_indices=reduc_ind,
+                                         keep_dims=True))
+        eta = eta * eps / norm
+    return eta
