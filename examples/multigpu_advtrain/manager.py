@@ -97,7 +97,7 @@ class Manager(object):
 
     def eval(self):
         if self.evaluate is not None:
-            self.evaluate.evaluate()
+            self.evaluate.eval_multi()
 
     def finish(self):
         self.writer.close()

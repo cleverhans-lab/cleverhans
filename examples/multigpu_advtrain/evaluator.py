@@ -1,4 +1,3 @@
-import numpy as np
 import logging
 
 import tensorflow as tf
@@ -25,6 +24,7 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     :param y: (optional) a symbolic variable for the labels.
     :param kwargs: (optional) additional parameters to be passed to the attack.
     """
+    # TODO: black box attacks
     attack_names = {'FGSM': FastGradientMethod,
                     'MadryEtAl': MadryEtAl,
                     'MadryEtAl_y': MadryEtAl,
@@ -33,8 +33,6 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
 
     if attack_type not in attack_names:
         raise Exception('Attack %s not defined.' % attack_type)
-
-    # TODO: black box attacks
 
     attack_params_shared = {
         'mnist': {'eps': .3, 'eps_iter': 0.01, 'clip_min': 0., 'clip_max': 1.,
@@ -55,9 +53,24 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
 
 
 class Evaluator(object):
+    """
+    This class evaluates a model against multiple attacks.
+    """
     def __init__(self, sess, model, batch_size, x_pre, x, y,
                  data,
                  writer, hparams={}):
+        """
+        :param sess: Tensorflow session.
+        :param model: ?
+        :param batch_size: batch_size for evaluation.
+        :param x_pre: placeholder for input before preprocessing.
+        :param x: symbolic input to model.
+        :param y: symbolic tensor for the label.
+        :param data: a tuple with training and test data in the form
+                     (X_train, Y_train, X_test, Y_test).
+        :param writer: Tensorflow summary writer.
+        :param hparams: Flags to control the evaluation.
+        """
         self.preds = model.fprop(x, training=False)
         self.sess = sess
         self.batch_size = batch_size
@@ -93,22 +106,21 @@ class Evaluator(object):
             tf.summary.image(att_type, adv_x, max_outputs=10)
         self.sum_op = tf.summary.merge_all()
 
-    def log_value(self, tag, val, desc='', print_stats=False,
-                  print_only=False):
-        if print_stats:
-            valp = ''
-            if not print_only:
-                for i in range(0, 101, 10):
-                    pr = np.percentile(val, i)
-                    self.summary.value.add(tag=tag, simple_value=pr)
-                    valp += ' %d: %.4f' % (i, pr)
-            logging.info('%s (%s):\t %s' % (desc, tag, valp))
-        else:
-            logging.info('%s (%s): %.4f' % (desc, tag, val))
-            if not print_only:
-                self.summary.value.add(tag=tag, simple_value=val)
+    def log_value(self, tag, val, desc=''):
+        """
+        Log values to standard output and tensorflow summary.
+
+        :param tag: summary tag.
+        :param val: (required float or numpy array) value to be logged.
+        :param desc: (optional) additional description to be printed.
+        """
+        logging.info('%s (%s): %.4f' % (desc, tag, val))
+        self.summary.value.add(tag=tag, simple_value=val)
 
     def eval_train(self, sess, x, y, preds, X_train, Y_train):
+        """
+        Evaluate the accuracy of the model on legitimate train examples
+        """
         subsample_factor = 100
         X_train_subsampled = X_train[::subsample_factor]
         Y_train_subsampled = Y_train[::subsample_factor]
@@ -118,14 +130,18 @@ class Evaluator(object):
                        'Clean accuracy, subsampled train')
 
     def eval_test(self, sess, x, y, preds, X_test, Y_test):
-        # Evaluate the accuracy of the MNIST model on legitimate test examples
+        """
+        Evaluate the accuracy of the model on legitimate test examples
+        """
         acc = model_eval(sess, x, y, preds, X_test, Y_test,
                          args=self.eval_params)
         self.log_value('test_accuracy_natural', acc,
                        'Clean accuracy, natural test')
 
     def eval_advs(self, sess, x, y, preds_adv, X_test, Y_test, att_type):
-        # Evaluate the accuracy of the MNIST model on adversarial examples
+        """
+        Evaluate the accuracy of the model on adversarial examples
+        """
         end = (len(X_test) // self.batch_size) * self.batch_size
 
         if self.hparams.fast_tests:
@@ -133,17 +149,14 @@ class Evaluator(object):
 
         acc = model_eval(sess, x, y, preds_adv, X_test[:end], Y_test[:end],
                          args=self.eval_params)
-        print_only = False
-        cond = ('FGSM_' in att_type or 'BasicIter_' in att_type
-                or 'PGD_' in att_type)
-        if cond:
-            print_only = True
         self.log_value('test_accuracy_%s' % att_type, acc,
-                       'Test accuracy on adversarial examples',
-                       print_only=print_only)
+                       'Test accuracy on adversarial examples')
         return acc
 
-    def evaluate(self, inc_epoch=True):
+    def eval_multi(self, inc_epoch=True):
+        """
+        Run the evaluation on multiple attacks.
+        """
         preds = self.preds
         sess = self.sess
         x = self.x_pre
@@ -183,4 +196,4 @@ class Evaluator(object):
         self.epoch += 1 if inc_epoch else 0
 
     def __call__(self, **kwargs):
-        return self.evaluate(**kwargs)
+        return self.eval_multi(**kwargs)
