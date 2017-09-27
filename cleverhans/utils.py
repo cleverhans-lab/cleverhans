@@ -256,11 +256,13 @@ def get_logits_over_interval(sess, model, x, adv_x, x_data,
     height = shape[1]
     width = shape[2]
     channels = shape[3]
+    size = height * width * channels
 
-    # epsilon_array_t = tf.constant(epsilon_array, dtype=tf.float32)
     epsilon_array_t = tf.constant(epsilon_array)
-    epsilon_array_t = tf.stack([epsilon_array_t] * height * width * channels, axis=1)
-    epsilon_array_t = tf.reshape(epsilon_array_t, shape=[num_points, height, width, channels])
+    epsilon_array_t = tf.stack([epsilon_array_t] * size, axis=1)
+    epsilon_array_t = tf.reshape(epsilon_array_t,
+                                 shape=[num_points, height,
+                                        width, channels])
 
     adv_x_epsilon = x + eta * epsilon_array_t
     logits = model.get_logits(adv_x_epsilon)
