@@ -767,7 +767,7 @@ class ElasticNetMethod(object):
                                results. Using only a few iterations requires
                                a larger learning rate, and will produce larger
                                distortion results.
-        :param abort_early: If true, allows early abort when the total 
+        :param abort_early: If true, allows early abort when the total
                             loss starts to increase (greatly speeds up attack,
                             but hurts performance, particularly on ImageNet)
         :param initial_const: The initial tradeoff-constant to use to tune the
@@ -821,7 +821,7 @@ class ElasticNetMethod(object):
                                             name='assign_newimg')
         self.assign_slack = tf.placeholder(tf.float32, shape,
                                            name='assign_slack')
-        self.assign_tlab = tf.placeholder(tf.float32, (batch_size, 
+        self.assign_tlab = tf.placeholder(tf.float32, (batch_size,
                                                        num_labels),
                                           name='assign_tlab')
         self.assign_const = tf.placeholder(tf.float32, [batch_size],
@@ -832,20 +832,20 @@ class ElasticNetMethod(object):
 
         """Fast Iterative Shrinkage Thresholding"""
         """--------------------------------"""
-        self.zt = tf.divide(self.global_step_t, 
+        self.zt = tf.divide(self.global_step_t,
                             self.global_step_t + tf.cast(3, tf.float32))
 
-        cond1 = tf.cast(tf.greater(tf.subtract(self.slack, self.timg), 
+        cond1 = tf.cast(tf.greater(tf.subtract(self.slack, self.timg),
                                    self.beta_t), tf.float32)
-        cond2 = tf.cast(tf.less_equal(tf.abs(tf.subtract(self.slack, 
-                                                         self.timg)), 
+        cond2 = tf.cast(tf.less_equal(tf.abs(tf.subtract(self.slack,
+                                                         self.timg)),
                                       self.beta_t), tf.float32)
         cond3 = tf.cast(tf.less(tf.subtract(self.slack, self.timg),
                                 tf.negative(self.beta_t)), tf.float32)
 
-        upper = tf.minimum(tf.subtract(self.slack, self.beta_t), 
+        upper = tf.minimum(tf.subtract(self.slack, self.beta_t),
                            tf.cast(self.clip_max, tf.float32))
-        lower = tf.maximum(tf.add(self.slack, self.beta_t), 
+        lower = tf.maximum(tf.add(self.slack, self.beta_t),
                            tf.cast(self.clip_min, tf.float32))
 
         self.assign_newimg = tf.multiply(cond1, upper)
@@ -853,7 +853,7 @@ class ElasticNetMethod(object):
         self.assign_newimg += tf.multiply(cond3, lower)
 
         self.assign_slack = self.assign_newimg
-        self.assign_slack += tf.multiply(self.zt, 
+        self.assign_slack += tf.multiply(self.zt,
                                          self.assign_newimg - self.newimg)
 
         self.setter = tf.assign(self.newimg, self.assign_newimg)
@@ -873,17 +873,17 @@ class ElasticNetMethod(object):
                                     list(range(1, len(shape))))
         self.l1dist_y = tf.reduce_sum(tf.abs(self.slack-self.timg),
                                       list(range(1, len(shape))))
-        self.elasticdist = self.l2dist + tf.multiply(self.l1dist, 
+        self.elasticdist = self.l2dist + tf.multiply(self.l1dist,
                                                      self.beta_t)
-        self.elasticdist_y = self.l2dist_y + tf.multiply(self.l1dist_y, 
+        self.elasticdist_y = self.l2dist_y + tf.multiply(self.l1dist_y,
                                                          self.beta_t)
 
         # compute the probability of the label class versus the maximum other
         real = tf.reduce_sum((self.tlab) * self.output, 1)
         real_y = tf.reduce_sum((self.tlab) * self.output_y, 1)
-        other = tf.reduce_max((1 - self.tlab) * self.output - 
+        other = tf.reduce_max((1 - self.tlab) * self.output -
                               (self.tlab * 10000), 1)
-        other_y = tf.reduce_max((1 - self.tlab) * self.output_y - 
+        other_y = tf.reduce_max((1 - self.tlab) * self.output_y -
                                 (self.tlab * 10000), 1)
 
         if self.TARGETED:
@@ -907,16 +907,16 @@ class ElasticNetMethod(object):
         self.loss_opt = self.loss1_y+self.loss2_y
         self.loss = self.loss1+self.loss2+tf.multiply(self.beta_t, self.loss21)
 
-        self.learning_rate = tf.train.polynomial_decay(self.LEARNING_RATE, 
-                                                       self.global_step, 
-                                                       self.MAX_ITERATIONS, 
-                                                       0, power=0.5) 
+        self.learning_rate = tf.train.polynomial_decay(self.LEARNING_RATE,
+                                                       self.global_step,
+                                                       self.MAX_ITERATIONS,
+                                                       0, power=0.5)
 
         # Setup the optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
-        self.train = optimizer.minimize(self.loss_opt, 
-                                        var_list=[self.slack], 
+        self.train = optimizer.minimize(self.loss_opt,
+                                        var_list=[self.slack],
                                         global_step=self.global_step)
         end_vars = tf.global_variables()
         new_vars = [x for x in end_vars if x.name not in start_vars]
@@ -928,7 +928,7 @@ class ElasticNetMethod(object):
         self.setup.append(self.const.assign(self.assign_const))
 
         self.init = tf.variables_initializer(var_list=[self.global_step] +
-                                             [self.slack] + [self.newimg] + 
+                                             [self.slack] + [self.newimg] +
                                              new_vars)
 
     def attack(self, imgs, targets):
@@ -1004,9 +1004,9 @@ class ElasticNetMethod(object):
                 # perform the attack
                 self.sess.run([self.train])
                 self.sess.run([self.setter, self.setter_y])
-                l, l2s, l1s, elastic = self.sess.run([self.loss, 
+                l, l2s, l1s, elastic = self.sess.run([self.loss,
                                                       self.l2dist,
-                                                      self.l1dist, 
+                                                      self.l1dist,
                                                       self.elasticdist])
                 scores, nimg = self.sess.run([self.output, self.newimg])
 
