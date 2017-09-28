@@ -639,6 +639,7 @@ class VirtualAdversarialMethod(Attack):
         self.clip_max = clip_max
         return True
 
+
 class CarliniWagnerL2(Attack):
     """
     This attack was originally proposed by Carlini and Wagner. It is an
@@ -817,9 +818,9 @@ class ElasticNetMethod(Attack):
                                results. Using only a few iterations requires
                                a larger learning rate, and will produce larger
                                distortion results.
-        :param abort_early: If true, allows early abort when the total loss starts
-                            to increase (greatly speeds up attack, but hurts
-                            performance, particularly on ImageNet)
+        :param abort_early: If true, allows early abort when the total 
+                            loss starts to increase (greatly speeds up attack,
+                            but hurts performance, particularly on ImageNet)
         :param initial_const: The initial tradeoff-constant to use to tune the
                               relative importance of size of the perturbation
                               and confidence of classification.
@@ -836,12 +837,12 @@ class ElasticNetMethod(Attack):
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
         attack = EAD(self.sess, self.model, self.beta,
-                      self.batch_size, self.confidence,
-                      'y_target' in kwargs, self.learning_rate, 
-                      self.binary_search_steps, self.max_iterations, 
-                      self.abort_early, self.initial_const, 
-                      self.clip_min, self.clip_max,
-                      nb_classes, x.get_shape().as_list()[1:])
+                     self.batch_size, self.confidence,
+                     'y_target' in kwargs, self.learning_rate, 
+                     self.binary_search_steps, self.max_iterations, 
+                     self.abort_early, self.initial_const, 
+                     self.clip_min, self.clip_max,
+                     nb_classes, x.get_shape().as_list()[1:])
 
         def ead_wrap(x_val, y_val):
             return np.array(attack.attack(x_val, y_val), dtype=np.float32)
