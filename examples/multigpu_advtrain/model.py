@@ -275,3 +275,31 @@ class BatchNorm(Layer):
             x, mean, variance, self.beta, self.gamma, 0.001)
         y.set_shape(x.get_shape())
         return y
+
+
+class LayerNorm(Layer):
+    def __init__(self, **kwargs):
+        super(LayerNorm, self).__init__(**kwargs)
+        self._extra_train_ops = []
+
+    def set_input_shape(self, input_shape, **kwargs):
+        self.input_shape = list(input_shape)
+        params_shape = [input_shape[-1]]
+        self.params_shape = params_shape
+
+        self.beta = tf.get_variable(
+            'beta', params_shape, tf.float32,
+            initializer=tf.constant_initializer(0.0, tf.float32),
+            trainable=self.training)
+        self.gamma = tf.get_variable(
+            'gamma', params_shape, tf.float32,
+            initializer=tf.constant_initializer(1.0, tf.float32),
+            trainable=self.training)
+
+    def fprop_noscope(self, x, **kwargs):
+        mean = tf.reduce_mean(x, (1, 2), keep_dims=True)
+        x = x - mean
+        std = tf.sqrt(1e-7 +
+                      tf.reduce_mean(tf.square(x), (1, 2), keep_dims=True))
+        x = x / std
+        return x * self.gamma + self.beta
