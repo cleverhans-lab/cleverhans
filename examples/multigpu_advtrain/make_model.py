@@ -10,7 +10,7 @@ from cleverhans_tutorials.tutorial_models import MaxPool
 from resnet_tf import ResNetTF
 
 
-def make_madry(nb_classes=10, input_shape=(None, 28, 28, 1), **kwargs):
+def make_madry_ngpu(nb_classes=10, input_shape=(None, 28, 28, 1), **kwargs):
     layers = [Conv2DnGPU(32, (5, 5), (1, 1), "SAME", name='conv1'),
               ReLU(name='act1'),
               MaxPool((2, 2), (2, 2), "SAME", name='mxpool1'),
@@ -29,7 +29,7 @@ def make_madry(nb_classes=10, input_shape=(None, 28, 28, 1), **kwargs):
 
 def make_model(model_type='madry', *args, **kwargs):
     if model_type == 'madry':
-        return make_madry(*args, **kwargs)
+        return make_madry_ngpu(*args, **kwargs)
     elif model_type == 'resnet_tf':
         return ResNetTF(*args, **kwargs)
     else:
