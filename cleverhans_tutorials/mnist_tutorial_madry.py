@@ -27,7 +27,7 @@ FLAGS = flags.FLAGS
 
 
 def mnist_tutorial_madry(train_start=0, train_end=60000, test_start=0,
-                   test_end=10000, nb_epochs=6, batch_size=128,
+                   test_end=10000, nb_epochs=6, nb_iter=40, batch_size=128,
                    learning_rate=0.001,
                    clean_train=True,
                    testing=False,
@@ -93,9 +93,10 @@ def mnist_tutorial_madry(train_start=0, train_end=60000, test_start=0,
         'learning_rate': learning_rate
     }
     madry_params = {'eps': 0.3,
-                    'eps_iter': 1,
+                    'eps_iter': 0.01,
+                    'nb_iter': nb_iter,
                     'y': y,
-                    #'y_target': # only set one of y and y_target
+                    #'y_target': None, # only set one of y and y_target
                    'clip_min': 0.,
                    'clip_max': 1.}
     rng = np.random.RandomState([2017, 8, 30])
@@ -191,7 +192,9 @@ def mnist_tutorial_madry(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
-    mnist_tutorial_madry(nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
+    mnist_tutorial_madry(nb_epochs=FLAGS.nb_epochs, 
+                    nb_iter=FLAGS.nb_iter,
+                    batch_size=FLAGS.batch_size,
                    learning_rate=FLAGS.learning_rate,
                    clean_train=FLAGS.clean_train,
                    backprop_through_attack=FLAGS.backprop_through_attack,
@@ -201,6 +204,7 @@ def main(argv=None):
 if __name__ == '__main__':
     flags.DEFINE_integer('nb_filters', 64, 'Model size multiplier')
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
+    flags.DEFINE_integer('nb_iter', 40, 'Number of iterations for madry attack')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_bool('clean_train', True, 'Train on clean examples')
