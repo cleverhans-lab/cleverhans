@@ -150,8 +150,6 @@ def mnist_tutorial_madry(train_start=0, train_end=60000, test_start=0,
     madry2 = MadryEtAl(model_2, sess=sess)
     adv_x_2 = madry2.generate(x, **madry_params)
     if not backprop_through_attack:
-        # For the fgsm attack used in this tutorial, the attack has zero
-        # gradient so enabling this flag does not change the gradient.
         # For some other attacks, enabling this flag increases the cost of
         # training, but gives the defender the ability to anticipate how
         # the atacker will change their strategy in response to updates to
