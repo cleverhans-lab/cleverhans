@@ -2,26 +2,82 @@ import tensorflow as tf
 from tensorflow.python.client import timeline
 
 
-class RunnerMultiGPU(object):
-    def __init__(self, inputs, outputs, sync_ops, manager):
+class TrainerMultiGPU(object):
+    def __init__(self, **kwargs):
+        super(TrainerMultiGPU, self).__init__(**kwargs)
         self.manager = manager
         self.hparams = manager.hparams
         self.sess = manager.sess
+        self.feed_dict = {}
+        self.step_num = 0
+
+        self.create_train_graph()
+        self.next_vals = [None] * len(self.inputs)
+
+    def create_train_graph(self):
+        assert '_multigpu' in self.hparams.attack_type_train
+
+        hparams = self.hparams
+        model = self.model
+        x_pre, x, y = self.g0_inputs
+        sess = self.sess
+
+        # Generates steps on gpus 0-(ngpu-1)
+        logging.info("Initializing train attack %s" %
+                     hparams.attack_type_train)
+        inputs, outputs = create_adv_by_name(
+            model, x, hparams.attack_type_train,
+            sess, y=y, nb_iter=hparams.attack_nb_iter_train,
+            dataset=hparams.dataset, ngpu=hparams.ngpu)
+
+        assert len(inputs) == len(outputs)
+        # 0
+        # inputs[0] = (x_pre, y)
+
+        # copy y forward
+        for i in range(len(outputs)):
+            if i > 0:
+                with tf.device(inputs[i][-1].device):
+                    y2 = clone_variable('y%d' % i, y)
+            else:
+                y2 = y
+            inputs[i] = inputs[i] + (y2,)
+            outputs[i] = outputs[i] + (y2,)
+
+        # train step on last gpu
+        x, adv_x, y = outputs[-1]
+        device_name = '/gpu:%d' % (hparams.ngpu-1)
+        model.set_device(device_name)
+        with tf.device(device_name):
+            with tf.variable_scope('last'):
+                x2 = clone_variable('x_-1', x)
+                adv2_x = clone_variable('adv_x_-1', adv_x)
+                y2 = clone_variable('y_-1', y)
+                inputs += [(x2, adv2_x, y2)]
+                if not hparams.adv_train:
+                    preds = model.get_probs(x2, training=True,
+                                            bn_training=True)
+                    preds_2_adv = None
+                elif not hparams.only_adv_train:
+                    preds = model.get_probs(x2, training=True)
+                    preds_2_adv = model.get_probs(adv2_x, training=True,
+                                                  bn_training=True)
+                else:
+                    preds = None
+                    preds_2_adv = model.get_probs(adv2_x, training=True,
+                                                  bn_training=True)
+                train_fetches = self.build_train_op(preds, y2, preds_2_adv)
+
+        outputs += [train_fetches]
+
+        device_name = '/gpu:%d' % (hparams.ngpu-1)
+        model.set_device(device_name)
+        with tf.device(device_name):
+            sync_ops = model.create_sync_ops(host_device=device_name)
+
         self.inputs = inputs
         self.outputs = outputs
         self.sync_ops = sync_ops
-        self.feed_dict = {}
-        self.step_num = 0
-        self.next_vals = [None] * len(self.inputs)
-
-    def init_tf(self, X_batch, Y_batch):
-        x_pre, x, y = self.manager.g0_inputs
-        fd = {x_pre: X_batch, y: Y_batch}
-        init_op = tf.global_variables_initializer()
-        self.sess.run(init_op, feed_dict=fd)
-
-    def is_finished(self):
-        return self.next_vals[-1] is None
 
     def set_input(self, X_batch=None, Y_batch=None):
         inputs = self.inputs
@@ -79,34 +135,9 @@ class RunnerMultiGPU(object):
         else:
             self.run_simple(X_batch, Y_batch)
 
-    def run_simple(self, X_batch=None, Y_batch=None):
-        fetches, feed_dict = self.set_input(X_batch, Y_batch)
-        fvals = self.sess.run(fetches, feed_dict=feed_dict)
-        self.proc_fvals(fvals)
-        self.step_num += 1
-
-    def run_with_graph(self, X_batch, Y_batch):
-        manager = self.manager
-        fetches, feed_dict = self.set_input(X_batch, Y_batch)
-
-        manager.writer.add_graph(self.sess.graph)
-        run_options = tf.RunOptions(
-            trace_level=tf.RunOptions.FULL_TRACE)
-        run_metadata = tf.RunMetadata()
-        fvals = self.sess.run(fetches,
-                              feed_dict=feed_dict,
-                              options=run_options,
-                              run_metadata=run_metadata)
-        manager.writer.add_run_metadata(run_metadata, 'graph')
-
-        tl = timeline.Timeline(run_metadata.step_stats)
-        ctf = tl.generate_chrome_trace_format()
-        with open('timeline.json', 'w') as f:
-            f.write(ctf)
-
-        self.proc_fvals(fvals)
-        self.step_num += 1
-
     def sync_params(self, forced=False):
         if forced or (self.step_num % self.hparams.sync_step == 0):
             self.sess.run(self.sync_ops)
+
+    def is_finished(self):
+        return self.next_vals[-1] is None

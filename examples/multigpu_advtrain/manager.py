@@ -8,12 +8,13 @@ from utils import preprocess_batch
 
 from make_model import make_model
 from evaluator import Evaluator
+from cleverhans.utils_tf import model_loss
 
 _data_path = {'svhn':  '/ssd1/datasets/svhn/',
               'cifar10':  '/ssd1/datasets/cifar-10/'}
 
 
-class Manager(object):
+class TrainManager(object):
     def __init__(self, hparams):
         self.hparams = hparams
         self.batch_size = hparams.batch_size
@@ -102,3 +103,169 @@ class Manager(object):
     def finish(self):
         self.writer.close()
         return self.report
+
+    def update_learning_params(self):
+        model = self.model
+        hparams = self.hparams
+        fd = self.feed_dict
+        self.step_num = self.step_num
+
+        if hparams.model_type == 'resnet_tf':
+            if self.step_num < hparams.lrn_step:
+                lrn_rate = hparams.resnet_lrn
+            elif self.step_num < 30000:
+                lrn_rate = hparams.resnet_lrn/10
+            elif self.step_num < 35000:
+                lrn_rate = hparams.resnet_lrn/100
+            else:
+                lrn_rate = hparams.resnet_lrn/1000
+
+            fd[model.lrn_rate] = lrn_rate
+
+    def build_train_op(self, predictions, y, predictions_adv):
+        model = self.model
+        hparams = self.hparams
+        if hparams.model_type == 'resnet_tf':
+            build_train_op = model.build_cost
+        else:
+            build_train_op = model_loss
+
+        # Define loss
+        with tf.variable_scope('train_loss'):
+            if predictions_adv is not None:
+                if hparams.only_adv_train:
+                    loss = build_train_op(y, predictions_adv)
+                else:
+                    loss = build_train_op(y, predictions)
+                    adv_loss = build_train_op(y, predictions_adv)
+                    loss = (loss + adv_loss) / 2
+            else:
+                loss = build_train_op(y, predictions)
+
+        if hparams.model_type == 'resnet_tf':
+            train_step = model.build_train_op_from_cost(loss)
+        else:
+            optim = tf.train.AdamOptimizer(learning_rate=hparams.learning_rate)
+            train_step = optim.minimize(loss)
+
+        return [train_step]
+
+    def save_model(self):
+        hparams = self.hparams
+
+        cond = ((epoch+1) % hparams.save_steps == 0
+                or epoch == nb_epochs)
+        if hparams.save and cond:
+            save_path = os.path.join(train_dir, filename)
+            saver = tf.train.Saver()
+            saver.save(sess, save_path)
+            logging.info("Completed model training and saved at:" +
+                         str(save_path))
+        else:
+            logging.info("Completed model training.")
+
+    def model_train(self):
+        """
+        Train a TF graph
+        :param sess: TF session to use when training the graph
+        :param x: input placeholder
+        :param y: output placeholder (for labels)
+        :param predictions: model output predictions
+        :param X_train: numpy array with training inputs
+        :param Y_train: numpy array with training outputs
+        :param hparams.save: boolean controlling the save operation
+        :param predictions_adv: if set with the adversarial example tensor,
+                                will run adversarial training
+        :param evaluate: function that is run after each training iteration
+                        (typically to display the test/validation accuracy).
+        """
+
+        hparams = self.hparams
+        batch_size = hparams.batch_size
+        nb_epochs = hparams.nb_epochs
+        train_dir = hparams.save_dir
+        filename = 'model.ckpt'
+        X_train = self.X_train
+        Y_train = self.Y_train
+
+        sess = self.sess
+
+        with sess.as_default():
+            X_batch = X_train[:batch_size]
+            Y_batch = Y_train[:batch_size]
+            self.init_tf(X_batch, Y_batch)
+
+            for epoch in six.moves.xrange(nb_epochs):
+                logging.info("Epoch " + str(epoch))
+
+                # Compute number of batches
+                nb_batches = int(math.ceil(float(len(X_train)) / batch_size))
+                assert nb_batches * batch_size >= len(X_train)
+
+                # Indices to shuffle training set
+                index_shuf = list(range(len(X_train)))
+                random.shuffle(index_shuf)
+
+                prev = time.time()
+                for batch in range(nb_batches):
+                    # Compute batch start and end indices
+                    start, end = batch_indices(
+                        batch, len(X_train), batch_size)
+
+                    # Perform one training step
+                    self.update_learning_params()
+
+                    # train step
+                    X_batch = X_train[index_shuf[start:end]]
+                    Y_batch = Y_train[index_shuf[start:end]]
+
+                    self.run(X_batch, Y_batch)
+                    self.sync_params()
+
+                # clean up the queue
+                while not self.is_finished():
+                    self.run()
+
+                self.sync_params(forced=True)
+
+                assert end >= len(X_train)  # Check that all examples were used
+                cur = time.time()
+                logging.info("\tEpoch took " + str(cur - prev) + " seconds")
+                prev = cur
+
+                self.eval()
+                self.save_model()
+    def init_tf(self, X_batch, Y_batch):
+        x_pre, x, y = self.manager.g0_inputs
+        fd = {x_pre: X_batch, y: Y_batch}
+        init_op = tf.global_variables_initializer()
+        self.sess.run(init_op, feed_dict=fd)
+
+    def run_simple(self, X_batch=None, Y_batch=None):
+        fetches, feed_dict = self.set_input(X_batch, Y_batch)
+        fvals = self.sess.run(fetches, feed_dict=feed_dict)
+        self.proc_fvals(fvals)
+        self.step_num += 1
+
+    def run_with_graph(self, X_batch, Y_batch):
+        manager = self.manager
+        fetches, feed_dict = self.set_input(X_batch, Y_batch)
+
+        manager.writer.add_graph(self.sess.graph)
+        run_options = tf.RunOptions(
+            trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
+        fvals = self.sess.run(fetches,
+                              feed_dict=feed_dict,
+                              options=run_options,
+                              run_metadata=run_metadata)
+        manager.writer.add_run_metadata(run_metadata, 'graph')
+
+        tl = timeline.Timeline(run_metadata.step_stats)
+        ctf = tl.generate_chrome_trace_format()
+        with open('timeline.json', 'w') as f:
+            f.write(ctf)
+
+        self.proc_fvals(fvals)
+        self.step_num += 1
+

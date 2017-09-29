@@ -25,12 +25,9 @@ def mnist_tutorial(hparams=None):
     """
     """
 
-    manager = Manager(hparams)
-
-    inputs, outputs, sync_ops = create_train_graph_multigpu(manager)
-    trainer = RunnerMultiGPU(inputs, outputs, sync_ops, manager)
-    model_train(trainer, manager)
-    manager.evaluate(inc_epoch=False)
+    trainer = TrainerMultiGPU(hparams)
+    trainer.model_train()
+    trainer.evaluate(inc_epoch=False)
 
     return manager.finish()
 
