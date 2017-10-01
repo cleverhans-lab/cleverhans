@@ -31,7 +31,7 @@ REQUIRED_METADATA_JSON_FIELDS = ['entry_point', 'container',
 
 CMD_VARIABLE_RE = re.compile('^\\$\\{(\\w+)\\}$')
 
-BATCH_SIZE = 8
+BATCH_SIZE = 100
 IMAGE_NAME_PATTERN = 'IMG{0:04}.png'
 
 ALLOWED_EPS = [4, 8, 12, 16]
