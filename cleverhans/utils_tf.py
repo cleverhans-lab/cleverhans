@@ -403,6 +403,8 @@ def clip_eta(eta, ord, eps):
     """
 
     # Clipping perturbation eta to self.ord norm ball
+    if ord not in [np.inf, 1, 2]:
+        raise ValueError('ord must be np.inf, 1, or 2.')
     if ord == np.inf:
         eta = tf.clip_by_value(eta, -eps, eps)
     elif ord in [1, 2]:
