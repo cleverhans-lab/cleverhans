@@ -25,7 +25,7 @@ class TestMNISTTutorialTF(CleverHansTest):
 
         # Check accuracy values contained in the AccuracyReport object
         self.assertGreater(report.train_clean_train_clean_eval, 0.97)
-        self.assertLess(report.train_clean_train_adv_eval, 0.029)
+        self.assertLess(report.train_clean_train_adv_eval, 0.036)
         self.assertGreater(report.train_adv_train_clean_eval, 0.93)
         self.assertGreater(report.train_adv_train_adv_eval, 0.4)
 
