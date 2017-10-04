@@ -16,6 +16,7 @@ from cleverhans.attacks import MomentumIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.attacks import CarliniWagnerL2
+from cleverhans.attacks import CarliniWagnerL0
 from cleverhans.attacks import ElasticNetMethod
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import MadryEtAl
@@ -816,6 +817,53 @@ class TestFastFeatureAdversaries(CleverHansTest):
               (layer, d_sg))
         print("d_ag/d_sg*100 `%s`: %.4f" % (layer, d_ag*100/d_sg))
         self.assertTrue(d_ag*100/d_sg < 50.)
+
+
+
+class TestCarliniWagnerL0(CleverHansTest):
+    def setUp(self):
+        super(TestCarliniWagnerL0, self).setUp()
+        import tensorflow as tf
+        import tensorflow.contrib.slim as slim
+        from cleverhans.model import CallableModelWrapper
+
+        def dummy_model(x):
+            net = slim.fully_connected(x, 60)
+            return slim.fully_connected(net, 10, activation_fn=None)
+
+        self.sess = tf.Session()
+        self.sess.as_default()
+        self.model = tf.make_template('dummy_model', dummy_model)
+        self.attack = SaliencyMapMethod(self.model, sess=self.sess)
+
+        # initialize model
+        with tf.name_scope('dummy_model'):
+            self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
+        self.sess.run(tf.global_variables_initializer())
+
+        self.model = CallableModelWrapper(self.model, 'logits')
+        self.attack = CarliniWagnerL0(self.model, sess=self.sess)
+
+    def test_generate_np_targeted_gives_adversarial_example(self):
+        x_val = np.random.rand(10, 1000)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        feed_labs = np.zeros((10, 10))
+        feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
+        print('try to hit', feed_labs)
+
+        import cleverhans.attacks_tf
+        attack = cleverhans.attacks_tf.CarliniWagnerL0(self.sess, self.model, 0, True, 0.05, 100, True, 0.01, 1000.0, 2, -5, 5, 10, [1000])
+        
+        #x_adv = self.attack.generate_np(x_val,
+        #                                clip_min=-5, clip_max=5,
+        #                                y_target=feed_labs)
+        x_adv = attack.attack(x_val, feed_labs)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+        worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
+        self.assertTrue(worked > .9)
 
 
 if __name__ == '__main__':
