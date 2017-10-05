@@ -1,3 +1,7 @@
+"""
+Simplifying the evaluation of a model. Multiple attacks are initialized and
+run against a model at every evaluation step.
+"""
 import logging
 
 import tensorflow as tf
