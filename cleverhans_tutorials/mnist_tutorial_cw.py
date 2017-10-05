@@ -11,6 +11,7 @@ from tensorflow.python.platform import flags
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
+from cleverhans.attacks import CarliniWagnerL0
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
@@ -210,10 +211,10 @@ if __name__ == '__main__':
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
                         'Path to save or load the model file')
-    flags.DEFINE_boolean('attack_iterations', 100,
+    flags.DEFINE_boolean('attack_iterations', 10,
                          'Number of iterations to run attack; 1000 is good')
-    flags.DEFINE_boolean('targeted', True,
+    flags.DEFINE_boolean('targeted', False,
                          'Run the tutorial in targeted mode?')
-    flags.DEFINE_integer('metric', 'l0', 'Distance metric to optimize (l0,l2,li)')
+    flags.DEFINE_string('metric', 'l0', 'Distance metric to optimize (l0,l2,li)')
 
     tf.app.run()
