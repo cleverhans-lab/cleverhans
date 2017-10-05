@@ -13,23 +13,11 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 
-from manager import Manager
-from trainer import model_train, create_train_graph_multigpu
-from runner import RunnerMultiGPU
+from trainer_multigpu import TrainerMultiGPU
+from trainer_singlegpu import TrainerSingleGPU
 
 
 FLAGS = flags.FLAGS
-
-
-def mnist_tutorial(hparams=None):
-    """
-    """
-
-    trainer = TrainerMultiGPU(hparams)
-    trainer.model_train()
-    trainer.evaluate(inc_epoch=False)
-
-    return manager.finish()
 
 
 def main(argv=None):
@@ -37,7 +25,16 @@ def main(argv=None):
 
     hparams = flags.FLAGS
 
-    mnist_tutorial(hparams=hparams)
+    if hparams.ngpu > 1:
+        logging.info('Multi GPU Trainer.')
+        trainer = TrainerMultiGPU(hparams)
+    else:
+        logging.info('Single GPU Trainer.')
+        trainer = TrainerSingleGPU(hparams)
+    trainer.model_train()
+    trainer.evaluate(inc_epoch=False)
+
+    return trainer.finish()
 
 
 if __name__ == '__main__':

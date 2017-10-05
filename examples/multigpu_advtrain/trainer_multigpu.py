@@ -1,13 +1,16 @@
+import logging
+
 import tensorflow as tf
-from tensorflow.python.client import timeline
+
+from model import clone_variable
+
+from evaluator import create_adv_by_name
+from trainer import TrainManager
 
 
-class TrainerMultiGPU(object):
+class TrainerMultiGPU(TrainManager):
     def __init__(self, **kwargs):
         super(TrainerMultiGPU, self).__init__(**kwargs)
-        self.manager = manager
-        self.hparams = manager.hparams
-        self.sess = manager.sess
         self.feed_dict = {}
         self.step_num = 0
 
@@ -128,12 +131,6 @@ class TrainerMultiGPU(object):
                 cur += 1
             if i == 0:
                 self.next_vals[0] = None
-
-    def run(self, X_batch=None, Y_batch=None):
-        if self.step_num == len(self.inputs)+1:
-            self.run_with_graph(X_batch, Y_batch)
-        else:
-            self.run_simple(X_batch, Y_batch)
 
     def sync_params(self, forced=False):
         if forced or (self.step_num % self.hparams.sync_step == 0):
