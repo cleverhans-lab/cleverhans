@@ -10,7 +10,7 @@ from cleverhans.utils_tf import model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import MadryEtAl
 
-from target_attacks import MadryEtAlMultiGPU
+from attacks_multigpu import MadryEtAlMultiGPU
 
 
 def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
