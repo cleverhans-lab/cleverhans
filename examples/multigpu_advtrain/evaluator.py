@@ -16,8 +16,11 @@ from target_attacks import MadryEtAlMultiGPU
 def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     """
     Creates the symbolic graph of an adversarial example given the name of
-    an attack. Default parameters are used unless a different value is given
-    in kwargs.
+    an attack. Simplifies creating the symbolic graph of an attack by defining
+    dataset-specific parameters.
+    Dataset-specific default parameters are used unless a different value is
+    given in kwargs.
+
     :param model: an object of Model class
     :param x: Symbolic input to the attack.
     :param attack_type: A string that is the name of an attack.
