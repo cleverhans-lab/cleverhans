@@ -113,8 +113,6 @@ example contests.
 
 You can find a full list attacks along with their function signatures at [cleverhans.readthedocs.io](http://cleverhans.readthedocs.io/)
 
-
-
 ## Reporting benchmarks
 
 When reporting benchmarks, please:
