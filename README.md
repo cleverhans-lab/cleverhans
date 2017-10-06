@@ -109,6 +109,10 @@ The `examples/` folder contains additional scripts to showcase different uses
 of the CleverHans library or get you started competing in different adversarial
 example contests.
 
+## List of attacks
+
+You can find a full list attacks along with their function signatures at [cleverhans.readthedocs.io](http://cleverhans.readthedocs.io/)
+
 ## Reporting benchmarks
 
 When reporting benchmarks, please:
