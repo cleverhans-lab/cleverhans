@@ -969,7 +969,6 @@ class CarliniWagnerL0(object):
             self.l2_attack.source_image = np.copy(prev)
             while const < self.largest_const:
                 # try solving for each value of the constant
-                print('try const', const)
                 self.l2_attack.initial_const = const
                 res = self.l2_attack.attack_batch(np.copy([img]), np.array([target]),
                                                   mask=np.array([valid]))
@@ -979,7 +978,7 @@ class CarliniWagnerL0(object):
             
             if res is None:
                 # the attack failed, we return this as our final answer
-                print("Final answer",equal_count)
+                _logger.debug("Attack succeeded with {} fixed values.".format(equal_count))
                 return last_solution
 
             # the attack succeeded, now we pick new pixels to set to 0
@@ -987,11 +986,10 @@ class CarliniWagnerL0(object):
             gradientnorm, scores, nimg = res
 
             equal_count = np.sum(np.abs(img-nimg[0])<.0001)
-            print("Forced equal:",np.sum(1-valid),
-                  "Equal count:",equal_count)
             if np.sum(valid) == 0:
                 # if no pixels changed, return 
                 return [img]
+            _logger.debug("Next iteration; {} fixed values.".format(equal_count))
     
             orig_shape = valid.shape
             valid = valid.flatten()
@@ -1013,7 +1011,6 @@ class CarliniWagnerL0(object):
                         break
 
             valid = np.reshape(valid,orig_shape)
-            print("Now forced equal:",np.sum(1-valid))
     
             last_solution = prev = nimg
 
