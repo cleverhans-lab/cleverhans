@@ -58,7 +58,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     sess = tf.Session()
     print("Created TensorFlow session.")
 
-    set_log_level(logging.DEBUG)
+    set_log_level(logging.INFO)
 
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
@@ -113,8 +113,10 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     # Instantiate a CW attack object
     if FLAGS.metric == 'l2':
         cw = CarliniWagnerL2(model, back='tf', sess=sess)
+        const = 10
     elif FLAGS.metric == 'l0':
         cw = CarliniWagnerL0(model, back='tf', sess=sess)
+        const = 0.1
     else:
         raise 
 
@@ -144,9 +146,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     cw_params = {'binary_search_steps': 1,
                  yname: adv_ys,
                  'max_iterations': attack_iterations,
-                 'learning_rate': 0.1,
+                 'learning_rate': 10./attack_iterations,
                  'batch_size': 100 if targeted else 10,
-                 'initial_const': 10}
+                 'initial_const': const}
 
     adv = cw.generate_np(adv_inputs,
                          **cw_params)
@@ -211,9 +213,9 @@ if __name__ == '__main__':
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
                         'Path to save or load the model file')
-    flags.DEFINE_boolean('attack_iterations', 10,
+    flags.DEFINE_integer('attack_iterations', 100,
                          'Number of iterations to run attack; 1000 is good')
-    flags.DEFINE_boolean('targeted', False,
+    flags.DEFINE_boolean('targeted', True,
                          'Run the tutorial in targeted mode?')
     flags.DEFINE_string('metric', 'l0', 'Distance metric to optimize (l0,l2,li)')
 

@@ -960,8 +960,9 @@ class CarliniWagnerL0(object):
         # the previous image
         prev = np.copy([img])
         
-        last_solution = None
+        last_solution = [img]
         const = self.initial_const
+        equal_count = 0
     
         while True:
             # try to solve given this valid map

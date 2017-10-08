@@ -838,14 +838,14 @@ class TestCarliniWagnerL0(CleverHansTest):
 
         # initialize model
         with tf.name_scope('dummy_model'):
-            self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
+            self.model(tf.placeholder(tf.float32, shape=(None, 10)))
         self.sess.run(tf.global_variables_initializer())
 
         self.model = CallableModelWrapper(self.model, 'logits')
         self.attack = CarliniWagnerL0(self.model, sess=self.sess)
 
     def test_generate_np_targeted_gives_adversarial_example(self):
-        x_val = np.random.rand(10, 1000)
+        x_val = np.random.rand(10, 10)
         x_val = np.array(x_val, dtype=np.float32)
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
@@ -853,13 +853,16 @@ class TestCarliniWagnerL0(CleverHansTest):
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
         print('try to hit', feed_labs)
 
-        import cleverhans.attacks_tf
-        attack = cleverhans.attacks_tf.CarliniWagnerL0(self.sess, self.model, 0, True, 0.05, 100, True, 0.01, 1000.0, 2, -5, 5, 10, [1000])
+        #import cleverhans.attacks_tf
+        #attack = cleverhans.attacks_tf.CarliniWagnerL0(self.sess, self.model, 0, True, 0.05, 100, True, 0.01, 1000.0, 2, -5, 5, 10, [1000])
         
-        #x_adv = self.attack.generate_np(x_val,
-        #                                clip_min=-5, clip_max=5,
-        #                                y_target=feed_labs)
-        x_adv = attack.attack(x_val, feed_labs)
+        x_adv = self.attack.generate_np(x_val,
+                                        clip_min=-5, clip_max=5,
+                                        num_iterations=10,
+                                        initial_const=10,
+                                        largest_const=20,
+                                        y_target=feed_labs)
+        #x_adv = attack.attack(x_val, feed_labs)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
