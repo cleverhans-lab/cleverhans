@@ -986,8 +986,6 @@ class CarliniWagnerL0(object):
             restarted = False
             gradientnorm, scores, nimg = res
 
-            print(scores)
-    
             equal_count = np.sum(np.abs(img-nimg[0])<.0001)
             print("Forced equal:",np.sum(1-valid),
                   "Equal count:",equal_count)

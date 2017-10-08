@@ -851,10 +851,6 @@ class TestCarliniWagnerL0(CleverHansTest):
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((10, 10))
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
-        print('try to hit', feed_labs)
-
-        #import cleverhans.attacks_tf
-        #attack = cleverhans.attacks_tf.CarliniWagnerL0(self.sess, self.model, 0, True, 0.05, 100, True, 0.01, 1000.0, 2, -5, 5, 10, [1000])
         
         x_adv = self.attack.generate_np(x_val,
                                         clip_min=-5, clip_max=5,
@@ -862,11 +858,15 @@ class TestCarliniWagnerL0(CleverHansTest):
                                         initial_const=10,
                                         largest_const=20,
                                         y_target=feed_labs)
-        #x_adv = attack.attack(x_val, feed_labs)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
         self.assertTrue(worked > .9)
+
+cw=TestCarliniWagnerL0()
+cw.setUp()
+cw.test_generate_np_targeted_gives_adversarial_example()
+        
 
 
 if __name__ == '__main__':
