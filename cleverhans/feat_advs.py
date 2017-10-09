@@ -1,3 +1,10 @@
+"""
+This module inmplements a fast implementation of Feature Adversaries, an attack
+against a target internal representation of a model.
+Feature adversaries were originally introduced in (Sabour et al. 2016),
+where the optimization was done using LBFGS.
+Paper link: https://arxiv.org/abs/1511.05122
+"""
 import numpy as np
 import tensorflow as tf
 
@@ -161,10 +168,7 @@ class FastIterativeFeatureAdversaries(Attack):
 
     """
     This is similar to Basic Iterative Method (Kurakin et al. 2016) but
-    applied to the internal representations. Feature adversaries were
-    originally introduced in (Sabour et al. 2016), where the optimization
-    was done using LBFGS.
-    Paper link: https://arxiv.org/abs/1511.05122
+    applied to the internal representations.
     """
 
     def __init__(self, model, back='tf', sess=None):
