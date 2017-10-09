@@ -15,8 +15,9 @@ from cleverhans.model import Model
 def ffg(x, s_feat, g_feat, eps=0.3, ord=np.inf,
         clip_min=None, clip_max=None):
     """
-    TensorFlow implementation of the Fast Feature Adversaries. This is a
-    single step attack similar to Fast Gradient Method.
+    TensorFlow implementation of the Fast Feature Gradient. This is a
+    single step attack similar to Fast Gradient Method that attacks an
+    internal representation.
     :param x: the input placeholder
     :param s_feat: model's internal tensor for source
     :param g_feat: model's internal tensor for guide
