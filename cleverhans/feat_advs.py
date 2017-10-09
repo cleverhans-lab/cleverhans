@@ -13,38 +13,26 @@ from cleverhans.model import Model
 
 
 def ffg(x, s_feat, g_feat, eps=0.3, ord=np.inf,
-        clip_min=None, clip_max=None, targeted=False):
+        clip_min=None, clip_max=None):
     """
-    TensorFlow implementation of the Fast Gradient Method.
+    TensorFlow implementation of the Fast Feature Adversaries. This is a
+    single step attack similar to Fast Gradient Method.
     :param x: the input placeholder
-    :param preds: the model's output tensor
-    :param y: (optional) A placeholder for the model labels. If targeted
-              is true, then provide the target label. Otherwise, only provide
-              this parameter if you'd like to use true labels when crafting
-              adversarial samples. Otherwise, model predictions are used as
-              labels to avoid the "label leaking" effect (explained in this
-              paper: https://arxiv.org/abs/1611.01236). Default is None.
-              Labels should be one-hot-encoded.
+    :param s_feat: model's internal tensor for source
+    :param g_feat: model's internal tensor for guide
     :param eps: the epsilon (input variation parameter)
     :param ord: (optional) Order of the norm (mimics NumPy).
                 Possible values: np.inf, 1 or 2.
     :param clip_min: Minimum float value for adversarial example components
     :param clip_max: Maximum float value for adversarial example components
-    :param targeted: Is the attack targeted or untargeted? Untargeted, the
-                     default, will try to make the label incorrect. Targeted
-                     will instead try to move in the direction of being more
-                     like y.
     :return: a tensor for the adversarial example
     """
 
     # feat.shape = (batch, c) or (batch, w, h, c)
     axis = range(1, len(s_feat.shape))
 
-    # Compute loss (targeted)
+    # Compute loss
     loss = tf.reduce_sum(tf.square(s_feat - g_feat), axis)
-
-    if targeted:
-        loss = - loss
 
     # Define gradient of loss wrt input
     grad, = tf.gradients(loss, x)
