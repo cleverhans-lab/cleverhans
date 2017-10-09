@@ -12,8 +12,7 @@ from cleverhans.attacks import Attack
 from cleverhans.model import Model
 
 
-def ffg(x, s_feat, g_feat, eps=0.3, ord=np.inf,
-        clip_min=None, clip_max=None):
+def ffg(x, s_feat, g_feat, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
     """
     TensorFlow implementation of the Fast Feature Gradient. This is a
     single step attack similar to Fast Gradient Method that attacks an
@@ -111,10 +110,10 @@ class FastFeatureGradient(Attack):
         g_feat = self.model.get_layer(g, self.layer)
         return ffg(x, s_feat, g_feat, eps=self.eps,
                    ord=self.ord, clip_min=self.clip_min,
-                   clip_max=self.clip_max, targeted=self.targeted)
+                   clip_max=self.clip_max)
 
     def parse_params(self, layer=None, eps=0.3, ord=np.inf,
-                     clip_min=None, clip_max=None, targeted=False, **kwargs):
+                     clip_min=None, clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -142,7 +141,6 @@ class FastFeatureGradient(Attack):
         self.layer = layer
         self.clip_min = clip_min
         self.clip_max = clip_max
-        self.targeted = targeted
 
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, int(1), int(2)]:
@@ -170,8 +168,7 @@ class FastIterativeFeatureAdversaries(Attack):
                                 'eps_iter': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32,
-                                'layer': str,
-                                'targeted': False}
+                                'layer': str}
         self.structural_kwargs = ['ord', 'nb_iter']
 
         assert isinstance(self.model, Model)
@@ -222,7 +219,7 @@ class FastIterativeFeatureAdversaries(Attack):
 
         fgm_params = {'eps': self.eps_iter, 'layer': self.layer,
                       'ord': self.ord, 'clip_min': self.clip_min,
-                      'clip_max': self.clip_max, 'targeted': self.targeted}
+                      'clip_max': self.clip_max}
 
         for i in range(self.nb_iter):
             FFG = FastFeatureGradient(self.model, back=self.back,
@@ -240,8 +237,7 @@ class FastIterativeFeatureAdversaries(Attack):
         return adv_x
 
     def parse_params(self, layer=None, eps=0.3, eps_iter=0.05, nb_iter=10,
-                     ord=np.inf, clip_min=None, clip_max=None,
-                     targeted=False, **kwargs):
+                     ord=np.inf, clip_min=None, clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -270,7 +266,6 @@ class FastIterativeFeatureAdversaries(Attack):
         self.ord = ord
         self.clip_min = clip_min
         self.clip_max = clip_max
-        self.targeted = targeted
 
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
