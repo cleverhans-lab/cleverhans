@@ -128,6 +128,8 @@ class FastFeatureGradient(Attack):
         self.clip_max = clip_max
 
         # Check if order of the norm is acceptable given current implementation
+        if self.layer not in self.model.get_layer_names():
+            raise ValueError("Layer name does not exist in the model layers.")
         if self.ord not in [np.inf, int(1), int(2)]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
         if self.back == 'th' and self.ord != np.inf:
