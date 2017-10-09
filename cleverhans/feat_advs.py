@@ -17,6 +17,7 @@ def ffg(x, s_feat, g_feat, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
     TensorFlow implementation of the Fast Feature Gradient. This is a
     single step attack similar to Fast Gradient Method that attacks an
     internal representation.
+
     :param x: the input placeholder
     :param s_feat: model's internal tensor for source
     :param g_feat: model's internal tensor for guide
@@ -75,7 +76,7 @@ class FastFeatureGradient(Attack):
 
     def __init__(self, model, back='tf', sess=None):
         """
-        Create a FastGradientMethod instance.
+        Create a FastFeatureGradient instance.
         """
         super(FastFeatureGradient, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
@@ -87,19 +88,11 @@ class FastFeatureGradient(Attack):
     def generate(self, x, g, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
-        :param x: The model's symbolic inputs.
+        :param x: The model's symbolic inputs for a source.
+        :param g: The model's symoblic input for a guide.
         :param eps: (optional float) attack step size (input variation)
         :param ord: (optional) Order of the norm (mimics NumPy).
                     Possible values: np.inf, 1 or 2.
-        :param y: (optional) A tensor with the model labels. Only provide
-                  this parameter if you'd like to use true labels when crafting
-                  adversarial samples. Otherwise, model predictions are used as
-                  labels to avoid the "label leaking" effect (explained in this
-                  paper: https://arxiv.org/abs/1611.01236). Default is None.
-                  Labels should be one-hot-encoded.
-        :param y_target: (optional) A tensor with the labels to target. Leave
-                         y_target=None if y is also set. Labels should be
-                         one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -119,26 +112,18 @@ class FastFeatureGradient(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
+        :param layer: The name of the layer to be manipulated by the attack
         :param eps: (optional float) attack step size (input variation)
         :param ord: (optional) Order of the norm (mimics NumPy).
                     Possible values: np.inf, 1 or 2.
-        :param y: (optional) A tensor with the model labels. Only provide
-                  this parameter if you'd like to use true labels when crafting
-                  adversarial samples. Otherwise, model predictions are used as
-                  labels to avoid the "label leaking" effect (explained in this
-                  paper: https://arxiv.org/abs/1611.01236). Default is None.
-                  Labels should be one-hot-encoded.
-        :param y_target: (optional) A tensor with the labels to target. Leave
-                         y_target=None if y is also set. Labels should be
-                         one-hot-encoded.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
         # Save attack-specific parameters
 
+        self.layer = layer
         self.eps = eps
         self.ord = ord
-        self.layer = layer
         self.clip_min = clip_min
         self.clip_max = clip_max
 
