@@ -614,7 +614,7 @@ class CarliniWagnerL2(object):
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
 
-        This method is more complicated than it has to be for just the 
+        This method is more complicated than it has to be for just the
         L2 attack because the CWL0 and Linfty attacks call this class.
 
         :param sess: a TF session.
@@ -735,7 +735,7 @@ class CarliniWagnerL2(object):
             # This is being used as the inner loop of a L0 attack
             # We therefore need access to the gradients
             self.outgrad = tf.gradients(self.loss, [modifier])[0]
-        
+
         # Setup the adam optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.AdamOptimizer(self.LEARNING_RATE)
@@ -901,15 +901,16 @@ class CarliniWagnerL2(object):
             if o_bestscore[0] == -1:
                 # return failure
                 return None
-            
+
             gradients = self.sess.run(self.outgrad)
-            
+
             return gradients, o_bestscore, o_bestattack
-        
+
         return o_bestattack
 
+
 class CarliniWagnerL0(object):
-    
+
     def __init__(self, sess, model, confidence,
                  targeted, learning_rate,
                  max_iterations,
@@ -943,10 +944,10 @@ class CarliniWagnerL0(object):
         :param initial_const: The initial tradeoff-constant to use to tune the
                               relative importance of size of the pururbation
                               and confidence of classification.
-                              A smaller value of this constant gives lower 
+                              A smaller value of this constant gives lower
                               distortion results.
         :param largest_const: When the tradeoff-constant exceeds this value,
-                              the attack terminates. Larger values gives lower 
+                              the attack terminates. Larger values gives lower
                               distortion results.
         :param const_factor: How much to increase the tradeoff-constant by
                              on each iteration of the attack if the prior
@@ -964,7 +965,6 @@ class CarliniWagnerL0(object):
                                          clip_min, clip_max, num_labels, shape,
                                          extension=0)
 
-
     def attack(self, instances, targets):
         """
         Perform the L_0 attack on the given instance for the given targets.
@@ -974,7 +974,7 @@ class CarliniWagnerL0(object):
         """
 
         r = []
-        for i,(instance, target) in enumerate(zip(instances,targets)):
+        for i, (instance, target) in enumerate(zip(instances, targets)):
             _logger.debug(("Running CWL0 attack on instance " +
                            "{} of {}").format(i, len(instances)))
             r.extend(self.attack_single(instance, target))
@@ -990,38 +990,41 @@ class CarliniWagnerL0(object):
 
         # the previous image
         prev = np.copy([instance])
-        
+
         last_solution = [instance]
         const = self.initial_const
         equal_count = 0
-    
+
         while True:
             # try to solve given this valid map
             self.l2_attack.source_image = np.copy(prev)
             while const < self.largest_const:
                 # try solving for each value of the constant
                 self.l2_attack.initial_const = const
-                res = self.l2_attack.attack_batch(np.copy([instance]), np.array([target]),
+                res = self.l2_attack.attack_batch(np.copy([instance]),
+                                                  np.array([target]),
                                                   mask=np.array([valid]))
                 if res is not None:
                     break
                 const *= self.const_factor
-            
+
             if res is None:
                 # the attack failed, we return this as our final answer
-                _logger.debug("Attack succeeded with {} fixed values.".format(equal_count))
+                _logger.debug("Attack succeeded with {} fixed values.".
+                              format(equal_count))
                 return last_solution
 
             # the attack succeeded, now we pick new pixels to set to 0
             restarted = False
             gradientnorm, scores, nimg = res
 
-            equal_count = np.sum(np.abs(instance-nimg[0])<.0001)
+            equal_count = np.sum(np.abs(instance-nimg[0]) < .0001)
             if np.sum(valid) == 0:
-                # if no pixels changed, return 
+                # if no pixels changed, return
                 return [instance]
-            _logger.debug("Next iteration; {} fixed values.".format(equal_count))
-    
+            _logger.debug("Next iteration; {} fixed values."
+                          .format(equal_count))
+
             orig_shape = valid.shape
             valid = valid.flatten()
             totalchange = abs(nimg[0]-instance)*np.abs(gradientnorm[0])
@@ -1041,8 +1044,8 @@ class CarliniWagnerL0(object):
                         # if we changed too many pixels, skip
                         break
 
-            valid = np.reshape(valid,orig_shape)
-    
+            valid = np.reshape(valid, orig_shape)
+
             last_solution = prev = nimg
 
 

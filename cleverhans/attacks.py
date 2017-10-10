@@ -979,10 +979,10 @@ class CarliniWagnerL0(Attack):
         :param initial_const: The initial tradeoff-constant to use to tune the
                               relative importance of size of the pururbation
                               and confidence of classification.
-                              A smaller value of this constant gives lower 
+                              A smaller value of this constant gives lower
                               distortion results.
         :param largest_const: When the tradeoff-constant exceeds this value,
-                              the attack terminates. Larger values gives lower 
+                              the attack terminates. Larger values gives lower
                               distortion results.
         :param const_factor: How much to increase the tradeoff-constant by
                              on each iteration of the attack if the prior

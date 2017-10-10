@@ -223,6 +223,6 @@ if __name__ == '__main__':
                          'Number of iterations to run attack; 1000 is good')
     flags.DEFINE_boolean('targeted', True,
                          'Run the tutorial in targeted mode?')
-    flags.DEFINE_string('metric', 'l0', 'Distance metric to optimize (l0,l2,li)')
+    flags.DEFINE_string('metric', 'l2', 'Distance metric to optimize (l0,l2,li)')
 
     tf.app.run()
