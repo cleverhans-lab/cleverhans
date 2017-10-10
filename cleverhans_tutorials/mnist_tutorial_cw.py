@@ -118,7 +118,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         cw = CarliniWagnerL0(model, back='tf', sess=sess)
         const = 0.1
     else:
-        raise 
+        raise Exception("Unknown distance metric")
 
     idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0] for i in range(10)]
     if targeted:
@@ -180,12 +180,14 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         # Compute the average distortion introduced by the algorithm
         percent_perturbed = np.mean(np.sum((adv - adv_inputs)**2,
                                            axis=(1, 2, 3))**.5)
-        print('Avg. L_2 norm of perturbations {0:.4f}'.format(percent_perturbed))
+        print('Avg. L_2 norm of perturbations {0:.4f}'
+              .format(percent_perturbed))
     elif FLAGS.metric == 'l0':
         # Compute the average distortion introduced by the algorithm
-        percent_perturbed = np.mean(np.sum(np.abs(adv - adv_inputs)>1e-5,
+        percent_perturbed = np.mean(np.sum(np.abs(adv - adv_inputs) > 1e-5,
                                            axis=(1, 2, 3)))
-        print('Avg. L_0 norm of perturbations {0:.4f}'.format(percent_perturbed))
+        print('Avg. L_0 norm of perturbations {0:.4f}'
+              .format(percent_perturbed))
 
     # Close TF session
     sess.close()
@@ -223,6 +225,6 @@ if __name__ == '__main__':
                          'Number of iterations to run attack; 1000 is good')
     flags.DEFINE_boolean('targeted', True,
                          'Run the tutorial in targeted mode?')
-    flags.DEFINE_string('metric', 'l2', 'Distance metric to optimize (l0,l2,li)')
+    flags.DEFINE_string('metric', 'l2', 'Distance metric to optimize (l0,l2)')
 
     tf.app.run()
