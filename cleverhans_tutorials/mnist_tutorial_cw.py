@@ -176,10 +176,16 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     print('Avg. rate of successful adv. examples {0:.4f}'.format(adv_accuracy))
     report.clean_train_adv_eval = 1.-adv_accuracy
 
-    # Compute the average distortion introduced by the algorithm
-    percent_perturbed = np.mean(np.sum((adv - adv_inputs)**2,
-                                       axis=(1, 2, 3))**.5)
-    print('Avg. L_2 norm of perturbations {0:.4f}'.format(percent_perturbed))
+    if FLAGS.metric == 'l2':
+        # Compute the average distortion introduced by the algorithm
+        percent_perturbed = np.mean(np.sum((adv - adv_inputs)**2,
+                                           axis=(1, 2, 3))**.5)
+        print('Avg. L_2 norm of perturbations {0:.4f}'.format(percent_perturbed))
+    elif FLAGS.metric == 'l0':
+        # Compute the average distortion introduced by the algorithm
+        percent_perturbed = np.mean(np.sum(np.abs(adv - adv_inputs)>1e-5,
+                                           axis=(1, 2, 3)))
+        print('Avg. L_0 norm of perturbations {0:.4f}'.format(percent_perturbed))
 
     # Close TF session
     sess.close()
