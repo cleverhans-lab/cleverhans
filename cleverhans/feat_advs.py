@@ -70,7 +70,7 @@ class FastFeatureAdversaries(Attack):
 
         return True
 
-    def attack_single_step(self, x, eta, s_feat, g_feat):
+    def attack_single_step(self, x, eta, g_feat):
         """
         TensorFlow implementation of the Fast Feature Gradient. This is a
         single step attack similar to Fast Gradient Method that attacks an
@@ -78,19 +78,20 @@ class FastFeatureAdversaries(Attack):
 
         :param x: the input placeholder
         :param eta: A tensor the same shape as x that holds the perturbation.
-        :param s_feat: model's internal tensor for source
         :param g_feat: model's internal tensor for guide
         :return: a tensor for the adversarial example
         """
         from utils_tf import clip_eta
 
         adv_x = x + eta
+        a_feat = self.model.get_layer(adv_x, self.layer)
 
         # feat.shape = (batch, c) or (batch, w, h, c)
-        axis = range(1, len(s_feat.shape))
+        axis = range(1, len(a_feat.shape))
 
         # Compute loss
-        loss = tf.reduce_sum(tf.square(s_feat - g_feat), axis)
+        # This is a targeted attack, hence the negative sign
+        loss = -tf.reduce_sum(tf.square(a_feat - g_feat), axis)
 
         # Define gradient of loss wrt input
         grad, = tf.gradients(loss, x)
@@ -105,6 +106,8 @@ class FastFeatureAdversaries(Attack):
         # reset all values outside of [clip_min, clip_max]
         if (self.clip_min is not None) and (self.clip_max is not None):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+        adv_x = tf.stop_gradient(adv_x)
 
         eta = adv_x - x
         eta = clip_eta(eta, self.ord, self.eps)
@@ -131,7 +134,6 @@ class FastFeatureAdversaries(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        s_feat = self.model.get_layer(x, self.layer)
         g_feat = self.model.get_layer(g, self.layer)
 
         # Initialize loop variables
@@ -139,7 +141,7 @@ class FastFeatureAdversaries(Attack):
         eta = clip_eta(eta, self.ord, self.eps)
 
         for i in range(self.nb_iter):
-            eta = self.attack_single_step(x, eta, s_feat, g_feat)
+            eta = self.attack_single_step(x, eta, g_feat)
 
         # Define adversarial example (and clip if necessary)
         adv_x = x + eta
