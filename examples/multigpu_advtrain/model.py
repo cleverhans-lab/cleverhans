@@ -23,13 +23,11 @@ class MLPnGPU(MLP):
     A multi layer perceptron that can be copied over multiple GPUs.
     """
 
-    def __init__(self, layers, input_shape, **kwargs):
+    def __init__(self, layers, input_shape):
         super(MLPnGPU, self).__init__(layers, input_shape)
         self.name = 'MLPnGPU'
-        self.kwargs = kwargs
 
-    def fprop(self, x, **kwargs):
-        kwargs.update(self.kwargs)
+    def fprop(self, x):
         with tf.variable_scope(self.name):
             states = super(MLPnGPU, self).fprop(x)
         return states
@@ -64,11 +62,11 @@ class LayernGPU(Layer):
     """
     A layer that has separate copies of model parameters on each GPU.
     """
-    def __init__(self, input_shape=None):
+    def __init__(self):
         """
         :param input_shape: a tuple or list as the input shape to layer
         """
-        self.input_shape = input_shape
+        self.input_shape = None
         self.params_device = {}
         self.params_names = None
         self.device_name = '/gpu:0'
@@ -86,7 +84,7 @@ class LayernGPU(Layer):
                             trainable=self.training)
         return v
 
-    def set_input_shape_ngpu(self, new_input_shape, **kwargs):
+    def set_input_shape_ngpu(self, new_input_shape):
         """
         Create and initialize layer parameters on the device previously set.
 
@@ -109,7 +107,7 @@ class LayernGPU(Layer):
         # Initialize weights on this device
         with tf.device(device_name):
             keys_before = self.__dict__.keys()
-            self.set_input_shape(self.input_shape, **kwargs)
+            self.set_input_shape(self.input_shape)
             keys_after = self.__dict__.keys()
             if self.params_names is None:
                 self.params_names = list(set(keys_after) - set(keys_before))
@@ -127,25 +125,24 @@ class LayernGPU(Layer):
                     sync_ops += [tf.assign(params[k], host_params[k])]
         return sync_ops
 
-    def fprop(self, x, **kwargs):
+    def fprop(self, x):
         if self.name is None:
-            self.set_input_shape_ngpu(x.shape[1:], **kwargs)
-            return self.fprop_noscope(x, **kwargs)
+            self.set_input_shape_ngpu(x.shape[1:])
+            return self.fprop_noscope(x)
         else:
             with tf.variable_scope(self.name):
-                self.set_input_shape_ngpu(x.shape[1:], **kwargs)
-                return self.fprop_noscope(x, **kwargs)
+                self.set_input_shape_ngpu(x.shape[1:])
+                return self.fprop_noscope(x)
 
 
 class LinearnGPU(LayernGPU):
 
-    def __init__(self, num_hid, w_name='W', **kwargs):
-        super(LinearnGPU, self).__init__(**kwargs)
+    def __init__(self, num_hid, w_name='W'):
+        super(LinearnGPU, self).__init__()
         self.num_hid = num_hid
-        self.input_shape = None
         self.w_name = w_name
 
-    def set_input_shape(self, input_shape, **kwargs):
+    def set_input_shape(self, input_shape):
         batch_size, dim = input_shape
         self.input_shape = [batch_size, dim]
         self.output_shape = [batch_size, self.num_hid]
@@ -156,21 +153,20 @@ class LinearnGPU(LayernGPU):
             self.b = self.get_variable('b', .1 + np.zeros(
                 (self.num_hid,)).astype('float32'))
 
-    def fprop_noscope(self, x, **kwargs):
+    def fprop_noscope(self, x):
         return tf.matmul(x, self.W) + self.b
 
 
 class Conv2DnGPU(LayernGPU):
 
     def __init__(self, output_channels, kernel_shape, strides, padding,
-                 w_name='kernels', *args, **kwargs):
-        super(Conv2DnGPU, self).__init__(*args, **kwargs)
+                 w_name='kernels'):
+        super(Conv2DnGPU, self).__init__()
         self.__dict__.update(locals())
         del self.self
-        self.input_shape = None
         self.w_name = w_name
 
-    def set_input_shape(self, input_shape, **kwargs):
+    def set_input_shape(self, input_shape):
         batch_size, rows, cols, input_channels = input_shape
         kernel_shape = tuple(self.kernel_shape) + (input_channels,
                                                    self.output_channels)
@@ -190,18 +186,18 @@ class Conv2DnGPU(LayernGPU):
         output_shape[0] = 1
         self.output_shape = tuple(output_shape)
 
-    def fprop_noscope(self, x, **kwargs):
+    def fprop_noscope(self, x):
         return tf.nn.conv2d(x, self.kernels, (1,) + tuple(self.strides) +
                             (1,), self.padding) + self.b
 
 
 class MaxPool(LayernGPU):
-    def __init__(self, ksize, strides, padding, **kwargs):
-        super(MaxPool, self).__init__(**kwargs)
+    def __init__(self, ksize, strides, padding):
+        super(MaxPool, self).__init__()
         self.__dict__.update(locals())
         del self.self
 
-    def set_input_shape(self, input_shape, **kwargs):
+    def set_input_shape(self, input_shape):
         input_shape = list(input_shape)
         input_shape[0] = 1
         dummy_batch = tf.zeros(input_shape)
@@ -210,7 +206,7 @@ class MaxPool(LayernGPU):
         output_shape[0] = 1
         self.output_shape = tuple(output_shape)
 
-    def fprop_noscope(self, x, **kwargs):
+    def fprop_noscope(self, x):
         return tf.nn.max_pool(x,
                               ksize=(1,) + tuple(self.ksize) + (1,),
                               strides=(1,) + tuple(self.strides) + (1,),
@@ -218,13 +214,13 @@ class MaxPool(LayernGPU):
 
 
 class BatchNorm(LayernGPU):
-    def __init__(self, bn_mean_only=False, **kwargs):
-        super(BatchNorm, self).__init__(**kwargs)
+    def __init__(self, bn_mean_only=False):
+        super(BatchNorm, self).__init__()
         self.bn_mean_only = bn_mean_only
         self._extra_train_ops = []
         self.done_init_training = False
 
-    def set_input_shape(self, input_shape, **kwargs):
+    def set_input_shape(self, input_shape):
         self.input_shape = list(input_shape)
         params_shape = [input_shape[-1]]
         self.params_shape = params_shape
@@ -248,7 +244,7 @@ class BatchNorm(LayernGPU):
         if self.bn_mean_only:
             self.variance = tf.constant(1, tf.float32, params_shape, 'v1')
 
-    def fprop_noscope(self, x, **kwargs):
+    def fprop_noscope(self, x):
         if self.training and self.bn_training:
             assert not self.done_init_training
             self.done_init_training = True
@@ -277,11 +273,11 @@ class BatchNorm(LayernGPU):
 
 
 class LayerNorm(LayernGPU):
-    def __init__(self, **kwargs):
-        super(LayerNorm, self).__init__(**kwargs)
+    def __init__(self):
+        super(LayerNorm, self).__init__()
         self._extra_train_ops = []
 
-    def set_input_shape(self, input_shape, **kwargs):
+    def set_input_shape(self, input_shape):
         self.input_shape = list(input_shape)
         params_shape = [input_shape[-1]]
         self.params_shape = params_shape
@@ -295,7 +291,7 @@ class LayerNorm(LayernGPU):
             initializer=tf.constant_initializer(1.0, tf.float32),
             trainable=self.training)
 
-    def fprop_noscope(self, x, **kwargs):
+    def fprop_noscope(self, x):
         mean = tf.reduce_mean(x, (1, 2), keep_dims=True)
         x = x - mean
         std = tf.sqrt(1e-7 +

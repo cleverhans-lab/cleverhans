@@ -26,7 +26,7 @@ def make_madry_ngpu(nb_classes=10, input_shape=(None, 28, 28, 1), **kwargs):
               LinearnGPU(nb_classes),
               Softmax()]
 
-    model = MLPnGPU(layers, input_shape, **kwargs)
+    model = MLPnGPU(layers, input_shape)
     return model
 
 
