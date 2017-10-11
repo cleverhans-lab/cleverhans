@@ -9,11 +9,8 @@ from trainer import TrainManager
 
 
 class TrainerMultiGPU(TrainManager):
-    def __init__(self, **kwargs):
-        super(TrainerMultiGPU, self).__init__(**kwargs)
-        self.feed_dict = {}
-        self.step_num = 0
-
+    def __init__(self, *args, **kwargs):
+        super(TrainerMultiGPU, self).__init__(*args, **kwargs)
         self.create_train_graph()
         self.next_vals = [None] * len(self.inputs)
 
@@ -58,17 +55,18 @@ class TrainerMultiGPU(TrainManager):
                 y2 = clone_variable('y_-1', y)
                 inputs += [(x2, adv2_x, y2)]
                 if not hparams.adv_train:
-                    preds = model.get_probs(x2, training=True,
-                                            bn_training=True)
+                    model.set_training(training=True, bn_training=True)
+                    preds = model.get_probs(x2)
                     preds_2_adv = None
                 elif not hparams.only_adv_train:
-                    preds = model.get_probs(x2, training=True)
-                    preds_2_adv = model.get_probs(adv2_x, training=True,
-                                                  bn_training=True)
+                    model.set_training(training=True)
+                    preds = model.get_probs(x2)
+                    model.set_training(training=True, bn_training=True)
+                    preds_2_adv = model.get_probs(adv2_x)
                 else:
                     preds = None
-                    preds_2_adv = model.get_probs(adv2_x, training=True,
-                                                  bn_training=True)
+                    model.set_training(training=True, bn_training=True)
+                    preds_2_adv = model.get_probs(adv2_x)
                 train_fetches = self.build_train_op(preds, y2, preds_2_adv)
 
         outputs += [train_fetches]
@@ -89,7 +87,7 @@ class TrainerMultiGPU(TrainManager):
         # data for first gpu
         fd = {}
         if X_batch is not None:
-            x_pre, x, y = self.manager.g0_inputs
+            x_pre, x, y = self.g0_inputs
             fd[x_pre] = X_batch
             fd[y] = Y_batch
             self.next_vals[0] = (X_batch, Y_batch)

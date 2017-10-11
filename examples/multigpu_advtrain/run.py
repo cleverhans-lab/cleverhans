@@ -207,7 +207,8 @@ def mnist_tutorial(hparams=None):
 
     with tf.device('/gpu:0'):
         model = make_model(input_shape=input_shape, **hparams.__flags)
-        preds = model.get_probs(x, training=True, bn_training=True)
+        model.set_training(True, bn_training=True)
+        preds = model.get_probs(x)
 
     writer = tf.summary.FileWriter(hparams.save_dir, flush_secs=10)
 
@@ -246,7 +247,8 @@ def mnist_tutorial(hparams=None):
             model, x, hparams.attack_type_train, sess,
             y=y, nb_iter=hparams.attack_nb_iter_train,
             dataset=hparams.dataset)
-        preds_2_adv = model.get_probs(adv2_x, training=True, bn_training=False)
+        model.set_training(True, bn_training=False)
+        preds_2_adv = model.get_probs(adv2_x)
 
         # Perform and evaluate adversarial training
         model_train(sess, model, x_pre, x, y, preds, X_train, Y_train,

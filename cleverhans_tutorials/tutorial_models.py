@@ -33,6 +33,7 @@ class MLP(Model):
                 name = layer.name
             else:
                 name = layer.__class__.__name__ + str(i)
+                layer.name = name
             self.layer_names.append(name)
 
             layer.set_input_shape(input_shape)

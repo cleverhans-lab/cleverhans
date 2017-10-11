@@ -10,8 +10,8 @@ from tensorflow.python.client import timeline
 from cleverhans.utils_tf import batch_indices
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_mnist import data_mnist
-import svhn_input
-import cifar_input
+import cleverhans.utils_cifar as cifar_input
+import cleverhans.utils_svhn as svhn_input
 from utils import preprocess_batch
 
 from make_model import make_model
@@ -28,6 +28,8 @@ class TrainManager(object):
     def __init__(self, hparams):
         self.hparams = hparams
         self.batch_size = hparams.batch_size
+        self.feed_dict = {}
+        self.step_num = 0
         self.init_session()
         self.init_data()
         self.init_inputs()
@@ -118,14 +120,14 @@ class TrainManager(object):
         model = self.model
         hparams = self.hparams
         fd = self.feed_dict
-        self.step_num = self.step_num
+        step_num = self.step_num
 
         if hparams.model_type == 'resnet_tf':
-            if self.step_num < hparams.lrn_step:
+            if step_num < hparams.lrn_step:
                 lrn_rate = hparams.resnet_lrn
-            elif self.step_num < 30000:
+            elif step_num < 30000:
                 lrn_rate = hparams.resnet_lrn/10
-            elif self.step_num < 35000:
+            elif step_num < 35000:
                 lrn_rate = hparams.resnet_lrn/100
             else:
                 lrn_rate = hparams.resnet_lrn/1000
@@ -244,7 +246,7 @@ class TrainManager(object):
                     logging.info("Completed model training.")
 
     def init_tf(self, X_batch, Y_batch):
-        x_pre, x, y = self.manager.g0_inputs
+        x_pre, x, y = self.g0_inputs
         fd = {x_pre: X_batch, y: Y_batch}
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op, feed_dict=fd)
@@ -256,18 +258,16 @@ class TrainManager(object):
         self.step_num += 1
 
     def run_with_graph(self, X_batch, Y_batch):
-        manager = self.manager
         fetches, feed_dict = self.set_input(X_batch, Y_batch)
 
-        manager.writer.add_graph(self.sess.graph)
-        run_options = tf.RunOptions(
-            trace_level=tf.RunOptions.FULL_TRACE)
+        self.writer.add_graph(self.sess.graph)
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
         run_metadata = tf.RunMetadata()
         fvals = self.sess.run(fetches,
                               feed_dict=feed_dict,
                               options=run_options,
                               run_metadata=run_metadata)
-        manager.writer.add_run_metadata(run_metadata, 'graph')
+        self.writer.add_run_metadata(run_metadata, 'graph')
 
         tl = timeline.Timeline(run_metadata.step_stats)
         ctf = tl.generate_chrome_trace_format()
@@ -278,7 +278,7 @@ class TrainManager(object):
         self.step_num += 1
 
     def run(self, X_batch=None, Y_batch=None):
-        if self.step_num == len(self.inputs)+1:
+        if self.step_num == len(self.inputs)+1 and self.hparams.debug_graph:
             self.run_with_graph(X_batch, Y_batch)
         else:
             self.run_simple(X_batch, Y_batch)

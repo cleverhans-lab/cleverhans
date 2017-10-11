@@ -1,11 +1,11 @@
 from model import MLPnGPU
 from model import Conv2DnGPU
 from model import LinearnGPU
+from model import MaxPool
 
 from cleverhans_tutorials.tutorial_models import ReLU
 from cleverhans_tutorials.tutorial_models import Flatten
 from cleverhans_tutorials.tutorial_models import Softmax
-from cleverhans_tutorials.tutorial_models import MaxPool
 
 from resnet_tf import ResNetTF
 
@@ -14,19 +14,19 @@ def make_madry_ngpu(nb_classes=10, input_shape=(None, 28, 28, 1), **kwargs):
     """
     Create a multi-GPU model similar to Madry et al. (arXiv:1706.06083).
     """
-    layers = [Conv2DnGPU(32, (5, 5), (1, 1), "SAME", name='conv1'),
-              ReLU(name='act1'),
-              MaxPool((2, 2), (2, 2), "SAME", name='mxpool1'),
-              Conv2DnGPU(64, (5, 5), (1, 1), "SAME", name='conv2'),
-              ReLU(name='act2'),
-              MaxPool((2, 2), (2, 2), "SAME", name='mxpool2'),
-              Flatten(name='flat1'),
-              LinearnGPU(1024, name='fc1'),
-              ReLU(name='act3'),
-              LinearnGPU(nb_classes, name='fc2'),
-              Softmax(name='softmax')]
+    layers = [Conv2DnGPU(32, (5, 5), (1, 1), "SAME"),
+              ReLU(),
+              MaxPool((2, 2), (2, 2), "SAME"),
+              Conv2DnGPU(64, (5, 5), (1, 1), "SAME"),
+              ReLU(),
+              MaxPool((2, 2), (2, 2), "SAME"),
+              Flatten(),
+              LinearnGPU(1024),
+              ReLU(),
+              LinearnGPU(nb_classes),
+              Softmax()]
 
-    model = MLPnGPU(layers, input_shape, name='madry', **kwargs)
+    model = MLPnGPU(layers, input_shape, **kwargs)
     return model
 
 

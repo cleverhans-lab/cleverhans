@@ -5,10 +5,8 @@ from trainer import TrainManager
 
 
 class TrainerSingleGPU(TrainManager):
-    def __init__(self, **kwargs):
-        super(TrainerSingleGPU, self).__init__(**kwargs)
-        self.step_num = 0
-
+    def __init__(self, *args, **kwargs):
+        super(TrainerSingleGPU, self).__init__(*args, **kwargs)
         self.create_train_graph()
 
     def create_train_graph(self):
@@ -20,7 +18,8 @@ class TrainerSingleGPU(TrainManager):
         if not hparams.adv_train:
             logging.info("Naive training")
 
-            preds = model.get_probs(x, training=True, bn_training=True)
+            model.set_training(training=True, bn_training=True)
+            preds = model.get_probs(x)
             preds_adv = None
         else:
             logging.info("Adversarial training")
@@ -33,12 +32,13 @@ class TrainerSingleGPU(TrainManager):
                 dataset=hparams.dataset)
             if hparams.only_adv_train:
                 preds = None
-                preds_adv = model.get_probs(adv_x, training=True,
-                                            bn_training=True)
+                model.set_training(training=True, bn_training=True)
+                preds_adv = model.get_probs(adv_x)
             else:
-                preds = model.get_probs(x, training=True)
-                preds_adv = model.get_probs(adv_x, training=True,
-                                            bn_training=True)
+                model.set_training(training=True)
+                preds = model.get_probs(x)
+                model.set_training(training=True, bn_training=True)
+                preds_adv = model.get_probs(adv_x)
         train_fetches = self.build_train_op(preds, y, preds_adv)
 
         self.inputs = [self.g0_inputs]

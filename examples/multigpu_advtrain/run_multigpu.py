@@ -49,11 +49,11 @@ if __name__ == '__main__':
                         'Location to store logs/model.')
     flags.DEFINE_string('model_type', 'madry',
                         'Model type: madry|resnet_tf')
-    flags.DEFINE_string('attack_type_train', 'PGDpgd_y_multigpu',
+    flags.DEFINE_string('attack_type_train', 'MadryEtAl_y_multigpu',
                         'Attack type for adversarial training:\
-                        FGSM|PGDpgd_y')
-    flags.DEFINE_string('attack_type_test', 'PGDpgd_y',
-                        'Attack type for test: FGSM|PGDpgd_y')
+                        FGSM|MadryEtAl{,_y,_y_multigpu}')
+    flags.DEFINE_string('attack_type_test', 'FGSM',
+                        'Attack type for test: FGSM|MadryEtAl{,_y}')
     flags.DEFINE_string('dataset', 'mnist', 'Dataset mnist|cifar10')
     flags.DEFINE_boolean('only_adv_train', False,
                          'Do not train with clean examples when adv training.')
@@ -67,5 +67,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('ngpu', 1, 'Number of gpus')
     flags.DEFINE_integer('sync_step', 1, 'Sync params frequency')
     flags.DEFINE_boolean('fast_tests', False, 'Fast tests against attacks')
+    flags.DEFINE_boolean('debug_graph', False,
+                         'Saves the graph to Tensorobard.')
 
     app.run()

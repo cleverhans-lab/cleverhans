@@ -76,7 +76,8 @@ class Evaluator(object):
         :param writer: Tensorflow summary writer.
         :param hparams: Flags to control the evaluation.
         """
-        self.preds = model.get_probs(x, training=False)
+        model.set_training(False)
+        self.preds = model.get_probs(x)
         self.sess = sess
         self.batch_size = batch_size
         self.x_pre = x_pre
@@ -105,7 +106,8 @@ class Evaluator(object):
             adv_x = create_adv_by_name(model, x, att_type, sess,
                                        dataset=hparams.dataset, y=y)
 
-            preds_adv = model.get_probs(adv_x, training=False)
+            model.set_training(False)
+            preds_adv = model.get_probs(adv_x)
             self.attacks[att_type] = (adv_x, preds_adv)
             # visualize adversarial image
             tf.summary.image(att_type, adv_x, max_outputs=10)

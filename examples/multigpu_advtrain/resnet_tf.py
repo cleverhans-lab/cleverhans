@@ -28,7 +28,6 @@ import tensorflow as tf
 import six
 
 from cleverhans.model import Model
-from cleverhans.model import ReLU
 
 HParams = namedtuple('HParams',
                      'batch_size, num_classes, min_lrn_rate, lrn_rate, '
@@ -336,18 +335,8 @@ class ResNetTF(Model):
 
     def _relu(self, x, leakiness=0.0):
         """Relu, with optional leaky support."""
-        # if True:
-        if self.ReLU == ReLU:
-            return tf.where(tf.less(x, 0.0), leakiness * x, x,
-                            name='leaky_relu')
-        else:
-            if self.init_layers:
-                act = self.ReLU()
-                self.layers += [act]
-            else:
-                act = self.layers[self.layer_idx]
-                self.layer_idx += 1
-            return act.fprop(x, **self.kwargs)
+        return tf.where(tf.less(x, 0.0), leakiness * x, x,
+                        name='leaky_relu')
 
     def _fully_connected(self, x, out_dim):
         """FullyConnected layer for final output."""
