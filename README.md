@@ -150,6 +150,7 @@ If you use CleverHans for academic research, you are highly encouraged
   journal={arXiv preprint arXiv:1610.00768},
   year={2017}
 }
+```
 
 ## About the name
 
