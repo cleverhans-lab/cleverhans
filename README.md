@@ -142,14 +142,14 @@ If you use CleverHans for academic research, you are highly encouraged
 (though not required) to cite the following [paper](https://arxiv.org/abs/1610.00768):
 
 ```
-@article{papernot2016cleverhans,
-  title={cleverhans v1.0.0: an adversarial machine learning library},
-  author={Papernot, Nicolas and Goodfellow, Ian and Sheatsley, Ryan and Feinman, Reuben and McDaniel, Patrick},
+@article{papernot2017cleverhans,
+  title={cleverhans v2.0.0: an adversarial machine learning library},
+  author={Nicolas Papernot, Nicholas Carlini, Ian Goodfellow, Reuben Feinman,
+  Fartash Faghri, Alexander Matyasko, Karen Hambardzumyan, Yi-Lin Juang, Alexey
+  Kurakin, Ryan Sheatsley, Abhibhav Garg, Yen-Chen Lin},
   journal={arXiv preprint arXiv:1610.00768},
-  year={2016}
+  year={2017}
 }
-```
-There is not yet an ArXiv tech report for v2.0.0 but one will be prepared soon.
 
 ## About the name
 
