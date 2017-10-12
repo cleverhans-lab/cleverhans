@@ -26,7 +26,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                       batch_size=128, nb_classes=10, source_samples=10,
                       learning_rate=0.001, attack_iterations=100,
                       model_path=os.path.join("models", "mnist"),
-                      targeted=True):
+                      metric='l2', targeted=True):
     """
     MNIST tutorial for Carlini and Wagner's attack
     :param train_start: index of first training set example
@@ -111,10 +111,10 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     print("This could take some time ...")
 
     # Instantiate a CW attack object
-    if FLAGS.metric == 'l2':
+    if metric == 'l2':
         cw = CarliniWagnerL2(model, back='tf', sess=sess)
         const = 10
-    elif FLAGS.metric == 'l0':
+    elif metric == 'l0':
         cw = CarliniWagnerL0(model, back='tf', sess=sess)
         const = 0.1
     else:
@@ -176,13 +176,13 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     print('Avg. rate of successful adv. examples {0:.4f}'.format(adv_accuracy))
     report.clean_train_adv_eval = 1.-adv_accuracy
 
-    if FLAGS.metric == 'l2':
+    if metric == 'l2':
         # Compute the average distortion introduced by the algorithm
         percent_perturbed = np.mean(np.sum((adv - adv_inputs)**2,
                                            axis=(1, 2, 3))**.5)
         print('Avg. L_2 norm of perturbations {0:.4f}'
               .format(percent_perturbed))
-    elif FLAGS.metric == 'l0':
+    elif metric == 'l0':
         # Compute the average distortion introduced by the algorithm
         percent_perturbed = np.mean(np.sum(np.abs(adv - adv_inputs) > 1e-5,
                                            axis=(1, 2, 3)))
@@ -209,6 +209,7 @@ def main(argv=None):
                       learning_rate=FLAGS.learning_rate,
                       attack_iterations=FLAGS.attack_iterations,
                       model_path=FLAGS.model_path,
+                      metric=FLAGS.metric,
                       targeted=FLAGS.targeted)
 
 
