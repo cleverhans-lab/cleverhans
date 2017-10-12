@@ -1172,7 +1172,7 @@ class MadryEtAl(Attack):
         :param y: A tensor with the target labels or ground-truth labels.
         """
         import tensorflow as tf
-        from utils_tf import model_loss, clip_eta
+        from cleverhans.utils_tf import model_loss, clip_eta
 
         adv_x = x + eta
         preds = self.model.get_probs(adv_x)
