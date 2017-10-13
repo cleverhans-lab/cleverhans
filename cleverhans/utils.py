@@ -220,15 +220,15 @@ def grid_visual(data):
     return figure
 
 
-def get_logits_over_interval(sess, model, x, adv_x, x_data,
-                             min_epsilon=-10, max_epsilon=10,
+def get_logits_over_interval(sess, model, x_data, fgsm_params,
+                             min_epsilon=-10., max_epsilon=10.,
                              num_points=21):
     """Get logits when the input is perturbed in an interval in adv direction.
 
     Args:
         sess: Tf session
         model: Model for which we wish to get logits
-        x: Data tensor of shape [None, height, width, channels]
+        x: Data tensor of shape [1, height, width, channels]
         adv_x: Tensor for adversarial perturbation of x
         x_data: Numpy array corresponding to single data
                 point of shape [height, width, channels].
@@ -242,32 +242,39 @@ def get_logits_over_interval(sess, model, x, adv_x, x_data,
     Raises:
         ValueError if min_epsilon is larger than max_epsilon
     """
+    # Get the height, width and number of channels
+    height = x_data.shape[0]
+    width = x_data.shape[1]
+    channels = x_data.shape[2]
+    size = height * width * channels
+
+    x_data = np.expand_dims(x_data, axis=0)
     import tensorflow as tf
+    from cleverhans.attacks import FastGradientMethod
+
+    # Define the data placeholder
+    x = tf.placeholder(dtype=tf.float32,
+                       shape=[1, height,
+                              width,
+                              channels],
+                       name='x')
+    # Define adv_x
+    fgsm = FastGradientMethod(model, sess=sess)
+    adv_x = fgsm.generate(x, **fgsm_params)
+
     if min_epsilon > max_epsilon:
         raise ValueError('Minimum epsilon is less than maximum epsilon')
 
     eta = tf.nn.l2_normalize(adv_x - x, dim=0)
-    x_data = np.stack([x_data] * num_points, axis=0)
-    epsilon_array = np.linspace(min_epsilon, max_epsilon,
-                                num_points)
-
-    # Get the height, width and number of channels
-    shape = x.get_shape().as_list()
-    height = shape[1]
-    width = shape[2]
-    channels = shape[3]
-    size = height * width * channels
-
-    epsilon_array_t = tf.constant(epsilon_array, dtype=tf.float32)
-    epsilon_array_t = tf.stack([epsilon_array_t] * size, axis=1)
-    epsilon_array_t = tf.reshape(epsilon_array_t,
-                                 shape=[num_points, height,
-                                        width, channels])
-
-    adv_x_epsilon = x + eta * epsilon_array_t
-    logits = model.get_logits(adv_x_epsilon)
+    epsilon = tf.reshape(tf.lin_space(float(min_epsilon),
+                                      float(max_epsilon),
+                                      num_points),
+						(num_points, 1, 1, 1))
+    lin_batch = x + epsilon * eta
+    logits = model.get_logits(lin_batch)
     with sess.as_default():
-        log_prob_adv_array = sess.run(logits, feed_dict={x: x_data})
+        log_prob_adv_array = sess.run(logits,
+                                      feed_dict={x: x_data})
     return log_prob_adv_array
 
 
@@ -284,6 +291,8 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
         max_epsilon: Maximum value of epsilon over the interval
         num_points: Number of points used to interpolate
     """
+    import matplotlib
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
     figure = plt.figure()
@@ -292,7 +301,7 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
     correct_idx = np.argmax(y, axis=0)
     fig = plt.figure()
     plt.xlabel('Epsilon')
-    plt.ylabel('Log probabilities')
+    plt.ylabel('Logits')
     x_axis = np.linspace(min_epsilon, max_epsilon, num_points)
     plt.xlim(min_epsilon - 1, max_epsilon + 1)
     for i in xrange(y.shape[0]):
