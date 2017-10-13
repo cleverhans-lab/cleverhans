@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 from cleverhans.attacks import MadryEtAl
+from cleverhans.utils_tf import clip_eta
 
 from model import clone_variable
 
@@ -19,19 +20,32 @@ class MadryEtAlMultiGPU(MadryEtAl):
     implementation gets close to 6x speed up on 8 GPUs.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Create a MadryEtAlMultiGPU instance.
         """
-        super(MadryEtAlMultiGPU, self).__init__(**kwargs)
+        super(MadryEtAlMultiGPU, self).__init__(*args, **kwargs)
 
     def attack(self, x, **kwargs):
+        """
+        This method creates a symoblic graph of the MadryEtAl attack on
+        multiple GPUs. The assumption is that at least 2 GPUs exist. The graph
+        is created on the first n-1 GPUs. The last GPU is left for train step.
+
+        Stop gradient is needed to get the speed-up. This prevents us from
+        being able to back-prop through the attack.
+
+        :param x: A tensor with the input image.
+        :return: Two lists containing the input and output tensors of each GPU.
+        """
+        # Create the initial random perturbation
+        # If target label is not provided, also compute the model perdiction
         device_name = '/gpu:0'
         self.model.set_device(device_name)
         with tf.device(device_name):
             with tf.variable_scope('init_rand'):
                 eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
-                eta = self.clip_eta(eta)
+                eta = clip_eta(eta, self.ord, self.eps)
                 eta = tf.stop_gradient(eta)
 
                 if self.y is not None:
@@ -43,19 +57,23 @@ class MadryEtAlMultiGPU(MadryEtAl):
                     y = y / tf.reduce_sum(y, 1, keep_dims=True)
                 y = tf.stop_gradient(y)
 
+        # List of inputs/outputs for each GPU
         inputs = []
         outputs = []
 
         for i in range(self.nb_iter):
-            # need at least 2 gpus
+            # Create the graph for i'th step of attack
+            # Last GPU is reserved for training step
             gid = i % (self.ngpu-1)
             device_name = '/gpu:%d' % gid
             self.model.set_device(device_name)
             with tf.device(device_name):
                 with tf.variable_scope('step%d' % i):
                     if i == 0:
+                        # This will be filled by the TrainerMultiGPU
                         inputs += [()]  # (x_pre, y)
                     else:
+                        # Clone the variables to separate the graph of 2 GPUs
                         x = clone_variable('x', x)
                         eta = clone_variable('eta', eta)
                         y = clone_variable('y', y)
@@ -66,6 +84,9 @@ class MadryEtAlMultiGPU(MadryEtAl):
                     if i < self.nb_iter-1:
                         outputs += [(x, eta, y)]
                     else:
+                        # adv_x, not eta is the output of attack
+                        # No need to output y anymore. It was used only inside
+                        # this attack
                         adv_x = x + eta
                         if (self.clip_min is not None
                                 and self.clip_max is not None):
@@ -75,23 +96,6 @@ class MadryEtAlMultiGPU(MadryEtAl):
                         outputs += [(x, adv_x)]
 
         return inputs, outputs
-
-    def generate(self, x, **kwargs):
-        """
-        Generate symbolic graph for adversarial examples and return.
-        :param x: The model's symbolic inputs.
-        :param ngpu: (required int) the number of GPUs available. ngpu-1
-                     will be used in this attack.
-        :param kwargs: A dictionary of parameters for MadryEtAl attack.
-        """
-
-        # Parse and save attack-specific parameters
-        assert self.parse_params(**kwargs)
-
-        # Initialize loop variables
-        adv_x = self.attack(x)
-
-        return adv_x
 
     def parse_params(self, ngpu=1, **kwargs):
         """

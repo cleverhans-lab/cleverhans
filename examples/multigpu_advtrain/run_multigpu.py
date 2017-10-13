@@ -34,7 +34,7 @@ def main(argv=None):
     trainer.model_train()
     trainer.evaluate(inc_epoch=False)
 
-    return trainer.finish()
+    trainer.finish()
 
 
 if __name__ == '__main__':

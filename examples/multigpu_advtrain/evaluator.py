@@ -50,7 +50,9 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     with tf.variable_scope(attack_type):
         attack_class = attack_names[attack_type]
         params = attack_params_shared[dataset].copy()
-        params.update(kwargs)
+        for k, v in kwargs.iteritems():
+            if v is not None:
+                params[k] = v
         attack = attack_class(model, sess=sess)
         adv_x = attack.generate(x, **params)
 

@@ -49,7 +49,8 @@ class MLPnGPU(MLP):
         """
         sync_ops = []
         for layer in self.layers:
-            sync_ops += layer.create_sync_ops(host_device)
+            if isinstance(layer, LayernGPU):
+                sync_ops += layer.create_sync_ops(host_device)
         return sync_ops
 
     def set_training(self, training=False, bn_training=False):
