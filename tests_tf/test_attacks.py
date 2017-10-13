@@ -863,5 +863,5 @@ class TestCarliniWagnerL0(CleverHansTest):
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
         self.assertTrue(worked > .9)
 
- __name__ == '__main__':
+if __name__ == '__main__':
     unittest.main()
