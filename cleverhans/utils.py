@@ -227,20 +227,19 @@ def get_logits_over_interval(sess, model, x_data, fgsm_params,
 
     Args:
         sess: Tf session
-        model: Model for which we wish to get logits
-        x: Data tensor of shape [1, height, width, channels]
-        adv_x: Tensor for adversarial perturbation of x
-        x_data: Numpy array corresponding to single data
+        model: Model for which we wish to get logits.
+        x_data: Numpy array corresponding to single data.
                 point of shape [height, width, channels].
-        min_epsilon: Minimum value of epsilon over the interval
-        max_epsilon: Maximum value of epsilon over the interval
-        num_points: Number of points used to interpolate
+        fgsm_params: Parameters for generating adversarial examples.
+        min_epsilon: Minimum value of epsilon over the interval.
+        max_epsilon: Maximum value of epsilon over the interval.
+        num_points: Number of points used to interpolate.
 
     Returns:
-        Numpy array containing logits
+        Numpy array containing logits.
 
     Raises:
-        ValueError if min_epsilon is larger than max_epsilon
+        ValueError if min_epsilon is larger than max_epsilon.
     """
     # Get the height, width and number of channels
     height = x_data.shape[0]
