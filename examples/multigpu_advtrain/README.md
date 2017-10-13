@@ -3,7 +3,7 @@ This directory includes scripts to train a model using iterative attacks.
 The following command trains a model using a single GPU on MNIST:
 
 ```python
-CUDA_VISIBLE_DEVICES=7 python run.py --save_dir runs/X
+CUDA_VISIBLE_DEVICES=7 python run_multigpu.py --save_dir runs/X
 CUDA_VISIBLE_DEVICES=0 ipython --pdb -- run_multigpu.py --attack_type_train FGSM --attack_type_test FGSM
 ```
 
