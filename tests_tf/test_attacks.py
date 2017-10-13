@@ -863,11 +863,5 @@ class TestCarliniWagnerL0(CleverHansTest):
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
         self.assertTrue(worked > .9)
 
-cw=TestCarliniWagnerL0()
-cw.setUp()
-cw.test_generate_np_targeted_gives_adversarial_example()
-        
-
-
-if __name__ == '__main__':
+ __name__ == '__main__':
     unittest.main()
