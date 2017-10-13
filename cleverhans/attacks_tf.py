@@ -652,7 +652,7 @@ class CarliniWagnerL2(object):
         :param clip_max: (optional float) Maximum input component value.
         :param num_labels: the number of classes in the model's output.
         :param shape: the shape of the model's input tensor.
-        :param extension: The CW L0 attack (and potentially others in the 
+        :param extension: The CW L0 attack (and potentially others in the
                           future) make calls to this attack. This argument
                           allows for slight modifications to the attack
                           algorithm to support minor differences in how the
