@@ -777,6 +777,8 @@ class CarliniWagnerL2(object):
     def attack_batch(self, imgs, labs, mask=None):
         """
         Run the attack on a batch of instance and labels.
+        Mask is an argument that allows modifying only a subset of the pixels,
+        and is used by the CW L0 attack algorithm.
         """
         def compare(x, y):
             if not isinstance(x, (float, int, np.int64)):
