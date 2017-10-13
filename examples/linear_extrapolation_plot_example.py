@@ -175,13 +175,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Plot the linear extrapolation plot for clean model
     log_prob_adv_array = get_logits_over_interval(
-        sess, wrap, x, adv_x, X_slice)
+        sess, wrap, X_slice, fgsm_params)
     linear_extrapolation_plot(log_prob_adv_array, Y_slice,
                               'lep_clean.png')
 
     # Plot the linear extrapolation plot for adv model
     log_prob_adv_array = get_logits_over_interval(
-        sess, wrap_2, x, adv_x, X_slice)
+        sess, wrap_2, X_slice, fgsm_params)
     linear_extrapolation_plot(log_prob_adv_array, Y_slice,
                               'lep_adv.png')
 
