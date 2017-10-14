@@ -268,7 +268,7 @@ def get_logits_over_interval(sess, model, x_data, fgsm_params,
     epsilon = tf.reshape(tf.lin_space(float(min_epsilon),
                                       float(max_epsilon),
                                       num_points),
-						(num_points, 1, 1, 1))
+                         (num_points, 1, 1, 1))
     lin_batch = x + epsilon * eta
     logits = model.get_logits(lin_batch)
     with sess.as_default():
