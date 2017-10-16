@@ -7,9 +7,14 @@ from trainer import TrainManager
 class TrainerSingleGPU(TrainManager):
     def __init__(self, *args, **kwargs):
         super(TrainerSingleGPU, self).__init__(*args, **kwargs)
-        self.create_train_graph()
 
     def create_train_graph(self):
+        # The evaluation graph should be initialized after the train graph is
+        # fully initialized, otherwise, some of the variables will be created
+        # untrainable.
+        assert self.evaluate is None, ("""Evaluation graph should be initialzed
+                                       after the train graph""")
+        self.model.set_device('/gpu:0')
         hparams = self.hparams
         model = self.model
         x_pre, x, y = self.g0_inputs

@@ -11,10 +11,11 @@ from trainer import TrainManager
 class TrainerMultiGPU(TrainManager):
     def __init__(self, *args, **kwargs):
         super(TrainerMultiGPU, self).__init__(*args, **kwargs)
-        self.create_train_graph()
         self.next_vals = [None] * len(self.inputs)
 
     def create_train_graph(self):
+        assert self.evaluate is None, ("""Evaluation graph should be initialzed
+                                       after the train graph""")
         assert '_multigpu' in self.hparams.attack_type_train
 
         hparams = self.hparams

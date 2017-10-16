@@ -2,8 +2,8 @@ import six
 import math
 import time
 import os
-import random
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.client import timeline
 
@@ -28,16 +28,19 @@ class TrainManager(object):
     def __init__(self, hparams):
         self.hparams = hparams
         self.batch_size = hparams.batch_size
+        self.evaluate = None
         self.feed_dict = {}
         self.step_num = 0
         self.init_session()
         self.init_data()
         self.init_inputs()
         self.init_model()
+        self.create_train_graph()
         self.init_eval()
 
     def init_session(self):
         # Set TF random seed to improve reproducibility
+        self.rng = np.random.RandomState([2017, 8, 30])
         tf.set_random_seed(1234)
 
         # Create TF session
@@ -100,6 +103,7 @@ class TrainManager(object):
         return self.model
 
     def init_eval(self):
+        logging.info("Init eval")
         x_pre, x, y = self.g0_inputs
         self.model.set_device('/gpu:0')
         self.evaluate = Evaluator(self.sess, self.model, self.batch_size,
@@ -202,7 +206,7 @@ class TrainManager(object):
 
                 # Indices to shuffle training set
                 index_shuf = list(range(len(X_train)))
-                random.shuffle(index_shuf)
+                self.rng.shuffle(index_shuf)
 
                 prev = time.time()
                 for batch in range(nb_batches):
