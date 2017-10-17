@@ -29,6 +29,10 @@ import six
 
 from cleverhans.model import Model
 
+from model import Conv2DnGPU
+from model import LinearnGPU
+from model import LayerNorm
+
 HParams = namedtuple('HParams',
                      'batch_size, num_classes, min_lrn_rate, lrn_rate, '
                      'num_residual_units, use_bottleneck, weight_decay_rate, '
@@ -87,10 +91,8 @@ class ResNetTF(Model):
         with tf.variable_scope('Resnet', reuse=self.reuse):
             logits, probs = self._build_model(x)
         self.reuse = True
-        if return_all:
-            return [logits, probs]
-        else:
-            return probs
+        states = {'logits': logits, 'probs': probs}
+        return states
 
     def _stride_arr(self, stride):
         """Map a stride scalar to the stride array for tf.nn.conv2d."""
@@ -220,7 +222,8 @@ class ResNetTF(Model):
     def _batch_norm(self, name, x):
         """Batch normalization."""
         if self.init_layers:
-            bn = self.norm_op(name=name)
+            bn = LayerNorm()
+            bn.name = name
             self.layers += [bn]
         else:
             bn = self.layers[self.layer_idx]
@@ -328,9 +331,10 @@ class ResNetTF(Model):
         """Convolution."""
         with tf.variable_scope(name):
             if self.init_layers:
-                conv = self.Conv2D(out_filters,
-                                   (filter_size, filter_size),
-                                   strides[1:3], 'SAME', w_name='DW')
+                conv = Conv2DnGPU(out_filters,
+                                  (filter_size, filter_size),
+                                  strides[1:3], 'SAME', name=name, w_name='DW')
+                conv.name = name
                 self.layers += [conv]
             else:
                 conv = self.layers[self.layer_idx]
@@ -346,7 +350,8 @@ class ResNetTF(Model):
     def _fully_connected(self, x, out_dim):
         """FullyConnected layer for final output."""
         if self.init_layers:
-            fc = self.Linear(out_dim, w_name='DW')
+            fc = LinearnGPU(out_dim, w_name='DW')
+            fc.name = 'logits'
             self.layers += [fc]
         else:
             fc = self.layers[self.layer_idx]

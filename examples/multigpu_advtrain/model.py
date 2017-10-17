@@ -55,8 +55,8 @@ class MLPnGPU(MLP):
 
     def set_training(self, training=False, bn_training=False):
         for layer in self.layers:
-            layer.training = training
-            layer.bn_training = bn_training
+            if isinstance(layer, LayernGPU):
+                layer.set_training(training, bn_training)
 
 
 class LayernGPU(Layer):
@@ -72,6 +72,10 @@ class LayernGPU(Layer):
         self.params_names = None
         self.device_name = '/gpu:0'
         self.training = True
+
+    def set_training(self, training=False, bn_training=False):
+        self.training = training
+        self.bn_training = bn_training
 
     def get_variable(self, name, initializer):
         """
