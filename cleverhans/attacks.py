@@ -1069,7 +1069,7 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
 class MadryEtAl(Attack):
 
     """
-    The Projected Gradient Descent Attack (Madry et al. 2016).
+    The Projected Gradient Descent Attack (Madry et al. 2017).
     Paper link: https://arxiv.org/pdf/1706.06083.pdf
     """
 
