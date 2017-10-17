@@ -26,8 +26,6 @@ def make_madry_ngpu(nb_classes=10, input_shape=(None, 28, 28, 1), **kwargs):
     """
     Create a multi-GPU model similar to Madry et al. (arXiv:1706.06083).
     """
-    model = make_basic_cnn()
-    layers = model.layers
     layers = [Conv2DnGPU(32, (5, 5), (1, 1), "SAME"),
               ReLU(),
               MaxPool((2, 2), (2, 2), "SAME"),
