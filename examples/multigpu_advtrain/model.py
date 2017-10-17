@@ -91,7 +91,8 @@ class LayernGPU(Layer):
 
         :param new_input_shape: a list or tuple for the shape of the input.
         """
-        assert self.device_name
+        assert self.device_name, "Device name has not been set."
+
         device_name = self.device_name
         if self.input_shape is None:
             # First time setting the input shape

@@ -25,8 +25,18 @@ class MadryEtAlMultiGPU(MadryEtAl):
         Create a MadryEtAlMultiGPU instance.
         """
         super(MadryEtAlMultiGPU, self).__init__(*args, **kwargs)
+        self.structural_kwargs += ['ngpu']
 
-    def attack(self, x, **kwargs):
+    def get_or_guess_labels(self, x, kwargs):
+        device_name = '/gpu:0'
+        self.model.set_device(device_name)
+        with tf.device(device_name):
+            with tf.variable_scope('model_pred'):
+                ret = super(MadryEtAlMultiGPU, self).get_or_guess_labels(
+                    x, kwargs)
+        return ret
+
+    def attack(self, x, y, **kwargs):
         """
         This method creates a symoblic graph of the MadryEtAl attack on
         multiple GPUs. The assumption is that at least 2 GPUs exist. The graph
@@ -39,7 +49,6 @@ class MadryEtAlMultiGPU(MadryEtAl):
         :return: Two lists containing the input and output tensors of each GPU.
         """
         # Create the initial random perturbation
-        # If target label is not provided, also compute the model perdiction
         device_name = '/gpu:0'
         self.model.set_device(device_name)
         with tf.device(device_name):
@@ -47,15 +56,6 @@ class MadryEtAlMultiGPU(MadryEtAl):
                 eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
                 eta = clip_eta(eta, self.ord, self.eps)
                 eta = tf.stop_gradient(eta)
-
-                if self.y is not None:
-                    y = self.y
-                else:
-                    preds = self.model.get_probs(x)
-                    preds_max = tf.reduce_max(preds, 1, keep_dims=True)
-                    y = tf.to_float(tf.equal(preds, preds_max))
-                    y = y / tf.reduce_sum(y, 1, keep_dims=True)
-                y = tf.stop_gradient(y)
 
         # List of inputs/outputs for each GPU
         inputs = []

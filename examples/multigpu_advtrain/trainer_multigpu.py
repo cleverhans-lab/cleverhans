@@ -24,6 +24,7 @@ class TrainerMultiGPU(TrainManager):
         sess = self.sess
 
         # Generates steps on gpus 0-(ngpu-1)
+        model.set_training(training=False)
         logging.info("Initializing train attack %s" %
                      hparams.attack_type_train)
         inputs, outputs = create_adv_by_name(
