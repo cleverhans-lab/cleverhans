@@ -20,9 +20,6 @@ from cleverhans.utils_tf import model_loss
 
 import logging
 
-_data_path = {'svhn':  '/ssd1/datasets/svhn/',
-              'cifar10':  '/ssd1/datasets/cifar-10/'}
-
 
 class TrainManager(object):
     def __init__(self, hparams):
@@ -62,12 +59,12 @@ class TrainManager(object):
             preproc_func = None
         elif hparams.dataset == 'cifar10':
             X_train, Y_train, X_test, Y_test = cifar_input.read_CIFAR10(
-                _data_path[hparams.dataset])
+                os.path.join(hparams.data_path, hparams.dataset))
             input_shape = (batch_size, 32, 32, 3)
             preproc_func = cifar_input.cifar_tf_preprocess
         elif hparams.dataset == 'svhn':
             X_train, Y_train, X_test, Y_test = svhn_input.read_SVHN(
-                _data_path[hparams.dataset])
+                os.path.join(hparams.data_path, hparams.dataset))
             input_shape = (batch_size, 32, 32, 3)
             preproc_func = svhn_input.svhn_tf_preprocess
 

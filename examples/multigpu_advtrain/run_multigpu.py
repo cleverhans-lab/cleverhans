@@ -69,5 +69,7 @@ if __name__ == '__main__':
     flags.DEFINE_boolean('fast_tests', False, 'Fast tests against attacks')
     flags.DEFINE_boolean('debug_graph', False,
                          'Saves the graph to Tensorobard.')
+    flags.DEFINE_boolean('data_path', './datasets/', 'Path to datasets.'
+                         'Each dataset should be in a subdirectory.')
 
     app.run()
