@@ -995,7 +995,7 @@ class MadryEtAl(Attack):
         self.targeted = self.y_target is not None
 
         # Initialize loop variables
-        adv_x = self.attack(x)
+        adv_x = self.attack(x, labels)
 
         return adv_x
 
@@ -1068,7 +1068,7 @@ class MadryEtAl(Attack):
         eta = clip_eta(eta, self.ord, self.eps)
         return x, eta
 
-    def attack(self, x, **kwargs):
+    def attack(self, x, y, **kwargs):
         """
         This method creates a symbolic graph that given an input image,
         first randomly perturbs the image. The
@@ -1083,15 +1083,6 @@ class MadryEtAl(Attack):
 
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
         eta = clip_eta(eta, self.ord, self.eps)
-
-        if self.y is not None:
-            y = self.y
-        else:
-            preds = self.model.get_probs(x)
-            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
-            y = tf.to_float(tf.equal(preds, preds_max))
-            y = y / tf.reduce_sum(y, 1, keep_dims=True)
-        y = tf.stop_gradient(y)
 
         for i in range(self.nb_iter):
             x, eta = self.attack_single_step(x, eta, y)
