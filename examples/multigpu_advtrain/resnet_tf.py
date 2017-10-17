@@ -61,6 +61,7 @@ class ResNetTF(Model):
         self.init_layers = True
         self.decay_cost = None
         self.training = None
+        self.bn_training = None
         self.device_name = None
 
         self._extra_train_ops = []
@@ -73,9 +74,11 @@ class ResNetTF(Model):
         for layer in self.layers:
             layer.device_name = device_name
 
+    def set_training(self, training, bn_training=False):
+        self.training = training
+        self.bn_training = bn_training
+
     def fprop(self, x, return_all=False, dataset='cifar10', **kwargs):
-        if 'training' in kwargs:
-            self.training = kwargs['training']
         self.kwargs = kwargs
         self.kwargs.update(self.init_kwargs)
         if 'input_shape' in self.kwargs:
@@ -222,7 +225,8 @@ class ResNetTF(Model):
         else:
             bn = self.layers[self.layer_idx]
             self.layer_idx += 1
-        x = bn.fprop(x, **self.kwargs)
+        bn.set_training(self.training, self.bn_training)
+        x = bn.fprop(x)
         if self.training:
             self._extra_train_ops += bn._extra_train_ops
         return x
@@ -331,7 +335,8 @@ class ResNetTF(Model):
             else:
                 conv = self.layers[self.layer_idx]
                 self.layer_idx += 1
-            return conv.fprop(x, **self.kwargs)
+            conv.set_training(self.training)
+            return conv.fprop(x)
 
     def _relu(self, x, leakiness=0.0):
         """Relu, with optional leaky support."""
@@ -346,7 +351,8 @@ class ResNetTF(Model):
         else:
             fc = self.layers[self.layer_idx]
             self.layer_idx += 1
-        return fc.fprop(x, **self.kwargs)
+        fc.set_training(self.training)
+        return fc.fprop(x)
 
     def _global_avg_pool(self, x):
         assert x.get_shape().ndims == 4
