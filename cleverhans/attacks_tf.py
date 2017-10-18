@@ -945,7 +945,7 @@ class ElasticNetMethod(object):
                            "{} of {}").format(i, len(imgs)))
             imgs_batch = imgs[i:i + self.batch_size]
             imgs_batch = imgs[i:i + self.batch_size]
-            if(i + self.batch_size >= len(imgs)):
+            if(i + self.batch_size > len(imgs)):
                 imgs_container = np.zeros((self.batch_size,) + imgs.shape[1:])
                 targets_container = np.zeros((self.batch_size,) +
                                              targets.shape[1:])
