@@ -1203,7 +1203,9 @@ class MadryEtAl(Attack):
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
         eta = clip_eta(eta, self.ord, self.eps)
 
-        if self.y is not None:
+        if self.y_target is not None:
+            y = self.y_target
+        elif self.y is not None:
             y = self.y
         else:
             preds = self.model.get_probs(x)
