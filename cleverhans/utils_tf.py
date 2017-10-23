@@ -274,6 +274,9 @@ def tf_model_load(sess, file_path=None):
     with sess.as_default():
         saver = tf.train.Saver()
         if file_path is None:
+            warnings.warn("Please provide file_path argument, "
+                          "support for FLAGS.train_dir and FLAGS.filename "
+                          "will be removed on 2018-04-23.")
             file_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
         saver.restore(sess, file_path)
 
