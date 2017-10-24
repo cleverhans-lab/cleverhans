@@ -943,8 +943,18 @@ class ElasticNetMethod(object):
         for i in range(0, len(imgs), self.batch_size):
             _logger.debug(("Running EAD attack on instance " +
                            "{} of {}").format(i, len(imgs)))
-            r.extend(self.attack_batch(imgs[i:i + self.batch_size],
-                                       targets[i:i + self.batch_size]))
+            imgs_batch = imgs[i:i + self.batch_size]
+            imgs_batch = imgs[i:i + self.batch_size]
+            if(i + self.batch_size > len(imgs)):
+                imgs_container = np.zeros((self.batch_size,) + imgs.shape[1:])
+                targets_container = np.zeros((self.batch_size,) +
+                                             targets.shape[1:])
+                imgs_container[:imgs_batch.shape[0]] = imgs_batch
+                targets_container[:targets_batch.shape[0]] = targets_batch
+                r.extend(self.attack_batch(imgs_container,
+                         targets_container)[:len(imgs) - i])
+            else:
+                r.extend(self.attack_batch(imgs_batch, targets_batch))
         return np.array(r)
 
     def attack_batch(self, imgs, labs):
