@@ -30,7 +30,7 @@ def model_loss(y, model, mean=True):
     """
 
     op = model.op
-    if "softmax" in str(op).lower():
+    if "softmax" in str(op).lower() and "pre_softmax" not in str(op).lower():
         logits, = op.inputs
     else:
         logits = model
