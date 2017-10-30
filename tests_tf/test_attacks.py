@@ -15,6 +15,7 @@ from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.attacks import ElasticNetMethod
 from cleverhans.attacks import DeepFool
+from cleverhans.attacks import MadryEtAl
 
 
 class TestAttackClassInitArguments(CleverHansTest):
@@ -690,6 +691,83 @@ class TestDeepFool(CleverHansTest):
 
         self.assertTrue(-0.201 < np.min(x_adv))
         self.assertTrue(np.max(x_adv) < .301)
+
+
+class TestMadryEtAl(CleverHansTest):
+    def setUp(self):
+        super(TestMadryEtAl, self).setUp()
+        import tensorflow as tf
+
+        # The world's simplest neural network
+        def my_model(x):
+            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
+            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
+            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
+            res = tf.matmul(h1, W2)
+            return res
+
+        self.sess = tf.Session()
+        self.model = my_model
+        self.attack = MadryEtAl(self.model, sess=self.sess)
+
+    def test_attack_strength(self):
+        """
+        If clipping is not done at each iteration (not using clip_min and
+        clip_max), this attack fails by
+        np.mean(orig_labels == new_labels) == .5
+        """
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.05,
+                                        clip_min=0.5, clip_max=0.7,
+                                        nb_iter=5)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        print(np.mean(orig_labs == new_labs))
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
+
+    def test_clip_eta(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
+                                        nb_iter=5)
+
+        delta = np.max(np.abs(x_adv - x_val), axis=1)
+        self.assertTrue(np.all(delta <= 1.))
+
+    def test_generate_np_gives_clipped_adversarial_examples(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
+                                        nb_iter=5,
+                                        clip_min=-0.2, clip_max=0.3)
+
+        self.assertTrue(-0.201 < np.min(x_adv))
+        self.assertTrue(np.max(x_adv) < .301)
+
+    def test_multiple_initial_random_step(self):
+        """
+        This test will fail if an initial random step is not taken.
+        """
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        new_labs_multi = orig_labs.copy()
+
+        for i in range(10):
+            x_adv = self.attack.generate_np(x_val, eps=.5, eps_iter=0.05,
+                                            clip_min=0.5, clip_max=0.7,
+                                            nb_iter=2)
+            new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+            I = (orig_labs == new_labs_multi)
+            new_labs_multi[I] = new_labs[I]
+
+        self.assertTrue(np.mean(orig_labs == new_labs_multi) < 0.1)
 
 
 if __name__ == '__main__':
