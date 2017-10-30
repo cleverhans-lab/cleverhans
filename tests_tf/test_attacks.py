@@ -168,7 +168,6 @@ class TestFastGradientMethod(CleverHansTest):
         delta = np.max(np.abs(x_adv - x_val), axis=1)
         self.assertClose(delta, 0.5)
 
-        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
         self.assertTrue(np.mean(random_labs == new_labs) > 0.7)
 
@@ -199,9 +198,9 @@ class TestFastGradientMethod(CleverHansTest):
         x_val = np.random.rand(1, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        x_adv = self.attack.generate_np(x_val, eps=.3, num_iterations=10,
-                                        clip_max=-5.0, clip_min=-5.0,
-                                        xi=1e-6)
+        self.attack.generate_np(x_val, eps=.3, num_iterations=10,
+                                clip_max=-5.0, clip_min=-5.0,
+                                xi=1e-6)
 
         old_grads = tf.gradients
 
@@ -209,9 +208,9 @@ class TestFastGradientMethod(CleverHansTest):
             raise RuntimeError()
         tf.gradients = fn
 
-        x_adv = self.attack.generate_np(x_val, eps=.2, num_iterations=10,
-                                        clip_max=-4.0, clip_min=-4.0,
-                                        xi=1e-5)
+        self.attack.generate_np(x_val, eps=.2, num_iterations=10,
+                                clip_max=-4.0, clip_min=-4.0,
+                                xi=1e-5)
 
         tf.gradients = old_grads
 
@@ -295,7 +294,7 @@ class TestCarliniWagnerL2(CleverHansTest):
             W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
             h1 = tf.nn.sigmoid(tf.matmul(x, W1))
             W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.matmul(x, W2)
+            res = tf.matmul(h1, W2)
             return res
 
         self.sess = tf.Session()
@@ -315,13 +314,12 @@ class TestCarliniWagnerL2(CleverHansTest):
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs == new_labs) < 0.1
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_generate_np_targeted_gives_adversarial_example(self):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((100, 2))
         feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
         x_adv = self.attack.generate_np(x_val, max_iterations=100,
@@ -332,7 +330,8 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(np.argmax(feed_labs, axis=1) == new_labs) > 0.9
+        self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs)
+                        > 0.9)
 
     def test_generate_gives_adversarial_example(self):
         import tensorflow as tf
@@ -355,7 +354,7 @@ class TestCarliniWagnerL2(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs == new_labs) < 0.1
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_generate_np_gives_clipped_adversarial_examples(self):
         x_val = np.random.rand(100, 2)
@@ -368,8 +367,8 @@ class TestCarliniWagnerL2(CleverHansTest):
                                         clip_min=-0.2, clip_max=0.3,
                                         batch_size=100)
 
-        assert -0.201 < np.min(x_adv)
-        assert np.max(x_adv) < .301
+        self.assertTrue(-0.201 < np.min(x_adv))
+        self.assertTrue(np.max(x_adv) < .301)
 
     def test_generate_np_high_confidence_targeted_examples(self):
         import tensorflow as tf
@@ -383,7 +382,6 @@ class TestCarliniWagnerL2(CleverHansTest):
             x_val = np.random.rand(10, 1) - .5
             x_val = np.array(x_val, dtype=np.float32)
 
-            orig_labs = np.argmax(self.sess.run(trivial_model(x_val)), axis=1)
             feed_labs = np.zeros((10, 2))
             feed_labs[np.arange(10), np.random.randint(0, 2, 10)] = 1
             attack = CarliniWagnerL2(trivial_model, sess=self.sess)
@@ -403,10 +401,10 @@ class TestCarliniWagnerL2(CleverHansTest):
             bad_labs = new_labs[np.arange(
                 10), 1 - np.argmax(feed_labs, axis=1)]
 
-            assert np.isclose(
-                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1)
-            assert np.mean(np.argmax(new_labs, axis=1) ==
-                           np.argmax(feed_labs, axis=1)) > .9
+            self.assertTrue(np.isclose(
+                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1))
+            self.assertTrue(np.mean(np.argmax(new_labs, axis=1) ==
+                                    np.argmax(feed_labs, axis=1)) > .9)
 
     def test_generate_np_high_confidence_untargeted_examples(self):
         import tensorflow as tf
@@ -436,9 +434,11 @@ class TestCarliniWagnerL2(CleverHansTest):
             good_labs = new_labs[np.arange(10), 1 - orig_labs]
             bad_labs = new_labs[np.arange(10), orig_labs]
 
-            assert np.mean(np.argmax(new_labs, axis=1) == orig_labs) == 0
-            assert np.isclose(
-                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1)
+            self.assertTrue(np.mean(np.argmax(new_labs, axis=1) == orig_labs)
+                            == 0)
+            self.assertTrue(np.isclose(
+                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1))
+
 
 class TestElasticNetMethod(CleverHansTest):
     def setUp(self):
@@ -450,7 +450,7 @@ class TestElasticNetMethod(CleverHansTest):
             W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
             h1 = tf.nn.sigmoid(tf.matmul(x, W1))
             W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.matmul(x, W2)
+            res = tf.matmul(h1, W2)
             return res
 
         self.sess = tf.Session()
@@ -470,13 +470,12 @@ class TestElasticNetMethod(CleverHansTest):
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs == new_labs) < 0.1
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_generate_np_targeted_gives_adversarial_example(self):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((100, 2))
         feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
         x_adv = self.attack.generate_np(x_val, max_iterations=100,
@@ -487,7 +486,8 @@ class TestElasticNetMethod(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(np.argmax(feed_labs, axis=1) == new_labs) > 0.9
+        self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs) >
+                        0.9)
 
     def test_generate_gives_adversarial_example(self):
         import tensorflow as tf
@@ -510,7 +510,7 @@ class TestElasticNetMethod(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs == new_labs) < 0.1
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_generate_np_gives_clipped_adversarial_examples(self):
         x_val = np.random.rand(100, 2)
@@ -523,8 +523,8 @@ class TestElasticNetMethod(CleverHansTest):
                                         clip_min=-0.2, clip_max=0.3,
                                         batch_size=100)
 
-        assert -0.201 < np.min(x_adv)
-        assert np.max(x_adv) < .301
+        self.assertTrue(-0.201 < np.min(x_adv))
+        self.assertTrue(np.max(x_adv) < .301)
 
     def test_generate_np_high_confidence_targeted_examples(self):
         import tensorflow as tf
@@ -538,7 +538,6 @@ class TestElasticNetMethod(CleverHansTest):
             x_val = np.random.rand(10, 1) - .5
             x_val = np.array(x_val, dtype=np.float32)
 
-            orig_labs = np.argmax(self.sess.run(trivial_model(x_val)), axis=1)
             feed_labs = np.zeros((10, 2))
             feed_labs[np.arange(10), np.random.randint(0, 2, 10)] = 1
             attack = CarliniWagnerL2(trivial_model, sess=self.sess)
@@ -558,10 +557,10 @@ class TestElasticNetMethod(CleverHansTest):
             bad_labs = new_labs[np.arange(
                 10), 1 - np.argmax(feed_labs, axis=1)]
 
-            assert np.isclose(
-                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1)
-            assert np.mean(np.argmax(new_labs, axis=1) ==
-                           np.argmax(feed_labs, axis=1)) > .9
+            self.assertTrue(np.isclose(
+                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1))
+            self.assertTrue(np.mean(np.argmax(new_labs, axis=1) ==
+                                    np.argmax(feed_labs, axis=1)) > .9)
 
     def test_generate_np_high_confidence_untargeted_examples(self):
         import tensorflow as tf
@@ -591,9 +590,10 @@ class TestElasticNetMethod(CleverHansTest):
             good_labs = new_labs[np.arange(10), 1 - orig_labs]
             bad_labs = new_labs[np.arange(10), orig_labs]
 
-            assert np.mean(np.argmax(new_labs, axis=1) == orig_labs) == 0
-            assert np.isclose(
-                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1)
+            self.assertTrue(np.mean(np.argmax(new_labs, axis=1) == orig_labs)
+                            == 0)
+            self.assertTrue(np.isclose(
+                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1))
 
 
 class TestSaliencyMapMethod(CleverHansTest):
@@ -622,7 +622,6 @@ class TestSaliencyMapMethod(CleverHansTest):
         x_val = np.random.rand(10, 1000)
         x_val = np.array(x_val, dtype=np.float32)
 
-        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((10, 1000))
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
         x_adv = self.attack.generate_np(x_val,
@@ -644,7 +643,7 @@ class TestDeepFool(CleverHansTest):
             W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
             h1 = tf.nn.sigmoid(tf.matmul(x, W1))
             W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.matmul(x, W2)
+            res = tf.matmul(h1, W2)
             return res
 
         self.sess = tf.Session()
@@ -656,12 +655,13 @@ class TestDeepFool(CleverHansTest):
         x_val = np.array(x_val, dtype=np.float32)
 
         x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
-                                        nb_candidate=2, clip_min=-5, clip_max=5)
+                                        nb_candidate=2, clip_min=-5,
+                                        clip_max=5)
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs == new_labs) < 0.1
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_generate_gives_adversarial_example(self):
         import tensorflow as tf
@@ -678,17 +678,19 @@ class TestDeepFool(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(orig_labs == new_labs) < 0.1
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_generate_np_gives_clipped_adversarial_examples(self):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
         x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
-                                        nb_candidate=2, clip_min=-0.2, clip_max=0.3)
+                                        nb_candidate=2, clip_min=-0.2,
+                                        clip_max=0.3)
 
-        assert -0.201 < np.min(x_adv)
-        assert np.max(x_adv) < .301
+        self.assertTrue(-0.201 < np.min(x_adv))
+        self.assertTrue(np.max(x_adv) < .301)
+
 
 if __name__ == '__main__':
     unittest.main()
