@@ -751,7 +751,11 @@ class TestMadryEtAl(CleverHansTest):
 
     def test_multiple_initial_random_step(self):
         """
-        This test will fail if an initial random step is not taken.
+        This test generates multiple adversarial examples until an adversarial
+        example is generated with a different label compared to the original
+        label. This is the procedure suggested in Madry et al. (2017).
+
+        This test will fail if an initial random step is not taken (error>0.5).
         """
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
@@ -759,11 +763,14 @@ class TestMadryEtAl(CleverHansTest):
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs_multi = orig_labs.copy()
 
+        # Generate multiple adversarial examples
         for i in range(10):
             x_adv = self.attack.generate_np(x_val, eps=.5, eps_iter=0.05,
                                             clip_min=0.5, clip_max=0.7,
                                             nb_iter=2)
             new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+            # Examples for which we have not found adversarial examples
             I = (orig_labs == new_labs_multi)
             new_labs_multi[I] = new_labs[I]
 
