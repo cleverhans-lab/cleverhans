@@ -1188,7 +1188,7 @@ class MadryEtAl(Attack):
         eta = clip_eta(eta, self.ord, self.eps)
         return x, eta
 
-    def attack(self, x, y, **kwargs):
+    def attack(self, x, y):
         """
         This method creates a symbolic graph that given an input image,
         first randomly perturbs the image. The
