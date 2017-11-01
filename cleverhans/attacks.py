@@ -1199,7 +1199,7 @@ class MadryEtAl(Attack):
         :param x: A tensor with the input image.
         """
         import tensorflow as tf
-        from utils_tf import clip_eta
+        from cleverhans.utils_tf import clip_eta
 
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
         eta = clip_eta(eta, self.ord, self.eps)
