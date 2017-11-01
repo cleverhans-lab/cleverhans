@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+from collections import namedtuple
 
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
@@ -17,13 +18,8 @@ from trainer_multigpu import TrainerMultiGPU
 from trainer_singlegpu import TrainerSingleGPU
 
 
-FLAGS = flags.FLAGS
-
-
-def main(argv=None):
+def run_trainer(hparams):
     logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
-
-    hparams = flags.FLAGS
 
     if hparams.ngpu > 1:
         logging.info('Multi GPU Trainer.')
@@ -32,12 +28,27 @@ def main(argv=None):
         logging.info('Single GPU Trainer.')
         trainer = TrainerSingleGPU(hparams)
     trainer.model_train()
-    trainer.evaluate(inc_epoch=False)
+    trainer.eval(inc_epoch=False)
 
-    trainer.finish()
+    return trainer.finish()
+
+
+def main(argv=None):
+    f = flags.FLAGS.__dict__['__flags']
+    HParams = namedtuple('HParams', f.keys())
+    hparams = HParams(**f)
+    run_trainer(hparams)
 
 
 if __name__ == '__main__':
+    flags.DEFINE_integer('train_start', 0,
+                         'index of first training set example')
+    flags.DEFINE_integer('train_end', 60000,
+                         'index of last training set example')
+    flags.DEFINE_integer('test_start', 0,
+                         'index of first test set example')
+    flags.DEFINE_integer('test_end', 10000,
+                         'index of last test set example')
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')

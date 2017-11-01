@@ -4,7 +4,7 @@ The following command trains a model using a single GPU on MNIST:
 
 ```python
 CUDA_VISIBLE_DEVICES=7 python run_multigpu.py --save_dir runs/X
-CUDA_VISIBLE_DEVICES=0 ipython --pdb -- run_multigpu.py --attack_type_train FGSM --attack_type_test FGSM
+CUDA_VISIBLE_DEVICES=0 ipython --pdb -- run_multigpu.py --attack_type_train FGSM --attack_type_test FGSM --adv_train
 ```
 
 This command trains a model using 2 GPUs on MNIST.

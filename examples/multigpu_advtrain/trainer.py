@@ -8,7 +8,6 @@ import tensorflow as tf
 from tensorflow.python.client import timeline
 
 from cleverhans.utils_tf import batch_indices
-from cleverhans.utils import AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 import cleverhans.utils_cifar as cifar_input
 import cleverhans.utils_svhn as svhn_input
@@ -28,6 +27,7 @@ class TrainManager(object):
         self.evaluate = None
         self.feed_dict = {}
         self.step_num = 0
+        self.report = None
         self.init_session()
         self.init_data()
         self.init_inputs()
@@ -45,16 +45,22 @@ class TrainManager(object):
             config=tf.ConfigProto(allow_soft_placement=True))
 
         # Object used to keep track of (and return) key accuracies
-        self.report = AccuracyReport()
-        self.writer = tf.summary.FileWriter(self.hparams.save_dir,
-                                            flush_secs=10)
+        if self.hparams.save:
+            self.writer = tf.summary.FileWriter(self.hparams.save_dir,
+                                                flush_secs=10)
+        else:
+            self.writer = None
 
     def init_data(self):
         hparams = self.hparams
         batch_size = hparams.batch_size
         if hparams.dataset == 'mnist':
             # Get MNIST test data
-            X_train, Y_train, X_test, Y_test = data_mnist()
+            X_train, Y_train, X_test, Y_test = data_mnist(
+                train_start=hparams.train_start,
+                train_end=hparams.train_end,
+                test_start=hparams.test_start,
+                test_end=hparams.test_end)
             input_shape = (batch_size, 28, 28, 1)
             preproc_func = None
         elif hparams.dataset == 'cifar10':
@@ -93,9 +99,9 @@ class TrainManager(object):
         self.g0_inputs = (x_pre, x, y)
 
     def init_model(self):
-        hparams = self.hparams.__dict__['__flags']
+        flags = self.hparams.__dict__
         # Define TF model graph
-        self.model = make_model(input_shape=self.input_shape, **hparams)
+        self.model = make_model(input_shape=self.input_shape, **flags)
         self.model.set_device(None)
         return self.model
 
@@ -109,12 +115,13 @@ class TrainManager(object):
                                   self.writer,
                                   self.hparams)
 
-    def eval(self):
+    def eval(self, **kwargs):
         if self.evaluate is not None:
-            self.evaluate.eval_multi()
+            self.report = self.evaluate.eval_multi()
 
     def finish(self):
-        self.writer.close()
+        if self.writer:
+            self.writer.close()
         return self.report
 
     def update_learning_params(self):
@@ -261,14 +268,16 @@ class TrainManager(object):
     def run_with_graph(self, X_batch, Y_batch):
         fetches, feed_dict = self.set_input(X_batch, Y_batch)
 
-        self.writer.add_graph(self.sess.graph)
+        if self.writer:
+            self.writer.add_graph(self.sess.graph)
         run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
         run_metadata = tf.RunMetadata()
         fvals = self.sess.run(fetches,
                               feed_dict=feed_dict,
                               options=run_options,
                               run_metadata=run_metadata)
-        self.writer.add_run_metadata(run_metadata, 'graph')
+        if self.writer:
+            self.writer.add_run_metadata(run_metadata, 'graph')
 
         tl = timeline.Timeline(run_metadata.step_stats)
         ctf = tl.generate_chrome_trace_format()

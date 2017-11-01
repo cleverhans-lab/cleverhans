@@ -165,6 +165,7 @@ class Evaluator(object):
         writer = self.writer
 
         self.summary = tf.Summary()
+        report = {}
 
         # Evaluate on train set
         subsample_factor = 100
@@ -174,29 +175,36 @@ class Evaluator(object):
                                Y_train_subsampled, args=self.eval_params)
         self.log_value('train_accuracy_subsampled', acc_train,
                        'Clean accuracy, subsampled train')
+        report['train'] = acc_train
 
         # Evaluate on the test set
         acc = model_eval(sess, x, y, preds, X_test, Y_test,
                          args=self.eval_params)
         self.log_value('test_accuracy_natural', acc,
                        'Clean accuracy, natural test')
+        report['test'] = acc
 
         # Evaluate against adversarial attacks
         if self.epoch % self.hparams.eval_iters == 0:
             for att_type in self.attack_type_test:
                 adv_x, preds_adv = self.attacks[att_type]
-                self.eval_advs(x, y, preds_adv, X_test, Y_test, att_type)
+                acc = self.eval_advs(x, y, preds_adv, X_test, Y_test, att_type)
+                report[att_type] = acc
 
-        writer.add_summary(self.summary, self.epoch)
+        if self.writer:
+            writer.add_summary(self.summary, self.epoch)
 
         # Add examples of adversarial examples to the summary
-        if self.epoch % 20 == 0 and self.sum_op is not None:
+        if self.writer and self.epoch % 20 == 0 and self.sum_op is not None:
             sm_val = self.sess.run(self.sum_op,
                                    feed_dict={x: X_test[:self.batch_size],
                                               y: Y_test[:self.batch_size]})
-            writer.add_summary(sm_val)
+            if self.writer:
+                writer.add_summary(sm_val)
 
         self.epoch += 1 if inc_epoch else 0
+
+        return report
 
     def __call__(self, **kwargs):
         return self.eval_multi(**kwargs)
