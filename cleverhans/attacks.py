@@ -1182,12 +1182,13 @@ class MadryEtAl(Attack):
         grad, = tf.gradients(loss, adv_x)
         scaled_signed_grad = self.eps_iter * tf.sign(grad)
         adv_x = adv_x + scaled_signed_grad
-        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
         eta = adv_x - x
         eta = clip_eta(eta, self.ord, self.eps)
         return x, eta
 
-    def attack(self, x, y, **kwargs):
+    def attack(self, x, y):
         """
         This method creates a symbolic graph that given an input image,
         first randomly perturbs the image. The
@@ -1198,7 +1199,7 @@ class MadryEtAl(Attack):
         :param x: A tensor with the input image.
         """
         import tensorflow as tf
-        from utils_tf import clip_eta
+        from cleverhans.utils_tf import clip_eta
 
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
         eta = clip_eta(eta, self.ord, self.eps)
