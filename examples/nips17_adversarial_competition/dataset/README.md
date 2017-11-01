@@ -56,6 +56,8 @@ OUTPUT_DIR=images
 # Download images
 python download_images.py --input_file=${CSV_FILE} --output_dir=${OUTPUT_DIR}
 ```
+To accelerate the image downloading, multiple threads are spawned (the default is CPU_COUNT + 1).
+You can change this setting using --threads flag to any other positive value.
 
 All downloaded images will be cropped according to the bounding boxes in
 `dev_dataset.csv` and resized to 299x299 pixels.
