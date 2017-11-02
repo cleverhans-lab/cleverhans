@@ -31,7 +31,7 @@ class TestMNISTTutorialTF(CleverHansTest):
 
         # Check that the tutorial is deterministic (seeded properly)
         if LooseVersion(tf.__version__) >= LooseVersion('1.1.0'):
-            atol_fac = 1
+            atol_fac = 3
         else:
             atol_fac = 2
         report_2 = mnist_tutorial_tf.mnist_tutorial(**test_dataset_indices)
@@ -47,6 +47,7 @@ class TestMNISTTutorialTF(CleverHansTest):
         self.assertClose(report.train_adv_train_adv_eval,
                          report_2.train_adv_train_adv_eval,
                          atol=atol_fac * 2e-1)
+
 
 if __name__ == '__main__':
     unittest.main()
