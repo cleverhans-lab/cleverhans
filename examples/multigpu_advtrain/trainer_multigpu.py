@@ -30,21 +30,10 @@ class TrainerMultiGPU(TrainManager):
         inputs, outputs = create_adv_by_name(
             model, x, hparams.attack_type_train,
             sess, y=y, nb_iter=hparams.attack_nb_iter_train,
-            dataset=hparams.dataset, ngpu=hparams.ngpu)
+            dataset=hparams.dataset, ngpu=hparams.ngpu,
+            g0_inputs=self.g0_inputs)
 
         assert len(inputs) == len(outputs)
-        # 0
-        # inputs[0] = (x_pre, y)
-
-        # copy y forward
-        for i in range(len(outputs)):
-            if i > 0:
-                with tf.device(inputs[i][-1].device):
-                    y2 = clone_variable('y%d' % i, y)
-            else:
-                y2 = y
-            inputs[i] = inputs[i] + (y2,)
-            outputs[i] = outputs[i] + (y2,)
 
         # train step on last gpu
         x, adv_x, y = outputs[-1]

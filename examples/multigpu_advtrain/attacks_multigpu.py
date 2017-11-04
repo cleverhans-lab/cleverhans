@@ -25,7 +25,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
         Create a MadryEtAlMultiGPU instance.
         """
         super(MadryEtAlMultiGPU, self).__init__(*args, **kwargs)
-        self.structural_kwargs += ['ngpu']
+        self.structural_kwargs += ['ngpu', 'g0_inputs']
 
     def get_or_guess_labels(self, x, kwargs):
         device_name = '/gpu:0'
@@ -71,18 +71,21 @@ class MadryEtAlMultiGPU(MadryEtAl):
                 with tf.variable_scope('step%d' % i):
                     if i == 0:
                         # This will be filled by the TrainerMultiGPU
-                        inputs += [()]  # (x_pre, y)
+                        x_pre, _, y0 = self.g0_inputs
+                        inputs += [(x_pre, y0)]
                     else:
                         # Clone the variables to separate the graph of 2 GPUs
                         x = clone_variable('x', x)
                         eta = clone_variable('eta', eta)
                         y = clone_variable('y', y)
-                        inputs += [(x, eta, y)]
+                        # copy y0 forward
+                        y0 = clone_variable('y0', self.g0_inputs[2])
+                        inputs += [(x, eta, y, y0)]
 
                     x, eta = self.attack_single_step(x, eta, y)
 
                     if i < self.nb_iter-1:
-                        outputs += [(x, eta, y)]
+                        outputs += [(x, eta, y, y0)]
                     else:
                         # adv_x, not eta is the output of attack
                         # No need to output y anymore. It was used only inside
@@ -93,11 +96,11 @@ class MadryEtAlMultiGPU(MadryEtAl):
                             adv_x = tf.clip_by_value(adv_x, self.clip_min,
                                                      self.clip_max)
                         adv_x = tf.stop_gradient(adv_x)
-                        outputs += [(x, adv_x)]
+                        outputs += [(x, adv_x, y0)]
 
         return inputs, outputs
 
-    def parse_params(self, ngpu=1, **kwargs):
+    def parse_params(self, ngpu=1, g0_inputs=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -110,8 +113,11 @@ class MadryEtAlMultiGPU(MadryEtAl):
 
         return_status = super(MadryEtAlMultiGPU, self).parse_params(**kwargs)
         self.ngpu = ngpu
+        self.g0_inputs = g0_inputs
 
         if self.ngpu < 2:
             raise ValueError("At least 2 GPUs need to be available.")
+        if len(g0_inputs) != 3:
+            raise ValueError("g0_inputs should be a tuple of 3 (x_pre, x, y).")
 
         return return_status

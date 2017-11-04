@@ -10,47 +10,6 @@ from collections import namedtuple
 
 from cleverhans.utils import AccuracyReport
 from cleverhans.devtools.checks import CleverHansTest
-from attacks_multigpu import MadryEtAlMultiGPU
-
-import sys
-import os
-sys.path.insert(0, os.path.abspath('../../tests_tf/'))
-from test_attacks import TestMadryEtAl  # NOQA
-
-
-class TestMadryEtAlMultiGPU(TestMadryEtAl):
-    def setUp(self):
-        super(TestMadryEtAlMultiGPU, self).setUp()
-        self.attack_single_gpu = self.attack
-        self.attack_multi_gpu = MadryEtAlMultiGPU(self.model, sess=self.sess,
-                                                  ngpu=2)
-        self.attack = self.attack_multi_gpu
-
-    def test_single_vs_multi_gpu(self):
-        x_val = np.random.rand(100, 2)
-        x_val = np.array(x_val, dtype=np.float32)
-
-        def multi_attack(attack):
-            flags = {'eps': 1.0, 'eps_iter': 0.05,
-                     'clip_min': 0.5, 'clip_max': 0.7, 'nb_iter': 5}
-
-            orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-            new_labs_multi = orig_labs.copy()
-            # Generate multiple adversarial examples
-            for i in range(10):
-                x_adv = attack.generate_np(x_val, **flags)
-                new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-
-                # Examples for which we have not found adversarial examples
-                I = (orig_labs == new_labs_multi)
-                new_labs_multi[I] = new_labs[I]
-
-            return np.mean(orig_labs == new_labs_multi)
-
-        acc_s = multi_attack(self.attack_single_gpu)
-        acc_m = multi_attack(self.attack_multi_gpu)
-
-        self.assertClose(acc_s, acc_m, atol=5e-3)
 
 
 class TestRunMultiGPU(CleverHansTest):
