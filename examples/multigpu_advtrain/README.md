@@ -18,3 +18,9 @@ This command trains a model using multiple GPUs on CIFAR10.
 ```python
 python run_multigpu.py --save_dir runs/X --ngpu 8 --fast_tests --attack_nb_iter_train 7 --dataset cifar10 --model_type resnet_tf
 ```
+
+The following command can be used to run tests:
+
+```python
+CUDA_VISIBLE_DEVICES=0,1 python test_run_multigpu.py
+```
