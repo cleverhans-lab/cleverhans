@@ -265,10 +265,7 @@ class FastGradientMethod(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        if self.back == 'tf':
-            from .attacks_tf import fgm
-        else:
-            from .attacks_th import fgm
+        from .attacks_tf import fgm
 
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
