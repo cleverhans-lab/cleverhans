@@ -20,17 +20,13 @@ class Attack(object):
     def __init__(self, model, back='tf', sess=None):
         """
         :param model: An instance of the cleverhans.model.Model class.
-        :param back: The backend to use. Either 'tf' (default) or 'th'
-                     (support for Theano is however deprecated and will
-                     be removed on 2017-11-08).
-        :param sess: The tf session to run graphs in (use None for Theano)
+        :param back: The backend to use. Currently 'tf' is the only option.
+        :param sess: The tf session to run graphs in
         """
-        if not(back == 'tf' or back == 'th'):
-            raise ValueError("Backend argument must either be 'tf' or 'th'.")
+        if not(back == 'tf'):
+            raise ValueError("Backend argument must either be 'tf'.")
 
-        if back == 'th' and sess is not None:
-            raise Exception("A session should not be provided when using th.")
-        elif back == 'tf' and sess is None:
+        if back == 'tf' and sess is None:
             import tensorflow as tf
             sess = tf.get_default_session()
 
@@ -43,9 +39,6 @@ class Attack(object):
             else:
                 raise ValueError("The model argument should be an instance of"
                                  " the cleverhans.model.Model class.")
-        if back == 'th':
-            warnings.warn("CleverHans support for Theano is deprecated and "
-                          "will be dropped on 2017-11-08.")
 
         # Prepare attributes
         self.model = model
@@ -79,8 +72,6 @@ class Attack(object):
         :param **kwargs: optional parameters used by child classes.
         :return: A symbolic representation of the adversarial examples.
         """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
 
         error = "Sub-classes must implement generate."
         raise NotImplementedError(error)
@@ -143,8 +134,6 @@ class Attack(object):
         :param **kwargs: optional parameters used by child classes.
         :return: A NumPy array holding the adversarial examples.
         """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
         if self.sess is None:
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
@@ -324,9 +313,6 @@ class FastGradientMethod(Attack):
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, int(1), int(2)]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
-        if self.back == 'th' and self.ord != np.inf:
-            raise NotImplementedError("The only FastGradientMethod norm "
-                                      "implemented for Theano is np.inf.")
         return True
 
 
@@ -464,9 +450,6 @@ class BasicIterativeMethod(Attack):
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
-        if self.back == 'th':
-            error_string = "BasicIterativeMethod is not implemented in Theano"
-            raise NotImplementedError(error_string)
 
         return True
 
@@ -488,10 +471,6 @@ class SaliencyMapMethod(Attack):
 
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'probs')
-
-        if self.back == 'th':
-            error = "Theano version of SaliencyMapMethod not implemented."
-            raise NotImplementedError(error)
 
         import tensorflow as tf
         self.feedable_kwargs = {'y_target': tf.float32}
@@ -586,10 +565,6 @@ class VirtualAdversarialMethod(Attack):
         """
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
 
-        if self.back == 'th':
-            error = "For the Theano version of VAM please call vatm directly."
-            raise NotImplementedError(error)
-
         import tensorflow as tf
         self.feedable_kwargs = {'eps': tf.float32, 'xi': tf.float32,
                                 'clip_min': tf.float32,
@@ -656,9 +631,6 @@ class CarliniWagnerL2(Attack):
         cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(CarliniWagnerL2, self).__init__(model, back, sess)
-
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32,
@@ -769,9 +741,6 @@ class ElasticNetMethod(Attack):
         cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(ElasticNetMethod, self).__init__(model, back, sess)
-
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32,
@@ -887,9 +856,6 @@ class DeepFool(Attack):
         """
         super(DeepFool, self).__init__(model, back, sess)
 
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
-
         self.structural_kwargs = ['over_shoot', 'max_iter', 'clip_max',
                                   'clip_min', 'nb_candidate']
 
@@ -978,8 +944,7 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
                          discovery of label leaking in the following paper:
                          https://arxiv.org/abs/1611.01236)
     :param eps: the epsilon (input variation parameter)
-    :param back: switch between TensorFlow ('tf') and
-                Theano ('th') implementation
+    :param back: Which backend to use (currently only 'tf' is supported)
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
@@ -993,10 +958,6 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
         from .attacks_tf import fgm
         return fgm(x, predictions, y=None, eps=eps, ord=np.inf,
                    clip_min=clip_min, clip_max=clip_max)
-    elif back == 'th':
-        # Compute FGSM using Theano
-        from .attacks_th import fgm
-        return fgm(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
 
 
 def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
@@ -1019,51 +980,11 @@ def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
     :return: a tensor for the adversarial example
 
     """
-    if back == 'tf':
-        # Compute VATM using TensorFlow
-        from .attacks_tf import vatm as vatm_tf
-        return vatm_tf(model, x, logits, eps, num_iterations=num_iterations,
-                       xi=xi, clip_min=clip_min, clip_max=clip_max)
-    elif back == 'th':
-        # Compute VATM using Theano
-        from .attacks_th import vatm as vatm_th
-        return vatm_th(model, x, logits, eps, num_iterations=num_iterations,
-                       xi=xi, clip_min=clip_min, clip_max=clip_max)
-
-
-def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
-         increase=True, back='tf', clip_min=None, clip_max=None):
-    """
-    A wrapper for the Jacobian-based saliency map approach.
-    It calls the right function, depending on the
-    user's backend.
-    :param sess: TF session
-    :param x: the input
-    :param predictions: the model's symbolic output (linear output,
-        pre-softmax)
-    :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
-    :param target: target class for input sample
-    :param theta: delta for each feature adjustment
-    :param gamma: a float between 0 - 1 indicating the maximum distortion
-        percentage
-    :param increase: boolean; true if we are increasing pixels, false otherwise
-    :param back: switch between TensorFlow ('tf') and
-                Theano ('th') implementation
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
-    :return: an adversarial sample
-    """
-    warnings.warn("attacks.jsma is deprecated and will be removed on "
-                  "2017-09-27. Instantiate an object from SaliencyMapMethod.")
-    if back == 'tf':
-        # Compute Jacobian-based saliency map attack using TensorFlow
-        from .attacks_tf import jsma
-        return jsma(sess, x, predictions, grads, sample, target, theta, gamma,
-                    clip_min, clip_max)
-    elif back == 'th':
-        raise NotImplementedError("Theano jsma not implemented.")
+    assert back == 'tf'
+    # Compute VATM using TensorFlow
+    from .attacks_tf import vatm as vatm_tf
+    return vatm_tf(model, x, logits, eps, num_iterations=num_iterations,
+                   xi=xi, clip_min=clip_min, clip_max=clip_max)
 
 
 class MadryEtAl(Attack):
@@ -1155,10 +1076,6 @@ class MadryEtAl(Attack):
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
-        if self.back == 'th':
-            error_string = ("ProjectedGradientDescentMethod is"
-                            " not implemented in Theano")
-            raise NotImplementedError(error_string)
 
         return True
 

@@ -51,7 +51,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         raise RuntimeError("This tutorial requires keras to be configured"
                            " to use the TensorFlow backend.")
 
-    # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'tf':
         keras.backend.set_image_dim_ordering('tf')
         print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to "
