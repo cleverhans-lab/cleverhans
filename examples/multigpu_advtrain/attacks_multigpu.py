@@ -13,7 +13,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
     (Madry et al. 2016).
     Paper link: https://arxiv.org/pdf/1706.06083.pdf
 
-    This attack is designed to run on n-1 GPUs for generating adversarial
+    This attack is designed to run on n GPUs for generating adversarial
     examples and the last GPU will be used for doing the training step.
     Comparing to data parallelism, using this parallelization we can get
     very close to optimal n times speed up using n GPUs. The current
@@ -39,8 +39,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
     def attack(self, x, y, **kwargs):
         """
         This method creates a symoblic graph of the MadryEtAl attack on
-        multiple GPUs. The assumption is that at least 2 GPUs exist. The graph
-        is created on the first n-1 GPUs. The last GPU is left for train step.
+        multiple GPUs. The graph is created on the first n GPUs.
 
         Stop gradient is needed to get the speed-up. This prevents us from
         being able to back-prop through the attack.
@@ -64,7 +63,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
         for i in range(self.nb_iter):
             # Create the graph for i'th step of attack
             # Last GPU is reserved for training step
-            gid = i % (self.ngpu-1)
+            gid = i % self.ngpu
             device_name = '/gpu:%d' % gid
             self.model.set_device(device_name)
             with tf.device(device_name):
@@ -106,8 +105,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
         before saving them as attributes.
 
         Attack-specific parameters:
-        :param ngpu: (required int) the number of GPUs available. ngpu-1
-                     will be used in this attack.
+        :param ngpu: (required int) the number of GPUs available.
         :param kwargs: A dictionary of parameters for MadryEtAl attack.
         """
 

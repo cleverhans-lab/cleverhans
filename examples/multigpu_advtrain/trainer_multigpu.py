@@ -23,7 +23,7 @@ class TrainerMultiGPU(TrainManager):
         x_pre, x, y = self.g0_inputs
         sess = self.sess
 
-        # Generates steps on gpus 0-(ngpu-1)
+        # Generates steps on gpus
         model.set_training(training=False)
         logging.info("Initializing train attack %s" %
                      hparams.attack_type_train)
@@ -37,7 +37,7 @@ class TrainerMultiGPU(TrainManager):
 
         # train step on last gpu
         x, adv_x, y = outputs[-1]
-        device_name = '/gpu:%d' % (hparams.ngpu-1)
+        device_name = '/gpu:%d' % hparams.ngpu
         model.set_device(device_name)
         with tf.device(device_name):
             with tf.variable_scope('last'):
@@ -62,7 +62,7 @@ class TrainerMultiGPU(TrainManager):
 
         outputs += [train_fetches]
 
-        device_name = '/gpu:%d' % (hparams.ngpu-1)
+        device_name = '/gpu:%d' % hparams.ngpu
         model.set_device(device_name)
         with tf.device(device_name):
             sync_ops = model.create_sync_ops(host_device=device_name)
