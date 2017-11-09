@@ -52,9 +52,12 @@ class MadryEtAlMultiGPU(MadryEtAl):
         self.model.set_device(device_name)
         with tf.device(device_name):
             with tf.variable_scope('init_rand'):
-                eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
-                eta = clip_eta(eta, self.ord, self.eps)
-                eta = tf.stop_gradient(eta)
+                if self.rand_init:
+                    eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
+                    eta = clip_eta(eta, self.ord, self.eps)
+                    eta = tf.stop_gradient(eta)
+                else:
+                    eta = tf.zeros_like(x)
 
         # List of inputs/outputs for each GPU
         inputs = []
@@ -99,6 +102,32 @@ class MadryEtAlMultiGPU(MadryEtAl):
 
         return inputs, outputs
 
+    def generate_np(self, x_val, **kwargs):
+        """
+        Facilitates testing this attack.
+        """
+        fixed, feedable, hash_key = self.construct_variables(kwargs)
+
+        if hash_key not in self.graphs:
+            with tf.variable_scope(None, 'attack_%d' % len(self.graphs)):
+                from runner import RunnerMultiGPU
+                runner = RunnerMultiGPU(self.sess, x_val.shape)
+
+                kwargs.update({'g0_inputs': runner.g0_inputs})
+                inputs, outputs = self.generate(runner.g0_inputs[0], **kwargs)
+                runner.inputs = inputs
+                runner.outputs = outputs
+                runner.next_vals = [None] * len(inputs)
+                self.graphs[hash_key] = runner
+
+        runner = self.graphs[hash_key]
+
+        fvals = runner.run(x_val)
+        while not runner.is_finished():
+            fvals = runner.run()
+
+        return fvals[1]
+
     def parse_params(self, ngpu=1, g0_inputs=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -113,8 +142,6 @@ class MadryEtAlMultiGPU(MadryEtAl):
         self.ngpu = ngpu
         self.g0_inputs = g0_inputs
 
-        if self.ngpu < 2:
-            raise ValueError("At least 2 GPUs need to be available.")
         if len(g0_inputs) != 3:
             raise ValueError("g0_inputs should be a tuple of 3 (x_pre, x, y).")
 

@@ -134,21 +134,13 @@ class Attack(object):
                           "structural paramaters is inefficient and should"
                           " be avoided. Calling generate() is preferred.")
 
-    def generate_np(self, x_val, **kwargs):
+    def construct_variables(self, kwargs):
         """
-        Generate adversarial examples and return them as a NumPy array.
-        Sub-classes *should not* implement this method unless they must
-        perform special handling of arguments.
-        :param x_val: A NumPy array with the original inputs.
-        :param **kwargs: optional parameters used by child classes.
-        :return: A NumPy array holding the adversarial examples.
+        Construct the inputs to the attack graph to be used by generate_np.
+        :param kwargs: Keyword arguments to generate_np.
+        :return: Structural and feedable arguments as well as a unique key
+                 for the graph given these inputs.
         """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
-        if self.sess is None:
-            raise ValueError("Cannot use `generate_np` when no `sess` was"
-                             " provided")
-
         # the set of arguments that are structural properties of the attack
         # if these arguments are different, we must construct a new graph
         fixed = dict((k, v) for k, v in kwargs.items()
@@ -173,6 +165,25 @@ class Attack(object):
         else:
             # create a unique key for this set of fixed paramaters
             hash_key = tuple(sorted(fixed.items()))
+
+        return fixed, feedable, hash_key
+
+    def generate_np(self, x_val, **kwargs):
+        """
+        Generate adversarial examples and return them as a NumPy array.
+        Sub-classes *should not* implement this method unless they must
+        perform special handling of arguments.
+        :param x_val: A NumPy array with the original inputs.
+        :param **kwargs: optional parameters used by child classes.
+        :return: A NumPy array holding the adversarial examples.
+        """
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+        if self.sess is None:
+            raise ValueError("Cannot use `generate_np` when no `sess` was"
+                             " provided")
+
+        fixed, feedable, hash_key = self.construct_variables(kwargs)
 
         if hash_key not in self.graphs:
             self.construct_graph(fixed, feedable, x_val, hash_key)
@@ -1084,7 +1095,7 @@ class MadryEtAl(Attack):
                                 'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
-        self.structural_kwargs = ['ord', 'nb_iter']
+        self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
 
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'probs')
@@ -1120,7 +1131,7 @@ class MadryEtAl(Attack):
 
     def parse_params(self, eps=0.3, eps_iter=0.01, nb_iter=40, y=None,
                      ord=np.inf, clip_min=None, clip_max=None,
-                     y_target=None, **kwargs):
+                     y_target=None, rand_init=True, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -1149,6 +1160,7 @@ class MadryEtAl(Attack):
         self.ord = ord
         self.clip_min = clip_min
         self.clip_max = clip_max
+        self.rand_init = rand_init
 
         if self.y is not None and self.y_target is not None:
             raise ValueError("Must not set both y and y_target")
@@ -1201,8 +1213,11 @@ class MadryEtAl(Attack):
         import tensorflow as tf
         from cleverhans.utils_tf import clip_eta
 
-        eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
-        eta = clip_eta(eta, self.ord, self.eps)
+        if self.rand_init:
+            eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
+            eta = clip_eta(eta, self.ord, self.eps)
+        else:
+            eta = tf.zeros_like(x)
 
         for i in range(self.nb_iter):
             x, eta = self.attack_single_step(x, eta, y)
