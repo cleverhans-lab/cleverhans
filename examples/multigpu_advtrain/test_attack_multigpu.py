@@ -71,7 +71,7 @@ class TestMadryEtAlMultiGPU(TestMadryEtAl):
         acc_s = multi_attack(self.attack_single_gpu)
         acc_m = multi_attack(self.attack_multi_gpu)
 
-        self.assertClose(acc_s, acc_m, atol=5e-3)
+        self.assertClose(acc_s, acc_m, atol=1e-2)
 
 
 if __name__ == '__main__':
