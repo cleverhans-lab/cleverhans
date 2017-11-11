@@ -347,6 +347,14 @@ def set_log_level(level, name="cleverhans"):
     logging.getLogger(name).setLevel(level)
 
 
+def get_log_level(name="cleverhans"):
+    """
+    Gets the current threshold for the cleverhans logger
+    :param name: the name used for the cleverhans logger
+    """
+    return logging.getLogger(name).getEffectiveLevel()
+
+
 def create_logger(name):
     """
     Create a logger object with the given name.
