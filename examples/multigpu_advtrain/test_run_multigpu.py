@@ -34,7 +34,7 @@ class TestRunMultiGPU(CleverHansTest):
                       'eval_iters': 1, 'fast_tests': True,
                       'debug_graph': False,
                       'save_dir': None, 'save_steps': 10000,
-                      'attack_nb_iter_train': 2, 'sync_step': None,
+                      'attack_nb_iter_train': 40, 'sync_step': None,
                       })
 
         flags.update({'adv_train': True,

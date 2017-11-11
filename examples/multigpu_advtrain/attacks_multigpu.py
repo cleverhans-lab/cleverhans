@@ -138,7 +138,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
                 inputs, outputs = self.generate(x, **kwargs)
 
                 from runner import RunnerMultiGPU
-                runner = RunnerMultiGPU(self.sess, inputs, outputs)
+                runner = RunnerMultiGPU(inputs, outputs, sess=self.sess)
                 self.graphs[hash_key] = runner
 
         runner = self.graphs[hash_key]

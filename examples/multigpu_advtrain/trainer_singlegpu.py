@@ -3,10 +3,14 @@ import logging
 from evaluator import create_adv_by_name
 from trainer import TrainManager
 
+from runner import RunnerSingleGPU
+
 
 class TrainerSingleGPU(TrainManager):
     def __init__(self, *args, **kwargs):
         super(TrainerSingleGPU, self).__init__(*args, **kwargs)
+        self.runner = RunnerSingleGPU(self.inputs, self.outputs,
+                                      sess=self.sess)
 
     def create_train_graph(self):
         # The evaluation graph should be initialized after the train graph is
@@ -17,7 +21,8 @@ class TrainerSingleGPU(TrainManager):
         self.model.set_device('/gpu:0')
         hparams = self.hparams
         model = self.model
-        x_pre, x, y = self.g0_inputs
+        x = self.g0_inputs['x']
+        y = self.g0_inputs['y']
         sess = self.sess
 
         if not hparams.adv_train:
@@ -49,28 +54,8 @@ class TrainerSingleGPU(TrainManager):
         self.inputs = [self.g0_inputs]
         self.outputs = [train_fetches]
 
-    def set_input(self, X_batch=None, Y_batch=None):
-        x_pre, x, y = self.g0_inputs
-        fd = {}
-        fd[x_pre] = X_batch
-        fd[y] = Y_batch
-        fetches = self.outputs[0]
-        return fetches, fd
-
-    def proc_fvals(self, fvals):
-        """
-        Nothing to post-process on single GPU.
-        """
-        return True
-
     def sync_params(self, forced=False):
         """
         Nothing to sync on single GPU.
-        """
-        return True
-
-    def is_finished(self):
-        """
-        Single GPU trainer has no cache.
         """
         return True

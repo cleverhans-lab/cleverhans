@@ -1,14 +1,23 @@
 from collections import OrderedDict
 
 
-class RunnerMultiGPU(object):
-    def __init__(self, sess, inputs, outputs):
+class Runner(object):
+    def __init__(self, inputs, outputs, sess=None):
         self.sess = sess
         self.inputs = inputs
         self.outputs = outputs
-        self.next_vals = [None] * len(inputs)
         self.feed_dict = {}
-        self.step_num = 0
+
+    def run(self, X_batch=None):
+        fetches, feed_dict = self.set_input(X_batch)
+        fvals = self.sess.run(fetches, feed_dict=feed_dict)
+        return self.proc_fvals(fvals)
+
+
+class RunnerMultiGPU(Runner):
+    def __init__(self, *args, **kwargs):
+        super(RunnerMultiGPU, self).__init__(*args, **kwargs)
+        self.next_vals = [None] * len(self.inputs)
 
     def set_input(self, X_batch=None):
         inputs = self.inputs
@@ -73,12 +82,27 @@ class RunnerMultiGPU(object):
     def is_finished(self):
         return all(v is None for v in self.next_vals)
 
-    def run_simple(self, X_batch=None):
-        fetches, feed_dict = self.set_input(X_batch)
-        fvals = self.sess.run(fetches, feed_dict=feed_dict)
-        return self.proc_fvals(fvals)
 
-    def run(self, X_batch=None):
-        last_fvals = self.run_simple(X_batch)
-        self.step_num += 1
-        return last_fvals
+class RunnerSingleGPU(Runner):
+    def __init__(self, *args, **kwargs):
+        super(RunnerSingleGPU, self).__init__(*args, **kwargs)
+
+    def set_input(self, X_batch=None):
+        fd = {}
+        for vname, v in self.inputs[0].iteritems():
+            if vname in X_batch:
+                fd[v] = X_batch[vname]
+        fetches = self.outputs[0]
+        return fetches, fd
+
+    def proc_fvals(self, fvals):
+        """
+        Nothing to post-process on single GPU.
+        """
+        return True
+
+    def is_finished(self):
+        """
+        Single GPU trainer has no cache.
+        """
+        return True

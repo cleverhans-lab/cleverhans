@@ -5,7 +5,6 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.client import timeline
 
 from cleverhans.utils_tf import batch_indices
 from cleverhans.utils_mnist import data_mnist
@@ -25,7 +24,6 @@ class TrainManager(object):
         self.hparams = hparams
         self.batch_size = hparams.batch_size
         self.evaluate = None
-        self.feed_dict = {}
         self.step_num = 0
         self.report = None
         self.init_session()
@@ -33,16 +31,22 @@ class TrainManager(object):
         self.init_inputs()
         self.init_model()
         self.create_train_graph()
+        self.inputs[0]['x_pre'] = self.g0_inputs['x_pre']
         self.init_eval()
+        self.runner = None
 
     def init_session(self):
         # Set TF random seed to improve reproducibility
         self.rng = np.random.RandomState([2017, 8, 30])
         tf.set_random_seed(1234)
 
+        # Limit GPU memory to 80%
+        # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1.0)
+
         # Create TF session
         self.sess = tf.Session(
             config=tf.ConfigProto(allow_soft_placement=True))
+        # gpu_options=gpu_options))
 
         # Object used to keep track of (and return) key accuracies
         if self.hparams.save:
@@ -96,18 +100,19 @@ class TrainManager(object):
             x = preprocess_batch(x_pre, preproc_func)
             y = tf.placeholder(tf.float32, shape=(self.batch_size, 10),
                                name='y')
-        self.g0_inputs = (x_pre, x, y)
+
+        self.g0_inputs = {'x_pre': x_pre, 'x': x, 'y': y}
 
     def init_model(self):
         flags = self.hparams.__dict__
         # Define TF model graph
-        self.model = make_model(input_shape=self.input_shape, **flags)
-        self.model.set_device(None)
-        return self.model
+        model = make_model(input_shape=self.input_shape, **flags)
+        model.set_device(None)
+        self.model = model
 
     def init_eval(self):
         logging.info("Init eval")
-        x_pre, x, y = self.g0_inputs
+        x_pre, x, y = [self.g0_inputs[k] for k in ['x_pre', 'x', 'y']]
         self.model.set_device('/gpu:0')
         self.evaluate = Evaluator(self.sess, self.model, self.batch_size,
                                   x_pre, x, y,
@@ -127,7 +132,7 @@ class TrainManager(object):
     def update_learning_params(self):
         model = self.model
         hparams = self.hparams
-        fd = self.feed_dict
+        fd = self.runner.feed_dict
         step_num = self.step_num
 
         if hparams.model_type == 'resnet_tf':
@@ -186,6 +191,9 @@ class TrainManager(object):
                         (typically to display the test/validation accuracy).
         """
 
+        assert self.runner is not None, (
+            """Runner is not initialized. TrainerSingleGPU or TrainerMultGPU
+            instantiate a Runner object at initialization time.""")
         hparams = self.hparams
         batch_size = hparams.batch_size
         nb_epochs = hparams.nb_epochs
@@ -225,11 +233,11 @@ class TrainManager(object):
                     X_batch = X_train[index_shuf[start:end]]
                     Y_batch = Y_train[index_shuf[start:end]]
 
-                    self.run(X_batch, Y_batch)
+                    self.run({'x_pre': X_batch, 'y': Y_batch})
                     self.sync_params()
 
                 # clean up the queue
-                while not self.is_finished():
+                while not self.runner.is_finished():
                     self.run()
 
                 self.sync_params(forced=True)
@@ -254,41 +262,16 @@ class TrainManager(object):
                     logging.info("Completed model training.")
 
     def init_tf(self, X_batch, Y_batch):
-        x_pre, x, y = self.g0_inputs
+        x_pre = self.g0_inputs['x_pre']
+        y = self.g0_inputs['y']
         fd = {x_pre: X_batch, y: Y_batch}
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op, feed_dict=fd)
 
-    def run_simple(self, X_batch=None, Y_batch=None):
-        fetches, feed_dict = self.set_input(X_batch, Y_batch)
-        fvals = self.sess.run(fetches, feed_dict=feed_dict)
-        self.proc_fvals(fvals)
+    def run(self, X_batch=None):
+        last_fvals = self.runner.run(X_batch)
         self.step_num += 1
+        return last_fvals
 
-    def run_with_graph(self, X_batch, Y_batch):
-        fetches, feed_dict = self.set_input(X_batch, Y_batch)
-
-        if self.writer:
-            self.writer.add_graph(self.sess.graph)
-        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-        run_metadata = tf.RunMetadata()
-        fvals = self.sess.run(fetches,
-                              feed_dict=feed_dict,
-                              options=run_options,
-                              run_metadata=run_metadata)
-        if self.writer:
-            self.writer.add_run_metadata(run_metadata, 'graph')
-
-        tl = timeline.Timeline(run_metadata.step_stats)
-        ctf = tl.generate_chrome_trace_format()
-        with open('timeline.json', 'w') as f:
-            f.write(ctf)
-
-        self.proc_fvals(fvals)
-        self.step_num += 1
-
-    def run(self, X_batch=None, Y_batch=None):
-        if self.step_num == len(self.inputs)+1 and self.hparams.debug_graph:
-            self.run_with_graph(X_batch, Y_batch)
-        else:
-            self.run_simple(X_batch, Y_batch)
+    def sync_params(self, forced=False):
+        raise NotImplemented('sync_params should be implemented.')
