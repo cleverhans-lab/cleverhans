@@ -54,6 +54,8 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
         params = attack_params_shared[dataset].copy()
         params.update({k: v for k, v in kwargs.items() if v is not None})
         params = {k: v for k, v in params.items() if k in fd_kwargs}
+        if '_y' in attack_type:
+            params['y'] = y
         logging.info(params)
         adv_x = attack.generate(x, **params)
 
