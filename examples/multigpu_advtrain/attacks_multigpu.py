@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import tensorflow as tf
 
 from cleverhans.attacks import MadryEtAl
@@ -25,7 +27,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
         Create a MadryEtAlMultiGPU instance.
         """
         super(MadryEtAlMultiGPU, self).__init__(*args, **kwargs)
-        self.structural_kwargs += ['ngpu', 'g0_inputs']
+        self.structural_kwargs += ['ngpu']
 
     def get_or_guess_labels(self, x, kwargs):
         device_name = '/gpu:0'
@@ -35,6 +37,36 @@ class MadryEtAlMultiGPU(MadryEtAl):
                 ret = super(MadryEtAlMultiGPU, self).get_or_guess_labels(
                     x, kwargs)
         return ret
+
+    def init_ngpus(self, x, y, **kwargs):
+        """
+        """
+        g0_inputs = OrderedDict()
+        g0_inputs['x'] = x
+        g0_inputs['y'] = y
+        feedable = dict((k, v) for k, v in kwargs.items()
+                        if k in self.feedable_kwargs)
+        g0_inputs.update(feedable)
+        inputs = [g0_inputs]
+        outputs = [g0_inputs]
+
+        # copy g0_inputs forward
+        # Clone the variables to separate the graph of 2 GPUs
+        for i in range(1, self.nb_iter):
+            # Create the graph for i'th step of attack
+            # Last GPU is reserved for training step
+            gid = i % self.ngpu
+            device_name = '/gpu:%d' % gid
+            inputs += [OrderedDict()]
+            outputs += [OrderedDict()]
+            with tf.device(device_name):
+                with tf.variable_scope('step%d' % i):
+                    for k, v in g0_inputs.iteritems():
+                        v_copy = clone_variable(k, v)
+                        inputs[i][k] = v_copy
+                        outputs[i][k] = v_copy
+
+        return inputs, outputs
 
     def attack(self, x, y, **kwargs):
         """
@@ -47,6 +79,11 @@ class MadryEtAlMultiGPU(MadryEtAl):
         :param x: A tensor with the input image.
         :return: Two lists containing the input and output tensors of each GPU.
         """
+        # List of inputs/outputs for each GPU
+        inputs, outputs = self.init_ngpus(x, y, **kwargs)
+        x = inputs[0]['x']
+        y = inputs[0]['y']
+
         # Create the initial random perturbation
         device_name = '/gpu:0'
         self.model.set_device(device_name)
@@ -59,35 +96,19 @@ class MadryEtAlMultiGPU(MadryEtAl):
                 else:
                     eta = tf.zeros_like(x)
 
-        # List of inputs/outputs for each GPU
-        inputs = []
-        outputs = []
-
         for i in range(self.nb_iter):
-            # Create the graph for i'th step of attack
-            # Last GPU is reserved for training step
-            gid = i % self.ngpu
-            device_name = '/gpu:%d' % gid
+            x = inputs[i]['x']
+            y = inputs[i]['y']
+            device_name = x.device
             self.model.set_device(device_name)
             with tf.device(device_name):
                 with tf.variable_scope('step%d' % i):
-                    if i == 0:
-                        # This will be filled by the TrainerMultiGPU
-                        x_pre, _, y0 = self.g0_inputs
-                        inputs += [(x_pre, y0)]
-                    else:
-                        # Clone the variables to separate the graph of 2 GPUs
-                        x = clone_variable('x', x)
-                        eta = clone_variable('eta', eta)
-                        y = clone_variable('y', y)
-                        # copy y0 forward
-                        y0 = clone_variable('y0', self.g0_inputs[2])
-                        inputs += [(x, eta, y, y0)]
-
-                    x, eta = self.attack_single_step(x, eta, y)
+                    eta = self.attack_single_step(x, eta, y)
 
                     if i < self.nb_iter-1:
-                        outputs += [(x, eta, y, y0)]
+                        outputs[i]['eta'] = eta
+                        eta = clone_variable('eta', eta)
+                        inputs[i+1]['eta'] = eta
                     else:
                         # adv_x, not eta is the output of attack
                         # No need to output y anymore. It was used only inside
@@ -97,8 +118,8 @@ class MadryEtAlMultiGPU(MadryEtAl):
                                 and self.clip_max is not None):
                             adv_x = tf.clip_by_value(adv_x, self.clip_min,
                                                      self.clip_max)
-                        adv_x = tf.stop_gradient(adv_x)
-                        outputs += [(x, adv_x, y0)]
+                        adv_x = tf.stop_gradient(adv_x, name='adv_x')
+                        outputs[i]['adv_x'] = adv_x
 
         return inputs, outputs
 
@@ -110,25 +131,27 @@ class MadryEtAlMultiGPU(MadryEtAl):
 
         if hash_key not in self.graphs:
             with tf.variable_scope(None, 'attack_%d' % len(self.graphs)):
-                from runner import RunnerMultiGPU
-                runner = RunnerMultiGPU(self.sess, x_val.shape)
+                # x is a special placeholder we always want to have
+                with tf.device('/gpu:0'):
+                    x = tf.placeholder(tf.float32, shape=x_val.shape, name='x')
 
-                kwargs.update({'g0_inputs': runner.g0_inputs})
-                inputs, outputs = self.generate(runner.g0_inputs[0], **kwargs)
-                runner.inputs = inputs
-                runner.outputs = outputs
-                runner.next_vals = [None] * len(inputs)
+                inputs, outputs = self.generate(x, **kwargs)
+
+                from runner import RunnerMultiGPU
+                runner = RunnerMultiGPU(self.sess, inputs, outputs)
                 self.graphs[hash_key] = runner
 
         runner = self.graphs[hash_key]
-
-        fvals = runner.run(x_val)
+        feed_dict = {'x': x_val}
+        for name in feedable:
+            feed_dict[name] = feedable[name]
+        fvals = runner.run(feed_dict)
         while not runner.is_finished():
             fvals = runner.run()
 
-        return fvals[1]
+        return fvals['adv_x']
 
-    def parse_params(self, ngpu=1, g0_inputs=None, **kwargs):
+    def parse_params(self, ngpu=1, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -140,9 +163,5 @@ class MadryEtAlMultiGPU(MadryEtAl):
 
         return_status = super(MadryEtAlMultiGPU, self).parse_params(**kwargs)
         self.ngpu = ngpu
-        self.g0_inputs = g0_inputs
-
-        if len(g0_inputs) != 3:
-            raise ValueError("g0_inputs should be a tuple of 3 (x_pre, x, y).")
 
         return return_status

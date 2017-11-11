@@ -1,22 +1,14 @@
-import tensorflow as tf
-import numpy as np
+from collections import OrderedDict
 
 
 class RunnerMultiGPU(object):
-    def __init__(self, sess, input_shape):
+    def __init__(self, sess, inputs, outputs):
         self.sess = sess
-        self.input_shape = input_shape
+        self.inputs = inputs
+        self.outputs = outputs
+        self.next_vals = [None] * len(inputs)
         self.feed_dict = {}
-        self.init_inputs()
-
-    def init_inputs(self):
-        input_shape = self.input_shape
-        # Define input TF placeholder
-        with tf.device('/gpu:0'):
-            x = tf.placeholder(tf.float32, shape=input_shape, name='x')
-            y = tf.placeholder(tf.float32, shape=(input_shape[0], 10),
-                               name='y')
-        self.g0_inputs = (x, x, y)
+        self.step_num = 0
 
     def set_input(self, X_batch=None):
         inputs = self.inputs
@@ -25,10 +17,12 @@ class RunnerMultiGPU(object):
         # data for first gpu
         fd = {}
         if X_batch is not None:
-            _, x, y = self.g0_inputs
-            fd[x] = X_batch
-            fd[y] = np.zeros((X_batch.shape[0], 10))
-            self.next_vals[0] = (X_batch,)
+            self.next_vals[0] = []
+            for i, vname in enumerate(self.inputs[0]):
+                if vname in X_batch:
+                    self.next_vals[0] += [X_batch[vname]]
+                else:
+                    self.next_vals[0] += [None]
         else:
             self.next_vals[0] = None
 
@@ -41,11 +35,11 @@ class RunnerMultiGPU(object):
                 self.active_gpus += [False]
                 continue
             self.active_gpus += [True]
-            if i > 0:
-                for j in range(len(inputs[i])):
-                    fd[inputs[i][j]] = self.next_vals[i][j]
-            for j in range(len(outputs[i])):
-                fetches += [outputs[i][j]]
+            for j, k in enumerate(inputs[i]):
+                if self.next_vals[i][j] is not None:
+                    fd[inputs[i][k]] = self.next_vals[i][j]
+            for k, v in outputs[i].iteritems():
+                fetches += [v]
 
         fd.update(self.feed_dict)
 
@@ -68,10 +62,12 @@ class RunnerMultiGPU(object):
             if i == 0:
                 self.next_vals[0] = None
 
-        last_fvals = []
-        while cur < len(fvals):
-            last_fvals += [fvals[cur]]
-            cur += 1
+        last_fvals = OrderedDict()
+        if self.active_gpus[-1]:
+            assert cur+len(outputs[-1]) == len(fvals)
+            for k, v in outputs[-1].iteritems():
+                last_fvals[k] = fvals[cur]
+                cur += 1
         return last_fvals
 
     def is_finished(self):
@@ -83,4 +79,6 @@ class RunnerMultiGPU(object):
         return self.proc_fvals(fvals)
 
     def run(self, X_batch=None):
-        return self.run_simple(X_batch)
+        last_fvals = self.run_simple(X_batch)
+        self.step_num += 1
+        return last_fvals
