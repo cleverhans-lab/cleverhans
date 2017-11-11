@@ -126,4 +126,4 @@ class TrainerMultiGPU(TrainManager):
             self.sess.run(self.sync_ops)
 
     def is_finished(self):
-        return self.next_vals[-1] is None
+        return all(v is None for v in self.next_vals)
