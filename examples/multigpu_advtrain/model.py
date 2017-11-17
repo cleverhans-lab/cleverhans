@@ -120,11 +120,10 @@ class LayernGPU(Layer):
 
         # Initialize weights on this device
         with tf.device(device_name):
-            keys_before = self.__dict__.keys()
             self.set_input_shape(self.input_shape)
             keys_after = self.__dict__.keys()
             if self.params_names is None:
-                self.params_names = list(set(keys_after) - set(keys_before))
+                self.params_names = list(keys_after)
             params = dict([(k, self.__dict__[k]) for k in self.params_names])
             self.params_device[device_name] = params
 
