@@ -18,6 +18,12 @@ def clone_variable(name, x, trainable=False):
                            trainable=trainable)
 
 
+def unify_device_name(dname):
+    if dname is None:
+        return None
+    return dname.lower().replace('device:', '')
+
+
 class MLPnGPU(MLP):
     """
     A multi layer perceptron that can be copied over multiple GPUs.
@@ -37,6 +43,7 @@ class MLPnGPU(MLP):
         Set the device before the next fprop to create a new graph on the
         specified device.
         """
+        device_name = unify_device_name(device_name)
         for layer in self.layers:
             layer.device_name = device_name
 
@@ -47,6 +54,7 @@ class MLPnGPU(MLP):
         :param host_device: (required str) the name of the device with latest
                             parameters
         """
+        host_device = unify_device_name(host_device)
         sync_ops = []
         for layer in self.layers:
             if isinstance(layer, LayernGPU):
