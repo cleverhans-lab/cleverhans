@@ -24,6 +24,14 @@ class TrainerMultiGPU(TrainManager):
         model = self.model
         sess = self.sess
 
+        # create trainable variables on last gpu
+        device_name = '/gpu:%d' % (hparams.ngpu-1)
+        model.set_device(device_name)
+        with tf.device(device_name):
+            x = clone_variable('x', self.g0_inputs['x'])
+            model.set_training(training=True)
+            preds = model.get_probs(x)
+
         # Generates steps on gpus
         model.set_training(training=False)
         logging.info("Initializing train attack %s" %
