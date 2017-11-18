@@ -17,7 +17,22 @@ class Runner(object):
 class RunnerMultiGPU(Runner):
     def __init__(self, *args, **kwargs):
         super(RunnerMultiGPU, self).__init__(*args, **kwargs)
+        self.assert_inputs_outputs()
         self.next_vals = [None] * len(self.inputs)
+
+    def assert_inputs_outputs(self):
+        inputs = self.inputs
+        outputs = self.outputs
+        assert len(inputs) == len(outputs), (
+            'Inputs and Outputs should match in length.')
+        for i in range(len(inputs)):
+            device = inputs[i].values()[0].device
+            for k, v in inputs[i].iteritems():
+                assert v.device == device, (
+                    'Inputs should be on the same device.')
+            for k, v in outputs[i].iteritems():
+                assert v.device == device, (
+                    'Outputs should be on the same device.')
 
     def set_input(self, X_batch=None):
         inputs = self.inputs

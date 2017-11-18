@@ -103,12 +103,12 @@ class MadryEtAlMultiGPU(MadryEtAl):
             self.model.set_device(device_name)
             with tf.device(device_name):
                 with tf.variable_scope('step%d' % i):
+                    eta = clone_variable('eta', eta)
+                    inputs[i]['eta'] = eta
                     eta = self.attack_single_step(x, eta, y)
 
                     if i < self.nb_iter-1:
                         outputs[i]['eta'] = eta
-                        eta = clone_variable('eta', eta)
-                        inputs[i+1]['eta'] = eta
                     else:
                         # adv_x, not eta is the output of attack
                         # No need to output y anymore. It was used only inside

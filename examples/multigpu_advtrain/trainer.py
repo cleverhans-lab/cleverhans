@@ -173,7 +173,7 @@ class TrainManager(object):
             optim = tf.train.AdamOptimizer(learning_rate=hparams.learning_rate)
             train_step = optim.minimize(loss)
 
-        return [train_step]
+        return train_step
 
     def model_train(self):
         """
