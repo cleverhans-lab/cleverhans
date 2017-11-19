@@ -15,6 +15,36 @@ class TrainerMultiGPU(TrainManager):
         super(TrainerMultiGPU, self).__init__(*args, **kwargs)
         self.runner = RunnerMultiGPU(self.inputs, self.outputs, sess=self.sess)
 
+    def clone_g0_inputs_on_ngpus(self, inputs, outputs, g0_inputs):
+        """
+        Clone variables unused by the attack on all GPUs. Specifically, the
+        ground-truth label, y, has to be preserved until the training step.
+
+        :param inputs: A list of dictionaries as the inputs to each step.
+        :param outputs: A list of dictionaries as the outputs of each step.
+        :param g0_inputs: Initial variables to be cloned.
+        :return: Updated inputs and outputs.
+        """
+        assert len(inputs) == len(outputs), (
+            'Inputs and outputs should have the same number of elements.')
+
+        inputs[0].update(g0_inputs)
+        outputs[0].update(g0_inputs)
+
+        # Copy g0_inputs forward
+        for i in range(1, len(inputs)):
+            # Create the graph for i'th step of attack
+            device_name = inputs[i]['x'].device
+            with tf.device(device_name):
+                with tf.variable_scope('step%d' % i):
+                    for k, v in g0_inputs.iteritems():
+                        if k not in inputs[i]:
+                            v_copy = clone_variable(k, v)
+                            inputs[i][k] = v_copy
+                            outputs[i][k] = v_copy
+
+        return inputs, outputs
+
     def create_train_graph(self):
         assert self.evaluate is None, ("""Evaluation graph should be initialzed
                                        after the train graph""")
@@ -44,11 +74,10 @@ class TrainerMultiGPU(TrainManager):
         inputs, outputs = create_adv_by_name(
             model, self.g0_inputs['x'], hparams.attack_type_train,
             sess, y=self.g0_inputs['y'], nb_iter=hparams.attack_nb_iter_train,
-            dataset=hparams.dataset, ngpu=hparams.ngpu,
-            g0_inputs=self.g0_inputs)
-        # TODO: fix g0_inputs and gt 'y'
+            dataset=hparams.dataset, ngpu=hparams.ngpu)
 
-        assert len(inputs) == len(outputs)
+        inputs, outputs = self.clone_g0_inputs_on_ngpus(
+            inputs, outputs, self.g0_inputs)
 
         # train step on last gpu
         device_name = '/gpu:%d' % (hparams.ngpu-1)

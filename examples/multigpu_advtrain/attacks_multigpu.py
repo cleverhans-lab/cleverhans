@@ -38,36 +38,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
                     x, kwargs)
         return ret
 
-    def init_ngpus(self, x, y, **kwargs):
-        """
-        """
-        g0_inputs = OrderedDict()
-        g0_inputs['x'] = x
-        g0_inputs['y'] = y
-        feedable = dict((k, v) for k, v in kwargs.items()
-                        if k in self.feedable_kwargs)
-        g0_inputs.update(feedable)
-        inputs = [g0_inputs]
-        outputs = [g0_inputs]
-
-        # copy g0_inputs forward
-        # Clone the variables to separate the graph of 2 GPUs
-        for i in range(1, self.nb_iter):
-            # Create the graph for i'th step of attack
-            gid = i % self.ngpu
-            device_name = '/gpu:%d' % gid
-            inputs += [OrderedDict()]
-            outputs += [OrderedDict()]
-            with tf.device(device_name):
-                with tf.variable_scope('step%d' % i):
-                    for k, v in g0_inputs.iteritems():
-                        v_copy = clone_variable(k, v)
-                        inputs[i][k] = v_copy
-                        outputs[i][k] = v_copy
-
-        return inputs, outputs
-
-    def attack(self, x, y, **kwargs):
+    def attack(self, x, y_p, **kwargs):
         """
         This method creates a symoblic graph of the MadryEtAl attack on
         multiple GPUs. The graph is created on the first n GPUs.
@@ -76,12 +47,11 @@ class MadryEtAlMultiGPU(MadryEtAl):
         being able to back-prop through the attack.
 
         :param x: A tensor with the input image.
+        :param y_p: Ground truth label or predicted label.
         :return: Two lists containing the input and output tensors of each GPU.
         """
-        # List of inputs/outputs for each GPU
-        inputs, outputs = self.init_ngpus(x, y, **kwargs)
-        x = inputs[0]['x']
-        y = inputs[0]['y']
+        inputs = []
+        outputs = []
 
         # Create the initial random perturbation
         device_name = '/gpu:0'
@@ -96,19 +66,29 @@ class MadryEtAlMultiGPU(MadryEtAl):
                     eta = tf.zeros_like(x)
 
         for i in range(self.nb_iter):
-            x = inputs[i]['x']
-            y = inputs[i]['y']
+            # Create the graph for i'th step of attack
+            inputs += [OrderedDict()]
+            outputs += [OrderedDict()]
             device_name = x.device
             self.model.set_device(device_name)
             with tf.device(device_name):
                 with tf.variable_scope('step%d' % i):
-                    eta = self.attack_single_step(x, eta, y)
+                    if i > 0:
+                        # Clone the variables to separate the graph of 2 GPUs
+                        x = clone_variable('x', x)
+                        y_p = clone_variable('y_p', y_p)
+                        eta = clone_variable('eta', eta)
+
+                    inputs[i]['x'] = x
+                    inputs[i]['y_p'] = y_p
+                    outputs[i]['x'] = x
+                    outputs[i]['y_p'] = y_p
+                    inputs[i]['eta'] = eta
+
+                    eta = self.attack_single_step(x, eta, y_p)
 
                     if i < self.nb_iter-1:
                         outputs[i]['eta'] = eta
-                        with tf.device(inputs[i+1]['x'].device):
-                            eta = clone_variable('eta', eta)
-                            inputs[i+1]['eta'] = eta
                     else:
                         # adv_x, not eta is the output of attack
                         adv_x = x + eta
