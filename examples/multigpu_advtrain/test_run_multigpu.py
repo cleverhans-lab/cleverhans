@@ -48,7 +48,8 @@ class TestRunMultiGPU(CleverHansTest):
         hparams = HParams(**flags)
         np.random.seed(42)
         tf.set_random_seed(42)
-        report_dict = run_trainer(hparams)
+        with tf.variable_scope(None, 'runner'):
+            report_dict = run_trainer(hparams)
         report_m = AccuracyReport()
         report_m.train_adv_train_clean_eval = report_dict['train']
         report_m.adv_train_clean_eval = report_dict['test']
@@ -60,7 +61,8 @@ class TestRunMultiGPU(CleverHansTest):
         hparams = HParams(**flags)
         np.random.seed(42)
         tf.set_random_seed(42)
-        report_dict = run_trainer(hparams)
+        with tf.variable_scope(None, 'runner'):
+            report_dict = run_trainer(hparams)
         report_s = AccuracyReport()
         report_s.train_adv_train_clean_eval = report_dict['train']
         report_s.adv_train_clean_eval = report_dict['test']
@@ -103,7 +105,8 @@ class TestRunMultiGPU(CleverHansTest):
         hparams = HParams(**flags)
         np.random.seed(42)
         tf.set_random_seed(42)
-        report_dict = run_trainer(hparams)
+        with tf.variable_scope(None, 'runner'):
+            report_dict = run_trainer(hparams)
         report_2 = AccuracyReport()
         report_2.train_clean_train_clean_eval = report_dict['train']
         report_2.clean_train_clean_eval = report_dict['test']
@@ -118,7 +121,8 @@ class TestRunMultiGPU(CleverHansTest):
         hparams = HParams(**flags)
         np.random.seed(42)
         tf.set_random_seed(42)
-        report_dict = run_trainer(hparams)
+        with tf.variable_scope(None, 'runner'):
+            report_dict = run_trainer(hparams)
         report_2.train_adv_train_clean_eval = report_dict['train']
         report_2.adv_train_clean_eval = report_dict['test']
         report_2.adv_train_adv_eval = report_dict['FGSM']

@@ -65,6 +65,11 @@ class MadryEtAlMultiGPU(MadryEtAl):
                 else:
                     eta = tf.zeros_like(x)
 
+        # TODO: Break the graph only nGPU times instead of nb_iter times.
+        # The current implementation by the time an adversarial example is
+        # used for training, the weights of the model have changed nb_iter
+        # times. This can cause slower convergence compared to the single GPU
+        # adversarial training.
         for i in range(self.nb_iter):
             # Create the graph for i'th step of attack
             inputs += [OrderedDict()]
