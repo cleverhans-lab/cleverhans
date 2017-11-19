@@ -107,7 +107,7 @@ class RunnerSingleGPU(Runner):
         for vname, v in self.inputs[0].iteritems():
             if vname in X_batch:
                 fd[v] = X_batch[vname]
-        fetches = self.outputs[0]
+        fetches = self.outputs
         return fetches, fd
 
     def proc_fvals(self, fvals):

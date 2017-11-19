@@ -21,7 +21,7 @@ from trainer_singlegpu import TrainerSingleGPU
 def run_trainer(hparams):
     logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
-    if hparams.ngpu > 1:
+    if 'multigpu' in hparams.attack_type_train:
         logging.info('Multi GPU Trainer.')
         trainer = TrainerMultiGPU(hparams)
     else:
