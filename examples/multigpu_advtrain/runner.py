@@ -33,6 +33,13 @@ class RunnerMultiGPU(Runner):
             for k, v in outputs[i].iteritems():
                 assert v.device == device, (
                     'Outputs should be on the same device.')
+            if i > 0:
+                ikeys = inputs[i].keys()
+                okeys = outputs[i-1].keys()
+                # The actual requirement is looser, only the last output keys
+                # should always be returned in the same order.
+                assert all(ikeys[j] == okeys[j] for j in range(len(ikeys))), (
+                    'Inputs and outputs keys should be in the same order.')
 
     def set_input(self, X_batch=None):
         inputs = self.inputs
@@ -41,12 +48,12 @@ class RunnerMultiGPU(Runner):
         # data for first gpu
         fd = {}
         if X_batch is not None:
-            self.next_vals[0] = []
+            self.next_vals[0] = OrderedDict()
             for i, vname in enumerate(self.inputs[0]):
                 if vname in X_batch:
-                    self.next_vals[0] += [X_batch[vname]]
+                    self.next_vals[0][vname] = X_batch[vname]
                 else:
-                    self.next_vals[0] += [None]
+                    self.next_vals[0][vname] = None
         else:
             self.next_vals[0] = None
 
@@ -59,9 +66,9 @@ class RunnerMultiGPU(Runner):
                 self.active_gpus += [False]
                 continue
             self.active_gpus += [True]
-            for j, k in enumerate(inputs[i]):
-                if self.next_vals[i][j] is not None:
-                    fd[inputs[i][k]] = self.next_vals[i][j]
+            for k in inputs[i]:
+                if self.next_vals[i][k] is not None:
+                    fd[inputs[i][k]] = self.next_vals[i][k]
             for k, v in outputs[i].iteritems():
                 fetches += [v]
 
@@ -79,9 +86,9 @@ class RunnerMultiGPU(Runner):
             if not self.active_gpus[i]:
                 self.next_vals[i+1] = None
                 continue
-            self.next_vals[i+1] = []
-            for j in range(len(outputs[i])):
-                self.next_vals[i+1] += [fvals[cur]]
+            self.next_vals[i+1] = OrderedDict()
+            for k in outputs[i]:
+                self.next_vals[i+1][k] = fvals[cur]
                 cur += 1
             if i == 0:
                 self.next_vals[0] = None
@@ -89,7 +96,7 @@ class RunnerMultiGPU(Runner):
         last_fvals = OrderedDict()
         if self.active_gpus[-1]:
             assert cur+len(outputs[-1]) == len(fvals)
-            for k, v in outputs[-1].iteritems():
+            for k in outputs[-1]:
                 last_fvals[k] = fvals[cur]
                 cur += 1
         return last_fvals
