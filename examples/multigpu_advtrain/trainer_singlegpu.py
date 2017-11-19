@@ -25,6 +25,10 @@ class TrainerSingleGPU(TrainManager):
         y = self.g0_inputs['y']
         sess = self.sess
 
+        # Create trainable variables.
+        model.set_training(training=True)
+        preds = model.get_probs(x)
+
         if not hparams.adv_train:
             logging.info("Naive training")
 
@@ -36,6 +40,7 @@ class TrainerSingleGPU(TrainManager):
             logging.info("Initializing train attack %s" %
                          hparams.attack_type_train)
 
+            model.set_training(training=False, bn_training=False)
             adv_x = create_adv_by_name(
                 model, x, hparams.attack_type_train, sess,
                 y=y, nb_iter=hparams.attack_nb_iter_train,

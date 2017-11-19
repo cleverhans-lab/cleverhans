@@ -256,10 +256,8 @@ class TrainManager(object):
                     save_path = os.path.join(train_dir, filename)
                     saver = tf.train.Saver()
                     saver.save(sess, save_path)
-                    logging.info("Completed model training and saved at:" +
-                                 str(save_path))
-                else:
-                    logging.info("Completed model training.")
+                    logging.info("Model saved at: " + str(save_path))
+        logging.info("Completed model training.")
 
     def init_tf(self, X_batch, Y_batch):
         x_pre = self.g0_inputs['x_pre']

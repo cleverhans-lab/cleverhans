@@ -44,6 +44,7 @@ class MLPnGPU(MLP):
         specified device.
         """
         device_name = unify_device_name(device_name)
+        self.device_name = device_name
         for layer in self.layers:
             layer.device_name = device_name
 
@@ -124,6 +125,7 @@ class LayernGPU(Layer):
             keys_after = self.__dict__.keys()
             if self.params_names is None:
                 self.params_names = list(keys_after)
+            # TODO: training and bn_training
             params = dict([(k, self.__dict__[k]) for k in self.params_names])
             self.params_device[device_name] = params
 
@@ -159,12 +161,11 @@ class LinearnGPU(LayernGPU):
         batch_size, dim = input_shape
         self.input_shape = [batch_size, dim]
         self.output_shape = [batch_size, self.num_hid]
-        with tf.variable_scope(self.name):
-            shape = [dim, self.num_hid]
-            init = tf.truncated_normal(shape, stddev=0.1)
-            self.W = self.get_variable(self.w_name, init)
-            self.b = self.get_variable('b', .1 + np.zeros(
-                (self.num_hid,)).astype('float32'))
+        shape = [dim, self.num_hid]
+        init = tf.truncated_normal(shape, stddev=0.1)
+        self.W = self.get_variable(self.w_name, init)
+        self.b = self.get_variable('b', .1 + np.zeros(
+            (self.num_hid,)).astype('float32'))
 
     def fprop_noscope(self, x):
         return tf.matmul(x, self.W) + self.b
@@ -185,11 +186,10 @@ class Conv2DnGPU(LayernGPU):
                                                    self.output_channels)
         assert len(kernel_shape) == 4
         assert all(isinstance(e, int) for e in kernel_shape), kernel_shape
-        with tf.variable_scope(self.name):
-            init = tf.truncated_normal(kernel_shape, stddev=0.1)
-            self.kernels = self.get_variable(self.w_name, init)
-            self.b = self.get_variable(
-                'b', .1 + np.zeros((self.output_channels,)).astype('float32'))
+        init = tf.truncated_normal(kernel_shape, stddev=0.1)
+        self.kernels = self.get_variable(self.w_name, init)
+        self.b = self.get_variable(
+            'b', .1 + np.zeros((self.output_channels,)).astype('float32'))
         input_shape = list(input_shape)
         self.input_shape = input_shape
         input_shape[0] = 1

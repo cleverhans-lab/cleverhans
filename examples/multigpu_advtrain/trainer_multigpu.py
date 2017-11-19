@@ -34,11 +34,11 @@ class TrainerMultiGPU(TrainManager):
         model.set_device(device_name)
         with tf.device(device_name):
             x = clone_variable('x', self.g0_inputs['x'])
-            model.set_training(training=True)
+            model.set_training(training=True, bn_training=True)
             preds = model.get_probs(x)
 
         # Generates steps on gpus
-        model.set_training(training=False)
+        model.set_training(training=False, bn_training=False)
         logging.info("Initializing train attack %s" %
                      hparams.attack_type_train)
         inputs, outputs = create_adv_by_name(
@@ -46,6 +46,7 @@ class TrainerMultiGPU(TrainManager):
             sess, y=self.g0_inputs['y'], nb_iter=hparams.attack_nb_iter_train,
             dataset=hparams.dataset, ngpu=hparams.ngpu,
             g0_inputs=self.g0_inputs)
+        # TODO: fix g0_inputs and gt 'y'
 
         assert len(inputs) == len(outputs)
 

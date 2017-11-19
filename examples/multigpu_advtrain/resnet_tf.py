@@ -27,8 +27,7 @@ from collections import namedtuple
 import tensorflow as tf
 import six
 
-from cleverhans.model import Model
-
+from model import MLPnGPU
 from model import Conv2DnGPU
 from model import LinearnGPU
 from model import LayerNorm
@@ -39,7 +38,7 @@ HParams = namedtuple('HParams',
                      'relu_leakiness, optimizer, momentum')
 
 
-class ResNetTF(Model):
+class ResNetTF(MLPnGPU):
     """ResNet model."""
 
     def __init__(self, batch_size=None, name=None, optimizer='mom',
@@ -56,7 +55,6 @@ class ResNetTF(Model):
                            relu_leakiness=0.1,
                            optimizer=optimizer,
                            momentum=.9)
-        self.reuse = None
         self.kwargs = {}
         self.init_kwargs = kwargs
         del self.init_kwargs['input_shape']
@@ -73,24 +71,20 @@ class ResNetTF(Model):
     def get_layer_names(self):
         return ['logits', 'probs']
 
-    def set_device(self, device_name):
-        self.device_name = device_name
-        for layer in self.layers:
-            layer.device_name = device_name
-
     def set_training(self, training, bn_training=False):
+        super(ResNetTF, self).set_training(training, bn_training)
         self.training = training
         self.bn_training = bn_training
 
-    def fprop(self, x, return_all=False, dataset='cifar10', **kwargs):
+    def fprop(self, x, return_all=False, **kwargs):
         self.kwargs = kwargs
         self.kwargs.update(self.init_kwargs)
         if 'input_shape' in self.kwargs:
             del self.kwargs['input_shape']
         self.layer_idx = 0
-        with tf.variable_scope('Resnet', reuse=self.reuse):
+        with tf.variable_scope('Resnet'):
             logits, probs = self._build_model(x)
-        self.reuse = True
+        self.init_layers = False
         states = {'logits': logits, 'probs': probs}
         return states
 
@@ -101,7 +95,6 @@ class ResNetTF(Model):
     def _build_model(self, x):
         """Build the core model within the graph."""
         with tf.variable_scope('init'):
-            # x = self._images
             x = self._conv('init_conv', x, 3, x.shape[3], 16,
                            self._stride_arr(1))
 
@@ -156,15 +149,9 @@ class ResNetTF(Model):
 
         with tf.variable_scope('logit'):
             logits = self._fully_connected(x, self.hps.num_classes)
-            self.predictions = tf.nn.softmax(logits)
+            predictions = tf.nn.softmax(logits)
 
-        return logits, self.predictions
-
-    def create_sync_ops(self, host_device):
-        sync_ops = []
-        for layer in self.layers:
-            sync_ops += layer.create_sync_ops(host_device)
-        return sync_ops
+        return logits, predictions
 
     def build_cost(self, labels, logits):
         op = logits.op
@@ -189,6 +176,9 @@ class ResNetTF(Model):
 
         trainable_variables = tf.trainable_variables()
         grads = tf.gradients(cost, trainable_variables)
+        devs = set([v.device for v in trainable_variables])
+        assert len(devs) == 1, ('There should be no trainable variables'
+                                ' on any device other than the last GPU.')
 
         if self.hps.optimizer == 'sgd':
             optimizer = tf.train.GradientDescentOptimizer(self.lrn_rate)
@@ -198,11 +188,11 @@ class ResNetTF(Model):
             optimizer = tf.train.MomentumOptimizer(self.lrn_rate,
                                                    self.momentum)
 
-        # there should be no gradients wrt vars on other gpus
         gv_pairs = zip(grads, trainable_variables)
         gv_pairs = [gv for gv in gv_pairs if gv[0] is not None]
         devs = set([gv[1].device for gv in gv_pairs])
-        assert len(devs) == 1
+        assert len(devs) == 1, ('There should be no gradients wrt'
+                                ' vars on other GPUs.')
 
         apply_op = optimizer.apply_gradients(
             gv_pairs,
@@ -228,6 +218,7 @@ class ResNetTF(Model):
         else:
             bn = self.layers[self.layer_idx]
             self.layer_idx += 1
+        bn.device_name = self.device_name
         bn.set_training(self.training, self.bn_training)
         x = bn.fprop(x)
         if self.training:
@@ -329,18 +320,18 @@ class ResNetTF(Model):
 
     def _conv(self, name, x, filter_size, in_filters, out_filters, strides):
         """Convolution."""
-        with tf.variable_scope(name):
-            if self.init_layers:
-                conv = Conv2DnGPU(out_filters,
-                                  (filter_size, filter_size),
-                                  strides[1:3], 'SAME', name=name, w_name='DW')
-                conv.name = name
-                self.layers += [conv]
-            else:
-                conv = self.layers[self.layer_idx]
-                self.layer_idx += 1
-            conv.set_training(self.training)
-            return conv.fprop(x)
+        if self.init_layers:
+            conv = Conv2DnGPU(out_filters,
+                              (filter_size, filter_size),
+                              strides[1:3], 'SAME', w_name='DW')
+            conv.name = name
+            self.layers += [conv]
+        else:
+            conv = self.layers[self.layer_idx]
+            self.layer_idx += 1
+        conv.device_name = self.device_name
+        conv.set_training(self.training)
+        return conv.fprop(x)
 
     def _relu(self, x, leakiness=0.0):
         """Relu, with optional leaky support."""
@@ -356,6 +347,7 @@ class ResNetTF(Model):
         else:
             fc = self.layers[self.layer_idx]
             self.layer_idx += 1
+        fc.device_name = self.device_name
         fc.set_training(self.training)
         return fc.fprop(x)
 

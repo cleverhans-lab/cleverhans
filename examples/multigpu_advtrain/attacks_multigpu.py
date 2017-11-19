@@ -111,8 +111,6 @@ class MadryEtAlMultiGPU(MadryEtAl):
                             inputs[i+1]['eta'] = eta
                     else:
                         # adv_x, not eta is the output of attack
-                        # No need to output y anymore. It was used only inside
-                        # this attack
                         adv_x = x + eta
                         if (self.clip_min is not None
                                 and self.clip_max is not None):
