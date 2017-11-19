@@ -34,6 +34,7 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     attack_names = {'FGSM': FastGradientMethod,
                     'MadryEtAl': MadryEtAl,
                     'MadryEtAl_y': MadryEtAl,
+                    'MadryEtAl_multigpu': MadryEtAlMultiGPU,
                     'MadryEtAl_y_multigpu': MadryEtAlMultiGPU,
                     }
 

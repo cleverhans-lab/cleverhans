@@ -24,7 +24,12 @@ class TrainerMultiGPU(TrainManager):
         model = self.model
         sess = self.sess
 
-        # create trainable variables on last gpu
+        # Create trainable variables on last gpu.
+        # Variables are set to trainable or non-trainable first time they are
+        # created. This caused a bug when the last gpu is used both for attack
+        # generation and training. With this bug the result of naive training
+        # was affected by the length of the unused adversarial generation
+        # graph.
         device_name = '/gpu:%d' % (hparams.ngpu-1)
         model.set_device(device_name)
         with tf.device(device_name):

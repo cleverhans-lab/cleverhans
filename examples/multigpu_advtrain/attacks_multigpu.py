@@ -54,7 +54,6 @@ class MadryEtAlMultiGPU(MadryEtAl):
         # Clone the variables to separate the graph of 2 GPUs
         for i in range(1, self.nb_iter):
             # Create the graph for i'th step of attack
-            # Last GPU is reserved for training step
             gid = i % self.ngpu
             device_name = '/gpu:%d' % gid
             inputs += [OrderedDict()]
@@ -103,12 +102,13 @@ class MadryEtAlMultiGPU(MadryEtAl):
             self.model.set_device(device_name)
             with tf.device(device_name):
                 with tf.variable_scope('step%d' % i):
-                    eta = clone_variable('eta', eta)
-                    inputs[i]['eta'] = eta
                     eta = self.attack_single_step(x, eta, y)
 
                     if i < self.nb_iter-1:
                         outputs[i]['eta'] = eta
+                        with tf.device(inputs[i+1]['x'].device):
+                            eta = clone_variable('eta', eta)
+                            inputs[i+1]['eta'] = eta
                     else:
                         # adv_x, not eta is the output of attack
                         # No need to output y anymore. It was used only inside
