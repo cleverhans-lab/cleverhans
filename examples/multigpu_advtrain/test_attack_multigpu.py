@@ -70,8 +70,8 @@ class TestMadryEtAlMultiGPU(TestMadryEtAl):
                 new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
                 # Examples for which we have not found adversarial examples
-                I = (orig_labs == new_labs_multi)
-                new_labs_multi[I] = new_labs[I]
+                indices = (orig_labs == new_labs_multi)
+                new_labs_multi[indices] = new_labs[indices]
 
             return np.mean(orig_labs == new_labs_multi)
 
