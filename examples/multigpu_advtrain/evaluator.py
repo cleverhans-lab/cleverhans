@@ -51,10 +51,13 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
     with tf.variable_scope(attack_type):
         attack_class = attack_names[attack_type]
         attack = attack_class(model, sess=sess)
+
+        # Extract feedable and structural keyword arguments from kwargs
         fd_kwargs = attack.feedable_kwargs.keys() + attack.structural_kwargs
         params = attack_params_shared[dataset].copy()
         params.update({k: v for k, v in kwargs.items() if v is not None})
         params = {k: v for k, v in params.items() if k in fd_kwargs}
+
         if '_y' in attack_type:
             params['y'] = y
         logging.info(params)

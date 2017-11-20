@@ -245,12 +245,12 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
             # It's acceptable to repeat during training, but not eval.
             start = batch * args.batch_size
             end = min(len(X_test), start + args.batch_size)
+
+            # The last batch may be smaller than all others. This should not
+            # affect the accuarcy disproportionately.
             cur_batch_size = end - start
             X_cur[:cur_batch_size] = X_test[start:end]
             Y_cur[:cur_batch_size] = Y_test[start:end]
-
-            # The last batch may be smaller than all others, so we need to
-            # account for variable batch size here
             feed_dict = {x: X_cur, y: Y_cur}
             if feed is not None:
                 feed_dict.update(feed)

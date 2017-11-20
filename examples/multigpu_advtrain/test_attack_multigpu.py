@@ -19,6 +19,10 @@ from test_attacks import TestMadryEtAl  # NOQA
 
 
 class TestMadryEtAlMultiGPU(TestMadryEtAl):
+    """
+    By inherting from `TestMadryEtAl`, the attack `MadryEtAlMultiGPU` can be
+    tested against all tests of the base attack.
+    """
     def setUp(self):
         super(TestMadryEtAlMultiGPU, self).setUp()
 
@@ -47,6 +51,9 @@ class TestMadryEtAlMultiGPU(TestMadryEtAl):
         self.attack = self.attack_multi_gpu
 
     def test_single_vs_multi_gpu(self):
+        """
+        Compare the strength of the single GPU and multi-GPU implementations.
+        """
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 

@@ -1,5 +1,7 @@
-"""Lightweight model objects in TensorFlow.
-
+"""
+MultiGPU model similar to the one used in model tutorials. The model keeps
+one copy of the weights on each device and handles syncing the parameters
+across devices.
 """
 
 from __future__ import absolute_import
@@ -10,8 +12,6 @@ import numpy as np
 import tensorflow as tf
 from cleverhans_tutorials.tutorial_models import MLP, Layer
 
-from tensorflow.python.training import moving_averages
-
 
 def clone_variable(name, x, trainable=False):
     return tf.get_variable(name, shape=x.shape, dtype=x.dtype,
@@ -19,6 +19,8 @@ def clone_variable(name, x, trainable=False):
 
 
 def unify_device_name(dname):
+    """Converts TensorFlow device names in the format /Device:GPU0 to /gpu:0.
+    """
     if dname is None:
         return None
     return dname.lower().replace('device:', '')
@@ -26,7 +28,8 @@ def unify_device_name(dname):
 
 class MLPnGPU(MLP):
     """
-    A multi layer perceptron that can be copied over multiple GPUs.
+    A multi layer perceptron that can be copied over multiple GPUs. Only one
+    copy of the weights is created on each device.
     """
 
     def __init__(self, layers, input_shape):
@@ -62,10 +65,10 @@ class MLPnGPU(MLP):
                 sync_ops += layer.create_sync_ops(host_device)
         return sync_ops
 
-    def set_training(self, training=False, bn_training=False):
+    def set_training(self, training=False):
         for layer in self.layers:
             if isinstance(layer, LayernGPU):
-                layer.set_training(training, bn_training)
+                layer.set_training(training)
 
 
 class LayernGPU(Layer):
@@ -82,9 +85,8 @@ class LayernGPU(Layer):
         self.device_name = '/gpu:0'
         self.training = True
 
-    def set_training(self, training=False, bn_training=False):
+    def set_training(self, training=False):
         self.training = training
-        self.bn_training = bn_training
 
     def get_variable(self, name, initializer):
         """
@@ -100,7 +102,8 @@ class LayernGPU(Layer):
 
     def set_input_shape_ngpu(self, new_input_shape):
         """
-        Create and initialize layer parameters on the device previously set.
+        Create and initialize layer parameters on the device previously set
+        in self.device_name.
 
         :param new_input_shape: a list or tuple for the shape of the input.
         """
@@ -116,7 +119,7 @@ class LayernGPU(Layer):
             self.__dict__.update(self.params_device[device_name])
             return
 
-        # stop recursion
+        # Stop recursion
         self.params_device[device_name] = {}
 
         # Initialize weights on this device
@@ -124,13 +127,16 @@ class LayernGPU(Layer):
             self.set_input_shape(self.input_shape)
             keys_after = self.__dict__.keys()
             if self.params_names is None:
-                # Prevent overriding training and bn_training
+                # Prevent overriding training
                 self.params_names = [k for k in keys_after if isinstance(
                     self.__dict__[k], tf.Variable)]
             params = dict([(k, self.__dict__[k]) for k in self.params_names])
             self.params_device[device_name] = params
 
     def create_sync_ops(self, host_device):
+        """Create an assignment operation for each weight on all devices. The
+        weight is assigned the value of the copy on the `host_device'.
+        """
         sync_ops = []
         host_params = self.params_device[host_device]
         for device, params in (self.params_device).iteritems():
@@ -229,69 +235,9 @@ class MaxPool(LayernGPU):
                               padding=self.padding)
 
 
-class BatchNorm(LayernGPU):
-    def __init__(self, bn_mean_only=False):
-        super(BatchNorm, self).__init__()
-        self.bn_mean_only = bn_mean_only
-        self._extra_train_ops = []
-        self.done_init_training = False
-
-    def set_input_shape(self, input_shape):
-        self.input_shape = list(input_shape)
-        params_shape = [input_shape[-1]]
-        self.params_shape = params_shape
-
-        self.beta = tf.get_variable(
-            'beta', params_shape, tf.float32,
-            initializer=tf.constant_initializer(0.0, tf.float32),
-            trainable=self.training)
-        self.gamma = tf.get_variable(
-            'gamma', params_shape, tf.float32,
-            initializer=tf.constant_initializer(1.0, tf.float32),
-            trainable=self.training)
-        self.moving_mean = tf.get_variable(
-            'moving_mean', params_shape, tf.float32,
-            initializer=tf.constant_initializer(0.0, tf.float32),
-            trainable=False)
-        self.moving_variance = tf.get_variable(
-            'moving_variance', params_shape, tf.float32,
-            initializer=tf.constant_initializer(1.0, tf.float32),
-            trainable=False)
-        if self.bn_mean_only:
-            self.variance = tf.constant(1, tf.float32, params_shape, 'v1')
-
-    def fprop_noscope(self, x):
-        if self.training and self.bn_training:
-            assert not self.done_init_training
-            self.done_init_training = True
-            mean, variance = tf.nn.moments(x, [0, 1, 2], name='moments')
-
-            if self.bn_mean_only:
-                variance = self.variance
-
-            moving_mean = self.moving_mean
-            moving_variance = self.moving_variance
-
-            self._extra_train_ops.append(
-                moving_averages.assign_moving_average(
-                    moving_mean, mean, 0.9))
-            self._extra_train_ops.append(
-                moving_averages.assign_moving_average(
-                    moving_variance, variance, 0.9))
-        else:
-            mean, variance = self.moving_mean, self.moving_variance
-        # epsilon used to be 1e-5. Maybe 0.001 solves NaN problem in deeper
-        # net.
-        y = tf.nn.batch_normalization(
-            x, mean, variance, self.beta, self.gamma, 0.001)
-        y.set_shape(x.get_shape())
-        return y
-
-
 class LayerNorm(LayernGPU):
     def __init__(self):
         super(LayerNorm, self).__init__()
-        self._extra_train_ops = []
 
     def set_input_shape(self, input_shape):
         self.input_shape = list(input_shape)

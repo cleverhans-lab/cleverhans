@@ -21,6 +21,7 @@ class TestRunnerMultiGPU(CleverHansTest):
         outputs = []
         self.niter = 10
         niter = self.niter
+        # A Simple graph with `niter` sub-graphs.
         with tf.variable_scope(None, 'runner'):
             for i in range(niter):
                 v = tf.get_variable('v%d' % i, shape=(100, 10))
@@ -32,6 +33,10 @@ class TestRunnerMultiGPU(CleverHansTest):
         self.runner = RunnerMultiGPU(inputs, outputs, sess=self.sess)
 
     def help_test_runner(self, ninputs, niter):
+        """
+        Tests the MultiGPU runner by feeding in random Tensors for `ninputs`
+        steps. Then validating the output after `niter-1` steps.
+        """
         v_val = []
         w_val = []
         for i in range(ninputs):

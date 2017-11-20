@@ -31,7 +31,6 @@ class TrainManager(object):
         self.init_inputs()
         self.init_model()
         self.create_train_graph()
-        self.inputs[0]['x_pre'] = self.g0_inputs['x_pre']
         self.init_eval()
         self.runner = None
 
@@ -40,13 +39,9 @@ class TrainManager(object):
         self.rng = np.random.RandomState([2017, 8, 30])
         tf.set_random_seed(1234)
 
-        # Limit GPU memory to 80%
-        # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1.0)
-
         # Create TF session
         self.sess = tf.Session(
             config=tf.ConfigProto(allow_soft_placement=True))
-        # gpu_options=gpu_options))
 
         # Object used to keep track of (and return) key accuracies
         if self.hparams.save:
@@ -137,13 +132,13 @@ class TrainManager(object):
 
         if hparams.model_type == 'resnet_tf':
             if step_num < hparams.lrn_step:
-                lrn_rate = hparams.resnet_lrn
+                lrn_rate = hparams.mom_lrn
             elif step_num < 30000:
-                lrn_rate = hparams.resnet_lrn/10
+                lrn_rate = hparams.mom_lrn/10
             elif step_num < 35000:
-                lrn_rate = hparams.resnet_lrn/100
+                lrn_rate = hparams.mom_lrn/100
             else:
-                lrn_rate = hparams.resnet_lrn/1000
+                lrn_rate = hparams.mom_lrn/1000
 
             fd[model.lrn_rate] = lrn_rate
 
@@ -170,7 +165,7 @@ class TrainManager(object):
         if hparams.model_type == 'resnet_tf':
             train_step = model.build_train_op_from_cost(loss)
         else:
-            optim = tf.train.AdamOptimizer(learning_rate=hparams.learning_rate)
+            optim = tf.train.AdamOptimizer(learning_rate=hparams.adam_lrn)
             train_step = optim.minimize(loss)
 
         return train_step
@@ -192,7 +187,7 @@ class TrainManager(object):
         """
 
         assert self.runner is not None, (
-            """Runner is not initialized. TrainerSingleGPU or TrainerMultGPU
+            """Runner is not initialized. TrainerSingleGPU or TrainerMultiGPU
             instantiate a Runner object at initialization time.""")
         hparams = self.hparams
         batch_size = hparams.batch_size
@@ -229,20 +224,21 @@ class TrainManager(object):
                     # Perform one training step
                     self.update_learning_params()
 
-                    # train step
+                    # Train step
                     X_batch = X_train[index_shuf[start:end]]
                     Y_batch = Y_train[index_shuf[start:end]]
 
                     self.run({'x_pre': X_batch, 'y': Y_batch})
                     self.sync_params()
 
-                # clean up the queue
+                # Clean up the queue
                 while not self.runner.is_finished():
                     self.run()
 
                 self.sync_params(forced=True)
 
-                assert end >= len(X_train)  # Check that all examples were used
+                assert end >= len(X_train), (
+                    'Not all training examples are used.')
                 cur = time.time()
                 logging.info("\tEpoch took " + str(cur - prev) + " seconds")
                 prev = cur
@@ -273,3 +269,12 @@ class TrainManager(object):
 
     def sync_params(self, forced=False):
         raise NotImplemented('sync_params should be implemented.')
+
+    def create_train_graph(self):
+        """
+        The evaluation graph must be initialized after the train graph is
+        fully initialized, otherwise, some of the variables will be created
+        untrainable.
+        """
+        assert self.evaluate is None, ("""Evaluation graph should be initialzed
+                                       after the train graph""")

@@ -15,6 +15,9 @@ from run_multigpu import run_trainer
 
 class TestRunMultiGPU(CleverHansTest):
     def helper_run_multi_gpu_madryetal(self, extra_flags=None):
+        """
+        Compare the single GPU performance to multiGPU performance.
+        """
         # Run the trainers on a dataset of reduced size
         flags = {'train_start': 0,
                  'train_end': 5000,
@@ -24,10 +27,9 @@ class TestRunMultiGPU(CleverHansTest):
                  'testing': True}
 
         # Run the multi-gpu trainer for adversarial training
-        flags.update({'batch_size': 128, 'learning_rate': 0.001,
+        flags.update({'batch_size': 128, 'adam_lrn': 0.001,
                       'dataset': 'mnist', 'only_adv_train': False,
                       'eval_iters': 1, 'fast_tests': True,
-                      'debug_graph': False,
                       'save_dir': None, 'save_steps': 10000,
                       'attack_nb_iter_train': 10, 'sync_step': None,
                       'adv_train': True,
@@ -70,7 +72,7 @@ class TestRunMultiGPU(CleverHansTest):
 
         self.assertClose(report_s.train_adv_train_clean_eval,
                          report_m.train_adv_train_clean_eval,
-                         atol=3e-2)
+                         atol=5e-2)
         self.assertClose(report_s.adv_train_clean_eval,
                          report_m.adv_train_clean_eval,
                          atol=2e-2)
@@ -79,6 +81,10 @@ class TestRunMultiGPU(CleverHansTest):
                          atol=5e-2)
 
     def test_run_single_gpu_fgsm(self):
+        """
+        Test the basic single GPU performance by comparing to the FGSM
+        tutorial.
+        """
         from cleverhans_tutorials import mnist_tutorial_tf
 
         # Run the MNIST tutorial on a dataset of reduced size
@@ -91,10 +97,10 @@ class TestRunMultiGPU(CleverHansTest):
         report = mnist_tutorial_tf.mnist_tutorial(**flags)
 
         # Run the multi-gpu trainer for clean training
-        flags.update({'batch_size': 128, 'learning_rate': 0.001,
+        flags.update({'batch_size': 128, 'adam_lrn': 0.001,
                       'dataset': 'mnist', 'only_adv_train': False,
                       'eval_iters': 1, 'ngpu': 1, 'fast_tests': False,
-                      'debug_graph': False, 'attack_type_train': '',
+                      'attack_type_train': '',
                       'save_dir': None, 'save_steps': 10000,
                       'attack_nb_iter_train': None, 'save': False,
                       'model_type': 'basic', 'attack_type_test': 'FGSM'})
@@ -129,19 +135,19 @@ class TestRunMultiGPU(CleverHansTest):
 
         self.assertClose(report.train_clean_train_clean_eval,
                          report_2.train_clean_train_clean_eval,
-                         atol=3e-2)
+                         atol=5e-2)
         self.assertClose(report.clean_train_clean_eval,
                          report_2.clean_train_clean_eval,
                          atol=2e-2)
         self.assertClose(report.clean_train_adv_eval,
                          report_2.clean_train_adv_eval,
-                         atol=2e-2)
+                         atol=5e-2)
         self.assertClose(report.train_adv_train_clean_eval,
                          report_2.train_adv_train_clean_eval,
-                         atol=5e-2)
+                         atol=1e-1)
         self.assertClose(report.adv_train_clean_eval,
                          report_2.adv_train_clean_eval,
-                         atol=5e-2)
+                         atol=2e-2)
         self.assertClose(report.adv_train_adv_eval,
                          report_2.adv_train_adv_eval,
                          atol=5e-2)

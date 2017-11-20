@@ -12,11 +12,11 @@ class MadryEtAlMultiGPU(MadryEtAl):
 
     """
     A multi-GPU version of the Projected Gradient Descent Attack
-    (Madry et al. 2016).
+    (Madry et al. 2017).
     Paper link: https://arxiv.org/pdf/1706.06083.pdf
 
-    This attack is designed to run on n GPUs for generating adversarial
-    examples and the last GPU will be used for doing the training step.
+    This attack is designed to run on multiple GPUs for generating adversarial
+    examples.
     Comparing to data parallelism, using this parallelization we can get
     very close to optimal n times speed up using n GPUs. The current
     implementation gets close to 6x speed up on 8 GPUs.
@@ -95,7 +95,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
                     if i < self.nb_iter-1:
                         outputs[i]['eta'] = eta
                     else:
-                        # adv_x, not eta is the output of attack
+                        # adv_x, not eta is the output of the last step
                         adv_x = x + eta
                         if (self.clip_min is not None
                                 and self.clip_max is not None):

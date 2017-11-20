@@ -35,14 +35,13 @@ from model import LayerNorm
 HParams = namedtuple('HParams',
                      'batch_size, num_classes, min_lrn_rate, lrn_rate, '
                      'num_residual_units, use_bottleneck, weight_decay_rate, '
-                     'relu_leakiness, optimizer, momentum')
+                     'relu_leakiness, momentum')
 
 
 class ResNetTF(MLPnGPU):
     """ResNet model."""
 
-    def __init__(self, batch_size=None, name=None, optimizer='mom',
-                 *args, **kwargs):
+    def __init__(self, batch_size=None, name=None, **kwargs):
         self.global_step = tf.contrib.framework.get_or_create_global_step()
         self.hps = HParams(batch_size=batch_size,
                            num_classes=10,
@@ -53,34 +52,22 @@ class ResNetTF(MLPnGPU):
                            use_bottleneck=False,
                            weight_decay_rate=0.0002,
                            relu_leakiness=0.1,
-                           optimizer=optimizer,
                            momentum=.9)
-        self.kwargs = {}
-        self.init_kwargs = kwargs
-        del self.init_kwargs['input_shape']
         self.layers = []
         self.layer_idx = 0
         self.init_layers = True
         self.decay_cost = None
         self.training = None
-        self.bn_training = None
         self.device_name = None
-
-        self._extra_train_ops = []
 
     def get_layer_names(self):
         return ['logits', 'probs']
 
-    def set_training(self, training, bn_training=False):
-        super(ResNetTF, self).set_training(training, bn_training)
+    def set_training(self, training):
+        super(ResNetTF, self).set_training(training)
         self.training = training
-        self.bn_training = bn_training
 
-    def fprop(self, x, return_all=False, **kwargs):
-        self.kwargs = kwargs
-        self.kwargs.update(self.init_kwargs)
-        if 'input_shape' in self.kwargs:
-            del self.kwargs['input_shape']
+    def fprop(self, x):
         self.layer_idx = 0
         with tf.variable_scope('Resnet'):
             logits, probs = self._build_model(x)
@@ -143,7 +130,7 @@ class ResNetTF(MLPnGPU):
                              self._stride_arr(1), False)
 
         with tf.variable_scope('unit_last'):
-            x = self._batch_norm('final_bn', x)
+            x = self._layer_norm('final_bn', x)
             x = self._relu(x, self.hps.relu_leakiness)
             x = self._global_avg_pool(x)
 
@@ -154,6 +141,10 @@ class ResNetTF(MLPnGPU):
         return logits, predictions
 
     def build_cost(self, labels, logits):
+        """
+        Build the graph for cost from the logits if logits are provided.
+        If predictions are provided, logits are extracted from the operation.
+        """
         op = logits.op
         if "softmax" in str(op).lower():
             logits, = op.inputs
@@ -180,13 +171,7 @@ class ResNetTF(MLPnGPU):
         assert len(devs) == 1, ('There should be no trainable variables'
                                 ' on any device other than the last GPU.')
 
-        if self.hps.optimizer == 'sgd':
-            optimizer = tf.train.GradientDescentOptimizer(self.lrn_rate)
-        elif self.hps.optimizer == 'adam':
-            optimizer = tf.train.AdamOptimizer(learning_rate=self.lrn_rate)
-        elif self.hps.optimizer == 'mom':
-            optimizer = tf.train.MomentumOptimizer(self.lrn_rate,
-                                                   self.momentum)
+        optimizer = tf.train.MomentumOptimizer(self.lrn_rate, self.momentum)
 
         gv_pairs = zip(grads, trainable_variables)
         gv_pairs = [gv for gv in gv_pairs if gv[0] is not None]
@@ -198,19 +183,12 @@ class ResNetTF(MLPnGPU):
             gv_pairs,
             global_step=self.global_step, name='train_step')
 
-        train_ops = [apply_op] + self._extra_train_ops
+        train_ops = [apply_op]
         train_op = tf.group(*train_ops)
         return train_op
 
-    def _build_train_op(self, logits, labels):
-        self.cost = self.build_cost(labels, logits)
-
-        train_op = self.build_train_op_from_cost(self.cost)
-
-        return train_op
-
-    def _batch_norm(self, name, x):
-        """Batch normalization."""
+    def _layer_norm(self, name, x):
+        """Layer normalization."""
         if self.init_layers:
             bn = LayerNorm()
             bn.name = name
@@ -219,10 +197,8 @@ class ResNetTF(MLPnGPU):
             bn = self.layers[self.layer_idx]
             self.layer_idx += 1
         bn.device_name = self.device_name
-        bn.set_training(self.training, self.bn_training)
+        bn.set_training(self.training)
         x = bn.fprop(x)
-        if self.training:
-            self._extra_train_ops += bn._extra_train_ops
         return x
 
     def _residual(self, x, in_filter, out_filter, stride,
@@ -230,20 +206,20 @@ class ResNetTF(MLPnGPU):
         """Residual unit with 2 sub layers."""
         if activate_before_residual:
             with tf.variable_scope('shared_activation'):
-                x = self._batch_norm('init_bn', x)
+                x = self._layer_norm('init_bn', x)
                 x = self._relu(x, self.hps.relu_leakiness)
                 orig_x = x
         else:
             with tf.variable_scope('residual_only_activation'):
                 orig_x = x
-                x = self._batch_norm('init_bn', x)
+                x = self._layer_norm('init_bn', x)
                 x = self._relu(x, self.hps.relu_leakiness)
 
         with tf.variable_scope('sub1'):
             x = self._conv('conv1', x, 3, in_filter, out_filter, stride)
 
         with tf.variable_scope('sub2'):
-            x = self._batch_norm('bn2', x)
+            x = self._layer_norm('bn2', x)
             x = self._relu(x, self.hps.relu_leakiness)
             x = self._conv('conv2', x, 3, out_filter, out_filter, [1, 1, 1, 1])
 
@@ -256,7 +232,6 @@ class ResNetTF(MLPnGPU):
                               (out_filter - in_filter) // 2]])
             x += orig_x
 
-        tf.logging.debug('image after unit %s', x.get_shape())
         return x
 
     def _bottleneck_residual(self, x, in_filter, out_filter, stride,
@@ -264,26 +239,26 @@ class ResNetTF(MLPnGPU):
         """Bottleneck residual unit with 3 sub layers."""
         if activate_before_residual:
             with tf.variable_scope('common_bn_relu'):
-                x = self._batch_norm('init_bn', x)
+                x = self._layer_norm('init_bn', x)
                 x = self._relu(x, self.hps.relu_leakiness)
                 orig_x = x
         else:
             with tf.variable_scope('residual_bn_relu'):
                 orig_x = x
-                x = self._batch_norm('init_bn', x)
+                x = self._layer_norm('init_bn', x)
                 x = self._relu(x, self.hps.relu_leakiness)
 
         with tf.variable_scope('sub1'):
             x = self._conv('conv1', x, 1, in_filter, out_filter / 4, stride)
 
         with tf.variable_scope('sub2'):
-            x = self._batch_norm('bn2', x)
+            x = self._layer_norm('bn2', x)
             x = self._relu(x, self.hps.relu_leakiness)
             x = self._conv('conv2', x, 3, out_filter / 4,
                            out_filter / 4, [1, 1, 1, 1])
 
         with tf.variable_scope('sub3'):
-            x = self._batch_norm('bn3', x)
+            x = self._layer_norm('bn3', x)
             x = self._relu(x, self.hps.relu_leakiness)
             x = self._conv('conv3', x, 1, out_filter /
                            4, out_filter, [1, 1, 1, 1])
@@ -294,7 +269,6 @@ class ResNetTF(MLPnGPU):
                                     in_filter, out_filter, stride)
             x += orig_x
 
-        tf.logging.info('image after unit %s', x.get_shape())
         return x
 
     def _decay(self):
@@ -335,8 +309,7 @@ class ResNetTF(MLPnGPU):
 
     def _relu(self, x, leakiness=0.0):
         """Relu, with optional leaky support."""
-        return tf.where(tf.less(x, 0.0), leakiness * x, x,
-                        name='leaky_relu')
+        return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
 
     def _fully_connected(self, x, out_dim):
         """FullyConnected layer for final output."""

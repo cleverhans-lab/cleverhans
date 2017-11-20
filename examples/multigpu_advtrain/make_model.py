@@ -42,12 +42,12 @@ def make_madry_ngpu(nb_classes=10, input_shape=(None, 28, 28, 1), **kwargs):
     return model
 
 
-def make_model(model_type='madry', *args, **kwargs):
+def make_model(model_type='madry', **kwargs):
     if model_type == 'basic':
-        return make_basic_ngpu(*args, **kwargs)
+        return make_basic_ngpu(**kwargs)
     elif model_type == 'madry':
-        return make_madry_ngpu(*args, **kwargs)
+        return make_madry_ngpu(**kwargs)
     elif model_type == 'resnet_tf':
-        return ResNetTF(*args, **kwargs)
+        return ResNetTF(**kwargs)
     else:
         raise Exception('model type not defined.')

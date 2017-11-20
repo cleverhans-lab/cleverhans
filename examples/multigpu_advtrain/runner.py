@@ -1,7 +1,13 @@
+"""Wrappers to TensorFlow Session.run().
+"""
 from collections import OrderedDict
 
 
 class Runner(object):
+    """
+    Wrap TensorFlow Session.run() by adding preprocessing and postprocessing
+    steps.
+    """
     def __init__(self, inputs, outputs, sess=None):
         self.sess = sess
         self.inputs = inputs
@@ -13,8 +19,21 @@ class Runner(object):
         fvals = self.sess.run(fetches, feed_dict=feed_dict)
         return self.proc_fvals(fvals)
 
+    def set_input(self, X_batch=None):
+        raise NotImplemented('set_input not implemented.')
+
+    def proc_fvals(self, fvals):
+        raise NotImplemented('proc_fvals not implemented.')
+
+    def is_finished(self):
+        raise NotImplemented('is_finished not implemented.')
+
 
 class RunnerMultiGPU(Runner):
+    """
+    Runs a graph with sub-graphs that need to run sequentially. Each sub-graph
+    takes its inputs from the outputs of the previous sub-graph.
+    """
     def __init__(self, *args, **kwargs):
         super(RunnerMultiGPU, self).__init__(*args, **kwargs)
         self.assert_inputs_outputs()
@@ -42,6 +61,13 @@ class RunnerMultiGPU(Runner):
                     'Inputs and outputs keys should be in the same order.')
 
     def set_input(self, X_batch=None):
+        """
+        Preprocessing the inputs before calling session.run()
+
+        :param X_batch: A dictionary of inputs to the first sub-graph
+        :return: A tuple, `(fetches, fd)`, with `fetches` being a list of
+                 Tensors to be fetches and `fd` the feed dictionary.
+        """
         inputs = self.inputs
         outputs = self.outputs
 
@@ -57,8 +83,8 @@ class RunnerMultiGPU(Runner):
         else:
             self.next_vals[0] = None
 
-        # set feed_dict for each gpu if there is something to run for that gpu
-        # collect outputs to be fetched
+        # Set `feed_dict` for each GPU. If there is something to run for that
+        # GPU, collect outputs to be fetched.
         fetches = []
         self.active_gpus = []
         for i in range(len(outputs)):
@@ -77,10 +103,17 @@ class RunnerMultiGPU(Runner):
         return fetches, fd
 
     def proc_fvals(self, fvals):
+        """
+        Postprocess the outputs of the Session.run(). Move the outputs of
+        sub-graphs to next ones and return the output of the last sub-graph.
+
+        :param fvals: A list of fetched values returned by Session.run()
+        :return: A dictionary of fetched values returned by the last sub-graph.
+        """
         inputs = self.inputs
         outputs = self.outputs
 
-        # move data for next step
+        # Move data to the next sub-graph for the next step
         cur = 0
         for i in range(len(inputs)-1):
             if not self.active_gpus[i]:
@@ -93,6 +126,7 @@ class RunnerMultiGPU(Runner):
             if i == 0:
                 self.next_vals[0] = None
 
+        # Return the output of the last sub-graph
         last_fvals = OrderedDict()
         if self.active_gpus[-1]:
             assert cur+len(outputs[-1]) == len(fvals)

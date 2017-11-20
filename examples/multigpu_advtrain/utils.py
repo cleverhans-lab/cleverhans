@@ -1,14 +1,6 @@
 import tensorflow as tf
 
 
-def ordered_union(l1, l2):
-    out = []
-    for e in l1 + l2:
-        if e not in out:
-            out.append(e)
-    return out
-
-
 def preprocess_batch(images_batch, preproc_func=None):
     """
     Creates a preprocessing graph for a batch given a function that processes
