@@ -13,6 +13,8 @@ from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
+from cleverhans.utils import get_logits_over_interval
+from cleverhans.utils import linear_extrapolation_plot
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
 
@@ -51,6 +53,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         raise RuntimeError("This tutorial requires keras to be configured"
                            " to use the TensorFlow backend.")
 
+    # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'tf':
         keras.backend.set_image_dim_ordering('tf')
         print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to "
@@ -108,7 +111,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     else:
         print("Model was not loaded, training from scratch.")
         model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                    args=train_params, save=True, rng=rng)
+                    args=train_params, save=True)
 
     # Calculate training error
     if testing:
@@ -119,9 +122,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
     wrap = KerasModelWrapper(model)
     fgsm = FastGradientMethod(wrap, sess=sess)
-    fgsm_params = {'eps': 0.3,
-                   'clip_min': 0.,
-                   'clip_max': 1.}
+    fgsm_params = {'eps': 0.3}
     adv_x = fgsm.generate(x, **fgsm_params)
     # Consider the attack to be constant
     adv_x = tf.stop_gradient(adv_x)
@@ -165,7 +166,24 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Perform and evaluate adversarial training
     model_train(sess, x, y, preds_2, X_train, Y_train,
                 predictions_adv=preds_2_adv, evaluate=evaluate_2,
-                args=train_params, save=False, rng=rng)
+                args=train_params, save=False)
+
+    # Get a random slice of the data for linear extrapolation plots
+    random_idx = np.random.randint(0, X_train.shape[0])
+    X_slice = X_train[random_idx]
+    Y_slice = Y_train[random_idx]
+
+    # Plot the linear extrapolation plot for clean model
+    log_prob_adv_array = get_logits_over_interval(
+        sess, wrap, X_slice, fgsm_params)
+    linear_extrapolation_plot(log_prob_adv_array, Y_slice,
+                              'lep_clean.png')
+
+    # Plot the linear extrapolation plot for adv model
+    log_prob_adv_array = get_logits_over_interval(
+        sess, wrap_2, X_slice, fgsm_params)
+    linear_extrapolation_plot(log_prob_adv_array, Y_slice,
+                              'lep_adv.png')
 
     # Calculate training errors
     if testing:
