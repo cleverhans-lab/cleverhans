@@ -486,37 +486,33 @@ class SaliencyMapMethod(Attack):
         :param y_target: (optional) Target tensor if the attack is targeted
         """
         import tensorflow as tf
-        from .attacks_tf import jacobian_graph, jsma_batch
+        from .attacks_tf import jsma
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        # Define Jacobian graph wrt to this input placeholder
-        preds = self.model.get_probs(x)
-        nb_classes = preds.get_shape().as_list()[-1]
-        grads = jacobian_graph(preds, x, nb_classes)
+        # Create random targets if y_target not provided
+        if self.y_target is None:
+            from random import randint
 
-        # Define appropriate graph (targeted / random target labels)
-        if self.y_target is not None:
-            def jsma_wrap(x_val, y_target):
-                return jsma_batch(self.sess, x, preds, grads, x_val,
-                                  self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, nb_classes,
-                                  y_target=y_target)
+            def random_targets(gt):
+                result = gt.copy()
+                nb_s = gt.shape[0]
+                nb_classes = gt.shape[1]
 
-            # Attack is targeted, target placeholder will need to be fed
-            wrap = tf.py_func(jsma_wrap, [x, self.y_target], tf.float32)
-        else:
-            def jsma_wrap(x_val):
-                return jsma_batch(self.sess, x, preds, grads, x_val,
-                                  self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, nb_classes,
-                                  y_target=None)
+                for i in xrange(nb_s):
+                    result[i, :] = np.roll(result[i, :],
+                                           randint(1, nb_classes-1))
 
-            # Attack is untargeted, target values will be chosen at random
-            wrap = tf.py_func(jsma_wrap, [x], tf.float32)
+                return result
 
-        return wrap
+            labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+            self.y_target = tf.py_func(random_targets, [labels], tf.float32)
+            self.y_target.set_shape([None, nb_classes])
+
+        return jsma(x, model=self.model, y_target=self.y_target,
+                    theta=self.theta, gamma=self.gamma,
+                    clip_min=self.clip_min, clip_max=self.clip_max)
 
     def parse_params(self, theta=1., gamma=np.inf, nb_classes=None,
                      clip_min=0., clip_max=1., y_target=None, **kwargs):
