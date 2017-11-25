@@ -514,7 +514,7 @@ class SaliencyMapMethod(Attack):
                     theta=self.theta, gamma=self.gamma,
                     clip_min=self.clip_min, clip_max=self.clip_max)
 
-    def parse_params(self, theta=1., gamma=np.inf, nb_classes=None,
+    def parse_params(self, theta=1., gamma=1., nb_classes=None,
                      clip_min=0., clip_max=1., y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
