@@ -623,10 +623,10 @@ class TestSaliencyMapMethod(CleverHansTest):
         x_val = np.random.rand(10, 1000)
         x_val = np.array(x_val, dtype=np.float32)
 
-        feed_labs = np.zeros((10, 1000))
+        feed_labs = np.zeros((10, 10))
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
         x_adv = self.attack.generate_np(x_val,
-                                        clip_min=-5, clip_max=5,
+                                        clip_min=-5., clip_max=5.,
                                         y_target=feed_labs)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
