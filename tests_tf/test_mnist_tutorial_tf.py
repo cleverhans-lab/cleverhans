@@ -39,7 +39,7 @@ class TestMNISTTutorialTF(CleverHansTest):
                          atol=atol_fac * 5e-3)
         self.assertClose(report.train_adv_train_clean_eval,
                          report_2.train_adv_train_clean_eval,
-                         atol=atol_fac * 5e-3)
+                         atol=atol_fac * 2e-2)
         self.assertClose(report.train_adv_train_adv_eval,
                          report_2.train_adv_train_adv_eval,
                          atol=atol_fac * 2e-2)
