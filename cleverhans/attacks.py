@@ -236,6 +236,7 @@ class FastGradientMethod(Attack):
         self.feedable_kwargs = {'eps': np.float32,
                                 'y': np.float32,
                                 'y_target': np.float32,
+				'np_mean':np.float32,#shasha
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord']
@@ -259,6 +260,8 @@ class FastGradientMethod(Attack):
         :param y_target: (optional) A tensor with the labels to target. Leave
                          y_target=None if y is also set. Labels should be
                          one-hot-encoded.
+        :param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -270,11 +273,12 @@ class FastGradientMethod(Attack):
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
         return fgm(x, self.model.get_probs(x), y=labels, eps=self.eps,
-                   ord=self.ord, clip_min=self.clip_min,
+                   ord=self.ord, np_mean=self.np_mean,#shasha
+		   clip_min=self.clip_min,
                    clip_max=self.clip_max,
                    targeted=(self.y_target is not None))
 
-    def parse_params(self, eps=0.3, ord=np.inf, y=None, y_target=None,
+    def parse_params(self, eps=0.3, ord=np.inf, y=None, y_target=None,np_mean=None,#shasha
                      clip_min=None, clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -293,6 +297,8 @@ class FastGradientMethod(Attack):
         :param y_target: (optional) A tensor with the labels to target. Leave
                          y_target=None if y is also set. Labels should be
                          one-hot-encoded.
+    	:param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -302,6 +308,7 @@ class FastGradientMethod(Attack):
         self.ord = ord
         self.y = y
         self.y_target = y_target
+	self.np_mean=np_mean#shasha
         self.clip_min = clip_min
         self.clip_max = clip_max
 
@@ -332,6 +339,7 @@ class BasicIterativeMethod(Attack):
                                 'eps_iter': np.float32,
                                 'y': np.float32,
                                 'y_target': np.float32,
+				'np_mean':np.float32,#shasha
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter']
@@ -353,6 +361,8 @@ class BasicIterativeMethod(Attack):
                          one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
+	:param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -379,7 +389,7 @@ class BasicIterativeMethod(Attack):
             targeted = False
 
         y_kwarg = 'y_target' if targeted else 'y'
-        fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord,
+        fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord, 'np_mean':self.np_mean,#shasha
                       'clip_min': self.clip_min, 'clip_max': self.clip_max}
 
         for i in range(self.nb_iter):
@@ -406,11 +416,14 @@ class BasicIterativeMethod(Attack):
         # Define adversarial example (and clip if necessary)
         adv_x = x + eta
         if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+	    if (self.np_mean==None):
+            	adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+            else:
+                adv_x = tf.clip_by_value(adv_x+self.np_mean, self.clip_min, self.clip_max) - self.np_mean
 
         return adv_x
 
-    def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
+    def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None, np_mean=None,#shasha
                      ord=np.inf, clip_min=None, clip_max=None,
                      y_target=None, **kwargs):
         """
@@ -428,6 +441,8 @@ class BasicIterativeMethod(Attack):
                          one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
+	:param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -439,6 +454,7 @@ class BasicIterativeMethod(Attack):
         self.y = y
         self.y_target = y_target
         self.ord = ord
+	self.np_mean=np_mean#shasha
         self.clip_min = clip_min
         self.clip_max = clip_max
 
@@ -564,6 +580,7 @@ class VirtualAdversarialMethod(Attack):
 
         import tensorflow as tf
         self.feedable_kwargs = {'eps': tf.float32, 'xi': tf.float32,
+				'np_mean':tf.float32,
                                 'clip_min': tf.float32,
                                 'clip_max': tf.float32}
         self.structural_kwargs = ['num_iterations']
@@ -578,6 +595,8 @@ class VirtualAdversarialMethod(Attack):
         :param eps: (optional float ) the epsilon (input variation parameter)
         :param num_iterations: (optional) the number of iterations
         :param xi: (optional float) the finite difference parameter
+	:param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -585,10 +604,10 @@ class VirtualAdversarialMethod(Attack):
         assert self.parse_params(**kwargs)
 
         return vatm(self.model, x, self.model.get_logits(x), eps=self.eps,
-                    num_iterations=self.num_iterations, xi=self.xi,
+                    num_iterations=self.num_iterations, xi=self.xi,np_mean=self.np_mean,
                     clip_min=self.clip_min, clip_max=self.clip_max)
 
-    def parse_params(self, eps=2.0, num_iterations=1, xi=1e-6, clip_min=None,
+    def parse_params(self, eps=2.0, num_iterations=1, xi=1e-6, np_mean=None,clip_min=None,
                      clip_max=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -598,6 +617,8 @@ class VirtualAdversarialMethod(Attack):
         :param eps: (optional float )the epsilon (input variation parameter)
         :param num_iterations: (optional) the number of iterations
         :param xi: (optional float) the finite difference parameter
+	:param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -605,6 +626,7 @@ class VirtualAdversarialMethod(Attack):
         self.eps = eps
         self.num_iterations = num_iterations
         self.xi = xi
+	self.np_mean=np_mean
         self.clip_min = clip_min
         self.clip_max = clip_max
         return True
@@ -925,7 +947,7 @@ class DeepFool(Attack):
         return True
 
 
-def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
+def fgsm(x, predictions, eps, back='tf', np_mean=None,clip_min=None, clip_max=None):
     """
     A wrapper for the Fast Gradient Sign Method.
     It calls the right function, depending on the
@@ -942,6 +964,8 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
                          https://arxiv.org/abs/1611.01236)
     :param eps: the epsilon (input variation parameter)
     :param back: Which backend to use (currently only 'tf' is supported)
+    :param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
@@ -953,11 +977,11 @@ def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
     if back == 'tf':
         # Compute FGSM using TensorFlow
         from .attacks_tf import fgm
-        return fgm(x, predictions, y=None, eps=eps, ord=np.inf,
+        return fgm(x, predictions, y=None, eps=eps, ord=np.inf,np_mean=np_mean,
                    clip_min=clip_min, clip_max=clip_max)
 
 
-def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
+def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,np_mean=None,
          clip_min=None, clip_max=None):
     """
     A wrapper for the perturbation methods used for virtual adversarial
@@ -970,6 +994,8 @@ def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
     :param eps: the epsilon (input variation parameter)
     :param num_iterations: the number of iterations
     :param xi: the finite difference parameter
+    :param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
@@ -981,7 +1007,7 @@ def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
     # Compute VATM using TensorFlow
     from .attacks_tf import vatm as vatm_tf
     return vatm_tf(model, x, logits, eps, num_iterations=num_iterations,
-                   xi=xi, clip_min=clip_min, clip_max=clip_max)
+                   xi=xi,np_mean=np_mean, clip_min=clip_min, clip_max=clip_max)
 
 
 class MadryEtAl(Attack):
@@ -1000,6 +1026,7 @@ class MadryEtAl(Attack):
                                 'eps_iter': np.float32,
                                 'y': np.float32,
                                 'y_target': np.float32,
+				'np_mean':np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter']
@@ -1021,6 +1048,8 @@ class MadryEtAl(Attack):
                          one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
+	:param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -1037,7 +1066,7 @@ class MadryEtAl(Attack):
         return adv_x
 
     def parse_params(self, eps=0.3, eps_iter=0.01, nb_iter=40, y=None,
-                     ord=np.inf, clip_min=None, clip_max=None,
+                     ord=np.inf, np_mean=None, clip_min=None, clip_max=None,
                      y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -1054,6 +1083,8 @@ class MadryEtAl(Attack):
                          one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
+	:param np_mean: (optional) A tensor with the average image that was 
+			subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -1065,6 +1096,7 @@ class MadryEtAl(Attack):
         self.y = y
         self.y_target = y_target
         self.ord = ord
+	self.np_mean=np_mean
         self.clip_min = clip_min
         self.clip_max = clip_max
 
@@ -1097,7 +1129,10 @@ class MadryEtAl(Attack):
         scaled_signed_grad = self.eps_iter * tf.sign(grad)
         adv_x = adv_x + scaled_signed_grad
         if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+	    if self.np_mean==None:
+            	adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+	    else:
+		adv_x = tf.clip_by_value(adv_x+self.np_mean, self.clip_min, self.clip_max)-self.np_mean
         eta = adv_x - x
         eta = clip_eta(eta, self.ord, self.eps)
         return x, eta
@@ -1123,6 +1158,10 @@ class MadryEtAl(Attack):
 
         adv_x = x + eta
         if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+	    if self.np_mean==None:
+            	adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+	    else:
+		adv_x = tf.clip_by_value(adv_x+self.np_mean, self.clip_min, self.clip_max)-self.np_mean
+        eta = adv_x - x  
 
         return adv_x
