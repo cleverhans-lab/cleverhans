@@ -236,7 +236,7 @@ class FastGradientMethod(Attack):
         self.feedable_kwargs = {'eps': np.float32,
                                 'y': np.float32,
                                 'y_target': np.float32,
-				                'np_mean':np.float32,
+                                'np_mean':np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord']
