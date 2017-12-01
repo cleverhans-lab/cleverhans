@@ -16,11 +16,11 @@ _logger = utils.create_logger("cleverhans.attacks.tf")
 
 
 def fgsm(x, predictions, eps=0.3, np_mean=None, clip_min=None, clip_max=None):
-    return fgm(x, predictions, y=None, eps=eps, ord=np.inf,np_mean=np_mean,
+    return fgm(x, predictions, y=None, eps=eps, ord=np.inf, np_mean=np_mean,
                clip_min=clip_min, clip_max=clip_max)
 
 
-def fgm(x, preds, y=None, eps=0.3, ord=np.inf,np_mean=None,#shasha
+def fgm(x, preds, y=None, eps=0.3, ord=np.inf, np_mean=None,
         clip_min=None, clip_max=None,
         targeted=False):
     """
@@ -39,7 +39,7 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,np_mean=None,#shasha
     :param ord: (optional) Order of the norm (mimics NumPy).
                 Possible values: np.inf, 1 or 2.
     :param np_mean: (optional) A tensor with the average image that was 
-			subtracted from original image.
+                    subtracted from original image.
     :param clip_min: Minimum float value for adversarial example components
     :param clip_max: Maximum float value for adversarial example components
     :param targeted: Is the attack targeted or untargeted? Untargeted, the
@@ -96,15 +96,16 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,np_mean=None,#shasha
 
     # If clipping is needed, reset all values outside of [clip_min, clip_max]
     if (clip_min is not None) and (clip_max is not None):
-	if (np_mean==None):
-        	adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
+        if (np_mean==None):
+            adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
         else:
- 		adv_x = tf.clip_by_value(adv_x+np_mean, clip_min, clip_max)-np_mean
+            adv_x = tf.clip_by_value(adv_x + np_mean, clip_min,
+                    clip_max) - np_mean
 
     return adv_x
 
 
-def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,np_mean=None,
+def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6, np_mean=None,
          clip_min=None, clip_max=None, scope=None):
     """
     Tensorflow implementation of the perturbation method used for virtual
@@ -117,7 +118,7 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,np_mean=None,
     :param num_iterations: the number of iterations
     :param xi: the finite difference parameter
     :param np_mean: (optional) A tensor with the average image that was 
-			subtracted from original image.
+                    subtracted from original image.
     :param clip_min: optional parameter that can be used to set a minimum
                     value for components of the example returned
     :param clip_max: optional parameter that can be used to set a maximum
@@ -137,9 +138,10 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,np_mean=None,
         adv_x = x + d
         if (clip_min is not None) and (clip_max is not None):
             if (np_mean==None):
-		adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
-	    else:
-    		adv_x = tf.clip_by_value(adv_x+np_mean, clip_min, clip_max)-np_mean
+                adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
+            else:
+                adv_x = tf.clip_by_value(adv_x + np_mean, clip_min,
+                        clip_max) - np_mean
         return adv_x
 
 
