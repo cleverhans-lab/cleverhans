@@ -296,7 +296,7 @@ class FastGradientMethod(Attack):
         :param y_target: (optional) A tensor with the labels to target. Leave
                          y_target=None if y is also set. Labels should be
                          one-hot-encoded.
-    	:param np_mean: (optional) A tensor with the average image that was 
+        :param np_mean: (optional) A tensor with the average image that was
                         subtracted from original image.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
