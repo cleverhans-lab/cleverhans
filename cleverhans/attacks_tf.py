@@ -1189,4 +1189,3 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     # need to clip this image into the given range
     adv_x = np.clip((1+overshoot)*r_tot + sample, clip_min, clip_max)
     return adv_x
-    
