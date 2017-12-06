@@ -20,9 +20,8 @@ def fgsm(x, predictions, eps=0.3, np_mean=None, clip_min=None, clip_max=None):
                clip_min=clip_min, clip_max=clip_max)
 
 
-def fgm(x, preds, y=None, eps=0.3, ord=np.inf, np_mean=None,
-        clip_min=None, clip_max=None,
-        targeted=False):
+def fgm(x, preds, y=None, eps=0.3, ord=np.inf, np_mean=None, clip_min=None,
+        clip_max=None, targeted=False):
     """
     TensorFlow implementation of the Fast Gradient Method.
     :param x: the input placeholder
