@@ -18,7 +18,8 @@ from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
 from cleverhans_tutorials.tutorial_models import make_basic_cnn, MLP
-from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax, Conv2D
+from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
+from cleverhans_tutorials.tutorial_models import Conv2D
 
 FLAGS = flags.FLAGS
 
@@ -149,7 +150,9 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
         if rho < data_aug - 1:
             print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
-            X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads, (2*int(int(rho/3)%2==0)-1) * lmbda)
+            lmbda_coef = 2 * int(int(rho / 3) != 0) - 1
+            X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
+                                          lmbda_coef * lmbda)
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
