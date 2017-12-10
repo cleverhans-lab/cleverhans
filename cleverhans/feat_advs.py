@@ -63,10 +63,6 @@ class FastFeatureAdversaries(Attack):
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
-        if self.back == 'th':
-            error_string = ("FeatureAdversaries is"
-                            " not implemented in Theano")
-            raise NotImplementedError(error_string)
 
         return True
 
