@@ -52,7 +52,7 @@ def adv_dga(x, model, discretize_fn, projection_fn, levels, phase,
 
   Args:
     x: Input image of shape [-1, height, width, channels] to attack.
-    model: Model function which given input returns logits and predictions.
+    model: Model function which given input returns logits.
     discretize_fn: Function used to discretize the input into one-hot or thermometer
         encoding.
     projection_fn: Function used to project the input before feeding to the
@@ -94,14 +94,14 @@ def adv_dga(x, model, discretize_fn, projection_fn, levels, phase,
       cur_x_one_hot = discretization_utils.thermometer_to_one_hot(
           cur_x_discretized, levels, flattened=True)
 
-    logits_discretized, predictions_discretized = model(
-        projection_fn(cur_x_discretized), is_training=phase, reuse=True)
+    logits_discretized = model(projection_fn(cur_x_discretized),
+                               is_training=phase, reuse=True)
 
     if i == 0 and y is None:
       # Get one hot version from predictions
       y = tf.one_hot(
-          tf.argmax(predictions_discretized, 1),
-          tf.shape(predictions_discretized)[1])
+          tf.argmax(logits_discretized, 1),
+          tf.shape(logits_discretized)[1])
 
     loss = tf.nn.softmax_cross_entropy_with_logits(
         labels=y, logits=logits_discretized)
@@ -116,6 +116,10 @@ def adv_dga(x, model, discretize_fn, projection_fn, levels, phase,
     harm = harm * mask - (1. - mask) * 1000.0
 
     harm_r = discretization_utils.unflatten_last(harm, levels)
+
+    # If we are using thermometer, then harm is the cumsum
+    if thermometer:
+        harm_r = tf.cumsum(harm_r, axis=-1, reverse=True)
 
     bit_to_activate = tf.argmax(harm_r, axis=-1)
 
@@ -148,7 +152,7 @@ def adv_lspga(x, model, discretize_fn, projection_fn, levels, phase,
 
   Args:
     x: Input image of shape [-1, height, width, channels] to attack.
-    model: Model function which given input returns logits and predictions.
+    model: Model function which given input returns logits.
     discretize_fn: Function used to discretize the input into one-hot or thermometer
         encoding.
     projection_fn: Function used to project the input before feeding to the
@@ -188,7 +192,7 @@ def adv_lspga(x, model, discretize_fn, projection_fn, levels, phase,
     if thermometer:
       activation_probs = tf.cumsum(activation_probs, axis=-1, reverse=True)
 
-    logits_discretized, predictions_discretized = model(
+    logits_discretized = model(
         projection_fn(discretization_utils.flatten_last(activation_probs)),
         is_training=phase,
         reuse=True)
@@ -196,8 +200,8 @@ def adv_lspga(x, model, discretize_fn, projection_fn, levels, phase,
     if i == 0 and y is None:
       # Get one hot version from model predictions
       y = tf.one_hot(
-          tf.argmax(predictions_discretized, 1),
-          tf.shape(predictions_discretized)[1])
+          tf.argmax(logits_discretized, 1),
+          tf.shape(logits_discretized)[1])
 
     loss = tf.nn.softmax_cross_entropy_with_logits(
         labels=y, logits=logits_discretized)
