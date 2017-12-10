@@ -90,7 +90,7 @@ class FastFeatureAdversaries(Attack):
         loss = -tf.reduce_sum(tf.square(a_feat - g_feat), axis)
 
         # Define gradient of loss wrt input
-        grad, = tf.gradients(loss, x)
+        grad, = tf.gradients(loss, adv_x)
 
         # Multiply by constant epsilon
         scaled_signed_grad = self.eps_iter * tf.sign(grad)
