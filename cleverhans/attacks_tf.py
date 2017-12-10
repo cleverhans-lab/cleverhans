@@ -440,12 +440,12 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     X_sub = np.vstack([X_sub_prev, X_sub_prev])
 
     # For each input in the previous' substitute training iteration
-    for ind, input in enumerate(X_sub_prev):
+    for ind, prev_input in enumerate(X_sub_prev):
         # Select gradient corresponding to the label predicted by the oracle
         grad = grads[Y_sub[ind]]
 
         # Prepare feeding dictionary
-        feed_dict = {x: np.reshape(input, input_shape)}
+        feed_dict = {x: np.reshape(prev_input, input_shape)}
         if feed is not None:
             feed_dict.update(feed)
 
@@ -453,7 +453,7 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
         grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
 
         # Create new synthetic point in adversary substitute training set
-        X_sub[2 * ind] = X_sub[ind] + lmbda * grad_val
+        X_sub[X_sub_prev.shape[0] + ind] = X_sub[ind] + lmbda * grad_val
 
     # Return augmented training data (needs to be labeled afterwards)
     return X_sub
