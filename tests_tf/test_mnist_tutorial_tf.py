@@ -9,7 +9,7 @@ class TestMNISTTutorialTF(CleverHansTest):
 
         np.random.seed(42)
         import tensorflow as tf
-        tf.set_random_seed(24)
+        tf.set_random_seed(42)
 
         from cleverhans_tutorials import mnist_tutorial_tf
 
