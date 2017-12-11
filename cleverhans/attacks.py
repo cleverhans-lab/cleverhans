@@ -1191,7 +1191,7 @@ class FastFeatureAdversaries(Attack):
         a_feat = self.model.get_layer(adv_x, self.layer)
 
         # feat.shape = (batch, c) or (batch, w, h, c)
-        axis = range(1, len(a_feat.shape))
+        axis = list(range(1, len(a_feat.shape)))
 
         # Compute loss
         # This is a targeted attack, hence the negative sign
