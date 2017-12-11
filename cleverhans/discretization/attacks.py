@@ -110,7 +110,7 @@ def adv_dga(x, model, discretize_fn, projection_fn, levels, phase,
     grad, = tf.gradients(loss, cur_x_discretized)
 
     # The harm done by choosing a particular bit to be active
-    harm = grad * (1. + cur_x_discretized - 2 * cur_x_one_hot)
+    harm = grad * (1. + cur_x_one_hot - 2 * cur_x_discretized)
 
     # Make sure values outside the global mask lose the max
     harm = harm * mask - (1. - mask) * 1000.0
