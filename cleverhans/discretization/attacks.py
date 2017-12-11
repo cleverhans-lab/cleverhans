@@ -112,14 +112,16 @@ def adv_dga(x, model, discretize_fn, projection_fn, levels, phase,
     # The harm done by choosing a particular bit to be active
     harm = grad * (1. + cur_x_one_hot - 2 * cur_x_discretized)
 
+    # If we are using thermometer harm is the cumsum
+    if thermometer:
+        harm_r = discretization_utils.unflatten_last(harm, levels)
+        harm_r = tf.cumsum(harm_r, axis=-1, reverse=True)
+        harm = discretization_utils.flatten_last(harm_r)
+
     # Make sure values outside the global mask lose the max
     harm = harm * mask - (1. - mask) * 1000.0
 
     harm_r = discretization_utils.unflatten_last(harm, levels)
-
-    # If we are using thermometer, then harm is the cumsum
-    if thermometer:
-        harm_r = tf.cumsum(harm_r, axis=-1, reverse=True)
 
     bit_to_activate = tf.argmax(harm_r, axis=-1)
 
