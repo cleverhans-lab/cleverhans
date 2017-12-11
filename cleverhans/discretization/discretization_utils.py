@@ -161,10 +161,10 @@ def undiscretize_uniform(x, levels, flattened=False, thermometer=False):
 
 
 def undiscretize_centroids(x,
-                         levels,
-                         centroids,
-                         flattened=False,
-                         thermometer=False):
+                           levels,
+                           centroids,
+                           flattened=False,
+                           thermometer=False):
   """Undiscretize a tensor that has been discretized using custom centroids.
 
   Args:
