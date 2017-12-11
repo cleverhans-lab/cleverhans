@@ -133,6 +133,79 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,
         return adv_x
 
 
+def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
+    """
+    TensorFlow implementation for apply perturbations to input features based
+    on salency maps
+    :param i: index of first selected feature
+    :param j: index of second selected feature
+    :param X: a matrix containing our input features for our sample
+    :param increase: boolean; true if we are increasing pixels, false otherwise
+    :param theta: delta for each feature adjustment
+    :param clip_min: mininum value for a feature in our sample
+    :param clip_max: maximum value for a feature in our sample
+    : return: a perturbed input feature matrix for a target class
+    """
+
+    # perturb our input sample
+    if increase:
+        X[0, i] = np.minimum(clip_max, X[0, i] + theta)
+        X[0, j] = np.minimum(clip_max, X[0, j] + theta)
+    else:
+        X[0, i] = np.maximum(clip_min, X[0, i] - theta)
+        X[0, j] = np.maximum(clip_min, X[0, j] - theta)
+
+    return X
+
+
+def saliency_map(grads_target, grads_other, search_domain, increase):
+    """
+    TensorFlow implementation for computing saliency maps
+    :param grads_target: a matrix containing forward derivatives for the
+                         target class
+    :param grads_other: a matrix where every element is the sum of forward
+                        derivatives over all non-target classes at that index
+    :param search_domain: the set of input indices that we are considering
+    :param increase: boolean; true if we are increasing pixels, false otherwise
+    :return: (i, j, search_domain) the two input indices selected and the
+             updated search domain
+    """
+    # Compute the size of the input (the number of features)
+    nf = len(grads_target)
+
+    # Remove the already-used input features from the search space
+    invalid = list(set(range(nf)) - search_domain)
+    increase_coef = (2 * int(increase) - 1)
+    grads_target[invalid] = - increase_coef * np.max(np.abs(grads_target))
+    grads_other[invalid] = increase_coef * np.max(np.abs(grads_other))
+
+    # Create a 2D numpy array of the sum of grads_target and grads_other
+    target_sum = grads_target.reshape((1, nf)) + grads_target.reshape((nf, 1))
+    other_sum = grads_other.reshape((1, nf)) + grads_other.reshape((nf, 1))
+
+    # Create a mask to only keep features that match saliency map conditions
+    if increase:
+        scores_mask = ((target_sum > 0) & (other_sum < 0))
+    else:
+        scores_mask = ((target_sum < 0) & (other_sum > 0))
+
+    # Create a 2D numpy array of the scores for each pair of candidate features
+    scores = scores_mask * (-target_sum * other_sum)
+
+    # A pixel can only be selected (and changed) once
+    np.fill_diagonal(scores, 0)
+
+    # Extract the best two pixels
+    best = np.argmax(scores)
+    p1, p2 = best % nf, best // nf
+
+    # Remove used pixels from our search domain
+    search_domain.discard(p1)
+    search_domain.discard(p2)
+
+    return p1, p2, search_domain
+
+
 def jacobian(sess, x, grads, target, X, nb_features, nb_classes, feed=None):
     """
     TensorFlow implementation of the foward derivative / Jacobian
@@ -184,7 +257,158 @@ def jacobian_graph(predictions, x, nb_classes):
     return list_derivatives
 
 
-def jsma(x, y_target, model, theta, gamma, clip_min, clip_max):
+def jsma(sess, x, predictions, grads, sample, target, theta, gamma, clip_min,
+         clip_max, feed=None):
+    """
+    TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
+    for details about the algorithm design choices).
+    :param sess: TF session
+    :param x: the input placeholder
+    :param predictions: the model's symbolic output (the attack expects the
+                  probabilities, i.e., the output of the softmax, but will
+                  also work with logits typically)
+    :param grads: symbolic gradients
+    :param sample: numpy array with sample input
+    :param target: target class for sample input
+    :param theta: delta for each feature adjustment
+    :param gamma: a float between 0 - 1 indicating the maximum distortion
+        percentage
+    :param clip_min: minimum value for components of the example returned
+    :param clip_max: maximum value for components of the example returned
+    :return: an adversarial sample
+    """
+
+    # Copy the source sample and define the maximum number of features
+    # (i.e. the maximum number of iterations) that we may perturb
+    adv_x = copy.copy(sample)
+    # count the number of features. For MNIST, 1x28x28 = 784; for
+    # CIFAR, 3x32x32 = 3072; etc.
+    nb_features = np.product(adv_x.shape[1:])
+    # reshape sample for sake of standardization
+    original_shape = adv_x.shape
+    adv_x = np.reshape(adv_x, (1, nb_features))
+    # compute maximum number of iterations
+    max_iters = np.floor(nb_features * gamma / 2)
+
+    # Find number of classes based on grads
+    nb_classes = len(grads)
+
+    increase = bool(theta > 0)
+
+    # Compute our initial search domain. We optimize the initial search domain
+    # by removing all features that are already at their maximum values (if
+    # increasing input features---otherwise, at their minimum value).
+    if increase:
+        search_domain = set([i for i in xrange(nb_features)
+                             if adv_x[0, i] < clip_max])
+    else:
+        search_domain = set([i for i in xrange(nb_features)
+                             if adv_x[0, i] > clip_min])
+
+    # Initialize the loop variables
+    iteration = 0
+    adv_x_original_shape = np.reshape(adv_x, original_shape)
+    current = utils_tf.model_argmax(sess, x, predictions, adv_x_original_shape,
+                                    feed=feed)
+
+    _logger.debug("Starting JSMA attack up to {} iterations".format(max_iters))
+    # Repeat this main loop until we have achieved misclassification
+    while (current != target and iteration < max_iters and
+           len(search_domain) > 1):
+        # Reshape the adversarial example
+        adv_x_original_shape = np.reshape(adv_x, original_shape)
+
+        # Compute the Jacobian components
+        grads_target, grads_others = jacobian(sess, x, grads, target,
+                                              adv_x_original_shape,
+                                              nb_features, nb_classes,
+                                              feed=feed)
+
+        if iteration % ((max_iters + 1) // 5) == 0 and iteration > 0:
+            _logger.debug("Iteration {} of {}".format(iteration,
+                                                      int(max_iters)))
+        # Compute the saliency map for each of our target classes
+        # and return the two best candidate features for perturbation
+        i, j, search_domain = saliency_map(
+            grads_target, grads_others, search_domain, increase)
+
+        # Apply the perturbation to the two input features selected previously
+        adv_x = apply_perturbations(
+            i, j, adv_x, increase, theta, clip_min, clip_max)
+
+        # Update our current prediction by querying the model
+        current = utils_tf.model_argmax(sess, x, predictions,
+                                        adv_x_original_shape, feed=feed)
+
+        # Update loop variables
+        iteration = iteration + 1
+
+    if current == target:
+        _logger.info("Attack succeeded using {} iterations".format(iteration))
+    else:
+        _logger.info(("Failed to find adversarial example " +
+                      "after {} iterations").format(iteration))
+
+    # Compute the ratio of pixels perturbed by the algorithm
+    percent_perturbed = float(iteration * 2) / nb_features
+
+    # Report success when the adversarial example is misclassified in the
+    # target class
+    if current == target:
+        return np.reshape(adv_x, original_shape), 1, percent_perturbed
+    else:
+        return np.reshape(adv_x, original_shape), 0, percent_perturbed
+
+
+def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
+               nb_classes, y_target=None, feed=None, **kwargs):
+    """
+    Applies the JSMA to a batch of inputs
+    :param sess: TF session
+    :param x: the input placeholder
+    :param pred: the model's symbolic output
+    :param grads: symbolic gradients
+    :param X: numpy array with sample inputs
+    :param theta: delta for each feature adjustment
+    :param gamma: a float between 0 - 1 indicating the maximum distortion
+        percentage
+    :param clip_min: minimum value for components of the example returned
+    :param clip_max: maximum value for components of the example returned
+    :param nb_classes: number of model output classes
+    :param y_target: target class for sample input
+    :return: adversarial examples
+    """
+
+    warnings.warn("jsma_batch is deprecated and will be removed on "
+                  "2018-06-10. Use jsma_symbolic instead.")
+
+    if 'targets' in kwargs:
+        warnings.warn('The targets parameter is deprecated, use y_target.'
+                      'targets will be removed on 2018-02-03.')
+        y_target = kwargs['targets']
+
+    X_adv = np.zeros(X.shape)
+
+    for ind, val in enumerate(X):
+        val = np.expand_dims(val, axis=0)
+        if y_target is None:
+            # No y_target provided, randomly choose from other classes
+            from .utils_tf import model_argmax
+            gt = model_argmax(sess, x, pred, val, feed=feed)
+
+            # Randomly choose from the incorrect classes for each sample
+            from .utils import random_targets
+            target = random_targets(gt, nb_classes)[0]
+        else:
+            target = y_target[ind]
+
+        X_adv[ind], _, _ = jsma(sess, x, pred, grads, val, np.argmax(target),
+                                theta, gamma, clip_min, clip_max, feed=feed)
+
+    return np.asarray(X_adv, dtype=np.float32)
+
+
+def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
     """
     TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
     for details about the algorithm design choices).
@@ -222,11 +446,19 @@ def jsma(x, y_target, model, theta, gamma, clip_min, clip_max):
                             tf.cast(x > clip_min, tf.float32),
                             [-1, nb_features])
 
+    # Loop variables
+    # x_in: the tensor that holds the latest adversarial outputs that are in
+    #       progress.
+    # y_in: the tensor for target labels
+    # domain_in: the tensor that holds the latest search domain
+    # cond_in: the boolean tensor to show if more iteration is needed for
+    #          generating adversarial samples
     def condition(x_in, y_in, domain_in, i_in, cond_in):
         # Repeat the loop until we have achieved misclassification or
         # reaches the maximum iterations
         return tf.logical_and(tf.less(i_in, max_iters), cond_in)
 
+    # Same loop variables as above
     def body(x_in, y_in, domain_in, i_in, cond_in):
 
         preds = model.get_probs(x_in)
@@ -241,6 +473,9 @@ def jsma(x, y_target, model, theta, gamma, clip_min, clip_max):
                            shape=[nb_classes, -1, nb_features])
 
         # Compute the Jacobian components
+        # To help with the computation later, reshape the target_class
+        # and other_class to [nb_classes, -1, 1].
+        # The last dimention is added to allow broadcasting later.
         target_class = tf.reshape(tf.transpose(y_in, perm=[1, 0]),
                                   shape=[nb_classes, -1, 1])
         other_classes = tf.cast(tf.not_equal(target_class, 1), tf.float32)
@@ -286,9 +521,9 @@ def jsma(x, y_target, model, theta, gamma, clip_min, clip_max):
         p1_one_hot = tf.one_hot(p1, depth=nb_features)
         p2_one_hot = tf.one_hot(p2, depth=nb_features)
 
-        # Check if more modification is needed for each samples
-        mod_done = tf.equal(tf.reduce_sum(y_in * preds_onehot, axis=1), 0)
-        cond = mod_done & (tf.reduce_sum(domain_in, axis=1) >= 2)
+        # Check if more modification is needed for each sample
+        mod_not_done = tf.equal(tf.reduce_sum(y_in * preds_onehot, axis=1), 0)
+        cond = mod_not_done & (tf.reduce_sum(domain_in, axis=1) >= 2)
 
         # Update the search domain
         cond_float = tf.reshape(tf.cast(cond, tf.float32), shape=[-1, 1])

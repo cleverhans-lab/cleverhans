@@ -486,7 +486,7 @@ class SaliencyMapMethod(Attack):
         :param y_target: (optional) Target tensor if the attack is targeted
         """
         import tensorflow as tf
-        from .attacks_tf import jsma
+        from .attacks_tf import jsma_symbolic
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
@@ -510,9 +510,9 @@ class SaliencyMapMethod(Attack):
             self.y_target = tf.py_func(random_targets, [labels], tf.float32)
             self.y_target.set_shape([None, nb_classes])
 
-        return jsma(x, model=self.model, y_target=self.y_target,
-                    theta=self.theta, gamma=self.gamma,
-                    clip_min=self.clip_min, clip_max=self.clip_max)
+        return jsma_symbolic(x, model=self.model, y_target=self.y_target,
+                             theta=self.theta, gamma=self.gamma,
+                             clip_min=self.clip_min, clip_max=self.clip_max)
 
     def parse_params(self, theta=1., gamma=1., nb_classes=None,
                      clip_min=0., clip_max=1., y_target=None, **kwargs):
