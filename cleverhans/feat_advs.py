@@ -179,30 +179,14 @@ class FastIterativeFeatureAdversaries(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
+        from utils_tf import clip_eta
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        def clip_eta(eta):
-            # Clipping perturbation eta to self.ord norm ball
-            if self.ord == np.inf:
-                eta = tf.clip_by_value(eta, -self.eps, self.eps)
-            elif self.ord in [1, 2]:
-                reduc_ind = list(xrange(1, len(eta.get_shape())))
-                if self.ord == 1:
-                    norm = tf.reduce_sum(tf.abs(eta),
-                                         reduction_indices=reduc_ind,
-                                         keep_dims=True)
-                elif self.ord == 2:
-                    norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
-                                                 reduction_indices=reduc_ind,
-                                                 keep_dims=True))
-                eta = eta * self.eps / norm
-            return eta
-
         # Initialize loop variables
         eta = tf.truncated_normal(tf.shape(x), self.eps_iter / 2)
-        eta = clip_eta(eta)
+        eta = clip_eta(eta, self.ord, self.eps)
 
         fgm_params = {'eps': self.eps_iter, 'layer': self.layer,
                       'ord': self.ord, 'clip_min': self.clip_min,
@@ -214,7 +198,7 @@ class FastIterativeFeatureAdversaries(Attack):
             # Compute this step's perturbation
             eta = FFG.generate(x + eta, g, **fgm_params) - x
 
-            eta = clip_eta(eta)
+            eta = clip_eta(eta, self.ord, self.eps)
 
         # Define adversarial example (and clip if necessary)
         adv_x = x + eta
