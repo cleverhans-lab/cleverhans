@@ -810,7 +810,7 @@ class TestFastFeatureAdversaries(CleverHansTest):
             model = t_models.MLP(layers, input_shape)
             return model
 
-        self.input_shape = [100, 224, 224, 3]
+        self.input_shape = [10, 224, 224, 3]
         self.sess = tf.Session()
         self.model = make_imagenet_cnn(self.input_shape)
         self.attack = FastFeatureAdversaries(self.model)
