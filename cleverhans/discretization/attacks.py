@@ -211,8 +211,12 @@ def adv_lspga(x, model, discretize_fn, projection_fn, levels, phase,
     # compute the gradients wrt to current logits
     grad, = tf.gradients(loss, activation_logits)
 
+    # Get the sign of the gradient
+    signed_grad = tf.sign(grad)
+    signed_grad = tf.stop_gradient(grad)
+
     # Modify activation logits
-    activation_logits += attack_step * grad
+    activation_logits += attack_step * signed_grad
 
     # Anneal temperature
     inv_temp *= anneal_rate
