@@ -81,7 +81,7 @@ class FastFeatureAdversaries(Attack):
         :param g_feat: model's internal tensor for guide
         :return: a tensor for the adversarial example
         """
-        from utils_tf import clip_eta
+        from .utils_tf import clip_eta
 
         adv_x = x + eta
         a_feat = self.model.get_layer(adv_x, self.layer)
@@ -129,7 +129,7 @@ class FastFeatureAdversaries(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
-        from utils_tf import clip_eta
+        from .utils_tf import clip_eta
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
