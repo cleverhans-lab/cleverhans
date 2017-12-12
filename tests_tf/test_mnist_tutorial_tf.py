@@ -5,6 +5,7 @@ from cleverhans.devtools.checks import CleverHansTest
 
 HAS_GPU = 'GPU' in set([x.device_type for x in device_lib.list_local_devices()])
 
+
 class TestMNISTTutorialTF(CleverHansTest):
     def test_mnist_tutorial_tf(self):
 
