@@ -1,6 +1,5 @@
 from abc import ABCMeta
 import numpy as np
-from six.moves import xrange
 import warnings
 import collections
 
@@ -357,6 +356,7 @@ class BasicIterativeMethod(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
+        from cleverhans.utils_tf import clip_eta
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
@@ -387,21 +387,7 @@ class BasicIterativeMethod(Attack):
                                      sess=self.sess)
             # Compute this step's perturbation
             eta = FGM.generate(x + eta, **fgm_params) - x
-
-            # Clipping perturbation eta to self.ord norm ball
-            if self.ord == np.inf:
-                eta = tf.clip_by_value(eta, -self.eps, self.eps)
-            elif self.ord in [1, 2]:
-                reduc_ind = list(xrange(1, len(eta.get_shape())))
-                if self.ord == 1:
-                    norm = tf.reduce_sum(tf.abs(eta),
-                                         reduction_indices=reduc_ind,
-                                         keep_dims=True)
-                elif self.ord == 2:
-                    norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
-                                                 reduction_indices=reduc_ind,
-                                                 keep_dims=True))
-                eta = eta * self.eps / norm
+            eta = clip_eta(eta, self.ord, self.eps)
 
         # Define adversarial example (and clip if necessary)
         adv_x = x + eta
