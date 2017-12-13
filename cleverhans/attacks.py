@@ -472,7 +472,7 @@ class SaliencyMapMethod(Attack):
         import tensorflow as tf
         self.feedable_kwargs = {'y_target': tf.float32}
         self.structural_kwargs = ['theta', 'gamma',
-                                  'clip_max', 'clip_min']
+                                  'clip_max', 'clip_min', 'symbolic_impl']
 
     def generate(self, x, **kwargs):
         """
@@ -486,36 +486,68 @@ class SaliencyMapMethod(Attack):
         :param y_target: (optional) Target tensor if the attack is targeted
         """
         import tensorflow as tf
-        from .attacks_tf import jsma_symbolic
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        # Create random targets if y_target not provided
-        if self.y_target is None:
-            from random import randint
+        if self.symbolic_impl:
+            from .attacks_tf import jsma_symbolic
 
-            def random_targets(gt):
-                result = gt.copy()
-                nb_s = gt.shape[0]
-                nb_classes = gt.shape[1]
+            # Create random targets if y_target not provided
+            if self.y_target is None:
+                from random import randint
 
-                for i in xrange(nb_s):
-                    result[i, :] = np.roll(result[i, :],
-                                           randint(1, nb_classes-1))
+                def random_targets(gt):
+                    result = gt.copy()
+                    nb_s = gt.shape[0]
+                    nb_classes = gt.shape[1]
 
-                return result
+                    for i in xrange(nb_s):
+                        result[i, :] = np.roll(result[i, :],
+                                               randint(1, nb_classes-1))
 
-            labels, nb_classes = self.get_or_guess_labels(x, kwargs)
-            self.y_target = tf.py_func(random_targets, [labels], tf.float32)
-            self.y_target.set_shape([None, nb_classes])
+                    return result
 
-        return jsma_symbolic(x, model=self.model, y_target=self.y_target,
-                             theta=self.theta, gamma=self.gamma,
-                             clip_min=self.clip_min, clip_max=self.clip_max)
+                labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+                self.y_target = tf.py_func(random_targets, [labels], tf.float32)
+                self.y_target.set_shape([None, nb_classes])
+
+            x_adv = jsma_symbolic(x, model=self.model, y_target=self.y_target,
+                                  theta=self.theta, gamma=self.gamma,
+                                  clip_min=self.clip_min, clip_max=self.clip_max)
+        else:
+            from .attacks_tf import jacobian_graph, jsma_batch
+
+            # Define Jacobian graph wrt to this input placeholder
+            preds = self.model.get_probs(x)
+            nb_classes = preds.get_shape().as_list()[-1]
+            grads = jacobian_graph(preds, x, nb_classes)
+
+            # Define appropriate graph (targeted / random target labels)
+            if self.y_target is not None:
+                def jsma_wrap(x_val, y_target):
+                    return jsma_batch(self.sess, x, preds, grads, x_val,
+                                      self.theta, self.gamma, self.clip_min,
+                                      self.clip_max, nb_classes,
+                                      y_target=y_target)
+
+                # Attack is targeted, target placeholder will need to be fed
+                x_adv = tf.py_func(jsma_wrap, [x, self.y_target], tf.float32)
+            else:
+                def jsma_wrap(x_val):
+                    return jsma_batch(self.sess, x, preds, grads, x_val,
+                                      self.theta, self.gamma, self.clip_min,
+                                      self.clip_max, nb_classes,
+                                      y_target=None)
+
+                # Attack is untargeted, target values will be chosen at random
+                x_adv = tf.py_func(jsma_wrap, [x], tf.float32)
+
+        return x_adv
 
     def parse_params(self, theta=1., gamma=1., nb_classes=None,
-                     clip_min=0., clip_max=1., y_target=None, **kwargs):
+                     clip_min=0., clip_max=1., y_target=None, 
+                     symbolic_impl=True, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -538,6 +570,7 @@ class SaliencyMapMethod(Attack):
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.y_target = y_target
+        self.symbolic_impl = symbolic_impl
 
         return True
 
