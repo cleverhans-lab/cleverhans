@@ -495,12 +495,14 @@ class SaliencyMapMethod(Attack):
                     return result
 
                 labels, nb_classes = self.get_or_guess_labels(x, kwargs)
-                self.y_target = tf.py_func(random_targets, [labels], tf.float32)
+                self.y_target = tf.py_func(random_targets, [labels],
+                                           tf.float32)
                 self.y_target.set_shape([None, nb_classes])
 
             x_adv = jsma_symbolic(x, model=self.model, y_target=self.y_target,
                                   theta=self.theta, gamma=self.gamma,
-                                  clip_min=self.clip_min, clip_max=self.clip_max)
+                                  clip_min=self.clip_min,
+                                  clip_max=self.clip_max)
         else:
             from .attacks_tf import jacobian_graph, jsma_batch
 
@@ -532,7 +534,7 @@ class SaliencyMapMethod(Attack):
         return x_adv
 
     def parse_params(self, theta=1., gamma=1., nb_classes=None,
-                     clip_min=0., clip_max=1., y_target=None, 
+                     clip_min=0., clip_max=1., y_target=None,
                      symbolic_impl=True, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
