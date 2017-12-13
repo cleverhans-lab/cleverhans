@@ -23,7 +23,7 @@ def discretize_range(discretize_fn, levels, low, high, thermometer=False):
     is independent of the encoding used.
 
   Args:
-    discretize_fn: Discretization function to convert into one hot encoding.
+    discretize_fn: Discretization function used to discretize input.
     levels: Number of levels to discretize the input into.
     low: Minimum value in the interval.
     high: Maximum value in the interval.
