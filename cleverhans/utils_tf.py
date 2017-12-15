@@ -435,17 +435,11 @@ def clip_eta(eta, ord, eps):
     # Clipping perturbation eta to self.ord norm ball
     if ord not in [np.inf, 1, 2]:
         raise ValueError('ord must be np.inf, 1, or 2.')
+    reduc_ind = list(xrange(1, len(eta.get_shape())))
     if ord == np.inf:
         eta = tf.clip_by_value(eta, -eps, eps)
-    elif ord in [1, 2]:
-        reduc_ind = list(xrange(1, len(eta.get_shape())))
-        if ord == 1:
-            norm = tf.reduce_sum(tf.abs(eta),
-                                 reduction_indices=reduc_ind,
-                                 keep_dims=True)
-        elif ord == 2:
-            norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
-                                         reduction_indices=reduc_ind,
-                                         keep_dims=True))
-        eta = eta * eps / norm
+    elif ord == 1:
+        eta = l1_normalize(eta, reduc_ind)
+    elif ord == 2:
+        eta = tf.nn.l2_normalize(eta, reduc_ind)
     return eta
