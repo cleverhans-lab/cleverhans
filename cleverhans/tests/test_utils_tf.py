@@ -10,6 +10,9 @@ class TestUtils(CleverHansTest):
         self.sess = tf.Session()
 
     def test_clip_eta_norm_0(self):
+        # Test that `clip_eta` still works when the norm of `eta` is
+        # zero. This used to cause a divide by zero for ord 1 and ord
+        # 2.
         eta = tf.zeros((5, 3))
         assert eta.dtype == tf.float32, eta.dtype
         ord_arg = 2
