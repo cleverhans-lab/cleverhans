@@ -3,6 +3,7 @@ from cleverhans.utils_tf import clip_eta
 from cleverhans.devtools.checks import CleverHansTest
 import tensorflow as tf
 
+
 class TestUtils(CleverHansTest):
     def setUp(self):
         super(TestUtils, self).setUp()
@@ -22,4 +23,3 @@ class TestUtils(CleverHansTest):
             clipped = self.sess.run(clipped)
             assert not np.any(np.isinf(clipped))
             assert not np.any(np.isnan(clipped)), (ord_arg, clipped)
-
