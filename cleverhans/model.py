@@ -1,6 +1,6 @@
 from abc import ABCMeta
 
-
+failpep8 = True
 class Model(object):
 
     """
