@@ -92,9 +92,7 @@ def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     input_shape = (None, img_rows, img_cols, 1)
 
     # Define a fully connected model (it's different than the black-box)
-    layers = [Conv2D(64, (8, 8), (2, 2), "SAME"),
-              ReLU(),
-              Flatten(),
+    layers = [Flatten(),
               Linear(200),
               ReLU(),
               Linear(200),
