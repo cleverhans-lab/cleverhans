@@ -95,7 +95,7 @@ def adv_dga(x, model, discretize_fn, projection_fn, levels, phase,
           cur_x_discretized, levels, flattened=True)
 
     logits_discretized = model(projection_fn(cur_x_discretized),
-                               is_training=phase, reuse=True)
+                               is_training=phase)
 
     if i == 0 and y is None:
       # Get one hot version from predictions
@@ -196,8 +196,7 @@ def adv_lspga(x, model, discretize_fn, projection_fn, levels, phase,
 
     logits_discretized = model(
         projection_fn(discretization_utils.flatten_last(activation_probs)),
-        is_training=phase,
-        reuse=True)
+        is_training=phase)
 
     if i == 0 and y is None:
       # Get one hot version from model predictions

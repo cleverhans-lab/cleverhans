@@ -246,8 +246,7 @@ def random_convolution(x,
                        projection_dim,
                        levels,
                        flattened=True,
-                       trainable=False,
-                       reuse=True):
+                       trainable=False):
   """Reduce dimension by random convolutions using a standard Gaussian.
 
   Args:
@@ -259,7 +258,6 @@ def random_convolution(x,
         (Default: False).
     trainable: If True then the weights for projection are learned (Default:
         False).
-    reuse: Whether to reuse an already created variable.
 
   Returns:
     Projection of x using a fixed random convolution.
@@ -283,7 +281,7 @@ def random_convolution(x,
   if trainable:
     scope = 'trainable_projection'
 
-  with tf.variable_scope(scope, reuse=reuse):
+  with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
     kernel = tf.get_variable(
         'conv_projection', [1, 1, channels * levels, channels * projection_dim],
         trainable=trainable)
