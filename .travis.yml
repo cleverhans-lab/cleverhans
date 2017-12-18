@@ -54,7 +54,7 @@ install:
 
 # command to run tests
 script:
-  # exist on first error
+  # exit on first error
   - set -e
   # run keras backend init to initialize backend config
   - python -c "import keras.backend"
