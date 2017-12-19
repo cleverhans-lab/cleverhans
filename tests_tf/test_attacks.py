@@ -16,6 +16,7 @@ from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.attacks import ElasticNetMethod
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import MadryEtAl
+from cleverhans.attacks import FastFeatureAdversaries
 
 
 class TestAttackClassInitArguments(CleverHansTest):
@@ -623,10 +624,10 @@ class TestSaliencyMapMethod(CleverHansTest):
         x_val = np.random.rand(10, 1000)
         x_val = np.array(x_val, dtype=np.float32)
 
-        feed_labs = np.zeros((10, 1000))
+        feed_labs = np.zeros((10, 10))
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
         x_adv = self.attack.generate_np(x_val,
-                                        clip_min=-5, clip_max=5,
+                                        clip_min=-5., clip_max=5.,
                                         y_target=feed_labs)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
@@ -774,6 +775,83 @@ class TestMadryEtAl(CleverHansTest):
             new_labs_multi[I] = new_labs[I]
 
         self.assertTrue(np.mean(orig_labs == new_labs_multi) < 0.1)
+
+
+class TestFastFeatureAdversaries(CleverHansTest):
+    def setUp(self):
+        super(TestFastFeatureAdversaries, self).setUp()
+        import tensorflow as tf
+
+        def make_imagenet_cnn(input_shape=(None, 224, 224, 3)):
+            """
+            Similar CNN to AlexNet.
+            """
+            import cleverhans_tutorials.tutorial_models as t_models
+            layers = [t_models.Conv2D(96, (3, 3), (2, 2), "VALID"),
+                      t_models.ReLU(),
+                      t_models.Conv2D(256, (3, 3), (2, 2), "VALID"),
+                      t_models.ReLU(),
+                      t_models.Conv2D(384, (3, 3), (2, 2), "VALID"),
+                      t_models.ReLU(),
+                      t_models.Conv2D(384, (3, 3), (2, 2), "VALID"),
+                      t_models.ReLU(),
+                      t_models.Conv2D(256, (3, 3), (2, 2), "VALID"),
+                      t_models.ReLU(),
+                      t_models.Flatten(),
+                      t_models.Linear(4096),
+                      t_models.ReLU(),
+                      t_models.Linear(4096),
+                      t_models.ReLU(),
+                      t_models.Linear(1000),
+                      t_models.Softmax()]
+            layers[-3].name = 'fc7'
+
+            model = t_models.MLP(layers, input_shape)
+            return model
+
+        self.input_shape = [10, 224, 224, 3]
+        self.sess = tf.Session()
+        self.model = make_imagenet_cnn(self.input_shape)
+        self.attack = FastFeatureAdversaries(self.model)
+
+    def test_attack_strength(self):
+        """
+        This test generates a random source and guide and feeds them in a
+        randomly initialized CNN. Checks if an adversarial example can get
+        at least 50% closer to the guide compared to the original distance of
+        the source and the guide.
+        """
+        import tensorflow as tf
+        tf.set_random_seed(1234)
+        input_shape = self.input_shape
+        x_src = tf.abs(tf.random_uniform(input_shape, 0., 1.))
+        x_guide = tf.abs(tf.random_uniform(input_shape, 0., 1.))
+
+        layer = 'fc7'
+        attack_params = {'eps': 5./256, 'clip_min': 0., 'clip_max': 1.,
+                         'nb_iter': 10, 'eps_iter': 0.005,
+                         'layer': layer}
+        x_adv = self.attack.generate(x_src, x_guide, **attack_params)
+        h_adv = self.model.fprop(x_adv)[layer]
+        h_src = self.model.fprop(x_src)[layer]
+        h_guide = self.model.fprop(x_guide)[layer]
+
+        init = tf.global_variables_initializer()
+        self.sess.run(init)
+
+        ha, hs, hg, xa, xs, xg = self.sess.run(
+            [h_adv, h_src, h_guide, x_adv, x_src, x_guide])
+        d_as = np.sqrt(((hs-ha)*(hs-ha)).sum())
+        d_ag = np.sqrt(((hg-ha)*(hg-ha)).sum())
+        d_sg = np.sqrt(((hg-hs)*(hg-hs)).sum())
+        print("L2 distance between source and adversarial example `%s`: %.4f" %
+              (layer, d_as))
+        print("L2 distance between guide and adversarial example `%s`: %.4f" %
+              (layer, d_ag))
+        print("L2 distance between source and guide `%s`: %.4f" %
+              (layer, d_sg))
+        print("d_ag/d_sg*100 `%s`: %.4f" % (layer, d_ag*100/d_sg))
+        self.assertTrue(d_ag*100/d_sg < 50.)
 
 
 if __name__ == '__main__':

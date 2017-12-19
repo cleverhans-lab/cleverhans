@@ -13,7 +13,8 @@ import time
 import warnings
 import logging
 
-from .utils import batch_indices, _ArgsWrapper, create_logger, set_log_level
+from .utils import batch_indices, _ArgsWrapper, create_logger
+from .utils import set_log_level, get_log_level
 
 _logger = create_logger("cleverhans.utils.tf")
 
@@ -108,7 +109,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         assert args.filename, "Filename for save was not given in args dict"
 
     if not verbose:
-        set_log_level(logging.WARNING)
+        old_log_level = get_log_level(name=_logger.name)
+        set_log_level(logging.WARNING, name=_logger.name)
         warnings.warn("verbose argument is deprecated and will be removed"
                       " on 2018-02-11. Instead, use utils.set_log_level()."
                       " For backward compatibility, log_level was set to"
@@ -174,6 +176,9 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                          str(save_path))
         else:
             _logger.info("Completed model training.")
+
+    if not verbose:
+        set_log_level(old_log_level, name=_logger.name)
 
     return True
 
