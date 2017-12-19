@@ -13,8 +13,8 @@ import tensorflow as tf
 
 from cleverhans.utils_tf import batch_indices
 from cleverhans.utils_mnist import data_mnist
-import cleverhans.utils_cifar as cifar_input
-import cleverhans.utils_svhn as svhn_input
+import utils_cifar as cifar_input
+import utils_svhn as svhn_input
 from utils import preprocess_batch
 
 from make_model import make_model
