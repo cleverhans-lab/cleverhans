@@ -150,7 +150,7 @@ class TestRunMultiGPU(CleverHansTest):
                          atol=2e-2)
         self.assertClose(report.adv_train_adv_eval,
                          report_2.adv_train_adv_eval,
-                         atol=5e-2)
+                         atol=1e-1)
 
     def test_run_multi_gpu_madryetal(self):
         self.helper_run_multi_gpu_madryetal()
