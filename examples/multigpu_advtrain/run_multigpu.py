@@ -14,8 +14,8 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
 
-from trainer_multigpu import TrainerMultiGPU
-from trainer_singlegpu import TrainerSingleGPU
+from trainer import TrainerMultiGPU
+from trainer import TrainerSingleGPU
 
 
 def run_trainer(hparams):
