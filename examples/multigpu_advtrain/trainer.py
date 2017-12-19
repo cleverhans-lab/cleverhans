@@ -1,3 +1,8 @@
+"""
+This module provides Trainer classes that given a set of flags, create,
+initialize and train a model. Theese classes use Runner objects to handle
+multigpu/singlegpu training.
+"""
 import six
 import math
 import time
@@ -25,7 +30,18 @@ from evaluator import create_adv_by_name
 
 
 class TrainManager(object):
+    """
+    The base trainer class. Given an object of `hparams`, a trainer
+    creates and initializes a model. After initialization, the method
+    `model_train` can be used to train the model.
+    """
+
     def __init__(self, hparams):
+        """
+        :param hparams: An instance of collections.namedtuple specifying the
+                        model type and training configs. The parameters are
+                        documented in `run_multigpu.py`.
+        """
         self.hparams = hparams
         self.batch_size = hparams.batch_size
         self.evaluate = None
@@ -286,6 +302,12 @@ class TrainManager(object):
 
 
 class TrainerMultiGPU(TrainManager):
+    """
+    This class uses a `RunnerMultiGPU` object to train a model on multiple
+    GPUs. It mainly overrides the `_create_train_graph` to create a graph
+    for adversarial training on multiple GPUs.
+    """
+
     def __init__(self, *args, **kwargs):
         super(TrainerMultiGPU, self).__init__(*args, **kwargs)
         from runner import RunnerMultiGPU
@@ -399,6 +421,11 @@ class TrainerMultiGPU(TrainManager):
 
 
 class TrainerSingleGPU(TrainManager):
+    """
+    This class uses a `RunnerSingleGPU` object to train a model on a single
+    GPU.
+    """
+
     def __init__(self, *args, **kwargs):
         super(TrainerSingleGPU, self).__init__(*args, **kwargs)
         from runner import RunnerSingleGPU
