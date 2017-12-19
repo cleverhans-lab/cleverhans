@@ -1034,6 +1034,8 @@ class MadryEtAl(Attack):
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
+        :param rand_init: (optional bool) If True, an initial random
+                    perturbation is added.
         """
 
         # Parse and save attack-specific parameters
@@ -1067,6 +1069,8 @@ class MadryEtAl(Attack):
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
+        :param rand_init: (optional bool) If True, an initial random
+                    perturbation is added.
         """
 
         # Save attack-specific parameters
