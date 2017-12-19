@@ -31,15 +31,15 @@ class TrainManager(object):
         self.evaluate = None
         self.step_num = 0
         self.report = None
-        self.init_session()
-        self.init_data()
-        self.init_inputs()
-        self.init_model()
-        self.create_train_graph()
-        self.init_eval()
+        self._init_session()
+        self._init_data()
+        self._init_inputs()
+        self._init_model()
+        self._create_train_graph()
+        self._init_eval()
         self.runner = None
 
-    def init_session(self):
+    def _init_session(self):
         # Set TF random seed to improve reproducibility
         self.rng = np.random.RandomState([2017, 8, 30])
         tf.set_random_seed(1234)
@@ -55,7 +55,7 @@ class TrainManager(object):
         else:
             self.writer = None
 
-    def init_data(self):
+    def _init_data(self):
         hparams = self.hparams
         batch_size = hparams.batch_size
         if hparams.dataset == 'mnist':
@@ -91,7 +91,7 @@ class TrainManager(object):
         self.input_shape = input_shape
         self.preproc_func = preproc_func
 
-    def init_inputs(self):
+    def _init_inputs(self):
         preproc_func = self.preproc_func
         input_shape = self.input_shape
         # Define input TF placeholder
@@ -103,14 +103,14 @@ class TrainManager(object):
 
         self.g0_inputs = {'x_pre': x_pre, 'x': x, 'y': y}
 
-    def init_model(self):
+    def _init_model(self):
         flags = self.hparams.__dict__
         # Define TF model graph
         model = make_model(input_shape=self.input_shape, **flags)
         model.set_device(None)
         self.model = model
 
-    def init_eval(self):
+    def _init_eval(self):
         logging.info("Init eval")
         x_pre, x, y = [self.g0_inputs[k] for k in ['x_pre', 'x', 'y']]
         self.model.set_device('/gpu:0')
@@ -129,7 +129,7 @@ class TrainManager(object):
             self.writer.close()
         return self.report
 
-    def update_learning_params(self):
+    def _update_learning_params(self):
         model = self.model
         hparams = self.hparams
         fd = self.runner.feed_dict
@@ -147,7 +147,7 @@ class TrainManager(object):
 
             fd[model.lrn_rate] = lrn_rate
 
-    def build_train_op(self, predictions, y, predictions_adv):
+    def _build_train_op(self, predictions, y, predictions_adv):
         model = self.model
         hparams = self.hparams
         if hparams.model_type == 'resnet_tf':
@@ -207,7 +207,7 @@ class TrainManager(object):
         with sess.as_default():
             X_batch = X_train[:batch_size]
             Y_batch = Y_train[:batch_size]
-            self.init_tf(X_batch, Y_batch)
+            self._init_tf(X_batch, Y_batch)
 
             for epoch in six.moves.xrange(nb_epochs):
                 logging.info("Epoch " + str(epoch))
@@ -227,20 +227,20 @@ class TrainManager(object):
                         batch, len(X_train), batch_size)
 
                     # Perform one training step
-                    self.update_learning_params()
+                    self._update_learning_params()
 
                     # Train step
                     X_batch = X_train[index_shuf[start:end]]
                     Y_batch = Y_train[index_shuf[start:end]]
 
-                    self.run({'x_pre': X_batch, 'y': Y_batch})
-                    self.sync_params()
+                    self._run({'x_pre': X_batch, 'y': Y_batch})
+                    self._sync_params()
 
                 # Clean up the queue
                 while not self.runner.is_finished():
-                    self.run()
+                    self._run()
 
-                self.sync_params(forced=True)
+                self._sync_params(forced=True)
 
                 assert end >= len(X_train), (
                     'Not all training examples are used.')
@@ -260,22 +260,22 @@ class TrainManager(object):
                     logging.info("Model saved at: " + str(save_path))
         logging.info("Completed model training.")
 
-    def init_tf(self, X_batch, Y_batch):
+    def _init_tf(self, X_batch, Y_batch):
         x_pre = self.g0_inputs['x_pre']
         y = self.g0_inputs['y']
         fd = {x_pre: X_batch, y: Y_batch}
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op, feed_dict=fd)
 
-    def run(self, X_batch=None):
+    def _run(self, X_batch=None):
         last_fvals = self.runner.run(X_batch)
         self.step_num += 1
         return last_fvals
 
-    def sync_params(self, forced=False):
+    def _sync_params(self, forced=False):
         raise NotImplemented('sync_params should be implemented.')
 
-    def create_train_graph(self):
+    def _create_train_graph(self):
         """
         The evaluation graph must be initialized after the train graph is
         fully initialized, otherwise, some of the variables will be created
@@ -321,8 +321,8 @@ class TrainerMultiGPU(TrainManager):
 
         return inputs, outputs
 
-    def create_train_graph(self):
-        super(TrainerMultiGPU, self).create_train_graph()
+    def _create_train_graph(self):
+        super(TrainerMultiGPU, self)._create_train_graph()
         assert '_multigpu' in self.hparams.attack_type_train
 
         hparams = self.hparams
@@ -379,7 +379,7 @@ class TrainerMultiGPU(TrainManager):
                     preds = None
                     model.set_training(training=True)
                     preds_adv = model.get_probs(adv_x)
-                train_fetches = self.build_train_op(preds, y, preds_adv)
+                train_fetches = self._build_train_op(preds, y, preds_adv)
 
         outputs += [{'fetches': train_fetches}]
 
@@ -393,7 +393,7 @@ class TrainerMultiGPU(TrainManager):
         self.outputs = outputs
         self.sync_ops = sync_ops
 
-    def sync_params(self, forced=False):
+    def _sync_params(self, forced=False):
         if forced or (self.step_num % self.hparams.sync_step == 0):
             self.sess.run(self.sync_ops)
 
@@ -405,8 +405,8 @@ class TrainerSingleGPU(TrainManager):
         self.runner = RunnerSingleGPU(self.inputs, self.outputs,
                                       sess=self.sess)
 
-    def create_train_graph(self):
-        super(TrainerSingleGPU, self).create_train_graph()
+    def _create_train_graph(self):
+        super(TrainerSingleGPU, self)._create_train_graph()
         self.model.set_device('/gpu:0')
         hparams = self.hparams
         model = self.model
@@ -443,12 +443,12 @@ class TrainerSingleGPU(TrainManager):
                 preds = model.get_probs(x)
                 model.set_training(training=True)
                 preds_adv = model.get_probs(adv_x)
-        train_fetches = self.build_train_op(preds, y, preds_adv)
+        train_fetches = self._build_train_op(preds, y, preds_adv)
 
         self.inputs = [self.g0_inputs]
         self.outputs = [train_fetches]
 
-    def sync_params(self, forced=False):
+    def _sync_params(self, forced=False):
         """
         Nothing to sync on single GPU.
         """
