@@ -54,6 +54,8 @@ install:
 
 # command to run tests
 script:
+  # exit on first error
+  - set -e
   # run keras backend init to initialize backend config
   - python -c "import keras.backend"
   # create dataset directory to avoid concurrent directory creation at runtime
@@ -61,5 +63,7 @@ script:
   # set up keras backend
   - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
-  - nosetests -v --nologcapture cleverhans
-  - nosetests --nologcapture -v tests_tf
+  # --nologcapture: avoids a large amount of unnecessary tensorflow output
+  # --stop: stop on first error. Gives feedback from travis faster
+  - nosetests -v --nologcapture --stop cleverhans
+  - nosetests --nologcapture -v --stop tests_tf
