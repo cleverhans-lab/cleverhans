@@ -401,29 +401,6 @@ def kl_with_logits(p_logits, q_logits, scope=None,
         return loss
 
 
-def l1_normalize(x, dim, epsilon=1e-12, name=None):
-    """Normalizes along dimension `dim` using an L1 norm.
-    For a 1-D tensor with `dim = 0`, computes
-        output = x / max(sum(abs(x), epsilon))
-    For `x` with more dimensions, independently normalizes each slice along
-    dimension or dimensions specified by `dim`.
-    Args:
-        x: A `Tensor`.
-        dim: Dimension along which to normalize.  A scalar or a vector of
-            integers.
-        epsilon: A lower bound value for the norm. Will use `epsilon` as the
-            divisor if `norm < epsilon`.
-        name: A name for this operation (optional).
-    Returns:
-        A `Tensor` with the same shape as `x`.
-    """
-    with tf.name_scope(name, "l1_normalize", [x]) as name:
-        x = tf.convert_to_tensor(x, name="x")
-        abs_sum = tf.reduce_sum(tf.abs(x), dim, keep_dims=True)
-        x_inv_norm = 1. / tf.maximum(abs_sum, epsilon)
-        return tf.multiply(x, x_inv_norm, name=name)
-
-
 def clip_eta(eta, ord, eps):
     """
     Helper function to clip the perturbation to epsilon norm ball.
@@ -437,10 +414,23 @@ def clip_eta(eta, ord, eps):
     if ord not in [np.inf, 1, 2]:
         raise ValueError('ord must be np.inf, 1, or 2.')
     reduc_ind = list(xrange(1, len(eta.get_shape())))
+    avoid_zero_div = 1e-12
     if ord == np.inf:
         eta = tf.clip_by_value(eta, -eps, eps)
-    elif ord == 1:
-        eta = l1_normalize(eta, reduc_ind)
-    elif ord == 2:
-        eta = tf.nn.l2_normalize(eta, reduc_ind)
+    else:
+        if ord == 1:
+            norm = tf.maximum(avoid_zero_div,
+                              tf.reduce_sum(tf.abs(eta),
+                                            reduc_ind, keep_dims=True))
+        elif ord == 2:
+            # avoid_zero_div must go inside sqrt to avoid a divide by zero
+            # in the gradient through this operation
+            norm = tf.sqrt(tf.maximum(avoid_zero_div,
+                                      tf.reduce_sum(tf.square(eta),
+                                                    reduc_ind,
+                                                    keep_dims=True)))
+        # We must *clip* to within the norm ball, not *normalize* onto the
+        # surface of the ball
+        factor = tf.minimum(1., eps / norm)
+        eta = eta * factor
     return eta
