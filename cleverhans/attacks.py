@@ -454,9 +454,11 @@ class BasicIterativeMethod(Attack):
 class MomentumIterativeMethod(Attack):
 
     """
-    The Momentum Iterative Method (Kurakin et al. 2016). The original paper used
-    hard labels for this attack; no label smoothing.
-    Paper link: https://arxiv.org/pdf/1607.02533.pdf
+    The Momentum Iterative Method (Dong et al. 2017). This method won 
+    the first places in NIPS 2017 Non-targeted Adversarial Attacks and 
+    Targeted Adversarial Attacks. The original paper used hard labels 
+    for this attack; no label smoothing.
+    Paper link: https://arxiv.org/pdf/1710.06081.pdf
     """
 
     def __init__(self, model, back='tf', sess=None):
@@ -491,7 +493,7 @@ class MomentumIterativeMethod(Attack):
                          one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
-        :param decay_factor: (optional) Decay factor for momentum term.
+        :param decay_factor: (optional) Decay factor for the momentum term.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -518,6 +520,7 @@ class MomentumIterativeMethod(Attack):
 
         from . import utils_tf
         for i in range(self.nb_iter):
+            # Compute loss
             preds = self.model.get_probs(adv_x)
             loss = utils_tf.model_loss(y, preds, mean=False)
             if targeted:
@@ -525,6 +528,8 @@ class MomentumIterativeMethod(Attack):
 
             # Define gradient of loss wrt input
             grad, = tf.gradients(loss, adv_x)
+
+            # Normalize current gradient and add it to the accumulated gradient
             red_ind = list(xrange(1, len(grad.get_shape())))
             grad = grad / tf.reduce_mean(tf.abs(grad),
                                          reduction_indices=red_ind,
@@ -544,11 +549,12 @@ class MomentumIterativeMethod(Attack):
                                                  reduction_indices=reduc_ind,
                                                  keep_dims=True))
                 normalized_grad = eta / norm
-                
-            normalized_grad = tf.stop_gradient(normalized_grad)
+            
+            # Update and clip adversarial example in current iteration
             scaled_grad = self.eps_iter * normalized_grad
             adv_x = adv_x + scaled_grad
             adv_x = tf.clip_by_value(adv_x, x_min, x_max)
+            adv_x = tf.stop_gradient(adv_x)
 
         return adv_x
 
@@ -570,7 +576,7 @@ class MomentumIterativeMethod(Attack):
                          one-hot-encoded.
         :param ord: (optional) Order of the norm (mimics Numpy).
                     Possible values: np.inf, 1 or 2.
-        :param decay_factor: (optional) Decay factor for momentum term.
+        :param decay_factor: (optional) Decay factor for the momentum term.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
