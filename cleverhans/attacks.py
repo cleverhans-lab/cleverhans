@@ -454,9 +454,9 @@ class BasicIterativeMethod(Attack):
 class MomentumIterativeMethod(Attack):
 
     """
-    The Momentum Iterative Method (Dong et al. 2017). This method won 
-    the first places in NIPS 2017 Non-targeted Adversarial Attacks and 
-    Targeted Adversarial Attacks. The original paper used hard labels 
+    The Momentum Iterative Method (Dong et al. 2017). This method won
+    the first places in NIPS 2017 Non-targeted Adversarial Attacks and
+    Targeted Adversarial Attacks. The original paper used hard labels
     for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1710.06081.pdf
     """
@@ -507,8 +507,12 @@ class MomentumIterativeMethod(Attack):
         adv_x = x
 
         if (self.clip_min is not None) and (self.clip_max is not None):
-            x_max = tf.clip_by_value(x + self.eps, self.clip_min, self.clip_max)
-            x_min = tf.clip_by_value(x - self.eps, self.clip_min, self.clip_max)
+            x_max = tf.clip_by_value(x + self.eps,
+                                     self.clip_min,
+                                     self.clip_max)
+            x_min = tf.clip_by_value(x - self.eps,
+                                     self.clip_min,
+                                     self.clip_max)
         else:
             x_max = x + self.eps
             x_min = x - self.eps
@@ -549,7 +553,7 @@ class MomentumIterativeMethod(Attack):
                                                  reduction_indices=reduc_ind,
                                                  keep_dims=True))
                 normalized_grad = eta / norm
-            
+
             # Update and clip adversarial example in current iteration
             scaled_grad = self.eps_iter * normalized_grad
             adv_x = adv_x + scaled_grad
@@ -559,7 +563,8 @@ class MomentumIterativeMethod(Attack):
         return adv_x
 
     def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
-                     ord=np.inf, decay_factor=1.0, clip_min=None, clip_max=None,
+                     ord=np.inf, decay_factor=1.0,
+                     clip_min=None, clip_max=None,
                      y_target=None, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
