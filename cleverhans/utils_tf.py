@@ -413,17 +413,24 @@ def clip_eta(eta, ord, eps):
     # Clipping perturbation eta to self.ord norm ball
     if ord not in [np.inf, 1, 2]:
         raise ValueError('ord must be np.inf, 1, or 2.')
+    reduc_ind = list(xrange(1, len(eta.get_shape())))
+    avoid_zero_div = 1e-12
     if ord == np.inf:
         eta = tf.clip_by_value(eta, -eps, eps)
-    elif ord in [1, 2]:
-        reduc_ind = list(xrange(1, len(eta.get_shape())))
+    else:
         if ord == 1:
-            norm = tf.reduce_sum(tf.abs(eta),
-                                 reduction_indices=reduc_ind,
-                                 keep_dims=True)
+            norm = tf.maximum(avoid_zero_div,
+                              tf.reduce_sum(tf.abs(eta),
+                                            reduc_ind, keep_dims=True))
         elif ord == 2:
-            norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
-                                         reduction_indices=reduc_ind,
-                                         keep_dims=True))
-        eta = eta * eps / norm
+            # avoid_zero_div must go inside sqrt to avoid a divide by zero
+            # in the gradient through this operation
+            norm = tf.sqrt(tf.maximum(avoid_zero_div,
+                                      tf.reduce_sum(tf.square(eta),
+                                                    reduc_ind,
+                                                    keep_dims=True)))
+        # We must *clip* to within the norm ball, not *normalize* onto the
+        # surface of the ball
+        factor = tf.minimum(1., eps / norm)
+        eta = eta * factor
     return eta
