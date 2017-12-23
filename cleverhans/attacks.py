@@ -503,19 +503,8 @@ class MomentumIterativeMethod(Attack):
         assert self.parse_params(**kwargs)
 
         # Initialize loop variables
-        eta = 0
+        momentum = 0
         adv_x = x
-
-        if (self.clip_min is not None) and (self.clip_max is not None):
-            x_max = tf.clip_by_value(x + self.eps,
-                                     self.clip_min,
-                                     self.clip_max)
-            x_min = tf.clip_by_value(x - self.eps,
-                                     self.clip_min,
-                                     self.clip_max)
-        else:
-            x_max = x + self.eps
-            x_min = x - self.eps
 
         # Fix labels to the first model predictions for loss computation
         y, nb_classes = self.get_or_guess_labels(x, kwargs)
@@ -538,31 +527,35 @@ class MomentumIterativeMethod(Attack):
             grad = grad / tf.reduce_mean(tf.abs(grad),
                                          reduction_indices=red_ind,
                                          keep_dims=True)
-            eta = self.decay_factor * eta + grad
+            momentum = self.decay_factor * momentum + grad
 
             if self.ord == np.inf:
-                normalized_grad = tf.sign(eta)
+                normalized_grad = tf.sign(momentum)
             elif self.ord in [1, 2]:
-                reduc_ind = list(xrange(1, len(eta.get_shape())))
+                reduc_ind = list(xrange(1, len(momentum.get_shape())))
                 if self.ord == 1:
-                    norm = tf.reduce_sum(tf.abs(eta),
+                    norm = tf.reduce_sum(tf.abs(momentum),
                                          reduction_indices=reduc_ind,
                                          keep_dims=True)
                 elif self.ord == 2:
-                    norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
+                    norm = tf.sqrt(tf.reduce_sum(tf.square(momentum),
                                                  reduction_indices=reduc_ind,
                                                  keep_dims=True))
-                normalized_grad = eta / norm
+                normalized_grad = momentum / norm
 
             # Update and clip adversarial example in current iteration
             scaled_grad = self.eps_iter * normalized_grad
             adv_x = adv_x + scaled_grad
-            adv_x = tf.clip_by_value(adv_x, x_min, x_max)
+            adv_x = x + utils_tf.clip_eta(adv_x - x, self.ord, self.eps)
+
+            if self.clip_min is not None and self.clip_max is not None:
+                adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
             adv_x = tf.stop_gradient(adv_x)
 
         return adv_x
 
-    def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
+    def parse_params(self, eps=0.3, eps_iter=0.06, nb_iter=10, y=None,
                      ord=np.inf, decay_factor=1.0,
                      clip_min=None, clip_max=None,
                      y_target=None, **kwargs):
