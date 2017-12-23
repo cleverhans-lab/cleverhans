@@ -451,6 +451,160 @@ class BasicIterativeMethod(Attack):
         return True
 
 
+class MomentumIterativeMethod(Attack):
+
+    """
+    The Momentum Iterative Method (Dong et al. 2017). This method won
+    the first places in NIPS 2017 Non-targeted Adversarial Attacks and
+    Targeted Adversarial Attacks. The original paper used hard labels
+    for this attack; no label smoothing.
+    Paper link: https://arxiv.org/pdf/1710.06081.pdf
+    """
+
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Create a MomentumIterativeMethod instance.
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(MomentumIterativeMethod, self).__init__(model, back, sess)
+        self.feedable_kwargs = {'eps': np.float32,
+                                'eps_iter': np.float32,
+                                'y': np.float32,
+                                'y_target': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32}
+        self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'probs')
+
+    def generate(self, x, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param decay_factor: (optional) Decay factor for the momentum term.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        # Initialize loop variables
+        momentum = 0
+        adv_x = x
+
+        # Fix labels to the first model predictions for loss computation
+        y, nb_classes = self.get_or_guess_labels(x, kwargs)
+        y = y / tf.reduce_sum(y, 1, keep_dims=True)
+        targeted = (self.y_target is not None)
+
+        from . import utils_tf
+        for i in range(self.nb_iter):
+            # Compute loss
+            preds = self.model.get_probs(adv_x)
+            loss = utils_tf.model_loss(y, preds, mean=False)
+            if targeted:
+                loss = -loss
+
+            # Define gradient of loss wrt input
+            grad, = tf.gradients(loss, adv_x)
+
+            # Normalize current gradient and add it to the accumulated gradient
+            red_ind = list(xrange(1, len(grad.get_shape())))
+            avoid_zero_div = 1e-12
+            grad = grad / tf.maximum(avoid_zero_div,
+                                     tf.reduce_mean(tf.abs(grad),
+                                                    red_ind,
+                                                    keep_dims=True))
+            momentum = self.decay_factor * momentum + grad
+
+            if self.ord == np.inf:
+                normalized_grad = tf.sign(momentum)
+            elif self.ord == 1:
+                norm = tf.maximum(avoid_zero_div,
+                                  tf.reduce_sum(tf.abs(momentum),
+                                                red_ind,
+                                                keep_dims=True))
+                normalized_grad = momentum / norm
+            elif self.ord == 2:
+                square = tf.reduce_sum(tf.square(momentum),
+                                       red_ind,
+                                       keep_dims=True)
+                norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
+                normalized_grad = momentum / norm
+            else:
+                raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                                          "currently implemented.")
+
+            # Update and clip adversarial example in current iteration
+            scaled_grad = self.eps_iter * normalized_grad
+            adv_x = adv_x + scaled_grad
+            adv_x = x + utils_tf.clip_eta(adv_x - x, self.ord, self.eps)
+
+            if self.clip_min is not None and self.clip_max is not None:
+                adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+            adv_x = tf.stop_gradient(adv_x)
+
+        return adv_x
+
+    def parse_params(self, eps=0.3, eps_iter=0.06, nb_iter=10, y=None,
+                     ord=np.inf, decay_factor=1.0,
+                     clip_min=None, clip_max=None,
+                     y_target=None, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param decay_factor: (optional) Decay factor for the momentum term.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+
+        # Save attack-specific parameters
+        self.eps = eps
+        self.eps_iter = eps_iter
+        self.nb_iter = nb_iter
+        self.y = y
+        self.y_target = y_target
+        self.ord = ord
+        self.decay_factor = decay_factor
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+        if self.y is not None and self.y_target is not None:
+            raise ValueError("Must not set both y and y_target")
+        # Check if order of the norm is acceptable given current implementation
+        if self.ord not in [np.inf, 1, 2]:
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
+        return True
+
+
 class SaliencyMapMethod(Attack):
 
     """

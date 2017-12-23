@@ -10,6 +10,7 @@ from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.attacks import Attack
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import BasicIterativeMethod
+from cleverhans.attacks import MomentumIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.attacks import CarliniWagnerL2
@@ -284,6 +285,36 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         tf.gradients = old_grads
 
         self.assertTrue(ok[0])
+
+
+class TestMomentumIterativeMethod(TestBasicIterativeMethod):
+    def setUp(self):
+        super(TestMomentumIterativeMethod, self).setUp()
+        import tensorflow as tf
+
+        # The world's simplest neural network
+        def my_model(x):
+            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
+            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
+            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
+            res = tf.nn.softmax(tf.matmul(h1, W2))
+            return res
+
+        self.sess = tf.Session()
+        self.model = my_model
+        self.attack = MomentumIterativeMethod(self.model, sess=self.sess)
+
+    def test_generate_np_can_be_called_with_different_decay_factor(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        for dacay_factor in [0.0, 0.5, 1.0]:
+            x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
+                                            dacay_factor=dacay_factor,
+                                            clip_min=-5.0, clip_max=5.0)
+
+            delta = np.max(np.abs(x_adv - x_val), axis=1)
+            self.assertClose(delta, 0.5)
 
 
 class TestCarliniWagnerL2(CleverHansTest):
