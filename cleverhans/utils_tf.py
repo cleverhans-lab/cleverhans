@@ -198,7 +198,6 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
              the learning phase of a Keras model for instance.
     :param args: dict or argparse `Namespace` object.
                  Should contain `batch_size`
-    :param model: (deprecated) if not None, holds model output predictions
     :return: a float with the accuracy value
     """
     args = _ArgsWrapper(args or {})
@@ -210,15 +209,6 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
     if model is None and predictions is None:
         raise ValueError("One of model argument "
                          "or predictions argument must be supplied.")
-    if model is not None:
-        warnings.warn("model argument is deprecated. "
-                      "Switch to predictions argument. "
-                      "model argument will be removed after 2018-01-05.")
-        if predictions is None:
-            predictions = model
-        else:
-            raise ValueError("Exactly one of model argument"
-                             " and predictions argument should be specified.")
 
     # Define accuracy symbolically
     if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):

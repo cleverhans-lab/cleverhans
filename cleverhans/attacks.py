@@ -31,14 +31,8 @@ class Attack(object):
             sess = tf.get_default_session()
 
         if not isinstance(model, Model):
-            if hasattr(model, '__call__'):
-                warnings.warn("CleverHans support for supplying a callable"
-                              " instead of an instance of the"
-                              " cleverhans.model.Model class is"
-                              " deprecated and will be dropped on 2018-01-11.")
-            else:
-                raise ValueError("The model argument should be an instance of"
-                                 " the cleverhans.model.Model class.")
+            raise ValueError("The model argument should be an instance of"
+                             " the cleverhans.model.Model class.")
 
         # Prepare attributes
         self.model = model
@@ -1108,38 +1102,6 @@ class DeepFool(Attack):
         self.clip_max = clip_max
 
         return True
-
-
-def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
-    """
-    A wrapper for the Fast Gradient Sign Method.
-    It calls the right function, depending on the
-    user's backend.
-    :param x: the input
-    :param predictions: the model's output
-                        (Note: in the original paper that introduced this
-                         attack, the loss was computed by comparing the
-                         model predictions with the hard labels (from the
-                         dataset). Instead, this version implements the loss
-                         by comparing the model predictions with the most
-                         likely class. This tweak is recommended since the
-                         discovery of label leaking in the following paper:
-                         https://arxiv.org/abs/1611.01236)
-    :param eps: the epsilon (input variation parameter)
-    :param back: Which backend to use (currently only 'tf' is supported)
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
-    :return: a tensor for the adversarial example
-    """
-    warnings.warn("attacks.fgsm is deprecated and will be removed on "
-                  "2017-09-27. Instantiate an object from FastGradientMethod.")
-    if back == 'tf':
-        # Compute FGSM using TensorFlow
-        from .attacks_tf import fgm
-        return fgm(x, predictions, y=None, eps=eps, ord=np.inf,
-                   clip_min=clip_min, clip_max=clip_max)
 
 
 def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
