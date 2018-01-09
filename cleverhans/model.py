@@ -53,11 +53,15 @@ class Model(object):
         :return: A symbolic representation of the output probabilities (i.e.,
                 the output values produced by the softmax layer).
         """
+        use_logits = False
         try:
             return self.get_layer(x, 'probs')
         except NoSuchLayerError:
-            import tensorflow as tf
-            return tf.nn.softmax(self.get_logits(x))
+            pass
+        except NotImplementedError:
+            pass
+        import tensorflow as tf
+        return tf.nn.softmax(self.get_logits(x))
 
     def get_layer_names(self):
         """

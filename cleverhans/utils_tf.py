@@ -183,8 +183,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     return True
 
 
-def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
-               feed=None, args=None, model=None):
+def model_eval(sess, x, y, predictions, X_test=None, Y_test=None,
+               feed=None, args=None):
     """
     Compute the accuracy of a TF model on some data
     :param sess: TF session to use when training the graph
@@ -206,9 +206,6 @@ def model_eval(sess, x, y, predictions=None, X_test=None, Y_test=None,
     if X_test is None or Y_test is None:
         raise ValueError("X_test argument and Y_test argument "
                          "must be supplied.")
-    if model is None and predictions is None:
-        raise ValueError("One of model argument "
-                         "or predictions argument must be supplied.")
 
     # Define accuracy symbolically
     if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
