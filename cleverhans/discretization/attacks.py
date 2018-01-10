@@ -37,7 +37,7 @@ def discretize_range(discretize_fn, levels, low, high, thermometer=False):
   high = tf.clip_by_value(high, 0., 1.)
   out = 0.
   for alpha in np.linspace(0., 1., levels):
-    q = discretize_fn(alpha * low + (1. - alpha) * high)
+    q = discretize_fn(alpha * low + (1. - alpha) * high, levels, thermometer)
 
     # Convert into one hot encoding if q is in thermometer encoding
     if thermometer:
