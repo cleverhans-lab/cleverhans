@@ -7,7 +7,7 @@ matrix:
         - python: 2.7
           env:
             - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.0.1
+            - TENSORFLOW_V=1.4
         - python: 2.7
           env:
             - KERAS_BACKEND=tensorflow
@@ -19,7 +19,7 @@ matrix:
         - python: 3.5
           env:
             - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.1.0
+            - TENSORFLOW_V=1.4
 install:
   # code below is taken from http://conda.pydata.org/docs/travis.html
   # We do this conditionally because it saves us some downloading if the
