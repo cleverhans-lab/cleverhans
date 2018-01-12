@@ -53,7 +53,6 @@ class Model(object):
         :return: A symbolic representation of the output probabilities (i.e.,
                 the output values produced by the softmax layer).
         """
-        use_logits = False
         try:
             return self.get_layer(x, 'probs')
         except NoSuchLayerError:
