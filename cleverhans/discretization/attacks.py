@@ -14,7 +14,7 @@ import discretization_utils
 
 
 def discretize_range(discretize_fn, levels, low, high, thermometer=False):
-  """Get range of discretized values for in the interval (low, high).
+  """Get range of discretized values in the interval (low, high).
 
     For example, assume discretize_fn uniformly discretizes the values
     between 0 and 1 into 10 bins each represented by either a one hot encoding
