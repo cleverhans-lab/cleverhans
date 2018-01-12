@@ -138,6 +138,27 @@ class Attack(object):
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
 
+        fixed, feedable, hash_key = self.construct_variables(kwargs)
+
+        if hash_key not in self.graphs:
+            self.construct_graph(fixed, feedable, x_val, hash_key)
+
+        x, new_kwargs, x_adv = self.graphs[hash_key]
+
+        feed_dict = {x: x_val}
+
+        for name in feedable:
+            feed_dict[new_kwargs[name]] = feedable[name]
+
+        return self.sess.run(x_adv, feed_dict)
+
+    def construct_variables(self, kwargs):
+        """
+        Construct the inputs to the attack graph to be used by generate_np.
+        :param kwargs: Keyword arguments to generate_np.
+        :return: Structural and feedable arguments as well as a unique key
+                 for the graph given these inputs.
+        """
         # the set of arguments that are structural properties of the attack
         # if these arguments are different, we must construct a new graph
         fixed = dict((k, v) for k, v in kwargs.items()
@@ -163,17 +184,7 @@ class Attack(object):
             # create a unique key for this set of fixed paramaters
             hash_key = tuple(sorted(fixed.items()))
 
-        if hash_key not in self.graphs:
-            self.construct_graph(fixed, feedable, x_val, hash_key)
-
-        x, new_kwargs, x_adv = self.graphs[hash_key]
-
-        feed_dict = {x: x_val}
-
-        for name in feedable:
-            feed_dict[new_kwargs[name]] = feedable[name]
-
-        return self.sess.run(x_adv, feed_dict)
+        return fixed, feedable, hash_key
 
     def get_or_guess_labels(self, x, kwargs):
         """
@@ -1187,7 +1198,7 @@ class MadryEtAl(Attack):
                                 'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
-        self.structural_kwargs = ['ord', 'nb_iter']
+        self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
 
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'probs')
@@ -1208,6 +1219,8 @@ class MadryEtAl(Attack):
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
+        :param rand_init: (optional bool) If True, an initial random
+                    perturbation is added.
         """
 
         # Parse and save attack-specific parameters
@@ -1223,7 +1236,7 @@ class MadryEtAl(Attack):
 
     def parse_params(self, eps=0.3, eps_iter=0.01, nb_iter=40, y=None,
                      ord=np.inf, clip_min=None, clip_max=None,
-                     y_target=None, **kwargs):
+                     y_target=None, rand_init=True, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -1241,6 +1254,8 @@ class MadryEtAl(Attack):
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
+        :param rand_init: (optional bool) If True, an initial random
+                    perturbation is added.
         """
 
         # Save attack-specific parameters
@@ -1252,6 +1267,7 @@ class MadryEtAl(Attack):
         self.ord = ord
         self.clip_min = clip_min
         self.clip_max = clip_max
+        self.rand_init = rand_init
 
         if self.y is not None and self.y_target is not None:
             raise ValueError("Must not set both y and y_target")
@@ -1285,7 +1301,7 @@ class MadryEtAl(Attack):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
         eta = adv_x - x
         eta = clip_eta(eta, self.ord, self.eps)
-        return x, eta
+        return eta
 
     def attack(self, x, y):
         """
@@ -1300,11 +1316,14 @@ class MadryEtAl(Attack):
         import tensorflow as tf
         from cleverhans.utils_tf import clip_eta
 
-        eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
-        eta = clip_eta(eta, self.ord, self.eps)
+        if self.rand_init:
+            eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
+            eta = clip_eta(eta, self.ord, self.eps)
+        else:
+            eta = tf.zeros_like(x)
 
         for i in range(self.nb_iter):
-            x, eta = self.attack_single_step(x, eta, y)
+            eta = self.attack_single_step(x, eta, y)
 
         adv_x = x + eta
         if self.clip_min is not None and self.clip_max is not None:

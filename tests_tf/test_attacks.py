@@ -757,7 +757,6 @@ class TestMadryEtAl(CleverHansTest):
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        print(np.mean(orig_labs == new_labs))
         self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_clip_eta(self):
