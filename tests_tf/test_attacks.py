@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import tensorflow as tf
+import tensorflow.contrib.slim as slim
 import unittest
 import numpy as np
 
@@ -18,12 +20,48 @@ from cleverhans.attacks import ElasticNetMethod
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import MadryEtAl
 from cleverhans.attacks import FastFeatureAdversaries
+from cleverhans.model import Model
 
+class SimpleModel(Model):
+    """
+    A very simple neural network
+    """
+
+    def get_logits(self, x):
+        W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
+        h1 = tf.nn.sigmoid(tf.matmul(x, W1))
+        W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
+        res = tf.matmul(h1, W2)
+        return res
+
+class TrivialModel(Model):
+  """
+  A linear model with two weights
+  """
+
+  def get_logits(self, x):
+      W1 = tf.constant([[1, -1]], dtype=tf.float32)
+      res = tf.matmul(x, W1)
+      return res
+
+
+class DummyModel(Model):
+    """
+    A simple model based on slim
+    """
+
+    def __init__(self):
+        def template_fn(x):
+          net = slim.fully_connected(x, 60)
+          return slim.fully_connected(net, 10, activation_fn=None)
+        self.template = tf.make_template('dummy_model', template_fn)
+
+    def get_logits(self, x):
+        return self.template(x)
 
 class TestAttackClassInitArguments(CleverHansTest):
 
     def test_model(self):
-        import tensorflow as tf
         sess = tf.Session()
 
         # Exception is thrown when model does not have __call__ attribute
@@ -33,9 +71,7 @@ class TestAttackClassInitArguments(CleverHansTest):
         self.assertTrue(context.exception)
 
     def test_back(self):
-        # Define empty model
-        def model():
-            return True
+        model = Model()
 
         # Exception is thrown when back is not tf or th
         with self.assertRaises(Exception) as context:
@@ -44,15 +80,13 @@ class TestAttackClassInitArguments(CleverHansTest):
 
     def test_sess(self):
         # Define empty model
-        def model():
-            return True
+        model = Model()
 
         # Test that it is permitted to provide no session
         Attack(model, back='tf', sess=None)
 
     def test_sess_generate_np(self):
-        def model(x):
-            return True
+        model = Model()
 
         class DummyAttack(Attack):
             def generate(self, x, **kwargs):
@@ -66,29 +100,19 @@ class TestAttackClassInitArguments(CleverHansTest):
 
 class TestParseParams(CleverHansTest):
     def test_parse(self):
-        def model():
-            return True
-
-        import tensorflow as tf
         sess = tf.Session()
 
-        test_attack = Attack(model, back='tf', sess=sess)
+        test_attack = Attack(Model(), back='tf', sess=sess)
         self.assertTrue(test_attack.parse_params({}))
 
 
 class TestVirtualAdversarialMethod(CleverHansTest):
     def setUp(self):
         super(TestVirtualAdversarialMethod, self).setUp()
-        import tensorflow as tf
-        import tensorflow.contrib.slim as slim
-
-        def dummy_model(x):
-            net = slim.fully_connected(x, 60)
-            return slim.fully_connected(net, 10, activation_fn=None)
 
         self.sess = tf.Session()
         self.sess.as_default()
-        self.model = tf.make_template('dummy_model', dummy_model)
+        self.model = DummyModel()
         self.attack = VirtualAdversarialMethod(self.model, sess=self.sess)
 
         # initialize model
@@ -116,18 +140,10 @@ class TestVirtualAdversarialMethod(CleverHansTest):
 class TestFastGradientMethod(CleverHansTest):
     def setUp(self):
         super(TestFastGradientMethod, self).setUp()
-        import tensorflow as tf
 
-        # The world's simplest neural network
-        def my_model(x):
-            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.nn.softmax(tf.matmul(h1, W2))
-            return res
 
         self.sess = tf.Session()
-        self.model = my_model
+        self.model = SimpleModel()
         self.attack = FastGradientMethod(self.model, sess=self.sess)
 
     def help_generate_np_gives_adversarial_example(self, ord):
@@ -196,7 +212,6 @@ class TestFastGradientMethod(CleverHansTest):
         self.assertClose(np.max(x_adv), 0.1)
 
     def test_generate_np_caches_graph_computation_for_eps_clip_or_xi(self):
-        import tensorflow as tf
 
         x_val = np.random.rand(1, 2)
         x_val = np.array(x_val, dtype=np.float32)
@@ -221,18 +236,9 @@ class TestFastGradientMethod(CleverHansTest):
 class TestBasicIterativeMethod(TestFastGradientMethod):
     def setUp(self):
         super(TestBasicIterativeMethod, self).setUp()
-        import tensorflow as tf
-
-        # The world's simplest neural network
-        def my_model(x):
-            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.nn.softmax(tf.matmul(h1, W2))
-            return res
 
         self.sess = tf.Session()
-        self.model = my_model
+        self.model = SimpleModel()
         self.attack = BasicIterativeMethod(self.model, sess=self.sess)
 
     def test_attack_strength(self):
@@ -253,7 +259,6 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
-        import tensorflow as tf
 
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
@@ -290,18 +295,9 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
 class TestMomentumIterativeMethod(TestBasicIterativeMethod):
     def setUp(self):
         super(TestMomentumIterativeMethod, self).setUp()
-        import tensorflow as tf
-
-        # The world's simplest neural network
-        def my_model(x):
-            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.nn.softmax(tf.matmul(h1, W2))
-            return res
 
         self.sess = tf.Session()
-        self.model = my_model
+        self.model = SimpleModel()
         self.attack = MomentumIterativeMethod(self.model, sess=self.sess)
 
     def test_generate_np_can_be_called_with_different_decay_factor(self):
@@ -320,18 +316,9 @@ class TestMomentumIterativeMethod(TestBasicIterativeMethod):
 class TestCarliniWagnerL2(CleverHansTest):
     def setUp(self):
         super(TestCarliniWagnerL2, self).setUp()
-        import tensorflow as tf
-
-        # The world's simplest neural network
-        def my_model(x):
-            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.matmul(h1, W2)
-            return res
 
         self.sess = tf.Session()
-        self.model = my_model
+        self.model = SimpleModel()
         self.attack = CarliniWagnerL2(self.model, sess=self.sess)
 
     def test_generate_np_untargeted_gives_adversarial_example(self):
@@ -367,7 +354,6 @@ class TestCarliniWagnerL2(CleverHansTest):
                         > 0.9)
 
     def test_generate_gives_adversarial_example(self):
-        import tensorflow as tf
 
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
@@ -404,12 +390,8 @@ class TestCarliniWagnerL2(CleverHansTest):
         self.assertTrue(np.max(x_adv) < .301)
 
     def test_generate_np_high_confidence_targeted_examples(self):
-        import tensorflow as tf
 
-        def trivial_model(x):
-            W1 = tf.constant([[1, -1]], dtype=tf.float32)
-            res = tf.matmul(x, W1)
-            return res
+        trivial_model = TrivialModel()
 
         for CONFIDENCE in [0, 2.3]:
             x_val = np.random.rand(10, 1) - .5
@@ -428,30 +410,26 @@ class TestCarliniWagnerL2(CleverHansTest):
                                        y_target=feed_labs,
                                        batch_size=10)
 
-            new_labs = self.sess.run(trivial_model(x_adv))
+            new_labs = self.sess.run(trivial_model.get_logits(x_adv))
 
             good_labs = new_labs[np.arange(10), np.argmax(feed_labs, axis=1)]
             bad_labs = new_labs[np.arange(
                 10), 1 - np.argmax(feed_labs, axis=1)]
 
-            self.assertTrue(np.isclose(
-                0, np.min(good_labs - (bad_labs + CONFIDENCE)), atol=1e-1))
+            self.assertClose(CONFIDENCE, np.min(good_labs - bad_labs),
+                             atol=1e-1)
             self.assertTrue(np.mean(np.argmax(new_labs, axis=1) ==
                                     np.argmax(feed_labs, axis=1)) > .9)
 
     def test_generate_np_high_confidence_untargeted_examples(self):
-        import tensorflow as tf
 
-        def trivial_model(x):
-            W1 = tf.constant([[1, -1]], dtype=tf.float32)
-            res = tf.matmul(x, W1)
-            return res
+        trivial_model = TrivialModel()
 
         for CONFIDENCE in [0, 2.3]:
             x_val = np.random.rand(10, 1) - .5
             x_val = np.array(x_val, dtype=np.float32)
 
-            orig_labs = np.argmax(self.sess.run(trivial_model(x_val)), axis=1)
+            orig_labs = np.argmax(self.sess.run(trivial_model.get_logits(x_val)), axis=1)
             attack = CarliniWagnerL2(trivial_model, sess=self.sess)
             x_adv = attack.generate_np(x_val,
                                        max_iterations=100,
@@ -462,7 +440,7 @@ class TestCarliniWagnerL2(CleverHansTest):
                                        confidence=CONFIDENCE,
                                        batch_size=10)
 
-            new_labs = self.sess.run(trivial_model(x_adv))
+            new_labs = self.sess.run(trivial_model.get_logits(x_adv))
 
             good_labs = new_labs[np.arange(10), 1 - orig_labs]
             bad_labs = new_labs[np.arange(10), orig_labs]
@@ -476,18 +454,9 @@ class TestCarliniWagnerL2(CleverHansTest):
 class TestElasticNetMethod(CleverHansTest):
     def setUp(self):
         super(TestElasticNetMethod, self).setUp()
-        import tensorflow as tf
-
-        # The world's simplest neural network
-        def my_model(x):
-            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.matmul(h1, W2)
-            return res
 
         self.sess = tf.Session()
-        self.model = my_model
+        self.model = SimpleModel()
         self.attack = ElasticNetMethod(self.model, sess=self.sess)
 
     def test_generate_np_untargeted_gives_adversarial_example(self):
@@ -523,7 +492,6 @@ class TestElasticNetMethod(CleverHansTest):
                         0.9)
 
     def test_generate_gives_adversarial_example(self):
-        import tensorflow as tf
 
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
@@ -560,12 +528,8 @@ class TestElasticNetMethod(CleverHansTest):
         self.assertTrue(np.max(x_adv) < .301)
 
     def test_generate_np_high_confidence_targeted_examples(self):
-        import tensorflow as tf
 
-        def trivial_model(x):
-            W1 = tf.constant([[1, -1]], dtype=tf.float32)
-            res = tf.matmul(x, W1)
-            return res
+        trivial_model = TrivialModel()
 
         for CONFIDENCE in [0, 2.3]:
             x_val = np.random.rand(10, 1) - .5
@@ -584,7 +548,7 @@ class TestElasticNetMethod(CleverHansTest):
                                        y_target=feed_labs,
                                        batch_size=10)
 
-            new_labs = self.sess.run(trivial_model(x_adv))
+            new_labs = self.sess.run(trivial_model.get_logits(x_adv))
 
             good_labs = new_labs[np.arange(10), np.argmax(feed_labs, axis=1)]
             bad_labs = new_labs[np.arange(
@@ -596,18 +560,14 @@ class TestElasticNetMethod(CleverHansTest):
                                     np.argmax(feed_labs, axis=1)) > .9)
 
     def test_generate_np_high_confidence_untargeted_examples(self):
-        import tensorflow as tf
 
-        def trivial_model(x):
-            W1 = tf.constant([[1, -1]], dtype=tf.float32)
-            res = tf.matmul(x, W1)
-            return res
+        trivial_model = TrivialModel()
 
         for CONFIDENCE in [0, 2.3]:
             x_val = np.random.rand(10, 1) - .5
             x_val = np.array(x_val, dtype=np.float32)
 
-            orig_labs = np.argmax(self.sess.run(trivial_model(x_val)), axis=1)
+            orig_labs = np.argmax(self.sess.run(trivial_model.get_logits(x_val)), axis=1)
             attack = CarliniWagnerL2(trivial_model, sess=self.sess)
             x_adv = attack.generate_np(x_val,
                                        max_iterations=100,
@@ -618,7 +578,7 @@ class TestElasticNetMethod(CleverHansTest):
                                        confidence=CONFIDENCE,
                                        batch_size=10)
 
-            new_labs = self.sess.run(trivial_model(x_adv))
+            new_labs = self.sess.run(trivial_model.get_logits(x_adv))
 
             good_labs = new_labs[np.arange(10), 1 - orig_labs]
             bad_labs = new_labs[np.arange(10), orig_labs]
@@ -632,16 +592,10 @@ class TestElasticNetMethod(CleverHansTest):
 class TestSaliencyMapMethod(CleverHansTest):
     def setUp(self):
         super(TestSaliencyMapMethod, self).setUp()
-        import tensorflow as tf
-        import tensorflow.contrib.slim as slim
-
-        def dummy_model(x):
-            net = slim.fully_connected(x, 60)
-            return slim.fully_connected(net, 10, activation_fn=None)
 
         self.sess = tf.Session()
         self.sess.as_default()
-        self.model = tf.make_template('dummy_model', dummy_model)
+        self.model = DummyModel()
         self.attack = SaliencyMapMethod(self.model, sess=self.sess)
 
         # initialize model
@@ -669,18 +623,9 @@ class TestSaliencyMapMethod(CleverHansTest):
 class TestDeepFool(CleverHansTest):
     def setUp(self):
         super(TestDeepFool, self).setUp()
-        import tensorflow as tf
-
-        # The world's simplest neural network
-        def my_model(x):
-            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.matmul(h1, W2)
-            return res
 
         self.sess = tf.Session()
-        self.model = my_model
+        self.model = SimpleModel()
         self.attack = DeepFool(self.model, sess=self.sess)
 
     def test_generate_np_gives_adversarial_example(self):
@@ -697,7 +642,6 @@ class TestDeepFool(CleverHansTest):
         self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     def test_generate_gives_adversarial_example(self):
-        import tensorflow as tf
 
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
@@ -728,18 +672,9 @@ class TestDeepFool(CleverHansTest):
 class TestMadryEtAl(CleverHansTest):
     def setUp(self):
         super(TestMadryEtAl, self).setUp()
-        import tensorflow as tf
-
-        # The world's simplest neural network
-        def my_model(x):
-            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.matmul(h1, W2)
-            return res
 
         self.sess = tf.Session()
-        self.model = my_model
+        self.model = SimpleModel()
         self.attack = MadryEtAl(self.model, sess=self.sess)
 
     def test_attack_strength(self):
@@ -811,7 +746,6 @@ class TestMadryEtAl(CleverHansTest):
 class TestFastFeatureAdversaries(CleverHansTest):
     def setUp(self):
         super(TestFastFeatureAdversaries, self).setUp()
-        import tensorflow as tf
 
         def make_imagenet_cnn(input_shape=(None, 224, 224, 3)):
             """
@@ -852,7 +786,6 @@ class TestFastFeatureAdversaries(CleverHansTest):
         at least 50% closer to the guide compared to the original distance of
         the source and the guide.
         """
-        import tensorflow as tf
         tf.set_random_seed(1234)
         input_shape = self.input_shape
         x_src = tf.abs(tf.random_uniform(input_shape, 0., 1.))

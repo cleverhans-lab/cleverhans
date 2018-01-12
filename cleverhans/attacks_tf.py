@@ -554,7 +554,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
 
 def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
-                          keras_phase=None, feed=None):
+                          feed=None):
     """
     Augment an adversary's substitute training set using the Jacobian
     of a substitute model to generate new synthetic inputs.
@@ -568,17 +568,11 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
                   at the previous iteration
     :param grads: Jacobian symbolic graph for the substitute
                   (should be generated using attacks_tf.jacobian_graph)
-    :param keras_phase: (deprecated) if not None, holds keras learning_phase
     :return: augmented substitute data (will need to be labeled by oracle)
     """
     assert len(x.get_shape()) == len(np.shape(X_sub_prev))
     assert len(grads) >= np.max(Y_sub) + 1
     assert len(X_sub_prev) == len(Y_sub)
-
-    if keras_phase is not None:
-        warnings.warn("keras_phase argument is deprecated and will be removed"
-                      " on 2017-09-28. Instead, use K.set_learning_phase(0) at"
-                      " the start of your script and serve with tensorflow.")
 
     # Prepare input_shape (outside loop) for feeding dictionary below
     input_shape = list(x.get_shape())

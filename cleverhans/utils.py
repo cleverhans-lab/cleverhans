@@ -323,20 +323,6 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
     return figure
 
 
-def conv_2d(*args, **kwargs):
-    from cleverhans.utils_keras import conv_2d
-    warnings.warn("utils.conv_2d is deprecated and may be removed on or after"
-                  " 2018-01-05. Switch to utils_keras.conv_2d.")
-    return conv_2d(*args, **kwargs)
-
-
-def cnn_model(*args, **kwargs):
-    from cleverhans.utils_keras import cnn_model
-    warnings.warn("utils.cnn_model is deprecated and may be removed on or"
-                  " after 2018-01-05. Switch to utils_keras.cnn_model.")
-    return cnn_model(*args, **kwargs)
-
-
 def set_log_level(level, name="cleverhans"):
     """
     Sets the threshold for the cleverhans logger to level
