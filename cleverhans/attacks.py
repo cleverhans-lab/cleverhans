@@ -1006,7 +1006,7 @@ class ElasticNetMethod(Attack):
 
     def parse_params(self, y=None, y_target=None,
                      nb_classes=None, beta=1e-3,
-                     batch_size=9, confidence=0,
+                     batch_size=1, confidence=0,
                      learning_rate=1e-2,
                      binary_search_steps=9, max_iterations=1000,
                      abort_early=False, initial_const=1e-3,
