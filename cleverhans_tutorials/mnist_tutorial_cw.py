@@ -126,8 +126,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
         grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-        one_hot = np.zeros((10, 10))
-        one_hot[np.arange(10), np.arange(10)] = 1
+        one_hot = np.eye(10)
 
         adv_inputs = np.array([[instance] * 10 for instance in X_test[idxs]],
                               dtype=np.float32)

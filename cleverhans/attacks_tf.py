@@ -965,6 +965,17 @@ class CarliniWagnerL0(object):
         self.initial_const = initial_const
         self.largest_const = largest_const
         self.const_factor = const_factor
+
+        # If we've changed a pixel less than this amount, just set it to 0
+        # and pretend it hasn't changed. It likey doesn't impact the result
+        # in any meaningful way.
+        self.max_pixel_change = 0.01
+
+        # As a caveat of the above: don't allow us to fix more than
+        # pixel_change_fraction * sqrt(num_total_pixels)
+        # at any one time.
+        self.pixel_change_fraction = 0.3
+        
         self.l2_attack = CarliniWagnerL2(sess, model, 1, confidence,
                                          targeted, learning_rate,
                                          1, max_iterations,
@@ -1038,16 +1049,16 @@ class CarliniWagnerL0(object):
             totalchange = totalchange.flatten()
 
             # set some of the pixels to 0 depending on their total change
-            did = 0
+            num_changed = 0
             for e in np.argsort(totalchange):
                 if np.all(valid[e]):
-                    did += 1
+                    num_changed += 1
                     valid[e] = 0
 
-                    if totalchange[e] > .01:
+                    if totalchange[e] > self.max_pixel_change:
                         # if this pixel changed a lot, skip
                         break
-                    if did >= .3*equal_count**.5:
+                    if num_changed >= self.pixel_change_fraction*equal_count**.5:
                         # if we changed too many pixels, skip
                         break
 
