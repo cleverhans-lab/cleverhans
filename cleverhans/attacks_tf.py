@@ -975,7 +975,7 @@ class CarliniWagnerL0(object):
         # pixel_change_fraction * sqrt(num_total_pixels)
         # at any one time.
         self.pixel_change_fraction = 0.3
-        
+
         self.l2_attack = CarliniWagnerL2(sess, model, 1, confidence,
                                          targeted, learning_rate,
                                          1, max_iterations,
@@ -1058,7 +1058,8 @@ class CarliniWagnerL0(object):
                     if totalchange[e] > self.max_pixel_change:
                         # if this pixel changed a lot, skip
                         break
-                    if num_changed >= self.pixel_change_fraction*equal_count**.5:
+                    abort = self.pixel_change_fraction*equal_count**.5
+                    if num_changed >= abort:
                         # if we changed too many pixels, skip
                         break
 
