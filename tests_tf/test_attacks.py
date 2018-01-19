@@ -819,42 +819,32 @@ class TestFastFeatureAdversaries(CleverHansTest):
         self.assertTrue(d_ag*100/d_sg < 50.)
 
 
-
 class TestCarliniWagnerL0(CleverHansTest):
     def setUp(self):
         super(TestCarliniWagnerL0, self).setUp()
-        import tensorflow as tf
-        import tensorflow.contrib.slim as slim
-        from cleverhans.model import CallableModelWrapper
-
-        def dummy_model(x):
-            net = slim.fully_connected(x, 60)
-            return slim.fully_connected(net, 10, activation_fn=None)
 
         self.sess = tf.Session()
         self.sess.as_default()
-        self.model = tf.make_template('dummy_model', dummy_model)
-        self.attack = SaliencyMapMethod(self.model, sess=self.sess)
+        self.model = DummyModel()
+        self.attack = CarliniWagnerL0(self.model, sess=self.sess)
 
         # initialize model
         with tf.name_scope('dummy_model'):
-            self.model(tf.placeholder(tf.float32, shape=(None, 10)))
+            self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
         self.sess.run(tf.global_variables_initializer())
 
-        self.model = CallableModelWrapper(self.model, 'logits')
-        self.attack = CarliniWagnerL0(self.model, sess=self.sess)
+        self.attack = SaliencyMapMethod(self.model, sess=self.sess)
 
     def test_generate_np_targeted_gives_adversarial_example(self):
-        x_val = np.random.rand(10, 10)
+        x_val = np.random.rand(10, 1000)
         x_val = np.array(x_val, dtype=np.float32)
 
-        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((10, 10))
         feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
-        
         x_adv = self.attack.generate_np(x_val,
-                                        clip_min=-5, clip_max=5,
-                                        num_iterations=10,
+                                        clip_min=-5., clip_max=5.,
+                                        learning_rate=1.,
+                                        num_iterations=5,
                                         initial_const=10,
                                         largest_const=20,
                                         y_target=feed_labs)
@@ -862,6 +852,6 @@ class TestCarliniWagnerL0(CleverHansTest):
 
         worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
         self.assertTrue(worked > .9)
-
+        
 if __name__ == '__main__':
     unittest.main()
