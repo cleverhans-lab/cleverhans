@@ -1,14 +1,14 @@
 """
 Model construction utilities based on keras
 """
-from .model import Model
-
+import warnings
+from distutils.version import LooseVersion
 import keras
 from keras.utils import np_utils
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
+from .model import Model
 
-from distutils.version import LooseVersion
 if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
     from keras.layers import Conv2D
 else:
@@ -138,7 +138,16 @@ class KerasModelWrapper(Model):
         """
         softmax_name = self._get_softmax_name()
         softmax_layer = self.model.get_layer(softmax_name)
-        node = softmax_layer.inbound_nodes[0]
+
+        if hasattr(softmax_layer, 'inbound_nodes'):
+            warnings.warn(
+                "Please update your version to keras >= 2.1.3; "
+                "support for earlier keras versions will be dropped on "
+                "2018-07-22")
+            node = softmax_layer.inbound_nodes[0]
+        else:
+            node = softmax_layer._inbound_nodes[0]
+
         logits_name = node.inbound_layers[0].name
 
         return logits_name
