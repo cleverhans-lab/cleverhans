@@ -107,7 +107,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     rng = np.random.RandomState([2017, 8, 30])
 
     if clean_train:
-        model = make_basic_cnn(nb_filters=nb_filters)
+        model = make_basic_cnn(nb_filters=nb_filters,
+                               input_shape=(None, 28, 28, levels))
         preds = model.get_probs(x_discretized)
 
         def evaluate():
