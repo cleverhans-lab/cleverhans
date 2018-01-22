@@ -85,6 +85,10 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
+    # Print info
+    print('Discretizing into {} levels'.format(levels))
+    print('Using thermometer encoding: {}'.format(thermometer))
+
     # Use label smoothing
     assert Y_train.shape[1] == 10
     label_smooth = .1
@@ -104,7 +108,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'learning_rate': learning_rate
     }
     lspga_params = {'eps': 0.3, 'levels':levels, 'steps':steps,
-                    'attack_step':1.0, 'noisy_grads': False,
+                    'attack_step':1.0, 'noisy_grads': True,
                     'thermometer': thermometer}
     rng = np.random.RandomState([2017, 8, 30])
 
