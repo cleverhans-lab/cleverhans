@@ -817,9 +817,13 @@ class LSPGA(Attack):
         """
         import tensorflow as tf
         from .attacks_tf import lspga
+        from .discretization_utils import discretize_uniform
         self.parse_params(**kwargs)
 
-        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+        x_projected = discretize_uniform(x, levels=self.levels,
+                                         thermometer=self.thermometer)
+
+        labels, nb_classes = self.get_or_guess_labels(x_projected, kwargs)
 
         attack = lspga(x, model=self.model, phase=True,
                        levels=self.levels,
