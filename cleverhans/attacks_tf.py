@@ -933,9 +933,7 @@ def lspga(x, model, levels, phase,
         if thermometer:
             activation_probs = tf.cumsum(activation_probs, axis=-1, reverse=True)
 
-        logits_discretized = model(
-            flatten_last(activation_probs),
-            is_training=phase)
+        logits_discretized = model.get_logits(flatten_last(activation_probs))
 
         if i == 0:
             if y_target is not None:
