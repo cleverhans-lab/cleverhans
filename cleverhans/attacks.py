@@ -782,10 +782,9 @@ class LSPGA(Attack):
         self.feedable_kwargs = {'y': tf.float32,
                                 'y_target': tf.float32}
 
-        self.structural_kwargs = ['batch_size', 'confidence',
-                                  'targeted', 'learning_rate',
-                                  'binary_search_steps', 'max_iterations',
-                                  'abort_early', 'initial_const',
+        self.structural_kwargs = ['levels', 'thermometer',
+                                  'eps', 'steps', 'attack_step',
+                                  'inv_temp', 'anneal_rate',
                                   'clip_min', 'clip_max']
 
         if not isinstance(self.model, Model):
