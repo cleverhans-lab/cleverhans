@@ -37,8 +37,19 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py six mkl-service libgcc
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py six mkl-service
   - source activate test-environment
+
+  # debug libgcc
+  - python -c "import scipy; print(scipy.__file__)"
+  - python -c "import scipy; print(scipy.__version__)"
+  - ldd  $(conda info | grep 'default environment' | awk '{print $4}')/lib/python3.5/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
+  - conda install gcc
+  - ldd  $(conda info | grep 'default environment' | awk '{print $4}')/lib/python3.5/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
+  - ls /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+  - cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 $(conda info | grep 'default environment' | awk '{print $4}')/../../lib
+  - ldd  $(conda info | grep 'default environment' | awk '{print $4}')/lib/python3.5/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
+
   # install TensorFlow
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.4.1" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp27-none-linux_x86_64.whl;
