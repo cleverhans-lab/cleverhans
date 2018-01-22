@@ -847,7 +847,7 @@ class LSPGA(Attack):
     def parse_params(self, y=None, y_target=None, eps=0.3, steps=40,
                      levels=16,thermometer=True,
                      attack_step=0.01, inv_temp=1.0, anneal_rate=1.2,
-                     clip_min=0, clip_max=1):
+                     noisy_grads=False, clip_min=0, clip_max=1):
         self.y = y
         self.y_target = y_target
         self.eps = eps
@@ -857,6 +857,7 @@ class LSPGA(Attack):
         self.attack_step = attack_step
         self.inv_temp = inv_temp
         self.anneal_rate = anneal_rate
+        self.noisy_grads = noisy_grads
         self.clip_min = clip_min
         self.clip_max = clip_max
 
