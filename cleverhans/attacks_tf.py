@@ -952,7 +952,7 @@ def lspga(x, model, levels, phase,
 
         # Get the sign of the gradient
         signed_grad = tf.sign(grad)
-        signed_grad = tf.stop_gradient(grad)
+        signed_grad = tf.stop_gradient(signed_grad)
 
         # Modify activation logits
         if y_target is None:
