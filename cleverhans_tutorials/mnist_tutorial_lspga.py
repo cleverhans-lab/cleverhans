@@ -103,7 +103,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    lspga_params = {'eps': 0.3, 'levels':16, 'steps':40, 'attack_step':1.0}
+    lspga_params = {'eps': 0.3, 'levels':16, 'steps':10, 'attack_step':1.0}
     rng = np.random.RandomState([2017, 8, 30])
 
     if clean_train:
@@ -151,7 +151,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
         print("Repeating the process, using adversarial training")
     # Redefine TF model graph
-    model_2 = make_basic_cnn(nb_filters=nb_filters)
+    model_2 = make_basic_cnn(nb_filters=nb_filters,
+                             input_shape=(None, 28, 28, levels))
     preds_2 = model_2(x_discretized)
     lspga2 =LSPGA(model_2, sess=sess)
     adv_x_2 = lspga2.generate(x, **lspga_params)
