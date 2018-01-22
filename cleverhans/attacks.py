@@ -754,6 +754,114 @@ class CarliniWagnerL2(Attack):
         self.clip_max = clip_max
 
 
+class LSPGA(Attack):
+    """
+    This attack was originally proposed by Buckman, Roy, Raffel and
+    Goodfellow. It is an iterative atttack targeting discrete
+    representations of images.
+    Paper link: https://openreview.net/pdf?id=S18Su--CW
+
+    For input images represented as one-hot encodings, this attack
+    can be seen as doing projected gradient descent (PGD) in the logit
+    space of the inputs. At every step it follows the gradient through
+    the probability simplex (for one hot encodings) while projecting
+    back to the nearest vertex of the simplex at the termination of the
+    attack.
+    """
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(LSPGA, self).__init__(model, back, sess)
+
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'y': tf.float32,
+                                'y_target': tf.float32}
+
+        self.structural_kwargs = ['batch_size', 'confidence',
+                                  'targeted', 'learning_rate',
+                                  'binary_search_steps', 'max_iterations',
+                                  'abort_early', 'initial_const',
+                                  'clip_min', 'clip_max']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'logits')
+
+    def generate(self, x, **kwargs):
+        """
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
+
+        :param x: (required) A tensor with the undiscretized input images.
+        :param y: (optional) A tensor with the true labels for an untargeted
+                  attack. If None (and y_target is None) then use the
+                  original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the target labels for a
+                         targeted attack.
+        :param levels: (optional) Number of levels to discretize the input to.
+        :param thermometer: (optional) Whether to use thermometer encoding
+                            to discretize.
+        :param eps: (optional) Epsilon parameter within which the attacked image must
+                    stay.
+        :param steps: (optional) The number of iterations of the attack to run.
+        :param attack_step (optional): Parameter controlling the amount
+                                       of step per iteration of the attack.
+        :param inv_temp (optional): Inverse temperature for the LSPGA attack.
+        :param anneal_rate (optional): Anneal rate for the LSPGA attack.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+        from .attacks_tf import lspga
+        self.parse_params(**kwargs)
+
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+
+        attack = lspga(x, model=self.model, phase=True,
+                       levels=self.levels,
+                       steps=self.steps, eps=self.eps,
+                       attack_step=self.attack_step,
+                       clip_min=self.clip_min,
+                       clip_max=self.clip_max,
+                       thermometer=self.thermometer,
+                       noisy_grads=self.noisy_grads,
+                       inv_temp=self.inv_temp,
+                       y=self.y,
+                       y_target=self.y_target,
+                       anneal_rate=self.anneal_rate)
+
+        def lspga_wrap(x_val, y_val):
+            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
+        wrap = tf.py_func(lspga_wrap, [x, labels], tf.float32)
+
+        return wrap
+
+    def parse_params(self, y=None, y_target=None, eps=0.3, steps=40,
+                     levels=16,thermometer=True,
+                     attack_step=0.01, inv_temp=1.0, anneal_rate=1.2,
+                     clip_min=0, clip_max=1):
+
+        # ignore the y and y_target argument
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
+        self.y = y
+        self.y_target = y_target
+        self.eps = eps
+        self.steps = steps
+        self.levels = levels
+        self.thermometer = thermometer
+        self.attack_step = attack_step
+        self.inv_temp = inv_temp
+        self.anneal_rate = anneal_rate
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+
 class DeepFool(Attack):
 
     """

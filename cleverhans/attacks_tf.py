@@ -839,3 +839,153 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     # need to clip this image into the given range
     adv_x = np.clip((1+overshoot)*r_tot + sample, clip_min, clip_max)
     return adv_x
+
+
+def lspga(x, model, levels, phase,
+          steps, eps, attack_step=.01, clip_min=0.,
+          clip_max=1., thermometer=False,
+          noisy_grads=False, y=None, y_target=None,
+          inv_temp=1., anneal_rate=1.2):
+    """Compute adversarial examples for discretized input by LS-PGA.
+
+    Args:
+        x: Input image of shape [-1, height, width, channels] to attack.
+        model: Model function which given the input returns the logits.
+        levels: Number of levels the input has been discretized into.
+        phase: Learning phase of the model, corresponding to train and test time.
+        steps: Number of steps to iterate when creating adversarial examples.
+        eps: Eps ball within which the perturbed image must stay.
+        attack_step: Attack step for one iteration of the iterative attack.
+                     (Default: 0.01).
+        clip_min: Minimum value of input image tensor (Default: 0.).
+        clip_max: Maximum value of input image tensor (Default: 1.).
+        thermometer: Whether the discretized input is in thermometer encoding or one
+                     hot encoding. (Default: False).
+        noisy_grads: If True then compute attack over noisy input.
+        y: True labels corresponding to x. If it is None, then use model predictions
+           to compute loss, else use true labels. (Default: None).
+        y_target: Labels corresponding to a target class for the attack.
+                  (Default: None).
+        inv_temp: Inverse of the temperature parameter for softmax. (Default: 1.)
+        anneal_rate: Rate for annealing the temperature after every iteration of
+                     attack.
+    Returns:
+        Adversarial image for input tensor in discretized form. The discretization
+        form is either one-hot or thermometer.
+    """
+    from .discretization_utils import discretize_uniform
+    from .discretization_utils import one_hot_to_thermometer
+    from .discretization_utils import thermometer_to_one_hot
+    from .discretization_utils import flatten_last
+    from .discretization_utils import unflatten_last
+
+    def compute_mask(levels, low, high, clip_min=0., clip_max=1., thermometer=False):
+        """Get a mask of allowable perturbations in the interval (low, high).
+
+        For example, assume that we uniformly discretize the values
+        between 0 and 1 into 10 bins each represented by either a one hot encoding
+        or a thermometer encoding. Then compute_mask(10, .3, .7)
+        would return [0., 0., 0., 1., 1., 1., 1., 0., 0., 0.]. Note that it's output
+        is independent of the encoding used.
+
+        Args:
+            levels: Number of levels to discretize the input into.
+            low: Minimum value to which a pixel may be perturbed.
+            high: Maximum value to which a pixel may be perturbed.
+            clip_min: Minimum value possible for a pixel. (Default: 0).
+            clip_max: Maximum value possible for a pixel. (Default: 1).
+            thermometer: If True, then the discretize_fn returns thermometer codes,
+                         else it returns one hot codes. (Default: False).
+
+        Returns:
+            Mask of 1's over the interval.
+        """
+        low = tf.clip_by_value(low, clip_min, clip_max)
+        high = tf.clip_by_value(high, clip_min, clip_max)
+        out = 0.
+        for alpha in np.linspace(clip_min, clip_max, levels):
+            q = discretize_uniform(alpha * low + (1. - alpha) * high,
+                                   levels=levels, clip_min=clip_min,
+                                   clip_max=clip_max,
+                                   thermometer=thermometer)
+
+            # Convert into one hot encoding if q is in thermometer encoding
+            if thermometer:
+                q = thermometer_to_one_hot(q, levels, flattened=True)
+            out += q
+        return tf.to_float(tf.greater(out, 0.))
+
+    # Compute the mask over the bits that we are allowed to attack
+    flat_mask = compute_mask(levels, x - eps, x + eps,
+                             clip_min=clip_min, clip_max=clip_max,
+                             thermometer=thermometer)
+    mask = unflatten_last(flat_mask, levels)
+    if noisy_grads:
+        activation_logits = tf.random_normal(tf.shape(mask))
+    else:
+        activation_logits = tf.zeros_like(mask)
+
+    for i in range(steps):
+        # Compute one hot representation if input is in thermometer encoding.
+        activation_probs = tf.nn.softmax(
+            inv_temp * (activation_logits * mask - 999999. * (1. - mask)))
+
+        if thermometer:
+            activation_probs = tf.cumsum(activation_probs, axis=-1, reverse=True)
+
+        logits_discretized = model(
+            projection_fn(flatten_last(activation_probs)),
+            is_training=phase)
+
+        if i == 0:
+            if y_target is not None:
+                y = y_target
+            elif y is None:
+                # Get one hot version from model predictions
+                y = tf.one_hot(
+                    tf.argmax(logits_discretized, 1),
+                    tf.shape(logits_discretized)[1])
+
+        loss = tf.nn.softmax_cross_entropy_with_logits(
+            labels=y, logits=logits_discretized)
+
+        # compute the gradients wrt to current logits
+        grad, = tf.gradients(loss, activation_logits)
+
+        # Get the sign of the gradient
+        signed_grad = tf.sign(grad)
+        signed_grad = tf.stop_gradient(grad)
+
+        # Modify activation logits
+        if y_target is None:
+            activation_logits += attack_step * signed_grad
+        else:
+            activation_logits -= attack_step * signed_grad
+
+        # Anneal temperature
+        inv_temp *= anneal_rate
+
+    # Convert from logits to actual one-hot image
+    final_al = activation_logits * mask - 999999. * (1. - mask)
+    bit_to_activate = tf.argmax(final_al, axis=-1)
+
+    one_hot = tf.one_hot(
+        bit_to_activate,
+        depth=levels,
+        on_value=1.,
+        off_value=0.,
+        dtype=tf.float32,
+        axis=-1)
+
+    # Convert into thermometer if we are doing thermometer encodings
+    inp = one_hot
+    if thermometer:
+        inp = one_hot_to_thermometer(
+            one_hot, levels, flattened=False)
+
+    flattened_inp = flatten_last(inp)
+
+    flattened_inp.mask = mask
+    flattened_inp = tf.stop_gradient(flattened_inp)
+
+    return flattened_inp
