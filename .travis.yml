@@ -43,12 +43,12 @@ install:
   # debug libgcc
   - python -c "import scipy; print(scipy.__file__)"
   - python -c "import scipy; print(scipy.__version__)"
-  - ldd  $(conda info | grep 'default environment' | awk '{print $4}')/lib/python3.5/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
+  - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
   - conda install libgcc
-  - ldd  $(conda info | grep 'default environment' | awk '{print $4}')/lib/python3.5/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
+  - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
   - ls /usr/lib/x86_64-linux-gnu/libstdc++.so.6
   - cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 $(conda info | grep 'default environment' | awk '{print $4}')/../../lib
-  - ldd  $(conda info | grep 'default environment' | awk '{print $4}')/lib/python3.5/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
+  - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
 
   # install TensorFlow
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.4.1" ]]; then
