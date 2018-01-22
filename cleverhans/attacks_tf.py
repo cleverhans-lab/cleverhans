@@ -934,7 +934,7 @@ def lspga(x, model, levels, phase,
             activation_probs = tf.cumsum(activation_probs, axis=-1, reverse=True)
 
         logits_discretized = model(
-            projection_fn(flatten_last(activation_probs)),
+            flatten_last(activation_probs),
             is_training=phase)
 
         if i == 0:
