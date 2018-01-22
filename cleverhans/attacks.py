@@ -844,11 +844,6 @@ class LSPGA(Attack):
                      levels=16,thermometer=True,
                      attack_step=0.01, inv_temp=1.0, anneal_rate=1.2,
                      clip_min=0, clip_max=1):
-
-        # ignore the y and y_target argument
-        if nb_classes is not None:
-            warnings.warn("The nb_classes argument is depricated and will "
-                          "be removed on 2018-02-11")
         self.y = y
         self.y_target = y_target
         self.eps = eps
