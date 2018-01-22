@@ -838,11 +838,7 @@ class LSPGA(Attack):
                        y_target=self.y_target,
                        anneal_rate=self.anneal_rate)
 
-        def lspga_wrap(x_val, y_val):
-            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
-        wrap = tf.py_func(lspga_wrap, [x, labels], tf.float32)
-
-        return wrap
+        return attack
 
     def parse_params(self, y=None, y_target=None, eps=0.3, steps=40,
                      levels=16,thermometer=True,
