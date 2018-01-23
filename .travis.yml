@@ -60,9 +60,9 @@ install:
   - ls /usr/lib/x86_64-linux-gnu/libstdc++.so.6
   - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
   - conda install libgcc
-  - ls /home/travis/miniconda/lib | grep libstdc
+  - ls /home/travis/miniconda/envs/test-environment/lib
   - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/lib
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
   - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
 
 # command to run tests
