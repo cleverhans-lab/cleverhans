@@ -33,6 +33,7 @@ class MLP(Model):
                 name = layer.name
             else:
                 name = layer.__class__.__name__ + str(i)
+                layer.name = name
             self.layer_names.append(name)
 
             layer.set_input_shape(input_shape)
@@ -93,7 +94,6 @@ class Conv2D(Layer):
         self.kernels = tf.Variable(init)
         self.b = tf.Variable(
             np.zeros((self.output_channels,)).astype('float32'))
-        orig_input_batch_size = input_shape[0]
         input_shape = list(input_shape)
         input_shape[0] = 1
         dummy_batch = tf.zeros(input_shape)

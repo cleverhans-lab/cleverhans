@@ -56,8 +56,11 @@ class Model(object):
         try:
             return self.get_layer(x, 'probs')
         except NoSuchLayerError:
-            import tensorflow as tf
-            return tf.nn.softmax(self.get_logits(x))
+            pass
+        except NotImplementedError:
+            pass
+        import tensorflow as tf
+        return tf.nn.softmax(self.get_logits(x))
 
     def get_layer_names(self):
         """

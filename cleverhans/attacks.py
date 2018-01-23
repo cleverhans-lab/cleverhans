@@ -7,8 +7,6 @@ import collections
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
 
-import logging
-
 _logger = utils.create_logger("cleverhans.attacks")
 
 
@@ -22,32 +20,19 @@ class Attack(object):
     def __init__(self, model, back='tf', sess=None):
         """
         :param model: An instance of the cleverhans.model.Model class.
-        :param back: The backend to use. Either 'tf' (default) or 'th'
-                     (support for Theano is however deprecated and will
-                     be removed on 2017-11-08).
-        :param sess: The tf session to run graphs in (use None for Theano)
+        :param back: The backend to use. Currently 'tf' is the only option.
+        :param sess: The tf session to run graphs in
         """
-        if not(back == 'tf' or back == 'th'):
-            raise ValueError("Backend argument must either be 'tf' or 'th'.")
+        if not(back == 'tf'):
+            raise ValueError("Backend argument must either be 'tf'.")
 
-        if back == 'th' and sess is not None:
-            raise Exception("A session should not be provided when using th.")
-        elif back == 'tf' and sess is None:
+        if back == 'tf' and sess is None:
             import tensorflow as tf
             sess = tf.get_default_session()
 
         if not isinstance(model, Model):
-            if hasattr(model, '__call__'):
-                warnings.warn("CleverHans support for supplying a callable"
-                              " instead of an instance of the"
-                              " cleverhans.model.Model class is"
-                              " deprecated and will be dropped on 2018-01-11.")
-            else:
-                raise ValueError("The model argument should be an instance of"
-                                 " the cleverhans.model.Model class.")
-        if back == 'th':
-            warnings.warn("CleverHans support for Theano is deprecated and "
-                          "will be dropped on 2017-11-08.")
+            raise ValueError("The model argument should be an instance of"
+                             " the cleverhans.model.Model class.")
 
         # Prepare attributes
         self.model = model
@@ -81,8 +66,6 @@ class Attack(object):
         :param **kwargs: optional parameters used by child classes.
         :return: A symbolic representation of the adversarial examples.
         """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
 
         error = "Sub-classes must implement generate."
         raise NotImplementedError(error)
@@ -145,12 +128,31 @@ class Attack(object):
         :param **kwargs: optional parameters used by child classes.
         :return: A NumPy array holding the adversarial examples.
         """
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
         if self.sess is None:
             raise ValueError("Cannot use `generate_np` when no `sess` was"
                              " provided")
 
+        fixed, feedable, hash_key = self.construct_variables(kwargs)
+
+        if hash_key not in self.graphs:
+            self.construct_graph(fixed, feedable, x_val, hash_key)
+
+        x, new_kwargs, x_adv = self.graphs[hash_key]
+
+        feed_dict = {x: x_val}
+
+        for name in feedable:
+            feed_dict[new_kwargs[name]] = feedable[name]
+
+        return self.sess.run(x_adv, feed_dict)
+
+    def construct_variables(self, kwargs):
+        """
+        Construct the inputs to the attack graph to be used by generate_np.
+        :param kwargs: Keyword arguments to generate_np.
+        :return: Structural and feedable arguments as well as a unique key
+                 for the graph given these inputs.
+        """
         # the set of arguments that are structural properties of the attack
         # if these arguments are different, we must construct a new graph
         fixed = dict((k, v) for k, v in kwargs.items()
@@ -176,17 +178,7 @@ class Attack(object):
             # create a unique key for this set of fixed paramaters
             hash_key = tuple(sorted(fixed.items()))
 
-        if hash_key not in self.graphs:
-            self.construct_graph(fixed, feedable, x_val, hash_key)
-
-        x, new_kwargs, x_adv = self.graphs[hash_key]
-
-        feed_dict = {x: x_val}
-
-        for name in feedable:
-            feed_dict[new_kwargs[name]] = feedable[name]
-
-        return self.sess.run(x_adv, feed_dict)
+        return fixed, feedable, hash_key
 
     def get_or_guess_labels(self, x, kwargs):
         """
@@ -212,7 +204,7 @@ class Attack(object):
             preds_max = tf.reduce_max(preds, 1, keep_dims=True)
             original_predictions = tf.to_float(tf.equal(preds,
                                                         preds_max))
-            labels = original_predictions
+            labels = tf.stop_gradient(original_predictions)
         if isinstance(labels, np.ndarray):
             nb_classes = labels.shape[1]
         else:
@@ -278,10 +270,7 @@ class FastGradientMethod(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        if self.back == 'tf':
-            from .attacks_tf import fgm
-        else:
-            from .attacks_th import fgm
+        from .attacks_tf import fgm
 
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
@@ -326,9 +315,6 @@ class FastGradientMethod(Attack):
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, int(1), int(2)]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
-        if self.back == 'th' and self.ord != np.inf:
-            raise NotImplementedError("The only FastGradientMethod norm "
-                                      "implemented for Theano is np.inf.")
         return True
 
 
@@ -394,6 +380,7 @@ class BasicIterativeMethod(Attack):
             targeted = False
         else:
             y = tf.to_float(tf.equal(model_preds, preds_max))
+            y = tf.stop_gradient(y)
             targeted = False
 
         y_kwarg = 'y_target' if targeted else 'y'
@@ -465,9 +452,160 @@ class BasicIterativeMethod(Attack):
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf, 1, 2]:
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
-        if self.back == 'th':
-            error_string = "BasicIterativeMethod is not implemented in Theano"
-            raise NotImplementedError(error_string)
+
+        return True
+
+
+class MomentumIterativeMethod(Attack):
+
+    """
+    The Momentum Iterative Method (Dong et al. 2017). This method won
+    the first places in NIPS 2017 Non-targeted Adversarial Attacks and
+    Targeted Adversarial Attacks. The original paper used hard labels
+    for this attack; no label smoothing.
+    Paper link: https://arxiv.org/pdf/1710.06081.pdf
+    """
+
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Create a MomentumIterativeMethod instance.
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(MomentumIterativeMethod, self).__init__(model, back, sess)
+        self.feedable_kwargs = {'eps': np.float32,
+                                'eps_iter': np.float32,
+                                'y': np.float32,
+                                'y_target': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32}
+        self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'probs')
+
+    def generate(self, x, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param decay_factor: (optional) Decay factor for the momentum term.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        # Initialize loop variables
+        momentum = 0
+        adv_x = x
+
+        # Fix labels to the first model predictions for loss computation
+        y, nb_classes = self.get_or_guess_labels(x, kwargs)
+        y = y / tf.reduce_sum(y, 1, keep_dims=True)
+        targeted = (self.y_target is not None)
+
+        from . import utils_tf
+        for i in range(self.nb_iter):
+            # Compute loss
+            preds = self.model.get_probs(adv_x)
+            loss = utils_tf.model_loss(y, preds, mean=False)
+            if targeted:
+                loss = -loss
+
+            # Define gradient of loss wrt input
+            grad, = tf.gradients(loss, adv_x)
+
+            # Normalize current gradient and add it to the accumulated gradient
+            red_ind = list(xrange(1, len(grad.get_shape())))
+            avoid_zero_div = 1e-12
+            grad = grad / tf.maximum(avoid_zero_div,
+                                     tf.reduce_mean(tf.abs(grad),
+                                                    red_ind,
+                                                    keep_dims=True))
+            momentum = self.decay_factor * momentum + grad
+
+            if self.ord == np.inf:
+                normalized_grad = tf.sign(momentum)
+            elif self.ord == 1:
+                norm = tf.maximum(avoid_zero_div,
+                                  tf.reduce_sum(tf.abs(momentum),
+                                                red_ind,
+                                                keep_dims=True))
+                normalized_grad = momentum / norm
+            elif self.ord == 2:
+                square = tf.reduce_sum(tf.square(momentum),
+                                       red_ind,
+                                       keep_dims=True)
+                norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
+                normalized_grad = momentum / norm
+            else:
+                raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                                          "currently implemented.")
+
+            # Update and clip adversarial example in current iteration
+            scaled_grad = self.eps_iter * normalized_grad
+            adv_x = adv_x + scaled_grad
+            adv_x = x + utils_tf.clip_eta(adv_x - x, self.ord, self.eps)
+
+            if self.clip_min is not None and self.clip_max is not None:
+                adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+            adv_x = tf.stop_gradient(adv_x)
+
+        return adv_x
+
+    def parse_params(self, eps=0.3, eps_iter=0.06, nb_iter=10, y=None,
+                     ord=np.inf, decay_factor=1.0,
+                     clip_min=None, clip_max=None,
+                     y_target=None, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param decay_factor: (optional) Decay factor for the momentum term.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+
+        # Save attack-specific parameters
+        self.eps = eps
+        self.eps_iter = eps_iter
+        self.nb_iter = nb_iter
+        self.y = y
+        self.y_target = y_target
+        self.ord = ord
+        self.decay_factor = decay_factor
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+        if self.y is not None and self.y_target is not None:
+            raise ValueError("Must not set both y and y_target")
+        # Check if order of the norm is acceptable given current implementation
+        if self.ord not in [np.inf, 1, 2]:
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
 
         return True
 
@@ -490,14 +628,10 @@ class SaliencyMapMethod(Attack):
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'probs')
 
-        if self.back == 'th':
-            error = "Theano version of SaliencyMapMethod not implemented."
-            raise NotImplementedError(error)
-
         import tensorflow as tf
         self.feedable_kwargs = {'y_target': tf.float32}
         self.structural_kwargs = ['theta', 'gamma',
-                                  'clip_max', 'clip_min']
+                                  'clip_max', 'clip_min', 'symbolic_impl']
 
     def generate(self, x, **kwargs):
         """
@@ -511,40 +645,70 @@ class SaliencyMapMethod(Attack):
         :param y_target: (optional) Target tensor if the attack is targeted
         """
         import tensorflow as tf
-        from .attacks_tf import jacobian_graph, jsma_batch
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        # Define Jacobian graph wrt to this input placeholder
-        preds = self.model.get_probs(x)
-        nb_classes = preds.get_shape().as_list()[-1]
-        grads = jacobian_graph(preds, x, nb_classes)
+        if self.symbolic_impl:
+            from .attacks_tf import jsma_symbolic
 
-        # Define appropriate graph (targeted / random target labels)
-        if self.y_target is not None:
-            def jsma_wrap(x_val, y_target):
-                return jsma_batch(self.sess, x, preds, grads, x_val,
-                                  self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, nb_classes,
-                                  y_target=y_target)
+            # Create random targets if y_target not provided
+            if self.y_target is None:
+                from random import randint
 
-            # Attack is targeted, target placeholder will need to be fed
-            wrap = tf.py_func(jsma_wrap, [x, self.y_target], tf.float32)
+                def random_targets(gt):
+                    result = gt.copy()
+                    nb_s = gt.shape[0]
+                    nb_classes = gt.shape[1]
+
+                    for i in xrange(nb_s):
+                        result[i, :] = np.roll(result[i, :],
+                                               randint(1, nb_classes-1))
+
+                    return result
+
+                labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+                self.y_target = tf.py_func(random_targets, [labels],
+                                           tf.float32)
+                self.y_target.set_shape([None, nb_classes])
+
+            x_adv = jsma_symbolic(x, model=self.model, y_target=self.y_target,
+                                  theta=self.theta, gamma=self.gamma,
+                                  clip_min=self.clip_min,
+                                  clip_max=self.clip_max)
         else:
-            def jsma_wrap(x_val):
-                return jsma_batch(self.sess, x, preds, grads, x_val,
-                                  self.theta, self.gamma, self.clip_min,
-                                  self.clip_max, nb_classes,
-                                  y_target=None)
+            from .attacks_tf import jacobian_graph, jsma_batch
 
-            # Attack is untargeted, target values will be chosen at random
-            wrap = tf.py_func(jsma_wrap, [x], tf.float32)
+            # Define Jacobian graph wrt to this input placeholder
+            preds = self.model.get_probs(x)
+            nb_classes = preds.get_shape().as_list()[-1]
+            grads = jacobian_graph(preds, x, nb_classes)
 
-        return wrap
+            # Define appropriate graph (targeted / random target labels)
+            if self.y_target is not None:
+                def jsma_wrap(x_val, y_target):
+                    return jsma_batch(self.sess, x, preds, grads, x_val,
+                                      self.theta, self.gamma, self.clip_min,
+                                      self.clip_max, nb_classes,
+                                      y_target=y_target)
 
-    def parse_params(self, theta=1., gamma=np.inf, nb_classes=None,
-                     clip_min=0., clip_max=1., y_target=None, **kwargs):
+                # Attack is targeted, target placeholder will need to be fed
+                x_adv = tf.py_func(jsma_wrap, [x, self.y_target], tf.float32)
+            else:
+                def jsma_wrap(x_val):
+                    return jsma_batch(self.sess, x, preds, grads, x_val,
+                                      self.theta, self.gamma, self.clip_min,
+                                      self.clip_max, nb_classes,
+                                      y_target=None)
+
+                # Attack is untargeted, target values will be chosen at random
+                x_adv = tf.py_func(jsma_wrap, [x], tf.float32)
+
+        return x_adv
+
+    def parse_params(self, theta=1., gamma=1., nb_classes=None,
+                     clip_min=0., clip_max=1., y_target=None,
+                     symbolic_impl=True, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -567,6 +731,7 @@ class SaliencyMapMethod(Attack):
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.y_target = y_target
+        self.symbolic_impl = symbolic_impl
 
         return True
 
@@ -586,10 +751,6 @@ class VirtualAdversarialMethod(Attack):
         cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
-
-        if self.back == 'th':
-            error = "For the Theano version of VAM please call vatm directly."
-            raise NotImplementedError(error)
 
         import tensorflow as tf
         self.feedable_kwargs = {'eps': tf.float32, 'xi': tf.float32,
@@ -657,9 +818,6 @@ class CarliniWagnerL2(Attack):
         cleverhans.model.Model abstraction provided by CleverHans.
         """
         super(CarliniWagnerL2, self).__init__(model, back, sess)
-
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32,
@@ -754,6 +912,122 @@ class CarliniWagnerL2(Attack):
         self.clip_max = clip_max
 
 
+class ElasticNetMethod(Attack):
+    """
+    This attack features L1-oriented adversarial examples and includes
+    the C&W L2 attack as a special case (when beta is set to 0).
+    Adversarial examples attain similar performance to those
+    generated by the C&W L2 attack, and more importantly,
+    have improved transferability properties and
+    complement adversarial training.
+    Paper link: https://arxiv.org/abs/1709.04114
+    """
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(ElasticNetMethod, self).__init__(model, back, sess)
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'y': tf.float32,
+                                'y_target': tf.float32}
+
+        self.structural_kwargs = ['beta', 'batch_size', 'confidence',
+                                  'targeted', 'learning_rate',
+                                  'binary_search_steps', 'max_iterations',
+                                  'abort_early', 'initial_const',
+                                  'clip_min', 'clip_max']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'logits')
+
+    def generate(self, x, **kwargs):
+        """
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
+
+        :param x: (required) A tensor with the inputs.
+        :param y: (optional) A tensor with the true labels for an untargeted
+                  attack. If None (and y_target is None) then use the
+                  original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the target labels for a
+                  targeted attack.
+        :param beta: Trades off L2 distortion with L1 distortion: higher
+                     produces examples with lower L1 distortion, at the
+                     cost of higher L2 (and typically Linf) distortion
+        :param confidence: Confidence of adversarial examples: higher produces
+                           examples with larger l2 distortion, but more
+                           strongly classified as adversarial.
+        :param batch_size: Number of attacks to run simultaneously.
+        :param learning_rate: The learning rate for the attack algorithm.
+                              Smaller values produce better results but are
+                              slower to converge.
+        :param binary_search_steps: The number of times we perform binary
+                                    search to find the optimal tradeoff-
+                                    constant between norm of the perturbation
+                                    and confidence of the classification.
+        :param max_iterations: The maximum number of iterations. Setting this
+                               to a larger value will produce lower distortion
+                               results. Using only a few iterations requires
+                               a larger learning rate, and will produce larger
+                               distortion results.
+        :param abort_early: If true, allows early abort when the total
+                            loss starts to increase (greatly speeds up attack,
+                            but hurts performance, particularly on ImageNet)
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of size of the perturbation
+                              and confidence of classification.
+                              If binary_search_steps is large, the initial
+                              constant is not important. A smaller value of
+                              this constant gives lower distortion results.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+        self.parse_params(**kwargs)
+
+        from .attacks_tf import ElasticNetMethod as EAD
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+
+        attack = EAD(self.sess, self.model, self.beta,
+                     self.batch_size, self.confidence,
+                     'y_target' in kwargs, self.learning_rate,
+                     self.binary_search_steps, self.max_iterations,
+                     self.abort_early, self.initial_const,
+                     self.clip_min, self.clip_max,
+                     nb_classes, x.get_shape().as_list()[1:])
+
+        def ead_wrap(x_val, y_val):
+            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
+        wrap = tf.py_func(ead_wrap, [x, labels], tf.float32)
+
+        return wrap
+
+    def parse_params(self, y=None, y_target=None,
+                     nb_classes=None, beta=1e-3,
+                     batch_size=1, confidence=0,
+                     learning_rate=1e-2,
+                     binary_search_steps=9, max_iterations=1000,
+                     abort_early=False, initial_const=1e-3,
+                     clip_min=0, clip_max=1):
+
+        # ignore the y and y_target argument
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
+        self.beta = beta
+        self.batch_size = batch_size
+        self.confidence = confidence
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iterations = max_iterations
+        self.abort_early = abort_early
+        self.initial_const = initial_const
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+
 class DeepFool(Attack):
 
     """
@@ -769,10 +1043,6 @@ class DeepFool(Attack):
         """
         super(DeepFool, self).__init__(model, back, sess)
 
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
-
-        import tensorflow as tf
         self.structural_kwargs = ['over_shoot', 'max_iter', 'clip_max',
                                   'clip_min', 'nb_candidate']
 
@@ -845,43 +1115,6 @@ class DeepFool(Attack):
         return True
 
 
-def fgsm(x, predictions, eps, back='tf', clip_min=None, clip_max=None):
-    """
-    A wrapper for the Fast Gradient Sign Method.
-    It calls the right function, depending on the
-    user's backend.
-    :param x: the input
-    :param predictions: the model's output
-                        (Note: in the original paper that introduced this
-                         attack, the loss was computed by comparing the
-                         model predictions with the hard labels (from the
-                         dataset). Instead, this version implements the loss
-                         by comparing the model predictions with the most
-                         likely class. This tweak is recommended since the
-                         discovery of label leaking in the following paper:
-                         https://arxiv.org/abs/1611.01236)
-    :param eps: the epsilon (input variation parameter)
-    :param back: switch between TensorFlow ('tf') and
-                Theano ('th') implementation
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
-    :return: a tensor for the adversarial example
-    """
-    warnings.warn("attacks.fgsm is deprecated and will be removed on "
-                  "2017-09-27. Instantiate an object from FastGradientMethod.")
-    if back == 'tf':
-        # Compute FGSM using TensorFlow
-        from .attacks_tf import fgm
-        return fgm(x, predictions, y=None, eps=eps, ord=np.inf,
-                   clip_min=clip_min, clip_max=clip_max)
-    elif back == 'th':
-        # Compute FGSM using Theano
-        from .attacks_th import fgm
-        return fgm(x, predictions, eps, clip_min=clip_min, clip_max=clip_max)
-
-
 def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
          clip_min=None, clip_max=None):
     """
@@ -902,52 +1135,305 @@ def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
     :return: a tensor for the adversarial example
 
     """
-    if back == 'tf':
-        # Compute VATM using TensorFlow
-        from .attacks_tf import vatm as vatm_tf
-        return vatm_tf(model, x, logits, eps, num_iterations=num_iterations,
-                       xi=xi, clip_min=clip_min, clip_max=clip_max)
-    elif back == 'th':
-        # Compute VATM using Theano
-        from .attacks_th import vatm as vatm_th
-        return vatm_th(model, x, logits, eps, num_iterations=num_iterations,
-                       xi=xi, clip_min=clip_min, clip_max=clip_max)
+    assert back == 'tf'
+    # Compute VATM using TensorFlow
+    from .attacks_tf import vatm as vatm_tf
+    return vatm_tf(model, x, logits, eps, num_iterations=num_iterations,
+                   xi=xi, clip_min=clip_min, clip_max=clip_max)
 
 
-def jsma(sess, x, predictions, grads, sample, target, theta, gamma=np.inf,
-         increase=True, back='tf', clip_min=None, clip_max=None):
+class MadryEtAl(Attack):
+
     """
-    A wrapper for the Jacobian-based saliency map approach.
-    It calls the right function, depending on the
-    user's backend.
-    :param sess: TF session
-    :param x: the input
-    :param predictions: the model's symbolic output (linear output,
-        pre-softmax)
-    :param sample: (1 x 1 x img_rows x img_cols) numpy array with sample input
-    :param target: target class for input sample
-    :param theta: delta for each feature adjustment
-    :param gamma: a float between 0 - 1 indicating the maximum distortion
-        percentage
-    :param increase: boolean; true if we are increasing pixels, false otherwise
-    :param back: switch between TensorFlow ('tf') and
-                Theano ('th') implementation
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
-    :return: an adversarial sample
+    The Projected Gradient Descent Attack (Madry et al. 2017).
+    Paper link: https://arxiv.org/pdf/1706.06083.pdf
     """
-    warnings.warn("attacks.jsma is deprecated and will be removed on "
-                  "2017-09-27. Instantiate an object from SaliencyMapMethod.")
-    if back == 'tf':
-        # Compute Jacobian-based saliency map attack using TensorFlow
-        from .attacks_tf import jsma
-        return jsma(sess, x, predictions, grads, sample, target, theta, gamma,
-                    clip_min, clip_max)
-    elif back == 'th':
-        raise NotImplementedError("Theano jsma not implemented.")
 
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Create a MadryEtAl instance.
+        """
+        super(MadryEtAl, self).__init__(model, back, sess)
+        self.feedable_kwargs = {'eps': np.float32,
+                                'eps_iter': np.float32,
+                                'y': np.float32,
+                                'y_target': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32}
+        self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'probs')
+
+    def generate(self, x, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        :param rand_init: (optional bool) If True, an initial random
+                    perturbation is added.
+        """
+
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+        self.targeted = self.y_target is not None
+
+        # Initialize loop variables
+        adv_x = self.attack(x, labels)
+
+        return adv_x
+
+    def parse_params(self, eps=0.3, eps_iter=0.01, nb_iter=40, y=None,
+                     ord=np.inf, clip_min=None, clip_max=None,
+                     y_target=None, rand_init=True, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        :param rand_init: (optional bool) If True, an initial random
+                    perturbation is added.
+        """
+
+        # Save attack-specific parameters
+        self.eps = eps
+        self.eps_iter = eps_iter
+        self.nb_iter = nb_iter
+        self.y = y
+        self.y_target = y_target
+        self.ord = ord
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+        self.rand_init = rand_init
+
+        if self.y is not None and self.y_target is not None:
+            raise ValueError("Must not set both y and y_target")
+        # Check if order of the norm is acceptable given current implementation
+        if self.ord not in [np.inf, 1, 2]:
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
+        return True
+
+    def attack_single_step(self, x, eta, y):
+        """
+        Given the original image and the perturbation computed so far, computes
+        a new perturbation.
+
+        :param x: A tensor with the original input.
+        :param eta: A tensor the same shape as x that holds the perturbation.
+        :param y: A tensor with the target labels or ground-truth labels.
+        """
+        import tensorflow as tf
+        from cleverhans.utils_tf import model_loss, clip_eta
+
+        adv_x = x + eta
+        preds = self.model.get_probs(adv_x)
+        loss = model_loss(y, preds)
+        if self.targeted:
+            loss = -loss
+        grad, = tf.gradients(loss, adv_x)
+        scaled_signed_grad = self.eps_iter * tf.sign(grad)
+        adv_x = adv_x + scaled_signed_grad
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+        eta = adv_x - x
+        eta = clip_eta(eta, self.ord, self.eps)
+        return eta
+
+    def attack(self, x, y):
+        """
+        This method creates a symbolic graph that given an input image,
+        first randomly perturbs the image. The
+        perturbation is bounded to an epsilon ball. Then multiple steps of
+        gradient descent is performed to increase the probability of a target
+        label or decrease the probability of the ground-truth label.
+
+        :param x: A tensor with the input image.
+        """
+        import tensorflow as tf
+        from cleverhans.utils_tf import clip_eta
+
+        if self.rand_init:
+            eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
+            eta = clip_eta(eta, self.ord, self.eps)
+        else:
+            eta = tf.zeros_like(x)
+
+        for i in range(self.nb_iter):
+            eta = self.attack_single_step(x, eta, y)
+
+        adv_x = x + eta
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+        return adv_x
+
+
+class FastFeatureAdversaries(Attack):
+    """
+    This is a fast implementation of "Feature Adversaries", an attack
+    against a target internal representation of a model.
+    "Feature adversaries" were originally introduced in (Sabour et al. 2016),
+    where the optimization was done using LBFGS.
+    Paper link: https://arxiv.org/abs/1511.05122
+
+    This implementation is similar to "Basic Iterative Method"
+    (Kurakin et al. 2016) but applied to the internal representations.
+    """
+
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Create a FastFeatureAdversaries instance.
+        """
+        super(FastFeatureAdversaries, self).__init__(model, back, sess)
+        self.feedable_kwargs = {'eps': np.float32,
+                                'eps_iter': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32,
+                                'layer': str}
+        self.structural_kwargs = ['ord', 'nb_iter']
+
+        assert isinstance(self.model, Model)
+
+    def parse_params(self, layer=None, eps=0.3, eps_iter=0.05, nb_iter=10,
+                     ord=np.inf, clip_min=None, clip_max=None, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+
+        Attack-specific parameters:
+        :param layer: (required str) name of the layer to target.
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+
+        # Save attack-specific parameters
+        self.layer = layer
+        self.eps = eps
+        self.eps_iter = eps_iter
+        self.nb_iter = nb_iter
+        self.ord = ord
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.ord not in [np.inf, 1, 2]:
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
+        return True
+
+    def attack_single_step(self, x, eta, g_feat):
+        """
+        TensorFlow implementation of the Fast Feature Gradient. This is a
+        single step attack similar to Fast Gradient Method that attacks an
+        internal representation.
+
+        :param x: the input placeholder
+        :param eta: A tensor the same shape as x that holds the perturbation.
+        :param g_feat: model's internal tensor for guide
+        :return: a tensor for the adversarial example
+        """
+        import tensorflow as tf
+        from cleverhans.utils_tf import clip_eta
+
+        adv_x = x + eta
+        a_feat = self.model.get_layer(adv_x, self.layer)
+
+        # feat.shape = (batch, c) or (batch, w, h, c)
+        axis = list(range(1, len(a_feat.shape)))
+
+        # Compute loss
+        # This is a targeted attack, hence the negative sign
+        loss = -tf.reduce_sum(tf.square(a_feat - g_feat), axis)
+
+        # Define gradient of loss wrt input
+        grad, = tf.gradients(loss, adv_x)
+
+        # Multiply by constant epsilon
+        scaled_signed_grad = self.eps_iter * tf.sign(grad)
+
+        # Add perturbation to original example to obtain adversarial example
+        adv_x = adv_x + scaled_signed_grad
+
+        # If clipping is needed,
+        # reset all values outside of [clip_min, clip_max]
+        if (self.clip_min is not None) and (self.clip_max is not None):
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+        adv_x = tf.stop_gradient(adv_x)
+
+        eta = adv_x - x
+        eta = clip_eta(eta, self.ord, self.eps)
+
+        return eta
+
+    def generate(self, x, g, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param g: The target's symbolic representation.
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+        from cleverhans.utils_tf import clip_eta
+
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        g_feat = self.model.get_layer(g, self.layer)
+
+        # Initialize loop variables
+        eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
+        eta = clip_eta(eta, self.ord, self.eps)
+
+        for i in range(self.nb_iter):
+            eta = self.attack_single_step(x, eta, g_feat)
+
+        # Define adversarial example (and clip if necessary)
+        adv_x = x + eta
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+        return adv_x
+        
 class LSPGA(Attack):
     """
     This attack was originally proposed by Buckman, Roy, Raffel and

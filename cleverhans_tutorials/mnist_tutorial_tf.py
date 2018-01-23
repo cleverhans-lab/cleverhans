@@ -25,13 +25,6 @@ import os
 
 FLAGS = flags.FLAGS
 
-"""
-CleverHans is intended to supply attacks and defense, not models.
-Users may apply CleverHans to many different kinds of models.
-In this tutorial, we show you an example of the kind of model
-you might build.
-"""
-
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
@@ -39,7 +32,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    clean_train=True,
                    testing=False,
                    backprop_through_attack=False,
-                   nb_filters=64):
+                   nb_filters=64, num_threads=None):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -70,7 +63,11 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     set_log_level(logging.DEBUG)
 
     # Create TF session
-    sess = tf.Session()
+    if num_threads:
+        config_args = dict(intra_op_parallelism_threads=1)
+    else:
+        config_args = {}
+    sess = tf.Session(config=tf.ConfigProto(**config_args))
 
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
