@@ -1322,6 +1322,46 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     return adv_x
 
 
+def compute_mask(levels, low, high, clip_min=0., clip_max=1.,
+                     thermometer=False):
+    """Get a mask of allowable perturbations in the interval (low, high).
+
+    For example, assume that we uniformly discretize the values
+    between 0 and 1 into 10 bins each represented by either a one hot
+    encoding or a thermometer encoding. Then compute_mask(10, .3, .7)
+    would return [0., 0., 0., 1., 1., 1., 1., 0., 0., 0.]. Note that it's
+    output is independent of the encoding used.
+
+    Args:
+        levels: Number of levels to discretize the input into.
+        low: Minimum value to which a pixel may be perturbed.
+        high: Maximum value to which a pixel may be perturbed.
+        clip_min: Minimum value possible for a pixel. (Default: 0).
+        clip_max: Maximum value possible for a pixel. (Default: 1).
+        thermometer: If True, then the discretize_fn returns thermometer
+        codes, else it returns one hot codes. (Default: False).
+
+    Returns:
+        Mask of 1's over the interval.
+    """
+    from .discretization_utils import discretize_uniform
+    from .discretization_utils import thermometer_to_one_hot
+    low = tf.clip_by_value(low, clip_min, clip_max)
+    high = tf.clip_by_value(high, clip_min, clip_max)
+    out = 0.
+    for alpha in np.linspace(clip_min, clip_max, levels):
+        q = discretize_uniform(alpha * low + (1. - alpha) * high,
+                                levels=levels, clip_min=clip_min,
+                                clip_max=clip_max,
+                                thermometer=thermometer)
+
+        # Convert into one hot encoding if q is in thermometer encoding
+        if thermometer:
+            q = thermometer_to_one_hot(q, levels, flattened=True)
+        out += q
+    return tf.to_float(tf.greater(out, 0.))
+
+
 def lspga(x, model, levels, steps, eps, attack_step=.01, clip_min=0.,
           clip_max=1., thermometer=False,
           noisy_grads=False, y=None, y_target=None,
@@ -1353,48 +1393,9 @@ def lspga(x, model, levels, steps, eps, attack_step=.01, clip_min=0.,
         Adversarial image for input tensor in discretized form. The
         discretization form is either one-hot or thermometer.
     """
-    from .discretization_utils import discretize_uniform
     from .discretization_utils import one_hot_to_thermometer
-    from .discretization_utils import thermometer_to_one_hot
     from .discretization_utils import flatten_last
     from .discretization_utils import unflatten_last
-
-    def compute_mask(levels, low, high, clip_min=0., clip_max=1.,
-                     thermometer=False):
-        """Get a mask of allowable perturbations in the interval (low, high).
-
-        For example, assume that we uniformly discretize the values
-        between 0 and 1 into 10 bins each represented by either a one hot
-        encoding or a thermometer encoding. Then compute_mask(10, .3, .7)
-        would return [0., 0., 0., 1., 1., 1., 1., 0., 0., 0.]. Note that it's
-        output is independent of the encoding used.
-
-        Args:
-            levels: Number of levels to discretize the input into.
-            low: Minimum value to which a pixel may be perturbed.
-            high: Maximum value to which a pixel may be perturbed.
-            clip_min: Minimum value possible for a pixel. (Default: 0).
-            clip_max: Maximum value possible for a pixel. (Default: 1).
-            thermometer: If True, then the discretize_fn returns thermometer
-            codes, else it returns one hot codes. (Default: False).
-
-        Returns:
-            Mask of 1's over the interval.
-        """
-        low = tf.clip_by_value(low, clip_min, clip_max)
-        high = tf.clip_by_value(high, clip_min, clip_max)
-        out = 0.
-        for alpha in np.linspace(clip_min, clip_max, levels):
-            q = discretize_uniform(alpha * low + (1. - alpha) * high,
-                                   levels=levels, clip_min=clip_min,
-                                   clip_max=clip_max,
-                                   thermometer=thermometer)
-
-            # Convert into one hot encoding if q is in thermometer encoding
-            if thermometer:
-                q = thermometer_to_one_hot(q, levels, flattened=True)
-            out += q
-        return tf.to_float(tf.greater(out, 0.))
 
     # Compute the mask over the bits that we are allowed to attack
     flat_mask = compute_mask(levels, x - eps, x + eps,
