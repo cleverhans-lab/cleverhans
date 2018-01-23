@@ -1434,6 +1434,8 @@ class FastFeatureAdversaries(Attack):
 
         return adv_x
 
+
+
 class LSPGA(Attack):
     """
     This attack was originally proposed by Buckman, Roy, Raffel and
