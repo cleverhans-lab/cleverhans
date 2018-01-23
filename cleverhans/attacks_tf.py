@@ -1338,19 +1338,20 @@ def lspga(x, model, levels, steps, eps, attack_step=.01, clip_min=0.,
                      (Default: 0.01).
         clip_min: Minimum value of input image tensor (Default: 0.).
         clip_max: Maximum value of input image tensor (Default: 1.).
-        thermometer: Whether the discretized input is in thermometer encoding or one
-                     hot encoding. (Default: False).
+        thermometer: Whether the discretized input is in thermometer
+                     encoding or one hot encoding. (Default: False).
         noisy_grads: If True then compute attack over noisy input.
-        y: True labels corresponding to x. If it is None, then use model predictions
-           to compute loss, else use true labels. (Default: None).
+        y: True labels corresponding to x. If it is None, then use model
+           predictions to compute loss, else use true labels. (Default: None).
         y_target: Labels corresponding to a target class for the attack.
                   (Default: None).
-        inv_temp: Inverse of the temperature parameter for softmax. (Default: 1.)
-        anneal_rate: Rate for annealing the temperature after every iteration of
-                     attack.
+        inv_temp: Inverse of the temperature parameter for softmax.
+                  (Default: 1.)
+        anneal_rate: Rate for annealing the temperature after every iteration
+                     of attack.
     Returns:
-        Adversarial image for input tensor in discretized form. The discretization
-        form is either one-hot or thermometer.
+        Adversarial image for input tensor in discretized form. The
+        discretization form is either one-hot or thermometer.
     """
     from .discretization_utils import discretize_uniform
     from .discretization_utils import one_hot_to_thermometer
@@ -1358,14 +1359,15 @@ def lspga(x, model, levels, steps, eps, attack_step=.01, clip_min=0.,
     from .discretization_utils import flatten_last
     from .discretization_utils import unflatten_last
 
-    def compute_mask(levels, low, high, clip_min=0., clip_max=1., thermometer=False):
+    def compute_mask(levels, low, high, clip_min=0., clip_max=1.,
+                     thermometer=False):
         """Get a mask of allowable perturbations in the interval (low, high).
 
         For example, assume that we uniformly discretize the values
-        between 0 and 1 into 10 bins each represented by either a one hot encoding
-        or a thermometer encoding. Then compute_mask(10, .3, .7)
-        would return [0., 0., 0., 1., 1., 1., 1., 0., 0., 0.]. Note that it's output
-        is independent of the encoding used.
+        between 0 and 1 into 10 bins each represented by either a one hot
+        encoding or a thermometer encoding. Then compute_mask(10, .3, .7)
+        would return [0., 0., 0., 1., 1., 1., 1., 0., 0., 0.]. Note that it's
+        output is independent of the encoding used.
 
         Args:
             levels: Number of levels to discretize the input into.
@@ -1373,8 +1375,8 @@ def lspga(x, model, levels, steps, eps, attack_step=.01, clip_min=0.,
             high: Maximum value to which a pixel may be perturbed.
             clip_min: Minimum value possible for a pixel. (Default: 0).
             clip_max: Maximum value possible for a pixel. (Default: 1).
-            thermometer: If True, then the discretize_fn returns thermometer codes,
-                         else it returns one hot codes. (Default: False).
+            thermometer: If True, then the discretize_fn returns thermometer
+            codes, else it returns one hot codes. (Default: False).
 
         Returns:
             Mask of 1's over the interval.
@@ -1410,7 +1412,8 @@ def lspga(x, model, levels, steps, eps, attack_step=.01, clip_min=0.,
             inv_temp * (activation_logits * mask - 999999. * (1. - mask)))
 
         if thermometer:
-            activation_probs = tf.cumsum(activation_probs, axis=-1, reverse=True)
+            activation_probs = tf.cumsum(activation_probs, axis=-1,
+                                         reverse=True)
 
         logits_discretized = model.get_logits(flatten_last(activation_probs))
 

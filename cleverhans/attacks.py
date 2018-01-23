@@ -1435,7 +1435,6 @@ class FastFeatureAdversaries(Attack):
         return adv_x
 
 
-
 class LSPGA(Attack):
     """
     This attack was originally proposed by Buckman, Roy, Raffel and
@@ -1486,8 +1485,8 @@ class LSPGA(Attack):
         :param levels: (optional) Number of levels to discretize the input to.
         :param thermometer: (optional) Whether to use thermometer encoding
                             to discretize.
-        :param eps: (optional) Epsilon parameter within which the attacked image must
-                    stay.
+        :param eps: (optional) Epsilon parameter within which the attacked
+                    image must stay.
         :param steps: (optional) The number of iterations of the attack to run.
         :param attack_step (optional): Parameter controlling the amount
                                        of step per iteration of the attack.
@@ -1522,7 +1521,7 @@ class LSPGA(Attack):
         return attack
 
     def parse_params(self, y=None, y_target=None, eps=0.3, steps=40,
-                     levels=16,thermometer=True,
+                     levels=16, thermometer=True,
                      attack_step=0.01, inv_temp=1.0, anneal_rate=1.2,
                      noisy_grads=False, clip_min=0, clip_max=1):
         self.y = y
