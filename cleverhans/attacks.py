@@ -1433,7 +1433,7 @@ class FastFeatureAdversaries(Attack):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
         return adv_x
-        
+
 class LSPGA(Attack):
     """
     This attack was originally proposed by Buckman, Roy, Raffel and
@@ -1504,7 +1504,7 @@ class LSPGA(Attack):
 
         labels, nb_classes = self.get_or_guess_labels(x_projected, kwargs)
 
-        attack = lspga(x, model=self.model, phase=True,
+        attack = lspga(x, model=self.model,
                        levels=self.levels,
                        steps=self.steps, eps=self.eps,
                        attack_step=self.attack_step,

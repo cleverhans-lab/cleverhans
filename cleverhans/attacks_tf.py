@@ -1322,8 +1322,7 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     return adv_x
 
 
-def lspga(x, model, levels, phase,
-          steps, eps, attack_step=.01, clip_min=0.,
+def lspga(x, model, levels, steps, eps, attack_step=.01, clip_min=0.,
           clip_max=1., thermometer=False,
           noisy_grads=False, y=None, y_target=None,
           inv_temp=1., anneal_rate=1.2):
@@ -1333,7 +1332,6 @@ def lspga(x, model, levels, phase,
         x: Input image of shape [-1, height, width, channels] to attack.
         model: Model function which given the input returns the logits.
         levels: Number of levels the input has been discretized into.
-        phase: Learning phase of the model, corresponding to train and test time.
         steps: Number of steps to iterate when creating adversarial examples.
         eps: Eps ball within which the perturbed image must stay.
         attack_step: Attack step for one iteration of the iterative attack.
