@@ -53,17 +53,11 @@ install:
   - pip install keras
   - python setup.py install
 
-  # debug libgcc
-  - python -c "import scipy; print(scipy.__file__)"
-  - python -c "import scipy; print(scipy.__version__)"
-  - echo $LD_LIBRARY_PATH
-  - ls /usr/lib/x86_64-linux-gnu/libstdc++.so.6
-  - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
+  # workaround for version incompatibility between the scipy version in conda
+  # and the system-provided /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+  # by installing a conda-provided libgcc and adding it to the load path
   - conda install libgcc
-  - ls /home/travis/miniconda/envs/test-environment/lib
-  - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
-  - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
 
 # command to run tests
 script:
