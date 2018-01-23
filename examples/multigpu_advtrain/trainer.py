@@ -1,6 +1,6 @@
 """
 This module provides Trainer classes that given a set of flags, create,
-initialize and train a model. Theese classes use Runner objects to handle
+initialize and train a model. These classes use Runner objects to handle
 multigpu/singlegpu training.
 """
 import six
