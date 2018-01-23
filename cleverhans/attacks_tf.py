@@ -1323,7 +1323,7 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
 
 
 def compute_mask(levels, low, high, clip_min=0., clip_max=1.,
-                     thermometer=False):
+                 thermometer=False):
     """Get a mask of allowable perturbations in the interval (low, high).
 
     For example, assume that we uniformly discretize the values
@@ -1351,9 +1351,9 @@ def compute_mask(levels, low, high, clip_min=0., clip_max=1.,
     out = 0.
     for alpha in np.linspace(clip_min, clip_max, levels):
         q = discretize_uniform(alpha * low + (1. - alpha) * high,
-                                levels=levels, clip_min=clip_min,
-                                clip_max=clip_max,
-                                thermometer=thermometer)
+                               levels=levels, clip_min=clip_min,
+                               clip_max=clip_max,
+                               thermometer=thermometer)
 
         # Convert into one hot encoding if q is in thermometer encoding
         if thermometer:
