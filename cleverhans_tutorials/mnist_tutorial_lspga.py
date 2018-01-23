@@ -39,7 +39,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    learning_rate=0.001,
                    levels=16,
                    thermometer=True,
-                   steps=1,
+                   steps=10,
                    clean_train=True,
                    testing=False,
                    backprop_through_attack=False,
@@ -107,8 +107,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    lspga_params = {'eps': 0.3, 'levels':levels, 'steps':steps,
-                    'attack_step':1.0, 'noisy_grads': False,
+    lspga_params = {'eps': 0.3, 'levels': levels, 'steps': steps,
+                    'attack_step': 1.0, 'noisy_grads': False,
                     'thermometer': thermometer}
     rng = np.random.RandomState([2017, 8, 30])
 
