@@ -160,7 +160,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     model_2 = make_basic_cnn(nb_filters=nb_filters,
                              input_shape=(None, 28, 28, levels))
     preds_2 = model_2(x_discretized)
-    lspga2 =LSPGA(model_2, sess=sess)
+    lspga2 = LSPGA(model_2, sess=sess)
     adv_x_2 = lspga2.generate(x, **lspga_params)
     if not backprop_through_attack:
         # For the lspga attack used in this tutorial, the attack has zero
