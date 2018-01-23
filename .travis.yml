@@ -43,11 +43,12 @@ install:
   # debug libgcc
   - python -c "import scipy; print(scipy.__file__)"
   - python -c "import scipy; print(scipy.__version__)"
-  - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
-  - conda install libgcc
-  - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
+  - echo $LD_LIBRARY_PATH
   - ls /usr/lib/x86_64-linux-gnu/libstdc++.so.6
-  - cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 $(conda info | grep 'default environment' | awk '{print $4}')/../../lib
+  - ls -alh /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/
+  - ls -alh /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow
+  - ls -alh /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python
+  - conda install libgcc
   - ldd  /home/travis/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages/tensorflow/python/_pywrap_tensorflow_internal.so | grep libstdc
 
   # install TensorFlow
