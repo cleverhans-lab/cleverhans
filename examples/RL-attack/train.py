@@ -44,13 +44,17 @@ def parse_args():
     parser.add_argument("--lr", type=float, default=1e-4,
                         help="learning rate for Adam optimizer")
     parser.add_argument("--num-steps", type=int, default=int(2e8),
-                        help="total number of steps to run the environment for")
+                        help="total number of steps to \
+                        run the environment for")
     parser.add_argument("--batch-size", type=int, default=32,
-                        help="number of transitions to optimize at the same time")
+                        help="number of transitions to optimize \
+                        at the same time")
     parser.add_argument("--learning-freq", type=int, default=4,
-                        help="number of iterations between every optimization step")
+                        help="number of iterations between \
+                        every optimization step")
     parser.add_argument("--target-update-freq", type=int, default=40000,
-                        help="number of iterations between every target network update")
+                        help="number of iterations between \
+                        every target network update")
     # Bells and whistles
     boolean_flag(parser, "noisy", default=False,
                  help="whether or not to NoisyNetwork")
@@ -63,18 +67,24 @@ def parse_args():
     parser.add_argument("--prioritized-alpha", type=float, default=0.6,
                         help="alpha parameter for prioritized replay buffer")
     parser.add_argument("--prioritized-beta0", type=float, default=0.4,
-                        help="initial value of beta parameters for prioritized replay")
+                        help="initial value of beta \
+                        parameters for prioritized replay")
     parser.add_argument("--prioritized-eps", type=float, default=1e-6,
                         help="eps parameter for prioritized replay buffer")
     # Checkpointing
     parser.add_argument("--save-dir", type=str, default=None, required=True,
-                        help="directory in which training state and model should be saved.")
+                        help="directory in which \
+                        training state and model should be saved.")
     parser.add_argument("--save-azure-container", type=str, default=None,
-                        help="It present data will saved/loaded from Azure. Should be in format ACCOUNT_NAME:ACCOUNT_KEY:CONTAINER")
+                        help="It present data will saved/loaded from Azure. \
+                        Should be in format ACCOUNT_NAME:ACCOUNT_KEY:\
+                        CONTAINER")
     parser.add_argument("--save-freq", type=int, default=1e6,
-                        help="save model once every time this many iterations are completed")
+                        help="save model once every time this many \
+                        iterations are completed")
     boolean_flag(parser, "load-on-start", default=True,
-                 help="if true and model was previously saved then training will be resumed")
+                 help="if true and model was previously saved then training \
+                 will be resumed")
 
     # V: Attack Arguments #
     parser.add_argument("--attack", type=str, default=None,
@@ -82,7 +92,8 @@ def parse_args():
     parser.add_argument("--attack-init", type=int, default=0,
                         help="Iteration no. to begin attacks")
     parser.add_argument("--attack-prob", type=float, default=0.0,
-                        help="Probability of attack at each step, float in range 0 - 1.0")
+                        help="Probability of attack at each step, \
+                        float in range 0 - 1.0")
     return parser.parse_args()
 
 
@@ -105,7 +116,8 @@ def maybe_save_model(savedir, container, state):
     if container is not None:
         container.put(os.path.join(savedir, model_dir), model_dir)
     relatively_safe_pickle_dump(state,
-                                os.path.join(savedir, 'training_state.pkl.zip'),
+                                os.path.join(savedir,
+                                             'training_state.pkl.zip'),
                                 compression=True)
     if container is not None:
         container.put(os.path.join(savedir, 'training_state.pkl.zip'),
@@ -145,14 +157,15 @@ if __name__ == '__main__':
     # Parse savedir and azure container.
     savedir = args.save_dir
     if args.save_azure_container is not None:
-        account_name, account_key, container_name = args.save_azure_container.split(
+        account_name, account_key, container_name = \
+            args.save_azure_container.split(
             ":")
         container = Container(account_name=account_name,
                               account_key=account_key,
                               container_name=container_name,
                               maybe_create=True)
         if savedir is None:
-            # Careful! This will not get cleaned up. Docker spoils the developers.
+            # Careful! This will not get cleaned up.
             savedir = tempfile.TemporaryDirectory().name
     else:
         container = None
@@ -219,9 +232,10 @@ if __name__ == '__main__':
         sigma_list = []
         for param in tf.trainable_variables():
             # only record the \sigma in the action network
-            if 'sigma' in param.name and 'deepq/q_func/action_value' in param.name:
+            if 'sigma' in param.name \
+                    and 'deepq/q_func/action_value' in param.name:
                 summary_name = \
-                param.name.replace('deepq/q_func/action_value/', '').replace(
+                param.name.replace('deepq/q_func/action_value/', '').replace(\
                     '/', '.').split(':')[0]
                 sigma_name_list.append(summary_name)
                 sigma_list.append(tf.reduce_mean(tf.abs(param)))
@@ -237,8 +251,10 @@ if __name__ == '__main__':
             num_iters += 1
             ep_length += 1
 
-            # V: Perturb observation if we are past the init stage and at a designated attack step #
-            # if craft_adv != None and (num_iters >= args.attack_init) and ((num_iters - args.attack_init) % args.attack_freq == 0) :
+            # V: Perturb observation if we are past the init stage
+            # and at a designated attack step
+            # if craft_adv != None and (num_iters >= args.attack_init)
+            # and ((num_iters - args.attack_init) % args.attack_freq == 0) :
             if craft_adv != None and (num_iters >= args.attack_init) and (
                     random.random() <= args.attack_prob):
                 obs = craft_adv(np.array(obs)[None])[0]
@@ -268,16 +284,18 @@ if __name__ == '__main__':
                     (obses_t, actions, rewards, obses_tp1, dones, weights,
                      batch_idxes) = experience
                 else:
-                    obses_t, actions, rewards, obses_tp1, dones = replay_buffer.sample(
+                    obses_t, actions, rewards, obses_tp1, dones = \
+                        replay_buffer.sample(
                         args.batch_size)
                     weights = np.ones_like(rewards)
-                # Minimize the error in Bellman's equation and compute TD-error
+                # Minimize the error in Bellman's and compute TD-error
                 td_errors, huber_loss = train(obses_t, actions, rewards,
                                               obses_tp1, dones, weights)
                 # Update the priorities in the replay buffer
                 if args.prioritized:
                     new_priorities = np.abs(td_errors) + args.prioritized_eps
-                    replay_buffer.update_priorities(batch_idxes, new_priorities)
+                    replay_buffer.update_priorities(\
+                        batch_idxes, new_priorities)
                 # Write summary
                 mean_sigma = f_mean_sigma()
                 im_stats.add_all_summary(writer,
@@ -296,7 +314,7 @@ if __name__ == '__main__':
 
             # Save the model and training state.
             if num_iters > 0 and (num_iters % args.save_freq == 0 or info[
-                "steps"] > args.num_steps):
+                    "steps"] > args.num_steps):
                 maybe_save_model(savedir, container, {
                     'replay_buffer': replay_buffer,
                     'num_iters': num_iters,
@@ -324,10 +342,11 @@ if __name__ == '__main__':
                                           replay_buffer._max_priority)
                 fps_estimate = (
                     float(steps_per_iter) / (float(iteration_time_est) + 1e-6)
-                    if steps_per_iter._value is not None else "calculating...")
+                    if steps_per_iter._value is not None else "calculating:")
                 logger.dump_tabular()
                 logger.log()
-                logger.log("ETA: " + pretty_eta(int(steps_left / fps_estimate)))
+                logger.log("ETA: " + \
+                           pretty_eta(int(steps_left / fps_estimate)))
                 logger.log()
                 # add summary for one episode
                 ep_stats.add_all_summary(writer, [mean_ep_reward, ep_length],

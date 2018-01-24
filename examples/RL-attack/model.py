@@ -5,7 +5,6 @@ from rlattack.common.tf_util import noisy_dense
 
 def model(img_in, num_actions, scope, noisy=False, reuse=False,
           concat_softmax=False):
-    """As described in https://storage.googleapis.com/deepmind-data/assets/papers/DeepMindNature14236Paper.pdf"""
     with tf.variable_scope(scope, reuse=reuse):
         out = img_in
         with tf.variable_scope("convnet"):
@@ -61,7 +60,7 @@ def dueling_model(img_in, num_actions, scope, noisy=False, reuse=False,
                                           size=1)
             else:
                 state_hidden = layers.fully_connected(out, num_outputs=512,
-                                                      activation_fn=tf.nn.relu)
+                                                    activation_fn=tf.nn.relu)
                 state_score = layers.fully_connected(state_hidden,
                                                      num_outputs=1,
                                                      activation_fn=None)
@@ -75,10 +74,10 @@ def dueling_model(img_in, num_actions, scope, noisy=False, reuse=False,
                                             size=num_actions)
             else:
                 actions_hidden = layers.fully_connected(out, num_outputs=512,
-                                                        activation_fn=tf.nn.relu)
+                                                activation_fn=tf.nn.relu)
                 action_scores = layers.fully_connected(actions_hidden,
-                                                       num_outputs=num_actions,
-                                                       activation_fn=None)
+                                                    num_outputs=num_actions,
+                                                    activation_fn=None)
             action_scores_mean = tf.reduce_mean(action_scores, 1)
             action_scores = action_scores - tf.expand_dims(action_scores_mean,
                                                            1)

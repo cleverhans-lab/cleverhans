@@ -1,7 +1,6 @@
 """ DQN - Test-time attacks
 
-============ Sample usage ============ 
-
+============ Sample usage ============
 No attack, testing a DQN model of Breakout trained without parameter noise:
 $> python3 enjoy-adv.py --env Breakout --model-dir ./data/Breakout/model-173000 --video ./Breakout.mp4
 
@@ -149,16 +148,18 @@ def play(env, act, craft_adv_obs, craft_adv_obs2, stochastic, video_path,
         video_recorder.capture_frame()
 
         # V: Attack #
-        if attack != None:
+        if attack is not None:
             # Craft adv. examples
             with m_adv.get_session().as_default():
                 adv_obs = \
-                craft_adv_obs(np.array(obs)[None], stochastic_adv=stochastic)[0]
+                    craft_adv_obs(np.array(obs)[None],
+                                  stochastic_adv=stochastic)[0]
             with m_target.get_session().as_default():
-                action = act(np.array(adv_obs)[None], stochastic=stochastic)[0]
+                action = act(np.array(adv_obs)[None],
+                             stochastic=stochastic)[0]
                 action2 = act(np.array(obs)[None], stochastic=stochastic)[0]
                 num_moves += 1
-                if (action != action2):
+                if action != action2:
                     num_transfer += 1
         else:
             # Normal
@@ -191,7 +192,7 @@ if __name__ == '__main__':
     with g1.as_default():
         m1 = DQNModel(env, args.dueling, args.noisy,
                       os.path.join(args.model_dir, "saved"))
-    if args.blackbox == True:
+    if args.blackbox:
         with g2.as_default():
             m2 = DQNModel(env, args.dueling, args.noisy2,
                           os.path.join(args.model_dir2, "saved"))
