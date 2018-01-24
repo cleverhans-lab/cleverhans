@@ -101,16 +101,11 @@ class TestDiscretizationUtils(unittest.TestCase):
     def testQuantizeOneHotCounts(self):
         image = np.random.uniform(low=0., high=1., size=(10, 32, 32, 3))
         image_t = tf.constant(image, dtype=tf.float32)
-        image_t_quantized = quantization_utils.quantize_uniform(image_t, 10)
-        centroids = np.array([.1, .3, .35, .4, .5, .6, .7, .8, .9, .95])
-        image_t_quantized_custom = quantization_utils.quantize_centroids(
-            image_t, 10, centroids)
+        image_t_discretized = discretization_utils.discretize_uniform(
+            image_t, 10)
         # Check counts for quantizing using regular buckets
-        counts = tf.reduce_sum(image_t_quantized, axis=-1)
-        # Check counts for quantizing using custom buckets
-        counts_custom = tf.reduce_sum(image_t_quantized_custom, axis=-1)
+        counts = tf.reduce_sum(image_t_discretized, axis=-1)
         self.assertTrue(np.all(self.sess.run(counts) == 3))
-        self.assertTrue(np.all(self.sess.run(counts_custom) == 3))
 
 
 if __name__ == '__main__':
