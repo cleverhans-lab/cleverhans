@@ -27,7 +27,7 @@ def list_files(suffix=""):
         A list of all files in CleverHans whose filepath ends with `suffix`
     """
 
-    cleverhans_path = os.path.abspath(cleverhans.__path__[0])
+    cleverhans_path = os.path.abspath('/home/behzadan/rl-clever/fork/cleverhans/c')
     repo_path = os.path.abspath(os.path.join(cleverhans_path, os.pardir))
 
     file_list = _list_files(cleverhans_path, suffix)

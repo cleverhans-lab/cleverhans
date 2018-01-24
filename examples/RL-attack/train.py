@@ -99,8 +99,7 @@ def parse_args():
 
 def make_env(game_name):
     env = gym.make(game_name + "NoFrameskip-v4")
-    monitored_env = SimpleMonitor(
-        env)
+    monitored_env = SimpleMonitor(env)
     env = wrap_dqn(monitored_env)
     return env, monitored_env
 
@@ -157,10 +156,12 @@ if __name__ == '__main__':
     if args.save_azure_container is not None:
         account_name, account_key, container_name = \
             args.save_azure_container.split(":")
-        container = Container(account_name=account_name,
-                              account_key=account_key,
-                              container_name=container_name,
-                              maybe_create=True)
+        container = Container(
+            account_name=account_name,
+            account_key=account_key,
+            container_name=container_name,
+            maybe_create=True
+        )
         if savedir is None:
             # Careful! This will not get cleaned up.
             savedir = tempfile.TemporaryDirectory().name
@@ -234,7 +235,7 @@ if __name__ == '__main__':
                 summary_name = \
                     param.name.replace(
                         'deepq/q_func/action_value/', '').replace(
-                        '/', '.').split(':')[0]
+                            '/', '.').split(':')[0]
                 sigma_name_list.append(summary_name)
                 sigma_list.append(tf.reduce_mean(tf.abs(param)))
         f_mean_sigma = U.function(inputs=[], outputs=sigma_list)

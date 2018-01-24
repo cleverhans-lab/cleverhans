@@ -90,7 +90,7 @@ class DQNModel:
         self.sess = tf.Session(graph=self.g)
 
         if fname is not None:
-            print ('Loading Model...')
+            print('Loading Model...')
             self.saver.restore(self.sess, fname)
 
     def get_act(self):
@@ -195,7 +195,7 @@ def play(env, act, craft_adv_obs, craft_adv_obs2, stochastic, video_path,
                 video_recorder.enabled = False
             print('Reward: ' + str(info["rewards"][-1]))
             num_episodes = len(info["rewards"])
-            print ('Episode: ' + str(num_episodes))
+            print('Episode: ' + str(num_episodes))
             success = float(num_transfer / num_moves) * 100.0
             print("Percentage of successful attacks: " + str(success))
             num_moves = 0
