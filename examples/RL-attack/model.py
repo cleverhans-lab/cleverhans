@@ -59,8 +59,11 @@ def dueling_model(img_in, num_actions, scope, noisy=False, reuse=False,
                 state_score = noisy_dense(state_hidden, name='noisy_fc2',
                                           size=1)
             else:
-                state_hidden = layers.fully_connected(out, num_outputs=512,
-                                                    activation_fn=tf.nn.relu)
+                state_hidden = layers.fully_connected(
+                    out,
+                    num_outputs=512,
+                    activation_fn=tf.nn.relu
+                )
                 state_score = layers.fully_connected(state_hidden,
                                                      num_outputs=1,
                                                      activation_fn=None)
@@ -73,13 +76,20 @@ def dueling_model(img_in, num_actions, scope, noisy=False, reuse=False,
                 action_scores = noisy_dense(actions_hidden, name='noisy_fc2',
                                             size=num_actions)
             else:
-                actions_hidden = layers.fully_connected(out, num_outputs=512,
-                                                activation_fn=tf.nn.relu)
-                action_scores = layers.fully_connected(actions_hidden,
-                                                    num_outputs=num_actions,
-                                                    activation_fn=None)
+                actions_hidden = layers.fully_connected(
+                    out,
+                    num_outputs=512,
+                    activation_fn=tf.nn.relu
+                )
+                action_scores = layers.fully_connected(
+                    actions_hidden,
+                    num_outputs=num_actions,
+                    activation_fn=None
+                )
             action_scores_mean = tf.reduce_mean(action_scores, 1)
-            action_scores = action_scores - tf.expand_dims(action_scores_mean,
-                                                           1)
+            action_scores = action_scores - tf.expand_dims(
+                action_scores_mean,
+                1
+            )
 
         return state_score + action_scores

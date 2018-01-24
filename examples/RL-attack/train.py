@@ -100,14 +100,12 @@ def parse_args():
 def make_env(game_name):
     env = gym.make(game_name + "NoFrameskip-v4")
     monitored_env = SimpleMonitor(
-        env)  # puts rewards and number of steps in info, before environment is wrapped
-    env = wrap_dqn(
-        monitored_env)  # applies a bunch of modification to simplify the observation space (downsample, make b/w)
+        env)
+    env = wrap_dqn(monitored_env)
     return env, monitored_env
 
 
 def maybe_save_model(savedir, container, state):
-    """This function checkpoints the model and state of the training algorithm."""
     if savedir is None:
         return
     start_time = time.time()
@@ -158,8 +156,7 @@ if __name__ == '__main__':
     savedir = args.save_dir
     if args.save_azure_container is not None:
         account_name, account_key, container_name = \
-            args.save_azure_container.split(
-            ":")
+            args.save_azure_container.split(":")
         container = Container(account_name=account_name,
                               account_key=account_key,
                               container_name=container_name,
@@ -235,8 +232,9 @@ if __name__ == '__main__':
             if 'sigma' in param.name \
                     and 'deepq/q_func/action_value' in param.name:
                 summary_name = \
-                param.name.replace('deepq/q_func/action_value/', '').replace(\
-                    '/', '.').split(':')[0]
+                    param.name.replace(
+                        'deepq/q_func/action_value/', '').replace(
+                        '/', '.').split(':')[0]
                 sigma_name_list.append(summary_name)
                 sigma_list.append(tf.reduce_mean(tf.abs(param)))
         f_mean_sigma = U.function(inputs=[], outputs=sigma_list)
@@ -255,7 +253,7 @@ if __name__ == '__main__':
             # and at a designated attack step
             # if craft_adv != None and (num_iters >= args.attack_init)
             # and ((num_iters - args.attack_init) % args.attack_freq == 0) :
-            if craft_adv != None and (num_iters >= args.attack_init) and (
+            if craft_adv is not None and (num_iters >= args.attack_init) and (
                     random.random() <= args.attack_prob):
                 obs = craft_adv(np.array(obs)[None])[0]
 
@@ -285,8 +283,7 @@ if __name__ == '__main__':
                      batch_idxes) = experience
                 else:
                     obses_t, actions, rewards, obses_tp1, dones = \
-                        replay_buffer.sample(
-                        args.batch_size)
+                        replay_buffer.sample(args.batch_size)
                     weights = np.ones_like(rewards)
                 # Minimize the error in Bellman's and compute TD-error
                 td_errors, huber_loss = train(obses_t, actions, rewards,
@@ -294,8 +291,9 @@ if __name__ == '__main__':
                 # Update the priorities in the replay buffer
                 if args.prioritized:
                     new_priorities = np.abs(td_errors) + args.prioritized_eps
-                    replay_buffer.update_priorities(\
-                        batch_idxes, new_priorities)
+                    replay_buffer.update_priorities(
+                        batch_idxes, new_priorities
+                    )
                 # Write summary
                 mean_sigma = f_mean_sigma()
                 im_stats.add_all_summary(writer,
@@ -345,7 +343,7 @@ if __name__ == '__main__':
                     if steps_per_iter._value is not None else "calculating:")
                 logger.dump_tabular()
                 logger.log()
-                logger.log("ETA: " + \
+                logger.log("ETA: " +
                            pretty_eta(int(steps_left / fps_estimate)))
                 logger.log()
                 # add summary for one episode

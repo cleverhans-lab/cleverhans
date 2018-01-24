@@ -2,25 +2,43 @@
 
 ============ Sample usage ============
 No attack, testing a DQN model of Breakout trained without parameter noise:
-$> python3 enjoy-adv.py --env Breakout --model-dir ./data/Breakout/model-173000 --video ./Breakout.mp4
+$> python3 enjoy-adv.py --env Breakout --model-dir \
+           ./data/Breakout/model-100 --video ./Breakout.mp4
 
-No attack, testing a DQN model of Breakout trained with parameter noise (NoisyNet implementation):
-$> python3 enjoy-adv.py --env Breakout --noisy --model-dir ./data/Breakout/model-173000 --video ./Breakout.mp4
+No attack, testing a DQN model of Breakout trained with parameter noise
+(NoisyNet implementation):
+$> python3 enjoy-adv.py --env Breakout --noisy \
+           --model-dir ./data/Breakout/model-173000 --video ./Breakout.mp4
 
-Whitebox FGSM attack, testing a DQN model of Breakout trained without parameter noise:
-$> python3 enjoy-adv.py --env Breakout --model-dir ./data/Breakout/model-173000 --attack fgsm --video ./Breakout.mp4
+Whitebox FGSM attack, testing a DQN model of Breakout
+trained without parameter noise:
+$> python3 enjoy-adv.py --env Breakout --model-dir \
+        ./data/Breakout/model-173000 --attack fgsm --video ./Breakout.mp4
 
-Whitebox FGSM attack, testing a DQN model of Breakout trained with parameter noise (NoisyNet implementation):
-$> python3 enjoy-adv.py --env Breakout --noisy --model-dir ./data/Breakout/model-173000 --attack fgsm --video ./Breakout.mp4
+Whitebox FGSM attack, testing a DQN model of Breakout
+trained with parameter noise (NoisyNet implementation):
+$> python3 enjoy-adv.py --env Breakout --noisy --model-dir \
+        ./data/Breakout/model-173000 --attack fgsm --video ./Breakout.mp4
 
-Blackbox FGSM attack, testing a DQN model of Breakout trained without parameter noise:
-$> python3 enjoy-adv.py --env Breakout --model-dir ./data/Breakout/model-173000 --attack fgsm --blackbox --model-dir2 ./data/Breakout/model-173000-2 --video ./Breakout.mp4
+Blackbox FGSM attack, testing a DQN model of Breakout
+trained without parameter noise:
+$> python3 enjoy-adv.py --env Breakout --model-dir \
+    ./data/Breakout/model-173000 --attack fgsm --blackbox \
+    --model-dir2 ./data/Breakout/model-173000-2 --video ./Breakout.mp4
 
-Blackbox FGSM attack, testing a DQN model of Breakout trained with parameter noise (NoisyNet implementation), replica model trained without parameter noise:
-$> python3 enjoy-adv.py --env Breakout --noisy --model-dir ./data/Breakout/model-173000 --attack fgsm --blackbox --model-dir2 ./data/Breakout/model-173000-2 --video ./Breakout.mp4
+Blackbox FGSM attack, testing a DQN model of Breakout
+trained with parameter noise (NoisyNet implementation),
+replica model trained without parameter noise:
+$> python3 enjoy-adv.py --env Breakout --noisy \
+    --model-dir ./data/Breakout/model-173000 --attack fgsm --blackbox \
+    --model-dir2 ./data/Breakout/model2-173000-2 --video ./Breakout.mp4
 
-Blackbox FGSM attack, testing a DQN model of Breakout trained with parameter noise (NoisyNet implementation), replica model trained with parameter noise:
-$> python3 enjoy-adv.py --env Breakout --noisy --model-dir ./data/Breakout/model-173000 --attack fgsm --blackbox --model-dir2 ./data/Breakout/model-173000-2 --noisy2 --video ./Breakout.mp4
+Blackbox FGSM attack, testing a DQN model of Breakout
+trained with parameter noise (NoisyNet implementation),
+replica model trained with parameter noise:
+$> python3 enjoy-adv.py --env Breakout --noisy --model-dir \
+    ./data/Breakout/model-173000 --attack fgsm --blackbox \
+    --model-dir2 ./data/Breakout/model2-173000 --noisy2 --video ./Breakout.mp4
 
 """
 
@@ -178,7 +196,7 @@ def play(env, act, craft_adv_obs, craft_adv_obs2, stochastic, video_path,
             print('Reward: ' + str(info["rewards"][-1]))
             num_episodes = len(info["rewards"])
             print ('Episode: ' + str(num_episodes))
-            success = float((num_transfer) / num_moves) * 100.0
+            success = float(num_transfer / num_moves) * 100.0
             print("Percentage of successful attacks: " + str(success))
             num_moves = 0
             num_transfer = 0
