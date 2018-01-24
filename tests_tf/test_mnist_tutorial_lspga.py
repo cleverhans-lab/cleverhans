@@ -3,7 +3,8 @@ import numpy as np
 from tensorflow.python.client import device_lib
 from cleverhans.devtools.checks import CleverHansTest
 
-HAS_GPU = 'GPU' in set([x.device_type for x in device_lib.list_local_devices()])
+HAS_GPU = 'GPU' in set([x.device_type for
+                        x in device_lib.list_local_devices()])
 
 
 class TestMNISTTutorialLSPGA(CleverHansTest):
@@ -21,8 +22,9 @@ class TestMNISTTutorialLSPGA(CleverHansTest):
                                 'testing': True}
         g = tf.Graph()
         with g.as_default():
-          np.random.seed(42)
-          report = mnist_tutorial_lspga.mnist_tutorial(**test_dataset_indices)
+            np.random.seed(42)
+            report = mnist_tutorial_lspga.mnist_tutorial(
+                **test_dataset_indices)
 
         # Check accuracy values contained in the AccuracyReport object
         self.assertGreater(report.train_clean_train_clean_eval, 0.97)
@@ -34,8 +36,9 @@ class TestMNISTTutorialLSPGA(CleverHansTest):
         atol_fac = 2e-2 if HAS_GPU else 1e-6
         g = tf.Graph()
         with g.as_default():
-          np.random.seed(42)
-          report_2 = mnist_tutorial_lspga.mnist_tutorial(**test_dataset_indices)
+            np.random.seed(42)
+            report_2 = mnist_tutorial_lspga.mnist_tutorial(
+                **test_dataset_indices)
         self.assertClose(report.train_clean_train_clean_eval,
                          report_2.train_clean_train_clean_eval,
                          atol=atol_fac * 1)

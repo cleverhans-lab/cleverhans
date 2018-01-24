@@ -32,6 +32,7 @@ class TestDiscretizationUtils(unittest.TestCase):
         unflattened_a = discretization_utils.unflatten_last(a_t, 20)
         self.assertTrue(np.all(b == self.sess.run(unflattened_a,
                                                   feed_dict={a_t: a})))
+
     def testOneHotToThermometer(self):
         one_hot_inputs = [[1] + [0] * 9, [0, 0, 1] + [0] * 7,
                           [0, 1] + [0] * 8, [0] * 9 + [1]]
@@ -44,10 +45,10 @@ class TestDiscretizationUtils(unittest.TestCase):
             one_hot = np.full((10, 32, 32, 3, levels), one_hot_input)
             x = tf.constant(one_hot, dtype=tf.int32)
             thermometer = np.full((10, 32, 32, 3, levels), thermometer_input)
-            thermometer_x = discretization_utils.one_hot_to_thermometer(x,
-                                                                        levels,
-                                                                        flattened=False)
-            self.assertTrue(np.all(thermometer == self.sess.run(thermometer_x)))
+            thermometer_x = discretization_utils.one_hot_to_thermometer(
+                x, levels, flattened=False)
+            self.assertTrue(np.all(thermometer ==
+                                   self.sess.run(thermometer_x)))
 
     def testThermometerToOneHot(self):
         one_hot_inputs = [[1] + [0] * 9, [0, 1] + [0] * 8,
@@ -61,9 +62,8 @@ class TestDiscretizationUtils(unittest.TestCase):
             one_hot = np.full((10, 32, 32, 3, levels), one_hot_input)
             thermometer = np.full((10, 32, 32, 3, levels), thermometer_input)
             x = tf.constant(thermometer, dtype=tf.int32)
-            one_hot_x = discretization_utils.thermometer_to_one_hot(x,
-                                                                    levels,
-                                                                    flattened=False)
+            one_hot_x = discretization_utils.thermometer_to_one_hot(
+                x, levels, flattened=False)
             self.assertTrue(np.all(one_hot == self.sess.run(one_hot_x)))
 
     def testQuantizeUniformOneHot(self):
@@ -83,7 +83,7 @@ class TestDiscretizationUtils(unittest.TestCase):
 
     def testQuantizeUniformThermometer(self):
         values = [.1, .15, .95]
-    	buckets = [[1] + [0] * 9, [1, 1] + [0] * 8, [1] * 10]
+        buckets = [[1] + [0] * 9, [1, 1] + [0] * 8, [1] * 10]
         for i in range(len(values)):
             bucket = buckets[i]
             value = values[i]
@@ -92,27 +92,25 @@ class TestDiscretizationUtils(unittest.TestCase):
             image_t = tf.placeholder(dtype=tf.float32, shape=[10, 32, 32, 3])
             thermometer = np.full((10, 32, 32, 3, levels), bucket)
             thermometer = np.reshape(thermometer, (10, 32, 32, 3 * levels))
-            discretized_x = discretization_utils.discretize_uniform(image_t,
-                                                                    levels,
-                                                                    thermometer=True)
-            self.assertTrue(np.all(thermometer == self.sess.run(discretized_x,
-                                                                feed_dict={image_t: image})))
+            discretized_x = discretization_utils.discretize_uniform(
+                image_t, levels, thermometer=True)
+            self.assertTrue(np.all(thermometer == self.sess.run(
+                discretized_x,
+                feed_dict={image_t: image})))
 
-	def testQuantizeOneHotCounts(self):
-		image = np.random.uniform(low=0., high=1., size=(10, 32, 32, 3))
-		image_t = tf.constant(image, dtype=tf.float32)
-		image_t_quantized = quantization_utils.quantize_uniform(image_t, 10)
-		centroids = np.array([.1, .3, .35, .4, .5, .6, .7, .8, .9, .95])
-		image_t_quantized_custom = quantization_utils.quantize_centroids(
-			image_t, 10, centroids)
-		# Check counts for quantizing using regular buckets
-		counts = tf.reduce_sum(image_t_quantized, axis=-1)
-
-		# Check counts for quantizing using custom buckets
-		counts_custom = tf.reduce_sum(image_t_quantized_custom, axis=-1)
-
-		self.assertTrue(np.all(self.sess.run(counts) == 3))
-		self.assertTrue(np.all(self.sess.run(counts_custom) == 3))
+    def testQuantizeOneHotCounts(self):
+        image = np.random.uniform(low=0., high=1., size=(10, 32, 32, 3))
+        image_t = tf.constant(image, dtype=tf.float32)
+        image_t_quantized = quantization_utils.quantize_uniform(image_t, 10)
+        centroids = np.array([.1, .3, .35, .4, .5, .6, .7, .8, .9, .95])
+        image_t_quantized_custom = quantization_utils.quantize_centroids(
+            image_t, 10, centroids)
+        # Check counts for quantizing using regular buckets
+        counts = tf.reduce_sum(image_t_quantized, axis=-1)
+        # Check counts for quantizing using custom buckets
+        counts_custom = tf.reduce_sum(image_t_quantized_custom, axis=-1)
+        self.assertTrue(np.all(self.sess.run(counts) == 3))
+        self.assertTrue(np.all(self.sess.run(counts_custom) == 3))
 
 
 if __name__ == '__main__':

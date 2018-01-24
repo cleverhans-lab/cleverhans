@@ -25,6 +25,7 @@ from cleverhans.discretization_utils import discretize_uniform
 from cleverhans.discretization_utils import undiscretize_uniform
 from cleverhans.model import Model
 
+
 class SimpleDiscretizedModel(Model):
     """
     A very simple neural network for discretized inputs
@@ -41,6 +42,7 @@ class SimpleDiscretizedModel(Model):
         res = tf.reshape(res, [batch_size, -1])
         return res
 
+
 class SimpleModel(Model):
     """
     A very simple neural network
@@ -53,15 +55,14 @@ class SimpleModel(Model):
         res = tf.matmul(h1, W2)
         return res
 
-class TrivialModel(Model):
-  """
-  A linear model with two weights
-  """
 
-  def get_logits(self, x):
-      W1 = tf.constant([[1, -1]], dtype=tf.float32)
-      res = tf.matmul(x, W1)
-      return res
+class TrivialModel(Model):
+    """A linear model with two weights."""
+
+    def get_logits(self, x):
+        W1 = tf.constant([[1, -1]], dtype=tf.float32)
+        res = tf.matmul(x, W1)
+        return res
 
 
 class DummyModel(Model):
@@ -71,12 +72,13 @@ class DummyModel(Model):
 
     def __init__(self):
         def template_fn(x):
-          net = slim.fully_connected(x, 60)
-          return slim.fully_connected(net, 10, activation_fn=None)
+            net = slim.fully_connected(x, 60)
+            return slim.fully_connected(net, 10, activation_fn=None)
         self.template = tf.make_template('dummy_model', template_fn)
 
     def get_logits(self, x):
         return self.template(x)
+
 
 class TestAttackClassInitArguments(CleverHansTest):
 
@@ -159,7 +161,6 @@ class TestVirtualAdversarialMethod(CleverHansTest):
 class TestFastGradientMethod(CleverHansTest):
     def setUp(self):
         super(TestFastGradientMethod, self).setUp()
-
 
         self.sess = tf.Session()
         self.model = SimpleModel()

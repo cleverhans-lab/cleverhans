@@ -41,9 +41,9 @@ class testComputeMask(unittest.TestCase):
         x = np.random.rand(10, 32, 32, 3)
         x_t = tf.constant(x, tf.float32)
         x_one_hot = discretize_uniform(x_t, levels,
-                                    thermometer=False)
+                                       thermometer=False)
         x_thermometer = discretize_uniform(x_t, levels,
-                                        thermometer=True)
+                                           thermometer=True)
         mask = [1] * 10
         mask = np.stack([mask] * 3, axis=1)
         mask = mask.flatten()
@@ -63,5 +63,5 @@ class testComputeMask(unittest.TestCase):
         self.assertTrue(np.all(mask == sess.run(mask_t)))
 
 
-if __name__== '__main__':
+if __name__ == '__main__':
     unittest.main()
