@@ -24,6 +24,7 @@ class TestMNISTTutorialLSPGA(CleverHansTest):
         with g.as_default():
             np.random.seed(42)
             report = mnist_tutorial_lspga.mnist_tutorial(
+                levels=6, steps=2,
                 **test_dataset_indices)
 
         # Check accuracy values contained in the AccuracyReport object
@@ -38,6 +39,7 @@ class TestMNISTTutorialLSPGA(CleverHansTest):
         with g.as_default():
             np.random.seed(42)
             report_2 = mnist_tutorial_lspga.mnist_tutorial(
+                levels=6, steps=2,
                 **test_dataset_indices)
         self.assertClose(report.train_clean_train_clean_eval,
                          report_2.train_clean_train_clean_eval,
