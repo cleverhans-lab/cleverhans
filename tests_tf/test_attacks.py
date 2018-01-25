@@ -818,5 +818,77 @@ class TestFastFeatureAdversaries(CleverHansTest):
         self.assertTrue(d_ag*100/d_sg < 50.)
 
 
+class TestLBFGS(CleverHansTest):
+    def setUp(self):
+        super(TestLBFGS, self).setUp()
+        import tensorflow as tf
+
+        # The world's simplest neural network
+        def my_model(x):
+            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
+            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
+            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
+            res = tf.matmul(x, W2)
+            return res
+
+        self.sess = tf.Session()
+        self.model = my_model
+        self.attack = LBFGS(self.model, sess=self.sess)
+
+    def test_generate_np_targeted_gives_adversarial_example(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        feed_labs = np.zeros((100, 2))
+        feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
+        x_adv = self.attack.generate_np(x_val, max_iterations=100,
+                                        binary_search_steps=3,
+                                        initial_const=1,
+                                        clip_min=-5, clip_max=5,
+                                        batch_size=100, y_target=feed_labs)
+
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+        assert np.mean(np.argmax(feed_labs, axis=1) == new_labs) > 0.9
+
+    def test_generate_targeted_gives_adversarial_example(self):
+        import tensorflow as tf
+
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        feed_labs = np.zeros((100, 2))
+        feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
+        x = tf.placeholder(tf.float32, x_val.shape)
+        y = tf.placeholder(tf.float32, feed_labs.shape)
+
+        x_adv_p = self.attack.generate(x, max_iterations=100,
+                                       binary_search_steps=3,
+                                       initial_const=1,
+                                       clip_min=-5, clip_max=5,
+                                       batch_size=100, y_target=y)
+        x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
+
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        assert np.mean(np.argmax(feed_labs, axis=1) == new_labs) > 0.9
+
+    def test_generate_np_gives_clipped_adversarial_examples(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        feed_labs = np.zeros((100, 2))
+        feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
+        x_adv = self.attack.generate_np(x_val, max_iterations=10,
+                                        binary_search_steps=1,
+                                        initial_const=1,
+                                        clip_min=-0.2, clip_max=0.3,
+                                        batch_size=100, y_target=feed_labs)
+
+        assert -0.201 < np.min(x_adv)
+        assert np.max(x_adv) < .301
+
+
 if __name__ == '__main__':
     unittest.main()

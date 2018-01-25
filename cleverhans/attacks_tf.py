@@ -1320,3 +1320,156 @@ def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
     # need to clip this image into the given range
     adv_x = np.clip((1+overshoot)*r_tot + sample, clip_min, clip_max)
     return adv_x
+
+
+class LBFGS_attack(object):
+
+    def __init__(self, sess, x, model_preds, targeted_label,
+                 binary_search_steps, max_iterations, initial_const,
+                 clip_min, clip_max, nb_classes, batch_size):
+        """
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
+
+        :param sess: a TF session.
+        :param x: A tensor with the inputs.
+        :param model_preds: A tensor with model's predictions.
+        :param targeted_label: A tensor with the target labels.
+        :param binary_search_steps: The number of times we perform binary
+                                    search to find the optimal tradeoff-
+                                    constant between norm of the purturbation
+                                    and cross-entropy loss of classification.
+        :param max_iterations: The maximum number of iterations.
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of size of the pururbation
+                              and cross-entropy loss of the classification.
+        :param clip_min: Minimum input component value
+        :param clip_max: Maximum input component value
+        :param num_labels: The number of classes in the model's output.
+        :param batch_size: Number of attacks to run simultaneously.
+
+        """
+        self.sess = sess
+        self.x = x
+        self.model_preds = model_preds
+        self.targeted_label = targeted_label
+        self.binary_search_steps = binary_search_steps
+        self.max_iterations = max_iterations
+        self.initial_const = initial_const
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+        self.batch_size = batch_size
+
+        self.repeat = self.binary_search_steps >= 10
+        self.shape = shape = tuple([self.batch_size] +
+                                   list(self.x.get_shape().as_list()[1:]))
+        self.ori_img = tf.Variable(np.zeros(self.shape), dtype=tf.float32,
+                                   name='ori_img')
+        self.const = tf.Variable(np.zeros(self.batch_size), dtype=tf.float32,
+                                 name='const')
+        self.score = utils_tf.model_loss(self.targeted_label, self.model_preds,
+                                         mean=False)
+        self.l2dist = tf.reduce_sum(tf.square(self.x - self.ori_img))
+        # small self.const will result small adversarial perturbation
+        self.loss = tf.reduce_sum(self.score*self.const) + self.l2dist
+        self.grad, = tf.gradients(self.loss, self.x)
+
+    def attack(self, x_val, targets):
+        """
+        Perform the attack on the given instance for the given targets.
+        """
+        def lbfgs_objective(adv_x, self, targets, oimgs, CONST):
+            # returns the function value and the gradient for fmin_l_bfgs_b
+            loss = self.sess.run(self.loss, feed_dict=
+                                 {self.x: adv_x.reshape(oimgs.shape),
+                                  self.targeted_label: targets,
+                                  self.ori_img: oimgs,
+                                  self.const: CONST})
+            grad = self.sess.run(self.grad, feed_dict=
+                                 {self.x: adv_x.reshape(oimgs.shape),
+                                  self.targeted_label: targets,
+                                  self.ori_img: oimgs,
+                                  self.const: CONST})
+            return loss, grad.flatten().astype(float)
+
+        # begin the main part for the attack
+        from scipy.optimize import fmin_l_bfgs_b
+        oimgs = np.clip(x_val, self.clip_min, self.clip_max)
+        CONST = np.ones(self.batch_size) * self.initial_const
+
+        # set the lower and upper bounds accordingly
+        lower_bound = np.zeros(self.batch_size)
+        upper_bound = np.ones(self.batch_size) * 1e10
+
+        # set the box constraints for the optimization function
+        clip_min = self.clip_min*np.ones(oimgs.shape[:])
+        clip_max = self.clip_max*np.ones(oimgs.shape[:])
+        clip_bound = zip(clip_min.flatten(), clip_max.flatten())
+
+        # placeholders for the best l2 and instance attack found so far
+        o_bestl2 = [1e10] * self.batch_size
+        o_bestattack = np.copy(oimgs)
+
+        for outer_step in range(self.binary_search_steps):
+            # completely reset adam's internal state.
+            _logger.debug(("  Binary search step {} of {}")
+                          .format(outer_step, self.binary_search_steps))
+
+            # The last iteration (if we run many steps) repeat the search once.
+            if self.repeat and outer_step == self.binary_search_steps - 1:
+                CONST = upper_bound
+
+            # optimization function
+            adv_x, f, _ = fmin_l_bfgs_b(lbfgs_objective,
+                                        oimgs.flatten().astype(float),
+                                        args=(self, targets, oimgs, CONST),
+                                        bounds=clip_bound,
+                                        maxiter=self.max_iterations,
+                                        iprint=0)
+
+            adv_x = adv_x.reshape(oimgs.shape)
+            assert np.amax(adv_x) <= self.clip_max and \
+                np.amin(adv_x) >= self.clip_min, \
+                'fmin_l_bfgs_b returns are invalid'
+
+            # adjust the best result found so far
+            preds = np.atleast_1d(utils_tf.model_argmax(self.sess, self.x,
+                                                        self.model_preds,
+                                                        adv_x))
+            _logger.debug("predicted labels are {}".format(preds))
+
+            l2s = np.zeros(self.batch_size)
+            for i in range(self.batch_size):
+                l2s[i] = np.sum(np.square(adv_x[i] - oimgs[i]))
+
+            for e, (l2, pred, ii) in enumerate(zip(l2s, preds, adv_x)):
+                if l2 < o_bestl2[e] and pred == np.argmax(targets[e]):
+                    o_bestl2[e] = l2
+                    o_bestattack[e] = ii
+
+            # adjust the constant as needed
+            for e in range(self.batch_size):
+                if preds[e] == np.argmax(targets[e]):
+                    # success, divide const by two
+                    upper_bound[e] = min(upper_bound[e], CONST[e])
+                    if upper_bound[e] < 1e9:
+                        CONST[e] = (lower_bound[e] + upper_bound[e]) / 2
+                else:
+                    # failure, either multiply by 10 if no solution found yet
+                    #          or do binary search with the known upper bound
+                    lower_bound[e] = max(lower_bound[e], CONST[e])
+                    if upper_bound[e] < 1e9:
+                        CONST[e] = (lower_bound[e] + upper_bound[e]) / 2
+                    else:
+                        CONST[e] *= 10
+
+            _logger.debug("  Successfully generated adversarial examples " +
+                          "on {} of {} instances.".
+                          format(sum(upper_bound < 1e9), self.batch_size))
+            o_bestl2 = np.array(o_bestl2)
+            mean = np.mean(np.sqrt(o_bestl2[o_bestl2 < 1e9]))
+            _logger.debug("   Mean successful distortion: {:.4g}".format(mean))
+
+        # return the best solution found
+        o_bestl2 = np.array(o_bestl2)
+        return o_bestattack
