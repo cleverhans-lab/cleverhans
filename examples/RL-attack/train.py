@@ -23,7 +23,7 @@ from rlattack.common.misc_util import (
     SimpleMonitor
 )
 from rlattack.common.schedules import LinearSchedule, PiecewiseSchedule
-# when updating this to non-deperecated ones, it is important to
+# when updating this to non-deprecated ones, it is important to
 # copy over LazyFrames
 from rlattack.common.atari_wrappers_deprecated import wrap_dqn
 from rlattack.common.azure_utils import Container

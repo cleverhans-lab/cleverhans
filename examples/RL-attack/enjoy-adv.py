@@ -57,7 +57,7 @@ from rlattack.common.misc_util import (
     SimpleMonitor,
 )
 from rlattack.common.atari_wrappers_deprecated import wrap_dqn
-# from rlattack.deepq.experiments.atari.model import model, dueling_model
+
 
 # V: imports#
 import tensorflow as tf
