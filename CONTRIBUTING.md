@@ -21,5 +21,8 @@ on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com
 * When making code contributions to CleverHans, you follow the
 `PEP8` coding style in your pull requests.
 * When making your first pull request, you [sign the Google CLA](https://cla.developers.google.com/clas)
+* We do not accept pull requests that add git submodules because of [the
+  problems that arise when maintaining git
+  submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407)
 
 Bug fixes can be initiated through Github pull requests.
