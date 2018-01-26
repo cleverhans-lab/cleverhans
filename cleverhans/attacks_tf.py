@@ -1380,16 +1380,16 @@ class LBFGS_attack(object):
         """
         def lbfgs_objective(adv_x, self, targets, oimgs, CONST):
             # returns the function value and the gradient for fmin_l_bfgs_b
-            loss = self.sess.run(self.loss, feed_dict=
-                                 {self.x: adv_x.reshape(oimgs.shape),
-                                  self.targeted_label: targets,
-                                  self.ori_img: oimgs,
-                                  self.const: CONST})
-            grad = self.sess.run(self.grad, feed_dict=
-                                 {self.x: adv_x.reshape(oimgs.shape),
-                                  self.targeted_label: targets,
-                                  self.ori_img: oimgs,
-                                  self.const: CONST})
+            loss = self.sess.run(self.loss, feed_dict={
+                                 self.x: adv_x.reshape(oimgs.shape),
+                                 self.targeted_label: targets,
+                                 self.ori_img: oimgs,
+                                 self.const: CONST})
+            grad = self.sess.run(self.grad, feed_dict={
+                                 self.x: adv_x.reshape(oimgs.shape),
+                                 self.targeted_label: targets,
+                                 self.ori_img: oimgs,
+                                 self.const: CONST})
             return loss, grad.flatten().astype(float)
 
         # begin the main part for the attack
