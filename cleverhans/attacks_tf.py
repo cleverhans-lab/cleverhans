@@ -1404,7 +1404,7 @@ class LBFGS_attack(object):
         # set the box constraints for the optimization function
         clip_min = self.clip_min*np.ones(oimgs.shape[:])
         clip_max = self.clip_max*np.ones(oimgs.shape[:])
-        clip_bound = zip(clip_min.flatten(), clip_max.flatten())
+        clip_bound = list(zip(clip_min.flatten(), clip_max.flatten()))
 
         # placeholders for the best l2 and instance attack found so far
         o_bestl2 = [1e10] * self.batch_size
