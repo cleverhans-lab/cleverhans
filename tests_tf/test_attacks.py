@@ -20,6 +20,7 @@ from cleverhans.attacks import ElasticNetMethod
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import MadryEtAl
 from cleverhans.attacks import FastFeatureAdversaries
+from cleverhans.attacks import LBFGS
 from cleverhans.model import Model
 
 class SimpleModel(Model):
@@ -821,25 +822,15 @@ class TestFastFeatureAdversaries(CleverHansTest):
 class TestLBFGS(CleverHansTest):
     def setUp(self):
         super(TestLBFGS, self).setUp()
-        import tensorflow as tf
-
-        # The world's simplest neural network
-        def my_model(x):
-            W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-            h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-            W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-            res = tf.matmul(x, W2)
-            return res
 
         self.sess = tf.Session()
-        self.model = my_model
+        self.model = SimpleModel()
         self.attack = LBFGS(self.model, sess=self.sess)
 
     def test_generate_np_targeted_gives_adversarial_example(self):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((100, 2))
         feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
         x_adv = self.attack.generate_np(x_val, max_iterations=100,
@@ -850,15 +841,13 @@ class TestLBFGS(CleverHansTest):
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
-        assert np.mean(np.argmax(feed_labs, axis=1) == new_labs) > 0.9
+        self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs)
+                        > 0.9)
 
     def test_generate_targeted_gives_adversarial_example(self):
-        import tensorflow as tf
-
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         feed_labs = np.zeros((100, 2))
         feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
         x = tf.placeholder(tf.float32, x_val.shape)
@@ -872,7 +861,9 @@ class TestLBFGS(CleverHansTest):
         x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        assert np.mean(np.argmax(feed_labs, axis=1) == new_labs) > 0.9
+
+        self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs)
+                        > 0.9)
 
     def test_generate_np_gives_clipped_adversarial_examples(self):
         x_val = np.random.rand(100, 2)
@@ -886,8 +877,8 @@ class TestLBFGS(CleverHansTest):
                                         clip_min=-0.2, clip_max=0.3,
                                         batch_size=100, y_target=feed_labs)
 
-        assert -0.201 < np.min(x_adv)
-        assert np.max(x_adv) < .301
+        self.assertTrue(-0.201 < np.min(x_adv))
+        self.assertTrue(np.max(x_adv) < .301)
 
 
 if __name__ == '__main__':

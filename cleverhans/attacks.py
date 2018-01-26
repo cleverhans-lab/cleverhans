@@ -1128,9 +1128,6 @@ class LBFGS(Attack):
         """
         super(LBFGS, self).__init__(model, back, sess)
 
-        if self.back == 'th':
-            raise NotImplementedError('Theano version not implemented.')
-
         import tensorflow as tf
         self.feedable_kwargs = {'y_target': tf.float32}
         self.structural_kwargs = ['batch_size', 'binary_search_steps',
@@ -1164,6 +1161,7 @@ class LBFGS(Attack):
         self.parse_params(**kwargs)
 
         _, nb_classes = self.get_or_guess_labels(x, kwargs)
+
         attack = LBFGS_attack(self.sess, x, self.model.get_probs(x),
                               self.y_target, self.binary_search_steps,
                               self.max_iterations, self.initial_const,
