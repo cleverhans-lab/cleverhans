@@ -1143,15 +1143,16 @@ class LBFGS(Attack):
         input. Generate uses tf.py_func in order to operate over tensors.
 
         :param x: (required) A tensor with the inputs.
-        :param y_target: (required) A tensor with the target labels.
-        :param batch_size: Number of attacks to run simultaneously.
+        :param y_target: (required) A tensor with the one-hot target labels.
+        :param batch_size: The number of inputs to include in a batch and 
+                           process simultaneously.
         :param binary_search_steps: The number of times we perform binary
                                     search to find the optimal tradeoff-
                                     constant between norm of the purturbation
                                     and cross-entropy loss of classification.
         :param max_iterations: The maximum number of iterations.
         :param initial_const: The initial tradeoff-constant to use to tune the
-                              relative importance of size of the pururbation
+                              relative importance of size of the perturbation
                               and cross-entropy loss of the classification.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
@@ -1174,13 +1175,10 @@ class LBFGS(Attack):
 
         return wrap
 
-    def parse_params(self, y_target=None, nb_classes=None, batch_size=1,
+    def parse_params(self, y_target=None, batch_size=1,
                      binary_search_steps=5, max_iterations=1000,
                      initial_const=1e-2, clip_min=0, clip_max=1):
 
-        if nb_classes is not None:
-            warnings.warn("The nb_classes argument is depricated and will "
-                          "be removed on 2018-02-11")
         self.y_target = y_target
         self.batch_size = batch_size
         self.binary_search_steps = binary_search_steps
