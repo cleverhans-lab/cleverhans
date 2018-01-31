@@ -11,6 +11,7 @@ from tensorflow.python.platform import flags
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
+from cleverhans.attacks import CarliniWagnerL0
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
@@ -25,7 +26,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                       batch_size=128, nb_classes=10, source_samples=10,
                       learning_rate=0.001, attack_iterations=100,
                       model_path=os.path.join("models", "mnist"),
-                      targeted=True):
+                      metric='l2', targeted=True):
     """
     MNIST tutorial for Carlini and Wagner's attack
     :param train_start: index of first training set example
@@ -57,7 +58,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     sess = tf.Session()
     print("Created TensorFlow session.")
 
-    set_log_level(logging.DEBUG)
+    set_log_level(logging.INFO)
 
     # Get MNIST test data
     X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
@@ -66,8 +67,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                                                   test_end=test_end)
 
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, channels))
-    y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
+    y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
     model = make_basic_cnn()
@@ -89,7 +90,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     rng = np.random.RandomState([2017, 8, 30])
     # check if we've trained before, and if we have, use that pre-trained model
-    if os.path.exists(model_path + ".meta"):
+    if os.path.exists(model_path+".meta"):
         tf_model_load(sess, model_path)
     else:
         model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
@@ -105,100 +106,87 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     # Craft adversarial examples using Carlini and Wagner's approach
     ###########################################################################
-    nb_adv_per_sample = str(nb_classes - 1) if targeted else '1'
-    print('Crafting ' + str(source_samples) + ' * ' + nb_adv_per_sample +
+    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1) +
           ' adversarial examples')
     print("This could take some time ...")
 
     # Instantiate a CW attack object
-    cw = CarliniWagnerL2(model, back='tf', sess=sess)
+    if metric == 'l2':
+        cw = CarliniWagnerL2(model, back='tf', sess=sess)
+        const = 10
+    elif metric == 'l0':
+        cw = CarliniWagnerL0(model, back='tf', sess=sess)
+        const = 0.1
+    else:
+        raise Exception("Unknown distance metric")
 
-    if viz_enabled:
-        assert source_samples == nb_classes
-        idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0]
-                for i in range(nb_classes)]
+    idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0] for i in range(10)]
     if targeted:
-        if viz_enabled:
-            # Initialize our array for grid visualization
-            grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
-            grid_viz_data = np.zeros(grid_shape, dtype='f')
+        # Initialize our array for grid visualization
+        grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
+        grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-            adv_inputs = np.array(
-                [[instance] * nb_classes for instance in X_test[idxs]],
-                dtype=np.float32)
-        else:
-            adv_inputs = np.array(
-                [[instance] * nb_classes for
-                 instance in X_test[:source_samples]], dtype=np.float32)
+        one_hot = np.eye(10)
 
-        one_hot = np.zeros((nb_classes, nb_classes))
-        one_hot[np.arange(nb_classes), np.arange(nb_classes)] = 1
-
-        adv_inputs = adv_inputs.reshape(
-            (source_samples * nb_classes, img_rows, img_cols, 1))
-        adv_ys = np.array([one_hot] * source_samples,
-                          dtype=np.float32).reshape((source_samples *
-                                                     nb_classes, nb_classes))
+        adv_inputs = np.array([[instance] * 10 for instance in X_test[idxs]],
+                              dtype=np.float32)
+        adv_inputs = adv_inputs.reshape((100, 28, 28, 1))
+        adv_ys = np.array([one_hot] * 10, dtype=np.float32).reshape((100, 10))
         yname = "y_target"
     else:
-        if viz_enabled:
-            # Initialize our array for grid visualization
-            grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
-            grid_viz_data = np.zeros(grid_shape, dtype='f')
+        # Initialize our array for grid visualization
+        grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
+        grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-            adv_inputs = X_test[idxs]
-        else:
-            adv_inputs = X_test[:source_samples]
-
+        adv_inputs = X_test[idxs]
         adv_ys = None
         yname = "y"
 
     cw_params = {'binary_search_steps': 1,
                  yname: adv_ys,
                  'max_iterations': attack_iterations,
-                 'learning_rate': 0.1,
-                 'batch_size': source_samples * nb_classes if
-                 targeted else source_samples,
-                 'initial_const': 10}
+                 'learning_rate': 10./attack_iterations,
+                 'batch_size': 100 if targeted else 10,
+                 'initial_const': const}
 
     adv = cw.generate_np(adv_inputs,
                          **cw_params)
 
-    eval_params = {'batch_size': np.minimum(nb_classes, source_samples)}
     if targeted:
-        adv_accuracy = model_eval(
-            sess, x, y, preds, adv, adv_ys, args=eval_params)
+        adv_accuracy = model_eval(sess, x, y, preds, adv, adv_ys,
+                                  args={'batch_size': 10})
     else:
-        if viz_enabled:
-            adv_accuracy = 1 - \
-                model_eval(sess, x, y, preds, adv, Y_test[
-                           idxs], args=eval_params)
+        adv_accuracy = 1-model_eval(sess, x, y, preds, adv, Y_test[idxs],
+                                    args={'batch_size': 10})
+
+    for j in range(10):
+        if targeted:
+            for i in range(10):
+                grid_viz_data[i, j] = adv[i * 10 + j]
         else:
-            adv_accuracy = 1 - \
-                model_eval(sess, x, y, preds, adv, Y_test[
-                           :source_samples], args=eval_params)
+            grid_viz_data[j, 0] = adv_inputs[j]
+            grid_viz_data[j, 1] = adv[j]
 
-    if viz_enabled:
-        for j in range(nb_classes):
-            if targeted:
-                for i in range(nb_classes):
-                    grid_viz_data[i, j] = adv[i * nb_classes + j]
-            else:
-                grid_viz_data[j, 0] = adv_inputs[j]
-                grid_viz_data[j, 1] = adv[j]
-
-        print(grid_viz_data.shape)
+    print(grid_viz_data.shape)
 
     print('--------------------------------------')
 
     # Compute the number of adversarial examples that were successfully found
     print('Avg. rate of successful adv. examples {0:.4f}'.format(adv_accuracy))
-    report.clean_train_adv_eval = 1. - adv_accuracy
+    report.clean_train_adv_eval = 1.-adv_accuracy
 
-    # Compute the average distortion introduced by the algorithm
-    percent_perturbed = np.mean(np.sum((adv - adv_inputs)**2,
-                                       axis=(1, 2, 3))**.5)
-    print('Avg. L_2 norm of perturbations {0:.4f}'.format(percent_perturbed))
+    if metric == 'l2':
+        # Compute the average distortion introduced by the algorithm
+        percent_perturbed = np.mean(np.sum((adv - adv_inputs)**2,
+                                           axis=(1, 2, 3))**.5)
+        print('Avg. L_2 norm of perturbations {0:.4f}'
+              .format(percent_perturbed))
+    elif metric == 'l0':
+        # Compute the average distortion introduced by the algorithm
+        percent_perturbed = np.mean(np.sum(np.abs(adv - adv_inputs) > 1e-5,
+                                           axis=(1, 2, 3)))
+        print('Avg. L_0 norm of perturbations {0:.4f}'
+              .format(percent_perturbed))
 
     # Close TF session
     sess.close()
@@ -220,6 +208,7 @@ def main(argv=None):
                       learning_rate=FLAGS.learning_rate,
                       attack_iterations=FLAGS.attack_iterations,
                       model_path=FLAGS.model_path,
+                      metric=FLAGS.metric,
                       targeted=FLAGS.targeted)
 
 
@@ -232,9 +221,10 @@ if __name__ == '__main__':
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
                         'Path to save or load the model file')
-    flags.DEFINE_boolean('attack_iterations', 100,
+    flags.DEFINE_integer('attack_iterations', 100,
                          'Number of iterations to run attack; 1000 is good')
     flags.DEFINE_boolean('targeted', True,
                          'Run the tutorial in targeted mode?')
+    flags.DEFINE_string('metric', 'l2', 'Distance metric to optimize (l0,l2)')
 
     tf.app.run()

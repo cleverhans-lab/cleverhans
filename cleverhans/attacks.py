@@ -912,6 +912,127 @@ class CarliniWagnerL2(Attack):
         self.clip_max = clip_max
 
 
+class CarliniWagnerL0(Attack):
+    """
+    This attack was originally proposed by Carlini and Wagner. It is an
+    iterative attack that finds adversarial examples on many defenses that
+    are robust to other attacks.
+    Paper link: https://arxiv.org/abs/1608.04644
+
+    At a high level, this attack is an iterative attack using Adam and
+    a specially-chosen loss function to find adversarial examples with
+    lower distortion than other attacks. This comes at the cost of speed,
+    as this attack is often much slower than others.
+
+    The attack in this class minimizes the L0 distance.
+    """
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(CarliniWagnerL0, self).__init__(model, back, sess)
+
+        if self.back == 'th':
+            raise NotImplementedError('Theano version not implemented.')
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'y': tf.float32,
+                                'y_target': tf.float32}
+
+        self.structural_kwargs = ['confidence',
+                                  'targeted', 'learning_rate',
+                                  'max_iterations',
+                                  'abort_early', 'initial_const',
+                                  'largest_const', 'const_factor',
+                                  'clip_min', 'clip_max',
+                                  'independent_channels']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'logits')
+
+    def generate(self, x, **kwargs):
+        """
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
+
+        :param x: (required) A tensor with the inputs.
+        :param y: (optional) A tensor with the true labels for an untargeted
+                  attack. If None (and y_target is None) then use the
+                  original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the target labels for a
+                  targeted attack.
+        :param confidence: Confidence of adversarial examples: higher produces
+                           examples with larger l2 distortion, but more
+                           strongly classified as adversarial.
+        :param learning_rate: The learning rate for the attack algorithm.
+                              Smaller values produce better results but are
+                              slower to converge.
+        :param max_iterations: The maximum number of iterations. Setting this
+                               to a larger value will produce lower distortion
+                               results. Using only a few iterations requires
+                               a larger learning rate, and will produce larger
+                               distortion results.
+        :param abort_early: If true, allows early aborts if gradient descent
+                            is unable to make progress (i.e., gets stuck in
+                            a local minimum).
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of size of the pururbation
+                              and confidence of classification.
+                              A smaller value of this constant gives lower
+                              distortion results.
+        :param largest_const: When the tradeoff-constant exceeds this value,
+                              the attack terminates. Larger values gives lower
+                              distortion results.
+        :param const_factor: How much to increase the tradeoff-constant by
+                             on each iteration of the attack if the prior
+                             iteration failed.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+        from .attacks_tf import CarliniWagnerL0 as CWL0
+        self.parse_params(**kwargs)
+
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+
+        attack = CWL0(self.sess, self.model,
+                      self.confidence, 'y_target' in kwargs,
+                      self.learning_rate,
+                      self.max_iterations, self.abort_early,
+                      self.initial_const, self.largest_const,
+                      self.const_factor,
+                      self.clip_min, self.clip_max,
+                      nb_classes, x.get_shape().as_list()[1:])
+
+        def cw_wrap(x_val, y_val):
+            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
+        wrap = tf.py_func(cw_wrap, [x, labels], tf.float32)
+
+        return wrap
+
+    def parse_params(self, y=None, y_target=None, nb_classes=None,
+                     confidence=0, learning_rate=5e-2,
+                     max_iterations=100,
+                     abort_early=True, initial_const=1e-2,
+                     largest_const=1e3, const_factor=2,
+                     clip_min=0, clip_max=1):
+
+        # ignore the y and y_target argument
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
+        self.confidence = confidence
+        self.learning_rate = learning_rate
+        self.max_iterations = max_iterations
+        self.abort_early = abort_early
+        self.initial_const = initial_const
+        self.largest_const = largest_const
+        self.const_factor = const_factor
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+
 class ElasticNetMethod(Attack):
     """
     This attack features L1-oriented adversarial examples and includes

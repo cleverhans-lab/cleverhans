@@ -608,10 +608,14 @@ class CarliniWagnerL2(object):
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
                  abort_early, initial_const,
-                 clip_min, clip_max, num_labels, shape):
+                 clip_min, clip_max, num_labels, shape,
+                 extension=None):
         """
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
+
+        This method is more complicated than it has to be for just the
+        L2 attack because the CWL0 and Linfty attacks call this class.
 
         :param sess: a TF session.
         :param model: a cleverhans.model.Model object.
@@ -648,6 +652,11 @@ class CarliniWagnerL2(object):
         :param clip_max: (optional float) Maximum input component value.
         :param num_labels: the number of classes in the model's output.
         :param shape: the shape of the model's input tensor.
+        :param extension: The CW L0 attack (and potentially others in the
+                          future) make calls to this attack. This argument
+                          allows for slight modifications to the attack
+                          algorithm to support minor differences in how the
+                          attack runs.
         """
 
         self.sess = sess
@@ -662,6 +671,7 @@ class CarliniWagnerL2(object):
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.model = model
+        self.extension = extension
 
         self.repeat = binary_search_steps >= 10
 
@@ -671,16 +681,24 @@ class CarliniWagnerL2(object):
         modifier = tf.Variable(np.zeros(shape, dtype=np.float32))
 
         # these are variables to be more efficient in sending data to tf
+        self.mask = tf.Variable(np.ones(shape), dtype=tf.float32,
+                                name='mask')
         self.timg = tf.Variable(np.zeros(shape), dtype=tf.float32,
                                 name='timg')
+        self.simg = tf.Variable(np.zeros(shape), dtype=tf.float32,
+                                name='simg')
         self.tlab = tf.Variable(np.zeros((batch_size, num_labels)),
                                 dtype=tf.float32, name='tlab')
         self.const = tf.Variable(np.zeros(batch_size), dtype=tf.float32,
                                  name='const')
 
         # and here's what we use to assign them
+        self.assign_mask = tf.placeholder(tf.float32, shape,
+                                          name='assign_mask')
         self.assign_timg = tf.placeholder(tf.float32, shape,
                                           name='assign_timg')
+        self.assign_simg = tf.placeholder(tf.float32, shape,
+                                          name='assign_simg')
         self.assign_tlab = tf.placeholder(tf.float32, (batch_size, num_labels),
                                           name='assign_tlab')
         self.assign_const = tf.placeholder(tf.float32, [batch_size],
@@ -688,7 +706,7 @@ class CarliniWagnerL2(object):
 
         # the resulting instance, tanh'd to keep bounded from clip_min
         # to clip_max
-        self.newimg = (tf.tanh(modifier + self.timg) + 1) / 2
+        self.newimg = (tf.tanh(modifier*self.mask + self.timg) + 1) / 2
         self.newimg = self.newimg * (clip_max - clip_min) + clip_min
 
         # prediction BEFORE-SOFTMAX of the model
@@ -718,6 +736,11 @@ class CarliniWagnerL2(object):
         self.loss1 = tf.reduce_sum(self.const * loss1)
         self.loss = self.loss1 + self.loss2
 
+        if extension == 0:
+            # This is being used as the inner loop of a L0 attack
+            # We therefore need access to the gradients
+            self.outgrad = tf.gradients(self.loss, [modifier])[0]
+
         # Setup the adam optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.AdamOptimizer(self.LEARNING_RATE)
@@ -727,7 +750,9 @@ class CarliniWagnerL2(object):
 
         # these are the variables to initialize when we run
         self.setup = []
+        self.setup.append(self.mask.assign(self.assign_mask))
         self.setup.append(self.timg.assign(self.assign_timg))
+        self.setup.append(self.simg.assign(self.assign_simg))
         self.setup.append(self.tlab.assign(self.assign_tlab))
         self.setup.append(self.const.assign(self.assign_const))
 
@@ -749,9 +774,11 @@ class CarliniWagnerL2(object):
                                        targets[i:i + self.batch_size]))
         return np.array(r)
 
-    def attack_batch(self, imgs, labs):
+    def attack_batch(self, imgs, labs, mask=None):
         """
         Run the attack on a batch of instance and labels.
+        Mask is an argument that allows modifying only a subset of the pixels,
+        and is used by the CW L0 attack algorithm.
         """
         def compare(x, y):
             if not isinstance(x, (float, int, np.int64)):
@@ -767,6 +794,9 @@ class CarliniWagnerL2(object):
                 return x != y
 
         batch_size = self.batch_size
+
+        if mask is None:
+            mask = np.ones(imgs.shape, dtype=imgs.dtype)
 
         oimgs = np.clip(imgs, self.clip_min, self.clip_max)
 
@@ -805,6 +835,8 @@ class CarliniWagnerL2(object):
 
             # set the variables so that we don't have to send them over again
             self.sess.run(self.setup, {self.assign_timg: batch,
+                                       self.assign_mask: mask,
+                                       self.assign_simg: batch,
                                        self.assign_tlab: batchlab,
                                        self.assign_const: CONST})
 
@@ -868,7 +900,172 @@ class CarliniWagnerL2(object):
 
         # return the best solution found
         o_bestl2 = np.array(o_bestl2)
+
+        if self.extension == 0:
+            # We're using this attack to create an L0 attack.
+            # Change the return arguments to be what's required for that.
+
+            if o_bestscore[0] == -1:
+                # return failure
+                return None
+
+            gradients = self.sess.run(self.outgrad)
+
+            return gradients, o_bestscore, o_bestattack
+
         return o_bestattack
+
+
+class CarliniWagnerL0(object):
+
+    def __init__(self, sess, model, confidence,
+                 targeted, learning_rate,
+                 max_iterations,
+                 abort_early, initial_const,
+                 largest_const, const_factor,
+                 clip_min, clip_max, num_labels, shape):
+        """
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
+
+        :param x: (required) A tensor with the inputs.
+        :param y: (optional) A tensor with the true labels for an untargeted
+                  attack. If None (and y_target is None) then use the
+                  original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the target labels for a
+                  targeted attack.
+        :param confidence: Confidence of adversarial examples: higher produces
+                           examples with larger l2 distortion, but more
+                           strongly classified as adversarial.
+        :param learning_rate: The learning rate for the attack algorithm.
+                              Smaller values produce better results but are
+                              slower to converge.
+        :param max_iterations: The maximum number of iterations. Setting this
+                               to a larger value will produce lower distortion
+                               results. Using only a few iterations requires
+                               a larger learning rate, and will produce larger
+                               distortion results.
+        :param abort_early: If true, allows early aborts if gradient descent
+                            is unable to make progress (i.e., gets stuck in
+                            a local minimum).
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of size of the pururbation
+                              and confidence of classification.
+                              A smaller value of this constant gives lower
+                              distortion results.
+        :param largest_const: When the tradeoff-constant exceeds this value,
+                              the attack terminates. Larger values gives lower
+                              distortion results.
+        :param const_factor: How much to increase the tradeoff-constant by
+                             on each iteration of the attack if the prior
+                             iteration failed.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        self.initial_const = initial_const
+        self.largest_const = largest_const
+        self.const_factor = const_factor
+
+        # If we've changed a pixel less than this amount, just set it to 0
+        # and pretend it hasn't changed. It likey doesn't impact the result
+        # in any meaningful way.
+        self.max_pixel_change = 0.01
+
+        # As a caveat of the above: don't allow us to fix more than
+        # pixel_change_fraction * sqrt(num_total_pixels)
+        # at any one time.
+        self.pixel_change_fraction = 0.3
+
+        self.l2_attack = CarliniWagnerL2(sess, model, 1, confidence,
+                                         targeted, learning_rate,
+                                         1, max_iterations,
+                                         abort_early, initial_const,
+                                         clip_min, clip_max, num_labels, shape,
+                                         extension=0)
+
+    def attack(self, instances, targets):
+        """
+        Perform the L_0 attack on the given instance for the given targets.
+
+        If self.targeted is true, then the targets represents the target labels
+        If self.targeted is false, then targets are the original class labels
+        """
+
+        r = []
+        for i, (instance, target) in enumerate(zip(instances, targets)):
+            _logger.debug(("Running CWL0 attack on instance " +
+                           "{} of {}").format(i, len(instances)))
+            r.extend(self.attack_single(instance, target))
+        return np.array(r)
+
+    def attack_single(self, instance, target):
+        """
+        Run the attack on a single instance and label.
+        """
+
+        # the pixels we can change
+        valid = np.ones(instance.shape)
+
+        # the previous image
+        prev = np.copy([instance])
+
+        last_solution = [instance]
+        const = self.initial_const
+        equal_count = 0
+
+        while True:
+            # try to solve given this valid map
+            self.l2_attack.source_image = np.copy(prev)
+            while const < self.largest_const:
+                # try solving for each value of the constant
+                self.l2_attack.initial_const = const
+                res = self.l2_attack.attack_batch(np.copy([instance]),
+                                                  np.array([target]),
+                                                  mask=np.array([valid]))
+                if res is not None:
+                    break
+                const *= self.const_factor
+
+            if res is None:
+                # the attack failed, we return this as our final answer
+                _logger.debug("Attack succeeded with {} fixed values.".
+                              format(equal_count))
+                return last_solution
+
+            # the attack succeeded, now we pick new pixels to set to 0
+            restarted = False
+            gradientnorm, scores, nimg = res
+
+            equal_count = np.sum(np.abs(instance-nimg[0]) < .0001)
+            if np.sum(valid) == 0:
+                # if no pixels changed, return
+                return [instance]
+            _logger.debug("Next iteration; {} fixed values."
+                          .format(equal_count))
+
+            orig_shape = valid.shape
+            valid = valid.flatten()
+            totalchange = abs(nimg[0]-instance)*np.abs(gradientnorm[0])
+            totalchange = totalchange.flatten()
+
+            # set some of the pixels to 0 depending on their total change
+            num_changed = 0
+            for e in np.argsort(totalchange):
+                if np.all(valid[e]):
+                    num_changed += 1
+                    valid[e] = 0
+
+                    if totalchange[e] > self.max_pixel_change:
+                        # if this pixel changed a lot, skip
+                        break
+                    abort = self.pixel_change_fraction*equal_count**.5
+                    if num_changed >= abort:
+                        # if we changed too many pixels, skip
+                        break
+
+            valid = np.reshape(valid, orig_shape)
+
+            last_solution = prev = nimg
 
 
 class ElasticNetMethod(object):

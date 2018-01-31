@@ -14,7 +14,8 @@ class TestMNISTTutorialCW(CleverHansTest):
                             'train_end': 10000,
                             'test_start': 0,
                             'test_end': 1666,
-                            'viz_enabled': False}
+                            'viz_enabled': False,
+                            'metric': 'l2'}
         g = tf.Graph()
         with g.as_default():
             np.random.seed(42)

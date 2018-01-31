@@ -16,6 +16,7 @@ from cleverhans.attacks import MomentumIterativeMethod
 from cleverhans.attacks import VirtualAdversarialMethod
 from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.attacks import CarliniWagnerL2
+from cleverhans.attacks import CarliniWagnerL0
 from cleverhans.attacks import ElasticNetMethod
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import MadryEtAl
@@ -818,5 +819,39 @@ class TestFastFeatureAdversaries(CleverHansTest):
         self.assertTrue(d_ag*100/d_sg < 50.)
 
 
+class TestCarliniWagnerL0(CleverHansTest):
+    def setUp(self):
+        super(TestCarliniWagnerL0, self).setUp()
+
+        self.sess = tf.Session()
+        self.sess.as_default()
+        self.model = DummyModel()
+        self.attack = CarliniWagnerL0(self.model, sess=self.sess)
+
+        # initialize model
+        with tf.name_scope('dummy_model'):
+            self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
+        self.sess.run(tf.global_variables_initializer())
+
+        self.attack = SaliencyMapMethod(self.model, sess=self.sess)
+
+    def test_generate_np_targeted_gives_adversarial_example(self):
+        x_val = np.random.rand(10, 1000)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        feed_labs = np.zeros((10, 10))
+        feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
+        x_adv = self.attack.generate_np(x_val,
+                                        clip_min=-5., clip_max=5.,
+                                        learning_rate=1.,
+                                        num_iterations=5,
+                                        initial_const=10,
+                                        largest_const=20,
+                                        y_target=feed_labs)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+        worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
+        self.assertTrue(worked > .9)
+        
 if __name__ == '__main__':
     unittest.main()
