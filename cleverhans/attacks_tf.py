@@ -1341,7 +1341,7 @@ class LBFGS_attack(object):
                                     and cross-entropy loss of classification.
         :param max_iterations: The maximum number of iterations.
         :param initial_const: The initial tradeoff-constant to use to tune the
-                              relative importance of size of the pururbation
+                              relative importance of size of the purturbation
                               and cross-entropy loss of the classification.
         :param clip_min: Minimum input component value
         :param clip_max: Maximum input component value
@@ -1431,7 +1431,8 @@ class LBFGS_attack(object):
                 np.amin(adv_x) >= self.clip_min, \
                 'fmin_l_bfgs_b returns are invalid'
 
-            # adjust the best result found so far
+            # adjust the best result (i.e., the adversarial example with the
+            # smallest perturbation in terms of L_2 norm) found so far
             preds = np.atleast_1d(utils_tf.model_argmax(self.sess, self.x,
                                                         self.model_preds,
                                                         adv_x))
