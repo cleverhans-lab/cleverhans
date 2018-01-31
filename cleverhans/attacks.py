@@ -1144,7 +1144,7 @@ class LBFGS(Attack):
 
         :param x: (required) A tensor with the inputs.
         :param y_target: (required) A tensor with the one-hot target labels.
-        :param batch_size: The number of inputs to include in a batch and 
+        :param batch_size: The number of inputs to include in a batch and
                            process simultaneously.
         :param binary_search_steps: The number of times we perform binary
                                     search to find the optimal tradeoff-
