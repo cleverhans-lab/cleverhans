@@ -1411,7 +1411,6 @@ class LBFGS_attack(object):
         o_bestattack = np.copy(oimgs)
 
         for outer_step in range(self.binary_search_steps):
-            # completely reset adam's internal state.
             _logger.debug(("  Binary search step {} of {}")
                           .format(outer_step, self.binary_search_steps))
 
