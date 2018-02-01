@@ -7,7 +7,7 @@ matrix:
         - python: 2.7
           env:
             - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.0.1
+            - TENSORFLOW_V=1.4.1
         - python: 2.7
           env:
             - KERAS_BACKEND=tensorflow
@@ -15,19 +15,11 @@ matrix:
         - python: 3.5
           env:
             - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.0.1
+            - TENSORFLOW_V=1.1.0
         - python: 3.5
           env:
             - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.1.0
-        - python: 2.7
-          env:
-            - KERAS_BACKEND=theano
-            - TENSORFLOW_V=1.1.0
-        - python: 3.5
-          env:
-            - KERAS_BACKEND=theano
-            - TENSORFLOW_V=1.1.0
+            - TENSORFLOW_V=1.4.1
 install:
   # code below is taken from http://conda.pydata.org/docs/travis.html
   # We do this conditionally because it saves us some downloading if the
@@ -45,26 +37,32 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py six
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py six mkl-service
   - source activate test-environment
+
   # install TensorFlow
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.0.1" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl;
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.4.1" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp27-none-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.1.0" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp27-none-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.0.1" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp35-cp35m-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.4.1" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp35-cp35m-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.1.0" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp35-cp35m-linux_x86_64.whl;
-    fi
-  - if [[ "$KERAS_BACKEND" == "theano" ]]; then
-      pip install theano;
     fi
   - pip install keras
   - python setup.py install
 
+  # workaround for version incompatibility between the scipy version in conda
+  # and the system-provided /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+  # by installing a conda-provided libgcc and adding it to the load path
+  - conda install libgcc
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
+
 # command to run tests
 script:
+  # exit on first error
+  - set -e
   # run keras backend init to initialize backend config
   - python -c "import keras.backend"
   # create dataset directory to avoid concurrent directory creation at runtime
@@ -72,9 +70,7 @@ script:
   # set up keras backend
   - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
-  - nosetests -v --nologcapture cleverhans
-  - if [[ "$KERAS_BACKEND" == "tensorflow" ]]; then
-    nosetests --nologcapture -v tests_tf/;
-    else
-      nosetests -v tests_th/;
-    fi
+  # --nologcapture: avoids a large amount of unnecessary tensorflow output
+  # --stop: stop on first error. Gives feedback from travis faster
+  - nosetests -v --nologcapture --stop cleverhans
+  - nosetests --nologcapture -v --stop tests_tf

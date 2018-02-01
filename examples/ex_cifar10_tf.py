@@ -19,10 +19,11 @@ from cleverhans.utils_tf import model_train, model_eval, batch_eval
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('train_dir', '/tmp', 'Directory storing the saved model.')
-flags.DEFINE_string('filename', 'cifar10.ckpt', 'Filename to save model under.')
+flags.DEFINE_string(
+    'filename', 'cifar10.ckpt', 'Filename to save model under.')
 flags.DEFINE_integer('nb_epochs', 10, 'Number of epochs to train model')
 flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-flags.DEFINE_float('learning_rate', 0.1, 'Learning rate for training')
+flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
 
 def data_cifar10():
@@ -72,7 +73,6 @@ def main(argv=None):
         raise RuntimeError("This tutorial requires keras to be configured"
                            " to use the TensorFlow backend.")
 
-    # Image dimensions ordering should follow the Theano convention
     if keras.backend.image_dim_ordering() != 'tf':
         keras.backend.set_image_dim_ordering('tf')
         print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to "
@@ -99,7 +99,8 @@ def main(argv=None):
     print("Defined TensorFlow model graph.")
 
     def evaluate():
-        # Evaluate the accuracy of the CIFAR10 model on legitimate test examples
+        # Evaluate the accuracy of the CIFAR10 model on legitimate test
+        # examples
         eval_params = {'batch_size': FLAGS.batch_size}
         accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
                               args=eval_params)
@@ -156,7 +157,6 @@ def main(argv=None):
     accuracy = model_eval(sess, x, y, predictions_2_adv, X_test, Y_test,
                           args=eval_params)
     print('Test accuracy on adversarial examples: ' + str(accuracy))
-
 
 
 if __name__ == '__main__':

@@ -329,7 +329,7 @@ class DatasetMetadata(object):
   def save_target_classes(self, filename):
     """Saves target classed for all dataset images into given file."""
     with open(filename, 'w') as f:
-      for k, v in self._target_classes.iteritems():
+      for k, v in self._target_classes.items():
         f.write('{0}.png,{1}\n'.format(k, v))
 
 
@@ -415,8 +415,8 @@ def compute_and_save_scores_and_ranking(attacks_output,
   hit_target_class = np.zeros(
       (len(targeted_attack_names), len(defense_names)), dtype=np.int32)
 
-  for defense_name, defense_result in defenses_output.iteritems():
-    for image_filename, predicted_label in defense_result.iteritems():
+  for defense_name, defense_result in defenses_output.items():
+    for image_filename, predicted_label in defense_result.items():
       attack_name, is_targeted, image_id = (
           attacks_output.image_by_base_filename(image_filename))
       true_label = dataset_meta.get_true_label(image_id)
@@ -463,8 +463,8 @@ def compute_and_save_scores_and_ranking(attacks_output,
       writer = csv.writer(f)
       writer.writerow(['AttackName', 'IsTargeted', 'DefenseName', 'ImageId',
                        'PredictedLabel', 'TrueLabel', 'TargetClass'])
-      for defense_name, defense_result in defenses_output.iteritems():
-        for image_filename, predicted_label in defense_result.iteritems():
+      for defense_name, defense_result in defenses_output.items():
+        for image_filename, predicted_label in defense_result.items():
           attack_name, is_targeted, image_id = (
               attacks_output.image_by_base_filename(image_filename))
           true_label = dataset_meta.get_true_label(image_id)
