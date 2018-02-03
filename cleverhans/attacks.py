@@ -1115,6 +1115,79 @@ class DeepFool(Attack):
         return True
 
 
+class LBFGS(Attack):
+    """
+    LBFGS is the first adversarial attack for convolutional neural networks,
+    and is a target & iterative attack.
+    Paper link: "https://arxiv.org/pdf/1312.6199.pdf"
+    """
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(LBFGS, self).__init__(model, back, sess)
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'y_target': tf.float32}
+        self.structural_kwargs = ['batch_size', 'binary_search_steps',
+                                  'max_iterations', 'initial_const',
+                                  'clip_min', 'clip_max']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'probs')
+
+    def generate(self, x, **kwargs):
+        """
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
+
+        :param x: (required) A tensor with the inputs.
+        :param y_target: (required) A tensor with the one-hot target labels.
+        :param batch_size: The number of inputs to include in a batch and
+                           process simultaneously.
+        :param binary_search_steps: The number of times we perform binary
+                                    search to find the optimal tradeoff-
+                                    constant between norm of the purturbation
+                                    and cross-entropy loss of classification.
+        :param max_iterations: The maximum number of iterations.
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of size of the perturbation
+                              and cross-entropy loss of the classification.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+        from .attacks_tf import LBFGS_attack
+        self.parse_params(**kwargs)
+
+        _, nb_classes = self.get_or_guess_labels(x, kwargs)
+
+        attack = LBFGS_attack(self.sess, x, self.model.get_probs(x),
+                              self.y_target, self.binary_search_steps,
+                              self.max_iterations, self.initial_const,
+                              self.clip_min, self.clip_max, nb_classes,
+                              self.batch_size)
+
+        def lbfgs_wrap(x_val, y_val):
+            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
+        wrap = tf.py_func(lbfgs_wrap, [x, self.y_target], tf.float32)
+
+        return wrap
+
+    def parse_params(self, y_target=None, batch_size=1,
+                     binary_search_steps=5, max_iterations=1000,
+                     initial_const=1e-2, clip_min=0, clip_max=1):
+
+        self.y_target = y_target
+        self.batch_size = batch_size
+        self.binary_search_steps = binary_search_steps
+        self.max_iterations = max_iterations
+        self.initial_const = initial_const
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+
 def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
          clip_min=None, clip_max=None):
     """
