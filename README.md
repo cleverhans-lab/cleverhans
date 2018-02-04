@@ -42,7 +42,7 @@ Once dependencies have been taken care of, you can install CleverHans using
 If you are installing CleverHans using `pip`, run the following command:
 
 ```
-pip install -e git+http://github.com/tensorflow/cleverhans.git#egg=cleverhans
+pip install -e git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
 ```
 
 #### Manual installation
