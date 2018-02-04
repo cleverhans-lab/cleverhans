@@ -1082,12 +1082,24 @@ class ElasticNetMethod(object):
         If self.targeted is false, then targets are the original class labels
         """
 
+        batch_size = self.batch_size
         r = []
-        for i in range(0, len(imgs), self.batch_size):
+        for i in range(0, len(imgs) // batch_size):
             _logger.debug(("Running EAD attack on instance " +
-                           "{} of {}").format(i, len(imgs)))
-            r.extend(self.attack_batch(imgs[i:i + self.batch_size],
-                                       targets[i:i + self.batch_size]))
+                           "{} of {}").format(i * batch_size, len(imgs)))
+            r.extend(self.attack_batch(imgs[i*batch_size:(i+1)*batch_size],
+                                       targets[i*batch_size:(i+1)*batch_size]))
+        if len(imgs) % batch_size != 0:
+            last_elements = len(imgs) - (len(imgs) % batch_size)
+            _logger.debug(("Running EAD attack on instance " +
+                           "{} of {}").format(last_elements, len(imgs)))
+            temp_imgs = np.zeros((batch_size,) + imgs.shape[2:])
+            temp_targets = np.zeros((batch_size,) + targets.shape[2:])
+            temp_imgs[:(len(imgs) % batch_size)] = imgs[last_elements:]
+            temp_targets[:(len(imgs) % batch_size)] = targets[last_elements:]
+            temp_data = self.attack_batch(temp_imgs, temp_targets)
+            r.extend(temp_data[:(len(imgs) % batch_size)],
+                     targets[last_elements:])
         return np.array(r)
 
     def attack_batch(self, imgs, labs):
