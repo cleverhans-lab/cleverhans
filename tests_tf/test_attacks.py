@@ -173,6 +173,11 @@ class TestFastGradientMethod(CleverHansTest):
     def test_generate_np_gives_adversarial_example_l2(self):
         self.help_generate_np_gives_adversarial_example(2)
 
+    def test_generate_respects_dtype(self):
+        x = tf.placeholder(dtype=tf.float64, shape=(100, 2))
+        x_adv = self.attack.generate(x)
+        self.assertEqual(x_adv.dtype, tf.float64)
+
     def test_targeted_generate_np_gives_adversarial_example(self):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
