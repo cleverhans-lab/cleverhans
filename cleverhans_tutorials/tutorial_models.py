@@ -99,7 +99,7 @@ class Conv2D(Layer):
         dummy_batch = tf.zeros(input_shape)
         dummy_output = self.fprop(dummy_batch)
         output_shape = [int(e) for e in dummy_output.get_shape()]
-        output_shape[0] = 1
+        output_shape[0] = batch_size
         self.output_shape = tuple(output_shape)
 
     def fprop(self, x):
@@ -115,9 +115,6 @@ class ReLU(Layer):
     def set_input_shape(self, shape):
         self.input_shape = shape
         self.output_shape = shape
-
-    def get_output_shape(self):
-        return self.output_shape
 
     def fprop(self, x):
         return tf.nn.relu(x)
@@ -147,7 +144,7 @@ class Flatten(Layer):
         for factor in shape[1:]:
             output_width *= factor
         self.output_width = output_width
-        self.output_shape = [None, output_width]
+        self.output_shape = [shape[0], output_width]
 
     def fprop(self, x):
         return tf.reshape(x, [-1, self.output_width])
