@@ -31,7 +31,7 @@ def model_loss(y, model, mean=True):
     """
 
     op = model.op
-    if "softmax" in str(op).lower():
+    if op.type == "Softmax":
         logits, = op.inputs
     else:
         logits = model
