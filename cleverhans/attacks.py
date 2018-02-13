@@ -237,6 +237,9 @@ class FastGradientMethod(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
+
         super(FastGradientMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'y': np.float32,
@@ -244,9 +247,6 @@ class FastGradientMethod(Attack):
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'probs')
 
     def generate(self, x, **kwargs):
         """
@@ -332,6 +332,9 @@ class BasicIterativeMethod(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
+
         super(BasicIterativeMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'eps_iter': np.float32,
@@ -340,9 +343,6 @@ class BasicIterativeMethod(Attack):
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'probs')
 
     def generate(self, x, **kwargs):
         """
@@ -472,6 +472,9 @@ class MomentumIterativeMethod(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
+
         super(MomentumIterativeMethod, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'eps_iter': np.float32,
@@ -480,9 +483,6 @@ class MomentumIterativeMethod(Attack):
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'probs')
 
     def generate(self, x, **kwargs):
         """
@@ -623,10 +623,10 @@ class SaliencyMapMethod(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
-        super(SaliencyMapMethod, self).__init__(model, back, sess)
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
 
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'probs')
+        super(SaliencyMapMethod, self).__init__(model, back, sess)
 
         import tensorflow as tf
         self.feedable_kwargs = {'y_target': tf.float32}
@@ -750,6 +750,9 @@ class VirtualAdversarialMethod(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'logits')
+
         super(VirtualAdversarialMethod, self).__init__(model, back, sess)
 
         import tensorflow as tf
@@ -757,9 +760,6 @@ class VirtualAdversarialMethod(Attack):
                                 'clip_min': tf.float32,
                                 'clip_max': tf.float32}
         self.structural_kwargs = ['num_iterations']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'logits')
 
     def generate(self, x, **kwargs):
         """
@@ -817,6 +817,9 @@ class CarliniWagnerL2(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'logits')
+
         super(CarliniWagnerL2, self).__init__(model, back, sess)
 
         import tensorflow as tf
@@ -828,9 +831,6 @@ class CarliniWagnerL2(Attack):
                                   'binary_search_steps', 'max_iterations',
                                   'abort_early', 'initial_const',
                                   'clip_min', 'clip_max']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'logits')
 
     def generate(self, x, **kwargs):
         """
@@ -927,6 +927,9 @@ class ElasticNetMethod(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'logits')
+
         super(ElasticNetMethod, self).__init__(model, back, sess)
 
         import tensorflow as tf
@@ -938,9 +941,6 @@ class ElasticNetMethod(Attack):
                                   'binary_search_steps', 'max_iterations',
                                   'abort_early', 'initial_const',
                                   'clip_min', 'clip_max']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'logits')
 
     def generate(self, x, **kwargs):
         """
@@ -1041,13 +1041,13 @@ class DeepFool(Attack):
         """
         Create a DeepFool instance.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'logits')
+
         super(DeepFool, self).__init__(model, back, sess)
 
         self.structural_kwargs = ['over_shoot', 'max_iter', 'clip_max',
                                   'clip_min', 'nb_candidate']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'logits')
 
     def generate(self, x, **kwargs):
         """
@@ -1126,6 +1126,9 @@ class LBFGS(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
+
         super(LBFGS, self).__init__(model, back, sess)
 
         import tensorflow as tf
@@ -1133,9 +1136,6 @@ class LBFGS(Attack):
         self.structural_kwargs = ['batch_size', 'binary_search_steps',
                                   'max_iterations', 'initial_const',
                                   'clip_min', 'clip_max']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'probs')
 
     def generate(self, x, **kwargs):
         """
@@ -1226,6 +1226,9 @@ class MadryEtAl(Attack):
         """
         Create a MadryEtAl instance.
         """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
+
         super(MadryEtAl, self).__init__(model, back, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'eps_iter': np.float32,
@@ -1234,9 +1237,6 @@ class MadryEtAl(Attack):
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
         self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
-
-        if not isinstance(self.model, Model):
-            self.model = CallableModelWrapper(self.model, 'probs')
 
     def generate(self, x, **kwargs):
         """
