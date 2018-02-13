@@ -382,11 +382,6 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
     warnings.warn("jsma_batch is deprecated and will be removed on "
                   "2018-06-10. Use jsma_symbolic instead.")
 
-    if 'targets' in kwargs:
-        warnings.warn('The targets parameter is deprecated, use y_target.'
-                      'targets will be removed on 2018-02-03.')
-        y_target = kwargs['targets']
-
     X_adv = np.zeros(X.shape)
 
     for ind, val in enumerate(X):

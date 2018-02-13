@@ -68,7 +68,7 @@ def initialize_uninitialized_global_variables(sess):
 
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 predictions_adv=None, init_all=True, evaluate=None,
-                verbose=True, feed=None, args=None, rng=None):
+                feed=None, args=None, rng=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -85,7 +85,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                      uninitialized variables are initialized before training.
     :param evaluate: function that is run after each training iteration
                      (typically to display the test/validation accuracy).
-    :param verbose: (boolean) all print statements disabled when set to False.
     :param feed: An optional dictionary that is appended to the feeding
                  dictionary before the session runs. Can be used to feed
                  the learning phase of a Keras model for instance.
@@ -107,14 +106,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     if save:
         assert args.train_dir, "Directory for save was not given in args dict"
         assert args.filename, "Filename for save was not given in args dict"
-
-    if not verbose:
-        old_log_level = get_log_level(name=_logger.name)
-        set_log_level(logging.WARNING, name=_logger.name)
-        warnings.warn("verbose argument is deprecated and will be removed"
-                      " on 2018-02-11. Instead, use utils.set_log_level()."
-                      " For backward compatibility, log_level was set to"
-                      " logging.WARNING (30).")
 
     if rng is None:
         rng = np.random.RandomState()
@@ -162,8 +153,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 train_step.run(feed_dict=feed_dict)
             assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
-            if verbose:
-                _logger.info("Epoch " + str(epoch) + " took " +
+            _logger.info("Epoch " + str(epoch) + " took " +
                              str(cur - prev) + " seconds")
             if evaluate is not None:
                 evaluate()
@@ -176,9 +166,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                          str(save_path))
         else:
             _logger.info("Completed model training.")
-
-    if not verbose:
-        set_log_level(old_log_level, name=_logger.name)
 
     return True
 
