@@ -62,6 +62,7 @@ class Attack(object):
         method should be overriden in any child class that implements an
         attack that is expressable symbolically. Otherwise, it will wrap the
         numerical implementation as a symbolic operator.
+
         :param x: The model's symbolic inputs.
         :param **kwargs: optional parameters used by child classes.
         :return: A symbolic representation of the adversarial examples.
@@ -73,6 +74,7 @@ class Attack(object):
     def construct_graph(self, fixed, feedable, x_val, hash_key):
         """
         Construct the graph required to run the attack through generate_np.
+
         :param fixed: Structural elements that require defining a new graph.
         :param feedable: Arguments that can be fed to the same graph when
                          they take different values.
@@ -124,6 +126,7 @@ class Attack(object):
         Generate adversarial examples and return them as a NumPy array.
         Sub-classes *should not* implement this method unless they must
         perform special handling of arguments.
+
         :param x_val: A NumPy array with the original inputs.
         :param **kwargs: optional parameters used by child classes.
         :return: A NumPy array holding the adversarial examples.
@@ -149,6 +152,7 @@ class Attack(object):
     def construct_variables(self, kwargs):
         """
         Construct the inputs to the attack graph to be used by generate_np.
+
         :param kwargs: Keyword arguments to generate_np.
         :return: Structural and feedable arguments as well as a unique key
                  for the graph given these inputs.
@@ -215,6 +219,7 @@ class Attack(object):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
+
         :param params: a dictionary of attack-specific parameters
         :return: True when parsing was successful
         """
@@ -251,6 +256,7 @@ class FastGradientMethod(Attack):
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+
         :param x: The model's symbolic inputs.
         :param eps: (optional float) attack step size (input variation)
         :param ord: (optional) Order of the norm (mimics NumPy).
@@ -286,6 +292,7 @@ class FastGradientMethod(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
+
         :param eps: (optional float) attack step size (input variation)
         :param ord: (optional) Order of the norm (mimics NumPy).
                     Possible values: np.inf, 1 or 2.
@@ -347,6 +354,7 @@ class BasicIterativeMethod(Attack):
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+
         :param x: The model's symbolic inputs.
         :param eps: (required float) maximum distortion of adversarial example
                     compared to original input
@@ -423,6 +431,7 @@ class BasicIterativeMethod(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
+
         :param eps: (required float) maximum distortion of adversarial example
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
@@ -487,6 +496,7 @@ class MomentumIterativeMethod(Attack):
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+
         :param x: The model's symbolic inputs.
         :param eps: (required float) maximum distortion of adversarial example
                     compared to original input
@@ -575,6 +585,7 @@ class MomentumIterativeMethod(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
+
         :param eps: (required float) maximum distortion of adversarial example
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
@@ -636,6 +647,7 @@ class SaliencyMapMethod(Attack):
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+
         :param x: The model's symbolic inputs.
         :param theta: (optional float) Perturbation introduced to modified
                       components (can be positive or negative)
@@ -714,6 +726,7 @@ class SaliencyMapMethod(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
+
         :param theta: (optional float) Perturbation introduced to modified
                       components (can be positive or negative)
         :param gamma: (optional float) Maximum percentage of perturbed features
@@ -764,6 +777,7 @@ class VirtualAdversarialMethod(Attack):
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+
         :param x: The model's symbolic inputs.
         :param eps: (optional float ) the epsilon (input variation parameter)
         :param num_iterations: (optional) the number of iterations
@@ -785,6 +799,7 @@ class VirtualAdversarialMethod(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
+
         :param eps: (optional float )the epsilon (input variation parameter)
         :param num_iterations: (optional) the number of iterations
         :param xi: (optional float) the finite difference parameter
@@ -1052,6 +1067,7 @@ class DeepFool(Attack):
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+
         :param x: The model's symbolic inputs.
         :param nb_candidate: The number of classes to test against, i.e.,
                              deepfool only consider nb_candidate classes when
@@ -1195,6 +1211,7 @@ def vatm(model, x, logits, eps, back='tf', num_iterations=1, xi=1e-6,
     training : https://arxiv.org/abs/1507.00677
     It calls the right function, depending on the
     user's backend.
+
     :param model: the model which returns the network unnormalized logits
     :param x: the input placeholder
     :param logits: the model's unnormalized output tensor
@@ -1241,6 +1258,7 @@ class MadryEtAl(Attack):
     def generate(self, x, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+
         :param x: The model's symbolic inputs.
         :param eps: (required float) maximum distortion of adversarial example
                     compared to original input
@@ -1277,6 +1295,7 @@ class MadryEtAl(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
+
         :param eps: (required float) maximum distortion of adversarial example
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
@@ -1400,6 +1419,7 @@ class FastFeatureAdversaries(Attack):
         before saving them as attributes.
 
         Attack-specific parameters:
+
         :param layer: (required str) name of the layer to target.
         :param eps: (required float) maximum distortion of adversarial example
                     compared to original input
@@ -1474,6 +1494,7 @@ class FastFeatureAdversaries(Attack):
     def generate(self, x, g, **kwargs):
         """
         Generate symbolic graph for adversarial examples and return.
+
         :param x: The model's symbolic inputs.
         :param g: The target's symbolic representation.
         :param eps: (required float) maximum distortion of adversarial example
