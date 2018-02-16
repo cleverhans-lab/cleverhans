@@ -154,7 +154,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
             _logger.info("Epoch " + str(epoch) + " took " +
-                             str(cur - prev) + " seconds")
+                         str(cur - prev) + " seconds")
             if evaluate is not None:
                 evaluate()
 
