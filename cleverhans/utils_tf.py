@@ -11,10 +11,8 @@ from six.moves import xrange
 import tensorflow as tf
 import time
 import warnings
-import logging
 
 from .utils import batch_indices, _ArgsWrapper, create_logger
-from .utils import set_log_level, get_log_level
 
 _logger = create_logger("cleverhans.utils.tf")
 

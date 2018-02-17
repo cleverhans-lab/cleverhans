@@ -340,6 +340,27 @@ def get_log_level(name="cleverhans"):
     """
     return logging.getLogger(name).getEffectiveLevel()
 
+class TemporaryLogLevel(object):
+    """
+    A ContextManager that changes a log level temporarily.
+
+    Note that the log level will be set back to its original value when
+    the context manager exits, even if the log level has been changed
+    again in the meantime.
+    """
+
+    def __init__(self, level, name):
+        self.name = name
+        self.level = level
+
+    def __enter__(self):
+        self.old_level = get_log_level(self.name)
+        set_log_level(self.level, self.name)
+
+    def __exit__(self, type, value, traceback):
+        set_log_level(self.old_level, self.name)
+        return True
+
 
 def create_logger(name):
     """
