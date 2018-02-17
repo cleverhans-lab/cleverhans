@@ -340,6 +340,7 @@ def get_log_level(name="cleverhans"):
     """
     return logging.getLogger(name).getEffectiveLevel()
 
+
 class TemporaryLogLevel(object):
     """
     A ContextManager that changes a log level temporarily.
