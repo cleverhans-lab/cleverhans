@@ -1,3 +1,9 @@
+"""
+This tutorial shows how to generate adversarial examples
+using C&W attack in white-box setting.
+The original paper can be found at:
+https://nicholas.carlini.com/papers/2017_sp_nnrobustattacks.pdf
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

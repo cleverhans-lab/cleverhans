@@ -1,9 +1,10 @@
 """
-This tutorial shows how to generate some simple adversarial examples
-and train a model using adversarial training using nothing but pure
-TensorFlow.
+This tutorial shows how to generate adversarial examples using FGSM
+and train a model using adversarial training with TensorFlow.
 It is very similar to mnist_tutorial_keras_tf.py, which does the same
 thing but with a dependence on keras.
+The original paper can be found at:
+https://arxiv.org/abs/1412.6572
 """
 from __future__ import absolute_import
 from __future__ import division
