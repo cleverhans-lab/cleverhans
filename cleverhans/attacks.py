@@ -1527,3 +1527,53 @@ class FastFeatureAdversaries(Attack):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
         return adv_x
+
+
+class SPSA(Attack):
+    """
+    This implements the SPSA adversary, as in https://arxiv.org/abs/1802.05666
+    (Uesato et al. 2018). SPSA is a gradient-free optimization method, which
+    is useful when the model is non-differentiable, or more generally, the
+    gradients do not point in useful directions.
+    """
+
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Create a SPSA instance.
+        """
+        super(SPSA, self).__init__(model, back, sess)
+        # self.feedable_kwargs = {'eps': np.float32,
+        #                         'y': np.float32,
+        #                         'y_target': np.float32,
+        #                         'clip_min': np.float32,
+        #                         'clip_max': np.float32}
+        # self.structural_kwargs = ['ord']
+
+        assert isinstance(self.model, Model)
+
+    def generate(self, x, y=None, y_target=None, epsilon=None, num_steps=None,
+                 is_targeted=False, early_stop_loss_threshold=None,
+                 learning_rate=0.01, delta=0.01, batch_size=128, spsa_iters=1,
+                 is_debug=False):
+        """
+        XXX.
+        """
+        from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
+
+        optimizer = SPSAAdam(lr=learning_rate, delta=delta,
+                             num_samples=batch_size, num_iters=spsa_iters)
+
+        def loss_fn(x, label):
+            logits = self.model.get_logits(x)
+            loss_multiplier = 1 if is_targeted else -1
+            return loss_multiplier * margin_logit_loss(
+                logits, label, num_classes=self.model.num_classes)
+
+        y_attack = y_target if is_targeted else y
+        adv_x = pgd_attack(
+            loss_fn, x, y_attack, epsilon, num_steps=num_steps,
+            optimizer=optimizer,
+            early_stop_loss_threshold=early_stop_loss_threshold,
+            is_debug=is_debug,
+        )
+        return adv_x

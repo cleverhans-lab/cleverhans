@@ -163,7 +163,7 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
     TensorFlow implementation for computing saliency maps
     :param grads_target: a matrix containing forward derivatives for the
                          target class
-    :param grads_other: a matrix where every element is the sum of forward
+    # :param grads_other: a matrix where every element is the sum of forward
                         derivatives over all non-target classes at that index
     :param search_domain: the set of input indices that we are considering
     :param increase: boolean; true if we are increasing pixels, false otherwise
@@ -1485,3 +1485,254 @@ class LBFGS_attack(object):
         # return the best solution found
         o_bestl2 = np.array(o_bestl2)
         return o_bestattack
+
+
+class UnrolledOptimizer(object):
+  """Functional-stype optimizer which does not use TF Variables.
+
+  UnrolledOptimizers implement optimizers where the values being optimized are
+  ordinary Tensors, rather than Variables. TF Variables can have strange
+  behaviors when being assigned multiple times within a single sess.run() call,
+  particularly in Distributed TF, so this avoids thinking about those issues.
+  In cleverhans, these are helper classes for the `pgd_attack` method.
+  """
+
+  def _compute_gradients(self, loss_fn, x, unused_optim_state):
+    """Compute a new value of `x` to minimize `loss_fn`.
+
+    Args:
+      loss_fn: a callable that takes `x`, a batch of images, and returns a batch
+        of loss values. `x` will be optimized to minimize `loss_fn(x)`.
+      x: A list of Tensors, the values to be updated. This is analogous to the
+        `var_list` argument in standard TF Optimizer.
+      unused_optim_state: A (possibly nested) dict, containing any state info
+        needed for the optimizer.
+
+    Returns:
+      new_x: A list of Tensors, the same length as `x`, which are updated
+      new_optim_state: A dict, with the same structure as `optim_state`, which
+        have been updated.
+    """
+    loss = tf.reduce_mean(loss_fn(x), axis=0)
+    return tf.gradients(loss, x)
+
+  def _apply_gradients(self, grads, x, optim_state):
+    raise NotImplementedError(
+        "_apply_gradients should be defined in each subclass")
+
+  def minimize(self, loss_fn, x, optim_state):
+    grads = self._compute_gradients(loss_fn, x, optim_state)
+    return self._apply_gradients(grads, x, optim_state)
+
+  def init_optim_state(self, x):
+    """Returns the initial state of the optimizer.
+
+    Args:
+      x: A list of Tensors, which will be optimized.
+
+    Returns:
+      A dictionary, representing the initial state of the optimizer.
+    """
+    raise NotImplementedError(
+        "init_optim_state should be defined in each subclass")
+
+
+class UnrolledGradientDescent(UnrolledOptimizer):
+  """Vanilla Gradient Descent UnrolledOptimizer."""
+
+  def __init__(self, lr):
+    self._lr = lr
+
+  def _apply_gradients(self, grads, x, optim_state):
+    new_x = [None] * len(x)
+    for i in xrange(len(x)):
+      new_x[i] = x[i] - self._lr * grads[i]
+    return new_x, optim_state
+
+
+class UnrolledAdam(UnrolledOptimizer):
+  """The Adam optimizer defined in https://arxiv.org/abs/1412.6980."""
+
+  def __init__(self, lr=0.001, beta1=0.9, beta2=0.999, epsilon=1e-9):
+    self._lr = lr
+    self._beta1 = beta1
+    self._beta2 = beta2
+    self._epsilon = epsilon
+
+  def init_state(self, x):
+    optim_state = {}
+    optim_state["t"] = 0.
+    optim_state["m"] = [tf.zeros_like(v) for v in x]
+    optim_state["u"] = [tf.zeros_like(v) for v in x]
+    return optim_state
+
+  def _apply_gradients(self, grads, x, optim_state):
+    """Refer to parent class documentation."""
+    new_x = [None] * len(x)
+    new_optim_state = {
+        "t": optim_state["t"] + 1.,
+        "m": [None] * len(x),
+        "u": [None] * len(x)
+    }
+    t = new_optim_state["t"]
+    for i in xrange(len(x)):
+      g = grads[i]
+      m_old = optim_state["m"][i]
+      u_old = optim_state["u"][i]
+      new_optim_state["m"][i] = self._beta1 * m_old + (1. - self._beta1) * g
+      new_optim_state["u"][i] = self._beta2 * u_old + (1. - self._beta2) * g * g
+      m_hat = new_optim_state["m"][i] / (1. - tf.pow(self._beta1, t))
+      u_hat = new_optim_state["u"][i] / (1. - tf.pow(self._beta2, t))
+      new_x[i] = x[i] - self._lr * m_hat / (tf.sqrt(u_hat) + self._epsilon)
+    return new_x, new_optim_state
+
+
+class SPSAAdam(UnrolledAdam):
+  """Optimizer for gradient-free attacks in https://arxiv.org/abs/1802.05666.
+
+  Gradients estimates are computed using Simultaneous Perturbation Stochastic
+  Approximation (SPSA), combined with the ADAM update rule.
+  """
+
+  def __init__(self, lr=0.01, delta=0.01, num_samples=128, num_iters=1,
+               compare_to_analytic_grad=False):
+    super(SPSAAdam, self).__init__(lr=lr)
+    assert num_samples % 2 == 0, "number of samples must be even"
+    self._delta = delta
+    self._num_samples = num_samples // 2  # Since we mirror +/- delta later
+    self._num_iters = num_iters
+    self._compare_to_analytic_grad = compare_to_analytic_grad
+
+  def _get_delta(self, x, delta):
+    x_shape = x.get_shape().as_list()
+    delta_x = delta * tf.sign(tf.random_uniform(
+        [self._num_samples] + x_shape[1:], minval=-1., maxval=1.))
+    return delta_x
+
+  def _compute_gradients(self, loss_fn, x, unused_optim_state):
+    """Compute gradient estimates using SPSA."""
+    # Assumes `x` is a list, containing a [1, H, W, C] image
+    assert len(x) == 1 and x[0].get_shape().as_list()[0] == 1
+    x = x[0]
+    x_shape = x.get_shape().as_list()
+    def body(i, grad_array):
+      delta = self._delta
+      delta_x = self._get_delta(x, delta)
+      delta_x = tf.concat([delta_x, -delta_x], axis=0)
+      loss_vals = tf.reshape(loss_fn(x + delta_x),
+                             [2 * self._num_samples] + [1] * (len(x_shape) - 1))
+      avg_grad = tf.reduce_mean(loss_vals * delta_x, axis=0) / delta
+      avg_grad = tf.expand_dims(avg_grad, axis=0)
+      new_grad_array = grad_array.write(i, avg_grad)
+      return i + 1, new_grad_array
+
+    cond = lambda i, _: i < self._num_iters
+    _, all_grads = tf.while_loop(
+        cond, body,
+        loop_vars=[0, tf.TensorArray(size=self._num_iters, dtype=tf.float32)],
+        back_prop=False, parallel_iterations=1)
+    avg_grad = tf.reduce_sum(all_grads.stack(), axis=0)
+    return [avg_grad]
+
+
+def _project_perturbation(perturbation, epsilon, input_image):
+  """Project `perturbation` onto L-infinity ball of radius `epsilon`."""
+  clipped_perturbation = tf.clip_by_value(perturbation, -epsilon, epsilon)
+  new_image = tf.clip_by_value(input_image + clipped_perturbation, 0., 1.)
+  return new_image - input_image
+
+
+def pgd_attack(loss_fn, input_image, label, epsilon, num_steps,
+               optimizer=UnrolledAdam(),
+               project_perturbation=_project_perturbation,
+               early_stop_loss_threshold=None,
+               is_debug=False):
+  """Projected gradient descent for generating adversarial images.
+
+  Args:
+    loss_fn: A callable which takes `input_image` and `label` as arguments, and
+      returns a batch of loss values. Same interface as UnrolledOptimizer.
+    input_image: Tensor, a batch of images
+    label: Tensor, a batch of labels
+    epsilon: float, the L-infinity norm of the maximum allowable perturbation
+    num_steps: int, the number of steps of gradient descent
+    optimizer: An `UnrolledOptimizer` object
+    project_perturbation: A function, which will be used to enforce some
+      constraint. It should have the same signature as `_project_perturbation`.
+      Note that if you use a custom projection function, you should double-check
+      your implementation, since an incorrect implementation will not error,
+      and will appear to work fine.
+    early_stop_loss_threshold: A float or None. If specified, the attack will
+      end if the loss is below early_stop_loss_threshold.
+    is_debug: A bool. If True, print debug info for attack progress.
+
+  Returns:
+    adversarial version of `input_image`, with L-infinity difference less than
+      epsilon, which tries to minimize loss_fn.
+
+  Note that this function is not intended as an Attack by itself. Rather, it is
+  designed as a helper function which you can use to write your own attack
+  methods.
+  """
+
+  init_perturbation = tf.random_uniform(tf.shape(input_image),
+                                        minval=-epsilon, maxval=epsilon)
+  init_perturbation = project_perturbation(init_perturbation,
+                                           epsilon, input_image)
+  init_optim_state = optimizer.init_state([init_perturbation])
+  nest = tf.contrib.framework.nest
+
+  def loop_body(i, perturbation, flat_optim_state):
+    """Update perturbation to input image."""
+    optim_state = nest.pack_sequence_as(structure=init_optim_state,
+                                        flat_sequence=flat_optim_state)
+    wrapped_loss_fn = lambda x: loss_fn(input_image + x, label)
+    new_perturbation_list, new_optim_state = optimizer.minimize(
+        wrapped_loss_fn, [perturbation], optim_state)
+    loss = tf.reduce_mean(wrapped_loss_fn(perturbation), axis=0)
+    if is_debug:
+      with tf.device("/cpu:0"):
+        loss = tf.Print(loss, [loss], "Total batch loss")
+    projected_perturbation = project_perturbation(
+        new_perturbation_list[0], epsilon, input_image)
+    with tf.control_dependencies([loss]):
+      i = tf.identity(i)
+      if early_stop_loss_threshold:
+        i = tf.cond(tf.less(loss, early_stop_loss_threshold),
+                    lambda: float(num_steps), lambda: i)
+    return i + 1, projected_perturbation, nest.flatten(new_optim_state)
+
+  def cond(i, *_):
+    return tf.less(i, num_steps)
+
+  flat_init_optim_state = nest.flatten(init_optim_state)
+  _, final_perturbation, _ = tf.while_loop(
+      cond,
+      loop_body,
+      loop_vars=[tf.constant(0.), init_perturbation, flat_init_optim_state],
+      parallel_iterations=1,
+      back_prop=False)
+
+  if project_perturbation == _project_perturbation:
+    check_diff = tf.assert_less_equal(final_perturbation, epsilon * 1.1)
+  else:
+    check_diff = tf.no_op()
+  with tf.control_dependencies([check_diff]):
+    adversarial_image = input_image + final_perturbation
+  return tf.stop_gradient(adversarial_image)
+
+
+def margin_logit_loss(model_logits, label, num_classes=10):
+  """Computes difference between logit for `label` and next highest logit.
+
+  The loss is high when `label` is unlikely (targeted by default).
+  This follows the same interface as `loss_fn` for UnrolledOptimizer and
+  pgd_attack, i.e. it returns a batch of loss values.
+  """
+  logit_mask = tf.one_hot(label, depth=num_classes, axis=-1)
+  label_logits = tf.reduce_sum(logit_mask * model_logits, axis=-1)
+  logits_with_target_label_neg_inf = model_logits - logit_mask * 99999
+  highest_nonlabel_logits = tf.reduce_max(
+      logits_with_target_label_neg_inf, axis=-1)
+  loss = highest_nonlabel_logits - label_logits
+  return loss
