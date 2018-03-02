@@ -126,7 +126,8 @@ class TestInception(CleverHansTest):
         metadata_file_path = FLAGS.metadata_file_path
         num_images = 16
         batch_shape = (num_images, 299, 299, 3)
-        images, labels = load_images(input_dir, metadata_file_path, batch_shape)
+        images, labels = load_images(
+            input_dir, metadata_file_path, batch_shape)
         num_classes = 1001
 
         tf.logging.set_verbosity(tf.logging.INFO)
@@ -146,7 +147,7 @@ class TestInception(CleverHansTest):
                 master=FLAGS.master)
 
             with tf.train.MonitoredSession(
-                session_creator=session_creator) as sess:
+                    session_creator=session_creator) as sess:
                 acc_val = sess.run(acc, feed_dict={
                     x_input: images, y_label: labels})
                 tf.logging.info('Accuracy: %s', acc_val)
@@ -162,7 +163,8 @@ class TestSPSA(CleverHansTest):
         metadata_file_path = FLAGS.metadata_file_path
         num_images = 8
         batch_shape = (num_images, 299, 299, 3)
-        images, labels = load_images(input_dir, metadata_file_path, batch_shape)
+        images, labels = load_images(
+            input_dir, metadata_file_path, batch_shape)
         num_classes = 1001
 
         tf.logging.set_verbosity(tf.logging.INFO)
@@ -186,7 +188,7 @@ class TestSPSA(CleverHansTest):
                 master=FLAGS.master)
 
             with tf.train.MonitoredSession(
-                session_creator=session_creator) as sess:
+                    session_creator=session_creator) as sess:
                 for i in xrange(num_images):
                     adv_image = sess.run(x_adv, feed_dict={
                         x_input: np.expand_dims(images[i], axis=0),
@@ -204,7 +206,8 @@ class TestSPSA(CleverHansTest):
         metadata_file_path = FLAGS.metadata_file_path
         num_images = 8
         batch_shape = (num_images, 299, 299, 3)
-        images, labels = load_images(input_dir, metadata_file_path, batch_shape)
+        images, labels = load_images(
+            input_dir, metadata_file_path, batch_shape)
         num_classes = 1001
 
         tf.logging.set_verbosity(tf.logging.INFO)
@@ -232,7 +235,7 @@ class TestSPSA(CleverHansTest):
 
             num_correct = 0.
             with tf.train.MonitoredSession(
-                session_creator=session_creator) as sess:
+                    session_creator=session_creator) as sess:
                 for i in xrange(num_images):
                     acc_val = sess.run(acc, feed_dict={
                         x_input: np.expand_dims(images[i], axis=0),

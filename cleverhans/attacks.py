@@ -1557,17 +1557,17 @@ class SPSA(Attack):
         :param num_steps: The number of optimization steps.
         :param is_targeted: Whether to use a targeted or untargeted attack.
         :param early_stop_loss_threshold: A float or None. If specified, the
-                                          attack will end as soon as the loss is
-                                          below `early_stop_loss_threshold`.
+                                          attack will end as soon as the loss
+                                          is below `early_stop_loss_threshold`.
         :param learning_rate: Learning rate of ADAM optimizer.
         :param delta: Perturbation size used for SPSA approximation.
         :param batch_size: Number of inputs to evaluate at a single time. Note
                            that the true batch size (the number of evaluated
-                           inputs for each update) is `batch_size * spsa_iters`.
+                           inputs for each update) is `batch_size * spsa_iters`
         :param spsa_iters: Number of model evaluations before performing an
                            update, where each evaluation is on `batch_size`
                            different inputs.
-        :param is_debug: If True, prints the adversarial loss after each update.
+        :param is_debug: If True, print the adversarial loss after each update.
         """
         from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
 
