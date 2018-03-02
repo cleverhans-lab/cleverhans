@@ -245,5 +245,6 @@ class TestSPSA(CleverHansTest):
                     num_correct += acc_val
                 assert (num_correct / num_images) < 0.1
 
+
 if __name__ == '__main__':
     unittest.main()
