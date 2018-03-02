@@ -1,7 +1,20 @@
-"""Test attack success against ImageNet models for a few images."""
+"""Test attack success against ImageNet models for a few images.
+
+Many of the tests require using flags to specify a pre-trained ImageNet model,
+as well as image data. The easiest way to provide these is using the data from
+cleverhans/examples/nips17_adversarial_competition, and then the default flag
+values will just work.
+
+Setup:
+$ cd cleverhans/examples/nips17_adversarial_competition
+$ mkdir images
+$ python download_images.py
+$ cd sample_attacks
+$ ./download_checkpoints.sh
+"""
 
 # pylint: disable=bad-indentation
-# pylint: disable=invalid-import-order
+# pylint: disable=g-bad-import-order
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -16,9 +29,8 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.contrib.slim.nets import inception
 
-from cleverhans.devtools.checks import CleverHansTest
-from cleverhans.attacks import Attack
 from cleverhans.attacks import SPSA
+from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
 
 DEFAULT_INCEPTION_PATH = (
@@ -32,11 +44,21 @@ tf.flags.DEFINE_string(
     'checkpoint_path',
     DEFAULT_INCEPTION_PATH, 'Path to checkpoint for inception network.')
 
+tf.flags.DEFINE_string(
+    'input_image_dir',
+    '../examples/nips17_adversarial_competition/dataset/images',
+    'Path to image directory.')
+
+tf.flags.DEFINE_string(
+    'metadata_file_path',
+    '../examples/nips17_adversarial_competition/dataset/dev_dataset.csv',
+    'Path to metadata file.')
+
 FLAGS = tf.flags.FLAGS
 
 
 def load_images(input_dir, metadata_file_path, batch_shape):
-    """XXX."""
+    """Retrieve numpy arrays of images and labels, read from a directory."""
     num_images = batch_shape[0]
     with open(metadata_file_path) as input_file:
         reader = csv.reader(input_file)
@@ -70,7 +92,8 @@ class InceptionModel(Model):
         """Constructs model and return probabilities for given input."""
         reuse = True if self.built else None
         with slim.arg_scope(inception.inception_v3_arg_scope()):
-            x_input = x_input * 2.0 - 1.0  # inception is [-1, 1]-scaled input.
+            # Inception preprocessing uses [-1, 1]-scaled input.
+            x_input = x_input * 2.0 - 1.0
             _, end_points = inception.inception_v3(
                 x_input, num_classes=self.num_classes, is_training=False,
                 reuse=reuse)
@@ -98,10 +121,9 @@ def _top_1_accuracy(logits, labels):
 class TestInception(CleverHansTest):
 
     def test_clean_accuracy(self):
-        # TODO(juesato): Make these flags
-        input_dir = '../examples/nips17_adversarial_competition/dataset/images'
-        metadata_file_path = ('../examples/nips17_adversarial_competition/'
-                              'dataset/dev_dataset.csv')
+        """Check model is accurate on unperturbed images."""
+        input_dir = FLAGS.input_image_dir
+        metadata_file_path = FLAGS.metadata_file_path
         num_images = 16
         batch_shape = (num_images, 299, 299, 3)
         images, labels = load_images(input_dir, metadata_file_path, batch_shape)
@@ -134,14 +156,52 @@ class TestInception(CleverHansTest):
 class TestSPSA(CleverHansTest):
 
     def test_attack_bounds(self):
-        pass
+        """Check SPSA respects perturbation limits."""
+        epsilon = 4. / 255
+        input_dir = FLAGS.input_image_dir
+        metadata_file_path = FLAGS.metadata_file_path
+        num_images = 8
+        batch_shape = (num_images, 299, 299, 3)
+        images, labels = load_images(input_dir, metadata_file_path, batch_shape)
+        num_classes = 1001
+
+        tf.logging.set_verbosity(tf.logging.INFO)
+        with tf.Graph().as_default():
+            # Prepare graph
+            x_input = tf.placeholder(tf.float32, shape=(1,) + batch_shape[1:])
+            y_label = tf.placeholder(tf.int32, shape=(1,))
+            model = InceptionModel(num_classes)
+
+            attack = SPSA(model)
+            x_adv = attack.generate(
+                x_input, y=y_label, epsilon=epsilon, num_steps=10,
+                early_stop_loss_threshold=-1., batch_size=32, spsa_iters=1,
+                is_debug=True)
+
+            # Run computation
+            saver = tf.train.Saver(slim.get_model_variables())
+            session_creator = tf.train.ChiefSessionCreator(
+                scaffold=tf.train.Scaffold(saver=saver),
+                checkpoint_filename_with_path=FLAGS.checkpoint_path,
+                master=FLAGS.master)
+
+            with tf.train.MonitoredSession(
+                session_creator=session_creator) as sess:
+                for i in xrange(num_images):
+                    adv_image = sess.run(x_adv, feed_dict={
+                        x_input: np.expand_dims(images[i], axis=0),
+                        y_label: np.expand_dims(labels[i], axis=0),
+                    })
+                    diff = adv_image - images[i]
+                    assert np.max(np.abs(diff)) < epsilon + 1e-4
+                    assert np.max(adv_image < 1. + 1e-4)
+                    assert np.min(adv_image > -1e-4)
 
     def test_attack_success(self):
-        # TODO(juesato): Make these flags
+        """Check SPSA creates misclassified images."""
         epsilon = 4. / 255
-        input_dir = '../examples/nips17_adversarial_competition/dataset/images'
-        metadata_file_path = ('../examples/nips17_adversarial_competition/'
-                              'dataset/dev_dataset.csv')
+        input_dir = FLAGS.input_image_dir
+        metadata_file_path = FLAGS.metadata_file_path
         num_images = 8
         batch_shape = (num_images, 299, 299, 3)
         images, labels = load_images(input_dir, metadata_file_path, batch_shape)

@@ -163,7 +163,7 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
     TensorFlow implementation for computing saliency maps
     :param grads_target: a matrix containing forward derivatives for the
                          target class
-    # :param grads_other: a matrix where every element is the sum of forward
+    :param grads_other: a matrix where every element is the sum of forward
                         derivatives over all non-target classes at that index
     :param search_domain: the set of input indices that we are considering
     :param increase: boolean; true if we are increasing pixels, false otherwise
@@ -1650,21 +1650,22 @@ def pgd_attack(loss_fn, input_image, label, epsilon, num_steps,
   """Projected gradient descent for generating adversarial images.
 
   Args:
-    loss_fn: A callable which takes `input_image` and `label` as arguments, and
-      returns a batch of loss values. Same interface as UnrolledOptimizer.
-    input_image: Tensor, a batch of images
-    label: Tensor, a batch of labels
-    epsilon: float, the L-infinity norm of the maximum allowable perturbation
-    num_steps: int, the number of steps of gradient descent
-    optimizer: An `UnrolledOptimizer` object
-    project_perturbation: A function, which will be used to enforce some
-      constraint. It should have the same signature as `_project_perturbation`.
-      Note that if you use a custom projection function, you should double-check
-      your implementation, since an incorrect implementation will not error,
-      and will appear to work fine.
-    early_stop_loss_threshold: A float or None. If specified, the attack will
-      end if the loss is below early_stop_loss_threshold.
-    is_debug: A bool. If True, print debug info for attack progress.
+    :param loss_fn: A callable which takes `input_image` and `label` as
+                    arguments, and returns a batch of loss values. Same
+                    interface as UnrolledOptimizer.
+    :param input_image: Tensor, a batch of images
+    :param label: Tensor, a batch of labels
+    :param epsilon: float, the L-infinity norm of the maximum allowable
+                    perturbation
+    :param num_steps: int, the number of steps of gradient descent
+    :param optimizer: An `UnrolledOptimizer` object
+    :param project_perturbation: A function, which will be used to enforce some
+                                 constraint. It should have the same signature
+                                 as `_project_perturbation`.
+    :param early_stop_loss_threshold: A float or None. If specified, the attack
+                                      will end if the loss is below
+                                      `early_stop_loss_threshold`.
+    :param is_debug: A bool. If True, print debug info for attack progress.
 
   Returns:
     adversarial version of `input_image`, with L-infinity difference less than

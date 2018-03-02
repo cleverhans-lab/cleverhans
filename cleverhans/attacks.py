@@ -1538,17 +1538,7 @@ class SPSA(Attack):
     """
 
     def __init__(self, model, back='tf', sess=None):
-        """
-        Create a SPSA instance.
-        """
         super(SPSA, self).__init__(model, back, sess)
-        # self.feedable_kwargs = {'eps': np.float32,
-        #                         'y': np.float32,
-        #                         'y_target': np.float32,
-        #                         'clip_min': np.float32,
-        #                         'clip_max': np.float32}
-        # self.structural_kwargs = ['ord']
-
         assert isinstance(self.model, Model)
 
     def generate(self, x, y=None, y_target=None, epsilon=None, num_steps=None,
@@ -1556,7 +1546,28 @@ class SPSA(Attack):
                  learning_rate=0.01, delta=0.01, batch_size=128, spsa_iters=1,
                  is_debug=False):
         """
-        XXX.
+        Generate symbolic graph for adversarial examples.
+
+        :param x: The model's symbolic inputs. Must be a batch of size 1.
+        :param y: A Tensor or None. The index of the correct label.
+        :param y_target: A Tensor or None. The index of the target label in a
+                         targeted attack.
+        :param epsilon: The size of the maximum perturbation, measured in the
+                        L-infinity norm.
+        :param num_steps: The number of optimization steps.
+        :param is_targeted: Whether to use a targeted or untargeted attack.
+        :param early_stop_loss_threshold: A float or None. If specified, the
+                                          attack will end as soon as the loss is
+                                          below `early_stop_loss_threshold`.
+        :param learning_rate: Learning rate of ADAM optimizer.
+        :param delta: Perturbation size used for SPSA approximation.
+        :param batch_size: Number of inputs to evaluate at a single time. Note
+                           that the true batch size (the number of evaluated
+                           inputs for each update) is `batch_size * spsa_iters`.
+        :param spsa_iters: Number of model evaluations before performing an
+                           update, where each evaluation is on `batch_size`
+                           different inputs.
+        :param is_debug: If True, prints the adversarial loss after each update.
         """
         from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
 
