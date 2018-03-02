@@ -1484,4 +1484,5 @@ class LBFGS_attack(object):
 
         # return the best solution found
         o_bestl2 = np.array(o_bestl2)
+        # comment that doesn't do anything
         return o_bestattack
