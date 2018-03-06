@@ -25,7 +25,7 @@ from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
 from cleverhans_tutorials.tutorial_models import make_basic_cnn, MLP
 from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
-from cleverhans_tutorials.tutorial_models import Conv2D
+from cleverhans.utils import TemporaryLogLevel
 
 FLAGS = flags.FLAGS
 
@@ -73,7 +73,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    model_train(sess, x, y, predictions, X_train, Y_train, verbose=False,
+    model_train(sess, x, y, predictions, X_train, Y_train,
                 args=train_params, rng=rng)
 
     # Print out the accuracy on legitimate data
@@ -146,9 +146,9 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             'batch_size': batch_size,
             'learning_rate': learning_rate
         }
-        model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
-                    init_all=False, verbose=False, args=train_params,
-                    rng=rng)
+        with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
+            model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
+                        init_all=False, args=train_params, rng=rng)
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < data_aug - 1:
