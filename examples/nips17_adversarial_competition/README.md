@@ -8,4 +8,4 @@ Directory has following structure:
 
 * `dataset/` - directory with datasets.
 * `dev_toolkit/` - development toolkit which was shared with participants during the competition.
-* `eval_infra/' - code of evaluation infrastructure which was used to run the competition.
+* `eval_infra/` - code of evaluation infrastructure which was used to run the competition.
