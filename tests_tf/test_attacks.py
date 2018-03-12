@@ -29,9 +29,9 @@ class SimpleModel(Model):
     """
 
     def get_logits(self, x):
-        W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=x.dtype)
+        W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.as_dtype(x.dtype))
         h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-        W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=x.dtype)
+        W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.as_dtype(x.dtype))
 
         res = tf.matmul(h1, W2)
         return res
