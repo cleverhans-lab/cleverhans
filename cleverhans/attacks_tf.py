@@ -1683,7 +1683,8 @@ def pgd_attack(loss_fn, input_image, label, epsilon, num_steps,
 
     Note that this function is not intended as an Attack by itself. Rather, it
     is designed as a helper function which you can use to write your own attack
-    methods.
+    methods. The method uses a tf.while_loop to optimize a loss function in
+    a single sess.run() call.
     """
 
     init_perturbation = tf.random_uniform(tf.shape(input_image),
