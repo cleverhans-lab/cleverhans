@@ -139,6 +139,10 @@ class KerasModelWrapper(Model):
         softmax_name = self._get_softmax_name()
         softmax_layer = self.model.get_layer(softmax_name)
 
+        if not isinstance(softmax_layer, Activation):
+            # In this case, the activation is part of another layer
+            return softmax_name
+
         if hasattr(softmax_layer, 'inbound_nodes'):
             warnings.warn(
                 "Please update your version to keras >= 2.1.3; "
@@ -158,8 +162,18 @@ class KerasModelWrapper(Model):
         :return: A symbolic representation of the logits
         """
         logits_name = self._get_logits_name()
+        logits_layer = self.get_layer(x, logits_name)
 
-        return self.get_layer(x, logits_name)
+        # Need to deal with the case where softmax is part of the
+        # logits layer
+        if logits_name == self._get_softmax_name():
+            softmax_logit_layer = self.model.get_layer(logits_name)
+            softmax_out = softmax_logit_layer.output
+
+            # The final op is the softmax. Return its input
+            logits_layer = softmax_out._op.inputs[0]
+
+        return logits_layer
 
     def get_probs(self, x):
         """
