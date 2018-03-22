@@ -167,11 +167,10 @@ class KerasModelWrapper(Model):
         # Need to deal with the case where softmax is part of the
         # logits layer
         if logits_name == self._get_softmax_name():
-            softmax_logit_layer = self.model.get_layer(logits_name)
-            softmax_out = softmax_logit_layer.output
+            softmax_logit_layer = self.get_layer(x, logits_name)
 
             # The final op is the softmax. Return its input
-            logits_layer = softmax_out._op.inputs[0]
+            logits_layer = softmax_logit_layer._op.inputs[0]
 
         return logits_layer
 
