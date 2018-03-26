@@ -147,7 +147,8 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             'learning_rate': learning_rate
         }
         with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
-            model_train(sess, x, y, preds_sub, X_sub, to_categorical(Y_sub),
+            model_train(sess, x, y, preds_sub, X_sub,
+                        to_categorical(Y_sub, nb_classes),
                         init_all=False, args=train_params, rng=rng)
 
         # If we are not at last substitute training iteration, augment dataset

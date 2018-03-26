@@ -18,7 +18,7 @@ class TestUtils(unittest.TestCase):
                           [0, 1, 0],
                           [0, 0, 1]])
         self.assertTrue(np.all(utils.to_categorical(vec) == cat))
-
+        
     def test_to_categorical_with_nb_classes_arg(self):
         vec = np.asarray([0])
         cat = np.asarray([[1, 0, 0]])
