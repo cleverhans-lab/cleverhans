@@ -102,7 +102,7 @@ def to_categorical(y, num_classes=None):
     if not num_classes:
         num_classes = np.max(y) + 1
         warnings.warn("FutureWarning: the default value of the second"
-                      "argument in function \"to_catagorical\" is deprecated."
+                      "argument in function \"to_categorical\" is deprecated."
                       "On 2018-9-19, the second argument"
                       "will become mandatory.")
     n = y.shape[0]
