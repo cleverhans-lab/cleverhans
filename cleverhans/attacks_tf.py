@@ -868,23 +868,28 @@ class CarliniWagnerL2(object):
 
 class ElasticNetMethod(object):
 
-    def __init__(self, sess, model, beta,
-                 batch_size, confidence,
+    def __init__(self, sess, model, fista, beta,
+                 decision_rule, batch_size, confidence,
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
                  abort_early, initial_const,
                  clip_min, clip_max, num_labels, shape):
         """
-        EAD Attack with the EN Decision Rule
+        EAD Attack
 
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
 
         :param sess: a TF session.
         :param model: a cleverhans.model.Model object.
+        :param fista: FISTA or ISTA. FISTA has better convergence properties
+                      but performs an additional query per iteration
         :param beta: Trades off L2 distortion with L1 distortion: higher
                      produces examples with lower L1 distortion, at the
                      cost of higher L2 (and typically Linf) distortion
+        :param decision_rule: EN or L1. Select final adversarial example from
+                              all successful examples based on the least
+                              elastic-net or L1 distortion criterion. 
         :param batch_size: Number of attacks to run simultaneously.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
@@ -932,7 +937,9 @@ class ElasticNetMethod(object):
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.model = model
+        self.decision_rule = decision_rule
 
+        self.fista = fista
         self.beta = beta
         self.beta_t = tf.cast(self.beta, tf.float32)
 
@@ -945,8 +952,6 @@ class ElasticNetMethod(object):
                                 name='timg')
         self.newimg = tf.Variable(np.zeros(shape), dtype=tf.float32,
                                   name='newimg')
-        self.slack = tf.Variable(np.zeros(shape), dtype=tf.float32,
-                                 name='slack')
         self.tlab = tf.Variable(np.zeros((batch_size, num_labels)),
                                 dtype=tf.float32, name='tlab')
         self.const = tf.Variable(np.zeros(batch_size), dtype=tf.float32,
@@ -957,8 +962,6 @@ class ElasticNetMethod(object):
                                           name='assign_timg')
         self.assign_newimg = tf.placeholder(tf.float32, shape,
                                             name='assign_newimg')
-        self.assign_slack = tf.placeholder(tf.float32, shape,
-                                           name='assign_slack')
         self.assign_tlab = tf.placeholder(tf.float32, (batch_size,
                                                        num_labels),
                                           name='assign_tlab')
@@ -968,61 +971,65 @@ class ElasticNetMethod(object):
         self.global_step = tf.Variable(0, trainable=False)
         self.global_step_t = tf.cast(self.global_step, tf.float32)
 
+        if self.fista:
+            self.slack = tf.Variable(np.zeros(shape), dtype=tf.float32,
+                                     name='slack')
+            self.assign_slack = tf.placeholder(tf.float32, shape,
+                                               name='assign_slack')
+            var = self.slack
+        else:
+            var = self.newimg
+
         """Fast Iterative Shrinkage Thresholding"""
         """--------------------------------"""
         self.zt = tf.divide(self.global_step_t,
                             self.global_step_t + tf.cast(3, tf.float32))
 
-        cond1 = tf.cast(tf.greater(tf.subtract(self.slack, self.timg),
+        cond1 = tf.cast(tf.greater(tf.subtract(var, self.timg),
                                    self.beta_t), tf.float32)
-        cond2 = tf.cast(tf.less_equal(tf.abs(tf.subtract(self.slack,
+        cond2 = tf.cast(tf.less_equal(tf.abs(tf.subtract(var,
                                                          self.timg)),
                                       self.beta_t), tf.float32)
-        cond3 = tf.cast(tf.less(tf.subtract(self.slack, self.timg),
+        cond3 = tf.cast(tf.less(tf.subtract(var, self.timg),
                                 tf.negative(self.beta_t)), tf.float32)
 
-        upper = tf.minimum(tf.subtract(self.slack, self.beta_t),
+        upper = tf.minimum(tf.subtract(var, self.beta_t),
                            tf.cast(self.clip_max, tf.float32))
-        lower = tf.maximum(tf.add(self.slack, self.beta_t),
+        lower = tf.maximum(tf.add(var, self.beta_t),
                            tf.cast(self.clip_min, tf.float32))
 
         self.assign_newimg = tf.multiply(cond1, upper)
         self.assign_newimg += tf.multiply(cond2, self.timg)
         self.assign_newimg += tf.multiply(cond3, lower)
-
-        self.assign_slack = self.assign_newimg
-        self.assign_slack += tf.multiply(self.zt,
-                                         self.assign_newimg - self.newimg)
-
         self.setter = tf.assign(self.newimg, self.assign_newimg)
-        self.setter_y = tf.assign(self.slack, self.assign_slack)
+        if self.fista:
+            self.assign_slack = self.assign_newimg
+            self.assign_slack += tf.multiply(self.zt,
+                                             self.assign_newimg - self.newimg)
+            self.setter_y = tf.assign(self.slack, self.assign_slack)
         """--------------------------------"""
 
         # prediction BEFORE-SOFTMAX of the model
         self.output = model.get_logits(self.newimg)
-        self.output_y = model.get_logits(self.slack)
 
         # distance to the input data
         self.l2dist = tf.reduce_sum(tf.square(self.newimg-self.timg),
                                     list(range(1, len(shape))))
-        self.l2dist_y = tf.reduce_sum(tf.square(self.slack-self.timg),
-                                      list(range(1, len(shape))))
         self.l1dist = tf.reduce_sum(tf.abs(self.newimg-self.timg),
                                     list(range(1, len(shape))))
-        self.l1dist_y = tf.reduce_sum(tf.abs(self.slack-self.timg),
-                                      list(range(1, len(shape))))
         self.elasticdist = self.l2dist + tf.multiply(self.l1dist,
                                                      self.beta_t)
-        self.elasticdist_y = self.l2dist_y + tf.multiply(self.l1dist_y,
-                                                         self.beta_t)
+        if self.decision_rule == 'EN':
+            self.crit = self.elasticdist
+            self.crit_p = 'Elastic'
+        else:
+            self.crit = self.l1dist
+            self.crit_p = 'L1'
 
         # compute the probability of the label class versus the maximum other
         real = tf.reduce_sum((self.tlab) * self.output, 1)
-        real_y = tf.reduce_sum((self.tlab) * self.output_y, 1)
         other = tf.reduce_max((1 - self.tlab) * self.output -
                               (self.tlab * 10000), 1)
-        other_y = tf.reduce_max((1 - self.tlab) * self.output_y -
-                                (self.tlab * 10000), 1)
 
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
@@ -1035,14 +1042,27 @@ class ElasticNetMethod(object):
 
         # sum up the losses
         self.loss21 = tf.reduce_sum(self.l1dist)
-        self.loss21_y = tf.reduce_sum(self.l1dist_y)
         self.loss2 = tf.reduce_sum(self.l2dist)
-        self.loss2_y = tf.reduce_sum(self.l2dist_y)
         self.loss1 = tf.reduce_sum(self.const * loss1)
-        self.loss1_y = tf.reduce_sum(self.const * loss1_y)
-        self.loss2 = tf.reduce_sum(self.l2dist)
 
-        self.loss_opt = self.loss1_y+self.loss2_y
+        if self.fista:
+            self.output_y = model.get_logits(self.slack)
+            self.l2dist_y = tf.reduce_sum(tf.square(self.slack-self.timg),
+                                          list(range(1, len(shape))))
+            real_y = tf.reduce_sum((self.tlab) * self.output_y, 1)
+            other_y = tf.reduce_max((1 - self.tlab) * self.output_y -
+                                    (self.tlab * 10000), 1)
+            if self.TARGETED:
+                loss1_y = tf.maximum(0.0, other_y - real_y + self.CONFIDENCE)
+            else:
+                loss1_y = tf.maximum(0.0, real_y - other_y + self.CONFIDENCE)
+
+            self.loss2_y = tf.reduce_sum(self.l2dist_y)
+            self.loss1_y = tf.reduce_sum(self.const * loss1_y)
+
+            self.loss_opt = self.loss1_y+self.loss2_y
+        else:
+            self.loss_opt = self.loss1+self.loss2
         self.loss = self.loss1+self.loss2+tf.multiply(self.beta_t, self.loss21)
 
         self.learning_rate = tf.train.polynomial_decay(self.LEARNING_RATE,
@@ -1054,7 +1074,7 @@ class ElasticNetMethod(object):
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
         self.train = optimizer.minimize(self.loss_opt,
-                                        var_list=[self.slack],
+                                        var_list=[var],
                                         global_step=self.global_step)
         end_vars = tf.global_variables()
         new_vars = [x for x in end_vars if x.name not in start_vars]
@@ -1065,9 +1085,10 @@ class ElasticNetMethod(object):
         self.setup.append(self.tlab.assign(self.assign_tlab))
         self.setup.append(self.const.assign(self.assign_const))
 
-        self.init = tf.variables_initializer(var_list=[self.global_step] +
-                                             [self.slack] + [self.newimg] +
-                                             new_vars)
+        var_list=[self.global_step] + [self.newimg] + new_vars
+        if self.fista:
+            var_list+=[self.slack]
+        self.init = tf.variables_initializer(var_list=var_list)
 
     def attack(self, imgs, targets):
         """
@@ -1124,7 +1145,7 @@ class ElasticNetMethod(object):
         upper_bound = np.ones(batch_size) * 1e10
 
         # placeholders for the best en, score, and instance attack found so far
-        o_besten = [1e10] * batch_size
+        o_bestdst = [1e10] * batch_size
         o_bestscore = [-1] * batch_size
         o_bestattack = np.copy(imgs)
 
@@ -1134,7 +1155,7 @@ class ElasticNetMethod(object):
             batch = imgs[:batch_size]
             batchlab = labs[:batch_size]
 
-            besten = [1e10] * batch_size
+            bestdst = [1e10] * batch_size
             bestscore = [-1] * batch_size
             _logger.debug("  Binary search step {} of {}".
                           format(outer_step, self.BINARY_SEARCH_STEPS))
@@ -1147,17 +1168,26 @@ class ElasticNetMethod(object):
             self.sess.run(self.setup, {self.assign_timg: batch,
                                        self.assign_tlab: batchlab,
                                        self.assign_const: CONST})
-            self.sess.run(self.setter, feed_dict={self.assign_newimg: batch})
-            self.sess.run(self.setter_y, feed_dict={self.assign_slack: batch})
+            self.sess.run(self.setter, {self.assign_newimg: batch})
+            if self.fista:
+                self.sess.run(self.setter_y, {self.assign_slack: batch})
             prev = 1e6
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack
                 self.sess.run([self.train])
-                self.sess.run([self.setter, self.setter_y])
-                l, l2s, l1s, elastic = self.sess.run([self.loss,
+                if self.fista:
+                    _,_,l, l2s, l1s, crit = self.sess.run([self.setter,
+                                                      self.setter_y,
+                                                      self.loss,
                                                       self.l2dist,
                                                       self.l1dist,
-                                                      self.elasticdist])
+                                                      self.crit])
+                else:
+                    _,l, l2s, l1s, crit = self.sess.run([self.setter,
+                                                      self.loss,
+                                                      self.l2dist,
+                                                      self.l1dist,
+                                                      self.crit])                
                 scores, nimg = self.sess.run([self.output, self.newimg])
 
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
@@ -1177,13 +1207,13 @@ class ElasticNetMethod(object):
                     prev = l
 
                 # adjust the best result found so far
-                for e, (en, sc, ii) in enumerate(zip(elastic, scores, nimg)):
+                for e, (dst, sc, ii) in enumerate(zip(crit, scores, nimg)):
                     lab = np.argmax(batchlab[e])
-                    if en < besten[e] and compare(sc, lab):
-                        besten[e] = en
+                    if dst < bestdst[e] and compare(sc, lab):
+                        bestdst[e] = dst
                         bestscore[e] = np.argmax(sc)
-                    if en < o_besten[e] and compare(sc, lab):
-                        o_besten[e] = en
+                    if dst < o_bestdst[e] and compare(sc, lab):
+                        o_bestdst[e] = dst
                         o_bestscore[e] = np.argmax(sc)
                         o_bestattack[e] = ii
 
@@ -1206,13 +1236,13 @@ class ElasticNetMethod(object):
             _logger.debug("  Successfully generated adversarial examples " +
                           "on {} of {} instances.".
                           format(sum(upper_bound < 1e9), batch_size))
-            o_besten = np.array(o_besten)
-            mean = np.mean(np.sqrt(o_besten[o_besten < 1e9]))
-            _logger.debug(" Elastic Mean successful distortion: {:.4g}".
+            o_bestdst = np.array(o_bestdst)
+            mean = np.mean(np.sqrt(o_bestdst[o_bestdst < 1e9]))
+            _logger.debug(self.crit_p + " Mean successful distortion: {:.4g}".
                           format(mean))
 
         # return the best solution found
-        o_besten = np.array(o_besten)
+        o_bestdst = np.array(o_bestdst)
         return o_bestattack
 
 
