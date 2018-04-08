@@ -1034,12 +1034,10 @@ class ElasticNetMethod(object):
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
             loss1 = tf.maximum(0.0, other - real + self.CONFIDENCE)
-            loss1_y = tf.maximum(0.0, other_y - real_y + self.CONFIDENCE)
         else:
             # if untargeted, optimize for making this class least likely.
             loss1 = tf.maximum(0.0, real - other + self.CONFIDENCE)
-            loss1_y = tf.maximum(0.0, real_y - other_y + self.CONFIDENCE)
-
+        
         # sum up the losses
         self.loss21 = tf.reduce_sum(self.l1dist)
         self.loss2 = tf.reduce_sum(self.l2dist)
