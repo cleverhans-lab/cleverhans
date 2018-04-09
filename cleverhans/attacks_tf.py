@@ -889,7 +889,7 @@ class ElasticNetMethod(object):
                      cost of higher L2 (and typically Linf) distortion
         :param decision_rule: EN or L1. Select final adversarial example from
                               all successful examples based on the least
-                              elastic-net or L1 distortion criterion. 
+                              elastic-net or L1 distortion criterion.
         :param batch_size: Number of attacks to run simultaneously.
         :param confidence: Confidence of adversarial examples: higher produces
                            examples with larger l2 distortion, but more
@@ -1037,7 +1037,7 @@ class ElasticNetMethod(object):
         else:
             # if untargeted, optimize for making this class least likely.
             loss1 = tf.maximum(0.0, real - other + self.CONFIDENCE)
-        
+
         # sum up the losses
         self.loss21 = tf.reduce_sum(self.l1dist)
         self.loss2 = tf.reduce_sum(self.l2dist)
@@ -1072,7 +1072,7 @@ class ElasticNetMethod(object):
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
         self.train = optimizer.minimize(self.loss_opt,
-                                        var_list=[var],
+                                        var_list = [var],
                                         global_step=self.global_step)
         end_vars = tf.global_variables()
         new_vars = [x for x in end_vars if x.name not in start_vars]
@@ -1083,10 +1083,10 @@ class ElasticNetMethod(object):
         self.setup.append(self.tlab.assign(self.assign_tlab))
         self.setup.append(self.const.assign(self.assign_const))
 
-        var_list=[self.global_step] + [self.newimg] + new_vars
+        var_list = [self.global_step] + [self.newimg] + new_vars
         if self.fista:
-            var_list+=[self.slack]
-        self.init = tf.variables_initializer(var_list=var_list)
+            var_list += [self.slack]
+        self.init = tf.variables_initializer(var_list = var_list)
 
     def attack(self, imgs, targets):
         """
@@ -1174,18 +1174,18 @@ class ElasticNetMethod(object):
                 # perform the attack
                 self.sess.run([self.train])
                 if self.fista:
-                    _,_,l, l2s, l1s, crit = self.sess.run([self.setter,
-                                                      self.setter_y,
-                                                      self.loss,
-                                                      self.l2dist,
-                                                      self.l1dist,
-                                                      self.crit])
+                    _, _, l, l2s, l1s, crit = self.sess.run([self.setter,
+                                                             self.setter_y,
+                                                             self.loss,
+                                                             self.l2dist,
+                                                             self.l1dist,
+                                                             self.crit])
                 else:
-                    _,l, l2s, l1s, crit = self.sess.run([self.setter,
-                                                      self.loss,
-                                                      self.l2dist,
-                                                      self.l1dist,
-                                                      self.crit])                
+                    _, l, l2s, l1s, crit = self.sess.run([self.setter,
+                                                          self.loss,
+                                                          self.l2dist,
+                                                          self.l1dist,
+                                                          self.crit])
                 scores, nimg = self.sess.run([self.output, self.newimg])
 
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
