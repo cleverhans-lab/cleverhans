@@ -1072,7 +1072,7 @@ class ElasticNetMethod(object):
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
         self.train = optimizer.minimize(self.loss_opt,
-                                        var_list = [var],
+                                        var_list=[var],
                                         global_step=self.global_step)
         end_vars = tf.global_variables()
         new_vars = [x for x in end_vars if x.name not in start_vars]
@@ -1086,7 +1086,7 @@ class ElasticNetMethod(object):
         var_list = [self.global_step] + [self.newimg] + new_vars
         if self.fista:
             var_list += [self.slack]
-        self.init = tf.variables_initializer(var_list = var_list)
+        self.init = tf.variables_initializer(var_list=var_list)
 
     def attack(self, imgs, targets):
         """
