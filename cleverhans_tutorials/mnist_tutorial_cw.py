@@ -238,7 +238,7 @@ if __name__ == '__main__':
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
                         'Path to save or load the model file')
-    flags.DEFINE_boolean('attack_iterations', 100,
+    flags.DEFINE_integer('attack_iterations', 100,
                          'Number of iterations to run attack; 1000 is good')
     flags.DEFINE_boolean('targeted', True,
                          'Run the tutorial in targeted mode?')
