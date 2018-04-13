@@ -399,22 +399,16 @@ class BasicIterativeMethod(Attack):
             FGM = FastGradientMethod(self.model, back=self.back,
                                      sess=self.sess)
             # Compute this step's perturbation
-            eta = FGM.generate(x + eta, **fgm_params) - x
+            adv_x = FGM.generate(x + eta, **fgm_params)
+
+            # Clipping perturbation according to clip_min and clip_max
+            if self.clip_min is not None and self.clip_max is not None:
+                adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
             # Clipping perturbation eta to self.ord norm ball
-            if self.ord == np.inf:
-                eta = tf.clip_by_value(eta, -self.eps, self.eps)
-            elif self.ord in [1, 2]:
-                reduc_ind = list(xrange(1, len(eta.get_shape())))
-                if self.ord == 1:
-                    norm = tf.reduce_sum(tf.abs(eta),
-                                         reduction_indices=reduc_ind,
-                                         keep_dims=True)
-                elif self.ord == 2:
-                    norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
-                                                 reduction_indices=reduc_ind,
-                                                 keep_dims=True))
-                eta = eta * self.eps / norm
+            eta = adv_x - x
+            from cleverhans.utils_tf import clip_eta
+            eta = clip_eta(eta, self.ord, self.eps)
 
         # Define adversarial example (and clip if necessary)
         adv_x = x + eta
