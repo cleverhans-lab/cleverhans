@@ -160,7 +160,7 @@ class TestFastGradientMethod(CleverHansTest):
             delta = np.sum(np.abs(x_adv - x_val), axis=1)
         elif ord == 2:
             delta = np.sum(np.square(x_adv - x_val), axis=1)**.5
-        self.assertClose(delta, 0.5)
+        self.assertClose(delta, 0.5, atol=1e-4)
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
