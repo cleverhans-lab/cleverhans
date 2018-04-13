@@ -59,6 +59,9 @@ install:
   - conda install libgcc
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
 
+  # install dependencies for adversarial competition eval infra tests
+  - pip install google-cloud
+
 # command to run tests
 script:
   # exit on first error
