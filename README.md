@@ -200,7 +200,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Yinpeng Dong (Tsinghua University)
 * Jonas Rauber (IMPRS)
 * Paul Hendricks
-* David Berthelot
+* David Berthelot (Google Brain)
 * Shuolongbj
 
 ## Copyright
