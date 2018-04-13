@@ -269,7 +269,7 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         for ord in [1, 2, np.infty]:
             _, _, delta = self.generate_adversarial_examples_np(
                 ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
-            self.assrtTrue(np.max(0.5 - delta) > 0.25)
+            self.assertTrue(np.max(0.5 - delta) > 0.25)
 
     def test_attack_strength(self):
         """
