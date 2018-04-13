@@ -196,6 +196,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Zhi Li
 * Ryan Sheatsley (Pennsylvania State University)
 * Abhibhav Garg (IIT Delhi)
+* Jonathan Uesato (MIT)
 * Willi Gierke (Hasso Plattner Institute)
 * Yinpeng Dong (Tsinghua University)
 * Jonas Rauber (IMPRS)
