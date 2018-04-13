@@ -61,6 +61,7 @@ install:
 
   # install dependencies for adversarial competition eval infra tests
   - pip install google-cloud
+  - pip install Pillow
 
 # command to run tests
 script:
