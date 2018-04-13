@@ -1535,3 +1535,64 @@ class FastFeatureAdversaries(Attack):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
         return adv_x
+
+
+class SPSA(Attack):
+    """
+    This implements the SPSA adversary, as in https://arxiv.org/abs/1802.05666
+    (Uesato et al. 2018). SPSA is a gradient-free optimization method, which
+    is useful when the model is non-differentiable, or more generally, the
+    gradients do not point in useful directions.
+    """
+
+    def __init__(self, model, back='tf', sess=None):
+        super(SPSA, self).__init__(model, back, sess)
+        assert isinstance(self.model, Model)
+
+    def generate(self, x, y=None, y_target=None, epsilon=None, num_steps=None,
+                 is_targeted=False, early_stop_loss_threshold=None,
+                 learning_rate=0.01, delta=0.01, batch_size=128, spsa_iters=1,
+                 is_debug=False):
+        """
+        Generate symbolic graph for adversarial examples.
+
+        :param x: The model's symbolic inputs. Must be a batch of size 1.
+        :param y: A Tensor or None. The index of the correct label.
+        :param y_target: A Tensor or None. The index of the target label in a
+                         targeted attack.
+        :param epsilon: The size of the maximum perturbation, measured in the
+                        L-infinity norm.
+        :param num_steps: The number of optimization steps.
+        :param is_targeted: Whether to use a targeted or untargeted attack.
+        :param early_stop_loss_threshold: A float or None. If specified, the
+                                          attack will end as soon as the loss
+                                          is below `early_stop_loss_threshold`.
+        :param learning_rate: Learning rate of ADAM optimizer.
+        :param delta: Perturbation size used for SPSA approximation.
+        :param batch_size: Number of inputs to evaluate at a single time. Note
+                           that the true batch size (the number of evaluated
+                           inputs for each update) is `batch_size * spsa_iters`
+        :param spsa_iters: Number of model evaluations before performing an
+                           update, where each evaluation is on `batch_size`
+                           different inputs.
+        :param is_debug: If True, print the adversarial loss after each update.
+        """
+        from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
+
+        optimizer = SPSAAdam(lr=learning_rate, delta=delta,
+                             num_samples=batch_size, num_iters=spsa_iters)
+
+        def loss_fn(x, label):
+            logits = self.model.get_logits(x)
+            loss_multiplier = 1 if is_targeted else -1
+            return loss_multiplier * margin_logit_loss(
+                logits, label, num_classes=self.model.num_classes)
+
+        y_attack = y_target if is_targeted else y
+        adv_x = pgd_attack(
+            loss_fn, x, y_attack, epsilon, num_steps=num_steps,
+            optimizer=optimizer,
+            early_stop_loss_threshold=early_stop_loss_threshold,
+            is_debug=is_debug,
+        )
+        return adv_x

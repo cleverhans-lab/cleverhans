@@ -101,6 +101,10 @@ def to_categorical(y, num_classes=None):
     y = np.array(y, dtype='int').ravel()
     if not num_classes:
         num_classes = np.max(y) + 1
+        warnings.warn("FutureWarning: the default value of the second"
+                      "argument in function \"to_categorical\" is deprecated."
+                      "On 2018-9-19, the second argument"
+                      "will become mandatory.")
     n = y.shape[0]
     categorical = np.zeros((n, num_classes))
     categorical[np.arange(n), y] = 1

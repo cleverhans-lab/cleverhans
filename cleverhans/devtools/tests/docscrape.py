@@ -275,11 +275,11 @@ class NumpyDocString(object):
         """Grab signature (if given) and summary"""
         summary = self._doc.read_to_next_empty_line()
         summary_str = "\n".join([s.strip() for s in summary])
-        if re.compile('^([\w. ]+=)?[\w\.]+\(.*\)$').match(summary_str):
+        if re.compile('^([\\w. ]+=)?[\\w\\.]+\\(.*\\)$').match(summary_str):
             self['Signature'] = summary_str
             if not self._is_at_section():
                 self['Summary'] = self._doc.read_to_next_empty_line()
-        elif re.compile('^[\w]+\n[-]+').match(summary_str):
+        elif re.compile('^[\\w]+\n[-]+').match(summary_str):
             self['Summary'] = ''
             self._doc.reset()
         else:
@@ -323,7 +323,7 @@ class NumpyDocString(object):
     def _str_signature(self):
         if not self['Signature']:
             return []
-        return ["*%s*" % self['Signature'].replace('*', '\*')] + ['']
+        return ["*%s*" % self['Signature'].replace('*', '\\*')] + ['']
 
     def _str_summary(self):
         return self['Summary'] + ['']
@@ -581,7 +581,7 @@ class SphinxDocString(NumpyDocString):
         return out
 
     def _str_signature(self):
-        return ['``%s``' % self['Signature'].replace('*', '\*')] + ['']
+        return ['``%s``' % self['Signature'].replace('*', '\\*')] + ['']
 
     def _str_summary(self):
         return self['Summary'] + ['']
@@ -655,13 +655,13 @@ class FunctionDoc(object):
 
         if doc['Signature']:
             out += '%s\n' % header('**%s**' %
-                                   doc['Signature'].replace('*', '\*'), '-')
+                                   doc['Signature'].replace('*', '\\*'), '-')
         else:
             try:
                 # try to read signature
                 argspec = inspect.getargspec(self._f)
                 argspec = inspect.formatargspec(*argspec)
-                argspec = argspec.replace('*', '\*')
+                argspec = argspec.replace('*', '\\*')
                 out += header('%s%s' % (self._f.__name__, argspec), '-')
             except TypeError as e:
                 out += '%s\n' % header('**%s()**' % self._f.__name__, '-')
