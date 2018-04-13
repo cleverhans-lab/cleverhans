@@ -23,6 +23,7 @@ def dev_version():
         md5_hash.update(content)
     return md5_hash.hexdigest()
 
+
 def append_dev_version(release_version):
     """
     If dev version is not empty appends it to release_version.
