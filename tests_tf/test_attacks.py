@@ -143,25 +143,29 @@ class TestFastGradientMethod(CleverHansTest):
     def setUp(self):
         super(TestFastGradientMethod, self).setUp()
 
-
         self.sess = tf.Session()
         self.model = SimpleModel()
         self.attack = FastGradientMethod(self.model, sess=self.sess)
 
-    def help_generate_np_gives_adversarial_example(self, ord):
+    def generate_adversarial_examples_np(self, ord, eps, **kwargs):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=ord,
-                                        clip_min=-5, clip_max=5)
+        x_adv = self.attack.generate_np(x_val, eps=eps, ord=ord,
+                                        clip_min=-5, clip_max=5, **kwargs)
         if ord == np.inf:
             delta = np.max(np.abs(x_adv - x_val), axis=1)
         elif ord == 1:
             delta = np.sum(np.abs(x_adv - x_val), axis=1)
         elif ord == 2:
             delta = np.sum(np.square(x_adv - x_val), axis=1)**.5
-        self.assertClose(delta, 0.5)
 
+        return x_val, x_adv, delta
+
+    def help_generate_np_gives_adversarial_example(self, ord, eps=.5, **kwargs):
+        x_val, x_adv, delta = self.generate_adversarial_examples_np(ord, eps,
+                                                                    **kwargs)
+        self.assertClose(delta, eps)
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
         self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
@@ -181,17 +185,13 @@ class TestFastGradientMethod(CleverHansTest):
         self.assertEqual(x_adv.dtype, tf.float64)
 
     def test_targeted_generate_np_gives_adversarial_example(self):
-        x_val = np.random.rand(100, 2)
-        x_val = np.array(x_val, dtype=np.float32)
         random_labs = np.random.random_integers(0, 1, 100)
         random_labs_one_hot = np.zeros((100, 2))
         random_labs_one_hot[np.arange(100), random_labs] = 1
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
-                                        clip_min=-5, clip_max=5,
-                                        y_target=random_labs_one_hot)
+        _, x_adv, delta = self.generate_adversarial_examples_np(
+            eps=.5, ord=np.inf, y_target=random_labs_one_hot)
 
-        delta = np.max(np.abs(x_adv - x_val), axis=1)
         self.assertClose(delta, 0.5)
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -247,6 +247,29 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         self.sess = tf.Session()
         self.model = SimpleModel()
         self.attack = BasicIterativeMethod(self.model, sess=self.sess)
+
+    def test_generate_np_gives_adversarial_example_linfinity(self):
+        self.help_generate_np_gives_adversarial_example(ord=np.infty, eps=.5,
+                                                        nb_iter=20)
+
+    def test_generate_np_gives_adversarial_example_l1(self):
+        self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
+                                                        nb_iter=20)
+
+    def test_generate_np_gives_adversarial_example_l2(self):
+        self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
+                                                        nb_iter=20)
+
+    def test_do_not_reach_lp_boundary(self):
+        """
+        Make sure that iterative attack don't reach boundary of Lp
+        neighbourhood if nb_iter * eps_iter is relatively small compared to
+        epsilon.
+        """
+        for ord in [1, 2, np.infty]:
+            _, _, delta = self.generate_adversarial_examples_np(
+                ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
+            self.assertTrue(np.max(0.5 - delta) > 0.25)
 
     def test_attack_strength(self):
         """
