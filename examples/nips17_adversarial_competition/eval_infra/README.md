@@ -1,8 +1,6 @@
 
 # Evaluation infrastructure for adversarial competition
 
-[TOC]
-
 ## About
 
 This directory contains code of the backend which was used to run evaluation of
