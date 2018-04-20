@@ -132,7 +132,8 @@ def main(argv=None):
     # Redefine TF model graph
     model_2 = cnn_model(img_rows=32, img_cols=32, channels=3)
     predictions_2 = model_2(x)
-    adv_x_2 = fgsm.generate(x, eps=0.3)
+    fgsm_2 = FastGradientMethod(model_2)
+    adv_x_2 = fgsm_2.generate(x, eps=0.3)
     predictions_2_adv = model_2(adv_x_2)
 
     def evaluate_2():
