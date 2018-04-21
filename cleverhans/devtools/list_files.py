@@ -1,15 +1,6 @@
 """Code for listing files that belong to the library."""
-import logging
-import cleverhans
 import os
-__authors__ = "Ian Goodfellow"
-__copyright__ = "Copyright 2010-2012, Universite de Montreal"
-__credits__ = ["Ian Goodfellow"]
-__license__ = "3-clause BSD"
-__maintainer__ = "LISA Lab"
-__email__ = "pylearn-dev@googlegroups"
-
-logger = logging.getLogger(__name__)
+import cleverhans
 
 
 def list_files(suffix=""):
@@ -28,8 +19,11 @@ def list_files(suffix=""):
     """
 
     cleverhans_path = os.path.abspath(cleverhans.__path__[0])
+    # In some environments cleverhans_path does not point to a real directory.
+    # In such case return empty list.
+    if not os.path.isdir(cleverhans_path):
+        return []
     repo_path = os.path.abspath(os.path.join(cleverhans_path, os.pardir))
-
     file_list = _list_files(cleverhans_path, suffix)
 
     tutorials_path = os.path.join(repo_path, "cleverhans_tutorials")
@@ -74,8 +68,8 @@ def _list_files(path, suffix=""):
         complete = [os.path.join(path, entry) for entry in incomplete]
         lists = [_list_files(subpath, suffix) for subpath in complete]
         flattened = []
-        for l in lists:
-            for elem in l:
+        for one_list in lists:
+            for elem in one_list:
                 flattened.append(elem)
         return flattened
     else:
@@ -83,10 +77,3 @@ def _list_files(path, suffix=""):
         if path.endswith(suffix):
             return [path]
         return []
-
-
-if __name__ == '__main__':
-    # Print all .py files in the library
-    result = list_files('.py')
-    for path in result:
-        logger.info(path)
