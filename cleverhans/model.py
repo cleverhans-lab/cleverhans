@@ -82,6 +82,13 @@ class Model(object):
         """
         raise NotImplementedError('`fprop` not implemented.')
 
+    def get_params(self):
+        """
+        Provides access to the model's parameters.
+        :return: A list of all Variables defining the model parameters.
+        """
+        raise NotImplementedError()
+
 
 class CallableModelWrapper(Model):
 
