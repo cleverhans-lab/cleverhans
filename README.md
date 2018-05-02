@@ -186,8 +186,8 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Alexey Kurakin (Google Brain)
 * Cihang Xie (Johns Hopkins)
 * Yash Sharma (The Cooper Union)
-* Aurko Roy (Google Brain)
 * Tom Brown (Google Brain)
+* Aurko Roy (Google Brain)
 * Alexander Matyasko (Nanyang Technological University)
 * Vahid Behzadan (Kansas State)
 * Karen Hambardzumyan (YerevaNN)
@@ -199,9 +199,9 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Jonathan Uesato (MIT)
 * Willi Gierke (Hasso Plattner Institute)
 * Yinpeng Dong (Tsinghua University)
-* Jonas Rauber (IMPRS)
-* Paul Hendricks
 * David Berthelot (Google Brain)
+* Paul Hendricks
+* Jonas Rauber (IMPRS)
 * Shuolongbj
 
 ## Copyright
