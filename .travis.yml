@@ -50,7 +50,7 @@ install:
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.1.0" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp35-cp35m-linux_x86_64.whl;
     fi
-  - pip install keras
+  - pip install keras==2.1.5
   - python setup.py install
 
   # workaround for version incompatibility between the scipy version in conda
