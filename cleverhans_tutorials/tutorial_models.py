@@ -50,6 +50,14 @@ class MLP(Model):
         states = dict(zip(self.get_layer_names(), states))
         return states
 
+    def get_params(self):
+        out = []
+        for layer in self.layers:
+            for param in layer.get_params():
+                if param not in out:
+                    out.append(param)
+        return out
+
 
 class Layer(object):
 
@@ -74,6 +82,9 @@ class Linear(Layer):
 
     def fprop(self, x):
         return tf.matmul(x, self.W) + self.b
+
+    def get_params(self):
+        return [self.W, self.b]
 
 
 class Conv2D(Layer):
@@ -106,6 +117,9 @@ class Conv2D(Layer):
         return tf.nn.conv2d(x, self.kernels, (1,) + tuple(self.strides) + (1,),
                             self.padding) + self.b
 
+    def get_params(self):
+        return [self.kernels, self.b]
+
 
 class ReLU(Layer):
 
@@ -119,6 +133,9 @@ class ReLU(Layer):
     def fprop(self, x):
         return tf.nn.relu(x)
 
+    def get_params(self):
+        return []
+
 
 class Softmax(Layer):
 
@@ -131,6 +148,9 @@ class Softmax(Layer):
 
     def fprop(self, x):
         return tf.nn.softmax(x)
+
+    def get_params(self):
+        return []
 
 
 class Flatten(Layer):
@@ -148,6 +168,9 @@ class Flatten(Layer):
 
     def fprop(self, x):
         return tf.reshape(x, [-1, self.output_width])
+
+    def get_params(self):
+        return []
 
 
 def make_basic_cnn(nb_filters=64, nb_classes=10,
