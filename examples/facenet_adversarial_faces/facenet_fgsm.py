@@ -71,15 +71,17 @@ with tf.Graph().as_default():
             model.embedding_output, feed_dict=feed_dict)
 
         # Define FGSM for the model
+        steps = 1
+        eps = 0.01
+        alpha = eps / steps
         fgsm = FastGradientMethod(model)
-        fgsm_params = {'eps': 0.01,
+        fgsm_params = {'eps': alpha,
                        'clip_min': 0.,
                        'clip_max': 1.}
         adv_x = fgsm.generate(model.face_input, **fgsm_params)
 
         # Run FGSM
         adv = faces1
-        steps = 1
         for i in range(steps):
             print("FGSM step " + str(i + 1))
             feed_dict = {model.face_input: adv,
