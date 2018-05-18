@@ -147,9 +147,10 @@ If you use CleverHans for academic research, you are highly encouraged
 ```
 @article{papernot2017cleverhans,
   title={cleverhans v2.0.0: an adversarial machine learning library},
-  author={Nicolas Papernot, Nicholas Carlini, Ian Goodfellow, Reuben Feinman,
-  Fartash Faghri, Alexander Matyasko, Karen Hambardzumyan, Yi-Lin Juang, Alexey
-  Kurakin, Ryan Sheatsley, Abhibhav Garg, Yen-Chen Lin},
+  author={Nicolas Papernot and Nicholas Carlini and Ian Goodfellow and
+  Reuben Feinman and Fartash Faghri and Alexander Matyasko and
+  Karen Hambardzumyan and Yi-Lin Juang and Alexey Kurakin and
+  Ryan Sheatsley and Abhibhav Garg and Yen-Chen Lin},
   journal={arXiv preprint arXiv:1610.00768},
   year={2017}
 }
