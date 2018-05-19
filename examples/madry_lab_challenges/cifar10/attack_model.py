@@ -90,7 +90,8 @@ def main(argv):
                 preds_adv = model.get_probs(x_adv)
                 acc = model_eval(sess, x, y, preds_adv, X_test[
                     :nb_samples], Y_test[:nb_samples], args=eval_par)
-                print('Epsilon %.2f, accuracy on adversarial examples %0.4f' % (e, acc))
+                print('Epsilon %.2f, accuracy on adversarial' % e,
+                      'examples %0.4f\n' % acc)
             t2 = time.time()
         else:
             t1 = time.time()
@@ -112,13 +113,13 @@ if __name__ == '__main__':
 
     flags.DEFINE_integer('batch_size', 100, "Batch size")
 
-    flags.DEFINE_integer('nb_samples', 1000, "Number of examples to test with")
+    flags.DEFINE_integer('nb_samples', 1000, "Number of samples to test")
 
-    flags.DEFINE_string('attack_type', 'fgsm', ("Attack type: 'fgsm'->fast gradient sign"
-                                                " method', 'bim'->'basic iterative method'"
-                                                ", 'pgd'->'projected gradient "
-                                                "descent', 'cwl2'->'Carlini & "
-                                                "Wagner L2'"))
+    flags.DEFINE_string('attack_type', 'fgsm', ("Attack type: 'fgsm'->'fast "
+                                                "gradient sign method', "
+                                                "'pgd'->'projected "
+                                                "gradient descent', 'cwl2'->"
+                                                "'Carlini & Wagner L2'"))
     flags.DEFINE_string('checkpoint_dir', default_ckpt_dir,
                         'Checkpoint directory to load')
 
