@@ -168,8 +168,10 @@ class Linear(Layer):
         self.output_shape = [batch_size, self.num_hid]
 
         with tf.variable_scope('logit', reuse=tf.AUTO_REUSE):
-            self.w = tf.get_variable('DW', [dim, self.num_hid],
-                                     initializer=tf.initializers.variance_scaling(distribution='uniform'))
+            self.w = tf.get_variable(
+                'DW', [dim, self.num_hid],
+                initializer=tf.initializers.variance_scaling(
+                    distribution='uniform'))
             self.b = tf.get_variable('biases', [self.num_hid],
                                      initializer=tf.initializers.constant())
 
@@ -216,8 +218,9 @@ def _residual(x, in_filter, out_filter, stride,
         if in_filter != out_filter:
             orig_x = tf.nn.avg_pool(orig_x, stride, stride, 'VALID')
             orig_x = tf.pad(
-                orig_x, [[0, 0], [0, 0], [0, 0],
-                         [(out_filter - in_filter) // 2, (out_filter - in_filter) // 2]])
+                orig_x, [[0, 0], [0, 0],
+                         [0, 0], [(out_filter - in_filter) // 2,
+                                  (out_filter - in_filter) // 2]])
         x += orig_x
 
     tf.logging.debug('image after unit %s', x.get_shape())
