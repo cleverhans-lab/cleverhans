@@ -1,4 +1,4 @@
-# CleverHans (latest release: v2.0.0)
+# CleverHans (latest release: v2.1.0)
 
 <img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
@@ -122,7 +122,7 @@ When reporting benchmarks, please:
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v2.0.0 of CleverHans. On a test set modified by the
+adversarial attack using v2.1.0 of CleverHans. On a test set modified by the
 `FastGradientMethod` with a max-norm `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Contributing
@@ -145,14 +145,17 @@ If you use CleverHans for academic research, you are highly encouraged
 (though not required) to cite the following [paper](https://arxiv.org/abs/1610.00768):
 
 ```
-@article{papernot2017cleverhans,
-  title={cleverhans v2.0.0: an adversarial machine learning library},
-  author={Nicolas Papernot and Nicholas Carlini and Ian Goodfellow and
-  Reuben Feinman and Fartash Faghri and Alexander Matyasko and
-  Karen Hambardzumyan and Yi-Lin Juang and Alexey Kurakin and
-  Ryan Sheatsley and Abhibhav Garg and Yen-Chen Lin},
+@article{papernot2018cleverhans,
+  title={cleverhans v2.1.0: an adversarial machine learning library},
+  author={Nicolas Papernot and Fartash Faghri and Nicholas Carlini and
+  Ian Goodfellow and Reuben Feinman and Alexey Kurakin and Cihang Xie and
+  Yash Sharma and Tom Brown and Aurko Roy and Alexander Matyasko and
+  Vahid Behzadan and Karen Hambardzumyan and Zhishuai Zhang and
+  Yi-Lin Juang and Zhi Li and Ryan Sheatsley and Abhibhav Garg and 
+  Jonathan Uesato and Willi Gierke and Yinpeng Dong and David Berthelot and
+  Paul Hendricks and Jonas Rauber and Rujun Long},
   journal={arXiv preprint arXiv:1610.00768},
-  year={2017}
+  year={2018}
 }
 ```
 
@@ -194,7 +197,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Karen Hambardzumyan (YerevaNN)
 * Zhishuai Zhang (Johns Hopkins)
 * Yi-Lin Juang (NTUEE)
-* Zhi Li
+* Zhi Li (University of Toronto)
 * Ryan Sheatsley (Pennsylvania State University)
 * Abhibhav Garg (IIT Delhi)
 * Jonathan Uesato (MIT)
@@ -203,7 +206,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * David Berthelot (Google Brain)
 * Paul Hendricks
 * Jonas Rauber (IMPRS)
-* Shuolongbj
+* Rujun Long (0101.AI)
 
 ## Copyright
 
