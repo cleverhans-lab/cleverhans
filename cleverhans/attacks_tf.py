@@ -14,15 +14,18 @@ from . import utils
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
-np_dtype=np.dtype('float32')
-tf_dtype=tf.as_dtype('float32')
+np_dtype = np.dtype('float32')
+tf_dtype = tf.as_dtype('float32')
+
 
 def ZERO():
     return np.asarray(0., dtype=np_dtype)
 
+
 def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
     return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,
                clip_max=clip_max)
+
 
 def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
         clip_min=None, clip_max=None,
@@ -704,7 +707,7 @@ class CarliniWagnerL2(object):
         other = tf.reduce_max(
             (1 - self.tlab) * self.output - self.tlab * 10000,
             1)
-        
+
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
             loss1 = tf.maximum(ZERO(), other - real + self.CONFIDENCE)
@@ -966,8 +969,7 @@ class ElasticNetMethod(object):
                                           name='assign_timg')
         self.assign_newimg = tf.placeholder(tf_dtype, shape,
                                             name='assign_newimg')
-        self.assign_tlab = tf.placeholder(tf_dtype, (batch_size,
-                                                       num_labels),
+        self.assign_tlab = tf.placeholder(tf_dtype, (batch_size, num_labels),
                                           name='assign_tlab')
         self.assign_const = tf.placeholder(tf_dtype, [batch_size],
                                            name='assign_const')
@@ -1055,9 +1057,11 @@ class ElasticNetMethod(object):
             other_y = tf.reduce_max((1 - self.tlab) * self.output_y -
                                     (self.tlab * 10000), 1)
             if self.TARGETED:
-                loss1_y = tf.maximum(ZERO(), other_y - real_y + self.CONFIDENCE)
+                loss1_y = tf.maximum(ZERO(),
+                                     other_y - real_y + self.CONFIDENCE)
             else:
-                loss1_y = tf.maximum(ZERO(), real_y - other_y + self.CONFIDENCE)
+                loss1_y = tf.maximum(ZERO(),
+                                     real_y - other_y + self.CONFIDENCE)
 
             self.loss2_y = tf.reduce_sum(self.l2dist_y)
             self.loss1_y = tf.reduce_sum(self.const * loss1_y)
@@ -1638,7 +1642,8 @@ class SPSAAdam(UnrolledAdam):
     def _get_delta(self, x, delta):
         x_shape = x.get_shape().as_list()
         delta_x = delta * tf.sign(tf.random_uniform(
-                [self._num_samples] + x_shape[1:], minval=-1., maxval=1., dtype=tf_dtype))
+                [self._num_samples] + x_shape[1:],
+                minval=-1., maxval=1., dtype=tf_dtype))
         return delta_x
 
     def _compute_gradients(self, loss_fn, x, unused_optim_state):
@@ -1715,7 +1720,8 @@ def pgd_attack(loss_fn, input_image, label, epsilon, num_steps,
     """
 
     init_perturbation = tf.random_uniform(tf.shape(input_image),
-                                          minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
+                                          minval=-epsilon, maxval=epsilon,
+                                          dtype=tf_dtype)
     init_perturbation = project_perturbation(init_perturbation,
                                              epsilon, input_image)
     init_optim_state = optimizer.init_state([init_perturbation])

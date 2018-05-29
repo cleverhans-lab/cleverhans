@@ -28,16 +28,16 @@ class Attack(object):
 
         if back == 'tf':
             import tensorflow as tf
-            self.tf_dtype=tf.as_dtype(dtypestr)
+            self.tf_dtype = tf.as_dtype(dtypestr)
             if sess is None:
                 sess = tf.get_default_session()
-        
-        self.np_dtype=np.dtype(dtypestr)
-        
+
+        self.np_dtype = np.dtype(dtypestr)
+
         import cleverhans.attacks_tf as attacks_tf
-        attacks_tf.np_dtype=self.np_dtype
-        attacks_tf.tf_dtype=self.tf_dtype
-        
+        attacks_tf.np_dtype = self.np_dtype
+        attacks_tf.tf_dtype = self.tf_dtype
+
         if not isinstance(model, Model):
             raise ValueError("The model argument should be an instance of"
                              " the cleverhans.model.Model class.")
@@ -486,7 +486,7 @@ class MomentumIterativeMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(MomentumIterativeMethod, self).__init__(model, back, sess, dtypestr)
+        super().__init__(model, back, sess, dtypestr)
         self.feedable_kwargs = {'eps': self.np_dtype,
                                 'eps_iter': self.np_dtype,
                                 'y': self.np_dtype,
@@ -707,7 +707,8 @@ class SaliencyMapMethod(Attack):
                                       y_target=y_target)
 
                 # Attack is targeted, target placeholder will need to be fed
-                x_adv = tf.py_func(jsma_wrap, [x, self.y_target], self.tf_dtype)
+                x_adv = tf.py_func(jsma_wrap, [x, self.y_target],
+                                   self.tf_dtype)
             else:
                 def jsma_wrap(x_val):
                     return jsma_batch(self.sess, x, preds, grads, x_val,
@@ -768,7 +769,7 @@ class VirtualAdversarialMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'logits')
 
-        super(VirtualAdversarialMethod, self).__init__(model, back, sess, dtypestr)
+        super().__init__(model, back, sess, dtypestr)
 
         import tensorflow as tf
         self.feedable_kwargs = {'eps': self.tf_dtype, 'xi': self.tf_dtype,
@@ -836,7 +837,7 @@ class CarliniWagnerL2(Attack):
         """
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'logits')
-        
+
         super(CarliniWagnerL2, self).__init__(model, back, sess, dtypestr)
 
         import tensorflow as tf
@@ -893,14 +894,14 @@ class CarliniWagnerL2(Attack):
         self.parse_params(**kwargs)
 
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
-        
+
         attack = CWL2(self.sess, self.model, self.batch_size,
                       self.confidence, 'y_target' in kwargs,
                       self.learning_rate, self.binary_search_steps,
                       self.max_iterations, self.abort_early,
                       self.initial_const, self.clip_min, self.clip_max,
                       nb_classes, x.get_shape().as_list()[1:])
-        
+
         def cw_wrap(x_val, y_val):
             return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
         wrap = tf.py_func(cw_wrap, [x, labels], self.tf_dtype)
@@ -1352,7 +1353,7 @@ class MadryEtAl(Attack):
         """
         import tensorflow as tf
         from cleverhans.utils_tf import model_loss, clip_eta
-        
+
         adv_x = x + eta
         preds = self.model.get_probs(adv_x)
         loss = model_loss(y, preds)
@@ -1379,13 +1380,14 @@ class MadryEtAl(Attack):
         """
         import tensorflow as tf
         from cleverhans.utils_tf import clip_eta
-        
+
         if self.rand_init:
-            eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps, dtype=self.tf_dtype)
+            eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,
+                                    dtype=self.tf_dtype)
             eta = clip_eta(eta, self.ord, self.eps)
         else:
             eta = tf.zeros_like(x)
-        
+
         for i in range(self.nb_iter):
             eta = self.attack_single_step(x, eta, y)
 
@@ -1412,7 +1414,7 @@ class FastFeatureAdversaries(Attack):
         """
         Create a FastFeatureAdversaries instance.
         """
-        super(FastFeatureAdversaries, self).__init__(model, back, sess, dtypestr)
+        super().__init__(model, back, sess, dtypestr)
         self.feedable_kwargs = {'eps': self.np_dtype,
                                 'eps_iter': self.np_dtype,
                                 'clip_min': self.np_dtype,
@@ -1525,12 +1527,13 @@ class FastFeatureAdversaries(Attack):
         g_feat = self.model.get_layer(g, self.layer)
 
         # Initialize loop variables
-        eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps, dtype=tf_dtype)
+        eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,
+                                dtype=tf_dtype)
         eta = clip_eta(eta, self.ord, self.eps)
-        
+
         for i in range(self.nb_iter):
             eta = self.attack_single_step(x, eta, g_feat)
-        
+
         # Define adversarial example (and clip if necessary)
         adv_x = x + eta
         if self.clip_min is not None and self.clip_max is not None:
