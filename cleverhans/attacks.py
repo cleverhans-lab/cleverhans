@@ -486,7 +486,8 @@ class MomentumIterativeMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super().__init__(model, back, sess, dtypestr)
+        super(MomentumIterativeMethod, self).__init__(model, back,
+                                                      sess, dtypestr)
         self.feedable_kwargs = {'eps': self.np_dtype,
                                 'eps_iter': self.np_dtype,
                                 'y': self.np_dtype,
@@ -769,7 +770,8 @@ class VirtualAdversarialMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'logits')
 
-        super().__init__(model, back, sess, dtypestr)
+        super(VirtualAdversarialMethod, self).__init__(model, back,
+                                                       sess, dtypestr)
 
         import tensorflow as tf
         self.feedable_kwargs = {'eps': self.tf_dtype, 'xi': self.tf_dtype,
@@ -1414,7 +1416,8 @@ class FastFeatureAdversaries(Attack):
         """
         Create a FastFeatureAdversaries instance.
         """
-        super().__init__(model, back, sess, dtypestr)
+        super(FastFeatureAdversaries, self).__init__(model, back,
+                                                     sess, dtypestr)
         self.feedable_kwargs = {'eps': self.np_dtype,
                                 'eps_iter': self.np_dtype,
                                 'clip_min': self.np_dtype,
