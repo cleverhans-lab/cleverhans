@@ -1531,7 +1531,7 @@ class FastFeatureAdversaries(Attack):
 
         # Initialize loop variables
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,
-                                dtype=tf_dtype)
+                                dtype=self.tf_dtype)
         eta = clip_eta(eta, self.ord, self.eps)
 
         for i in range(self.nb_iter):
