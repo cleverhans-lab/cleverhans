@@ -204,7 +204,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Willi Gierke (Hasso Plattner Institute)
 * Yinpeng Dong (Tsinghua University)
 * David Berthelot (Google Brain)
-* Paul Hendricks
+* Paul Hendricks (NVIDIA)
 * Jonas Rauber (IMPRS)
 * Rujun Long (0101.AI)
 
