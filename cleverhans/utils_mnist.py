@@ -4,8 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import sys
-import warnings
 
 from . import utils
 
@@ -27,17 +25,26 @@ def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
     assert isinstance(test_start, int)
     assert isinstance(test_end, int)
 
-    from tensorflow.examples.tutorials.mnist import input_data
-    mnist = input_data.read_data_sets(datadir, one_hot=True, reshape=False)
-    X_train = np.vstack((mnist.train.images, mnist.validation.images))
-    Y_train = np.vstack((mnist.train.labels, mnist.validation.labels))
-    X_test = mnist.test.images
-    Y_test = mnist.test.labels
+    from sklearn.datasets import fetch_mldata
+    mnist = fetch_mldata('MNIST original', data_home=datadir)
+    X_train = mnist.data[:60000] / 255.
+    Y_train = mnist.target[:60000]
+    X_test = mnist.data[60000:] / 255.
+    Y_test = mnist.target[60000:]
+
+    X_train = np.reshape(X_train, (60000, 28, 28, 1))
+    X_test = np.reshape(X_test, (10000, 28, 28, 1))
+
+    print(X_train.max())
+    print(X_train.min())
 
     X_train = X_train[train_start:train_end]
     Y_train = Y_train[train_start:train_end]
     X_test = X_test[test_start:test_end]
     Y_test = Y_test[test_start:test_end]
+
+    Y_train = utils.to_categorical(Y_train, num_classes=10)
+    Y_test = utils.to_categorical(Y_test, num_classes=10)
 
     print('X_train shape:', X_train.shape)
     print('X_test shape:', X_test.shape)
