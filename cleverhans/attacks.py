@@ -17,7 +17,7 @@ class Attack(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         :param model: An instance of the cleverhans.model.Model class.
         :param back: The backend to use. Currently 'tf' is the only option.
@@ -26,9 +26,17 @@ class Attack(object):
         if not(back == 'tf'):
             raise ValueError("Backend argument must either be 'tf'.")
 
-        if back == 'tf' and sess is None:
+        if back == 'tf':
             import tensorflow as tf
-            sess = tf.get_default_session()
+            self.tf_dtype = tf.as_dtype(dtypestr)
+            if sess is None:
+                sess = tf.get_default_session()
+
+        self.np_dtype = np.dtype(dtypestr)
+
+        import cleverhans.attacks_tf as attacks_tf
+        attacks_tf.np_dtype = self.np_dtype
+        attacks_tf.tf_dtype = self.tf_dtype
 
         if not isinstance(model, Model):
             raise ValueError("The model argument should be an instance of"
@@ -109,7 +117,7 @@ class Attack(object):
 
         # x is a special placeholder we always want to have
         x_shape = [None] + list(x_val.shape)[1:]
-        x = tf.placeholder(tf.float32, shape=x_shape)
+        x = tf.placeholder(self.tf_dtype, shape=x_shape)
 
         # now we generate the graph that we want
         x_adv = self.generate(x, **new_kwargs)
@@ -236,7 +244,7 @@ class FastGradientMethod(Attack):
     Paper link: https://arxiv.org/abs/1412.6572
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a FastGradientMethod instance.
         Note: the model parameter should be an instance of the
@@ -245,12 +253,12 @@ class FastGradientMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(FastGradientMethod, self).__init__(model, back, sess)
-        self.feedable_kwargs = {'eps': np.float32,
-                                'y': np.float32,
-                                'y_target': np.float32,
-                                'clip_min': np.float32,
-                                'clip_max': np.float32}
+        super(FastGradientMethod, self).__init__(model, back, sess, dtypestr)
+        self.feedable_kwargs = {'eps': self.np_dtype,
+                                'y': self.np_dtype,
+                                'y_target': self.np_dtype,
+                                'clip_min': self.np_dtype,
+                                'clip_max': self.np_dtype}
         self.structural_kwargs = ['ord']
 
     def generate(self, x, **kwargs):
@@ -333,7 +341,7 @@ class BasicIterativeMethod(Attack):
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a BasicIterativeMethod instance.
         Note: the model parameter should be an instance of the
@@ -342,13 +350,13 @@ class BasicIterativeMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(BasicIterativeMethod, self).__init__(model, back, sess)
-        self.feedable_kwargs = {'eps': np.float32,
-                                'eps_iter': np.float32,
-                                'y': np.float32,
-                                'y_target': np.float32,
-                                'clip_min': np.float32,
-                                'clip_max': np.float32}
+        super(BasicIterativeMethod, self).__init__(model, back, sess, dtypestr)
+        self.feedable_kwargs = {'eps': self.np_dtype,
+                                'eps_iter': self.np_dtype,
+                                'y': self.np_dtype,
+                                'y_target': self.np_dtype,
+                                'clip_min': self.np_dtype,
+                                'clip_max': self.np_dtype}
         self.structural_kwargs = ['ord', 'nb_iter']
 
     def generate(self, x, **kwargs):
@@ -469,7 +477,7 @@ class MomentumIterativeMethod(Attack):
     Paper link: https://arxiv.org/pdf/1710.06081.pdf
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a MomentumIterativeMethod instance.
         Note: the model parameter should be an instance of the
@@ -478,13 +486,14 @@ class MomentumIterativeMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(MomentumIterativeMethod, self).__init__(model, back, sess)
-        self.feedable_kwargs = {'eps': np.float32,
-                                'eps_iter': np.float32,
-                                'y': np.float32,
-                                'y_target': np.float32,
-                                'clip_min': np.float32,
-                                'clip_max': np.float32}
+        super(MomentumIterativeMethod, self).__init__(model, back,
+                                                      sess, dtypestr)
+        self.feedable_kwargs = {'eps': self.np_dtype,
+                                'eps_iter': self.np_dtype,
+                                'y': self.np_dtype,
+                                'y_target': self.np_dtype,
+                                'clip_min': self.np_dtype,
+                                'clip_max': self.np_dtype}
         self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor']
 
     def generate(self, x, **kwargs):
@@ -622,7 +631,7 @@ class SaliencyMapMethod(Attack):
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a SaliencyMapMethod instance.
         Note: the model parameter should be an instance of the
@@ -631,10 +640,10 @@ class SaliencyMapMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(SaliencyMapMethod, self).__init__(model, back, sess)
+        super(SaliencyMapMethod, self).__init__(model, back, sess, dtypestr)
 
         import tensorflow as tf
-        self.feedable_kwargs = {'y_target': tf.float32}
+        self.feedable_kwargs = {'y_target': self.tf_dtype}
         self.structural_kwargs = ['theta', 'gamma',
                                   'clip_max', 'clip_min', 'symbolic_impl']
 
@@ -675,7 +684,7 @@ class SaliencyMapMethod(Attack):
 
                 labels, nb_classes = self.get_or_guess_labels(x, kwargs)
                 self.y_target = tf.py_func(random_targets, [labels],
-                                           tf.float32)
+                                           self.tf_dtype)
                 self.y_target.set_shape([None, nb_classes])
 
             x_adv = jsma_symbolic(x, model=self.model, y_target=self.y_target,
@@ -699,7 +708,8 @@ class SaliencyMapMethod(Attack):
                                       y_target=y_target)
 
                 # Attack is targeted, target placeholder will need to be fed
-                x_adv = tf.py_func(jsma_wrap, [x, self.y_target], tf.float32)
+                x_adv = tf.py_func(jsma_wrap, [x, self.y_target],
+                                   self.tf_dtype)
             else:
                 def jsma_wrap(x_val):
                     return jsma_batch(self.sess, x, preds, grads, x_val,
@@ -708,7 +718,7 @@ class SaliencyMapMethod(Attack):
                                       y_target=None)
 
                 # Attack is untargeted, target values will be chosen at random
-                x_adv = tf.py_func(jsma_wrap, [x], tf.float32)
+                x_adv = tf.py_func(jsma_wrap, [x], self.tf_dtype)
 
         return x_adv
 
@@ -752,7 +762,7 @@ class VirtualAdversarialMethod(Attack):
 
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
@@ -760,12 +770,13 @@ class VirtualAdversarialMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'logits')
 
-        super(VirtualAdversarialMethod, self).__init__(model, back, sess)
+        super(VirtualAdversarialMethod, self).__init__(model, back,
+                                                       sess, dtypestr)
 
         import tensorflow as tf
-        self.feedable_kwargs = {'eps': tf.float32, 'xi': tf.float32,
-                                'clip_min': tf.float32,
-                                'clip_max': tf.float32}
+        self.feedable_kwargs = {'eps': self.tf_dtype, 'xi': self.tf_dtype,
+                                'clip_min': self.tf_dtype,
+                                'clip_max': self.tf_dtype}
         self.structural_kwargs = ['num_iterations']
 
     def generate(self, x, **kwargs):
@@ -821,7 +832,7 @@ class CarliniWagnerL2(Attack):
     lower distortion than other attacks. This comes at the cost of speed,
     as this attack is often much slower than others.
     """
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
@@ -829,11 +840,11 @@ class CarliniWagnerL2(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'logits')
 
-        super(CarliniWagnerL2, self).__init__(model, back, sess)
+        super(CarliniWagnerL2, self).__init__(model, back, sess, dtypestr)
 
         import tensorflow as tf
-        self.feedable_kwargs = {'y': tf.float32,
-                                'y_target': tf.float32}
+        self.feedable_kwargs = {'y': self.tf_dtype,
+                                'y_target': self.tf_dtype}
 
         self.structural_kwargs = ['batch_size', 'confidence',
                                   'targeted', 'learning_rate',
@@ -894,8 +905,8 @@ class CarliniWagnerL2(Attack):
                       nb_classes, x.get_shape().as_list()[1:])
 
         def cw_wrap(x_val, y_val):
-            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
-        wrap = tf.py_func(cw_wrap, [x, labels], tf.float32)
+            return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
+        wrap = tf.py_func(cw_wrap, [x, labels], self.tf_dtype)
 
         return wrap
 
@@ -931,7 +942,7 @@ class ElasticNetMethod(Attack):
     and complement adversarial training.
     Paper link: https://arxiv.org/abs/1709.04114
     """
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
@@ -939,11 +950,11 @@ class ElasticNetMethod(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'logits')
 
-        super(ElasticNetMethod, self).__init__(model, back, sess)
+        super(ElasticNetMethod, self).__init__(model, back, sess, dtypestr)
 
         import tensorflow as tf
-        self.feedable_kwargs = {'y': tf.float32,
-                                'y_target': tf.float32}
+        self.feedable_kwargs = {'y': self.tf_dtype,
+                                'y_target': self.tf_dtype}
 
         self.structural_kwargs = ['fista', 'beta', 'decision_rule',
                                   'batch_size', 'confidence',
@@ -1014,8 +1025,8 @@ class ElasticNetMethod(Attack):
                      nb_classes, x.get_shape().as_list()[1:])
 
         def ead_wrap(x_val, y_val):
-            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
-        wrap = tf.py_func(ead_wrap, [x, labels], tf.float32)
+            return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
+        wrap = tf.py_func(ead_wrap, [x, labels], self.tf_dtype)
 
         return wrap
 
@@ -1054,14 +1065,14 @@ class DeepFool(Attack):
     Paper link: "https://arxiv.org/pdf/1511.04599.pdf"
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a DeepFool instance.
         """
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'logits')
 
-        super(DeepFool, self).__init__(model, back, sess)
+        super(DeepFool, self).__init__(model, back, sess, dtypestr)
 
         self.structural_kwargs = ['over_shoot', 'max_iter', 'clip_max',
                                   'clip_min', 'nb_candidate']
@@ -1105,7 +1116,7 @@ class DeepFool(Attack):
                                   self.nb_candidate, self.overshoot,
                                   self.max_iter, self.clip_min, self.clip_max,
                                   self.nb_classes)
-        return tf.py_func(deepfool_wrap, [x], tf.float32)
+        return tf.py_func(deepfool_wrap, [x], self.tf_dtype)
 
     def parse_params(self, nb_candidate=10, overshoot=0.02, max_iter=50,
                      nb_classes=None, clip_min=0., clip_max=1., **kwargs):
@@ -1139,7 +1150,7 @@ class LBFGS(Attack):
     and is a target & iterative attack.
     Paper link: "https://arxiv.org/pdf/1312.6199.pdf"
     """
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
@@ -1147,10 +1158,10 @@ class LBFGS(Attack):
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(LBFGS, self).__init__(model, back, sess)
+        super(LBFGS, self).__init__(model, back, sess, dtypestr)
 
         import tensorflow as tf
-        self.feedable_kwargs = {'y_target': tf.float32}
+        self.feedable_kwargs = {'y_target': self.tf_dtype}
         self.structural_kwargs = ['batch_size', 'binary_search_steps',
                                   'max_iterations', 'initial_const',
                                   'clip_min', 'clip_max']
@@ -1188,8 +1199,8 @@ class LBFGS(Attack):
                               self.batch_size)
 
         def lbfgs_wrap(x_val, y_val):
-            return np.array(attack.attack(x_val, y_val), dtype=np.float32)
-        wrap = tf.py_func(lbfgs_wrap, [x, self.y_target], tf.float32)
+            return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
+        wrap = tf.py_func(lbfgs_wrap, [x, self.y_target], self.tf_dtype)
 
         return wrap
 
@@ -1241,20 +1252,20 @@ class MadryEtAl(Attack):
     Paper link: https://arxiv.org/pdf/1706.06083.pdf
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a MadryEtAl instance.
         """
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(MadryEtAl, self).__init__(model, back, sess)
-        self.feedable_kwargs = {'eps': np.float32,
-                                'eps_iter': np.float32,
-                                'y': np.float32,
-                                'y_target': np.float32,
-                                'clip_min': np.float32,
-                                'clip_max': np.float32}
+        super(MadryEtAl, self).__init__(model, back, sess, dtypestr)
+        self.feedable_kwargs = {'eps': self.np_dtype,
+                                'eps_iter': self.np_dtype,
+                                'y': self.np_dtype,
+                                'y_target': self.np_dtype,
+                                'clip_min': self.np_dtype,
+                                'clip_max': self.np_dtype}
         self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
 
     def generate(self, x, **kwargs):
@@ -1373,7 +1384,8 @@ class MadryEtAl(Attack):
         from cleverhans.utils_tf import clip_eta
 
         if self.rand_init:
-            eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
+            eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,
+                                    dtype=self.tf_dtype)
             eta = clip_eta(eta, self.ord, self.eps)
         else:
             eta = tf.zeros_like(x)
@@ -1400,15 +1412,16 @@ class FastFeatureAdversaries(Attack):
     (Kurakin et al. 2016) but applied to the internal representations.
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a FastFeatureAdversaries instance.
         """
-        super(FastFeatureAdversaries, self).__init__(model, back, sess)
-        self.feedable_kwargs = {'eps': np.float32,
-                                'eps_iter': np.float32,
-                                'clip_min': np.float32,
-                                'clip_max': np.float32,
+        super(FastFeatureAdversaries, self).__init__(model, back,
+                                                     sess, dtypestr)
+        self.feedable_kwargs = {'eps': self.np_dtype,
+                                'eps_iter': self.np_dtype,
+                                'clip_min': self.np_dtype,
+                                'clip_max': self.np_dtype,
                                 'layer': str}
         self.structural_kwargs = ['ord', 'nb_iter']
 
@@ -1517,7 +1530,8 @@ class FastFeatureAdversaries(Attack):
         g_feat = self.model.get_layer(g, self.layer)
 
         # Initialize loop variables
-        eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
+        eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,
+                                dtype=self.tf_dtype)
         eta = clip_eta(eta, self.ord, self.eps)
 
         for i in range(self.nb_iter):
@@ -1539,8 +1553,8 @@ class SPSA(Attack):
     gradients do not point in useful directions.
     """
 
-    def __init__(self, model, back='tf', sess=None):
-        super(SPSA, self).__init__(model, back, sess)
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+        super(SPSA, self).__init__(model, back, sess, dtypestr)
         assert isinstance(self.model, Model)
 
     def generate(self, x, y=None, y_target=None, epsilon=None, num_steps=None,
