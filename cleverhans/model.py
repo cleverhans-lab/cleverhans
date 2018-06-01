@@ -26,12 +26,12 @@ class Model(object):
     def get_layer(self, x, layer):
         """
         Expose the hidden features of a model given a layer name.
-        :param x: A symbolic representation of the network input
+        :param x: A symbolic representation (Tensor) of the network input
         :param layer: The name of the hidden layer to return features at.
-        :return: A symbolic representation of the hidden features
+        :return: A symbolic representation (Tensor) of the hidden features
         :raise: NoSuchLayerError if `layer` is not in the model.
         """
-        # Return the symbolic representation for this layer.
+        # Return the symbolic representation (Tensor) for this layer.
         output = self.fprop(x)
         try:
             requested = output[layer]
@@ -41,17 +41,17 @@ class Model(object):
 
     def get_logits(self, x):
         """
-        :param x: A symbolic representation of the network input
-        :return: A symbolic representation of the output logits (i.e., the
-                 values fed as inputs to the softmax layer).
+        :param x: A symbolic representation (Tensor) of the network input
+        :return: A symbolic representation (Tensor) of the output logits
+        (i.e., the values fed as inputs to the softmax layer).
         """
         return self.get_layer(x, 'logits')
 
     def get_probs(self, x):
         """
-        :param x: A symbolic representation of the network input
-        :return: A symbolic representation of the output probabilities (i.e.,
-                the output values produced by the softmax layer).
+        :param x: A symbolic representation (Tensor) of the network input
+        :return: A symbolic representation (Tensor) of the output
+        probabilities (i.e., the output values produced by the softmax layer).
         """
         try:
             return self.get_layer(x, 'probs')
@@ -76,7 +76,7 @@ class Model(object):
     def fprop(self, x):
         """
         Exposes all the layers of the model returned by get_layer_names.
-        :param x: A symbolic representation of the network input
+        :param x: A symbolic representation (Tensor) of the network input
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
         """
