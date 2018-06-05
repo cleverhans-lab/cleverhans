@@ -46,7 +46,7 @@ def convert_pytorch_model_to_tf(model, out_features=None):
     def _fprop_fn(x_np):
         x_tensor = torch.Tensor(x_np).cuda()
         if torch.cuda.is_available():
-            x_tensor.cuda()
+            x_tensor = x_tensor.cuda()
         torch_state['x'] = Variable(x_tensor, requires_grad=True)
         torch_state['logits'] = model(torch_state['x'])
         return torch_state['logits'].data.cpu().numpy()
@@ -54,13 +54,12 @@ def convert_pytorch_model_to_tf(model, out_features=None):
     def _bprop_fn(x_np, grads_in_np):
         _fprop_fn(x_np)
 
-        model.zero_grad()
         grads_in_tensor = torch.Tensor(grads_in_np)
         if torch.cuda.is_available():
-            grads_in_tensor.cuda()
+            grads_in_tensor = grads_in_tensor.cuda()
 
-        loss = torch.sum(
-            torch_state['logits'] * grads_in_tensor.cuda())
+        # Run our backprop through our logits to our xs
+        loss = torch.sum(torch_state['logits'] * grads_in_tensor)
         loss.backward()
         return torch_state['x'].grad.cpu().data.numpy()
 
