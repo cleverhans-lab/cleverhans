@@ -30,7 +30,9 @@ FLAGS = flags.FLAGS
 
 
 class MnistModel(nn.Module):
-    """https://github.com/rickiepark/pytorch-examples/blob/master/mnist.ipynb"""
+    """ Basic mnist model from github
+    https://github.com/rickiepark/pytorch-examples/blob/master/mnist.ipynb
+    """
 
     def __init__(self):
         super(MnistModel, self).__init__()
@@ -100,7 +102,8 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
             train_loss.append(loss.data.item())
             optimizer.step()  # update gradients
 
-            correct += (np.argmax(preds.data.cpu().numpy(), axis=1) == ys).sum()
+            preds_np = preds.data.cpu().numpy()
+            correct += (np.argmax(preds_np, axis=1) == ys).sum()
             total += len(xs)
             step += 1
             if total % 1000 == 0:

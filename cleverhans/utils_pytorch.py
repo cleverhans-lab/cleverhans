@@ -19,7 +19,7 @@ def _py_func_with_gradient(func, inp, Tout, stateful=True, name=None,
     :param grad: Custom Gradient Function
     :return:
     """
-    # Generate Random Gradient name in order to avoid conflicts with inbuilt names
+    # Generate random name in order to avoid conflicts with inbuilt names
     rnd_name = 'PyFuncGrad-' + '%0x' % getrandbits(30 * 4)
 
     # Register Tensorflow Gradient
