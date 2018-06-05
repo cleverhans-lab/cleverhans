@@ -29,13 +29,13 @@ from cleverhans.utils_pytorch import convert_pytorch_model_to_tf
 FLAGS = flags.FLAGS
 
 
-class MnistModel(nn.Module):
-    """ Basic mnist model from github
+class PytorchMnistModel(nn.Module):
+    """ Basic MNIST model from github
     https://github.com/rickiepark/pytorch-examples/blob/master/mnist.ipynb
     """
 
     def __init__(self):
-        super(MnistModel, self).__init__()
+        super(PytorchMnistModel, self).__init__()
         # input is 28x28
         # padding=2 for same padding
         self.conv1 = nn.Conv2d(1, 32, 5, padding=2)
@@ -58,7 +58,6 @@ class MnistModel(nn.Module):
 
 def mnist_tutorial(nb_epochs=6, batch_size=128,
                    learning_rate=0.001,
-                   testing=False,
                    ):
     """
     MNIST cleverhans tutorial
@@ -70,7 +69,7 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
     :return: an AccuracyReport object
     """
     # Train a pytorch MNIST model
-    torch_model = MnistModel()
+    torch_model = PytorchMnistModel()
     if torch.cuda.is_available():
         torch_model = torch_model.cuda()
     report = AccuracyReport()
@@ -122,6 +121,7 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
     tf_model_op = convert_pytorch_model_to_tf(torch_model)
     cleverhans_model = CallableModelWrapper(tf_model_op, output_layer='logits')
 
+    # Create an FGSM attack
     fgsm_op = FastGradientMethod(cleverhans_model, sess=sess)
     fgsm_params = {'eps': 0.3,
                    'clip_min': 0.,
@@ -129,12 +129,11 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
     adv_x_op = fgsm_op.generate(x_op, **fgsm_params)
     adv_preds_op = tf_model_op(adv_x_op)
 
+    # Run an evaluation of our model against fgsm
     total = 0
     correct = 0
     for xs, ys in test_loader:
-        adv_preds = sess.run(adv_preds_op, feed_dict={
-            x_op: xs,
-        })
+        adv_preds = sess.run(adv_preds_op, feed_dict={x_op: xs})
         correct += (np.argmax(adv_preds, axis=1) == ys).sum()
         total += len(xs)
 
@@ -144,10 +143,10 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
     return report
 
 
-def main(argv=None):
-    mnist_tutorial(nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
-                   learning_rate=FLAGS.learning_rate,
-                   )
+def main(_=None):
+    mnist_tutorial(nb_epochs=FLAGS.nb_epochs,
+                   batch_size=FLAGS.batch_size,
+                   learning_rate=FLAGS.learning_rate)
 
 
 if __name__ == '__main__':
