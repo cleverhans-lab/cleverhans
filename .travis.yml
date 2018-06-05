@@ -80,5 +80,5 @@ script:
   # --nologcapture: avoids a large amount of unnecessary tensorflow output
   # --stop: stop on first error. Gives feedback from travis faster
   - nosetests -v --nologcapture --stop cleverhans
-  - nosetests --nologcapture -v --stop tests_pytorch
   - nosetests --nologcapture -v --stop tests_tf
+  - nosetests --nologcapture -v --stop tests_pytorch
