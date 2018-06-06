@@ -17,14 +17,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from tensorflow.python.platform import flags
-from torch.autograd import Variable
-from torchvision import datasets, transforms
-
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.model import CallableModelWrapper
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_pytorch import convert_pytorch_model_to_tf
+from tensorflow.python.platform import flags
+from torch.autograd import Variable
+from torchvision import datasets, transforms
 
 FLAGS = flags.FLAGS
 
@@ -121,7 +120,7 @@ def mnist_tutorial(nb_epochs=6, batch_size=128, train_end=-1, test_end=-1,
         xs, ys = Variable(xs), Variable(ys)
         if torch.cuda.is_available():
             xs, ys = xs.cuda(), ys.cuda()
-            
+
         preds = torch_model(xs)
         preds_np = preds.data.cpu().numpy()
 
