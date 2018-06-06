@@ -51,14 +51,12 @@ class PytorchMnistModel(nn.Module):
         x = F.max_pool2d(F.relu(self.conv2(x)), 2)
         x = x.view(-1, 64 * 7 * 7)  # reshape Variable
         x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
         x = self.fc2(x)
         return F.log_softmax(x)
 
 
-def mnist_tutorial(nb_epochs=6, batch_size=128,
-                   learning_rate=0.001,
-                   ):
+def mnist_tutorial(nb_epochs=6, batch_size=128, train_end=-1, test_end=-1,
+                   learning_rate=0.001):
     """
     MNIST cleverhans tutorial
     :param nb_epochs: number of epochs to train model
@@ -82,8 +80,13 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
         datasets.MNIST('data', train=False, transform=transforms.ToTensor()),
         batch_size=batch_size)
 
+    # Truncate the datasets so that our test run more quickly
+    train_loader.dataset.train_data = train_loader.dataset.train_data[
+                                      :train_end]
+    test_loader.dataset.test_data = test_loader.dataset.test_data[:test_end]
+
+    # Train our model
     optimizer = optim.Adam(torch_model.parameters(), lr=learning_rate)
-    torch_model.train()
     train_loss = []
 
     total = 0
@@ -107,13 +110,29 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
             step += 1
             if total % 1000 == 0:
                 acc = float(correct) / total
-                print('[%s] Clean accuracy: %.2f%%' % (step, acc * 100))
+                print('[%s] Training accuracy: %.2f%%' % (step, acc * 100))
                 total = 0
                 correct = 0
 
-    report.clean_train_clean_eval = acc
+    # Evaluate on clean data
+    total = 0
+    correct = 0
+    for xs, ys in test_loader:
+        xs, ys = Variable(xs), Variable(ys)
+        if torch.cuda.is_available():
+            xs, ys = xs.cuda(), ys.cuda()
+            
+        preds = torch_model(xs)
+        preds_np = preds.data.cpu().numpy()
 
-    # We use tf for evaluation
+        correct += (np.argmax(preds_np, axis=1) == ys).sum()
+        total += len(xs)
+
+    acc = float(correct) / total
+    report.clean_train_clean_eval = acc
+    print('[%s] Clean accuracy: %.2f%%' % (step, acc * 100))
+
+    # We use tf for evaluation on adversarial data
     sess = tf.Session()
     x_op = tf.placeholder(tf.float32, shape=(None, 1, 28, 28,))
 
