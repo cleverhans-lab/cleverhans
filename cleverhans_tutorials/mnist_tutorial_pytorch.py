@@ -118,8 +118,8 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
     x_op = tf.placeholder(tf.float32, shape=(None, 1, 28, 28,))
 
     # Convert pytorch model to a tf_model and wrap it in cleverhans
-    tf_model_op = convert_pytorch_model_to_tf(torch_model)
-    cleverhans_model = CallableModelWrapper(tf_model_op, output_layer='logits')
+    tf_model_fn = convert_pytorch_model_to_tf(torch_model)
+    cleverhans_model = CallableModelWrapper(tf_model_fn, output_layer='logits')
 
     # Create an FGSM attack
     fgsm_op = FastGradientMethod(cleverhans_model, sess=sess)
@@ -127,7 +127,7 @@ def mnist_tutorial(nb_epochs=6, batch_size=128,
                    'clip_min': 0.,
                    'clip_max': 1.}
     adv_x_op = fgsm_op.generate(x_op, **fgsm_params)
-    adv_preds_op = tf_model_op(adv_x_op)
+    adv_preds_op = tf_model_fn(adv_x_op)
 
     # Run an evaluation of our model against fgsm
     total = 0

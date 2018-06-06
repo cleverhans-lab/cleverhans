@@ -34,17 +34,23 @@ def _py_func_with_gradient(func, inp, Tout, stateful=True, name=None,
         return tf.py_func(func, inp, Tout, stateful=stateful, name=name)
 
 
-def convert_pytorch_model_to_tf(model, out_features=None):
-    """Convert a pytorch model into a tensorflow op that allows backprop"""
+def convert_pytorch_model_to_tf(model, out_dims=None):
+    """
+    Convert a pytorch model into a tensorflow op that allows backprop
+    :param model: A pytorch nn.Model object
+    :param out_dims: The number of output dimensions (classes) for the model
+    :return: A model function that maps an input (tf.Tensor) to the
+    output of the model (tf.Tensor)
+    """
     torch_state = {
         'logits': None,
         'x': None,
     }
-    if not out_features:
-        out_features = list(model.modules())[-1].out_features
+    if not out_dims:
+        out_dims = list(model.modules())[-1].out_features
 
     def _fprop_fn(x_np):
-        x_tensor = torch.Tensor(x_np).cuda()
+        x_tensor = torch.Tensor(x_np)
         if torch.cuda.is_available():
             x_tensor = x_tensor.cuda()
         torch_state['x'] = Variable(x_tensor, requires_grad=True)
@@ -67,11 +73,11 @@ def convert_pytorch_model_to_tf(model, out_features=None):
         return tf.py_func(_bprop_fn, [op.inputs[0], grads_in],
                           Tout=[tf.float32])
 
-    def tf_model_op(x_op):
+    def tf_model_fn(x_op):
         out = _py_func_with_gradient(_fprop_fn, [x_op], Tout=[tf.float32],
                                      stateful=True,
                                      grad_func=_tf_gradient_fn)[0]
-        out.set_shape([None, out_features])
+        out.set_shape([None, out_dims])
         return out
 
-    return tf_model_op
+    return tf_model_fn
