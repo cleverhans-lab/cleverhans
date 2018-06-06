@@ -1,7 +1,6 @@
 import unittest
 
 import numpy as np
-
 from cleverhans.devtools.checks import CleverHansTest
 
 
@@ -17,7 +16,6 @@ class TestMNISTTutorialPytorch(CleverHansTest):
                 nb_epochs=2,
                 train_end=5000,
                 test_end=333,
-
             )
 
         # Check accuracy values contained in the AccuracyReport object
