@@ -64,8 +64,8 @@ def initialize_uninitialized_global_variables(sess):
         sess.run(tf.variables_initializer(not_initialized_vars))
 
 
-def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                predictions_adv=None, init_all=True, evaluate=None,
+def model_train(sess, x, y, predictions, X_train, Y_train, dataflow=None, 
+                save=False, predictions_adv=None, init_all=True, evaluate=None,
                 feed=None, args=None, rng=None, var_list=None):
     """
     Train a TF graph
@@ -75,6 +75,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param predictions: model output predictions
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
+    :param dataflow: numpy array iterator yielding (x_batch, y_batch) tuples
     :param save: boolean controlling the save operation
     :param predictions_adv: if set with the adversarial example tensor,
                             will run adversarial training
@@ -140,17 +141,22 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             prev = time.time()
             for batch in range(nb_batches):
 
-                # Compute batch start and end indices
-                start, end = batch_indices(
-                    batch, len(X_train), args.batch_size)
-
                 # Perform one training step
-                feed_dict = {x: X_train[index_shuf[start:end]],
-                             y: Y_train[index_shuf[start:end]]}
+                if dataflow is not None:
+                    # Use data iterator if provided
+                    x_train, y_train = dataflow.next()
+                    feed_dict = {x: x_train, y: y_train}
+                else:
+                    # Compute batch start and end indices
+                    start, end = batch_indices(
+                        batch, len(X_train), args.batch_size)
+
+                    feed_dict = {x: X_train[index_shuf[start:end]],
+                                 y: Y_train[index_shuf[start:end]]}
                 if feed is not None:
                     feed_dict.update(feed)
                 train_step.run(feed_dict=feed_dict)
-            assert end >= len(X_train)  # Check that all examples were used
+            #assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
             _logger.info("Epoch " + str(epoch) + " took " +
                          str(cur - prev) + " seconds")
