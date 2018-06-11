@@ -161,6 +161,10 @@ def pair_visual(original, adversarial, figure=None):
     """
     import matplotlib.pyplot as plt
 
+    # Squeeze the image to remove single-dimensional entries from array shape
+    original = np.squeeze(original)
+    adversarial = np.squeeze(adversarial)
+
     # Ensure our inputs are of proper shape
     assert(len(original.shape) == 2 or len(original.shape) == 3)
 

@@ -14,6 +14,13 @@ from . import utils
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
+np_dtype = np.dtype('float32')
+tf_dtype = tf.as_dtype('float32')
+
+
+def ZERO():
+    return np.asarray(0., dtype=np_dtype)
+
 
 def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
     return fgm(x, predictions, y=None, eps=eps, ord=np.inf, clip_min=clip_min,
@@ -119,7 +126,7 @@ def vatm(model, x, logits, eps, num_iterations=1, xi=1e-6,
     :return: a tensor for the adversarial example
     """
     with tf.name_scope(scope, "virtual_adversarial_perturbation"):
-        d = tf.random_normal(tf.shape(x))
+        d = tf.random_normal(tf.shape(x), dtype=tf_dtype)
         for i in range(num_iterations):
             d = xi * utils_tf.l2_batch_normalize(d)
             logits_d = model.get_logits(x + d)
@@ -222,7 +229,7 @@ def jacobian(sess, x, grads, target, X, nb_features, nb_classes, feed=None):
         feed_dict.update(feed)
 
     # Initialize a numpy array to hold the Jacobian component values
-    jacobian_val = np.zeros((nb_classes, nb_features), dtype=np.float32)
+    jacobian_val = np.zeros((nb_classes, nb_features), dtype=np_dtype)
 
     # Compute the gradients for all classes
     for class_ind, grad in enumerate(grads):
@@ -400,7 +407,7 @@ def jsma_batch(sess, x, pred, grads, X, theta, gamma, clip_min, clip_max,
         X_adv[ind], _, _ = jsma(sess, x, pred, grads, val, np.argmax(target),
                                 theta, gamma, clip_min, clip_max, feed=feed)
 
-    return np.asarray(X_adv, dtype=np.float32)
+    return np.asarray(X_adv, dtype=np_dtype)
 
 
 def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
@@ -427,18 +434,18 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
     tmp = np.ones((nb_features, nb_features), int)
     np.fill_diagonal(tmp, 0)
-    zero_diagonal = tf.constant(tmp, tf.float32)
+    zero_diagonal = tf.constant(tmp, tf_dtype)
 
     # Compute our initial search domain. We optimize the initial search domain
     # by removing all features that are already at their maximum values (if
     # increasing input features---otherwise, at their minimum value).
     if increase:
         search_domain = tf.reshape(
-                            tf.cast(x < clip_max, tf.float32),
+                            tf.cast(x < clip_max, tf_dtype),
                             [-1, nb_features])
     else:
         search_domain = tf.reshape(
-                            tf.cast(x > clip_min, tf.float32),
+                            tf.cast(x > clip_min, tf_dtype),
                             [-1, nb_features])
 
     # Loop variables
@@ -473,7 +480,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
         # The last dimention is added to allow broadcasting later.
         target_class = tf.reshape(tf.transpose(y_in, perm=[1, 0]),
                                   shape=[nb_classes, -1, 1])
-        other_classes = tf.cast(tf.not_equal(target_class, 1), tf.float32)
+        other_classes = tf.cast(tf.not_equal(target_class, 1), tf_dtype)
 
         grads_target = tf.reduce_sum(grads * target_class, axis=0)
         grads_other = tf.reduce_sum(grads * other_classes, axis=0)
@@ -482,7 +489,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
         # Subtract 2 times the maximum value from those value so that
         # they won't be picked later
         increase_coef = (4 * int(increase) - 2) \
-            * tf.cast(tf.equal(domain_in, 0), tf.float32)
+            * tf.cast(tf.equal(domain_in, 0), tf_dtype)
 
         target_tmp = grads_target
         target_tmp -= increase_coef \
@@ -503,7 +510,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
             scores_mask = ((target_sum < 0) & (other_sum > 0))
 
         # Create a 2D numpy array of scores for each pair of candidate features
-        scores = tf.cast(scores_mask, tf.float32) \
+        scores = tf.cast(scores_mask, tf_dtype) \
             * (-target_sum * other_sum) * zero_diagonal
 
         # Extract the best two pixels
@@ -521,7 +528,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
         cond = mod_not_done & (tf.reduce_sum(domain_in, axis=1) >= 2)
 
         # Update the search domain
-        cond_float = tf.reshape(tf.cast(cond, tf.float32), shape=[-1, 1])
+        cond_float = tf.reshape(tf.cast(cond, tf_dtype), shape=[-1, 1])
         to_mod = (p1_one_hot + p2_one_hot) * cond_float
 
         domain_out = domain_in - to_mod
@@ -663,22 +670,22 @@ class CarliniWagnerL2(object):
         self.shape = shape = tuple([batch_size] + list(shape))
 
         # the variable we're going to optimize over
-        modifier = tf.Variable(np.zeros(shape, dtype=np.float32))
+        modifier = tf.Variable(np.zeros(shape, dtype=np_dtype))
 
         # these are variables to be more efficient in sending data to tf
-        self.timg = tf.Variable(np.zeros(shape), dtype=tf.float32,
+        self.timg = tf.Variable(np.zeros(shape), dtype=tf_dtype,
                                 name='timg')
         self.tlab = tf.Variable(np.zeros((batch_size, num_labels)),
-                                dtype=tf.float32, name='tlab')
-        self.const = tf.Variable(np.zeros(batch_size), dtype=tf.float32,
+                                dtype=tf_dtype, name='tlab')
+        self.const = tf.Variable(np.zeros(batch_size), dtype=tf_dtype,
                                  name='const')
 
         # and here's what we use to assign them
-        self.assign_timg = tf.placeholder(tf.float32, shape,
+        self.assign_timg = tf.placeholder(tf_dtype, shape,
                                           name='assign_timg')
-        self.assign_tlab = tf.placeholder(tf.float32, (batch_size, num_labels),
+        self.assign_tlab = tf.placeholder(tf_dtype, (batch_size, num_labels),
                                           name='assign_tlab')
-        self.assign_const = tf.placeholder(tf.float32, [batch_size],
+        self.assign_const = tf.placeholder(tf_dtype, [batch_size],
                                            name='assign_const')
 
         # the resulting instance, tanh'd to keep bounded from clip_min
@@ -703,10 +710,10 @@ class CarliniWagnerL2(object):
 
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
-            loss1 = tf.maximum(0.0, other - real + self.CONFIDENCE)
+            loss1 = tf.maximum(ZERO(), other - real + self.CONFIDENCE)
         else:
             # if untargeted, optimize for making this class least likely.
-            loss1 = tf.maximum(0.0, real - other + self.CONFIDENCE)
+            loss1 = tf.maximum(ZERO(), real - other + self.CONFIDENCE)
 
         # sum up the losses
         self.loss2 = tf.reduce_sum(self.l2dist)
@@ -941,40 +948,39 @@ class ElasticNetMethod(object):
 
         self.fista = fista
         self.beta = beta
-        self.beta_t = tf.cast(self.beta, tf.float32)
+        self.beta_t = tf.cast(self.beta, tf_dtype)
 
         self.repeat = binary_search_steps >= 10
 
         self.shape = shape = tuple([batch_size] + list(shape))
 
         # these are variables to be more efficient in sending data to tf
-        self.timg = tf.Variable(np.zeros(shape), dtype=tf.float32,
+        self.timg = tf.Variable(np.zeros(shape), dtype=tf_dtype,
                                 name='timg')
-        self.newimg = tf.Variable(np.zeros(shape), dtype=tf.float32,
+        self.newimg = tf.Variable(np.zeros(shape), dtype=tf_dtype,
                                   name='newimg')
         self.tlab = tf.Variable(np.zeros((batch_size, num_labels)),
-                                dtype=tf.float32, name='tlab')
-        self.const = tf.Variable(np.zeros(batch_size), dtype=tf.float32,
+                                dtype=tf_dtype, name='tlab')
+        self.const = tf.Variable(np.zeros(batch_size), dtype=tf_dtype,
                                  name='const')
 
         # and here's what we use to assign them
-        self.assign_timg = tf.placeholder(tf.float32, shape,
+        self.assign_timg = tf.placeholder(tf_dtype, shape,
                                           name='assign_timg')
-        self.assign_newimg = tf.placeholder(tf.float32, shape,
+        self.assign_newimg = tf.placeholder(tf_dtype, shape,
                                             name='assign_newimg')
-        self.assign_tlab = tf.placeholder(tf.float32, (batch_size,
-                                                       num_labels),
+        self.assign_tlab = tf.placeholder(tf_dtype, (batch_size, num_labels),
                                           name='assign_tlab')
-        self.assign_const = tf.placeholder(tf.float32, [batch_size],
+        self.assign_const = tf.placeholder(tf_dtype, [batch_size],
                                            name='assign_const')
 
         self.global_step = tf.Variable(0, trainable=False)
-        self.global_step_t = tf.cast(self.global_step, tf.float32)
+        self.global_step_t = tf.cast(self.global_step, tf_dtype)
 
         if self.fista:
-            self.slack = tf.Variable(np.zeros(shape), dtype=tf.float32,
+            self.slack = tf.Variable(np.zeros(shape), dtype=tf_dtype,
                                      name='slack')
-            self.assign_slack = tf.placeholder(tf.float32, shape,
+            self.assign_slack = tf.placeholder(tf_dtype, shape,
                                                name='assign_slack')
             var = self.slack
         else:
@@ -983,20 +989,20 @@ class ElasticNetMethod(object):
         """Fast Iterative Shrinkage Thresholding"""
         """--------------------------------"""
         self.zt = tf.divide(self.global_step_t,
-                            self.global_step_t + tf.cast(3, tf.float32))
+                            self.global_step_t + tf.cast(3, tf_dtype))
 
         cond1 = tf.cast(tf.greater(tf.subtract(var, self.timg),
-                                   self.beta_t), tf.float32)
+                                   self.beta_t), tf_dtype)
         cond2 = tf.cast(tf.less_equal(tf.abs(tf.subtract(var,
                                                          self.timg)),
-                                      self.beta_t), tf.float32)
+                                      self.beta_t), tf_dtype)
         cond3 = tf.cast(tf.less(tf.subtract(var, self.timg),
-                                tf.negative(self.beta_t)), tf.float32)
+                                tf.negative(self.beta_t)), tf_dtype)
 
         upper = tf.minimum(tf.subtract(var, self.beta_t),
-                           tf.cast(self.clip_max, tf.float32))
+                           tf.cast(self.clip_max, tf_dtype))
         lower = tf.maximum(tf.add(var, self.beta_t),
-                           tf.cast(self.clip_min, tf.float32))
+                           tf.cast(self.clip_min, tf_dtype))
 
         self.assign_newimg = tf.multiply(cond1, upper)
         self.assign_newimg += tf.multiply(cond2, self.timg)
@@ -1033,10 +1039,10 @@ class ElasticNetMethod(object):
 
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
-            loss1 = tf.maximum(0.0, other - real + self.CONFIDENCE)
+            loss1 = tf.maximum(ZERO(), other - real + self.CONFIDENCE)
         else:
             # if untargeted, optimize for making this class least likely.
-            loss1 = tf.maximum(0.0, real - other + self.CONFIDENCE)
+            loss1 = tf.maximum(ZERO(), real - other + self.CONFIDENCE)
 
         # sum up the losses
         self.loss21 = tf.reduce_sum(self.l1dist)
@@ -1051,9 +1057,11 @@ class ElasticNetMethod(object):
             other_y = tf.reduce_max((1 - self.tlab) * self.output_y -
                                     (self.tlab * 10000), 1)
             if self.TARGETED:
-                loss1_y = tf.maximum(0.0, other_y - real_y + self.CONFIDENCE)
+                loss1_y = tf.maximum(ZERO(),
+                                     other_y - real_y + self.CONFIDENCE)
             else:
-                loss1_y = tf.maximum(0.0, real_y - other_y + self.CONFIDENCE)
+                loss1_y = tf.maximum(ZERO(),
+                                     real_y - other_y + self.CONFIDENCE)
 
             self.loss2_y = tf.reduce_sum(self.l2dist_y)
             self.loss1_y = tf.reduce_sum(self.const * loss1_y)
@@ -1272,7 +1280,7 @@ def deepfool_batch(sess, x, pred, logits, grads, X, nb_candidate, overshoot,
     X_adv = deepfool_attack(sess, x, pred, logits, grads, X, nb_candidate,
                             overshoot, max_iter, clip_min, clip_max, feed=feed)
 
-    return np.asarray(X_adv, dtype=np.float32)
+    return np.asarray(X_adv, dtype=np_dtype)
 
 
 def deepfool_attack(sess, x, predictions, logits, grads, sample, nb_candidate,
@@ -1398,9 +1406,9 @@ class LBFGS_attack(object):
         self.repeat = self.binary_search_steps >= 10
         self.shape = shape = tuple([self.batch_size] +
                                    list(self.x.get_shape().as_list()[1:]))
-        self.ori_img = tf.Variable(np.zeros(self.shape), dtype=tf.float32,
+        self.ori_img = tf.Variable(np.zeros(self.shape), dtype=tf_dtype,
                                    name='ori_img')
-        self.const = tf.Variable(np.zeros(self.batch_size), dtype=tf.float32,
+        self.const = tf.Variable(np.zeros(self.batch_size), dtype=tf_dtype,
                                  name='const')
         self.score = utils_tf.model_loss(self.targeted_label, self.model_preds,
                                          mean=False)
@@ -1634,7 +1642,8 @@ class SPSAAdam(UnrolledAdam):
     def _get_delta(self, x, delta):
         x_shape = x.get_shape().as_list()
         delta_x = delta * tf.sign(tf.random_uniform(
-                [self._num_samples] + x_shape[1:], minval=-1., maxval=1.))
+                [self._num_samples] + x_shape[1:],
+                minval=-1., maxval=1., dtype=tf_dtype))
         return delta_x
 
     def _compute_gradients(self, loss_fn, x, unused_optim_state):
@@ -1662,7 +1671,7 @@ class SPSAAdam(UnrolledAdam):
         _, all_grads = tf.while_loop(
                 cond, body,
                 loop_vars=[0, tf.TensorArray(size=self._num_iters,
-                           dtype=tf.float32)],
+                           dtype=tf_dtype)],
                 back_prop=False, parallel_iterations=1)
         avg_grad = tf.reduce_sum(all_grads.stack(), axis=0)
         return [avg_grad]
@@ -1711,7 +1720,8 @@ def pgd_attack(loss_fn, input_image, label, epsilon, num_steps,
     """
 
     init_perturbation = tf.random_uniform(tf.shape(input_image),
-                                          minval=-epsilon, maxval=epsilon)
+                                          minval=-epsilon, maxval=epsilon,
+                                          dtype=tf_dtype)
     init_perturbation = project_perturbation(init_perturbation,
                                              epsilon, input_image)
     init_optim_state = optimizer.init_state([init_perturbation])
