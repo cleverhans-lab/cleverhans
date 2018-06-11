@@ -100,8 +100,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, dataflow=None,
 
     # Check that necessary arguments were given (see doc above)
     assert args.nb_epochs, "Number of epochs was not given in args dict"
-    assert args.learning_rate, "Learning rate was not given in args dict"
     assert args.batch_size, "Batch size was not given in args dict"
+    assert args.learning_rate is not None, "Learning rate was not given in args dict"
 
     if save:
         assert args.train_dir, "Directory for save was not given in args dict"
