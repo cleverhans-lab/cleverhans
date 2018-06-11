@@ -1,6 +1,5 @@
-from setuptools import setup
 from setuptools import find_packages
-
+from setuptools import setup
 
 setup(name='cleverhans',
       version='2.0.0',
@@ -14,7 +13,11 @@ setup(name='cleverhans',
       # Explicit dependence on TensorFlow is not supported.
       # See https://github.com/tensorflow/tensorflow/issues/7166
       extras_require={
-        "tf": ["tensorflow>=1.0.0"],
-        "tf_gpu": ["tensorflow-gpu>=1.0.0"],
+          "tf": ["tensorflow>=1.0.0"],
+          "tf_gpu": ["tensorflow-gpu>=1.0.0"],
+          "test": [
+              "keras ~= 2.1",  # For keras tests
+              "torchvision ~= 0.2",  # for mnist dataset
+          ],
       },
       packages=find_packages())

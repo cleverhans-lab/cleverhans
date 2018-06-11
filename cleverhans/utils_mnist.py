@@ -25,15 +25,19 @@ def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
     assert isinstance(test_start, int)
     assert isinstance(test_end, int)
 
-    from sklearn.datasets import fetch_mldata
-    mnist = fetch_mldata('MNIST original', data_home=datadir)
-    X_train = mnist.data[:60000] / 255.
-    Y_train = mnist.target[:60000]
-    X_test = mnist.data[60000:] / 255.
-    Y_test = mnist.target[60000:]
+    import torchvision
+    train_dataset = torchvision.datasets.MNIST(
+        root=datadir, train=True, download=True)
+    test_dataset = torchvision.datasets.MNIST(
+        root=datadir, train=False, download=True)
 
-    X_train = np.reshape(X_train, (60000, 28, 28, 1))
-    X_test = np.reshape(X_test, (10000, 28, 28, 1))
+    X_train = train_dataset.train_data.numpy() / 255.
+    Y_train = train_dataset.train_labels.numpy()
+    X_test = test_dataset.test_data.numpy() / 255.
+    Y_test = test_dataset.test_labels.numpy()
+
+    X_train = np.expand_dims(X_train, -1)
+    X_test = np.expand_dims(X_test, -1)
 
     print(X_train.max())
     print(X_train.min())
