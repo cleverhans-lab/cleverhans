@@ -130,6 +130,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, dataflow=None,
             sess.run(tf.initialize_all_variables())
 
         for epoch in xrange(args.nb_epochs):
+            sess.run(tf.assign(args.epoch_step, epoch))
+
             # Compute number of batches
             nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
             assert nb_batches * args.batch_size >= len(X_train)
