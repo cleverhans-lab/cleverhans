@@ -17,13 +17,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from tensorflow.python.platform import flags
+from torch.autograd import Variable
+from torchvision import datasets, transforms
+
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.model import CallableModelWrapper
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_pytorch import convert_pytorch_model_to_tf
-from tensorflow.python.platform import flags
-from torch.autograd import Variable
-from torchvision import datasets, transforms
 
 FLAGS = flags.FLAGS
 
@@ -168,13 +169,8 @@ def main(_=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_integer('nb_filters', 64, 'Model size multiplier')
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
-    flags.DEFINE_bool('clean_train', True, 'Train on clean examples')
-    flags.DEFINE_bool('backprop_through_attack', False,
-                      ('If True, backprop through adversarial example '
-                       'construction process during adversarial training'))
 
     tf.app.run()
