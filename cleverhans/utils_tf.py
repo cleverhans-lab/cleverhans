@@ -88,7 +88,8 @@ def model_train(sess, loss, x, y, X_train, Y_train, save=False, init_all=True,
     # Define optimizer
     loss_value = loss.fprop(x, y, **fprop_args)
     train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
-    train_step = train_step.minimize(loss_value, var_list=var_list)
+    with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+        train_step = train_step.minimize(loss_value, var_list=var_list)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
