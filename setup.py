@@ -9,7 +9,9 @@ setup(name='cleverhans',
           'nose',
           'pycodestyle',
           'scipy',
-          'matplotlib'],
+          'matplotlib',
+          "mnist ~= 0.2",
+      ],
       # Explicit dependence on TensorFlow is not supported.
       # See https://github.com/tensorflow/tensorflow/issues/7166
       extras_require={
@@ -17,7 +19,6 @@ setup(name='cleverhans',
           "tf_gpu": ["tensorflow-gpu>=1.0.0"],
           "test": [
               "keras == 2.1.5",  # Keras 2.1.6 is incompatible with TF 1.4
-              "mnist ~= 0.2",
           ],
       },
       packages=find_packages())
