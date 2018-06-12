@@ -86,7 +86,6 @@ def model_train(sess, loss, x, y, X_train, Y_train, save=False, init_all=True,
         rng = np.random.RandomState()
 
     # Define optimizer
-    print(var_list)
     loss_value = loss.fprop(x, y, **fprop_args)
     train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
     train_step = train_step.minimize(loss_value, var_list=var_list)
