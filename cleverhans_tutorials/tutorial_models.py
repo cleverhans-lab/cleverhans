@@ -187,3 +187,23 @@ def make_basic_cnn(nb_filters=64, nb_classes=10,
 
     model = MLP(layers, input_shape)
     return model
+
+
+class ModelBasicCNN(Model):
+    def __init__(self, scope, nb_classes, nb_filters, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
+        self.nb_filters = nb_filters
+
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            y = tf.layers.conv2d(x, self.nb_filters, 8, strides=2,
+                                 padding='same', activation=tf.nn.relu)
+            y = tf.layers.conv2d(y, self.nb_filters, 6, strides=2,
+                                 padding='valid', activation=tf.nn.relu)
+            y = tf.layers.conv2d(y, self.nb_filters, 5, strides=1,
+                                 padding='valid', activation=tf.nn.relu)
+            logits = tf.layers.dense(tf.layers.flatten(y), self.nb_classes)
+            return {self.O_LOGITS: logits,
+                    self.O_PROBS: tf.nn.softmax(logits=logits)}
