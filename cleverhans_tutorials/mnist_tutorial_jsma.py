@@ -16,12 +16,12 @@ from tensorflow.python.platform import flags
 import logging
 
 from cleverhans.attacks import SaliencyMapMethod
+from cleverhans.defenses import LossXEntropy
 from cleverhans.utils import other_classes, set_log_level
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, model_argmax
-from cleverhans.utils_keras import KerasModelWrapper, cnn_model
-from cleverhans_tutorials.tutorial_models import make_basic_cnn
+from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
@@ -62,7 +62,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     set_log_level(logging.DEBUG)
 
     # Get MNIST test data
-    X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
+    x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
@@ -72,8 +72,9 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
     # Define TF model graph
-    model = make_basic_cnn()
-    preds = model(x)
+    model = ModelBasicCNN('model1', 10, 64)
+    preds = model.get_logits(x)
+    loss = LossXEntropy(model, smoothing=0.1)
     print("Defined TensorFlow model graph.")
 
     ###########################################################################
@@ -88,13 +89,13 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     }
     sess.run(tf.global_variables_initializer())
     rng = np.random.RandomState([2017, 8, 30])
-    model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
+    model_train(sess, loss, x, y, x_train, y_train, args=train_params,
                 rng=rng)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
-    accuracy = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
-    assert X_test.shape[0] == test_end - test_start, X_test.shape
+    accuracy = model_eval(sess, x, y, preds, x_test, y_test, args=eval_params)
+    assert x_test.shape[0] == test_end - test_start, x_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
     report.clean_train_clean_eval = accuracy
 
@@ -125,11 +126,11 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     for sample_ind in xrange(0, source_samples):
         print('--------------------------------------')
         print('Attacking input %i/%i' % (sample_ind + 1, source_samples))
-        sample = X_test[sample_ind:(sample_ind+1)]
+        sample = x_test[sample_ind:(sample_ind+1)]
 
         # We want to find an adversarial example for each possible target class
         # (i.e. all classes that differ from the label given in the dataset)
-        current_class = int(np.argmax(Y_test[sample_ind]))
+        current_class = int(np.argmax(y_test[sample_ind]))
         target_classes = other_classes(nb_classes, current_class)
 
         # For the grid visualization, keep original images along the diagonal
@@ -151,7 +152,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
 
             # Computer number of modified features
             adv_x_reshape = adv_x.reshape(-1)
-            test_in_reshape = X_test[sample_ind].reshape(-1)
+            test_in_reshape = x_test[sample_ind].reshape(-1)
             nb_changed = np.where(adv_x_reshape != test_in_reshape)[0].shape[0]
             percent_perturb = float(nb_changed) / adv_x.reshape(-1).shape[0]
 

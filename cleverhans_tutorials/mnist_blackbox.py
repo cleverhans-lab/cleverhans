@@ -16,6 +16,8 @@ import logging
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
+from cleverhans.defenses import LossXEntropy
+from cleverhans.model import Model
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import to_categorical
 from cleverhans.utils import set_log_level
@@ -23,8 +25,7 @@ from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
-from cleverhans_tutorials.tutorial_models import make_basic_cnn, MLP
-from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
+from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 from cleverhans.utils import TemporaryLogLevel
 
 FLAGS = flags.FLAGS
@@ -63,8 +64,9 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     """
 
     # Define TF model graph (for the black-box model)
-    model = make_basic_cnn()
-    predictions = model(x)
+    model = ModelBasicCNN('model1', 10, 64)
+    loss = LossXEntropy(model, smoothing=0.1)
+    predictions = model.get_logits(x)
     print("Defined TensorFlow model graph.")
 
     # Train an MNIST model
@@ -73,8 +75,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    model_train(sess, x, y, predictions, X_train, Y_train,
-                args=train_params, rng=rng)
+    model_train(sess, loss, x, y, X_train, Y_train, args=train_params, rng=rng)
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
@@ -86,27 +87,21 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     return model, predictions, accuracy
 
 
-def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
-    """
-    Defines the model architecture to be used by the substitute. Use
-    the example model interface.
-    :param img_rows: number of rows in input
-    :param img_cols: number of columns in input
-    :param nb_classes: number of classes in output
-    :return: tensorflow model
-    """
-    input_shape = (None, img_rows, img_cols, 1)
+class ModelSubstitute(Model):
+    def __init__(self, scope, nb_classes, nb_filters=200, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
+        self.nb_filters = nb_filters
 
-    # Define a fully connected model (it's different than the black-box)
-    layers = [Flatten(),
-              Linear(200),
-              ReLU(),
-              Linear(200),
-              ReLU(),
-              Linear(nb_classes),
-              Softmax()]
-
-    return MLP(layers, input_shape)
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            y = tf.layers.flatten(x)
+            y = tf.layers.dense(y, self.nb_filters, activation=tf.nn.relu)
+            y = tf.layers.dense(y, self.nb_filters, activation=tf.nn.relu)
+            logits = tf.layers.dense(y, self.nb_classes)
+            return {self.O_LOGITS: logits,
+                    self.O_PROBS: tf.nn.softmax(logits=logits)}
 
 
 def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
@@ -131,8 +126,9 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
     :return:
     """
     # Define TF model graph (for the black-box model)
-    model_sub = substitute_model()
-    preds_sub = model_sub(x)
+    model_sub = ModelSubstitute('model_s', nb_classes)
+    preds_sub = model_sub.get_logits(x)
+    loss_sub = LossXEntropy(model_sub, smoothing=0)
     print("Defined TensorFlow model graph for the substitute.")
 
     # Define the Jacobian symbolically using TensorFlow
@@ -147,7 +143,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             'learning_rate': learning_rate
         }
         with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
-            model_train(sess, x, y, preds_sub, X_sub,
+            model_train(sess, loss_sub, x, y, X_sub,
                         to_categorical(Y_sub, nb_classes),
                         init_all=False, args=train_params, rng=rng)
 
@@ -253,8 +249,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     x_adv_sub = fgsm.generate(x, **fgsm_par)
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
-    accuracy = model_eval(sess, x, y, model(x_adv_sub), X_test, Y_test,
-                          args=eval_params)
+    accuracy = model_eval(sess, x, y, model.get_logits(x_adv_sub),
+                          X_test, Y_test, args=eval_params)
     print('Test accuracy of oracle on adversarial examples generated '
           'using the substitute: ' + str(accuracy))
     accuracies['bbox_on_sub_adv_ex'] = accuracy
