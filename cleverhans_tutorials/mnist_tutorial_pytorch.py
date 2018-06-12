@@ -62,8 +62,6 @@ def mnist_tutorial(nb_epochs=6, batch_size=128, train_end=-1, test_end=-1,
     :param nb_epochs: number of epochs to train model
     :param batch_size: size of training batches
     :param learning_rate: learning rate for training
-    :param testing: if true, complete an AccuracyReport for unit tests
-                    to verify that performance is adequate
     :return: an AccuracyReport object
     """
     # Train a pytorch MNIST model
