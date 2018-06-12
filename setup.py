@@ -17,7 +17,7 @@ setup(name='cleverhans',
           "tf_gpu": ["tensorflow-gpu>=1.0.0"],
           "test": [
               "keras ~= 2.1",  # For keras tests
-              "torchvision ~= 0.2",  # for mnist dataset
+              "mnist ~= 0.2",
           ],
       },
       packages=find_packages())
