@@ -17,7 +17,6 @@ from tensorflow.python.platform import flags
 import logging
 
 from cleverhans.defenses import LossXEntropy
-from cleverhans.model import Model
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
