@@ -55,14 +55,12 @@ into a folder of your choice:
 git clone https://github.com/tensorflow/cleverhans
 ```
 
-On UNIX machines, it is recommended to add your clone of this repository to the
-`PYTHONPATH` variable so as to be able to import `cleverhans` from any folder.
+You can then install the local package in "editable" mode in order to add it to
+your `PYTHONPATH`
 
 ```
-export PYTHONPATH="/path/to/cleverhans":$PYTHONPATH
+pip install -e ./cleverhans
 ```
-
-You may want to make that change permanent through your shell's profile.
 
 ### Currently supported setups
 
