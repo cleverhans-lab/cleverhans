@@ -17,30 +17,6 @@ from .utils import batch_indices, _ArgsWrapper, create_logger
 _logger = create_logger("cleverhans.utils.tf")
 
 
-def model_loss(y, model, mean=True):
-    """
-    Define loss of TF graph
-    :param y: correct labels
-    :param model: output of the model
-    :param mean: boolean indicating whether should return mean of loss
-                 or vector of losses for each input of the batch
-    :return: return mean of loss if True, otherwise return vector with per
-             sample loss
-    """
-
-    op = model.op
-    if op.type == "Softmax":
-        logits, = op.inputs
-    else:
-        logits = model
-
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
-
-    if mean:
-        out = tf.reduce_mean(out)
-    return out
-
-
 def initialize_uninitialized_global_variables(sess):
     """
     Only initializes the variables of a TensorFlow session that were not
@@ -64,20 +40,18 @@ def initialize_uninitialized_global_variables(sess):
         sess.run(tf.variables_initializer(not_initialized_vars))
 
 
-def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                predictions_adv=None, init_all=True, evaluate=None,
-                feed=None, args=None, rng=None, var_list=None):
+def model_train(sess, loss, x, y, X_train, Y_train, save=False, init_all=True,
+                evaluate=None, feed=None, args=None, rng=None, var_list=None,
+                fprop_args=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
+    :param loss: tensor, the model training loss.
     :param x: input placeholder
     :param y: output placeholder (for labels)
-    :param predictions: model output predictions
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
     :param save: boolean controlling the save operation
-    :param predictions_adv: if set with the adversarial example tensor,
-                            will run adversarial training
     :param init_all: (boolean) If set to true, all TF variables in the session
                      are (re)initialized, otherwise only previously
                      uninitialized variables are initialized before training.
@@ -93,9 +67,11 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                  and 'filename'
     :param rng: Instance of numpy.random.RandomState
     :param var_list: Optional list of parameters to train.
+    :param fprop_args: dict, extra arguments to pass to fprop (loss and model).
     :return: True if model trained
     """
     args = _ArgsWrapper(args or {})
+    fprop_args = fprop_args or {}
 
     # Check that necessary arguments were given (see doc above)
     assert args.nb_epochs, "Number of epochs was not given in args dict"
@@ -109,13 +85,11 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     if rng is None:
         rng = np.random.RandomState()
 
-    # Define loss
-    loss = model_loss(y, predictions)
-    if predictions_adv is not None:
-        loss = (loss + model_loss(y, predictions_adv)) / 2
-
+    # Define optimizer
+    print(var_list)
+    loss_value = loss.fprop(x, y, **fprop_args)
     train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
-    train_step = train_step.minimize(loss, var_list=var_list)
+    train_step = train_step.minimize(loss_value, var_list=var_list)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):

@@ -11,6 +11,7 @@ import warnings
 
 from . import utils_tf
 from . import utils
+from . import loss as loss_module
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
@@ -56,13 +57,13 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
 
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
-        preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+        preds_max = tf.reduce_max(preds, 1, keepdims=True)
         y = tf.to_float(tf.equal(preds, preds_max))
         y = tf.stop_gradient(y)
-    y = y / tf.reduce_sum(y, 1, keep_dims=True)
+    y = y / tf.reduce_sum(y, 1, keepdims=True)
 
     # Compute loss
-    loss = utils_tf.model_loss(y, preds, mean=False)
+    loss = loss_module.attack_softmax_cross_entropy(y, preds, mean=False)
     if targeted:
         loss = -loss
 
@@ -82,12 +83,12 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
         red_ind = list(xrange(1, len(x.get_shape())))
         normalized_grad = grad / tf.reduce_sum(tf.abs(grad),
                                                reduction_indices=red_ind,
-                                               keep_dims=True)
+                                               keepdims=True)
     elif ord == 2:
         red_ind = list(xrange(1, len(x.get_shape())))
         square = tf.reduce_sum(tf.square(grad),
                                reduction_indices=red_ind,
-                               keep_dims=True)
+                               keepdims=True)
         normalized_grad = grad / tf.sqrt(square)
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
@@ -493,13 +494,13 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
         target_tmp = grads_target
         target_tmp -= increase_coef \
-            * tf.reduce_max(tf.abs(grads_target), axis=1, keep_dims=True)
+            * tf.reduce_max(tf.abs(grads_target), axis=1, keepdims=True)
         target_sum = tf.reshape(target_tmp, shape=[-1, nb_features, 1]) \
             + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
 
         other_tmp = grads_other
         other_tmp += increase_coef \
-            * tf.reduce_max(tf.abs(grads_other), axis=1, keep_dims=True)
+            * tf.reduce_max(tf.abs(grads_other), axis=1, keepdims=True)
         other_sum = tf.reshape(other_tmp, shape=[-1, nb_features, 1]) \
             + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
 
@@ -1410,8 +1411,8 @@ class LBFGS_attack(object):
                                    name='ori_img')
         self.const = tf.Variable(np.zeros(self.batch_size), dtype=tf_dtype,
                                  name='const')
-        self.score = utils_tf.model_loss(self.targeted_label, self.model_preds,
-                                         mean=False)
+        self.score = loss_module.attack_softmax_cross_entropy(
+            self.targeted_label, self.model_preds, mean=False)
         self.l2dist = tf.reduce_sum(tf.square(self.x - self.ori_img))
         # small self.const will result small adversarial perturbation
         self.loss = tf.reduce_sum(self.score*self.const) + self.l2dist
