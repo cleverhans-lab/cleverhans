@@ -35,9 +35,6 @@ def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
     X_train = np.expand_dims(X_train, -1)
     X_test = np.expand_dims(X_test, -1)
 
-    print(X_train.max())
-    print(X_train.min())
-
     X_train = X_train[train_start:train_end]
     Y_train = Y_train[train_start:train_end]
     X_test = X_test[test_start:test_end]
