@@ -42,8 +42,4 @@ def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
 
     Y_train = utils.to_categorical(Y_train, num_classes=10)
     Y_test = utils.to_categorical(Y_test, num_classes=10)
-
-    print('X_train shape:', X_train.shape)
-    print('X_test shape:', X_test.shape)
-
     return X_train, Y_train, X_test, Y_test
