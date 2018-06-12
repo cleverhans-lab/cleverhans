@@ -34,7 +34,7 @@ def model_loss(y, model, mean=True):
     else:
         logits = model
 
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+    out = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=y)
 
     if mean:
         out = tf.reduce_mean(out)
@@ -115,6 +115,12 @@ def model_train(sess, x, y, predictions, X_train, Y_train, dataflow=None,
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
+    if args.weight_decay:
+        reg_var = [var for var in var_list if var.op.name.endswith('weight')]
+        reg_loss = [tf.nn.l2_loss(var) for var in reg_var] 
+        reg_loss = args.weight_decay * tf.add_n(reg_loss)
+        loss += reg_loss 
+
     train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
     train_step = train_step.minimize(loss, var_list=var_list)
 
@@ -131,6 +137,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, dataflow=None,
 
         for epoch in xrange(args.nb_epochs):
             sess.run(tf.assign(args.epoch_step, epoch))
+            lr_val = sess.run(args.learning_rate)
 
             # Compute number of batches
             nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
@@ -160,8 +167,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, dataflow=None,
                 train_step.run(feed_dict=feed_dict)
             #assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
-            _logger.info("Epoch " + str(epoch) + " took " +
-                         str(cur - prev) + " seconds")
+            _logger.info("Epoch %d took %.2f seconds, lr=%.3E" %
+                (epoch, cur - prev, lr_val))
             if evaluate is not None:
                 evaluate()
 
