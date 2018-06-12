@@ -16,7 +16,7 @@ setup(name='cleverhans',
           "tf": ["tensorflow>=1.0.0"],
           "tf_gpu": ["tensorflow-gpu>=1.0.0"],
           "test": [
-              "keras ~= 2.1.5",  # For keras tests
+              "keras == 2.1.5",  # Keras 2.1.6 is incompatible with TF 1.4
               "mnist ~= 0.2",
           ],
       },
