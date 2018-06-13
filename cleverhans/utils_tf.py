@@ -34,7 +34,7 @@ def model_loss(y, model, mean=True):
     else:
         logits = model
 
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+    out = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=y)
 
     if mean:
         out = tf.reduce_mean(out)
@@ -64,8 +64,8 @@ def initialize_uninitialized_global_variables(sess):
         sess.run(tf.variables_initializer(not_initialized_vars))
 
 
-def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                predictions_adv=None, init_all=True, evaluate=None,
+def model_train(sess, x, y, predictions, X_train, Y_train, dataflow=None, 
+                save=False, predictions_adv=None, init_all=True, evaluate=None,
                 feed=None, args=None, rng=None, var_list=None):
     """
     Train a TF graph
@@ -75,6 +75,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param predictions: model output predictions
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
+    :param dataflow: numpy array iterator yielding (x_batch, y_batch) tuples
     :param save: boolean controlling the save operation
     :param predictions_adv: if set with the adversarial example tensor,
                             will run adversarial training
@@ -99,8 +100,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     # Check that necessary arguments were given (see doc above)
     assert args.nb_epochs, "Number of epochs was not given in args dict"
-    assert args.learning_rate, "Learning rate was not given in args dict"
     assert args.batch_size, "Batch size was not given in args dict"
+    assert args.learning_rate is not None, "Learning rate was not given in args dict"
 
     if save:
         assert args.train_dir, "Directory for save was not given in args dict"
@@ -113,6 +114,12 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     loss = model_loss(y, predictions)
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
+
+    if args.weight_decay:
+        reg_var = [var for var in var_list if var.op.name.endswith('weight')]
+        reg_loss = [tf.nn.l2_loss(var) for var in reg_var] 
+        reg_loss = args.weight_decay * tf.add_n(reg_loss)
+        loss += reg_loss 
 
     train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
     train_step = train_step.minimize(loss, var_list=var_list)
@@ -129,6 +136,9 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             sess.run(tf.initialize_all_variables())
 
         for epoch in xrange(args.nb_epochs):
+            sess.run(tf.assign(args.epoch_step, epoch))
+            lr_val = sess.run(args.learning_rate)
+
             # Compute number of batches
             nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
             assert nb_batches * args.batch_size >= len(X_train)
@@ -140,20 +150,25 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             prev = time.time()
             for batch in range(nb_batches):
 
-                # Compute batch start and end indices
-                start, end = batch_indices(
-                    batch, len(X_train), args.batch_size)
-
                 # Perform one training step
-                feed_dict = {x: X_train[index_shuf[start:end]],
-                             y: Y_train[index_shuf[start:end]]}
+                if dataflow is not None:
+                    # Use data iterator if provided
+                    x_train, y_train = dataflow.next()
+                    feed_dict = {x: x_train, y: y_train}
+                else:
+                    # Compute batch start and end indices
+                    start, end = batch_indices(
+                        batch, len(X_train), args.batch_size)
+
+                    feed_dict = {x: X_train[index_shuf[start:end]],
+                                 y: Y_train[index_shuf[start:end]]}
                 if feed is not None:
                     feed_dict.update(feed)
                 train_step.run(feed_dict=feed_dict)
-            assert end >= len(X_train)  # Check that all examples were used
+            #assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
-            _logger.info("Epoch " + str(epoch) + " took " +
-                         str(cur - prev) + " seconds")
+            _logger.info("Epoch %d took %.2f seconds, lr=%.3E" %
+                (epoch, cur - prev, lr_val))
             if evaluate is not None:
                 evaluate()
 

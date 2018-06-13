@@ -213,7 +213,7 @@ class Attack(object):
             labels = kwargs['y_target']
         else:
             preds = self.model.get_probs(x)
-            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+            preds_max = tf.reduce_max(preds, 1, keepdims=True)
             original_predictions = tf.to_float(tf.equal(preds,
                                                         preds_max))
             labels = tf.stop_gradient(original_predictions)
@@ -387,7 +387,7 @@ class BasicIterativeMethod(Attack):
 
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model.get_probs(x)
-        preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
+        preds_max = tf.reduce_max(model_preds, 1, keepdims=True)
         if self.y_target is not None:
             y = self.y_target
             targeted = True
