@@ -23,10 +23,6 @@ class Loss(object):
         self.hparams = hparams
         self.attack = attack
 
-    @property
-    def nb_classes(self):
-        return self.model.nb_classes
-
     def save(self, path):
         json.dump(dict(loss=self.__class__.__name__,
                        params=self.hparams),
