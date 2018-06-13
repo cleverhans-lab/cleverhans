@@ -46,19 +46,17 @@ class Model(object):
         :return: A symbolic representation (Tensor) of the output
         probabilities (i.e., the output values produced by the softmax layer).
         """
-        return self.fprop(x, **kwargs)[self.O_PROBS]
+        d = self.fprop(x, **kwargs)
+        if self.O_PROBS in d:
+            return d[self.O_PROBS]
+        elif self.O_LOGITS in d:
+            return tf.nn.softmax(logits=d[self.O_LOGITS])
+        else:
+            raise ValueError('Cannot find probs or logits.')
 
     def fprop(self, x, **kwargs):
         """
-
-        if hasattr(self, 'layer_names'):
-            return self.layer_names
-
-        raise NotImplementedError('`get_layer_names` not implemented.')
-
-    def fprop(self, x):
-        """
-        Exposes all the layers of the model returned by get_layer_names.
+        Forward propagation to compute the model outputs.
         :param x: A symbolic representation of the network input
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
