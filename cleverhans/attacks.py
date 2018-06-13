@@ -1479,7 +1479,7 @@ class FastFeatureAdversaries(Attack):
         from cleverhans.utils_tf import clip_eta
 
         adv_x = x + eta
-        a_feat = self.model.get_layer(adv_x, self.layer)
+        a_feat = self.model.fprop(adv_x)[self.layer]
 
         # feat.shape = (batch, c) or (batch, w, h, c)
         axis = list(range(1, len(a_feat.shape)))
@@ -1530,7 +1530,7 @@ class FastFeatureAdversaries(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        g_feat = self.model.get_layer(g, self.layer)
+        g_feat = self.model.fprop(g)[self.layer]
 
         # Initialize loop variables
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,

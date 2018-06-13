@@ -9,6 +9,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import functools
+
 import numpy as np
 from six.moves import xrange
 
@@ -25,7 +27,8 @@ from cleverhans.utils_tf import model_train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
-from cleverhans_tutorials.tutorial_models import ModelBasicCNN
+from cleverhans_tutorials.tutorial_models import ModelBasicCNN, \
+    HeReLuNormalInitializer
 from cleverhans.utils import TemporaryLogLevel
 
 FLAGS = flags.FLAGS
@@ -95,11 +98,13 @@ class ModelSubstitute(Model):
 
     def fprop(self, x, **kwargs):
         del kwargs
+        my_dense = functools.partial(
+            tf.layers.dense, kernel_initializer=HeReLuNormalInitializer)
         with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
             y = tf.layers.flatten(x)
-            y = tf.layers.dense(y, self.nb_filters, activation=tf.nn.relu)
-            y = tf.layers.dense(y, self.nb_filters, activation=tf.nn.relu)
-            logits = tf.layers.dense(y, self.nb_classes)
+            y = my_dense(y, self.nb_filters, activation=tf.nn.relu)
+            y = my_dense(y, self.nb_filters, activation=tf.nn.relu)
+            logits = my_dense(y, self.nb_classes)
             return {self.O_LOGITS: logits,
                     self.O_PROBS: tf.nn.softmax(logits=logits)}
 

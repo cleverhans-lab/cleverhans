@@ -9,19 +9,9 @@ from cleverhans.model import Model, CallableModelWrapper
 
 
 class TestModelClass(unittest.TestCase):
-    def test_get_layer(self):
-        # Define empty model
-        model = Model()
-        x = []
-
-        # Exception is thrown when `get_layer` not implemented
-        with self.assertRaises(Exception) as context:
-            model.get_layer(x, layer='')
-        self.assertTrue(context.exception)
-
     def test_get_logits(self):
         # Define empty model
-        model = Model()
+        model = Model('model', 10, {})
         x = []
 
         # Exception is thrown when `get_logits` not implemented
@@ -31,7 +21,7 @@ class TestModelClass(unittest.TestCase):
 
     def test_get_probs(self):
         # Define empty model
-        model = Model()
+        model = Model('model', 10, {})
         x = []
 
         # Exception is thrown when `get_probs` not implemented
@@ -39,18 +29,9 @@ class TestModelClass(unittest.TestCase):
             model.get_probs(x)
         self.assertTrue(context.exception)
 
-    def test_get_layer_names(self):
-        # Define empty model
-        model = Model()
-
-        # Exception is thrown when `get_layer_names` not implemented
-        with self.assertRaises(Exception) as context:
-            model.get_layer_names()
-        self.assertTrue(context.exception)
-
     def test_fprop(self):
         # Define empty model
-        model = Model()
+        model = Model('model', 10, {})
         x = []
 
         # Exception is thrown when `fprop` not implemented
@@ -61,7 +42,8 @@ class TestModelClass(unittest.TestCase):
 
 class TestCallableModelWrapperInitArguments(unittest.TestCase):
     def test_output_layer(self):
-        def model():
+        def model(**kwargs):
+            del kwargs
             return True
 
         # The following two calls should not raise Exceptions

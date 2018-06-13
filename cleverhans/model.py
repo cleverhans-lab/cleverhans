@@ -50,7 +50,7 @@ class Model(object):
 
     def fprop(self, x, **kwargs):
         """
-        Exposes all the layers of the model returned by get_layer_names.
+        Forward propagation to compute the model outputs.
         :param x: A symbolic representation of the network input
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
@@ -80,11 +80,8 @@ class CallableModelWrapper(Model):
         self.output_layer = output_layer
         self.callable_fn = callable_fn
 
-    def get_layer_names(self):
-        return [self.output_layer]
-
-    def fprop(self, x):
-        return {self.output_layer: self.callable_fn(x)}
+    def fprop(self, x, **kwargs):
+        return {self.output_layer: self.callable_fn(x, **kwargs)}
 
 
 class NoSuchLayerError(ValueError):
