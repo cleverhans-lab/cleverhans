@@ -34,23 +34,31 @@ class Model(object):
 
     def get_logits(self, x, **kwargs):
         """
-        :param x: A symbolic representation of the network input
-        :return: A symbolic representation of the output logits (i.e., the
-                 values fed as inputs to the softmax layer).
+        :param x: A symbolic representation (Tensor) of the network input
+        :return: A symbolic representation (Tensor) of the output logits
+        (i.e., the values fed as inputs to the softmax layer).
         """
         return self.fprop(x, **kwargs)[self.O_LOGITS]
 
     def get_probs(self, x, **kwargs):
         """
-        :param x: A symbolic representation of the network input
-        :return: A symbolic representation of the output probabilities (i.e.,
-                the output values produced by the softmax layer).
+        :param x: A symbolic representation (Tensor) of the network input
+        :return: A symbolic representation (Tensor) of the output
+        probabilities (i.e., the output values produced by the softmax layer).
         """
         return self.fprop(x, **kwargs)[self.O_PROBS]
 
     def fprop(self, x, **kwargs):
         """
-        Forward propagation to compute the model outputs.
+
+        if hasattr(self, 'layer_names'):
+            return self.layer_names
+
+        raise NotImplementedError('`get_layer_names` not implemented.')
+
+    def fprop(self, x):
+        """
+        Exposes all the layers of the model returned by get_layer_names.
         :param x: A symbolic representation of the network input
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.

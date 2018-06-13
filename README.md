@@ -67,8 +67,11 @@ You may want to make that change permanent through your shell's profile.
 ### Currently supported setups
 
 Although CleverHans is likely to work on many other machine configurations, we
-currently [test it](https://travis-ci.org/tensorflow/cleverhans) with Python
-{2.7, 3.5} and TensorFlow {1.0, 1.1} on Ubuntu 14.04.5 LTS (Trusty Tahr).
+currently [test it](https://travis-ci.org/tensorflow/cleverhans) it with Python
+{2.7, 3.5} and TensorFlow {1.4, 1.8} on Ubuntu 14.04.5 LTS (Trusty Tahr).
+Support for TensorFlow 1.3 and earlier is deprecated. After 2018-11-1 we will
+not fix bugs reported for these versions and we will eliminate wrapper code
+needed for backwards compatibility with these versions.
 
 ## Tutorials
 
