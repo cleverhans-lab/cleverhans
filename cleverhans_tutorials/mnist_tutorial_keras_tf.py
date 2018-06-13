@@ -17,6 +17,7 @@ from keras import backend
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
+from cleverhans.defenses import LossXEntropy
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
@@ -105,17 +106,21 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'filename': filename
     }
     ckpt = tf.train.get_checkpoint_state(train_dir)
+    print(train_dir, ckpt)
     ckpt_path = False if ckpt is None else ckpt.model_checkpoint_path
+    wrap = KerasModelWrapper(model, 10)
 
     rng = np.random.RandomState([2017, 8, 30])
     if load_model and ckpt_path:
         saver = tf.train.Saver()
+        print(ckpt_path)
         saver.restore(sess, ckpt_path)
         print("Model loaded from: {}".format(ckpt_path))
         evaluate()
     else:
         print("Model was not loaded, training from scratch.")
-        model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
+        loss = LossXEntropy(wrap, smoothing=0.1)
+        model_train(sess, loss, x, y, X_train, Y_train, evaluate=evaluate,
                     args=train_params, save=True, rng=rng)
 
     # Calculate training error
@@ -125,7 +130,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         report.train_clean_train_clean_eval = acc
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
-    wrap = KerasModelWrapper(model)
     fgsm = FastGradientMethod(wrap, sess=sess)
     fgsm_params = {'eps': 0.3,
                    'clip_min': 0.,
@@ -151,10 +155,12 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
     model_2 = cnn_model()
+    wrap_2 = KerasModelWrapper(model_2, 10)
     preds_2 = model_2(x)
-    wrap_2 = KerasModelWrapper(model_2)
     fgsm2 = FastGradientMethod(wrap_2, sess=sess)
-    preds_2_adv = model_2(fgsm2.generate(x, **fgsm_params))
+    attack = lambda x: fgsm2.generate(x, **fgsm_params)
+    preds_2_adv = model_2(attack(x))
+    loss_2 = LossXEntropy(wrap_2, smoothing=0.1, attack=attack)
 
     def evaluate_2():
         # Accuracy of adversarially trained model on legitimate test inputs
@@ -171,8 +177,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         report.adv_train_adv_eval = accuracy
 
     # Perform and evaluate adversarial training
-    model_train(sess, x, y, preds_2, X_train, Y_train,
-                predictions_adv=preds_2_adv, evaluate=evaluate_2,
+    model_train(sess, loss_2, x, y, X_train, Y_train, evaluate=evaluate_2,
                 args=train_params, save=False, rng=rng)
 
     # Calculate training errors
@@ -203,5 +208,5 @@ if __name__ == '__main__':
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_string('train_dir', '/tmp', 'Directory where to save model.')
     flags.DEFINE_string('filename', 'mnist.ckpt', 'Checkpoint filename.')
-    flags.DEFINE_boolean('load_model', True, 'Load saved model or train.')
+    flags.DEFINE_boolean('load_model', False, 'Load saved model or train.')
     tf.app.run()
