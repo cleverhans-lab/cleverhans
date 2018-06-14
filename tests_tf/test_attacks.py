@@ -24,6 +24,7 @@ from cleverhans.attacks import MadryEtAl
 from cleverhans.attacks import FastFeatureAdversaries
 from cleverhans.attacks import LBFGS
 from cleverhans.model import Model
+from cleverhans_tutorials.tutorial_models import HeReLuNormalInitializer
 
 
 class SimpleModel(Model):

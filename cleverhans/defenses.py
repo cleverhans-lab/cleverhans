@@ -39,7 +39,7 @@ class LossMixUp(Loss):
 
     def fprop(self, x, y, **kwargs):
         mix = tf.distributions.Beta(self.beta, self.beta)
-        mix = mix.sample([tf.shape(x)[0], 1, 1, 1])
+        mix = mix.sample([tf.shape(x)[0]] + [1]*(len(x.shape) - 1))
         xm = x + mix * (x[::-1] - x)
         ym = y + mix * (y[::-1] - y)
         logits = self.model.get_logits(xm, **kwargs)
