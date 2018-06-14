@@ -11,19 +11,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
-import keras
-from keras import backend
-import tensorflow as tf
-from tensorflow.python.platform import flags
-
-from cleverhans.defenses import LossXEntropy
-from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
+from cleverhans.defenses import LossXEntropy
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
+from cleverhans.utils_mnist import data_mnist
+from cleverhans.utils_tf import model_train, model_eval
+import keras
+from keras import backend
+import numpy as np
+import tensorflow as tf
+from tensorflow.python.platform import flags
 
 FLAGS = flags.FLAGS
 
@@ -158,7 +157,10 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     wrap_2 = KerasModelWrapper(model_2, 10)
     preds_2 = model_2(x)
     fgsm2 = FastGradientMethod(wrap_2, sess=sess)
-    attack = lambda x: fgsm2.generate(x, **fgsm_params)
+
+    def attack(x):
+        return fgsm2.generate(x, **fgsm_params)
+
     preds_2_adv = model_2(attack(x))
     loss_2 = LossXEntropy(wrap_2, smoothing=0.1, attack=attack)
 

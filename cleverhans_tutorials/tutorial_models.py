@@ -27,8 +27,9 @@ class ModelBasicCNN(Model):
             y = my_conv(x, self.nb_filters, 8, strides=2, padding='same')
             y = my_conv(y, 2 * self.nb_filters, 6, strides=2, padding='valid')
             y = my_conv(y, 2 * self.nb_filters, 5, strides=1, padding='valid')
-            logits = tf.layers.dense(tf.layers.flatten(y), self.nb_classes,
-                                     kernel_initializer=HeReLuNormalInitializer)
+            logits = tf.layers.dense(
+                tf.layers.flatten(y), self.nb_classes,
+                kernel_initializer=HeReLuNormalInitializer)
             return {self.O_LOGITS: logits,
                     self.O_PROBS: tf.nn.softmax(logits=logits)}
 
