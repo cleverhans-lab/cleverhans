@@ -44,7 +44,7 @@ class LossMixUp(Loss):
         ym = y + mix * (y[::-1] - y)
         logits = self.model.get_logits(xm, **kwargs)
         loss = tf.nn.softmax_cross_entropy_with_logits(labels=ym,
-                                                          logits=logits)
+                                                       logits=logits)
         return loss
 
 
