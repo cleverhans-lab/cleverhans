@@ -46,5 +46,5 @@ def attack_softmax_cross_entropy(y, probs, mean=True):
              sample loss
     """
     logits = probs.op.inputs[0] if probs.op.type == 'Softmax' else probs
-    out = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=y)
+    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
     return tf.reduce_mean(out) if mean else out
