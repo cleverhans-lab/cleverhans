@@ -24,7 +24,7 @@ class Attack(object):
         :param sess: The tf session to run graphs in
         """
         if not(back == 'tf'):
-            raise ValueError("Backend argument must either be 'tf'.")
+            raise ValueError("Backend argument must be 'tf'.")
 
         if back == 'tf':
             import tensorflow as tf
