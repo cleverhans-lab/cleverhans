@@ -16,7 +16,7 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 import logging
 
-from cleverhans.defenses import LossXEntropy
+from cleverhans.defenses import LossCrossEntropy
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
 from cleverhans.attacks import FastGradientMethod
@@ -109,7 +109,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     if clean_train:
         model = ModelBasicCNN('model1', 10, nb_filters)
         preds = model.get_logits(x)
-        loss = LossXEntropy(model, smoothing=0.1)
+        loss = LossCrossEntropy(model, smoothing=0.1)
 
         def evaluate():
             do_eval(preds, x_test, y_test, 'clean_train_clean_eval', False)
@@ -143,7 +143,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     def attack(x):
         return fgsm2.generate(x, **fgsm_params)
 
-    loss2 = LossXEntropy(model2, smoothing=0.1, attack=attack)
+    loss2 = LossCrossEntropy(model2, smoothing=0.1, attack=attack)
     preds2 = model2.get_logits(x)
     adv_x2 = attack(x)
 

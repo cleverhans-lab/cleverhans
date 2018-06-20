@@ -18,7 +18,7 @@ import logging
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-from cleverhans.defenses import LossXEntropy
+from cleverhans.defenses import LossCrossEntropy
 from cleverhans.model import Model
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import to_categorical
@@ -68,7 +68,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
 
     # Define TF model graph (for the black-box model)
     model = ModelBasicCNN('model1', 10, 64)
-    loss = LossXEntropy(model, smoothing=0.1)
+    loss = LossCrossEntropy(model, smoothing=0.1)
     predictions = model.get_logits(x)
     print("Defined TensorFlow model graph.")
 
@@ -133,7 +133,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
     # Define TF model graph (for the black-box model)
     model_sub = ModelSubstitute('model_s', nb_classes)
     preds_sub = model_sub.get_logits(x)
-    loss_sub = LossXEntropy(model_sub, smoothing=0)
+    loss_sub = LossCrossEntropy(model_sub, smoothing=0)
     print("Defined TensorFlow model graph for the substitute.")
 
     # Define the Jacobian symbolically using TensorFlow

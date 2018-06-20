@@ -16,7 +16,7 @@ from tensorflow.python.platform import flags
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
-from cleverhans.defenses import LossXEntropy
+from cleverhans.defenses import LossCrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
@@ -78,7 +78,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     # Define TF model graph
     model = ModelBasicCNN('model1', 10, 64)
     preds = model.get_logits(x)
-    loss = LossXEntropy(model, smoothing=0.1)
+    loss = LossCrossEntropy(model, smoothing=0.1)
     print("Defined TensorFlow model graph.")
 
     ###########################################################################

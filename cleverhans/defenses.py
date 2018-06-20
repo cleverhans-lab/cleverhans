@@ -3,13 +3,15 @@ from .model import Model
 import tensorflow as tf
 
 
-class LossXEntropy(Loss):
+class LossCrossEntropy(Loss):
     def __init__(self, model, smoothing, attack=None, **kwargs):
         """Constructor.
         :param model: Model instance, the model on which to apply the loss.
         :param smoothing: float, amount of label smoothing for cross-entropy.
-        :param attack: Attack instance, the attack method for adv. training.
+        :param attack: function, given an input x, return an attacked x'.
         """
+        if smoothing < 0 or smoothing > 1:
+            raise ValueError('Smoothing must be in [0, 1]', smoothing)
         del kwargs
         Loss.__init__(self, model, locals(), attack)
         self.smoothing = smoothing
@@ -53,7 +55,7 @@ class LossFeaturePairing(Loss):
         """Constructor.
         :param model: Model instance, the model on which to apply the loss.
         :param weight: float, with of logic pairing loss.
-        :param attack: Attack instance, the attack method for adv. training.
+        :param attack: function, given an input x, return an attacked x'.
         """
         del kwargs
         Loss.__init__(self, model, locals(), attack)

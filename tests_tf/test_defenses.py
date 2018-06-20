@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import unittest
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.defenses import LossXEntropy, LossMixUp, LossFeaturePairing
+from cleverhans.defenses import LossCrossEntropy, LossMixUp, LossFeaturePairing
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
 import numpy as np
@@ -46,7 +46,7 @@ class TestDefenses(CleverHansTest):
         self.y = tf.placeholder(tf.float32, [None, 2], 'y')
 
     def test_xe(self):
-        loss = LossXEntropy(self.model, smoothing=0.)
+        loss = LossCrossEntropy(self.model, smoothing=0.)
         l = loss.fprop(self.x, self.y)
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
@@ -55,7 +55,7 @@ class TestDefenses(CleverHansTest):
         self.assertClose(vl2, [2.210599660, 1.53666997], atol=1e-6)
 
     def test_xe_smoothing(self):
-        loss = LossXEntropy(self.model, smoothing=0.1)
+        loss = LossCrossEntropy(self.model, smoothing=0.1)
         l = loss.fprop(self.x, self.y)
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
