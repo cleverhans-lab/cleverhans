@@ -78,7 +78,8 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    model_train(sess, loss, x, y, X_train, Y_train, args=train_params, rng=rng)
+    model_train(sess, loss, x, y, predictions, X_train, Y_train,
+                args=train_params, rng=rng)
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
@@ -150,7 +151,8 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
         with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
             model_train(sess, loss_sub, x, y, X_sub,
                         to_categorical(Y_sub, nb_classes),
-                        init_all=False, args=train_params, rng=rng)
+                        init_all=False, args=train_params, rng=rng,
+                        var_list=model_sub.get_params())
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < data_aug - 1:
