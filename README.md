@@ -147,7 +147,7 @@ If you use CleverHans for academic research, you are highly encouraged
 
 ```
 @article{papernot2018cleverhans,
-  title={cleverhans v2.1.0: an adversarial machine learning library},
+  title={Technical Report on the CleverHans v2.1.0 Adversarial Examples Library},
   author={Nicolas Papernot and Fartash Faghri and Nicholas Carlini and
   Ian Goodfellow and Reuben Feinman and Alexey Kurakin and Cihang Xie and
   Yash Sharma and Tom Brown and Aurko Roy and Alexander Matyasko and
