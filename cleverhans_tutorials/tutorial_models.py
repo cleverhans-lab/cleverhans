@@ -76,7 +76,7 @@ class Linear(Layer):
         self.output_shape = [batch_size, self.num_hid]
         init = tf.random_normal([dim, self.num_hid], dtype=tf.float32)
         init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
-                                                   keep_dims=True))
+                                                   keepdims=True))
         self.W = tf.Variable(init)
         self.b = tf.Variable(np.zeros((self.num_hid,)).astype('float32'))
 
