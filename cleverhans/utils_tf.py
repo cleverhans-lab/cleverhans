@@ -262,8 +262,8 @@ def tf_model_load(sess, file_path=None):
     with sess.as_default():
         saver = tf.train.Saver()
         if file_path is None:
-        	error = 'file_path argument is missing.'
-        	raise ValueError(error)
+            error = 'file_path argument is missing.'
+            raise ValueError(error)
         saver.restore(sess, file_path)
 
     return True
@@ -415,3 +415,29 @@ def clip_eta(eta, ord, eps):
         factor = tf.minimum(1., eps / norm)
         eta = eta * factor
     return eta
+
+
+def tf_reduce_sum(input_tensor, axis=None, keepdims=None,
+                  name=None, reduction_indices=None, keep_dims=None):
+    """
+    Tensorflow depreciation of keep_dims for tf 1.8 and above, but
+    tf 1.4 requires keep_dims
+    :param input_tensor: The tensor to reduce. Should have numeric type.
+    :param axis: The dimensions to reduce. If None (the default),
+            reduces all dimensions. Must be in the range
+            [-rank(input_tensor), rank(input_tensor)).
+    :param keepdims: If true, retains reduced dimensions with length 1.
+    :param name: A name for the operation (optional).
+    :param reduction_indices: The old (deprecated) name for axis.
+    :param keep_dims: Deprecated alias for keepdims.
+    :return: outputs same value as tf.reduce_sum.
+    """
+    if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+        out = tf.reduce_sum(input_tensor, axis=axis,
+                            keep_dims=keepdims, name=name,
+                            reduction_indices=reduction_indices)
+    else:
+        out = tf.reduce_sum(input_tensor, axis=axis,
+                            keepdims=keepdims, name=name,
+                            reduction_indices=reduction_indices)
+    return out
