@@ -853,8 +853,6 @@ class CarliniWagnerL2(object):
                     upper_bound[e] = min(upper_bound[e], CONST[e])
                     if upper_bound[e] < 1e9:
                         CONST[e] = (lower_bound[e] + upper_bound[e]) / 2
-                    if e not in success_set:
-                        success_set.append(e)
                 else:
                     # failure, either multiply by 10 if no solution found yet
                     #          or do binary search with the known upper bound
