@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 import numpy as np
 import tensorflow as tf
 from cleverhans.model import Model
+from distutils.version import LooseVersion
 
 
 class MLP(Model):
