@@ -864,8 +864,6 @@ class CarliniWagnerL2(object):
             _logger.debug("  Successfully generated adversarial examples " +
                           "on {} of {} instances.".
                           format(sum(upper_bound < 1e9), batch_size))
-            if sum(upper_bound < 1e9) == batch_size:
-                break
             o_bestl2 = np.array(o_bestl2)
             mean = np.mean(np.sqrt(o_bestl2[o_bestl2 < 1e9]))
             _logger.debug("   Mean successful distortion: {:.4g}".format(mean))
@@ -1244,8 +1242,6 @@ class ElasticNetMethod(object):
             _logger.debug("  Successfully generated adversarial examples " +
                           "on {} of {} instances.".
                           format(sum(upper_bound < 1e9), batch_size))
-            if sum(upper_bound < 1e9) == batch_size:
-                break
             o_bestdst = np.array(o_bestdst)
             mean = np.mean(np.sqrt(o_bestdst[o_bestdst < 1e9]))
             _logger.debug(self.crit_p + " Mean successful distortion: {:.4g}".
