@@ -75,8 +75,12 @@ class Linear(Layer):
         self.input_shape = [batch_size, dim]
         self.output_shape = [batch_size, self.num_hid]
         init = tf.random_normal([dim, self.num_hid], dtype=tf.float32)
-        init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
-                                                   keepdims=True))
+        # keep_dims depreciation warning in tf1.8
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            init_square_sum = tf.reduce_sum(tf.square(init), axis=0, keep_dims=True)
+        else:
+            init_square_sum = tf.reduce_sum(tf.square(init), axis=0, keepdims=True)
+        init = init / tf.sqrt(1e-7 + init_square_sum)  
         self.W = tf.Variable(init)
         self.b = tf.Variable(np.zeros((self.num_hid,)).astype('float32'))
 
