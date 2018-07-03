@@ -33,7 +33,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    clean_train=True,
                    testing=False,
                    backprop_through_attack=False,
-                   nb_filters=64, num_threads=None):
+                   nb_filters=64, num_threads=None,
+                   label_smoothing=True):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -75,15 +76,20 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
-
     # Use label smoothing
-    assert Y_train.shape[1] == 10
-    label_smooth = .1
-    Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
+    print(X_train.shape)
+    img_rows, img_cols, nchannels = X_train.shape[1:4]
+    nb_classes = Y_train.shape[1]
+
+    if label_smoothing:
+        label_smooth = .1
+        Y_train = Y_train.clip(label_smooth / 
+                               (nb_classes-1), 1. - label_smooth)
 
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+                                          nchannels))
+    y = tf.placeholder(tf.float32, shape=(None, nb_classes))
 
     model_path = "models/mnist"
     # Train an MNIST model
@@ -98,7 +104,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     rng = np.random.RandomState([2017, 8, 30])
 
     if clean_train:
-        model = make_basic_cnn(nb_filters=nb_filters)
+        model = make_basic_cnn(nb_filters, nb_classes,
+                               input_shape=(None, img_rows, img_cols,
+                                            nchannels))
         preds = model.get_probs(x)
 
         def evaluate():
@@ -108,7 +116,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
             acc = model_eval(
                 sess, x, y, preds, X_test, Y_test, args=eval_params)
             report.clean_train_clean_eval = acc
-            assert X_test.shape[0] == test_end - test_start, X_test.shape
+#            assert X_test.shape[0] == test_end - test_start, X_test.shape
             print('Test accuracy on legitimate examples: %0.4f' % acc)
         model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
                     args=train_params, rng=rng, var_list=model.get_params())
@@ -141,7 +149,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
         print("Repeating the process, using adversarial training")
     # Redefine TF model graph
-    model_2 = make_basic_cnn(nb_filters=nb_filters)
+    model_2 = make_basic_cnn(nb_filters, nb_classes,
+                             input_shape=(None, img_rows, img_cols,
+                                          nchannels))
     preds_2 = model_2(x)
     fgsm2 = FastGradientMethod(model_2, sess=sess)
     adv_x_2 = fgsm2.generate(x, **fgsm_params)

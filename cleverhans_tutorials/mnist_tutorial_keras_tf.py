@@ -16,6 +16,7 @@ import keras
 from keras import backend
 import tensorflow as tf
 from tensorflow.python.platform import flags
+import os
 
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval
@@ -29,9 +30,9 @@ FLAGS = flags.FLAGS
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
-                   learning_rate=0.001, train_dir="/tmp",
+                   learning_rate=0.001, train_dir="train_dir",
                    filename="mnist.ckpt", load_model=False,
-                   testing=False):
+                   testing=False, label_smoothing=True):
     """
     MNIST CleverHans tutorial
     :param train_start: index of first training set example
@@ -75,16 +76,24 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   test_end=test_end)
 
     # Use label smoothing
-    assert Y_train.shape[1] == 10
-    label_smooth = .1
-    Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
+    print(X_train.shape)
+    img_rows, img_cols, nchannels = X_train.shape[1:4]
+    nb_classes = Y_train.shape[1]
+
+    if label_smoothing:
+        label_smooth = .1
+        Y_train = Y_train.clip(label_smooth / (nb_classes-1),
+                               1. - label_smooth)
 
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+                                          nchannels))
+    y = tf.placeholder(tf.float32, shape=(None, nb_classes))
 
     # Define TF model graph
-    model = cnn_model()
+    model = cnn_model(img_rows=img_rows, img_cols=img_cols,
+                      channels=nchannels, nb_filters=64,
+                      nb_classes=nb_classes)
     preds = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -93,7 +102,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         eval_params = {'batch_size': batch_size}
         acc = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
         report.clean_train_clean_eval = acc
-        assert X_test.shape[0] == test_end - test_start, X_test.shape
+#        assert X_test.shape[0] == test_end - test_start, X_test.shape
         print('Test accuracy on legitimate examples: %0.4f' % acc)
 
     # Train an MNIST model
@@ -104,10 +113,14 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'train_dir': train_dir,
         'filename': filename
     }
-    ckpt = tf.train.get_checkpoint_state(train_dir)
-    ckpt_path = False if ckpt is None else ckpt.model_checkpoint_path
 
     rng = np.random.RandomState([2017, 8, 30])
+    if not os.path.exists(train_dir):
+        os.mkdir(train_dir)
+
+    ckpt = tf.train.get_checkpoint_state(train_dir)
+    ckpt_path = False if ckpt is None else ckpt.model_checkpoint_path
+        
     if load_model and ckpt_path:
         saver = tf.train.Saver()
         saver.restore(sess, ckpt_path)
@@ -150,7 +163,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     print("Repeating the process, using adversarial training")
     # Redefine TF model graph
-    model_2 = cnn_model()
+    model_2 = cnn_model(img_rows=img_rows, img_cols=img_cols,
+                        channels=nchannels, nb_filters=64,
+                        nb_classes=nb_classes)
     preds_2 = model_2(x)
     wrap_2 = KerasModelWrapper(model_2)
     fgsm2 = FastGradientMethod(wrap_2, sess=sess)
@@ -201,7 +216,8 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
-    flags.DEFINE_string('train_dir', '/tmp', 'Directory where to save model.')
+    flags.DEFINE_string('train_dir', './train_dir',
+                        'Directory where to save model.')
     flags.DEFINE_string('filename', 'mnist.ckpt', 'Checkpoint filename.')
     flags.DEFINE_boolean('load_model', True, 'Load saved model or train.')
     tf.app.run()

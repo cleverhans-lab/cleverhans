@@ -28,7 +28,7 @@ FLAGS = flags.FLAGS
 
 def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
                         test_end=10000, viz_enabled=True, nb_epochs=6,
-                        batch_size=128, nb_classes=10, source_samples=10,
+                        batch_size=128, source_samples=10,
                         learning_rate=0.001):
     """
     MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
@@ -47,11 +47,6 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     # Object used to keep track of (and return) key accuracies
     report = AccuracyReport()
 
-    # MNIST-specific dimensions
-    img_rows = 28
-    img_cols = 28
-    channels = 1
-
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
@@ -67,12 +62,19 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
-    # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+    print(X_train.shape)
+    img_rows, img_cols, nchannels = X_train.shape[1:4]
+    nb_classes = Y_train.shape[1]
 
+    # Define input TF placeholder
+    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+                                          nchannels))
+    y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+
+    nb_filters = 64
     # Define TF model graph
-    model = make_basic_cnn()
+    model = make_basic_cnn(nb_filters, nb_classes,
+                   input_shape=(None, img_rows, img_cols, nchannels))
     preds = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -94,7 +96,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
     accuracy = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
-    assert X_test.shape[0] == test_end - test_start, X_test.shape
+#    assert X_test.shape[0] == test_end - test_start, X_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
     report.clean_train_clean_eval = accuracy
 
@@ -111,7 +113,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     perturbations = np.zeros((nb_classes, source_samples), dtype='f')
 
     # Initialize our array for grid visualization
-    grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
+    grid_shape = (nb_classes, nb_classes, img_rows, img_cols, nchannels)
     grid_viz_data = np.zeros(grid_shape, dtype='f')
 
     # Instantiate a SaliencyMapMethod attack object
@@ -134,7 +136,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
 
         # For the grid visualization, keep original images along the diagonal
         grid_viz_data[current_class, current_class, :, :, :] = np.reshape(
-            sample, (img_rows, img_cols, channels))
+            sample, (img_rows, img_cols, nchannels))
 
         # Loop over all target classes
         for target in target_classes:
@@ -158,12 +160,12 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
             # Display the original and adversarial images side-by-side
             if viz_enabled:
                 figure = pair_visual(
-                    np.reshape(sample, (img_rows, img_cols, channels)),
-                    np.reshape(adv_x, (img_rows, img_cols, channels)), figure)
+                    np.reshape(sample, (img_rows, img_cols, nchannels)),
+                    np.reshape(adv_x, (img_rows, img_cols, nchannels)), figure)
 
             # Add our adversarial example to our grid data
             grid_viz_data[target, current_class, :, :, :] = np.reshape(
-                adv_x, (img_rows, img_cols, channels))
+                adv_x, (img_rows, img_cols, nchannels))
 
             # Update the arrays for later analysis
             results[target, sample_ind] = res
@@ -202,7 +204,6 @@ def main(argv=None):
     mnist_tutorial_jsma(viz_enabled=FLAGS.viz_enabled,
                         nb_epochs=FLAGS.nb_epochs,
                         batch_size=FLAGS.batch_size,
-                        nb_classes=FLAGS.nb_classes,
                         source_samples=FLAGS.source_samples,
                         learning_rate=FLAGS.learning_rate)
 
@@ -211,7 +212,6 @@ if __name__ == '__main__':
     flags.DEFINE_boolean('viz_enabled', True, 'Visualize adversarial ex.')
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_integer('nb_classes', 10, 'Number of output classes')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
