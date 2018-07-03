@@ -178,7 +178,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Perform and evaluate adversarial training
     model_train(sess, x, y, preds_2, X_train, Y_train,
                 predictions_adv=preds_2_adv, evaluate=evaluate_2,
-                args=train_params, rng=rng,var_list=model_2.get_params())
+                args=train_params, rng=rng, var_list=model_2.get_params())
 
     # Calculate training errors
     if testing:

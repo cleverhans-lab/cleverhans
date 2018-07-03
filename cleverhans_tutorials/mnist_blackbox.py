@@ -76,7 +76,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'learning_rate': learning_rate
     }
     model_train(sess, x, y, predictions, X_train, Y_train,
-                args=train_params, rng=rng,, var_list=model.get_params())
+                args=train_params, rng=rng, var_list=model.get_params())
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
