@@ -51,11 +51,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     # Object used to keep track of (and return) key accuracies
     report = AccuracyReport()
 
-    # MNIST-specific dimensions
-    img_rows = 28
-    img_cols = 28
-    channels = 1
-
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
@@ -71,12 +66,20 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
-    # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, channels))
-    y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+    # Use label smoothing
+    print(X_train.shape)
+    img_rows,img_cols,nchannels = X_train.shape[1:4]
+    nb_classes = Y_train.shape[1]
 
+    # Define input TF placeholder
+    x = tf.placeholder(tf.float32, shape=(None,img_rows,img_cols,nchannels))
+    y = tf.placeholder(tf.float32, shape=(None,nb_classes))
+    
+    nb_filters = 64
+    
     # Define TF model graph
-    model = make_basic_cnn()
+    model = make_basic_cnn(nb_filters, nb_classes,
+                   input_shape=(None, img_rows,img_cols,nchannels))
     preds = model(x)
     print("Defined TensorFlow model graph.")
 
@@ -126,7 +129,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     if targeted:
         if viz_enabled:
             # Initialize our array for grid visualization
-            grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
+            grid_shape = (nb_classes, nb_classes, img_rows, img_cols, nchannels)
             grid_viz_data = np.zeros(grid_shape, dtype='f')
 
             adv_inputs = np.array(
@@ -141,7 +144,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         one_hot[np.arange(nb_classes), np.arange(nb_classes)] = 1
 
         adv_inputs = adv_inputs.reshape(
-            (source_samples * nb_classes, img_rows, img_cols, 1))
+            (source_samples * nb_classes, img_rows, img_cols, nchannels))
         adv_ys = np.array([one_hot] * source_samples,
                           dtype=np.float32).reshape((source_samples *
                                                      nb_classes, nb_classes))
@@ -149,7 +152,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     else:
         if viz_enabled:
             # Initialize our array for grid visualization
-            grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
+            grid_shape = (nb_classes, 2, img_rows, img_cols, nchannels)
             grid_viz_data = np.zeros(grid_shape, dtype='f')
 
             adv_inputs = X_test[idxs]
