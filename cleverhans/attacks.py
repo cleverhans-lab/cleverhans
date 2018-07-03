@@ -562,12 +562,14 @@ class MomentumIterativeMethod(Attack):
             # Normalize current gradient and add it to the accumulated gradient
             red_ind = list(xrange(1, len(grad.get_shape())))
             avoid_zero_div = tf.cast(1e-12, grad.dtype)
-            
+
             if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
                 warnings.warn(self.depr_warning)
-                grad_mean =tf.reduce_mean(tf.abs(grad), red_ind, keep_dims=True)
+                grad_mean = tf.reduce_mean(tf.abs(grad), red_ind,
+                                           keep_dims=True)
             else:
-                grad_mean =tf.reduce_mean(tf.abs(grad), red_ind, keepdims=True)
+                grad_mean = tf.reduce_mean(tf.abs(grad), red_ind,
+                                           keepdims=True)
 
             grad = grad / tf.maximum(avoid_zero_div, grad_mean)
             momentum = self.decay_factor * momentum + grad
