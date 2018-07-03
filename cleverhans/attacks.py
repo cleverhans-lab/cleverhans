@@ -603,7 +603,8 @@ class MomentumIterativeMethod(Attack):
 
         return i+1, adv_x, momentum
 
-    _, adv_x, _ = tf.while_loop(cond, body, [tf.zeros([]), adv_x, momentum], back_prop=False)
+    _, adv_x, _ = tf.while_loop(
+            cond, body, [tf.zeros([]), adv_x, momentum], back_prop=False)
 
     return adv_x
 
