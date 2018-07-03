@@ -1511,7 +1511,7 @@ class MadryEtAl(Attack):
       eta = tf.zeros_like(x)
 
     def cond(i, _):
-        reutrn tf.less(i, self.nb_iter)
+        return tf.less(i, self.nb_iter)
 
     def body(i, e):
         new_eta = self.attack_single_step(x, e, y)
@@ -1669,7 +1669,7 @@ class FastFeatureAdversaries(Attack):
     eta = clip_eta(eta, self.ord, self.eps)
 
     def cond(i, _):
-        reutrn tf.less(i, self.nb_iter)
+        return tf.less(i, self.nb_iter)
 
     def body(i, e):
         new_eta = self.attack_single_step(x, e, g_feat)
