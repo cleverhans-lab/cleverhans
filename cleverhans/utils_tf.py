@@ -34,7 +34,18 @@ def model_loss(y, model, mean=True):
     else:
         logits = model
 
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+    try:
+        y = tf.stop_gradient(y)
+        out = tf.nn.softmax_cross_entropy_with_logits_v2(
+                                                logits=logits, labels=y)
+    except AttributeError:
+        warning = "Running on tensorflow version " + \
+                   LooseVersion(tf.__version__).vstring + \
+                   ". This version will not be supported by cleverhans" + \
+                   "in the future."
+        _logger.warn(warning)
+        out = tf.nn.softmax_cross_entropy_with_logits(
+                                                logits=logits, labels=y)
 
     if mean:
         out = tf.reduce_mean(out)
@@ -256,10 +267,8 @@ def tf_model_load(sess, file_path=None):
     with sess.as_default():
         saver = tf.train.Saver()
         if file_path is None:
-            warnings.warn("Please provide file_path argument, "
-                          "support for FLAGS.train_dir and FLAGS.filename "
-                          "will be removed on 2018-04-23.")
-            file_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
+            error = 'file_path argument is missing.'
+            raise ValueError(error)
         saver.restore(sess, file_path)
 
     return True
