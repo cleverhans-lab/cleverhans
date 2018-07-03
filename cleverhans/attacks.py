@@ -6,6 +6,7 @@ import collections
 
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
+from distutils.version import LooseVersion
 
 _logger = utils.create_logger("cleverhans.attacks")
 
@@ -49,6 +50,12 @@ class Attack(object):
 
         # We are going to keep track of old graphs and cache them.
         self.graphs = {}
+
+        # Depriciation warning
+        self.depr_warning = "Running on tensorflow version " + \
+                            LooseVersion(tf.__version__).vstring + \
+                            ". This version will not be supported by" + \
+                            " CleverHans in the future."
 
         # When calling generate_np, arguments in the following set should be
         # fed into the graph, as they are not structural items that require
@@ -213,7 +220,11 @@ class Attack(object):
             labels = kwargs['y_target']
         else:
             preds = self.model.get_probs(x)
-            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+            if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+                warnings.warn(self.depr_warning)
+                preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+            else:
+                preds_max = tf.reduce_max(preds, 1, keepdims=True)
             original_predictions = tf.to_float(tf.equal(preds,
                                                         preds_max))
             labels = tf.stop_gradient(original_predictions)
@@ -387,7 +398,11 @@ class BasicIterativeMethod(Attack):
 
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model.get_probs(x)
-        preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            warnings.warn(self.depr_warning)
+            preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
+        else:
+            preds_max = tf.reduce_max(model_preds, 1, keepdims=True)
         if self.y_target is not None:
             y = self.y_target
             targeted = True
@@ -526,7 +541,11 @@ class MomentumIterativeMethod(Attack):
 
         # Fix labels to the first model predictions for loss computation
         y, nb_classes = self.get_or_guess_labels(x, kwargs)
-        y = y / tf.reduce_sum(y, 1, keep_dims=True)
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            warnings.warn(self.depr_warning)
+            y = y / tf.reduce_sum(y, 1, keep_dims=True)
+        else:
+            y = y / tf.reduce_sum(y, 1, keepdims=True)
         targeted = (self.y_target is not None)
 
         from . import utils_tf
@@ -543,24 +562,39 @@ class MomentumIterativeMethod(Attack):
             # Normalize current gradient and add it to the accumulated gradient
             red_ind = list(xrange(1, len(grad.get_shape())))
             avoid_zero_div = tf.cast(1e-12, grad.dtype)
-            grad = grad / tf.maximum(avoid_zero_div,
-                                     tf.reduce_mean(tf.abs(grad),
-                                                    red_ind,
-                                                    keep_dims=True))
+            
+            if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+                warnings.warn(self.depr_warning)
+                grad_mean =tf.reduce_mean(tf.abs(grad), red_ind, keep_dims=True)
+            else:
+                grad_mean =tf.reduce_mean(tf.abs(grad), red_ind, keepdims=True)
+
+            grad = grad / tf.maximum(avoid_zero_div, grad_mean)
             momentum = self.decay_factor * momentum + grad
 
             if self.ord == np.inf:
                 normalized_grad = tf.sign(momentum)
             elif self.ord == 1:
-                norm = tf.maximum(avoid_zero_div,
-                                  tf.reduce_sum(tf.abs(momentum),
-                                                red_ind,
-                                                keep_dims=True))
+                if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+                    warnings.warn(self.depr_warning)
+                    momentum_sum = tf.reduce_sum(tf.abs(momentum), red_ind,
+                                                 keep_dims=True)
+                else:
+                    momentum_sum = tf.reduce_sum(tf.abs(momentum), red_ind,
+                                                 keepdims=True)
+
+                norm = tf.maximum(avoid_zero_div, momentum_sum)
                 normalized_grad = momentum / norm
             elif self.ord == 2:
-                square = tf.reduce_sum(tf.square(momentum),
-                                       red_ind,
-                                       keep_dims=True)
+                if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+                    warnings.warn(self.depr_warning)
+                    square = tf.reduce_sum(tf.square(momentum),
+                                           red_ind,
+                                           keep_dims=True)
+                else:
+                    square = tf.reduce_sum(tf.square(momentum),
+                                           red_ind,
+                                           keepdims=True)
                 norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
                 normalized_grad = momentum / norm
             else:

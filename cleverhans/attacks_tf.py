@@ -11,6 +11,7 @@ import warnings
 
 from . import utils_tf
 from . import utils
+from distutils.version import LooseVersion
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
@@ -56,10 +57,27 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
 
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
-        preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            warning = "Running on tensorflow version " + \
+                       LooseVersion(tf.__version__).vstring + \
+                       ". This version will not be supported by CleverHans" + \
+                       " in the future."
+            warnings.warn(warning)
+            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+        else:
+            preds_max = tf.reduce_max(preds, 1, keepdims=True)
         y = tf.to_float(tf.equal(preds, preds_max))
         y = tf.stop_gradient(y)
-    y = y / tf.reduce_sum(y, 1, keep_dims=True)
+
+    if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+        warning = "Running on tensorflow version " + \
+                   LooseVersion(tf.__version__).vstring + \
+                   ". This version will not be supported by CleverHans" + \
+                   " in the future."
+        warnings.warn(warning)
+        y = y / tf.reduce_sum(y, 1, keep_dims=True)
+    else:
+        y = y / tf.reduce_sum(y, 1, keepdims=True)
 
     # Compute loss
     loss = utils_tf.model_loss(y, preds, mean=False)
@@ -80,14 +98,34 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
         normalized_grad = tf.stop_gradient(normalized_grad)
     elif ord == 1:
         red_ind = list(xrange(1, len(x.get_shape())))
-        normalized_grad = grad / tf.reduce_sum(tf.abs(grad),
-                                               reduction_indices=red_ind,
-                                               keep_dims=True)
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            warning = "Running on tensorflow version " + \
+                       LooseVersion(tf.__version__).vstring + \
+                       ". This version will not be supported by CleverHans" + \
+                       " in the future."
+            warnings.warn(warning)
+            grad_sum = tf.reduce_sum(tf.abs(grad), reduction_indices=red_ind,
+                                     keep_dims=True)
+        else:
+            grad_sum = tf.reduce_sum(tf.abs(grad), reduction_indices=red_ind,
+                                     keepdims=True)
+        normalized_grad = grad / grad_sum
     elif ord == 2:
         red_ind = list(xrange(1, len(x.get_shape())))
-        square = tf.reduce_sum(tf.square(grad),
-                               reduction_indices=red_ind,
-                               keep_dims=True)
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            warning = "Running on tensorflow version " + \
+                       LooseVersion(tf.__version__).vstring + \
+                       ". This version will not be supported by CleverHans" + \
+                       " in the future."
+            warnings.warn(warning)
+            square = tf.reduce_sum(tf.square(grad),
+                                   reduction_indices=red_ind,
+                                   keep_dims=True)
+        else:
+            square = tf.reduce_sum(tf.square(grad),
+                                   reduction_indices=red_ind,
+                                   keepdims=True)
+
         normalized_grad = grad / tf.sqrt(square)
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
@@ -492,14 +530,35 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
             * tf.cast(tf.equal(domain_in, 0), tf_dtype)
 
         target_tmp = grads_target
-        target_tmp -= increase_coef \
-            * tf.reduce_max(tf.abs(grads_target), axis=1, keep_dims=True)
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            warning = "Running on tensorflow version " + \
+                       LooseVersion(tf.__version__).vstring + \
+                       ". This version will not be supported by CleverHans" + \
+                       " in the future."
+            warnings.warn(warning)
+            grads_max = tf.reduce_max(tf.abs(grads_target), axis=1,
+                                      keep_dims=True)
+        else:
+            grads_max = tf.reduce_max(tf.abs(grads_target), axis=1,
+                                      keepdims=True)
+
+        target_tmp -= increase_coef * grads_max
         target_sum = tf.reshape(target_tmp, shape=[-1, nb_features, 1]) \
             + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
 
         other_tmp = grads_other
-        other_tmp += increase_coef \
-            * tf.reduce_max(tf.abs(grads_other), axis=1, keep_dims=True)
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            warning = "Running on tensorflow version " + \
+                       LooseVersion(tf.__version__).vstring + \
+                       ". This version will not be supported by CleverHans" + \
+                       " in the future."
+            warnings.warn(warning)
+            grads_max = tf.reduce_max(tf.abs(grads_other), axis=1,
+                                      keep_dims=True)
+        else:
+            grads_max = tf.reduce_max(tf.abs(grads_other), axis=1,
+                                      keepdims=True)
+        other_tmp += increase_coef * grads_max
         other_sum = tf.reshape(other_tmp, shape=[-1, nb_features, 1]) \
             + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
 
