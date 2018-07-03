@@ -80,7 +80,7 @@ class Linear(Layer):
         if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
             warning = "Running on tensorflow version " + \
                        LooseVersion(tf.__version__).vstring + \
-                       ". This version will not be supported by cleverhans" + \
+                       ". This version will not be supported by CleverHans" + \
                        "in the future."
             warnings.warn(warning)
             init_square_sum = tf.reduce_sum(tf.square(init),
