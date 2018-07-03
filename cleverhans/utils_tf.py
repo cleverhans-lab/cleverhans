@@ -113,6 +113,10 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     if optimizer is None:
         optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    else:
+        if not isinstance(optimizer, tf.train.Optimizer):
+            raise ValueError("optimizer object must be from a child class of "
+                             "tf.train.Optimizer")
 
     # Define loss
     loss = model_loss(y, predictions)
