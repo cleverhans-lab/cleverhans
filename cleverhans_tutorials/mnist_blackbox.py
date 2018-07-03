@@ -14,6 +14,7 @@ from six.moves import xrange
 
 import logging
 import tensorflow as tf
+import keras
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
@@ -73,8 +74,16 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    model_train(sess, x, y, predictions, X_train, Y_train,
+    # treat keras model and tensorflow model separately
+    if (model.__class__ in [keras.models.Sequential 
+        or keras.engine.training.Model]):
+        print("Keras model detected...")
+        model_train(sess, x, y, predictions, X_train, Y_train, 
+                args=train_params, rng=rng)
+    else:
+        model_train(sess, x, y, predictions, X_train, Y_train, 
                 args=train_params, rng=rng, var_list=model.get_params())
+
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
@@ -235,6 +244,11 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     print("Training the substitute model.")
+    
+    # set keras model as non-trainable
+    if (model.__class__ in [keras.models.Sequential or keras.engine.training.Model]):
+        model.trainable = False
+
     train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
                               nb_classes, nb_epochs_s, batch_size,
                               learning_rate, data_aug, lmbda, rng=rng)
