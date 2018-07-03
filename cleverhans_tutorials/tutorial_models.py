@@ -11,6 +11,7 @@ import numpy as np
 import tensorflow as tf
 from cleverhans.model import Model
 from distutils.version import LooseVersion
+import warnings
 
 
 class MLP(Model):
@@ -81,7 +82,7 @@ class Linear(Layer):
                        LooseVersion(tf.__version__).vstring + \
                        ". This version will not be supported by cleverhans" + \
                        "in the future."
-            _logger.warn(warning)
+            warnings.warn(warning)
             init_square_sum = tf.reduce_sum(tf.square(init),
                                             axis=0, keep_dims=True)
         else:

@@ -41,9 +41,9 @@ def model_loss(y, model, mean=True):
     except AttributeError:
         warning = "Running on tensorflow version " + \
                    LooseVersion(tf.__version__).vstring + \
-                   ". This version will not be supported by cleverhans" + \
+                   ". This version will not be supported by CleverHans" + \
                    "in the future."
-        _logger.warn(warning)
+        warnings.warn(warning)
         out = tf.nn.softmax_cross_entropy_with_logits(
                                                 logits=logits, labels=y)
 
