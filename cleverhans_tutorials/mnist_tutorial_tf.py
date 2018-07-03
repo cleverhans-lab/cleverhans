@@ -83,7 +83,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     if label_smoothing:
         label_smooth = .1
-        Y_train = Y_train.clip(label_smooth / 
+        Y_train = Y_train.clip(label_smooth /
                                (nb_classes-1), 1. - label_smooth)
 
     # Define input TF placeholder

@@ -74,7 +74,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     nb_filters = 64
     # Define TF model graph
     model = make_basic_cnn(nb_filters, nb_classes,
-                   input_shape=(None, img_rows, img_cols, nchannels))
+                           input_shape=(None, img_rows, img_cols,
+                                        nchannels))
     preds = model(x)
     print("Defined TensorFlow model graph.")
 

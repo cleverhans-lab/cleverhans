@@ -129,7 +129,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     if targeted:
         if viz_enabled:
             # Initialize our array for grid visualization
-            grid_shape = (nb_classes, nb_classes, img_rows, img_cols, 
+            grid_shape = (nb_classes, nb_classes, img_rows, img_cols,
                           nchannels)
             grid_viz_data = np.zeros(grid_shape, dtype='f')
 

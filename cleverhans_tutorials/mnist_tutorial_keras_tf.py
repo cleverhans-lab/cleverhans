@@ -120,7 +120,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     ckpt = tf.train.get_checkpoint_state(train_dir)
     ckpt_path = False if ckpt is None else ckpt.model_checkpoint_path
-        
+
     if load_model and ckpt_path:
         saver = tf.train.Saver()
         saver.restore(sess, ckpt_path)
