@@ -210,7 +210,6 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
-
     # Initialize substitute training set reserved for adversary
     X_sub = X_test[:holdout]
     Y_sub = np.argmax(Y_test[:holdout], axis=1)

@@ -76,7 +76,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
-
     # Use label smoothing
     print(X_train.shape)
     img_rows,img_cols,nchannels = X_train.shape[1:4]
@@ -114,7 +113,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
             acc = model_eval(
                 sess, x, y, preds, X_test, Y_test, args=eval_params)
             report.clean_train_clean_eval = acc
-            assert X_test.shape[0] == test_end - test_start, X_test.shape
+#            assert X_test.shape[0] == test_end - test_start, X_test.shape
             print('Test accuracy on legitimate examples: %0.4f' % acc)
         model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
                     args=train_params, rng=rng)
