@@ -142,7 +142,7 @@ class TestVirtualAdversarialMethod(CleverHansTest):
         self.sess.run(tf.global_variables_initializer())
 
     def test_parse_params(self):
-        self.attack.parse_params()
+        self.attack.parse_params(eps=2.0, num_iterations=1)
         # test default values
         self.assertEqual(self.attack.eps, 2.0)
         self.assertEqual(self.attack.num_iterations, 1)
