@@ -361,8 +361,12 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
     with tf.name_scope(scope, "l2_batch_normalize") as scope:
         x_shape = tf.shape(x)
         x = tf.contrib.layers.flatten(x)
-        x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keep_dims=True))
-        square_sum = tf.reduce_sum(tf.square(x), 1, keep_dims=True)
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keepdims=True))
+            square_sum = tf.reduce_sum(tf.square(x), 1, keepdims=True)
+        else:
+            x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keepdims=True))
+            square_sum = tf.reduce_sum(tf.square(x), 1, keepdims=True)
         x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
         x_norm = tf.multiply(x, x_inv_norm)
         return tf.reshape(x_norm, x_shape, scope)
@@ -400,16 +404,24 @@ def clip_eta(eta, ord, eps):
         eta = tf.clip_by_value(eta, -eps, eps)
     else:
         if ord == 1:
-            norm = tf.maximum(avoid_zero_div,
-                              tf.reduce_sum(tf.abs(eta),
-                                            reduc_ind, keep_dims=True))
+            if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+                eta_sum = tf.reduce_sum(tf.abs(eta),
+                                        reduc_ind, keep_dims=True)
+            else:
+                eta_sum = tf.reduce_sum(tf.abs(eta),
+                                        reduc_ind, keepdims=True)
+            norm = tf.maximum(avoid_zero_div, eta_sum)
         elif ord == 2:
             # avoid_zero_div must go inside sqrt to avoid a divide by zero
             # in the gradient through this operation
-            norm = tf.sqrt(tf.maximum(avoid_zero_div,
-                                      tf.reduce_sum(tf.square(eta),
-                                                    reduc_ind,
-                                                    keep_dims=True)))
+            if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+                eta_sum = tf.reduce_sum(tf.square(eta),
+                                        reduc_ind, keep_dims=True)
+            else:
+                eta_sum = tf.reduce_sum(tf.square(eta),
+                                        reduc_ind, keepdims=True)
+            norm = tf.sqrt(tf.maximum(avoid_zero_div,eta_sum))
+
         # We must *clip* to within the norm ball, not *normalize* onto the
         # surface of the ball
         factor = tf.minimum(1., eps / norm)
