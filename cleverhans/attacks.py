@@ -1067,7 +1067,7 @@ class ElasticNetMethod(Attack):
         return wrap
 
     def parse_params(self, y=None, y_target=None,
-                     nb_classes=None, fista=True, beta=1e-3,
+                     nb_classes=None, fista=True, beta=1e-2,
                      decision_rule='EN', batch_size=1, confidence=0,
                      learning_rate=1e-2,
                      binary_search_steps=9, max_iterations=1000,

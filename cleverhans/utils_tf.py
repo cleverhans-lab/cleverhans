@@ -39,6 +39,11 @@ def model_loss(y, model, mean=True):
         out = tf.nn.softmax_cross_entropy_with_logits_v2(
                                                 logits=logits, labels=y)
     except AttributeError:
+        warning = "Running on tensorflow version " + \
+                   LooseVersion(tf.__version__).vstring + \
+                   ". This version will not be supported by CleverHans" + \
+                   "in the future."
+        warnings.warn(warning)
         out = tf.nn.softmax_cross_entropy_with_logits(
                                                 logits=logits, labels=y)
 
@@ -72,7 +77,8 @@ def initialize_uninitialized_global_variables(sess):
 
 def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 predictions_adv=None, init_all=True, evaluate=None,
-                feed=None, args=None, rng=None, var_list=None):
+                feed=None, args=None, rng=None, var_list=None,
+                optimizer=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -99,6 +105,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                  and 'filename'
     :param rng: Instance of numpy.random.RandomState
     :param var_list: Optional list of parameters to train.
+    :param optimizer: Optimizer to be used for training
     :return: True if model trained
     """
     args = _ArgsWrapper(args or {})
@@ -115,13 +122,19 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     if rng is None:
         rng = np.random.RandomState()
 
+    if optimizer is None:
+        optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    else:
+        if not isinstance(optimizer, tf.train.Optimizer):
+            raise ValueError("optimizer object must be from a child class of "
+                             "tf.train.Optimizer")
+
     # Define loss
     loss = model_loss(y, predictions)
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
-    train_step = train_step.minimize(loss, var_list=var_list)
+    train_step = optimizer.minimize(loss, var_list=var_list)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
