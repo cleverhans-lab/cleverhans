@@ -433,7 +433,7 @@ def clip_eta(eta, ord, eps):
             else:
                 eta_sum = tf.reduce_sum(tf.square(eta),
                                         reduc_ind, keepdims=True)
-            norm = tf.sqrt(tf.maximum(avoid_zero_div,eta_sum))
+            norm = tf.sqrt(tf.maximum(avoid_zero_div, eta_sum))
 
         # We must *clip* to within the norm ball, not *normalize* onto the
         # surface of the ball
