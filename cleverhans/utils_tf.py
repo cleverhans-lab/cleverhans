@@ -362,8 +362,8 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
         x_shape = tf.shape(x)
         x = tf.contrib.layers.flatten(x)
         if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-            x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keepdims=True))
-            square_sum = tf.reduce_sum(tf.square(x), 1, keepdims=True)
+            x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keep_dims=True))
+            square_sum = tf.reduce_sum(tf.square(x), 1, keep_dims=True)
         else:
             x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keepdims=True))
             square_sum = tf.reduce_sum(tf.square(x), 1, keepdims=True)
