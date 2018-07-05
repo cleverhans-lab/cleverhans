@@ -556,7 +556,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
 
 def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
-                          feed=None):
+                          aug_batch_size = 512, feed=None):
     """
     Augment an adversary's substitute training set using the Jacobian
     of a substitute model to generate new synthetic inputs.
@@ -583,23 +583,27 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     # Create new numpy array for adversary training data
     # with twice as many components on the first dimension.
     X_sub = np.vstack([X_sub_prev, X_sub_prev])
+    nsamples = X_sub_prev.shape[0]
 
-    # For each input in the previous' substitute training iteration
-    for ind, prev_input in enumerate(X_sub_prev):
-        # Select gradient corresponding to the label predicted by the oracle
-        grad = grads[Y_sub[ind]]
-
-        # Prepare feeding dictionary
-        feed_dict = {x: np.reshape(prev_input, input_shape)}
+    # Creating and processing as batch
+    nb_batches_aug = int((len(X_sub_prev) + aug_batch_size - 1)/aug_batch_size)
+    p_idxs = 0
+    for i in range(nb_batches_aug):
+        X_batch = X_sub_prev[i*aug_batch_size:(i+1)*aug_batch_size,:,:,:]
+        feed_dict = {x: X_batch}
         if feed is not None:
             feed_dict.update(feed)
 
         # Compute sign matrix
-        grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
+        grad_val = sess.run([tf.sign(grads)], feed_dict=feed_dict)[0]
 
         # Create new synthetic point in adversary substitute training set
-        X_sub[X_sub_prev.shape[0] + ind] = X_sub[ind] + lmbda * grad_val
-
+        print(grad_val.shape)
+        for ind in range(X_batch.shape[0]):
+            indx = ind + p_idxs
+            X_sub[nsamples + indx] = X_batch[ind] + \
+                                     lmbda * grad_val[Y_sub[indx], ind, :, :, :]
+        p_idxs = p_idxs + X_batch.shape[0]
     # Return augmented training data (needs to be labeled afterwards)
     return X_sub
 
