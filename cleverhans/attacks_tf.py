@@ -556,7 +556,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
 
 def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
-                          aug_batch_size = 512, feed=None):
+                          aug_batch_size=512, feed=None):
     """
     Augment an adversary's substitute training set using the Jacobian
     of a substitute model to generate new synthetic inputs.
@@ -589,7 +589,7 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     nb_batches_aug = int((len(X_sub_prev) + aug_batch_size - 1)/aug_batch_size)
     p_idxs = 0
     for i in range(nb_batches_aug):
-        X_batch = X_sub_prev[i*aug_batch_size:(i+1)*aug_batch_size,:,:,:]
+        X_batch = X_sub_prev[i*aug_batch_size:(i+1)*aug_batch_size, :, :, :]
         feed_dict = {x: X_batch}
         if feed is not None:
             feed_dict.update(feed)
@@ -601,8 +601,8 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
         print(grad_val.shape)
         for ind in range(X_batch.shape[0]):
             indx = ind + p_idxs
-            X_sub[nsamples + indx] = X_batch[ind] + \
-                                     lmbda * grad_val[Y_sub[indx], ind, :, :, :]
+            X_sub[nsamples + indx] = (X_batch[ind] + lmbda *
+                                      grad_val[Y_sub[indx], ind, :, :, :])
         p_idxs = p_idxs + X_batch.shape[0]
     # Return augmented training data (needs to be labeled afterwards)
     return X_sub
