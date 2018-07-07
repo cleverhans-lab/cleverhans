@@ -207,12 +207,12 @@ def mnist_tutorial_ead(train_start=0, train_end=60000, test_start=0,
     # Compute the average L2 distortion introduced by the algorithm
     percent_perturbed_l2 = np.mean(np.sum((adv - adv_inputs)**2,
                                           axis=(1, 2, 3))**.5)
-    print('Avg. L_2 norm of perturbations {0:.4f}'.format(percent_perturbed_l2))
+    print('Avg. L_2 perturbation norm {0:.4f}'.format(percent_perturbed_l2))
 
     # Compute the average L1 distortion introduced by the algorithm
     percent_perturbed_l1 = np.mean(np.sum(np.abs(adv - adv_inputs),
                                           axis=(1, 2, 3)))
-    print('Avg. L_1 norm of perturbations {0:.4f}'.format(percent_perturbed_l1))
+    print('Avg. L_1 perturbation norm {0:.4f}'.format(percent_perturbed_l1))
 
     # Close TF session
     sess.close()
