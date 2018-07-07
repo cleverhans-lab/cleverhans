@@ -993,13 +993,16 @@ class ElasticNetMethod(Attack):
                                     search to find the optimal tradeoff-
                                     constant between norm of the perturbation
                                     and confidence of the classification.
+                                    If computational efficiency is a concern,
+                                    fix this param to 1 and 'initial_const'
+                                    to a high value, e.g. 1e+5.
         :param max_iterations: The maximum number of iterations. Setting this
                                to a larger value will produce lower distortion
                                results. Using only a few iterations requires
                                a larger learning rate, and will produce larger
                                distortion results.
         :param abort_early: If true, allows early abort when the total
-                            loss starts to increase (greatly speeds up attack,
+                            loss increases (greatly speeds up attack,
                             but hurts performance, particularly on ImageNet)
         :param initial_const: The initial tradeoff-constant to use to tune the
                               relative importance of size of the perturbation
@@ -1007,6 +1010,9 @@ class ElasticNetMethod(Attack):
                               If binary_search_steps is large, the initial
                               constant is not important. A smaller value of
                               this constant gives lower distortion results.
+                              If computational efficiency is a concern,
+                              fix this param to a high value, e.g. 1e+5 and
+                              'binary_search_steps' to 1.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """

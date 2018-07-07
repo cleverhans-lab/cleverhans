@@ -88,25 +88,34 @@ To help you get started with the functionalities provided by this library, the
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial examples using adversarial training.
+* **MNIST with CW** ([code](cleverhans_tutorials/mnist_tutorial_cw.py)): this
+tutorial covers how to train a MNIST model using TensorFlow, and
+craft adversarial examples using the [C&W attack](https://arxiv.org/abs/1608.04644).
+* **MNIST with EAD** ([code](cleverhans_tutorials/mnist_tutorial_ead.py)): this
+tutorial covers how to train a MNIST model using TensorFlow, and
+craft adversarial examples using the [EAD attack](https://arxiv.org/abs/1709.04114).
 * **MNIST with FGSM using Keras** ([code](cleverhans_tutorials/mnist_tutorial_keras_tf.py)): this
 tutorial covers how to define a MNIST model with Keras and train it using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
 and make the model more robust to adversarial
 examples using adversarial training.
-* **MNIST with JSMA** ([code](cleverhans_tutorials/mnist_tutorial_jsma.py)): this second
-tutorial covers how to define a MNIST model with Keras and train it using TensorFlow and
+* **MNIST with FGSM using Pytorch** ([code](cleverhans_tutorials/mnist_tutorial_pytorch.py)): this
+tutorial covers how to train a MNIST Pytorch model, convert it to TensorFlow, and
+craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572).
+* **MNIST with JSMA** ([code](cleverhans_tutorials/mnist_tutorial_jsma.py)): this
+tutorial covers how to train a MNIST model using TensorFlow, and
 craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528).
 * **MNIST using a black-box attack** ([code](cleverhans_tutorials/mnist_blackbox.py)):
 this tutorial implements the black-box
 attack described in this [paper](https://arxiv.org/abs/1602.02697).
-The adversary train a substitute model: a copy that imitates the black-box
+The adversary trains a substitute model: a copy that imitates the black-box
 model by observing the labels that the black-box model assigns to inputs chosen
 carefully by the adversary. The adversary then uses the substitute
 model’s gradients to find adversarial examples that are misclassified by the
 black-box model as well.
 
 Some models used in the tutorials are defined using [Keras](https://keras.io),
-which should be installed before running these tutorials.
+which should be installed before running these tutorials. Same with [Pytorch](https://pytorch.org/).  
 Installation instructions for Keras can be found
 [here](https://keras.io/#installation).
 Note that you should configure Keras to use the TensorFlow backend. You
