@@ -27,11 +27,11 @@ FLAGS = flags.FLAGS
 
 
 def mnist_tutorial_ead(train_start=0, train_end=60000, test_start=0,
-                      test_end=10000, viz_enabled=True, nb_epochs=6,
-                      batch_size=128, nb_classes=10, source_samples=10,
-                      learning_rate=0.001, attack_iterations=1000,
-                      model_path=os.path.join("models", "mnist"),
-                      targeted=True):
+                       test_end=10000, viz_enabled=True, nb_epochs=6,
+                       batch_size=128, nb_classes=10, source_samples=10,
+                       learning_rate=0.001, attack_iterations=1000,
+                       model_path=os.path.join("models", "mnist"),
+                       targeted=True):
     """
     MNIST tutorial for the EAD attack
     :param train_start: index of first training set example
@@ -159,19 +159,19 @@ def mnist_tutorial_ead(train_start=0, train_end=60000, test_start=0,
         adv_ys = None
         yname = "y"
     """
-    No bss for computational efficiency, due to this 'initial_const' 
+    No bss for computational efficiency, due to this 'initial_const'
     fixed to high value. Success rate should be unchanged from default
     configuration, however, average distortion will be increased
     """
     ead_params = {'binary_search_steps': 1,
-                 yname: adv_ys,
-                 'max_iterations': attack_iterations,
-                 'batch_size': source_samples * nb_classes if
-                 targeted else source_samples,
-                 'initial_const': 1e+5}
+                  yname: adv_ys,
+                  'max_iterations': attack_iterations,
+                  'batch_size': source_samples * nb_classes if
+                  targeted else source_samples,
+                  'initial_const': 1e+5}
 
     adv = ead.generate_np(adv_inputs,
-                         **cw_params)
+                          **ead_params)
 
     eval_params = {'batch_size': np.minimum(nb_classes, source_samples)}
     if targeted:
@@ -206,12 +206,12 @@ def mnist_tutorial_ead(train_start=0, train_end=60000, test_start=0,
 
     # Compute the average L2 distortion introduced by the algorithm
     percent_perturbed_l2 = np.mean(np.sum((adv - adv_inputs)**2,
-                                       axis=(1, 2, 3))**.5)
+                                          axis=(1, 2, 3))**.5)
     print('Avg. L_2 norm of perturbations {0:.4f}'.format(percent_perturbed_l2))
 
     # Compute the average L1 distortion introduced by the algorithm
     percent_perturbed_l1 = np.mean(np.sum(np.abs(adv - adv_inputs),
-                                       axis=(1, 2, 3)))
+                                          axis=(1, 2, 3)))
     print('Avg. L_1 norm of perturbations {0:.4f}'.format(percent_perturbed_l1))
 
     # Close TF session
@@ -227,14 +227,14 @@ def mnist_tutorial_ead(train_start=0, train_end=60000, test_start=0,
 
 def main(argv=None):
     mnist_tutorial_ead(viz_enabled=FLAGS.viz_enabled,
-                      nb_epochs=FLAGS.nb_epochs,
-                      batch_size=FLAGS.batch_size,
-                      nb_classes=FLAGS.nb_classes,
-                      source_samples=FLAGS.source_samples,
-                      learning_rate=FLAGS.learning_rate,
-                      attack_iterations=FLAGS.attack_iterations,
-                      model_path=FLAGS.model_path,
-                      targeted=FLAGS.targeted)
+                       nb_epochs=FLAGS.nb_epochs,
+                       batch_size=FLAGS.batch_size,
+                       nb_classes=FLAGS.nb_classes,
+                       source_samples=FLAGS.source_samples,
+                       learning_rate=FLAGS.learning_rate,
+                       attack_iterations=FLAGS.attack_iterations,
+                       model_path=FLAGS.model_path,
+                       targeted=FLAGS.targeted)
 
 
 if __name__ == '__main__':
