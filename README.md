@@ -39,7 +39,16 @@ Once dependencies have been taken care of, you can install CleverHans using
 
 #### `pip` installation
 
-If you are installing CleverHans using `pip`, run the following command:
+If you are installing CleverHans using `pip`, run the following command
+after installing TensorFlow:
+
+```
+pip install cleverhans
+```
+
+This will install the last version uploaded to 
+[Pypi](https://pypi.org/project/cleverhans). 
+If you'd instead like to install the bleeding edge version, use: 
 
 ```
 pip install -e git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
@@ -47,8 +56,8 @@ pip install -e git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
 
 #### Manual installation
 
-If you are installing CleverHans manually, you need to install TensorFlow
-first. Then, run the following command to clone the CleverHans repository
+If you are installing CleverHans manually, install TensorFlow first. 
+Then, run the following command to clone the CleverHans repository
 into a folder of your choice:
 
 ```
@@ -147,7 +156,7 @@ If you use CleverHans for academic research, you are highly encouraged
 
 ```
 @article{papernot2018cleverhans,
-  title={cleverhans v2.1.0: an adversarial machine learning library},
+  title={Technical Report on the CleverHans v2.1.0 Adversarial Examples Library},
   author={Nicolas Papernot and Fartash Faghri and Nicholas Carlini and
   Ian Goodfellow and Reuben Feinman and Alexey Kurakin and Cihang Xie and
   Yash Sharma and Tom Brown and Aurko Roy and Alexander Matyasko and

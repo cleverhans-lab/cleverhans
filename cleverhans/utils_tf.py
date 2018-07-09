@@ -34,7 +34,18 @@ def model_loss(y, model, mean=True):
     else:
         logits = model
 
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+    try:
+        y = tf.stop_gradient(y)
+        out = tf.nn.softmax_cross_entropy_with_logits_v2(
+                                                logits=logits, labels=y)
+    except AttributeError:
+        warning = "Running on tensorflow version " + \
+                   LooseVersion(tf.__version__).vstring + \
+                   ". This version will not be supported by CleverHans" + \
+                   "in the future."
+        warnings.warn(warning)
+        out = tf.nn.softmax_cross_entropy_with_logits(
+                                                logits=logits, labels=y)
 
     if mean:
         out = tf.reduce_mean(out)
@@ -66,7 +77,7 @@ def initialize_uninitialized_global_variables(sess):
 
 def train(sess, loss, x, y, X_train, Y_train, save=False,
           init_all=True, evaluate=None, feed=None, args=None,
-          rng=None, var_list=None, fprop_args=None):
+          rng=None, var_list=None, fprop_args=None, optimizer=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
@@ -92,6 +103,7 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
     :param rng: Instance of numpy.random.RandomState
     :param var_list: Optional list of parameters to train.
     :param fprop_args: dict, extra arguments to pass to fprop (loss and model).
+    :param optimizer: Optimizer to be used for training
     :return: True if model trained
     """
     args = _ArgsWrapper(args or {})
@@ -111,10 +123,15 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
 
     # Define optimizer
     loss_value = loss.fprop(x, y, **fprop_args)
-    train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    if optimizer is None:
+        optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    else:
+        if not isinstance(optimizer, tf.train.Optimizer):
+            raise ValueError("optimizer object must be from a child class of "
+                             "tf.train.Optimizer")
     # Trigger update operations within the default graph (such as batch_norm).
     with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-        train_step = train_step.minimize(loss_value, var_list=var_list)
+        train_step = optimizer.minimize(loss_value, var_list=var_list)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
@@ -255,10 +272,8 @@ def tf_model_load(sess, file_path=None):
     with sess.as_default():
         saver = tf.train.Saver()
         if file_path is None:
-            warnings.warn("Please provide file_path argument, "
-                          "support for FLAGS.train_dir and FLAGS.filename "
-                          "will be removed on 2018-04-23.")
-            file_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
+            error = 'file_path argument is missing.'
+            raise ValueError(error)
         saver.restore(sess, file_path)
 
     return True
