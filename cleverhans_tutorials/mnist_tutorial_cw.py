@@ -16,11 +16,11 @@ from tensorflow.python.platform import flags
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
-from cleverhans.defenses import LossCrossEntropy
+from cleverhans.loss import LossCrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval, tf_model_load
+from cleverhans.utils_tf import train, model_eval, tf_model_load
 from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
@@ -99,8 +99,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     if os.path.exists(model_path + ".meta"):
         tf_model_load(sess, model_path)
     else:
-        model_train(sess, loss, x, y, x_train, y_train, args=train_params,
-                    save=os.path.exists("models"), rng=rng)
+        train(sess, loss, x, y, x_train, y_train, args=train_params,
+              save=os.path.exists("models"), rng=rng)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}

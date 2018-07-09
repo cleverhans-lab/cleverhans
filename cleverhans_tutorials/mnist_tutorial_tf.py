@@ -16,9 +16,9 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 import logging
 
-from cleverhans.defenses import LossCrossEntropy
+from cleverhans.loss import LossCrossEntropy
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval
+from cleverhans.utils_tf import train, model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport, set_log_level
 from cleverhans_tutorials.tutorial_models import ModelBasicCNN
@@ -114,8 +114,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         def evaluate():
             do_eval(preds, x_test, y_test, 'clean_train_clean_eval', False)
 
-        model_train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
-                    args=train_params, rng=rng, var_list=model.get_params())
+        train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
+              args=train_params, rng=rng, var_list=model.get_params())
 
         # Calculate training error
         if testing:
@@ -164,8 +164,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         do_eval(preds2_adv, x_test, y_test, 'adv_train_adv_eval', True)
 
     # Perform and evaluate adversarial training
-    model_train(sess, loss2, x, y, x_train, y_train, evaluate=evaluate2,
-                args=train_params, rng=rng, var_list=model2.get_params())
+    train(sess, loss2, x, y, x_train, y_train, evaluate=evaluate2,
+          args=train_params, rng=rng, var_list=model2.get_params())
 
     # Calculate training errors
     if testing:

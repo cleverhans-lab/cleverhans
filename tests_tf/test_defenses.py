@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import unittest
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.defenses import LossCrossEntropy, LossMixUp, LossFeaturePairing
+from cleverhans.loss import LossCrossEntropy, LossMixUp, LossFeaturePairing
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
 import numpy as np

@@ -533,8 +533,8 @@ class MomentumIterativeMethod(Attack):
         from . import utils_tf
         for i in range(self.nb_iter):
             # Compute loss
-            preds = self.model.get_probs(adv_x)
-            loss = loss_module.attack_softmax_cross_entropy(y, preds,
+            logits = self.model.get_logits(adv_x)
+            loss = loss_module.attack_softmax_cross_entropy(y, logits,
                                                             mean=False)
             if targeted:
                 loss = -loss
@@ -1360,8 +1360,8 @@ class MadryEtAl(Attack):
         from cleverhans.loss import attack_softmax_cross_entropy
 
         adv_x = x + eta
-        preds = self.model.get_probs(adv_x)
-        loss = attack_softmax_cross_entropy(y, preds)
+        logits = self.model.get_logits(adv_x)
+        loss = attack_softmax_cross_entropy(y, logits)
         if self.targeted:
             loss = -loss
         grad, = tf.gradients(loss, adv_x)

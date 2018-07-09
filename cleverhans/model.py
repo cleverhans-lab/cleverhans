@@ -13,16 +13,16 @@ class Model(object):
     __metaclass__ = ABCMeta
     O_LOGITS, O_PROBS, O_FEATURES = 'logits probs features'.split()
 
-    def __init__(self, scope, nb_classes, hparams):
+    def __init__(self, scope=None, nb_classes=10, hparams=None):
         """
         Constructor.
         :param scope: str, the name of model.
         :param nb_classes: integer, the number of classes.
         :param hparams: dict, hyper-parameters for the model.
         """
-        self.scope = scope
+        self.scope = scope or self.__class__.__name__
         self.nb_classes = nb_classes
-        self.hparams = hparams
+        self.hparams = hparams or {}
 
     def __call__(self, *args, **kwargs):
         """
@@ -68,7 +68,22 @@ class Model(object):
         Provides access to the model's parameters.
         :return: A list of all Variables defining the model parameters.
         """
-        return tf.global_variables(self.scope)
+        raise NotImplementedError()
+
+    def get_layer_names(self):
+        """Return the list of exposed layers for this model."""
+        scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                       self.scope)
+        return [x.name for x in scope_vars]
+
+    def get_layer(self, x, layer, **kwargs):
+        """Return a layer output.
+        :param x: tensor, the input to the network.
+        :param layer: str, the name of the layer to compute.
+        :param **kwargs: dict, extra optional params to pass to self.fprop.
+        :return: the content of layer `layer`
+        """
+        return self.fprop(x, **kwargs)[layer]
 
 
 class CallableModelWrapper(Model):

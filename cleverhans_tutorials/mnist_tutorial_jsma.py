@@ -16,11 +16,11 @@ from tensorflow.python.platform import flags
 import logging
 
 from cleverhans.attacks import SaliencyMapMethod
-from cleverhans.defenses import LossCrossEntropy
+from cleverhans.loss import LossCrossEntropy
 from cleverhans.utils import other_classes, set_log_level
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval, model_argmax
+from cleverhans.utils_tf import train, model_eval, model_argmax
 from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
@@ -89,8 +89,8 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     }
     sess.run(tf.global_variables_initializer())
     rng = np.random.RandomState([2017, 8, 30])
-    model_train(sess, loss, x, y, x_train, y_train, args=train_params,
-                rng=rng)
+    train(sess, loss, x, y, x_train, y_train, args=train_params,
+          rng=rng)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}

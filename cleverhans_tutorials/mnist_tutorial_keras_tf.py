@@ -12,12 +12,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.defenses import LossCrossEntropy
+from cleverhans.loss import LossCrossEntropy
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval
+from cleverhans.utils_tf import train, model_eval
 import keras
 from keras import backend
 import numpy as np
@@ -119,8 +119,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     else:
         print("Model was not loaded, training from scratch.")
         loss = LossCrossEntropy(wrap, smoothing=0.1)
-        model_train(sess, loss, x, y, X_train, Y_train, evaluate=evaluate,
-                    args=train_params, save=True, rng=rng)
+        train(sess, loss, x, y, X_train, Y_train, evaluate=evaluate,
+              args=train_params, save=True, rng=rng)
 
     # Calculate training error
     if testing:
@@ -179,8 +179,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         report.adv_train_adv_eval = accuracy
 
     # Perform and evaluate adversarial training
-    model_train(sess, loss_2, x, y, X_train, Y_train, evaluate=evaluate_2,
-                args=train_params, save=False, rng=rng)
+    train(sess, loss_2, x, y, X_train, Y_train, evaluate=evaluate_2,
+          args=train_params, save=False, rng=rng)
 
     # Calculate training errors
     if testing:

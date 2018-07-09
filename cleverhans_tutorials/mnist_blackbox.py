@@ -18,12 +18,12 @@ import logging
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-from cleverhans.defenses import LossCrossEntropy
+from cleverhans.loss import LossCrossEntropy
 from cleverhans.model import Model
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import to_categorical
 from cleverhans.utils import set_log_level
-from cleverhans.utils_tf import model_train, model_eval, batch_eval
+from cleverhans.utils_tf import train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
@@ -78,8 +78,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    model_train(sess, loss, x, y, predictions, X_train, Y_train,
-                args=train_params, rng=rng)
+    train(sess, loss, x, y, X_train, Y_train, args=train_params, rng=rng)
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
@@ -149,10 +148,10 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             'learning_rate': learning_rate
         }
         with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
-            model_train(sess, loss_sub, x, y, X_sub,
-                        to_categorical(Y_sub, nb_classes),
-                        init_all=False, args=train_params, rng=rng,
-                        var_list=model_sub.get_params())
+            train(sess, loss_sub, x, y, X_sub,
+                  to_categorical(Y_sub, nb_classes),
+                  init_all=False, args=train_params, rng=rng,
+                  var_list=model_sub.get_params())
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < data_aug - 1:
@@ -207,18 +206,18 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     sess = tf.Session()
 
     # Get MNIST data
-    X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
+    x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
     # Initialize substitute training set reserved for adversary
-    X_sub = X_test[:holdout]
-    Y_sub = np.argmax(Y_test[:holdout], axis=1)
+    X_sub = x_test[:holdout]
+    Y_sub = np.argmax(y_test[:holdout], axis=1)
 
     # Redefine test set as remaining samples unavailable to adversaries
-    X_test = X_test[holdout:]
-    Y_test = Y_test[holdout:]
+    x_test = x_test[holdout:]
+    y_test = y_test[holdout:]
 
     # Define input and output TF placeholders
     x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
@@ -230,7 +229,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
     print("Preparing the black-box model.")
-    prep_bbox_out = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
+    prep_bbox_out = prep_bbox(sess, x, y, x_train, y_train, x_test, y_test,
                               nb_epochs, batch_size, learning_rate,
                               rng=rng)
     model, bbox_preds, accuracies['bbox'] = prep_bbox_out
@@ -244,7 +243,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Evaluate the substitute model on clean test examples
     eval_params = {'batch_size': batch_size}
-    acc = model_eval(sess, x, y, preds_sub, X_test, Y_test, args=eval_params)
+    acc = model_eval(sess, x, y, preds_sub, x_test, y_test, args=eval_params)
     accuracies['sub'] = acc
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
@@ -257,7 +256,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
     accuracy = model_eval(sess, x, y, model.get_logits(x_adv_sub),
-                          X_test, Y_test, args=eval_params)
+                          x_test, y_test, args=eval_params)
     print('Test accuracy of oracle on adversarial examples generated '
           'using the substitute: ' + str(accuracy))
     accuracies['bbox_on_sub_adv_ex'] = accuracy
