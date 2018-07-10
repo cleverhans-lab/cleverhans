@@ -53,12 +53,6 @@ class Attack(object):
         # We are going to keep track of old graphs and cache them.
         self.graphs = {}
 
-        # Deprecation warning
-        self.depr_warning = "Running on tensorflow version " + \
-                            LooseVersion(tf.__version__).vstring + \
-                            ". This version will not be supported by" + \
-                            " CleverHans in the future."
-
         # When calling generate_np, arguments in the following set should be
         # fed into the graph, as they are not structural items that require
         # generating a new graph.
@@ -561,16 +555,16 @@ class MomentumIterativeMethod(Attack):
             if self.ord == np.inf:
                 normalized_grad = tf.sign(momentum)
             elif self.ord == 1:
-                square = reduce_sum(tf.square(momentum),
-                                       red_ind,
-                                       keep_dims=True)
-                norm = tf.maximum(avoid_zero_div, momentum_sum)
-                normalized_grad = momentum / norm
-            elif self.ord == 2:
                 norm = tf.maximum(avoid_zero_div,
                                   reduce_sum(tf.abs(momentum),
                                                 red_ind,
                                                 keep_dims=True))
+                normalized_grad = momentum / norm
+            elif self.ord == 2:
+                square = reduce_sum(tf.square(momentum),
+                                       red_ind,
+                                       keep_dims=True)
+                norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
                 normalized_grad = momentum / norm
             else:
                 raise NotImplementedError("Only L-inf, L1 and L2 norms are "
