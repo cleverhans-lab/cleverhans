@@ -377,8 +377,8 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
     with tf.name_scope(scope, "l2_batch_normalize") as scope:
         x_shape = tf.shape(x)
         x = tf.contrib.layers.flatten(x)
-        x /= (epsilon + reduce_max(tf.abs(x), 1, keep_dims=True))
-        square_sum = reduce_sum(tf.square(x), 1, keep_dims=True)
+        x /= (epsilon + reduce_max(tf.abs(x), 1, keepdims=True))
+        square_sum = reduce_sum(tf.square(x), 1, keepdims=True)
         x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
         x_norm = tf.multiply(x, x_inv_norm)
         return tf.reshape(x_norm, x_shape, scope)
@@ -418,14 +418,14 @@ def clip_eta(eta, ord, eps):
         if ord == 1:
             norm = tf.maximum(avoid_zero_div,
                               reduce_sum(tf.abs(eta),
-                                         reduc_ind, keep_dims=True))
+                                         reduc_ind, keepdims=True))
         elif ord == 2:
             # avoid_zero_div must go inside sqrt to avoid a divide by zero
             # in the gradient through this operation
             norm = tf.sqrt(tf.maximum(avoid_zero_div,
                                       reduce_sum(tf.square(eta),
                                                  reduc_ind,
-                                                 keep_dims=True)))
+                                                 keepdims=True)))
         # We must *clip* to within the norm ball, not *normalize* onto the
         # surface of the ball
         factor = tf.minimum(1., eps / norm)
