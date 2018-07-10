@@ -14,6 +14,7 @@ from . import utils
 from cleverhans.compat import reduce_max, reduce_min
 from cleverhans.compat import reduce_mean, reduce_sum
 from cleverhans.compat import reduce_any
+from . import loss as loss_module
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
@@ -65,7 +66,7 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
     y = y / reduce_sum(y, 1, keepdims=True)
 
     # Compute loss
-    loss = utils_tf.model_loss(y, preds, mean=False)
+    loss = loss_module.attack_softmax_cross_entropy(y, preds, mean=False)
     if targeted:
         loss = -loss
 
@@ -1413,8 +1414,9 @@ class LBFGS_attack(object):
                                    name='ori_img')
         self.const = tf.Variable(np.zeros(self.batch_size), dtype=tf_dtype,
                                  name='const')
-        self.score = utils_tf.model_loss(self.targeted_label, self.model_preds,
-                                         mean=False)
+
+        self.score = loss_module.attack_softmax_cross_entropy(
+            self.targeted_label, self.model_preds, mean=False)
         self.l2dist = reduce_sum(tf.square(self.x - self.ori_img))
         # small self.const will result small adversarial perturbation
         self.loss = reduce_sum(self.score*self.const) + self.l2dist
