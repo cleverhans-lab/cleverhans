@@ -13,6 +13,9 @@ import time
 import warnings
 
 from .utils import batch_indices, _ArgsWrapper, create_logger
+from cleverhans.compat import reduce_sum, reduce_mean
+from cleverhans.compat import reduce_max, reduce_min
+from cleverhans.compat import reduce_any
 
 _logger = create_logger("cleverhans.utils.tf")
 
@@ -48,7 +51,7 @@ def model_loss(y, model, mean=True):
                                                 logits=logits, labels=y)
 
     if mean:
-        out = tf.reduce_mean(out)
+        out = reduce_mean(out)
     return out
 
 
@@ -374,12 +377,8 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
     with tf.name_scope(scope, "l2_batch_normalize") as scope:
         x_shape = tf.shape(x)
         x = tf.contrib.layers.flatten(x)
-        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-            x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keep_dims=True))
-            square_sum = tf.reduce_sum(tf.square(x), 1, keep_dims=True)
-        else:
-            x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keepdims=True))
-            square_sum = tf.reduce_sum(tf.square(x), 1, keepdims=True)
+        x /= (epsilon + reduce_max(tf.abs(x), 1, keep_dims=True))
+        square_sum = reduce_sum(tf.square(x), 1, keep_dims=True)
         x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
         x_norm = tf.multiply(x, x_inv_norm)
         return tf.reshape(x_norm, x_shape, scope)
@@ -393,7 +392,7 @@ def kl_with_logits(p_logits, q_logits, scope=None,
         p = tf.nn.softmax(p_logits)
         p_log = tf.nn.log_softmax(p_logits)
         q_log = tf.nn.log_softmax(q_logits)
-        loss = tf.reduce_mean(tf.reduce_sum(p * (p_log - q_log), axis=1),
+        loss = reduce_mean(reduce_sum(p * (p_log - q_log), axis=1),
                               name=name)
         tf.losses.add_loss(loss, loss_collection)
         return loss
@@ -417,24 +416,16 @@ def clip_eta(eta, ord, eps):
         eta = tf.clip_by_value(eta, -eps, eps)
     else:
         if ord == 1:
-            if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-                eta_sum = tf.reduce_sum(tf.abs(eta),
-                                        reduc_ind, keep_dims=True)
-            else:
-                eta_sum = tf.reduce_sum(tf.abs(eta),
-                                        reduc_ind, keepdims=True)
-            norm = tf.maximum(avoid_zero_div, eta_sum)
+            norm = tf.maximum(avoid_zero_div,
+                              reduce_sum(tf.abs(eta),
+                                            reduc_ind, keep_dims=True))
         elif ord == 2:
             # avoid_zero_div must go inside sqrt to avoid a divide by zero
             # in the gradient through this operation
-            if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-                eta_sum = tf.reduce_sum(tf.square(eta),
-                                        reduc_ind, keep_dims=True)
-            else:
-                eta_sum = tf.reduce_sum(tf.square(eta),
-                                        reduc_ind, keepdims=True)
-            norm = tf.sqrt(tf.maximum(avoid_zero_div, eta_sum))
-
+            norm = tf.sqrt(tf.maximum(avoid_zero_div,
+                                      reduce_sum(tf.square(eta),
+                                                    reduc_ind,
+                                                    keep_dims=True)))
         # We must *clip* to within the norm ball, not *normalize* onto the
         # surface of the ball
         factor = tf.minimum(1., eps / norm)
