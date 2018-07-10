@@ -11,6 +11,9 @@ import warnings
 
 from . import utils_tf
 from . import utils
+from cleverhans.compat import reduce_max, reduce_min
+from cleverhans.compat import reduce_mean, reduce_sum
+from cleverhans.compat import reduce_any
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
