@@ -11,7 +11,6 @@ import warnings
 
 from . import utils_tf
 from . import utils
-from distutils.version import LooseVersion
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
@@ -57,27 +56,10 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
 
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
-        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-            warning = "Running on tensorflow version " + \
-                       LooseVersion(tf.__version__).vstring + \
-                       ". This version will not be supported by CleverHans" + \
-                       " in the future."
-            warnings.warn(warning)
-            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
-        else:
-            preds_max = tf.reduce_max(preds, 1, keepdims=True)
+        preds_max = reduce_max(preds, 1, keep_dims=True)
         y = tf.to_float(tf.equal(preds, preds_max))
         y = tf.stop_gradient(y)
-
-    if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-        warning = "Running on tensorflow version " + \
-                   LooseVersion(tf.__version__).vstring + \
-                   ". This version will not be supported by CleverHans" + \
-                   " in the future."
-        warnings.warn(warning)
-        y = y / tf.reduce_sum(y, 1, keep_dims=True)
-    else:
-        y = y / tf.reduce_sum(y, 1, keepdims=True)
+    y = y / reduce_sum(y, 1, keep_dims=True)
 
     # Compute loss
     loss = utils_tf.model_loss(y, preds, mean=False)
@@ -98,34 +80,14 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
         normalized_grad = tf.stop_gradient(normalized_grad)
     elif ord == 1:
         red_ind = list(xrange(1, len(x.get_shape())))
-        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-            warning = "Running on tensorflow version " + \
-                       LooseVersion(tf.__version__).vstring + \
-                       ". This version will not be supported by CleverHans" + \
-                       " in the future."
-            warnings.warn(warning)
-            grad_sum = tf.reduce_sum(tf.abs(grad), reduction_indices=red_ind,
-                                     keep_dims=True)
-        else:
-            grad_sum = tf.reduce_sum(tf.abs(grad), reduction_indices=red_ind,
-                                     keepdims=True)
-        normalized_grad = grad / grad_sum
+        normalized_grad = grad / reduce_sum(tf.abs(grad),
+                                               reduction_indices=red_ind,
+                                               keep_dims=True)
     elif ord == 2:
         red_ind = list(xrange(1, len(x.get_shape())))
-        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-            warning = "Running on tensorflow version " + \
-                       LooseVersion(tf.__version__).vstring + \
-                       ". This version will not be supported by CleverHans" + \
-                       " in the future."
-            warnings.warn(warning)
-            square = tf.reduce_sum(tf.square(grad),
-                                   reduction_indices=red_ind,
-                                   keep_dims=True)
-        else:
-            square = tf.reduce_sum(tf.square(grad),
-                                   reduction_indices=red_ind,
-                                   keepdims=True)
-
+        square = reduce_sum(tf.square(grad),
+                               reduction_indices=red_ind,
+                               keep_dims=True)
         normalized_grad = grad / tf.sqrt(square)
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
@@ -520,8 +482,8 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
                                   shape=[nb_classes, -1, 1])
         other_classes = tf.cast(tf.not_equal(target_class, 1), tf_dtype)
 
-        grads_target = tf.reduce_sum(grads * target_class, axis=0)
-        grads_other = tf.reduce_sum(grads * other_classes, axis=0)
+        grads_target = reduce_sum(grads * target_class, axis=0)
+        grads_other = reduce_sum(grads * other_classes, axis=0)
 
         # Remove the already-used input features from the search space
         # Subtract 2 times the maximum value from those value so that
@@ -530,35 +492,14 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
             * tf.cast(tf.equal(domain_in, 0), tf_dtype)
 
         target_tmp = grads_target
-        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-            warning = "Running on tensorflow version " + \
-                       LooseVersion(tf.__version__).vstring + \
-                       ". This version will not be supported by CleverHans" + \
-                       " in the future."
-            warnings.warn(warning)
-            grads_max = tf.reduce_max(tf.abs(grads_target), axis=1,
-                                      keep_dims=True)
-        else:
-            grads_max = tf.reduce_max(tf.abs(grads_target), axis=1,
-                                      keepdims=True)
-
-        target_tmp -= increase_coef * grads_max
+        target_tmp -= increase_coef \
+            * reduce_max(tf.abs(grads_target), axis=1, keep_dims=True)
         target_sum = tf.reshape(target_tmp, shape=[-1, nb_features, 1]) \
             + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
 
         other_tmp = grads_other
-        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-            warning = "Running on tensorflow version " + \
-                       LooseVersion(tf.__version__).vstring + \
-                       ". This version will not be supported by CleverHans" + \
-                       " in the future."
-            warnings.warn(warning)
-            grads_max = tf.reduce_max(tf.abs(grads_other), axis=1,
-                                      keep_dims=True)
-        else:
-            grads_max = tf.reduce_max(tf.abs(grads_other), axis=1,
-                                      keepdims=True)
-        other_tmp += increase_coef * grads_max
+        other_tmp += increase_coef \
+            * reduce_max(tf.abs(grads_other), axis=1, keep_dims=True)
         other_sum = tf.reshape(other_tmp, shape=[-1, nb_features, 1]) \
             + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
 
@@ -583,8 +524,8 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
         p2_one_hot = tf.one_hot(p2, depth=nb_features)
 
         # Check if more modification is needed for each sample
-        mod_not_done = tf.equal(tf.reduce_sum(y_in * preds_onehot, axis=1), 0)
-        cond = mod_not_done & (tf.reduce_sum(domain_in, axis=1) >= 2)
+        mod_not_done = tf.equal(reduce_sum(y_in * preds_onehot, axis=1), 0)
+        cond = mod_not_done & (reduce_sum(domain_in, axis=1) >= 2)
 
         # Update the search domain
         cond_float = tf.reshape(tf.cast(cond, tf_dtype), shape=[-1, 1])
@@ -602,7 +543,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
         # Increase the iterator, and check if all misclassifications are done
         i_out = tf.add(i_in, 1)
-        cond_out = tf.reduce_any(cond)
+        cond_out = reduce_any(cond)
 
         return x_out, y_in, domain_out, i_out, cond_out
 
@@ -758,12 +699,12 @@ class CarliniWagnerL2(object):
         # distance to the input data
         self.other = (tf.tanh(self.timg) + 1) / \
             2 * (clip_max - clip_min) + clip_min
-        self.l2dist = tf.reduce_sum(tf.square(self.newimg - self.other),
+        self.l2dist = reduce_sum(tf.square(self.newimg - self.other),
                                     list(range(1, len(shape))))
 
         # compute the probability of the label class versus the maximum other
-        real = tf.reduce_sum((self.tlab) * self.output, 1)
-        other = tf.reduce_max(
+        real = reduce_sum((self.tlab) * self.output, 1)
+        other = reduce_max(
             (1 - self.tlab) * self.output - self.tlab * 10000,
             1)
 
@@ -775,8 +716,8 @@ class CarliniWagnerL2(object):
             loss1 = tf.maximum(ZERO(), real - other + self.CONFIDENCE)
 
         # sum up the losses
-        self.loss2 = tf.reduce_sum(self.l2dist)
-        self.loss1 = tf.reduce_sum(self.const * loss1)
+        self.loss2 = reduce_sum(self.l2dist)
+        self.loss1 = reduce_sum(self.const * loss1)
         self.loss = self.loss1 + self.loss2
 
         # Setup the adam optimizer and keep track of variables we're creating
@@ -1078,9 +1019,9 @@ class ElasticNetMethod(object):
         self.output = model.get_logits(self.newimg)
 
         # distance to the input data
-        self.l2dist = tf.reduce_sum(tf.square(self.newimg-self.timg),
+        self.l2dist = reduce_sum(tf.square(self.newimg-self.timg),
                                     list(range(1, len(shape))))
-        self.l1dist = tf.reduce_sum(tf.abs(self.newimg-self.timg),
+        self.l1dist = reduce_sum(tf.abs(self.newimg-self.timg),
                                     list(range(1, len(shape))))
         self.elasticdist = self.l2dist + tf.multiply(self.l1dist,
                                                      self.beta_t)
@@ -1092,8 +1033,8 @@ class ElasticNetMethod(object):
             self.crit_p = 'L1'
 
         # compute the probability of the label class versus the maximum other
-        real = tf.reduce_sum((self.tlab) * self.output, 1)
-        other = tf.reduce_max((1 - self.tlab) * self.output -
+        real = reduce_sum((self.tlab) * self.output, 1)
+        other = reduce_max((1 - self.tlab) * self.output -
                               (self.tlab * 10000), 1)
 
         if self.TARGETED:
@@ -1104,16 +1045,16 @@ class ElasticNetMethod(object):
             loss1 = tf.maximum(ZERO(), real - other + self.CONFIDENCE)
 
         # sum up the losses
-        self.loss21 = tf.reduce_sum(self.l1dist)
-        self.loss2 = tf.reduce_sum(self.l2dist)
-        self.loss1 = tf.reduce_sum(self.const * loss1)
+        self.loss21 = reduce_sum(self.l1dist)
+        self.loss2 = reduce_sum(self.l2dist)
+        self.loss1 = reduce_sum(self.const * loss1)
 
         if self.fista:
             self.output_y = model.get_logits(self.slack)
-            self.l2dist_y = tf.reduce_sum(tf.square(self.slack-self.timg),
+            self.l2dist_y = reduce_sum(tf.square(self.slack-self.timg),
                                           list(range(1, len(shape))))
-            real_y = tf.reduce_sum((self.tlab) * self.output_y, 1)
-            other_y = tf.reduce_max((1 - self.tlab) * self.output_y -
+            real_y = reduce_sum((self.tlab) * self.output_y, 1)
+            other_y = reduce_max((1 - self.tlab) * self.output_y -
                                     (self.tlab * 10000), 1)
             if self.TARGETED:
                 loss1_y = tf.maximum(ZERO(),
@@ -1122,8 +1063,8 @@ class ElasticNetMethod(object):
                 loss1_y = tf.maximum(ZERO(),
                                      real_y - other_y + self.CONFIDENCE)
 
-            self.loss2_y = tf.reduce_sum(self.l2dist_y)
-            self.loss1_y = tf.reduce_sum(self.const * loss1_y)
+            self.loss2_y = reduce_sum(self.l2dist_y)
+            self.loss1_y = reduce_sum(self.const * loss1_y)
 
             self.loss_opt = self.loss1_y+self.loss2_y
         else:
@@ -1471,9 +1412,9 @@ class LBFGS_attack(object):
                                  name='const')
         self.score = utils_tf.model_loss(self.targeted_label, self.model_preds,
                                          mean=False)
-        self.l2dist = tf.reduce_sum(tf.square(self.x - self.ori_img))
+        self.l2dist = reduce_sum(tf.square(self.x - self.ori_img))
         # small self.const will result small adversarial perturbation
-        self.loss = tf.reduce_sum(self.score*self.const) + self.l2dist
+        self.loss = reduce_sum(self.score*self.const) + self.l2dist
         self.grad, = tf.gradients(self.loss, self.x)
 
     def attack(self, x_val, targets):
@@ -1605,7 +1546,7 @@ class UnrolledOptimizer(object):
             new_optim_state: A dict, with the same structure as `optim_state`,
                 which have been updated.
         """
-        loss = tf.reduce_mean(loss_fn(x), axis=0)
+        loss = reduce_mean(loss_fn(x), axis=0)
         return tf.gradients(loss, x)
 
     def _apply_gradients(self, grads, x, optim_state):
@@ -1719,7 +1660,7 @@ class SPSAAdam(UnrolledAdam):
             loss_vals = tf.reshape(
                 loss_fn(x + delta_x),
                 [2 * self._num_samples] + [1] * (len(x_shape) - 1))
-            avg_grad = tf.reduce_mean(loss_vals * delta_x, axis=0) / delta
+            avg_grad = reduce_mean(loss_vals * delta_x, axis=0) / delta
             avg_grad = tf.expand_dims(avg_grad, axis=0)
             new_grad_array = grad_array.write(i, avg_grad)
             return i + 1, new_grad_array
@@ -1732,7 +1673,7 @@ class SPSAAdam(UnrolledAdam):
                 loop_vars=[0, tf.TensorArray(size=self._num_iters,
                            dtype=tf_dtype)],
                 back_prop=False, parallel_iterations=1)
-        avg_grad = tf.reduce_sum(all_grads.stack(), axis=0)
+        avg_grad = reduce_sum(all_grads.stack(), axis=0)
         return [avg_grad]
 
 
@@ -1795,7 +1736,7 @@ def pgd_attack(loss_fn, input_image, label, epsilon, num_steps,
             return loss_fn(input_image + x, label)
         new_perturbation_list, new_optim_state = optimizer.minimize(
                 wrapped_loss_fn, [perturbation], optim_state)
-        loss = tf.reduce_mean(wrapped_loss_fn(perturbation), axis=0)
+        loss = reduce_mean(wrapped_loss_fn(perturbation), axis=0)
         if is_debug:
             with tf.device("/cpu:0"):
                 loss = tf.Print(loss, [loss], "Total batch loss")
@@ -1837,9 +1778,9 @@ def margin_logit_loss(model_logits, label, num_classes=10):
     pgd_attack, i.e. it returns a batch of loss values.
     """
     logit_mask = tf.one_hot(label, depth=num_classes, axis=-1)
-    label_logits = tf.reduce_sum(logit_mask * model_logits, axis=-1)
+    label_logits = reduce_sum(logit_mask * model_logits, axis=-1)
     logits_with_target_label_neg_inf = model_logits - logit_mask * 99999
-    highest_nonlabel_logits = tf.reduce_max(
+    highest_nonlabel_logits = reduce_max(
         logits_with_target_label_neg_inf, axis=-1)
     loss = highest_nonlabel_logits - label_logits
     return loss
