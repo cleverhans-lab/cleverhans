@@ -84,13 +84,13 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
     elif ord == 1:
         red_ind = list(xrange(1, len(x.get_shape())))
         normalized_grad = grad / reduce_sum(tf.abs(grad),
-                                               reduction_indices=red_ind,
-                                               keep_dims=True)
+                                            reduction_indices=red_ind,
+                                            keep_dims=True)
     elif ord == 2:
         red_ind = list(xrange(1, len(x.get_shape())))
         square = reduce_sum(tf.square(grad),
-                               reduction_indices=red_ind,
-                               keep_dims=True)
+                            reduction_indices=red_ind,
+                            keep_dims=True)
         normalized_grad = grad / tf.sqrt(square)
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
@@ -703,7 +703,7 @@ class CarliniWagnerL2(object):
         self.other = (tf.tanh(self.timg) + 1) / \
             2 * (clip_max - clip_min) + clip_min
         self.l2dist = reduce_sum(tf.square(self.newimg - self.other),
-                                    list(range(1, len(shape))))
+                                 list(range(1, len(shape))))
 
         # compute the probability of the label class versus the maximum other
         real = reduce_sum((self.tlab) * self.output, 1)
@@ -1023,9 +1023,9 @@ class ElasticNetMethod(object):
 
         # distance to the input data
         self.l2dist = reduce_sum(tf.square(self.newimg-self.timg),
-                                    list(range(1, len(shape))))
+                                 list(range(1, len(shape))))
         self.l1dist = reduce_sum(tf.abs(self.newimg-self.timg),
-                                    list(range(1, len(shape))))
+                                 list(range(1, len(shape))))
         self.elasticdist = self.l2dist + tf.multiply(self.l1dist,
                                                      self.beta_t)
         if self.decision_rule == 'EN':
@@ -1038,7 +1038,7 @@ class ElasticNetMethod(object):
         # compute the probability of the label class versus the maximum other
         real = reduce_sum((self.tlab) * self.output, 1)
         other = reduce_max((1 - self.tlab) * self.output -
-                              (self.tlab * 10000), 1)
+                           (self.tlab * 10000), 1)
 
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
@@ -1055,10 +1055,10 @@ class ElasticNetMethod(object):
         if self.fista:
             self.output_y = model.get_logits(self.slack)
             self.l2dist_y = reduce_sum(tf.square(self.slack-self.timg),
-                                          list(range(1, len(shape))))
+                                       list(range(1, len(shape))))
             real_y = reduce_sum((self.tlab) * self.output_y, 1)
             other_y = reduce_max((1 - self.tlab) * self.output_y -
-                                    (self.tlab * 10000), 1)
+                                 (self.tlab * 10000), 1)
             if self.TARGETED:
                 loss1_y = tf.maximum(ZERO(),
                                      other_y - real_y + self.CONFIDENCE)
