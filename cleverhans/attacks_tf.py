@@ -59,10 +59,10 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
 
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
-        preds_max = reduce_max(preds, 1, keep_dims=True)
+        preds_max = reduce_max(preds, 1, keepdims=True)
         y = tf.to_float(tf.equal(preds, preds_max))
         y = tf.stop_gradient(y)
-    y = y / reduce_sum(y, 1, keep_dims=True)
+    y = y / reduce_sum(y, 1, keepdims=True)
 
     # Compute loss
     loss = utils_tf.model_loss(y, preds, mean=False)
@@ -85,12 +85,12 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf,
         red_ind = list(xrange(1, len(x.get_shape())))
         normalized_grad = grad / reduce_sum(tf.abs(grad),
                                             reduction_indices=red_ind,
-                                            keep_dims=True)
+                                            keepdims=True)
     elif ord == 2:
         red_ind = list(xrange(1, len(x.get_shape())))
         square = reduce_sum(tf.square(grad),
                             reduction_indices=red_ind,
-                            keep_dims=True)
+                            keepdims=True)
         normalized_grad = grad / tf.sqrt(square)
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
@@ -496,13 +496,13 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
         target_tmp = grads_target
         target_tmp -= increase_coef \
-            * reduce_max(tf.abs(grads_target), axis=1, keep_dims=True)
+            * reduce_max(tf.abs(grads_target), axis=1, keepdims=True)
         target_sum = tf.reshape(target_tmp, shape=[-1, nb_features, 1]) \
             + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
 
         other_tmp = grads_other
         other_tmp += increase_coef \
-            * reduce_max(tf.abs(grads_other), axis=1, keep_dims=True)
+            * reduce_max(tf.abs(grads_other), axis=1, keepdims=True)
         other_sum = tf.reshape(other_tmp, shape=[-1, nb_features, 1]) \
             + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
 
