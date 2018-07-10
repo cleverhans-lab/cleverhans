@@ -10,6 +10,8 @@ from __future__ import unicode_literals
 import numpy as np
 import tensorflow as tf
 from cleverhans.model import Model
+from distutils.version import LooseVersion
+import warnings
 
 
 class MLP(Model):
@@ -75,8 +77,18 @@ class Linear(Layer):
         self.input_shape = [batch_size, dim]
         self.output_shape = [batch_size, self.num_hid]
         init = tf.random_normal([dim, self.num_hid], dtype=tf.float32)
-        init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
-                                                   keep_dims=True))
+        if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
+            warning = "Running on tensorflow version " + \
+                       LooseVersion(tf.__version__).vstring + \
+                       ". This version will not be supported by CleverHans" + \
+                       "in the future."
+            warnings.warn(warning)
+            init_square_sum = tf.reduce_sum(tf.square(init),
+                                            axis=0, keep_dims=True)
+        else:
+            init_square_sum = tf.reduce_sum(tf.square(init),
+                                            axis=0, keepdims=True)
+        init = init / tf.sqrt(1e-7 + init_square_sum)
         self.W = tf.Variable(init)
         self.b = tf.Variable(np.zeros((self.num_hid,)).astype('float32'))
 
