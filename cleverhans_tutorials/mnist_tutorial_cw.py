@@ -10,18 +10,18 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
-from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
+from cleverhans.loss import LossCrossEntropy
+from cleverhans.utils import grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval, tf_model_load
-from cleverhans_tutorials.tutorial_models import make_basic_cnn
+from cleverhans.utils_tf import train, model_eval, tf_model_load
+from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
@@ -66,7 +66,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     set_log_level(logging.DEBUG)
 
     # Get MNIST test data
-    X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
+    x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
@@ -76,8 +76,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     y = tf.placeholder(tf.float32, shape=(None, nb_classes))
 
     # Define TF model graph
-    model = make_basic_cnn()
-    preds = model(x)
+    model = ModelBasicCNN('model1', 10, 64)
+    preds = model.get_logits(x)
+    loss = LossCrossEntropy(model, smoothing=0.1)
     print("Defined TensorFlow model graph.")
 
     ###########################################################################
@@ -98,13 +99,13 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     if os.path.exists(model_path + ".meta"):
         tf_model_load(sess, model_path)
     else:
-        model_train(sess, x, y, preds, X_train, Y_train, args=train_params,
-                    save=os.path.exists("models"), rng=rng)
+        train(sess, loss, x, y, x_train, y_train, args=train_params,
+              save=os.path.exists("models"), rng=rng)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
-    accuracy = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
-    assert X_test.shape[0] == test_end - test_start, X_test.shape
+    accuracy = model_eval(sess, x, y, preds, x_test, y_test, args=eval_params)
+    assert x_test.shape[0] == test_end - test_start, x_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
     report.clean_train_clean_eval = accuracy
 
@@ -121,7 +122,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     if viz_enabled:
         assert source_samples == nb_classes
-        idxs = [np.where(np.argmax(Y_test, axis=1) == i)[0][0]
+        idxs = [np.where(np.argmax(y_test, axis=1) == i)[0][0]
                 for i in range(nb_classes)]
     if targeted:
         if viz_enabled:
@@ -130,12 +131,12 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
             grid_viz_data = np.zeros(grid_shape, dtype='f')
 
             adv_inputs = np.array(
-                [[instance] * nb_classes for instance in X_test[idxs]],
+                [[instance] * nb_classes for instance in x_test[idxs]],
                 dtype=np.float32)
         else:
             adv_inputs = np.array(
                 [[instance] * nb_classes for
-                 instance in X_test[:source_samples]], dtype=np.float32)
+                 instance in x_test[:source_samples]], dtype=np.float32)
 
         one_hot = np.zeros((nb_classes, nb_classes))
         one_hot[np.arange(nb_classes), np.arange(nb_classes)] = 1
@@ -152,9 +153,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
             grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
             grid_viz_data = np.zeros(grid_shape, dtype='f')
 
-            adv_inputs = X_test[idxs]
+            adv_inputs = x_test[idxs]
         else:
-            adv_inputs = X_test[:source_samples]
+            adv_inputs = x_test[:source_samples]
 
         adv_ys = None
         yname = "y"
@@ -177,11 +178,11 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     else:
         if viz_enabled:
             adv_accuracy = 1 - \
-                model_eval(sess, x, y, preds, adv, Y_test[
+                model_eval(sess, x, y, preds, adv, y_test[
                            idxs], args=eval_params)
         else:
             adv_accuracy = 1 - \
-                model_eval(sess, x, y, preds, adv, Y_test[
+                model_eval(sess, x, y, preds, adv, y_test[
                            :source_samples], args=eval_params)
 
     if viz_enabled:

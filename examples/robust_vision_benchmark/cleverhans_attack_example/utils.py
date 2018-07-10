@@ -42,14 +42,14 @@ class RVBCleverhansModel(cleverhans.model.Model):
 
     """
 
-    def __init__(self, adversarial):
+    def __init__(self, adversarial, **kwargs):
+        del kwargs
+        cleverhans.model.Model.__init__(
+            self, "model", self.adversarial.num_classes(), locals())
         self.adversarial = adversarial
 
-    def get_layer_names(self):
-        return ['logits']
-
     def fprop(self, x):
-        return {'logits': self._logits_op(x)}
+        return {self.O_LOGITS: self._logits_op(x)}
 
     def _logits_op(self, x, name=None):
         with tf.name_scope(name, "logits", [x]) as name:

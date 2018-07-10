@@ -27,7 +27,7 @@ def model_loss(y, model, mean=True):
     :return: return mean of loss if True, otherwise return vector with per
              sample loss
     """
-
+    warnings.warn('This function is deprecated.', DeprecationWarning)
     op = model.op
     if op.type == "Softmax":
         logits, = op.inputs
@@ -75,21 +75,18 @@ def initialize_uninitialized_global_variables(sess):
         sess.run(tf.variables_initializer(not_initialized_vars))
 
 
-def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                predictions_adv=None, init_all=True, evaluate=None,
-                feed=None, args=None, rng=None, var_list=None,
-                optimizer=None):
+def train(sess, loss, x, y, X_train, Y_train, save=False,
+          init_all=True, evaluate=None, feed=None, args=None,
+          rng=None, var_list=None, fprop_args=None, optimizer=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
+    :param loss: tensor, the model training loss.
     :param x: input placeholder
     :param y: output placeholder (for labels)
-    :param predictions: model output predictions
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
     :param save: boolean controlling the save operation
-    :param predictions_adv: if set with the adversarial example tensor,
-                            will run adversarial training
     :param init_all: (boolean) If set to true, all TF variables in the session
                      are (re)initialized, otherwise only previously
                      uninitialized variables are initialized before training.
@@ -105,10 +102,12 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                  and 'filename'
     :param rng: Instance of numpy.random.RandomState
     :param var_list: Optional list of parameters to train.
+    :param fprop_args: dict, extra arguments to pass to fprop (loss and model).
     :param optimizer: Optimizer to be used for training
     :return: True if model trained
     """
     args = _ArgsWrapper(args or {})
+    fprop_args = fprop_args or {}
 
     # Check that necessary arguments were given (see doc above)
     assert args.nb_epochs, "Number of epochs was not given in args dict"
@@ -122,19 +121,17 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     if rng is None:
         rng = np.random.RandomState()
 
+    # Define optimizer
+    loss_value = loss.fprop(x, y, **fprop_args)
     if optimizer is None:
         optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
     else:
         if not isinstance(optimizer, tf.train.Optimizer):
             raise ValueError("optimizer object must be from a child class of "
                              "tf.train.Optimizer")
-
-    # Define loss
-    loss = model_loss(y, predictions)
-    if predictions_adv is not None:
-        loss = (loss + model_loss(y, predictions_adv)) / 2
-
-    train_step = optimizer.minimize(loss, var_list=var_list)
+    # Trigger update operations within the default graph (such as batch_norm).
+    with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+        train_step = optimizer.minimize(loss_value, var_list=var_list)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
@@ -428,3 +425,109 @@ def clip_eta(eta, ord, eps):
         factor = tf.minimum(1., eps / norm)
         eta = eta * factor
     return eta
+
+
+def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
+                predictions_adv=None, init_all=True, evaluate=None,
+                feed=None, args=None, rng=None, var_list=None):
+    """
+    Train a TF graph
+    :param sess: TF session to use when training the graph
+    :param x: input placeholder
+    :param y: output placeholder (for labels)
+    :param predictions: model output predictions
+    :param X_train: numpy array with training inputs
+    :param Y_train: numpy array with training outputs
+    :param save: boolean controlling the save operation
+    :param predictions_adv: if set with the adversarial example tensor,
+                            will run adversarial training
+    :param init_all: (boolean) If set to true, all TF variables in the session
+                     are (re)initialized, otherwise only previously
+                     uninitialized variables are initialized before training.
+    :param evaluate: function that is run after each training iteration
+                     (typically to display the test/validation accuracy).
+    :param feed: An optional dictionary that is appended to the feeding
+                 dictionary before the session runs. Can be used to feed
+                 the learning phase of a Keras model for instance.
+    :param args: dict or argparse `Namespace` object.
+                 Should contain `nb_epochs`, `learning_rate`,
+                 `batch_size`
+                 If save is True, should also contain 'train_dir'
+                 and 'filename'
+    :param rng: Instance of numpy.random.RandomState
+    :param var_list: Optional list of parameters to train.
+    :return: True if model trained
+    """
+    warnings.warn('This function is deprecated.', DeprecationWarning)
+    args = _ArgsWrapper(args or {})
+
+    # Check that necessary arguments were given (see doc above)
+    assert args.nb_epochs, "Number of epochs was not given in args dict"
+    assert args.learning_rate, "Learning rate was not given in args dict"
+    assert args.batch_size, "Batch size was not given in args dict"
+
+    if save:
+        assert args.train_dir, "Directory for save was not given in args dict"
+        assert args.filename, "Filename for save was not given in args dict"
+
+    if rng is None:
+        rng = np.random.RandomState()
+
+    # Define loss
+    loss = model_loss(y, predictions)
+    if predictions_adv is not None:
+        loss = (loss + model_loss(y, predictions_adv)) / 2
+
+    train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    train_step = train_step.minimize(loss, var_list=var_list)
+
+    with sess.as_default():
+        if hasattr(tf, "global_variables_initializer"):
+            if init_all:
+                tf.global_variables_initializer().run()
+            else:
+                initialize_uninitialized_global_variables(sess)
+        else:
+            warnings.warn("Update your copy of tensorflow; future versions of "
+                          "CleverHans may drop support for this version.")
+            sess.run(tf.initialize_all_variables())
+
+        for epoch in xrange(args.nb_epochs):
+            # Compute number of batches
+            nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
+            assert nb_batches * args.batch_size >= len(X_train)
+
+            # Indices to shuffle training set
+            index_shuf = list(range(len(X_train)))
+            rng.shuffle(index_shuf)
+
+            prev = time.time()
+            for batch in range(nb_batches):
+
+                # Compute batch start and end indices
+                start, end = batch_indices(
+                    batch, len(X_train), args.batch_size)
+
+                # Perform one training step
+                feed_dict = {x: X_train[index_shuf[start:end]],
+                             y: Y_train[index_shuf[start:end]]}
+                if feed is not None:
+                    feed_dict.update(feed)
+                train_step.run(feed_dict=feed_dict)
+            assert end >= len(X_train)  # Check that all examples were used
+            cur = time.time()
+            _logger.info("Epoch " + str(epoch) + " took " +
+                         str(cur - prev) + " seconds")
+            if evaluate is not None:
+                evaluate()
+
+        if save:
+            save_path = os.path.join(args.train_dir, args.filename)
+            saver = tf.train.Saver()
+            saver.save(sess, save_path)
+            _logger.info("Completed model training and saved at: " +
+                         str(save_path))
+        else:
+            _logger.info("Completed model training.")
+
+    return True

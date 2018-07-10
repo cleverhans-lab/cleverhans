@@ -30,9 +30,6 @@ def main(argv):
     print(input_shape)
 
     model = make_imagenet_cnn(input_shape)
-    print("Model:")
-    for i, layer in enumerate(model.layers):
-        print('%s %s' % (model.layer_names[i], layer.output_shape))
     attack = FastFeatureAdversaries(model)
     attack_params = {'eps': 0.3, 'clip_min': 0., 'clip_max': 1.,
                      'nb_iter': FLAGS.nb_iter, 'eps_iter': 0.01,

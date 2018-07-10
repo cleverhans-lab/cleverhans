@@ -529,11 +529,13 @@ class MomentumIterativeMethod(Attack):
         y = y / tf.reduce_sum(y, 1, keep_dims=True)
         targeted = (self.y_target is not None)
 
+        from . import loss as loss_module
         from . import utils_tf
         for i in range(self.nb_iter):
             # Compute loss
-            preds = self.model.get_probs(adv_x)
-            loss = utils_tf.model_loss(y, preds, mean=False)
+            logits = self.model.get_logits(adv_x)
+            loss = loss_module.attack_softmax_cross_entropy(y, logits,
+                                                            mean=False)
             if targeted:
                 loss = -loss
 
@@ -1354,11 +1356,12 @@ class MadryEtAl(Attack):
         :param y: A tensor with the target labels or ground-truth labels.
         """
         import tensorflow as tf
-        from cleverhans.utils_tf import model_loss, clip_eta
+        from cleverhans.utils_tf import clip_eta
+        from cleverhans.loss import attack_softmax_cross_entropy
 
         adv_x = x + eta
-        preds = self.model.get_probs(adv_x)
-        loss = model_loss(y, preds)
+        logits = self.model.get_logits(adv_x)
+        loss = attack_softmax_cross_entropy(y, logits)
         if self.targeted:
             loss = -loss
         grad, = tf.gradients(loss, adv_x)
@@ -1476,7 +1479,7 @@ class FastFeatureAdversaries(Attack):
         from cleverhans.utils_tf import clip_eta
 
         adv_x = x + eta
-        a_feat = self.model.get_layer(adv_x, self.layer)
+        a_feat = self.model.fprop(adv_x)[self.layer]
 
         # feat.shape = (batch, c) or (batch, w, h, c)
         axis = list(range(1, len(a_feat.shape)))
@@ -1527,7 +1530,7 @@ class FastFeatureAdversaries(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        g_feat = self.model.get_layer(g, self.layer)
+        g_feat = self.model.fprop(g)[self.layer]
 
         # Initialize loop variables
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,

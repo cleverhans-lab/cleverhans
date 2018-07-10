@@ -34,7 +34,7 @@ def run_trainer(hparams):
 
 
 def main(argv=None):
-    f = flags.FLAGS.__dict__['__flags']
+    f = {x: flags.FLAGS[x].value for x in dir(flags.FLAGS)}
     HParams = namedtuple('HParams', f.keys())
     hparams = HParams(**f)
     run_trainer(hparams)
