@@ -393,7 +393,7 @@ def kl_with_logits(p_logits, q_logits, scope=None,
         p_log = tf.nn.log_softmax(p_logits)
         q_log = tf.nn.log_softmax(q_logits)
         loss = reduce_mean(reduce_sum(p * (p_log - q_log), axis=1),
-                              name=name)
+                           name=name)
         tf.losses.add_loss(loss, loss_collection)
         return loss
 
@@ -418,14 +418,14 @@ def clip_eta(eta, ord, eps):
         if ord == 1:
             norm = tf.maximum(avoid_zero_div,
                               reduce_sum(tf.abs(eta),
-                                            reduc_ind, keep_dims=True))
+                                         reduc_ind, keep_dims=True))
         elif ord == 2:
             # avoid_zero_div must go inside sqrt to avoid a divide by zero
             # in the gradient through this operation
             norm = tf.sqrt(tf.maximum(avoid_zero_div,
                                       reduce_sum(tf.square(eta),
-                                                    reduc_ind,
-                                                    keep_dims=True)))
+                                                 reduc_ind,
+                                                 keep_dims=True)))
         # We must *clip* to within the norm ball, not *normalize* onto the
         # surface of the ball
         factor = tf.minimum(1., eps / norm)
