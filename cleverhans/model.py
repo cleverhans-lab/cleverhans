@@ -68,13 +68,13 @@ class Model(object):
         Provides access to the model's parameters.
         :return: A list of all Variables defining the model parameters.
         """
-        raise NotImplementedError()
+        scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                       self.scope)
+        return scope_vars
 
     def get_layer_names(self):
         """Return the list of exposed layers for this model."""
-        scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                       self.scope)
-        return [x.name for x in scope_vars]
+        raise NotImplementedError
 
     def get_layer(self, x, layer, **kwargs):
         """Return a layer output.
