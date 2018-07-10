@@ -549,8 +549,7 @@ class MomentumIterativeMethod(Attack):
             avoid_zero_div = tf.cast(1e-12, grad.dtype)
             grad = grad / tf.maximum(avoid_zero_div,
                                      reduce_mean(tf.abs(grad),
-                                                    red_ind,
-                                                    keep_dims=True))
+                                                 red_ind, keep_dims=True))
             momentum = self.decay_factor * momentum + grad
 
             if self.ord == np.inf:
@@ -558,13 +557,12 @@ class MomentumIterativeMethod(Attack):
             elif self.ord == 1:
                 norm = tf.maximum(avoid_zero_div,
                                   reduce_sum(tf.abs(momentum),
-                                                red_ind,
-                                                keep_dims=True))
+                                             red_ind, keep_dims=True))
                 normalized_grad = momentum / norm
             elif self.ord == 2:
                 square = reduce_sum(tf.square(momentum),
-                                       red_ind,
-                                       keep_dims=True)
+                                    red_ind,
+                                    keep_dims=True)
                 norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
                 normalized_grad = momentum / norm
             else:
