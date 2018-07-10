@@ -75,8 +75,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
-    # Use label smoothing
-    print(X_train.shape)
+    # Obtain Image Parameters
     img_rows, img_cols, nchannels = X_train.shape[1:4]
     nb_classes = Y_train.shape[1]
 

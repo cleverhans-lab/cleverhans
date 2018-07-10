@@ -62,7 +62,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
-    print(X_train.shape)
+    # Obtain Image Parameters
     img_rows, img_cols, nchannels = X_train.shape[1:4]
     nb_classes = Y_train.shape[1]
 
@@ -97,7 +97,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
     accuracy = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
-#    assert X_test.shape[0] == test_end - test_start, X_test.shape
+    assert X_test.shape[0] == test_end - test_start, X_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
     report.clean_train_clean_eval = accuracy
 
