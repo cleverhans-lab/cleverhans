@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import model_train, model_eval
+from cleverhans.utils_tf import train, model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils import get_logits_over_interval
@@ -110,8 +110,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         evaluate()
     else:
         print("Model was not loaded, training from scratch.")
-        model_train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
-                    args=train_params, save=True)
+        train(sess, x, y, preds, X_train, Y_train, evaluate=evaluate,
+              args=train_params, save=True)
 
     # Calculate training error
     if testing:
@@ -164,9 +164,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         report.adv_train_adv_eval = accuracy
 
     # Perform and evaluate adversarial training
-    model_train(sess, x, y, preds_2, X_train, Y_train,
-                predictions_adv=preds_2_adv, evaluate=evaluate_2,
-                args=train_params, save=False)
+    train(sess, x, y, preds_2, X_train, Y_train,
+          predictions_adv=preds_2_adv, evaluate=evaluate_2,
+          args=train_params, save=False)
 
     # Get a random slice of the data for linear extrapolation plots
     random_idx = np.random.randint(0, X_train.shape[0])

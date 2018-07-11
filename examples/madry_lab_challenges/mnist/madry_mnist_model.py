@@ -17,7 +17,7 @@ from cleverhans.utils import deterministic_dict
 
 class MadryMNIST(Model):
 
-    def __init__(self, **kwargs):
+    def __init__(self, nb_classes=10):
         # NOTE: for compatibility with Madry Lab downloadable checkpoints,
         # we cannot use scopes, give these variables names, etc.
         self.W_conv1 = self._weight_variable([5, 5, 1, 32])
@@ -26,9 +26,9 @@ class MadryMNIST(Model):
         self.b_conv2 = self._bias_variable([64])
         self.W_fc1 = self._weight_variable([7 * 7 * 64, 1024])
         self.b_fc1 = self._bias_variable([1024])
-        self.W_fc2 = self._weight_variable([1024, 10])
-        self.b_fc2 = self._bias_variable([10])
-        super(MadryMNIST, self).__init__(**kwargs)
+        self.W_fc2 = self._weight_variable([1024, nb_classes])
+        self.b_fc2 = self._bias_variable([nb_classes])
+        Model.__init__(self, '', nb_classes, {})
 
     def fprop(self, x):
 
@@ -52,6 +52,7 @@ class MadryMNIST(Model):
 
         output = deterministic_dict(locals())
         del output["self"]
+        output[self.O_PROBS] = tf.nn.softmax(logits=logits)
 
         return output
 

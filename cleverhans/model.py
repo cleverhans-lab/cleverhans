@@ -1,8 +1,8 @@
 from abc import ABCMeta
+import tensorflow as tf
 
 
 class Model(object):
-
     """
     An abstract interface for model wrappers that exposes model symbols
     needed for making an attack. This abstraction removes the dependency on
@@ -11,9 +11,18 @@ class Model(object):
     model when a specific package does not directly expose them.
     """
     __metaclass__ = ABCMeta
+    O_LOGITS, O_PROBS, O_FEATURES = 'logits probs features'.split()
 
-    def __init__(self):
-        pass
+    def __init__(self, scope=None, nb_classes=10, hparams=None):
+        """
+        Constructor.
+        :param scope: str, the name of model.
+        :param nb_classes: integer, the number of classes.
+        :param hparams: dict, hyper-parameters for the model.
+        """
+        self.scope = scope or self.__class__.__name__
+        self.nb_classes = nb_classes
+        self.hparams = hparams or {}
 
     def __call__(self, *args, **kwargs):
         """
@@ -23,60 +32,32 @@ class Model(object):
         """
         return self.get_probs(*args, **kwargs)
 
-    def get_layer(self, x, layer):
-        """
-        Expose the hidden features of a model given a layer name.
-        :param x: A symbolic representation (Tensor) of the network input
-        :param layer: The name of the hidden layer to return features at.
-        :return: A symbolic representation (Tensor) of the hidden features
-        :raise: NoSuchLayerError if `layer` is not in the model.
-        """
-        # Return the symbolic representation (Tensor) for this layer.
-        output = self.fprop(x)
-        try:
-            requested = output[layer]
-        except KeyError:
-            raise NoSuchLayerError()
-        return requested
-
-    def get_logits(self, x):
+    def get_logits(self, x, **kwargs):
         """
         :param x: A symbolic representation (Tensor) of the network input
         :return: A symbolic representation (Tensor) of the output logits
         (i.e., the values fed as inputs to the softmax layer).
         """
-        return self.get_layer(x, 'logits')
+        return self.fprop(x, **kwargs)[self.O_LOGITS]
 
-    def get_probs(self, x):
+    def get_probs(self, x, **kwargs):
         """
         :param x: A symbolic representation (Tensor) of the network input
         :return: A symbolic representation (Tensor) of the output
         probabilities (i.e., the output values produced by the softmax layer).
         """
-        try:
-            return self.get_layer(x, 'probs')
-        except NoSuchLayerError:
-            pass
-        except NotImplementedError:
-            pass
-        import tensorflow as tf
-        return tf.nn.softmax(self.get_logits(x))
+        d = self.fprop(x, **kwargs)
+        if self.O_PROBS in d:
+            return d[self.O_PROBS]
+        elif self.O_LOGITS in d:
+            return tf.nn.softmax(logits=d[self.O_LOGITS])
+        else:
+            raise ValueError('Cannot find probs or logits.')
 
-    def get_layer_names(self):
+    def fprop(self, x, **kwargs):
         """
-        :return: a list of names for the layers that can be exposed by this
-        model abstraction.
-        """
-
-        if hasattr(self, 'layer_names'):
-            return self.layer_names
-
-        raise NotImplementedError('`get_layer_names` not implemented.')
-
-    def fprop(self, x):
-        """
-        Exposes all the layers of the model returned by get_layer_names.
-        :param x: A symbolic representation (Tensor) of the network input
+        Forward propagation to compute the model outputs.
+        :param x: A symbolic representation of the network input
         :return: A dictionary mapping layer names to the symbolic
                  representation of their output.
         """
@@ -87,7 +68,22 @@ class Model(object):
         Provides access to the model's parameters.
         :return: A list of all Variables defining the model parameters.
         """
-        raise NotImplementedError()
+        scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                       self.scope)
+        return scope_vars
+
+    def get_layer_names(self):
+        """Return the list of exposed layers for this model."""
+        raise NotImplementedError
+
+    def get_layer(self, x, layer, **kwargs):
+        """Return a layer output.
+        :param x: tensor, the input to the network.
+        :param layer: str, the name of the layer to compute.
+        :param **kwargs: dict, extra optional params to pass to self.fprop.
+        :return: the content of layer `layer`
+        """
+        return self.fprop(x, **kwargs)[layer]
 
 
 class CallableModelWrapper(Model):
@@ -105,11 +101,8 @@ class CallableModelWrapper(Model):
         self.output_layer = output_layer
         self.callable_fn = callable_fn
 
-    def get_layer_names(self):
-        return [self.output_layer]
-
-    def fprop(self, x):
-        return {self.output_layer: self.callable_fn(x)}
+    def fprop(self, x, **kwargs):
+        return {self.output_layer: self.callable_fn(x, **kwargs)}
 
 
 class NoSuchLayerError(ValueError):
