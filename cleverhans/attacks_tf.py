@@ -593,8 +593,7 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
 
     # Creating and processing as batch
     nb_batches_aug = int((num_samples + aug_batch_size - 1)/aug_batch_size)
-    for (i, p_idxs) in zip(range(nb_batches_aug),
-                           range(0, num_samples, aug_batch_size)):
+    for p_idxs in range(0, num_samples, aug_batch_size):
         X_batch = X_sub_prev[p_idxs:p_idxs + aug_batch_size, ...]
         feed_dict = {x: X_batch}
         if feed is not None:
