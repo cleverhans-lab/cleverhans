@@ -215,7 +215,6 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     X_sub = x_test[:holdout]
     Y_sub = np.argmax(y_test[:holdout], axis=1)
 
-    print(np.max(Y_sub))
     # Redefine test set as remaining samples unavailable to adversaries
     x_test = x_test[holdout:]
     y_test = y_test[holdout:]
@@ -290,4 +289,5 @@ if __name__ == '__main__':
     flags.DEFINE_float('lmbda', 0.1, 'Lambda from arxiv.org/abs/1602.02697')
     flags.DEFINE_integer('data_aug_batch_size', 512,
                          'Batch size for augmentation')
+
     tf.app.run()

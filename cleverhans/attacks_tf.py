@@ -580,6 +580,8 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     assert len(grads) >= np.max(Y_sub) + 1
     assert len(X_sub_prev) == len(Y_sub)
 
+    aug_batch_size = min(aug_batch_size, X_sub_prev.shape[0])
+
     # Prepare input_shape (outside loop) for feeding dictionary below
     input_shape = list(x.get_shape())
     input_shape[0] = 1
@@ -587,13 +589,13 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     # Create new numpy array for adversary training data
     # with twice as many components on the first dimension.
     X_sub = np.vstack([X_sub_prev, X_sub_prev])
-    nsamples = X_sub_prev.shape[0]
+    num_samples = X_sub_prev.shape[0]
 
     # Creating and processing as batch
-    nb_batches_aug = int((len(X_sub_prev) + aug_batch_size - 1)/aug_batch_size)
-    p_idxs = 0
-    for i in range(nb_batches_aug):
-        X_batch = X_sub_prev[i*aug_batch_size:(i+1)*aug_batch_size, :, :, :]
+    nb_batches_aug = int((num_samples + aug_batch_size - 1)/aug_batch_size)
+    for (i, p_idxs) in zip(range(nb_batches_aug),
+                           range(0, num_samples, aug_batch_size)):
+        X_batch = X_sub_prev[p_idxs:p_idxs + aug_batch_size, ...]
         feed_dict = {x: X_batch}
         if feed is not None:
             feed_dict.update(feed)
@@ -602,12 +604,11 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
         grad_val = sess.run([tf.sign(grads)], feed_dict=feed_dict)[0]
 
         # Create new synthetic point in adversary substitute training set
-        print(grad_val.shape)
-        for ind in range(X_batch.shape[0]):
-            indx = ind + p_idxs
-            X_sub[nsamples + indx] = (X_batch[ind] + lmbda *
-                                      grad_val[Y_sub[indx], ind, :, :, :])
-        p_idxs = p_idxs + X_batch.shape[0]
+        for (indx, ind) in zip(range(p_idxs, p_idxs + X_batch.shape[0]),
+                               range(X_batch.shape[0])):
+            X_sub[num_samples + indx] = (X_batch[ind] + lmbda *
+                                         grad_val[Y_sub[indx], ind, ...])
+
     # Return augmented training data (needs to be labeled afterwards)
     return X_sub
 
