@@ -221,8 +221,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     y_test = y_test[holdout:]
 
     # Obtain Image parameters
-    img_rows, img_cols, nchannels = X_train.shape[1:4]
-    nb_classes = Y_train.shape[1]
+    img_rows, img_cols, nchannels = x_train.shape[1:4]
+    nb_classes = y_train.shape[1]
 
     # Define input TF placeholder
     x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
