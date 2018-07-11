@@ -6,6 +6,10 @@ import collections
 
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
+from distutils.version import LooseVersion
+from cleverhans.compat import reduce_sum, reduce_mean
+from cleverhans.compat import reduce_max, reduce_min
+from cleverhans.compat import reduce_any
 
 _logger = utils.create_logger("cleverhans.attacks")
 
@@ -213,7 +217,7 @@ class Attack(object):
             labels = kwargs['y_target']
         else:
             preds = self.model.get_probs(x)
-            preds_max = tf.reduce_max(preds, 1, keep_dims=True)
+            preds_max = reduce_max(preds, 1, keepdims=True)
             original_predictions = tf.to_float(tf.equal(preds,
                                                         preds_max))
             labels = tf.stop_gradient(original_predictions)
@@ -387,7 +391,7 @@ class BasicIterativeMethod(Attack):
 
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model.get_probs(x)
-        preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
+        preds_max = reduce_max(model_preds, 1, keepdims=True)
         if self.y_target is not None:
             y = self.y_target
             targeted = True
@@ -526,14 +530,16 @@ class MomentumIterativeMethod(Attack):
 
         # Fix labels to the first model predictions for loss computation
         y, nb_classes = self.get_or_guess_labels(x, kwargs)
-        y = y / tf.reduce_sum(y, 1, keep_dims=True)
+        y = y / reduce_sum(y, 1, keepdims=True)
         targeted = (self.y_target is not None)
 
+        from . import loss as loss_module
         from . import utils_tf
         for i in range(self.nb_iter):
             # Compute loss
-            preds = self.model.get_probs(adv_x)
-            loss = utils_tf.model_loss(y, preds, mean=False)
+            logits = self.model.get_logits(adv_x)
+            loss = loss_module.attack_softmax_cross_entropy(y, logits,
+                                                            mean=False)
             if targeted:
                 loss = -loss
 
@@ -544,23 +550,21 @@ class MomentumIterativeMethod(Attack):
             red_ind = list(xrange(1, len(grad.get_shape())))
             avoid_zero_div = tf.cast(1e-12, grad.dtype)
             grad = grad / tf.maximum(avoid_zero_div,
-                                     tf.reduce_mean(tf.abs(grad),
-                                                    red_ind,
-                                                    keep_dims=True))
+                                     reduce_mean(tf.abs(grad),
+                                                 red_ind, keepdims=True))
             momentum = self.decay_factor * momentum + grad
 
             if self.ord == np.inf:
                 normalized_grad = tf.sign(momentum)
             elif self.ord == 1:
                 norm = tf.maximum(avoid_zero_div,
-                                  tf.reduce_sum(tf.abs(momentum),
-                                                red_ind,
-                                                keep_dims=True))
+                                  reduce_sum(tf.abs(momentum),
+                                             red_ind, keepdims=True))
                 normalized_grad = momentum / norm
             elif self.ord == 2:
-                square = tf.reduce_sum(tf.square(momentum),
-                                       red_ind,
-                                       keep_dims=True)
+                square = reduce_sum(tf.square(momentum),
+                                    red_ind,
+                                    keepdims=True)
                 norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
                 normalized_grad = momentum / norm
             else:
@@ -1354,11 +1358,12 @@ class MadryEtAl(Attack):
         :param y: A tensor with the target labels or ground-truth labels.
         """
         import tensorflow as tf
-        from cleverhans.utils_tf import model_loss, clip_eta
+        from cleverhans.utils_tf import clip_eta
+        from cleverhans.loss import attack_softmax_cross_entropy
 
         adv_x = x + eta
-        preds = self.model.get_probs(adv_x)
-        loss = model_loss(y, preds)
+        logits = self.model.get_logits(adv_x)
+        loss = attack_softmax_cross_entropy(y, logits)
         if self.targeted:
             loss = -loss
         grad, = tf.gradients(loss, adv_x)
@@ -1476,14 +1481,14 @@ class FastFeatureAdversaries(Attack):
         from cleverhans.utils_tf import clip_eta
 
         adv_x = x + eta
-        a_feat = self.model.get_layer(adv_x, self.layer)
+        a_feat = self.model.fprop(adv_x)[self.layer]
 
         # feat.shape = (batch, c) or (batch, w, h, c)
         axis = list(range(1, len(a_feat.shape)))
 
         # Compute loss
         # This is a targeted attack, hence the negative sign
-        loss = -tf.reduce_sum(tf.square(a_feat - g_feat), axis)
+        loss = -reduce_sum(tf.square(a_feat - g_feat), axis)
 
         # Define gradient of loss wrt input
         grad, = tf.gradients(loss, adv_x)
@@ -1527,7 +1532,7 @@ class FastFeatureAdversaries(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        g_feat = self.model.get_layer(g, self.layer)
+        g_feat = self.model.fprop(g)[self.layer]
 
         # Initialize loop variables
         eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,

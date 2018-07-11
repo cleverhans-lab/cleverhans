@@ -52,7 +52,7 @@ class PytorchMnistModel(nn.Module):
         x = x.view(-1, 64 * 7 * 7)  # reshape Variable
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
-        return F.log_softmax(x)
+        return F.log_softmax(x, dim=-1)
 
 
 def mnist_tutorial(nb_epochs=6, batch_size=128, train_end=-1, test_end=-1,

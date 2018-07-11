@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import functools
+
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import unittest
@@ -22,29 +24,47 @@ from cleverhans.attacks import MadryEtAl
 from cleverhans.attacks import FastFeatureAdversaries
 from cleverhans.attacks import LBFGS
 from cleverhans.model import Model
+from cleverhans_tutorials.tutorial_models import HeReLuNormalInitializer
+
 
 class SimpleModel(Model):
     """
     A very simple neural network
     """
 
-    def get_logits(self, x):
-        W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.as_dtype(x.dtype))
-        h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-        W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.as_dtype(x.dtype))
+    def __init__(self, scope='simple', nb_classes=2, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
 
-        res = tf.matmul(h1, W2)
-        return res
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            w1 = tf.constant([[1.5, .3], [-2, 0.3]],
+                             dtype=tf.as_dtype(x.dtype))
+            w2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]],
+                             dtype=tf.as_dtype(x.dtype))
+        h1 = tf.nn.sigmoid(tf.matmul(x, w1))
+        res = tf.matmul(h1, w2)
+        return {self.O_LOGITS: res,
+                self.O_PROBS: tf.nn.softmax(res)}
+
 
 class TrivialModel(Model):
-  """
-  A linear model with two weights
-  """
+    """
+    A linear model with two weights
+    """
 
-  def get_logits(self, x):
-      W1 = tf.constant([[1, -1]], dtype=tf.float32)
-      res = tf.matmul(x, W1)
-      return res
+    def __init__(self, scope='trivial', nb_classes=2, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
+
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            w1 = tf.constant([[1, -1]], dtype=tf.float32)
+        res = tf.matmul(x, w1)
+        return {self.O_LOGITS: res,
+                self.O_PROBS: tf.nn.softmax(res)}
 
 
 class DummyModel(Model):
@@ -52,14 +72,18 @@ class DummyModel(Model):
     A simple model based on slim
     """
 
-    def __init__(self):
-        def template_fn(x):
-          net = slim.fully_connected(x, 60)
-          return slim.fully_connected(net, 10, activation_fn=None)
-        self.template = tf.make_template('dummy_model', template_fn)
+    def __init__(self, scope='dummy_model', nb_classes=10, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
 
-    def get_logits(self, x):
-        return self.template(x)
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            net = slim.fully_connected(x, 60)
+            logits = slim.fully_connected(net, 10, activation_fn=None)
+            return {self.O_LOGITS: logits,
+                    self.O_PROBS: tf.nn.softmax(logits)}
+
 
 class TestAttackClassInitArguments(CleverHansTest):
 
@@ -73,22 +97,17 @@ class TestAttackClassInitArguments(CleverHansTest):
         self.assertTrue(context.exception)
 
     def test_back(self):
-        model = Model()
-
         # Exception is thrown when back is not tf or th
         with self.assertRaises(Exception) as context:
-            Attack(model, back='test', sess=None)
+            Attack(None, back='test', sess=None)
         self.assertTrue(context.exception)
 
     def test_sess(self):
-        # Define empty model
-        model = Model()
-
         # Test that it is permitted to provide no session
-        Attack(model, back='tf', sess=None)
+        Attack(Model('model', 10, {}), back='tf', sess=None)
 
     def test_sess_generate_np(self):
-        model = Model()
+        model = Model('model', 10, {})
 
         class DummyAttack(Attack):
             def generate(self, x, **kwargs):
@@ -104,7 +123,7 @@ class TestParseParams(CleverHansTest):
     def test_parse(self):
         sess = tf.Session()
 
-        test_attack = Attack(Model(), back='tf', sess=sess)
+        test_attack = Attack(Model('model', 10, {}), back='tf', sess=sess)
         self.assertTrue(test_attack.parse_params({}))
 
 
@@ -781,28 +800,34 @@ class TestFastFeatureAdversaries(CleverHansTest):
             """
             Similar CNN to AlexNet.
             """
-            import cleverhans_tutorials.tutorial_models as t_models
-            layers = [t_models.Conv2D(96, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Conv2D(256, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Conv2D(384, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Conv2D(384, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Conv2D(256, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Flatten(),
-                      t_models.Linear(4096),
-                      t_models.ReLU(),
-                      t_models.Linear(4096),
-                      t_models.ReLU(),
-                      t_models.Linear(1000),
-                      t_models.Softmax()]
-            layers[-3].name = 'fc7'
 
-            model = t_models.MLP(layers, input_shape)
-            return model
+            class ModelImageNetCNN(Model):
+                def __init__(self, scope, nb_classes=1000, **kwargs):
+                    del kwargs
+                    Model.__init__(self, scope, nb_classes, locals())
+
+                def fprop(self, x, **kwargs):
+                    del kwargs
+                    my_conv = functools.partial(tf.layers.conv2d,
+                                                kernel_size=3,
+                                                strides=2,
+                                                padding='valid',
+                                                activation=tf.nn.relu,
+                                                kernel_initializer=HeReLuNormalInitializer)
+                    my_dense = functools.partial(tf.layers.dense,
+                                                 kernel_initializer=HeReLuNormalInitializer)
+                    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+                        for depth in [96, 256, 384, 384, 256]:
+                            x = my_conv(x, depth)
+                        y = tf.layers.flatten(x)
+                        y = my_dense(y, 4096, tf.nn.relu)
+                        y = fc7 = my_dense(y, 4096, tf.nn.relu)
+                        y = my_dense(y, 1000)
+                        return {'fc7': fc7,
+                                self.O_LOGITS: y,
+                                self.O_PROBS: tf.nn.softmax(logits=y)}
+
+            return ModelImageNetCNN('imagenet')
 
         self.input_shape = [10, 224, 224, 3]
         self.sess = tf.Session()
