@@ -90,6 +90,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
 
     return model, predictions, accuracy
 
+
 class ModelSubstitute(Model):
     def __init__(self, scope, nb_classes, nb_filters=200, **kwargs):
         del kwargs
