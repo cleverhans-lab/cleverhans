@@ -115,8 +115,8 @@ class Attack(object):
             elif isinstance(value, utils.known_number_types):
                 new_kwargs[name] = tf.placeholder(given_type, shape=[])
             else:
-                raise ValueError("Could not identify type of argument " + name +
-                                 ": " + str(value))
+                raise ValueError("Could not identify type of argument " +
+                                 name + ": " + str(value))
 
         # x is a special placeholder we always want to have
         x_shape = [None] + list(x_val.shape)[1:]
@@ -766,7 +766,8 @@ class SaliencyMapMethod(Attack):
                         y_target=y_target)
 
                 # Attack is targeted, target placeholder will need to be fed
-                x_adv = tf.py_func(jsma_wrap, [x, self.y_target], self.tf_dtype)
+                x_adv = tf.py_func(jsma_wrap, [x, self.y_target],
+                                   self.tf_dtype)
             else:
 
                 def jsma_wrap(x_val):
