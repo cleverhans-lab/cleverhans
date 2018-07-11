@@ -23,6 +23,7 @@ from keras import backend
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
+import os
 
 FLAGS = flags.FLAGS
 
@@ -69,18 +70,18 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     keras.backend.set_session(sess)
 
     # Get MNIST test data
-    X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
+    x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
     # Obtain Image Parameters
-    img_rows, img_cols, nchannels = X_train.shape[1:4]
-    nb_classes = Y_train.shape[1]
+    img_rows, img_cols, nchannels = x_train.shape[1:4]
+    nb_classes = y_train.shape[1]
 
     if label_smoothing:
         label_smooth = .1
-        Y_train = Y_train.clip(label_smooth / (nb_classes-1),
+        y_train = y_train.clip(label_smooth / (nb_classes-1),
                                1. - label_smooth)
 
     # Define input TF placeholder
@@ -98,7 +99,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     def evaluate():
         # Evaluate the accuracy of the MNIST model on legitimate test examples
         eval_params = {'batch_size': batch_size}
-        acc = model_eval(sess, x, y, preds, X_test, Y_test, args=eval_params)
+        acc = model_eval(sess, x, y, preds, x_test, y_test, args=eval_params)
         report.clean_train_clean_eval = acc
 #        assert X_test.shape[0] == test_end - test_start, X_test.shape
         print('Test accuracy on legitimate examples: %0.4f' % acc)
@@ -130,13 +131,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     else:
         print("Model was not loaded, training from scratch.")
         loss = LossCrossEntropy(wrap, smoothing=0.1)
-        train(sess, loss, x, y, X_train, Y_train, evaluate=evaluate,
+        train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
               args=train_params, save=True, rng=rng)
 
     # Calculate training error
     if testing:
         eval_params = {'batch_size': batch_size}
-        acc = model_eval(sess, x, y, preds, X_train, Y_train, args=eval_params)
+        acc = model_eval(sess, x, y, preds, x_train, y_train, args=eval_params)
         report.train_clean_train_clean_eval = acc
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and graph
@@ -151,15 +152,15 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Evaluate the accuracy of the MNIST model on adversarial examples
     eval_par = {'batch_size': batch_size}
-    acc = model_eval(sess, x, y, preds_adv, X_test, Y_test, args=eval_par)
+    acc = model_eval(sess, x, y, preds_adv, x_test, y_test, args=eval_par)
     print('Test accuracy on adversarial examples: %0.4f\n' % acc)
     report.clean_train_adv_eval = acc
 
     # Calculating train error
     if testing:
         eval_par = {'batch_size': batch_size}
-        acc = model_eval(sess, x, y, preds_adv, X_train,
-                         Y_train, args=eval_par)
+        acc = model_eval(sess, x, y, preds_adv, x_train,
+                         y_train, args=eval_par)
         report.train_clean_train_adv_eval = acc
 
     print("Repeating the process, using adversarial training")
@@ -180,29 +181,29 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     def evaluate_2():
         # Accuracy of adversarially trained model on legitimate test inputs
         eval_params = {'batch_size': batch_size}
-        accuracy = model_eval(sess, x, y, preds_2, X_test, Y_test,
+        accuracy = model_eval(sess, x, y, preds_2, x_test, y_test,
                               args=eval_params)
         print('Test accuracy on legitimate examples: %0.4f' % accuracy)
         report.adv_train_clean_eval = accuracy
 
         # Accuracy of the adversarially trained model on adversarial examples
-        accuracy = model_eval(sess, x, y, preds_2_adv, X_test,
-                              Y_test, args=eval_params)
+        accuracy = model_eval(sess, x, y, preds_2_adv, x_test,
+                              y_test, args=eval_params)
         print('Test accuracy on adversarial examples: %0.4f' % accuracy)
         report.adv_train_adv_eval = accuracy
 
     # Perform and evaluate adversarial training
-    train(sess, loss_2, x, y, X_train, Y_train, evaluate=evaluate_2,
+    train(sess, loss_2, x, y, x_train, y_train, evaluate=evaluate_2,
           args=train_params, save=False, rng=rng)
 
     # Calculate training errors
     if testing:
         eval_params = {'batch_size': batch_size}
-        accuracy = model_eval(sess, x, y, preds_2, X_train, Y_train,
+        accuracy = model_eval(sess, x, y, preds_2, x_train, y_train,
                               args=eval_params)
         report.train_adv_train_clean_eval = accuracy
-        accuracy = model_eval(sess, x, y, preds_2_adv, X_train,
-                              Y_train, args=eval_params)
+        accuracy = model_eval(sess, x, y, preds_2_adv, x_train,
+                              y_train, args=eval_params)
         report.train_adv_train_adv_eval = accuracy
 
     return report

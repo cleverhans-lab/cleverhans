@@ -76,12 +76,12 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
     # Use Image Parameters
-    img_rows, img_cols, nchannels = X_train.shape[1:4]
-    nb_classes = Y_train.shape[1]
+    img_rows, img_cols, nchannels = x_train.shape[1:4]
+    nb_classes = y_train.shape[1]
 
     if label_smoothing:
         label_smooth = .1
-        Y_train = Y_train.clip(label_smooth /
+        y_train = y_train.clip(label_smooth /
                                (nb_classes-1), 1. - label_smooth)
 
     # Define input TF placeholder
