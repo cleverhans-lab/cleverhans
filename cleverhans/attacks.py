@@ -398,58 +398,69 @@ class BasicIterativeMethod(Attack):
     assert self.parse_params(**kwargs)
 
     # Initialize loop variables
-    eta = 0
+    eta = tf.zeros_like(x)
 
     # Fix labels to the first model predictions for loss computation
     model_preds = self.model.get_probs(x)
     preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
     if self.y_target is not None:
-        y = self.y_target
-        targeted = True
+      y = self.y_target
+      targeted = True
     elif self.y is not None:
-        y = self.y
-        targeted = False
+      y = self.y
+      targeted = False
     else:
-        y = tf.to_float(tf.equal(model_preds, preds_max))
-        y = tf.stop_gradient(y)
-        targeted = False
+      y = tf.to_float(tf.equal(model_preds, preds_max))
+      y = tf.stop_gradient(y)
+      targeted = False
 
     y_kwarg = 'y_target' if targeted else 'y'
-    fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord,
-                  'clip_min': self.clip_min, 'clip_max': self.clip_max}
+    fgm_params = {
+        'eps': self.eps_iter,
+        y_kwarg: y,
+        'ord': self.ord,
+        'clip_min': self.clip_min,
+        'clip_max': self.clip_max
+    }
 
-    FGM = FastGradientMethod(self.model, back=self.back,
-                             sess=self.sess)
+    FGM = FastGradientMethod(self.model, back=self.back, sess=self.sess)
 
     def cond(i, _):
-        return tf.less(i, self.nb_iter)
+      return tf.less(i, self.nb_iter)
 
     def body(i, e):
-        adv_x = FGM.generate(x + e, **fgm_params)
+      adv_x = FGM.generate(x + e, **fgm_params)
 
-        # Clipping perturbation according to clip_min and clip_max
-        if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+      # Clipping perturbation according to clip_min and clip_max
+      if self.clip_min is not None and self.clip_max is not None:
+        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
-        # Clipping perturbation eta to self.ord norm ball
-        eta = adv_x - x
-        from cleverhans.utils_tf import clip_eta
-        eta = clip_eta(eta, self.ord, self.eps)
-        return i+1, eta
+      # Clipping perturbation eta to self.ord norm ball
+      eta = adv_x - x
+      from cleverhans.utils_tf import clip_eta
+      eta = clip_eta(eta, self.ord, self.eps)
+      return i + 1, eta
 
-    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=False)
+    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
 
     # Define adversarial example (and clip if necessary)
     adv_x = x + eta
     if self.clip_min is not None and self.clip_max is not None:
-        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+      adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
     return adv_x
 
-    def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
-                     ord=np.inf, clip_min=None, clip_max=None,
-                     y_target=None, **kwargs):
-        """
+  def parse_params(self,
+                   eps=0.3,
+                   eps_iter=0.05,
+                   nb_iter=10,
+                   y=None,
+                   ord=np.inf,
+                   clip_min=None,
+                   clip_max=None,
+                   y_target=None,
+                   **kwargs):
+    """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
 
@@ -542,7 +553,7 @@ class MomentumIterativeMethod(Attack):
     assert self.parse_params(**kwargs)
 
     # Initialize loop variables
-    momentum = 0
+    momentum = tf.zeros_like(x)
     adv_x = x
 
     # Fix labels to the first model predictions for loss computation
@@ -553,66 +564,67 @@ class MomentumIterativeMethod(Attack):
     from . import utils_tf
 
     def cond(i, _, __):
-        reutrn tf.less(i, self.nb_iter)
+      return tf.less(i, self.nb_iter)
 
     def body(i, ax, m):
-        preds = self.model.get_probs(adv_x)
-        loss = utils_tf.model_loss(y, preds, mean=False)
-        if targeted:
-            loss = -loss
+      preds = self.model.get_probs(ax)
+      loss = utils_tf.model_loss(y, preds, mean=False)
+      if targeted:
+        loss = -loss
 
-        # Define gradient of loss wrt input
-        grad, = tf.gradients(loss, adv_x)
+      # Define gradient of loss wrt input
+      grad, = tf.gradients(loss, ax)
 
-        # Normalize current gradient and add it to the accumulated gradient
-        red_ind = list(xrange(1, len(grad.get_shape())))
-        avoid_zero_div = tf.cast(1e-12, grad.dtype)
-        grad = grad / tf.maximum(avoid_zero_div,
-                                 tf.reduce_mean(tf.abs(grad),
-                                                red_ind,
-                                                keep_dims=True))
-        momentum = self.decay_factor * momentum + grad
+      # Normalize current gradient and add it to the accumulated gradient
+      red_ind = list(xrange(1, len(grad.get_shape())))
+      avoid_zero_div = tf.cast(1e-12, grad.dtype)
+      grad = grad / tf.maximum(
+          avoid_zero_div, tf.reduce_mean(tf.abs(grad), red_ind, keep_dims=True))
+      m = self.decay_factor * m + grad
 
-        if self.ord == np.inf:
-            normalized_grad = tf.sign(momentum)
-        elif self.ord == 1:
-            norm = tf.maximum(avoid_zero_div,
-                              tf.reduce_sum(tf.abs(momentum),
-                                            red_ind,
-                                            keep_dims=True))
-            normalized_grad = momentum / norm
-        elif self.ord == 2:
-            square = tf.reduce_sum(tf.square(momentum),
-                                   red_ind,
-                                   keep_dims=True)
-            norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
-            normalized_grad = momentum / norm
-        else:
-            raise NotImplementedError("Only L-inf, L1 and L2 norms are "
-                                      "currently implemented.")
+      if self.ord == np.inf:
+        normalized_grad = tf.sign(m)
+      elif self.ord == 1:
+        norm = tf.maximum(avoid_zero_div,
+                          tf.reduce_sum(tf.abs(m), red_ind, keep_dims=True))
+        normalized_grad = m / norm
+      elif self.ord == 2:
+        square = tf.reduce_sum(tf.square(m), red_ind, keep_dims=True)
+        norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
+        normalized_grad = m / norm
+      else:
+        raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                                  "currently implemented.")
 
-        # Update and clip adversarial example in current iteration
-        scaled_grad = self.eps_iter * normalized_grad
-        adv_x = adv_x + scaled_grad
-        adv_x = x + utils_tf.clip_eta(adv_x - x, self.ord, self.eps)
+      # Update and clip adversarial example in current iteration
+      scaled_grad = self.eps_iter * normalized_grad
+      ax = ax + scaled_grad
+      ax = x + utils_tf.clip_eta(ax - x, self.ord, self.eps)
 
-        if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+      if self.clip_min is not None and self.clip_max is not None:
+        ax = tf.clip_by_value(ax, self.clip_min, self.clip_max)
 
-        adv_x = tf.stop_gradient(adv_x)
+      ax = tf.stop_gradient(ax)
 
-        return i+1, adv_x, momentum
+      return i + 1, ax, m
 
     _, adv_x, _ = tf.while_loop(
-            cond, body, [tf.zeros([]), adv_x, momentum], back_prop=False)
+        cond, body, [tf.zeros([]), adv_x, momentum], back_prop=True)
 
     return adv_x
 
-    def parse_params(self, eps=0.3, eps_iter=0.06, nb_iter=10, y=None,
-                     ord=np.inf, decay_factor=1.0,
-                     clip_min=None, clip_max=None,
-                     y_target=None, **kwargs):
-        """
+  def parse_params(self,
+                   eps=0.3,
+                   eps_iter=0.06,
+                   nb_iter=10,
+                   y=None,
+                   ord=np.inf,
+                   decay_factor=1.0,
+                   clip_min=None,
+                   clip_max=None,
+                   y_target=None,
+                   **kwargs):
+    """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
 
@@ -1511,13 +1523,13 @@ class MadryEtAl(Attack):
       eta = tf.zeros_like(x)
 
     def cond(i, _):
-        return tf.less(i, self.nb_iter)
+      return tf.less(i, self.nb_iter)
 
     def body(i, e):
-        new_eta = self.attack_single_step(x, e, y)
-        return i+1, new_eta
+      new_eta = self.attack_single_step(x, e, y)
+      return i + 1, new_eta
 
-    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=False)
+    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
 
     adv_x = x + eta
     if self.clip_min is not None and self.clip_max is not None:
@@ -1669,13 +1681,13 @@ class FastFeatureAdversaries(Attack):
     eta = clip_eta(eta, self.ord, self.eps)
 
     def cond(i, _):
-        return tf.less(i, self.nb_iter)
+      return tf.less(i, self.nb_iter)
 
     def body(i, e):
-        new_eta = self.attack_single_step(x, e, g_feat)
-        return i+1, new_eta
+      new_eta = self.attack_single_step(x, e, g_feat)
+      return i + 1, new_eta
 
-    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=False)
+    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
 
     # Define adversarial example (and clip if necessary)
     adv_x = x + eta
