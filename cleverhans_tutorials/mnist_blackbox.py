@@ -48,7 +48,7 @@ def setup_tutorial():
 
 def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
               nb_epochs, batch_size, learning_rate,
-              rng):
+              rng, nb_classes=10, img_rows=28, img_cols=28, nchannels=1):
     """
     Define and train a model that simulates the "remote"
     black-box oracle described in the original paper.
@@ -67,7 +67,8 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     """
 
     # Define TF model graph (for the black-box model)
-    model = ModelBasicCNN('model1', 10, 64)
+    nb_filters = 64
+    model = ModelBasicCNN('model1', nb_classes, nb_filters)
     loss = LossCrossEntropy(model, smoothing=0.1)
     predictions = model.get_logits(x)
     print("Defined TensorFlow model graph.")
@@ -111,7 +112,7 @@ class ModelSubstitute(Model):
 
 def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
               nb_epochs_s, batch_size, learning_rate, data_aug, lmbda,
-              rng):
+              rng, img_rows=28, img_cols=28, nchannels=1):
     """
     This function creates the substitute by alternatively
     augmenting the training data and training the substitute.
@@ -134,6 +135,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
     model_sub = ModelSubstitute('model_s', nb_classes)
     preds_sub = model_sub.get_logits(x)
     loss_sub = LossCrossEntropy(model_sub, smoothing=0)
+
     print("Defined TensorFlow model graph for the substitute.")
 
     # Define the Jacobian symbolically using TensorFlow
@@ -210,7 +212,6 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
-
     # Initialize substitute training set reserved for adversary
     X_sub = x_test[:holdout]
     Y_sub = np.argmax(y_test[:holdout], axis=1)
@@ -219,9 +220,14 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     x_test = x_test[holdout:]
     y_test = y_test[holdout:]
 
-    # Define input and output TF placeholders
-    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+    # Obtain Image parameters
+    img_rows, img_cols, nchannels = x_train.shape[1:4]
+    nb_classes = y_train.shape[1]
+
+    # Define input TF placeholder
+    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+                                          nchannels))
+    y = tf.placeholder(tf.float32, shape=(None,     nb_classes))
 
     # Seed random number generator so tutorial is reproducible
     rng = np.random.RandomState([2017, 8, 30])
@@ -231,14 +237,15 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     print("Preparing the black-box model.")
     prep_bbox_out = prep_bbox(sess, x, y, x_train, y_train, x_test, y_test,
                               nb_epochs, batch_size, learning_rate,
-                              rng=rng)
+                              rng, nb_classes, img_rows, img_cols, nchannels)
     model, bbox_preds, accuracies['bbox'] = prep_bbox_out
 
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     print("Training the substitute model.")
     train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
                               nb_classes, nb_epochs_s, batch_size,
-                              learning_rate, data_aug, lmbda, rng=rng)
+                              learning_rate, data_aug, lmbda, rng,
+                              img_rows, img_cols, nchannels)
     model_sub, preds_sub = train_sub_out
 
     # Evaluate the substitute model on clean test examples

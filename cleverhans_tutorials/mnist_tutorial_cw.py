@@ -28,7 +28,7 @@ FLAGS = flags.FLAGS
 
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                       test_end=10000, viz_enabled=True, nb_epochs=6,
-                      batch_size=128, nb_classes=10, source_samples=10,
+                      batch_size=128, source_samples=10,
                       learning_rate=0.001, attack_iterations=100,
                       model_path=os.path.join("models", "mnist"),
                       targeted=True):
@@ -51,11 +51,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     # Object used to keep track of (and return) key accuracies
     report = AccuracyReport()
 
-    # MNIST-specific dimensions
-    img_rows = 28
-    img_cols = 28
-    channels = 1
-
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
 
@@ -71,12 +66,18 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
 
+    # Obtain Image Parameters
+    img_rows, img_cols, nchannels = x_train.shape[1:4]
+    nb_classes = y_train.shape[1]
+
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, channels))
+    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+                                          nchannels))
     y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+    nb_filters = 64
 
     # Define TF model graph
-    model = ModelBasicCNN('model1', 10, 64)
+    model = ModelBasicCNN('model1', nb_classes, nb_filters)
     preds = model.get_logits(x)
     loss = LossCrossEntropy(model, smoothing=0.1)
     print("Defined TensorFlow model graph.")
@@ -127,7 +128,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     if targeted:
         if viz_enabled:
             # Initialize our array for grid visualization
-            grid_shape = (nb_classes, nb_classes, img_rows, img_cols, channels)
+            grid_shape = (nb_classes, nb_classes, img_rows, img_cols,
+                          nchannels)
             grid_viz_data = np.zeros(grid_shape, dtype='f')
 
             adv_inputs = np.array(
@@ -142,7 +144,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         one_hot[np.arange(nb_classes), np.arange(nb_classes)] = 1
 
         adv_inputs = adv_inputs.reshape(
-            (source_samples * nb_classes, img_rows, img_cols, 1))
+            (source_samples * nb_classes, img_rows, img_cols, nchannels))
         adv_ys = np.array([one_hot] * source_samples,
                           dtype=np.float32).reshape((source_samples *
                                                      nb_classes, nb_classes))
@@ -150,7 +152,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     else:
         if viz_enabled:
             # Initialize our array for grid visualization
-            grid_shape = (nb_classes, 2, img_rows, img_cols, channels)
+            grid_shape = (nb_classes, 2, img_rows, img_cols, nchannels)
             grid_viz_data = np.zeros(grid_shape, dtype='f')
 
             adv_inputs = x_test[idxs]
@@ -222,7 +224,6 @@ def main(argv=None):
     mnist_tutorial_cw(viz_enabled=FLAGS.viz_enabled,
                       nb_epochs=FLAGS.nb_epochs,
                       batch_size=FLAGS.batch_size,
-                      nb_classes=FLAGS.nb_classes,
                       source_samples=FLAGS.source_samples,
                       learning_rate=FLAGS.learning_rate,
                       attack_iterations=FLAGS.attack_iterations,
@@ -234,7 +235,6 @@ if __name__ == '__main__':
     flags.DEFINE_boolean('viz_enabled', True, 'Visualize adversarial ex.')
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_integer('nb_classes', 10, 'Number of output classes')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
