@@ -32,7 +32,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    clean_train=True,
                    testing=False,
                    backprop_through_attack=False,
-                   nb_filters=64, num_threads=None):
+                   nb_filters=64, num_threads=None,
+                   label_smoothing=True):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -74,10 +75,19 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
+    # Use Image Parameters
+    img_rows, img_cols, nchannels = x_train.shape[1:4]
+    nb_classes = y_train.shape[1]
+
+    if label_smoothing:
+        label_smooth = .1
+        y_train = y_train.clip(label_smooth /
+                               (nb_classes-1), 1. - label_smooth)
 
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+                                          nchannels))
+    y = tf.placeholder(tf.float32, shape=(None, nb_classes))
 
     # Train an MNIST model
     train_params = {
@@ -107,7 +117,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
             print('Test accuracy on %s examples: %0.4f' % (report_text, acc))
 
     if clean_train:
-        model = ModelBasicCNN('model1', 10, nb_filters)
+        model = ModelBasicCNN('model1', nb_classes, nb_filters)
         preds = model.get_logits(x)
         loss = LossCrossEntropy(model, smoothing=0.1)
 
@@ -137,7 +147,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         print('Repeating the process, using adversarial training')
 
     # Create a new model and train it to be robust to FastGradientMethod
-    model2 = ModelBasicCNN('model2', 10, nb_filters)
+    model2 = ModelBasicCNN('model2', nb_classes, nb_filters)
     fgsm2 = FastGradientMethod(model2, sess=sess)
 
     def attack(x):
