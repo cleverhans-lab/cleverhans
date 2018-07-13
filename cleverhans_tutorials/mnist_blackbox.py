@@ -112,7 +112,8 @@ class ModelSubstitute(Model):
 
 def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
               nb_epochs_s, batch_size, learning_rate, data_aug, lmbda,
-              rng, img_rows=28, img_cols=28, nchannels=1):
+              aug_batch_size, rng, img_rows=28, img_cols=28,
+              nchannels=1):
     """
     This function creates the substitute by alternatively
     augmenting the training data and training the substitute.
@@ -161,7 +162,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             # Perform the Jacobian augmentation
             lmbda_coef = 2 * int(int(rho / 3) != 0) - 1
             X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
-                                          lmbda_coef * lmbda)
+                                          lmbda_coef * lmbda, aug_batch_size)
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
@@ -181,7 +182,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
 def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_classes=10, batch_size=128,
                    learning_rate=0.001, nb_epochs=10, holdout=150, data_aug=6,
-                   nb_epochs_s=10, lmbda=0.1):
+                   nb_epochs_s=10, lmbda=0.1, aug_batch_size=512):
     """
     MNIST tutorial for the black-box attack from arxiv.org/abs/1602.02697
     :param train_start: index of first training set example
@@ -244,8 +245,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     print("Training the substitute model.")
     train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
                               nb_classes, nb_epochs_s, batch_size,
-                              learning_rate, data_aug, lmbda, rng,
-                              img_rows, img_cols, nchannels)
+                              learning_rate, data_aug, lmbda, aug_batch_size,
+                              rng, img_rows, img_cols, nchannels)
     model_sub, preds_sub = train_sub_out
 
     # Evaluate the substitute model on clean test examples
@@ -276,7 +277,7 @@ def main(argv=None):
                    learning_rate=FLAGS.learning_rate,
                    nb_epochs=FLAGS.nb_epochs, holdout=FLAGS.holdout,
                    data_aug=FLAGS.data_aug, nb_epochs_s=FLAGS.nb_epochs_s,
-                   lmbda=FLAGS.lmbda)
+                   lmbda=FLAGS.lmbda, aug_batch_size=FLAGS.data_aug_batch_size)
 
 
 if __name__ == '__main__':
@@ -293,5 +294,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('data_aug', 6, 'Nb of substitute data augmentations')
     flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for substitute')
     flags.DEFINE_float('lmbda', 0.1, 'Lambda from arxiv.org/abs/1602.02697')
+    flags.DEFINE_integer('data_aug_batch_size', 512,
+                         'Batch size for augmentation')
 
     tf.app.run()

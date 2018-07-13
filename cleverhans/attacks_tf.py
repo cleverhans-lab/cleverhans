@@ -560,7 +560,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
 
 def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
-                          feed=None):
+                          aug_batch_size=512, feed=None):
     """
     Augment an adversary's substitute training set using the Jacobian
     of a substitute model to generate new synthetic inputs.
@@ -580,6 +580,8 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     assert len(grads) >= np.max(Y_sub) + 1
     assert len(X_sub_prev) == len(Y_sub)
 
+    aug_batch_size = min(aug_batch_size, X_sub_prev.shape[0])
+
     # Prepare input_shape (outside loop) for feeding dictionary below
     input_shape = list(x.get_shape())
     input_shape[0] = 1
@@ -587,22 +589,24 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
     # Create new numpy array for adversary training data
     # with twice as many components on the first dimension.
     X_sub = np.vstack([X_sub_prev, X_sub_prev])
+    num_samples = X_sub_prev.shape[0]
 
-    # For each input in the previous' substitute training iteration
-    for ind, prev_input in enumerate(X_sub_prev):
-        # Select gradient corresponding to the label predicted by the oracle
-        grad = grads[Y_sub[ind]]
-
-        # Prepare feeding dictionary
-        feed_dict = {x: np.reshape(prev_input, input_shape)}
+    # Creating and processing as batch
+    nb_batches_aug = int((num_samples + aug_batch_size - 1)/aug_batch_size)
+    for p_idxs in range(0, num_samples, aug_batch_size):
+        X_batch = X_sub_prev[p_idxs:p_idxs + aug_batch_size, ...]
+        feed_dict = {x: X_batch}
         if feed is not None:
             feed_dict.update(feed)
 
         # Compute sign matrix
-        grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
+        grad_val = sess.run([tf.sign(grads)], feed_dict=feed_dict)[0]
 
         # Create new synthetic point in adversary substitute training set
-        X_sub[X_sub_prev.shape[0] + ind] = X_sub[ind] + lmbda * grad_val
+        for (indx, ind) in zip(range(p_idxs, p_idxs + X_batch.shape[0]),
+                               range(X_batch.shape[0])):
+            X_sub[num_samples + indx] = (X_batch[ind] + lmbda *
+                                         grad_val[Y_sub[indx], ind, ...])
 
     # Return augmented training data (needs to be labeled afterwards)
     return X_sub
