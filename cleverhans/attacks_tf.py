@@ -495,17 +495,30 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
         increase_coef = (4 * int(increase) - 2) \
             * tf.cast(tf.equal(domain_in, 0), tf_dtype)
 
-        target_tmp = grads_target
-        target_tmp -= increase_coef \
-            * reduce_max(tf.abs(grads_target), axis=1, keepdims=True)
-        target_sum = tf.reshape(target_tmp, shape=[-1, nb_features, 1]) \
-            + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
+        if increase:
+            target_tmp = grads_target
+            target_tmp -= increase_coef \
+                * reduce_max(tf.abs(grads_target), axis=1, keepdims=True)
+            target_sum = tf.reshape(target_tmp, shape=[-1, nb_features, 1]) \
+                + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
 
-        other_tmp = grads_other
-        other_tmp += increase_coef \
-            * reduce_max(tf.abs(grads_other), axis=1, keepdims=True)
-        other_sum = tf.reshape(other_tmp, shape=[-1, nb_features, 1]) \
-            + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
+            other_tmp = grads_other
+            other_tmp += increase_coef \
+                * reduce_max(tf.abs(grads_other), axis=1, keepdims=True)
+            other_sum = tf.reshape(other_tmp, shape=[-1, nb_features, 1]) \
+                + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
+        else:
+            target_tmp = grads_target
+            target_tmp += increase_coef \
+                * reduce_max(tf.abs(grads_target), axis=1, keepdims=True)
+            target_sum = tf.reshape(target_tmp, shape=[-1, nb_features, 1]) \
+                + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
+
+            other_tmp = grads_other
+            other_tmp -= increase_coef \
+                * reduce_max(tf.abs(grads_other), axis=1, keepdims=True)
+            other_sum = tf.reshape(other_tmp, shape=[-1, nb_features, 1]) \
+                + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
 
         # Create a mask to only keep features that match conditions
         if increase:
