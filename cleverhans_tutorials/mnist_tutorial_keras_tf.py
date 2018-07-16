@@ -120,7 +120,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     ckpt = tf.train.get_checkpoint_state(train_dir)
     print(train_dir, ckpt)
     ckpt_path = False if ckpt is None else ckpt.model_checkpoint_path
-    wrap = KerasModelWrapper(model, 10)
+    wrap = KerasModelWrapper(model)
 
     if load_model and ckpt_path:
         saver = tf.train.Saver()
@@ -168,7 +168,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     model_2 = cnn_model(img_rows=img_rows, img_cols=img_cols,
                         channels=nchannels, nb_filters=64,
                         nb_classes=nb_classes)
-    wrap_2 = KerasModelWrapper(model_2, nb_classes)
+    wrap_2 = KerasModelWrapper(model_2)
     preds_2 = model_2(x)
     fgsm2 = FastGradientMethod(wrap_2, sess=sess)
 
