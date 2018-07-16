@@ -170,7 +170,6 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     # Compute the average distortion introduced by the algorithm
     percent_perturbed = np.mean(perturbations)
     print('Avg. rate of perturbed features {0:.4f}'.format(percent_perturbed))
-    np.savetxt('untarpert.txt',perturbations)
 
     # Compute the average distortion introduced for successful samples only
     percent_perturb_succ = np.mean(perturbations * (results == 1))
