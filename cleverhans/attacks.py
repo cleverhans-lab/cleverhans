@@ -689,7 +689,8 @@ class SaliencyMapMethod(Attack):
         import tensorflow as tf
         self.feedable_kwargs = {'y_target': self.tf_dtype}
         self.structural_kwargs = [
-            'theta', 'gamma', 'clip_max', 'clip_min', 'symbolic_impl'
+            'theta', 'gamma', 'clip_max', 'clip_min', 'symbolic_impl',
+            'targetted'
         ]
 
     def generate(self, x, **kwargs):
@@ -710,7 +711,7 @@ class SaliencyMapMethod(Attack):
         assert self.parse_params(**kwargs)
 
         if self.symbolic_impl:
-            from .attacks_tf import jsma_symbolic
+            from .attacks_tf import jsma_symbolic, jsma_symbolic_untargetted
 
             # Create random targets if y_target not provided
             if self.y_target is None:
@@ -732,14 +733,24 @@ class SaliencyMapMethod(Attack):
                                            self.tf_dtype)
                 self.y_target.set_shape([None, nb_classes])
 
-            x_adv = jsma_symbolic(
-                x,
-                model=self.model,
-                y_target=self.y_target,
-                theta=self.theta,
-                gamma=self.gamma,
-                clip_min=self.clip_min,
-                clip_max=self.clip_max)
+            if self.targetted:
+                x_adv = jsma_symbolic(
+                    x,
+                    model=self.model,
+                    y_target=self.y_target,
+                    theta=self.theta,
+                    gamma=self.gamma,
+                    clip_min=self.clip_min,
+                    clip_max=self.clip_max)
+            else:
+                x_adv = jsma_symbolic_untargetted(
+                    x,
+                    model=self.model,
+                    y_target=self.y_target,
+                    theta=self.theta,
+                    gamma=self.gamma,
+                    clip_min=self.clip_min,
+                    clip_max=self.clip_max)
         else:
             from .attacks_tf import jacobian_graph, jsma_batch
 
@@ -797,6 +808,7 @@ class SaliencyMapMethod(Attack):
                      clip_max=1.,
                      y_target=None,
                      symbolic_impl=True,
+                     targetted=True,
                      **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -822,6 +834,7 @@ class SaliencyMapMethod(Attack):
         self.clip_max = clip_max
         self.y_target = y_target
         self.symbolic_impl = symbolic_impl
+        self.targetted = targetted
 
         return True
 
