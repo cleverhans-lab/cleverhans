@@ -13,7 +13,7 @@ class Model(object):
     __metaclass__ = ABCMeta
     O_LOGITS, O_PROBS, O_FEATURES = 'logits probs features'.split()
 
-    def __init__(self, scope=None, nb_classes=10, hparams=None):
+    def __init__(self, scope=None, nb_classes=None, hparams=None):
         """
         Constructor.
         :param scope: str, the name of model.

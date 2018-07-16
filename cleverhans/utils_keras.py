@@ -111,7 +111,7 @@ class KerasModelWrapper(Model):
         Create a wrapper for a Keras model
         :param model: A Keras model
         """
-        super(KerasModelWrapper, self).__init__(None, 10, {})
+        super(KerasModelWrapper, self).__init__(None, None, {})
 
         if model is None:
             raise ValueError('model argument must be supplied.')
