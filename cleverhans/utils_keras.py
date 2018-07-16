@@ -106,7 +106,7 @@ class KerasModelWrapper(Model):
     in-place operations can incur an overhead.
     """
 
-    def __init__(self, model, nb_classes):
+    def __init__(self, model, nb_classes=10):
         """
         Create a wrapper for a Keras model
         :param model: A Keras model
