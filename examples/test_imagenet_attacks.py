@@ -28,6 +28,7 @@ from PIL import Image
 import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.contrib.slim.nets import inception
+from six.moves import xrange
 
 from cleverhans.attacks import SPSA
 from cleverhans.devtools.checks import CleverHansTest

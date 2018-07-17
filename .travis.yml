@@ -2,6 +2,7 @@
 sudo: required
 dist: trusty
 language: python
+# RUN_FLAKE8 should be set once for each version of Python under test
 matrix:
     include:
         - python: 2.7
@@ -12,6 +13,7 @@ matrix:
           env:
             - KERAS_BACKEND=tensorflow
             - TENSORFLOW_V=1.8.0
+            - RUN_FLAKE8=true
         - python: 3.5
           env:
             - KERAS_BACKEND=tensorflow
@@ -20,6 +22,7 @@ matrix:
           env:
             - KERAS_BACKEND=tensorflow
             - TENSORFLOW_V=1.8.0
+            - RUN_FLAKE8=true
 install:
   # code below is taken from http://conda.pydata.org/docs/travis.html
   # We do this conditionally because it saves us some downloading if the
@@ -63,6 +66,14 @@ install:
   # install dependencies for adversarial competition eval infra tests
   - pip install google-cloud
   - pip install Pillow
+
+
+before_script:
+    # stop the build if there are Python syntax errors or undefined names
+    if [[ "$RUN_FLAKE8" ]]; then
+      pip install flake8;
+      flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics;
+    fi
 
 # command to run tests
 script:
