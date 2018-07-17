@@ -1555,6 +1555,7 @@ class UnrolledOptimizer(object):
             new_optim_state: A dict, with the same structure as `optim_state`,
                 which have been updated.
         """
+        x = x[0]
         loss = reduce_mean(loss_fn(x), axis=0)
         return tf.gradients(loss, x)
 
