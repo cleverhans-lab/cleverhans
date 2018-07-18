@@ -16,7 +16,6 @@ from six.moves import xrange
 
 import logging
 import tensorflow as tf
-import keras
 from tensorflow.python.platform import flags
 
 from cleverhans.loss import LossCrossEntropy
