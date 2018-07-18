@@ -29,7 +29,8 @@ class TestMNISTBlackboxF(CleverHansTest):
         # Check accuracy values contained in the AccuracyReport object
         self.assertTrue(report['bbox'] > 0.7, report['bbox'])
         self.assertTrue(report['sub'] > 0.7, report['sub'])
-        self.assertTrue(report['bbox_on_sub_adv_ex'] < 0.2, report['bbox_on_sub_adv_ex'])
+        self.assertTrue(report['bbox_on_sub_adv_ex'] < 0.3,
+                        report['bbox_on_sub_adv_ex'])
 
         g = tf.Graph()
         with g.as_default():
@@ -41,6 +42,7 @@ class TestMNISTBlackboxF(CleverHansTest):
         self.assertClose(report['sub'], report_2['sub'], atol=atol_fac * 1)
         self.assertClose(report['bbox_on_sub_adv_ex'],
                          report_2['bbox_on_sub_adv_ex'], atol=atol_fac * 1)
+
 
 if __name__ == '__main__':
     unittest.main()

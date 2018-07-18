@@ -33,7 +33,7 @@ class ResNet(Model):
           each with set_input_shape() and fprop() methods.
           input_shape: 4-tuple describing input shape (e.g None, 32, 32, 3)
         """
-        super(ResNet, self).__init__()
+        super(ResNet, self).__init__('', 10, {})
         self.layer_names = []
         self.layers = layers
         self.input_shape = input_shape
@@ -61,7 +61,7 @@ class ResNet(Model):
             x = layer.fprop(x)
             assert x is not None
             states.append(x)
-        states = dict(zip(self.get_layer_names(), states))
+        states = dict(zip(self.layer_names, states))
         return states
 
     def add_internal_summaries(self):

@@ -84,7 +84,7 @@ class TestUtils(unittest.TestCase):
     def test_get_logits_over_interval(self):
         import tensorflow as tf
         model = cnn_model()
-        wrap = KerasModelWrapper(model)
+        wrap = KerasModelWrapper(model, nb_classes=10)
         fgsm_params = {'eps': .5}
         img = np.ones(shape=(28, 28, 1))
         num_points = 21

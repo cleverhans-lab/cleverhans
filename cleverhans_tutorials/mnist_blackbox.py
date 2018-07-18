@@ -9,6 +9,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import functools
+
 import numpy as np
 from six.moves import xrange
 
@@ -17,15 +19,17 @@ import tensorflow as tf
 import keras
 from tensorflow.python.platform import flags
 
+from cleverhans.loss import LossCrossEntropy
+from cleverhans.model import Model
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import to_categorical
 from cleverhans.utils import set_log_level
-from cleverhans.utils_tf import model_train, model_eval, batch_eval
+from cleverhans.utils_tf import train, model_eval, batch_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
-from cleverhans_tutorials.tutorial_models import make_basic_cnn, MLP
-from cleverhans_tutorials.tutorial_models import Flatten, Linear, ReLU, Softmax
+from cleverhans_tutorials.tutorial_models import ModelBasicCNN, \
+    HeReLuNormalInitializer
 from cleverhans.utils import TemporaryLogLevel
 
 FLAGS = flags.FLAGS
@@ -45,7 +49,7 @@ def setup_tutorial():
 
 def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
               nb_epochs, batch_size, learning_rate,
-              rng):
+              rng, nb_classes=10, img_rows=28, img_cols=28, nchannels=1):
     """
     Define and train a model that simulates the "remote"
     black-box oracle described in the original paper.
@@ -64,8 +68,10 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     """
 
     # Define TF model graph (for the black-box model)
-    model = make_basic_cnn()
-    predictions = model(x)
+    nb_filters = 64
+    model = ModelBasicCNN('model1', nb_classes, nb_filters)
+    loss = LossCrossEntropy(model, smoothing=0.1)
+    predictions = model.get_logits(x)
     print("Defined TensorFlow model graph.")
 
     # Train an MNIST model
@@ -74,15 +80,7 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    # treat keras model and tensorflow model separately
-    if (model.__class__ in
-            [keras.models.Sequential or keras.engine.training.Model]):
-        print("Keras model detected...")
-        model_train(sess, x, y, predictions, X_train, Y_train,
-                    args=train_params, rng=rng)
-    else:
-        model_train(sess, x, y, predictions, X_train, Y_train,
-                    args=train_params, rng=rng, var_list=model.get_params())
+    train(sess, loss, x, y, X_train, Y_train, args=train_params, rng=rng)
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
@@ -94,32 +92,29 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     return model, predictions, accuracy
 
 
-def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
-    """
-    Defines the model architecture to be used by the substitute. Use
-    the example model interface.
-    :param img_rows: number of rows in input
-    :param img_cols: number of columns in input
-    :param nb_classes: number of classes in output
-    :return: tensorflow model
-    """
-    input_shape = (None, img_rows, img_cols, 1)
+class ModelSubstitute(Model):
+    def __init__(self, scope, nb_classes, nb_filters=200, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
+        self.nb_filters = nb_filters
 
-    # Define a fully connected model (it's different than the black-box)
-    layers = [Flatten(),
-              Linear(200),
-              ReLU(),
-              Linear(200),
-              ReLU(),
-              Linear(nb_classes),
-              Softmax()]
-
-    return MLP(layers, input_shape)
+    def fprop(self, x, **kwargs):
+        del kwargs
+        my_dense = functools.partial(
+            tf.layers.dense, kernel_initializer=HeReLuNormalInitializer)
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            y = tf.layers.flatten(x)
+            y = my_dense(y, self.nb_filters, activation=tf.nn.relu)
+            y = my_dense(y, self.nb_filters, activation=tf.nn.relu)
+            logits = my_dense(y, self.nb_classes)
+            return {self.O_LOGITS: logits,
+                    self.O_PROBS: tf.nn.softmax(logits=logits)}
 
 
 def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
               nb_epochs_s, batch_size, learning_rate, data_aug, lmbda,
-              rng):
+              aug_batch_size, rng, img_rows=28, img_cols=28,
+              nchannels=1):
     """
     This function creates the substitute by alternatively
     augmenting the training data and training the substitute.
@@ -139,8 +134,10 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
     :return:
     """
     # Define TF model graph (for the black-box model)
-    model_sub = substitute_model()
-    preds_sub = model_sub(x)
+    model_sub = ModelSubstitute('model_s', nb_classes)
+    preds_sub = model_sub.get_logits(x)
+    loss_sub = LossCrossEntropy(model_sub, smoothing=0)
+
     print("Defined TensorFlow model graph for the substitute.")
 
     # Define the Jacobian symbolically using TensorFlow
@@ -155,10 +152,10 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             'learning_rate': learning_rate
         }
         with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
-            model_train(sess, x, y, preds_sub, X_sub,
-                        to_categorical(Y_sub, nb_classes),
-                        init_all=False, args=train_params, rng=rng,
-                        var_list=model_sub.get_params())
+            train(sess, loss_sub, x, y, X_sub,
+                  to_categorical(Y_sub, nb_classes),
+                  init_all=False, args=train_params, rng=rng,
+                  var_list=model_sub.get_params())
 
         # If we are not at last substitute training iteration, augment dataset
         if rho < data_aug - 1:
@@ -166,7 +163,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             # Perform the Jacobian augmentation
             lmbda_coef = 2 * int(int(rho / 3) != 0) - 1
             X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
-                                          lmbda_coef * lmbda)
+                                          lmbda_coef * lmbda, aug_batch_size)
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
@@ -186,7 +183,7 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
 def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_classes=10, batch_size=128,
                    learning_rate=0.001, nb_epochs=10, holdout=150, data_aug=6,
-                   nb_epochs_s=10, lmbda=0.1):
+                   nb_epochs_s=10, lmbda=0.1, aug_batch_size=512):
     """
     MNIST tutorial for the black-box attack from arxiv.org/abs/1602.02697
     :param train_start: index of first training set example
@@ -213,22 +210,26 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     sess = tf.Session()
 
     # Get MNIST data
-    X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
+    x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
                                                   test_start=test_start,
                                                   test_end=test_end)
-
     # Initialize substitute training set reserved for adversary
-    X_sub = X_test[:holdout]
-    Y_sub = np.argmax(Y_test[:holdout], axis=1)
+    X_sub = x_test[:holdout]
+    Y_sub = np.argmax(y_test[:holdout], axis=1)
 
     # Redefine test set as remaining samples unavailable to adversaries
-    X_test = X_test[holdout:]
-    Y_test = Y_test[holdout:]
+    x_test = x_test[holdout:]
+    y_test = y_test[holdout:]
 
-    # Define input and output TF placeholders
-    x = tf.placeholder(tf.float32, shape=(None, 28, 28, 1))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+    # Obtain Image parameters
+    img_rows, img_cols, nchannels = x_train.shape[1:4]
+    nb_classes = y_train.shape[1]
+
+    # Define input TF placeholder
+    x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+                                          nchannels))
+    y = tf.placeholder(tf.float32, shape=(None,     nb_classes))
 
     # Seed random number generator so tutorial is reproducible
     rng = np.random.RandomState([2017, 8, 30])
@@ -236,27 +237,23 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     # Simulate the black-box model locally
     # You could replace this by a remote labeling API for instance
     print("Preparing the black-box model.")
-    prep_bbox_out = prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
+    prep_bbox_out = prep_bbox(sess, x, y, x_train, y_train, x_test, y_test,
                               nb_epochs, batch_size, learning_rate,
-                              rng=rng)
+                              rng, nb_classes, img_rows, img_cols, nchannels)
     model, bbox_preds, accuracies['bbox'] = prep_bbox_out
 
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     print("Training the substitute model.")
 
-    # set keras model as non-trainable
-    if (model.__class__ in
-            [keras.models.Sequential or keras.engine.training.Model]):
-        model.trainable = False
-
     train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
                               nb_classes, nb_epochs_s, batch_size,
-                              learning_rate, data_aug, lmbda, rng=rng)
+                              learning_rate, data_aug, lmbda, aug_batch_size,
+                              rng, img_rows, img_cols, nchannels)
     model_sub, preds_sub = train_sub_out
 
     # Evaluate the substitute model on clean test examples
     eval_params = {'batch_size': batch_size}
-    acc = model_eval(sess, x, y, preds_sub, X_test, Y_test, args=eval_params)
+    acc = model_eval(sess, x, y, preds_sub, x_test, y_test, args=eval_params)
     accuracies['sub'] = acc
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object.
@@ -268,8 +265,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
     x_adv_sub = fgsm.generate(x, **fgsm_par)
 
     # Evaluate the accuracy of the "black-box" model on adversarial examples
-    accuracy = model_eval(sess, x, y, model(x_adv_sub), X_test, Y_test,
-                          args=eval_params)
+    accuracy = model_eval(sess, x, y, model.get_logits(x_adv_sub),
+                          x_test, y_test, args=eval_params)
     print('Test accuracy of oracle on adversarial examples generated '
           'using the substitute: ' + str(accuracy))
     accuracies['bbox_on_sub_adv_ex'] = accuracy
@@ -282,7 +279,7 @@ def main(argv=None):
                    learning_rate=FLAGS.learning_rate,
                    nb_epochs=FLAGS.nb_epochs, holdout=FLAGS.holdout,
                    data_aug=FLAGS.data_aug, nb_epochs_s=FLAGS.nb_epochs_s,
-                   lmbda=FLAGS.lmbda)
+                   lmbda=FLAGS.lmbda, aug_batch_size=FLAGS.data_aug_batch_size)
 
 
 if __name__ == '__main__':
@@ -299,5 +296,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('data_aug', 6, 'Nb of substitute data augmentations')
     flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for substitute')
     flags.DEFINE_float('lmbda', 0.1, 'Lambda from arxiv.org/abs/1602.02697')
+    flags.DEFINE_integer('data_aug_batch_size', 512,
+                         'Batch size for augmentation')
 
     tf.app.run()

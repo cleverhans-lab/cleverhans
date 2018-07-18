@@ -60,9 +60,6 @@ class ResNetTF(MLPnGPU):
         self.training = None
         self.device_name = None
 
-    def get_layer_names(self):
-        return ['logits', 'probs']
-
     def set_training(self, training):
         super(ResNetTF, self).set_training(training)
         self.training = training
