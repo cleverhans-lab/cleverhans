@@ -1555,6 +1555,9 @@ class UnrolledOptimizer(object):
             new_optim_state: A dict, with the same structure as `optim_state`,
                 which have been updated.
         """
+        # Assumes `x` is a list, containing a [B, H, W, C] image tensor
+        assert len(x) == 1 and isinstance(x, list), \
+            'x should be a list and contain only one image tensor with shape [B, H, W, C]'
         x = x[0]
         loss = reduce_mean(loss_fn(x), axis=0)
         return tf.gradients(loss, x)
