@@ -243,7 +243,6 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     print("Training the substitute model.")
-
     train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
                               nb_classes, nb_epochs_s, batch_size,
                               learning_rate, data_aug, lmbda, aug_batch_size,
