@@ -27,18 +27,18 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.model = dummy_model()
 
     def test_softmax_layer_name_is_softmax(self):
-        model = KerasModelWrapper(self.model, nb_classes=10)
+        model = KerasModelWrapper(self.model)
         softmax_name = model._get_softmax_name()
         self.assertEqual(softmax_name, 'softmax')
 
     def test_logit_layer_name_is_logits(self):
-        model = KerasModelWrapper(self.model, nb_classes=10)
+        model = KerasModelWrapper(self.model)
         logits_name = model._get_logits_name()
         self.assertEqual(logits_name, 'l2')
 
     def test_get_logits(self):
         import tensorflow as tf
-        model = KerasModelWrapper(self.model, nb_classes=10)
+        model = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         preds = model.get_probs(x)
         logits = model.get_logits(x)
@@ -51,7 +51,7 @@ class TestKerasModelWrapper(unittest.TestCase):
 
     def test_get_probs(self):
         import tensorflow as tf
-        model = KerasModelWrapper(self.model, nb_classes=10)
+        model = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         preds = model.get_probs(x)
 
@@ -63,13 +63,13 @@ class TestKerasModelWrapper(unittest.TestCase):
         self.assertTrue(np.all(p_val<=1))
 
     def test_get_layer_names(self):
-        model = KerasModelWrapper(self.model, nb_classes=10)
+        model = KerasModelWrapper(self.model)
         layer_names = model.get_layer_names()
         self.assertEqual(layer_names, ['l1', 'l2', 'softmax'])
 
     def test_fprop(self):
         import tensorflow as tf
-        model = KerasModelWrapper(self.model, nb_classes=10)
+        model = KerasModelWrapper(self.model)
         x = tf.placeholder(tf.float32, shape=(None, 100))
         out_dict = model.fprop(x)
 

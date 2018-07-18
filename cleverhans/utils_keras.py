@@ -106,12 +106,12 @@ class KerasModelWrapper(Model):
     in-place operations can incur an overhead.
     """
 
-    def __init__(self, model, nb_classes):
+    def __init__(self, model):
         """
         Create a wrapper for a Keras model
         :param model: A Keras model
         """
-        super(KerasModelWrapper, self).__init__(None, nb_classes, {})
+        super(KerasModelWrapper, self).__init__(None, None, {})
 
         if model is None:
             raise ValueError('model argument must be supplied.')
