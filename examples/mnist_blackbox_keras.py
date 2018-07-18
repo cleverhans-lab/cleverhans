@@ -29,8 +29,7 @@ from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.utils_keras import cnn_model
 
-from cleverhans_tutorials.tutorial_models import ModelBasicCNN, \
-    HeReLuNormalInitializer
+from cleverhans_tutorials.tutorial_models import HeReLuNormalInitializer
 from cleverhans.utils import TemporaryLogLevel
 
 
