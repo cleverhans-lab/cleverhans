@@ -251,6 +251,7 @@ def _relu(x, leakiness=0.0):
     """Relu, with optional leaky support."""
     return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
 
+
 def _global_avg_pool(x):
     assert x.get_shape().ndims == 4
     return tf.reduce_mean(x, [1, 2])
