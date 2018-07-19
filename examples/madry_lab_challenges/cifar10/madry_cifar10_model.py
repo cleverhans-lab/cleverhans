@@ -252,21 +252,6 @@ def _relu(x, leakiness=0.0):
     return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
 
 
-def _fully_connected(x, out_dim):
-    """FullyConnected layer for final output."""
-    num_non_batch_dimensions = len(x.shape)
-    prod_non_batch_dimensions = 1
-    for ii in range(num_non_batch_dimensions - 1):
-        prod_non_batch_dimensions *= int(x.shape[ii + 1])
-    x = tf.reshape(x, [tf.shape(x)[0], -1])
-    w = tf.get_variable(
-        'DW', [prod_non_batch_dimensions, out_dim],
-        initializer=tf.initializers.variance_scaling(distribution='uniform'))
-    b = tf.get_variable('biases', [out_dim],
-                        initializer=tf.initializers.constant())
-    return tf.nn.xw_plus_b(x, self.w, self.b)
-
-
 def _global_avg_pool(x):
     assert x.get_shape().ndims == 4
     return tf.reduce_mean(x, [1, 2])
