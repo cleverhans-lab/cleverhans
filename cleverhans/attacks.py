@@ -1525,7 +1525,7 @@ class MadryEtAl(Attack):
                                       "currently implemented.")
 
         # Multiply by constant epsilon
-        scaled_grad = eps * normalized_grad
+        scaled_grad = self.eps_iter * normalized_grad
         adv_x = adv_x + scaled_grad
         if self.clip_min is not None and self.clip_max is not None:
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
