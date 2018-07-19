@@ -1505,8 +1505,28 @@ class MadryEtAl(Attack):
         if self.targeted:
             loss = -loss
         grad, = tf.gradients(loss, adv_x)
-        scaled_signed_grad = self.eps_iter * tf.sign(grad)
-        adv_x = adv_x + scaled_signed_grad
+        if self.ord == np.inf:
+            # Take sign of gradient
+            normalized_grad = tf.sign(grad)
+            normalized_grad = tf.stop_gradient(normalized_grad)
+        elif self.ord == 1:
+            red_ind = list(xrange(1, len(x.get_shape())))
+            normalized_grad = grad / reduce_sum(tf.abs(grad),
+                                                reduction_indices=red_ind,
+                                                keepdims=True)
+        elif self.ord == 2:
+            red_ind = list(xrange(1, len(x.get_shape())))
+            square = reduce_sum(tf.square(grad),
+                                reduction_indices=red_ind,
+                                keepdims=True)
+            normalized_grad = grad / tf.sqrt(square)
+        else:
+            raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                                      "currently implemented.")
+
+        # Multiply by constant epsilon
+        scaled_grad = eps * normalized_grad
+        adv_x = adv_x + scaled_grad
         if self.clip_min is not None and self.clip_max is not None:
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
         eta = adv_x - x
