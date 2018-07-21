@@ -9,7 +9,28 @@ from cleverhans.attacks_tf import fgm, pgd_attack,\
     UnrolledAdam, UnrolledGradientDescent
 from cleverhans.devtools.mocks import random_feed_dict
 import unittest
-from tests_tf.test_attacks import SimpleModel
+from cleverhans.model import Model
+
+
+class SimpleModel(Model):
+    """
+    A very simple neural network
+    """
+
+    def __init__(self, scope='simple', nb_classes=2, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
+
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            w1 = tf.constant(
+                [[1.5, .3], [-2, 0.3]], dtype=tf.as_dtype(x.dtype))
+            w2 = tf.constant(
+                [[-2.4, 1.2], [0.5, -2.3]], dtype=tf.as_dtype(x.dtype))
+        h1 = tf.nn.sigmoid(tf.matmul(x, w1))
+        res = tf.matmul(h1, w2)
+        return {self.O_LOGITS: res, self.O_PROBS: tf.nn.softmax(res)}
 
 
 class TestAttackTF(CleverHansTest):
