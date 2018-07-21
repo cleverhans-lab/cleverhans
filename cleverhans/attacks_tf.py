@@ -1649,8 +1649,9 @@ class UnrolledOptimizer(object):
             new_optim_state: A dict, with the same structure as `optim_state`,
                 which have been updated.
         """
-        # Assumes `x` is a list, containing a tensor representing a batch of
-        # images
+
+        # Assumes `x` is a list,
+        # and contains a tensor representing a batch of images
         assert len(x) == 1 and isinstance(x, list), \
             'x should be a list and contain only one image tensor'
         x = x[0]
@@ -1683,6 +1684,9 @@ class UnrolledGradientDescent(UnrolledOptimizer):
 
     def __init__(self, lr):
         self._lr = lr
+
+    def init_state(self, x):
+        return {}
 
     def _apply_gradients(self, grads, x, optim_state):
         new_x = [None] * len(x)
