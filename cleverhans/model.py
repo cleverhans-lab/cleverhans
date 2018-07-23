@@ -68,8 +68,12 @@ class Model(object):
         Provides access to the model's parameters.
         :return: A list of all Variables defining the model parameters.
         """
-        scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                       self.scope)
+        if tf.executing_eagerly() == False:
+            scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                           self.scope)
+        else:
+            error = 'For Eager execution - get_params must be overridden.'
+            raise NotImplementedError()
         return scope_vars
 
     def get_layer_names(self):
