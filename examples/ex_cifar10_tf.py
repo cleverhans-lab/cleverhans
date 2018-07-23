@@ -114,7 +114,7 @@ def main(argv=None):
         'learning_rate': FLAGS.learning_rate
     }
     model_train(sess, x, y, predictions, X_train, Y_train,
-          evaluate=evaluate, args=train_params)
+                evaluate=evaluate, args=train_params)
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
     fgsm = FastGradientMethod(model)
@@ -152,8 +152,8 @@ def main(argv=None):
 
     # Perform adversarial training
     model_train(sess, x, y, predictions_2, X_train, Y_train,
-          predictions_adv=predictions_2_adv, evaluate=evaluate_2,
-          args=train_params)
+                predictions_adv=predictions_2_adv, evaluate=evaluate_2,
+                args=train_params)
 
     # Evaluate the accuracy of the CIFAR10 model on adversarial examples
     accuracy = model_eval(sess, x, y, predictions_2_adv, X_test, Y_test,
