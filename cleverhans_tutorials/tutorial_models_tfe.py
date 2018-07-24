@@ -1,5 +1,5 @@
 """
-A TensorFlow Eager implementation of a neural network. 
+A TensorFlow Eager implementation of a neural network.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -8,17 +8,16 @@ from __future__ import unicode_literals
 
 import tensorflow as tf
 from cleverhans.model import Model
-#tf.enable_eager_execution()
 
 
 class ModelBasicCNNTFE(Model):
     """
-    Basic CNN model for tensorflow eager execution. 
+    Basic CNN model for tensorflow eager execution.
     """
     def __init__(self, nb_classes=10,
-                 nb_filters=64, dummy_input=tf.zeros((32,28,28,1))):
+                 nb_filters=64, dummy_input=tf.zeros((32, 28, 28, 1))):
         Model.__init__(self, nb_classes=nb_classes)
-        
+
         # Parametes
         # number of filters, number of classes.
         self.nb_filters = nb_filters
@@ -26,22 +25,27 @@ class ModelBasicCNNTFE(Model):
 
         # Lists for layers attributes.
         # layer names , layers, layer activations
-        self.layer_names = ['input', 'conv_1', 'conv_2', 'conv_3', 'flatten', 'logits']
+        self.layer_names = ['input', 'conv_1', 'conv_2', 'conv_3', 'flatten',
+                            'logits']
         self.layers = {}
-        self.layer_acts ={}
+        self.layer_acts = {}
 
         # layer definitions
         self.layers['conv_1'] = tf.layers.Conv2D(filters=self.nb_filters,
                                                  kernel_size=8, strides=2,
-                                                 padding='same', activation=tf.nn.relu)
+                                                 padding='same',
+                                                 activation=tf.nn.relu)
         self.layers['conv_2'] = tf.layers.Conv2D(filters=self.nb_filters * 2,
                                                  kernel_size=6, strides=2,
-                                                 padding='valid', activation=tf.nn.relu)
+                                                 padding='valid',
+                                                 activation=tf.nn.relu)
         self.layers['conv_3'] = tf.layers.Conv2D(filters=self.nb_filters * 2,
                                                  kernel_size=5, strides=1,
-                                                 padding='valid', activation=tf.nn.relu)
+                                                 padding='valid',
+                                                 activation=tf.nn.relu)
         self.layers['flatten'] = tf.layers.Flatten()
-        self.layers['logits'] = tf.layers.Dense(self.nb_classes, activation=None)
+        self.layers['logits'] = tf.layers.Dense(self.nb_classes,
+                                                activation=None)
 
         # Dummy fprop to activate the network.
         output = self.fprop(dummy_input)
@@ -52,17 +56,19 @@ class ModelBasicCNNTFE(Model):
         :return: dictionary with layer names mapping to activation values.
         """
 
-        # Feed forward through the network layers 
+        # Feed forward through the network layers
         for layer_name in self.layer_names:
             if layer_name == 'input':
                 prev_layer_act = x
                 continue
             else:
-                self.layer_acts[layer_name] = self.layers[layer_name](prev_layer_act)
+                self.layer_acts[layer_name] = self.layers[layer_name](
+                                                                prev_layer_act)
                 prev_layer_act = self.layer_acts[layer_name]
-        
+
         # Adding softmax values to list of activations.
-        self.layer_acts['probs'] = tf.nn.softmax(logits=self.layer_acts['logits'])
+        self.layer_acts['probs'] = tf.nn.softmax(
+                                        logits=self.layer_acts['logits'])
         return self.layer_acts
 
     def get_layer_params(self, layer_name):
@@ -114,16 +120,3 @@ class ModelBasicCNNTFE(Model):
         """
         logits = self.fprop(x)['logits']
         return logits
-
-
-if __name__ == "__main__":
-    model = ModelBasicCNNTFE()
-    ln = model.get_layer_names()
-    p = model.get_params()
-    inp = tf.zeros((64,32,32, 1))
-    fp = model.fprop(inp)
-    fl = model.get_logits(inp)
-    fpr = model.get_probs(inp)
-    for key in fp:
-        print(key, fp[key].shape)
-    print(fl.dtype)

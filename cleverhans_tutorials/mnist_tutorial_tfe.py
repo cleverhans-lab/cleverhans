@@ -25,9 +25,8 @@ try:
     tf.enable_eager_execution()
 except AttributeError:
     if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-        error = ('For eager execution',
-                 'use Tensorflow version greather than 1.8.0.')
-        print(error)
+        print("For eager execution"
+              "use Tensorflow version greather than 1.8.0.")
         exit(1)
 
 from cleverhans.utils_mnist import data_mnist
@@ -39,8 +38,7 @@ from cleverhans_tutorials.tutorial_models_tfe import ModelBasicCNNTFE
 if tf.executing_eagerly() is True:
     print('TF Eager Activated.')
 else:
-    error = 'Error Enabling Eager Execution.'
-    raise Exception(error)
+    raise Exception("Error Enabling Eager Execution.")
 tfe = tf.contrib.eager
 
 FLAGS = flags.FLAGS
@@ -50,7 +48,7 @@ FLAGS = flags.FLAGS
 # Maps attack string taken from bash to attack class
 # -- 'fgsm' : FastGradientMethod
 
-ListOfAttacks = {
+AVAILABLE_ATTACKS = {
                  'fgsm': FastGradientMethodTFE
                 }
 
@@ -64,19 +62,17 @@ def attack_selection(attack_string):
     """
 
     # List of Implemented attacks
-    attacks_list = ListOfAttacks.keys()
+    attacks_list = AVAILABLE_ATTACKS.keys()
 
     # Checking for  requested attack in list of available attacks.
     if attack_string is None:
-        error = 'Attack type is not specified, list of available attacks\t'
-        error += attacks_list
-        raise AttributeError(error)
+        raise AttributeError("Attack type is not specified, "
+                             "list of available attacks\t".join(attacks_list))
     if attack_string not in attacks_list:
-        error = 'Attack not available, list of available attacks\t'
-        error += attacks_list
-        raise AttributeError(error)
+        raise AttributeError("Attack not available "
+                             "list of available attacks\t".join(attacks_list))
     # Mapping attack from string to class.
-    attack_class = ListOfAttacks[attack_string]
+    attack_class = AVAILABLE_ATTACKS[attack_string]
     return attack_class
 
 
@@ -141,9 +137,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Initialize the attack object
     attack_class = attack_selection(attack_string)
-    attack_params = {
-        'eps': 0.3, 'clip_min': 0.,
-        'clip_max': 1.}
+    attack_params = {'eps': 0.3, 'clip_min': 0.,
+                     'clip_max': 1.}
 
     rng = np.random.RandomState([2018, 6, 18])
     if clean_train:
@@ -160,7 +155,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
             print('Test accuracy on legitimate examples: %0.4f' % acc)
 
         train(model, X_train, Y_train, evaluate=evaluate_clean,
-                    args=train_params, rng=rng, var_list=model.get_params())
+              args=train_params, rng=rng, var_list=model.get_params())
 
         if testing:
             # Calculate training error
@@ -213,9 +208,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     # Perform and evaluate adversarial training
     train(model_adv_train, X_train, Y_train, evaluate=evaluate_adv,
-                args=train_params, rng=rng,
-                var_list=model_adv_train.get_params(),
-                attack=attack, attack_args=attack_params)
+          args=train_params, rng=rng,
+          var_list=model_adv_train.get_params(),
+          attack=attack, attack_args=attack_params)
 
     # Calculate training errors
     if testing:
@@ -244,7 +239,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
-    flags.DEFINE_bool('clean_train', False, 'Train on clean examples')
+    flags.DEFINE_bool('clean_train', True, 'Train on clean examples')
     flags.DEFINE_bool('backprop_through_attack', False,
                       ('If True, backprop through adversarial example '
                        'construction process during adversarial training'))

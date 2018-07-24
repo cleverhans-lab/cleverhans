@@ -20,9 +20,9 @@ _logger = create_logger("cleverhans.utils.tfe")
 
 
 def train(model, X_train=None, Y_train=None, save=False,
-                predictions_adv=None, evaluate=None,
-                args=None, rng=None, var_list=None,
-                attack=None, attack_args=None):
+          predictions_adv=None, evaluate=None,
+          args=None, rng=None, var_list=None,
+          attack=None, attack_args=None):
     """
     Train a TF Eager model
     :param model: instance of cleverhans model, takes in input batch,
@@ -47,8 +47,8 @@ def train(model, X_train=None, Y_train=None, save=False,
     """
     args = _ArgsWrapper(args or {})
     if ((attack is None) != (attack_args is None)):
-        error = "attack and attack_args must be passed together."
-        raise ValueError(error)
+        raise ValueError("attack and attack_args must be "
+                         "passed together.")
     if X_train is None or Y_train is None:
         raise ValueError("X_train argument and Y_train argument "
                          "must be supplied.")
@@ -143,8 +143,8 @@ def model_eval(model, X_test=None, Y_test=None, args=None,
     args = _ArgsWrapper(args or {})
 
     if ((attack is None) != (attack_args is None)):
-        error = "attack and attack_args must be passed together."
-        raise ValueError(error)
+        raise ValueError("attack and attack_args must be "
+                         "passed together.")
     assert args.batch_size, "Batch size was not given in args dict"
     if X_test is None or Y_test is None:
         raise ValueError("X_test argument and Y_test argument "
@@ -210,13 +210,13 @@ def tf_model_load(file_path=None):
                       taken from FLAGS.train_dir and FLAGS.filename
     :return:
     """
-    assert file_path != None, 'pretrained model ckpt is not given.' 
+    assert file_path is not None, "pretrained model ckpt is not given."
     saver = tf.train.Saver()
     saver.restore(file_path)
     return True
 
 
-def model_argmax(model, samples,):
+def model_argmax(model, samples):
     """
     Helper function that computes the current class prediction
     :param samples: numpy array with input samples (dims must match x)

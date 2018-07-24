@@ -53,7 +53,7 @@ class AttackTFE(Attack):
         Constructs the graph required to run the attacks.
         Is inherited from the attack class, is overloaded
         to raise an error.
-        """ 
+        """
         error = "This method is not required for eager execution."
         raise AttributeError(error)
 
@@ -80,7 +80,6 @@ class AttackTFE(Attack):
         raise AttributeError(error)
 
 
-
 class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
     """
     Inherited class from AttackTFE and FastGradientMethod.
@@ -94,8 +93,8 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
     def __init__(self, model, dtypestr='float32'):
         """
         Creates a FastGradientMethodTFE instance.
-        :model: CNN netwok, should be an instance of 
-                cleverhans.model.Model, if not wrap 
+        :model: CNN netwok, should be an instance of
+                cleverhans.model.Model, if not wrap
                 the output to probs.
         :dtypestr: datatype in the string format.
         """
@@ -183,15 +182,3 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
         if (self.clip_min is not None) and (self.clip_max is not None):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
         return adv_x
-
-if __name__ == "__main__":
-    from cleverhans_tutorials.tutorial_models_tfe import ModelBasicCNNTFE
-    model = ModelBasicCNNTFE()
-    fgsm = FastGradientMethodTFE(model)
-    tfe = tf.contrib.eager
-    inp = tfe.Variable(tf.ones((32,32, 32, 1)))
-    pertubation = fgsm.generate(inp)
-    import matplotlib.pyplot as plt
-    print(pertubation.shape)
-    plt.imshow(pertubation[0,:,:,0])
-    plt.show()
