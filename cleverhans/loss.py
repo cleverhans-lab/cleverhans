@@ -1,11 +1,9 @@
-from distutils.version import LooseVersion
 import json
 import os
 
 from .model import Model
 from .compat import softmax_cross_entropy_with_logits
 import tensorflow as tf
-import warnings
 
 
 class Loss(object):
