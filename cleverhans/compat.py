@@ -23,9 +23,9 @@ def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
 
     if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
         warning = "Running on tensorflow version " + \
-                   LooseVersion(tf.__version__).vstring + \
-                   ". This version will not be supported by CleverHans" + \
-                   "in the future."
+            LooseVersion(tf.__version__).vstring + \
+            ". This version will not be supported by CleverHans" + \
+            "in the future."
         warnings.warn(warning)
         out = op_func(input_tensor, axis=axis,
                       keep_dims=keepdims, name=name,
@@ -85,3 +85,31 @@ def reduce_any(input_tensor, axis=None, keepdims=None,
     return reduce_function(tf.reduce_any, input_tensor, axis=axis,
                            keepdims=keepdims, name=name,
                            reduction_indices=reduction_indices)
+
+
+def softmax_cross_entropy_with_logits(sentinel=None, labels=None, logits=None, dim=-1):
+    """
+    Wrapper around tf.nn.softmax_cross_entropy_with_logits_v2 to handle
+    deprecated warning
+    """
+    # Make sure that all arguments were passed as named arguments.
+    if sentinel is not None:
+        raise ValueError("Only call `%s` with "
+                         "named arguments (labels=..., logits=..., ...)" % name)
+    if labels is None or logits is None:
+        raise ValueError("Both labels and logits must be provided.")
+
+    try:
+        y = tf.stop_gradient(y)
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(
+            labels=y, logits=logits, dim=dim)
+    except AttributeError:
+        warning = "Running on tensorflow version " + \
+            LooseVersion(tf.__version__).vstring + \
+            ". This version will not be supported by CleverHans" + \
+            "in the future."
+        warnings.warn(warning)
+        loss = tf.nn.softmax_cross_entropy_with_logits(
+            labels=labels, logits=logits, dim=dim)
+
+    return loss

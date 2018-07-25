@@ -3,6 +3,7 @@ import json
 import os
 
 from .model import Model
+from .compat import softmax_cross_entropy_with_logits
 import tensorflow as tf
 import warnings
 
@@ -59,22 +60,9 @@ class LossCrossEntropy(Loss):
             x = x,
         y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], tf.float32))
         logits = [self.model.get_logits(x, **kwargs) for x in x]
-        try:
-            y = tf.stop_gradient(y)
-            loss = sum(
-                tf.nn.softmax_cross_entropy_with_logits_v2(
-                    labels=y, logits=logit)
-                for logit in logits)
-        except AttributeError:
-            warning = "Running on tensorflow version " + \
-                LooseVersion(tf.__version__).vstring + \
-                ". This version will not be supported by CleverHans" + \
-                "in the future."
-            warnings.warn(warning)
-            loss = sum(
-                tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logit)
-                for logit in logits)
-
+        loss = sum(
+            softmax_cross_entropy_with_logits(labels=y, logits=logit)
+            for logit in logits)
         return loss
 
 
@@ -94,8 +82,7 @@ class LossMixUp(Loss):
         xm = x + mix * (x[::-1] - x)
         ym = y + mix * (y[::-1] - y)
         logits = self.model.get_logits(xm, **kwargs)
-        loss = tf.nn.softmax_cross_entropy_with_logits(labels=ym,
-                                                       logits=logits)
+        loss = softmax_cross_entropy_with_logits(labels=ym, logits=logits)
         return loss
 
 
@@ -118,9 +105,9 @@ class LossFeaturePairing(Loss):
                         for a, b in
                         zip(d1[Model.O_FEATURES], d2[Model.O_FEATURES])]
         pairing_loss = tf.reduce_mean(pairing_loss)
-        loss = tf.nn.softmax_cross_entropy_with_logits(
+        loss = softmax_cross_entropy_with_logits(
             labels=y, logits=d1[Model.O_LOGITS])
-        loss += tf.nn.softmax_cross_entropy_with_logits(
+        loss += softmax_cross_entropy_with_logits(
             labels=y, logits=d2[Model.O_LOGITS])
         return loss + self.weight * pairing_loss
 
@@ -135,5 +122,5 @@ def attack_softmax_cross_entropy(y, probs, mean=True):
              sample loss
     """
     logits = probs.op.inputs[0] if probs.op.type == 'Softmax' else probs
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+    out = softmax_cross_entropy_with_logits(logits=logits, labels=y)
     return tf.reduce_mean(out) if mean else out
