@@ -100,9 +100,9 @@ def softmax_cross_entropy_with_logits(sentinel=None, labels=None, logits=None, d
         raise ValueError("Both labels and logits must be provided.")
 
     try:
-        y = tf.stop_gradient(y)
+        labels = tf.stop_gradient(labels)
         loss = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=y, logits=logits, dim=dim)
+            labels=labels, logits=logits, dim=dim)
     except AttributeError:
         warning = "Running on tensorflow version " + \
             LooseVersion(tf.__version__).vstring + \
