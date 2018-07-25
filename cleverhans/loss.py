@@ -1,8 +1,10 @@
+from distutils.version import LooseVersion
 import json
 import os
 
 from .model import Model
 import tensorflow as tf
+import warnings
 
 
 class Loss(object):
@@ -57,9 +59,22 @@ class LossCrossEntropy(Loss):
             x = x,
         y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], tf.float32))
         logits = [self.model.get_logits(x, **kwargs) for x in x]
-        loss = sum(
-            tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logit)
-            for logit in logits)
+        try:
+            y = tf.stop_gradient(y)
+            loss = sum(
+                tf.nn.softmax_cross_entropy_with_logits_v2(
+                    labels=y, logits=logit)
+                for logit in logits)
+        except AttributeError:
+            warning = "Running on tensorflow version " + \
+                LooseVersion(tf.__version__).vstring + \
+                ". This version will not be supported by CleverHans" + \
+                "in the future."
+            warnings.warn(warning)
+            loss = sum(
+                tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logit)
+                for logit in logits)
+
         return loss
 
 
