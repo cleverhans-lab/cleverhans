@@ -87,7 +87,10 @@ def reduce_any(input_tensor, axis=None, keepdims=None,
                            reduction_indices=reduction_indices)
 
 
-def softmax_cross_entropy_with_logits(sentinel=None, labels=None, logits=None, dim=-1):
+def softmax_cross_entropy_with_logits(sentinel=None,
+                                      labels=None,
+                                      logits=None,
+                                      dim=-1):
     """
     Wrapper around tf.nn.softmax_cross_entropy_with_logits_v2 to handle
     deprecated warning
@@ -95,7 +98,8 @@ def softmax_cross_entropy_with_logits(sentinel=None, labels=None, logits=None, d
     # Make sure that all arguments were passed as named arguments.
     if sentinel is not None:
         raise ValueError("Only call `%s` with "
-                         "named arguments (labels=..., logits=..., ...)" % name)
+                         "named arguments (labels=..., logits=..., ...)"
+                         % name)
     if labels is None or logits is None:
         raise ValueError("Both labels and logits must be provided.")
 
