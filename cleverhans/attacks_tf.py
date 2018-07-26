@@ -1033,11 +1033,11 @@ class ElasticNetMethod(object):
         self.l1dist = reduce_sum(tf.abs(self.newimg-self.timg),
                                  list(range(1, len(shape))))
         self.l1dist_y = reduce_sum(tf.abs(self.slack-self.timg),
-                                 list(range(1, len(shape))))
+                                   list(range(1, len(shape))))
         self.elasticdist = self.l2dist + tf.multiply(self.l1dist,
                                                      self.beta_t)
         self.elasticdist_y = self.l2dist_y + tf.multiply(self.l1dist_y,
-                                                     self.beta_t)
+                                                         self.beta_t)
         if self.decision_rule == 'EN':
             self.crit = self.elasticdist
             self.crit_p = 'Elastic'
@@ -1051,7 +1051,7 @@ class ElasticNetMethod(object):
         other = reduce_max((1 - self.tlab) * self.output -
                            (self.tlab * 10000), 1)
         other_y = reduce_max((1 - self.tlab) * self.output_y -
-                           (self.tlab * 10000), 1)
+                             (self.tlab * 10000), 1)
 
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
@@ -1180,12 +1180,12 @@ class ElasticNetMethod(object):
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack
                 self.sess.run([self.train])
-                l,l2s,l1s,crit,scores,nimg = self.sess.run([self.loss,
-                                                            self.l2dist,
-                                                            self.l1dist,
-                                                            self.crit,
-                                                            self.output,
-                                                            self.newimg])
+                l, l2s, l1s, crit, scores, nimg = self.sess.run([self.loss,
+                                                                 self.l2dist,
+                                                                 self.l1dist,
+                                                                 self.crit,
+                                                                 self.output,
+                                                                 self.newimg])
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
                     _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
                                    "l2={:.3g} l1={:.3g} f={:.3g}")
