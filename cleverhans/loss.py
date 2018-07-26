@@ -79,7 +79,8 @@ class LossMixUp(Loss):
         xm = x + mix * (x[::-1] - x)
         ym = y + mix * (y[::-1] - y)
         logits = self.model.get_logits(xm, **kwargs)
-        loss = tf.losses.softmax_cross_entropy(onehot_labels=y, logits=logits)
+        loss = tf.losses.softmax_cross_entropy(onehot_labels=y, 
+                                               logits=logits)
         return loss
 
 
@@ -102,8 +103,10 @@ class LossFeaturePairing(Loss):
                         for a, b in
                         zip(d1[Model.O_FEATURES], d2[Model.O_FEATURES])]
         pairing_loss = tf.reduce_mean(pairing_loss)
-        loss = tf.losses.softmax_cross_entropy(onehot_labels=y, logits=d1[Model.O_LOGITS])
-        loss += tf.losses.softmax_cross_entropy(onehot_labels=y, logits=d2[Model.O_LOGITS])
+        loss = tf.losses.softmax_cross_entropy(
+            onehot_labels=y, logits=d1[Model.O_LOGITS])
+        loss += tf.losses.softmax_cross_entropy(
+            onehot_labels=y, logits=d2[Model.O_LOGITS])
         return loss + self.weight * pairing_loss
 
 
@@ -117,5 +120,7 @@ def attack_softmax_cross_entropy(y, probs, mean=True):
              sample loss
     """
     logits = probs.op.inputs[0] if probs.op.type == 'Softmax' else probs
-    loss = tf.losses.softmax_cross_entropy(onehot_labels=y, logits=logits, reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS if mean else tf.losses.Reduction.NONE)
+    loss = tf.losses.softmax_cross_entropy(
+        onehot_labels=y, logits=logits, 
+        reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS if mean else tf.losses.Reduction.NONE)
     return loss
