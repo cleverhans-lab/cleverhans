@@ -1101,7 +1101,7 @@ class ElasticNetMethod(Attack):
                               If binary_search_steps is large, the initial
                               constant is not important. A smaller value of
                               this constant gives lower distortion results.
-                              For computational efficiency, fix 
+                              For computational efficiency, fix
                               binary_search_steps to 1 and set this param
                               to a large value.
         :param clip_min: (optional float) Minimum input component value
