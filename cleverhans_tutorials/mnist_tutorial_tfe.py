@@ -49,8 +49,8 @@ FLAGS = flags.FLAGS
 # -- 'fgsm' : FastGradientMethod
 
 AVAILABLE_ATTACKS = {
-                 'fgsm': FastGradientMethodTFE
-                }
+                     'fgsm': FastGradientMethodTFE
+                    }
 
 
 def attack_selection(attack_string):
