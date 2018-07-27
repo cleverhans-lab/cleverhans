@@ -24,8 +24,8 @@ def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
     if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
         warning = "Running on tensorflow version " + \
             LooseVersion(tf.__version__).vstring + \
-            ". This version will not be supported by CleverHans" + \
-            "in the future."
+            ". Support for this version in CleverHans is deprecated " + \
+            "and may be removed on or after 2019-01-26"
         warnings.warn(warning)
         out = op_func(input_tensor, axis=axis,
                       keep_dims=keepdims, name=name,
@@ -110,8 +110,8 @@ def softmax_cross_entropy_with_logits(sentinel=None,
     except AttributeError:
         warning = "Running on tensorflow version " + \
             LooseVersion(tf.__version__).vstring + \
-            ". This version will not be supported by CleverHans" + \
-            "in the future."
+            ". Support for this version in CleverHans is deprecated " + \
+            "and may be removed on or after 2019-01-26"
         warnings.warn(warning)
         loss = tf.nn.softmax_cross_entropy_with_logits(
             labels=labels, logits=logits, dim=dim)
