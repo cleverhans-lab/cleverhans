@@ -1180,6 +1180,7 @@ class ElasticNetMethod(object):
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack
                 self.sess.run([self.train])
+                self.sess.run([self.setter, self.setter_y])
                 l, l2s, l1s, crit, scores, nimg = self.sess.run([self.loss,
                                                                  self.l2dist,
                                                                  self.l1dist,
