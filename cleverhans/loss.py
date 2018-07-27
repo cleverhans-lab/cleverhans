@@ -56,7 +56,7 @@ class LossCrossEntropy(Loss):
         else:
             x = x,
 
-        # Catching RuntimeError: Variable -= value not supported.
+        # Catching RuntimeError: Variable -= value not supported by tf.eager.
         try:
             y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], tf.float32))
         except RuntimeError:
