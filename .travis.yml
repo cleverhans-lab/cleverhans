@@ -61,7 +61,7 @@ install:
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
 
   # install dependencies for adversarial competition eval infra tests
-  - pip install google-cloud
+  - pip install google-cloud==0.33.1
   - pip install Pillow
 
 # command to run tests
