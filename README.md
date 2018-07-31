@@ -21,7 +21,7 @@ currently open.
 
 This library uses [TensorFlow](https://www.tensorflow.org/) to accelerate graph
 computations performed by many machine learning models.
-Installing TensorFlow is therefore a pre-requisite.
+Therefore, installing TensorFlow is a pre-requisite.
 
 You can find instructions
 [here](https://www.tensorflow.org/install/).
