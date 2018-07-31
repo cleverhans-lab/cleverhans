@@ -100,11 +100,6 @@ class Attack(object):
         class_name = str(self.__class__).split(".")[-1][:-2]
         _logger.info("Constructing new graph for attack " + class_name)
 
-        # remove the None arguments, they are just left blank
-        for k in list(feedable.keys()):
-            if feedable[k] is None:
-                del feedable[k]
-
         # process all of the rest and create placeholders for them
         new_kwargs = dict(x for x in fixed.items())
         for name, value in feedable.items():
@@ -147,6 +142,11 @@ class Attack(object):
                              " provided")
 
         fixed, feedable, hash_key = self.construct_variables(kwargs)
+
+        # remove the None arguments, they are just left blank
+        for k in list(feedable.keys()):
+            if feedable[k] is None:
+                del feedable[k]
 
         if hash_key not in self.graphs:
             self.construct_graph(fixed, feedable, x_val, hash_key)
