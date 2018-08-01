@@ -71,8 +71,9 @@ script:
   - nosetests -v --nologcapture -w examples/nips17_adversarial_competition/eval_infra/code/ eval_lib/tests/
   # --nologcapture: avoids a large amount of unnecessary tensorflow output
   # --stop: stop on first error. Gives feedback from travis faster
-  - nosetests -v --nologcapture --stop cleverhans
   - if [[ "$PYTORCH" == True ]]; then
       nosetests --nologcapture -v --stop tests_pytorch;
+    elif [[ "$PYTORCH" == False ]]; then
+      nosetests -v --nologcapture --stop cleverhans;
+      nosetests --nologcapture -v --stop tests_tf;
     fi
-  - nosetests --nologcapture -v --stop tests_tf
