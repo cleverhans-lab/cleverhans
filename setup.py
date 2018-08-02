@@ -10,7 +10,6 @@ setup(name='cleverhans',
           'pycodestyle',
           'scipy',
           'matplotlib',
-          "mnist ~= 0.2",
           "numpy",
       ],
       # Explicit dependence on TensorFlow is not supported.
