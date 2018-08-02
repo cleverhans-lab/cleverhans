@@ -2,24 +2,15 @@
 sudo: required
 dist: trusty
 language: python
-matrix:
-    include:
-        - python: 2.7
-          env:
-            - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.4.1
-        - python: 2.7
-          env:
-            - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.8.0
-        - python: 3.5
-          env:
-            - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.4.1
-        - python: 3.5
-          env:
-            - KERAS_BACKEND=tensorflow
-            - TENSORFLOW_V=1.8.0
+python:
+  - 2.7
+  - 3.5
+env:
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.4.1 PYTORCH=False
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=False
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.4.1 PYTORCH=True
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=True
+
 install:
   # code below is taken from http://conda.pydata.org/docs/travis.html
   # We do this conditionally because it saves us some downloading if the
@@ -52,8 +43,9 @@ install:
     fi
 
   - time pip install -q -e ".[test]"
-  - pip install torch==0.4.0 torchvision==0.2.1 -q
-
+  - if [[ "$PYTORCH" == True ]]; then
+      pip install torch==0.4.0 torchvision==0.2.1 -q;
+    fi
   # workaround for version incompatibility between the scipy version in conda
   # and the system-provided /usr/lib/x86_64-linux-gnu/libstdc++.so.6
   # by installing a conda-provided libgcc and adding it to the load path
@@ -61,7 +53,7 @@ install:
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/travis/miniconda/envs/test-environment/lib
 
   # install dependencies for adversarial competition eval infra tests
-  - pip install google-cloud
+  - pip install google-cloud==0.33.1
   - pip install Pillow
 
 # command to run tests
@@ -79,6 +71,9 @@ script:
   - nosetests -v --nologcapture -w examples/nips17_adversarial_competition/eval_infra/code/ eval_lib/tests/
   # --nologcapture: avoids a large amount of unnecessary tensorflow output
   # --stop: stop on first error. Gives feedback from travis faster
-  - nosetests -v --nologcapture --stop cleverhans
-  - nosetests --nologcapture -v --stop tests_pytorch
-  - nosetests --nologcapture -v --stop tests_tf
+  - if [[ "$PYTORCH" == True ]]; then
+      nosetests --nologcapture -v --stop tests_pytorch;
+    elif [[ "$PYTORCH" == False ]]; then
+      nosetests -v --nologcapture --stop cleverhans;
+      nosetests --nologcapture -v --stop tests_tf;
+    fi

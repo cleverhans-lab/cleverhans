@@ -786,6 +786,7 @@ class SaliencyMapMethod(Attack):
 
                 # Attack is untargeted, target values will be chosen at random
                 x_adv = tf.py_func(jsma_wrap, [x], self.tf_dtype)
+                x_adv.set_shape(x.get_shape())
 
         return x_adv
 
@@ -994,6 +995,7 @@ class CarliniWagnerL2(Attack):
             return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
         wrap = tf.py_func(cw_wrap, [x, labels], self.tf_dtype)
+        wrap.set_shape(x.get_shape())
 
         return wrap
 
@@ -1122,6 +1124,7 @@ class ElasticNetMethod(Attack):
             return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
         wrap = tf.py_func(ead_wrap, [x, labels], self.tf_dtype)
+        wrap.set_shape(x.get_shape())
 
         return wrap
 
@@ -1222,7 +1225,9 @@ class DeepFool(Attack):
                                   self.max_iter, self.clip_min, self.clip_max,
                                   self.nb_classes)
 
-        return tf.py_func(deepfool_wrap, [x], self.tf_dtype)
+        wrap = tf.py_func(deepfool_wrap, [x], self.tf_dtype)
+        wrap.set_shape(x.get_shape())
+        return wrap
 
     def parse_params(self,
                      nb_candidate=10,
@@ -1315,6 +1320,7 @@ class LBFGS(Attack):
             return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
         wrap = tf.py_func(lbfgs_wrap, [x, self.y_target], self.tf_dtype)
+        wrap.set_shape(x.get_shape())
 
         return wrap
 

@@ -33,7 +33,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    testing=False,
                    backprop_through_attack=False,
                    nb_filters=64, num_threads=None,
-                   label_smoothing=True):
+                   label_smoothing=0.1):
     """
     MNIST cleverhans tutorial
     :param train_start: index of first training set example
@@ -51,6 +51,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                                     example construction process during
                                     adversarial training.
     :param clean_train: if true, train on clean examples
+    :param label_smoothing: float, amount of label smoothing for cross entropy
     :return: an AccuracyReport object
     """
 
@@ -78,11 +79,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Use Image Parameters
     img_rows, img_cols, nchannels = x_train.shape[1:4]
     nb_classes = y_train.shape[1]
-
-    if label_smoothing:
-        label_smooth = .1
-        y_train = y_train.clip(label_smooth /
-                               (nb_classes-1), 1. - label_smooth)
 
     # Define input TF placeholder
     x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
@@ -119,7 +115,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     if clean_train:
         model = ModelBasicCNN('model1', nb_classes, nb_filters)
         preds = model.get_logits(x)
-        loss = LossCrossEntropy(model, smoothing=0.1)
+        loss = LossCrossEntropy(model, smoothing=label_smoothing)
 
         def evaluate():
             do_eval(preds, x_test, y_test, 'clean_train_clean_eval', False)
@@ -153,7 +149,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     def attack(x):
         return fgsm2.generate(x, **fgsm_params)
 
-    loss2 = LossCrossEntropy(model2, smoothing=0.1, attack=attack)
+    loss2 = LossCrossEntropy(model2, smoothing=label_smoothing, attack=attack)
     preds2 = model2.get_logits(x)
     adv_x2 = attack(x)
 

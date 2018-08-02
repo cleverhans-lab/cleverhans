@@ -418,6 +418,7 @@ class TestCarliniWagnerL2(CleverHansTest):
                                        initial_const=1,
                                        clip_min=-5, clip_max=5,
                                        batch_size=100, y=y)
+        self.assertEqual(x_val.shape, x_adv_p.shape)
         x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -556,6 +557,7 @@ class TestElasticNetMethod(CleverHansTest):
                                        initial_const=1,
                                        clip_min=-5, clip_max=5,
                                        batch_size=100, y=y)
+        self.assertEqual(x_val.shape, x_adv_p.shape)
         x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -700,6 +702,7 @@ class TestDeepFool(CleverHansTest):
 
         x_adv_p = self.attack.generate(x, over_shoot=0.02, max_iter=50,
                                        nb_candidate=2, clip_min=-5, clip_max=5)
+        self.assertEqual(x_val.shape, x_adv_p.shape)
         x_adv = self.sess.run(x_adv_p, {x: x_val})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -912,6 +915,7 @@ class TestLBFGS(CleverHansTest):
                                        initial_const=1,
                                        clip_min=-5, clip_max=5,
                                        batch_size=100, y_target=y)
+        self.assertEqual(x_val.shape, x_adv_p.shape)
         x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
