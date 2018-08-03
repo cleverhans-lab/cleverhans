@@ -571,7 +571,8 @@ class MomentumIterativeMethod(Attack):
 
         def body(i, ax, m):
             preds = self.model.get_probs(ax)
-            loss = loss_module.attack_softmax_cross_entropy(y, preds, mean=False)
+            loss = loss_module.attack_softmax_cross_entropy(
+                y, preds, mean=False)
             if targeted:
                 loss = -loss
 
