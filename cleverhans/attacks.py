@@ -564,13 +564,15 @@ class MomentumIterativeMethod(Attack):
         targeted = (self.y_target is not None)
 
         from . import utils_tf
+        from . import loss as loss_module
 
         def cond(i, _, __):
             return tf.less(i, self.nb_iter)
 
         def body(i, ax, m):
             preds = self.model.get_probs(ax)
-            loss = utils_tf.model_loss(y, preds, mean=False)
+            loss = loss_module.attack_softmax_cross_entropy(
+                y, preds, mean=False)
             if targeted:
                 loss = -loss
 
