@@ -1055,7 +1055,7 @@ class ElasticNetMethod(Attack):
         self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
 
         self.structural_kwargs = [
-            'fista', 'beta', 'decision_rule', 'batch_size', 'confidence',
+            'beta', 'decision_rule', 'batch_size', 'confidence',
             'targeted', 'learning_rate', 'binary_search_steps',
             'max_iterations', 'abort_early', 'initial_const', 'clip_min',
             'clip_max'
@@ -1072,8 +1072,6 @@ class ElasticNetMethod(Attack):
                   original labels the classifier assigns.
         :param y_target: (optional) A tensor with the target labels for a
                   targeted attack.
-        :param fista: FISTA or ISTA. FISTA has better convergence properties
-                      but performs an additional query per iteration
         :param beta: Trades off L2 distortion with L1 distortion: higher
                      produces examples with lower L1 distortion, at the
                      cost of higher L2 (and typically Linf) distortion
@@ -1090,7 +1088,9 @@ class ElasticNetMethod(Attack):
         :param binary_search_steps: The number of times we perform binary
                                     search to find the optimal tradeoff-
                                     constant between norm of the perturbation
-                                    and confidence of the classification.
+                                    and confidence of the classification. Set
+                                    'initial_const' to a large value and fix
+                                    this param to 1 for speed.
         :param max_iterations: The maximum number of iterations. Setting this
                                to a larger value will produce lower distortion
                                results. Using only a few iterations requires
@@ -1105,6 +1105,9 @@ class ElasticNetMethod(Attack):
                               If binary_search_steps is large, the initial
                               constant is not important. A smaller value of
                               this constant gives lower distortion results.
+                              For computational efficiency, fix
+                              binary_search_steps to 1 and set this param
+                              to a large value.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -1114,7 +1117,7 @@ class ElasticNetMethod(Attack):
         from .attacks_tf import ElasticNetMethod as EAD
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
-        attack = EAD(self.sess, self.model, self.fista, self.beta,
+        attack = EAD(self.sess, self.model, self.beta,
                      self.decision_rule, self.batch_size, self.confidence,
                      'y_target' in kwargs, self.learning_rate,
                      self.binary_search_steps, self.max_iterations,
@@ -1134,7 +1137,6 @@ class ElasticNetMethod(Attack):
                      y=None,
                      y_target=None,
                      nb_classes=None,
-                     fista=True,
                      beta=1e-2,
                      decision_rule='EN',
                      batch_size=1,
@@ -1151,7 +1153,6 @@ class ElasticNetMethod(Attack):
         if nb_classes is not None:
             warnings.warn("The nb_classes argument is depricated and will "
                           "be removed on 2018-02-11")
-        self.fista = fista
         self.beta = beta
         self.decision_rule = decision_rule
         self.batch_size = batch_size

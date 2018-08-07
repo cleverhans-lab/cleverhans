@@ -938,7 +938,7 @@ class CarliniWagnerL2(object):
 
 
 class ElasticNetMethod(object):
-    def __init__(self, sess, model, fista, beta, decision_rule, batch_size,
+    def __init__(self, sess, model, beta, decision_rule, batch_size,
                  confidence, targeted, learning_rate, binary_search_steps,
                  max_iterations, abort_early, initial_const, clip_min,
                  clip_max, num_labels, shape):
@@ -950,8 +950,6 @@ class ElasticNetMethod(object):
 
         :param sess: a TF session.
         :param model: a cleverhans.model.Model object.
-        :param fista: FISTA or ISTA. FISTA has better convergence properties
-                      but performs an additional query per iteration
         :param beta: Trades off L2 distortion with L1 distortion: higher
                      produces examples with lower L1 distortion, at the
                      cost of higher L2 (and typically Linf) distortion
@@ -972,7 +970,9 @@ class ElasticNetMethod(object):
         :param binary_search_steps: The number of times we perform binary
                                     search to find the optimal tradeoff-
                                     constant between norm of the perturbation
-                                    and confidence of the classification.
+                                    and confidence of the classification. Set
+                                    'initial_const' to a large value and fix
+                                    this param to 1 for speed.
         :param max_iterations: The maximum number of iterations. Setting this
                                to a larger value will produce lower distortion
                                results. Using only a few iterations requires
@@ -987,6 +987,9 @@ class ElasticNetMethod(object):
                               If binary_search_steps is large, the initial
                               constant is not important. A smaller value of
                               this constant gives lower distortion results.
+                              For computational efficiency, fix
+                              binary_search_steps to 1 and set this param
+                              to a large value.
         :param clip_min: (optional float) Minimum input component value.
         :param clip_max: (optional float) Maximum input component value.
         :param num_labels: the number of classes in the model's output.
@@ -1007,7 +1010,6 @@ class ElasticNetMethod(object):
         self.model = model
         self.decision_rule = decision_rule
 
-        self.fista = fista
         self.beta = beta
         self.beta_t = tf.cast(self.beta, tf_dtype)
 
@@ -1019,6 +1021,8 @@ class ElasticNetMethod(object):
         self.timg = tf.Variable(np.zeros(shape), dtype=tf_dtype, name='timg')
         self.newimg = tf.Variable(
             np.zeros(shape), dtype=tf_dtype, name='newimg')
+        self.slack = tf.Variable(
+            np.zeros(shape), dtype=tf_dtype, name='slack')
         self.tlab = tf.Variable(
             np.zeros((batch_size, num_labels)), dtype=tf_dtype, name='tlab')
         self.const = tf.Variable(
@@ -1028,6 +1032,8 @@ class ElasticNetMethod(object):
         self.assign_timg = tf.placeholder(tf_dtype, shape, name='assign_timg')
         self.assign_newimg = tf.placeholder(
             tf_dtype, shape, name='assign_newimg')
+        self.assign_slack = tf.placeholder(
+            tf_dtype, shape, name='assign_slack')
         self.assign_tlab = tf.placeholder(
             tf_dtype, (batch_size, num_labels), name='assign_tlab')
         self.assign_const = tf.placeholder(
@@ -1036,53 +1042,52 @@ class ElasticNetMethod(object):
         self.global_step = tf.Variable(0, trainable=False)
         self.global_step_t = tf.cast(self.global_step, tf_dtype)
 
-        if self.fista:
-            self.slack = tf.Variable(
-                np.zeros(shape), dtype=tf_dtype, name='slack')
-            self.assign_slack = tf.placeholder(
-                tf_dtype, shape, name='assign_slack')
-            var = self.slack
-        else:
-            var = self.newimg
         """Fast Iterative Shrinkage Thresholding"""
         """--------------------------------"""
         self.zt = tf.divide(self.global_step_t,
                             self.global_step_t + tf.cast(3, tf_dtype))
+        cond1 = tf.cast(tf.greater(tf.subtract(self.slack, self.timg),
+                                   self.beta_t), tf_dtype)
+        cond2 = tf.cast(tf.less_equal(tf.abs(tf.subtract(self.slack,
+                                                         self.timg)),
+                                      self.beta_t), tf_dtype)
+        cond3 = tf.cast(tf.less(tf.subtract(self.slack, self.timg),
+                                tf.negative(self.beta_t)), tf_dtype)
 
-        cond1 = tf.cast(
-            tf.greater(tf.subtract(var, self.timg), self.beta_t), tf_dtype)
-        cond2 = tf.cast(
-            tf.less_equal(tf.abs(tf.subtract(var, self.timg)), self.beta_t),
-            tf_dtype)
-        cond3 = tf.cast(
-            tf.less(tf.subtract(var, self.timg), tf.negative(self.beta_t)),
-            tf_dtype)
-
-        upper = tf.minimum(
-            tf.subtract(var, self.beta_t), tf.cast(self.clip_max, tf_dtype))
-        lower = tf.maximum(
-            tf.add(var, self.beta_t), tf.cast(self.clip_min, tf_dtype))
+        upper = tf.minimum(tf.subtract(self.slack, self.beta_t),
+                           tf.cast(self.clip_max, tf_dtype))
+        lower = tf.maximum(tf.add(self.slack, self.beta_t),
+                           tf.cast(self.clip_min, tf_dtype))
 
         self.assign_newimg = tf.multiply(cond1, upper)
         self.assign_newimg += tf.multiply(cond2, self.timg)
         self.assign_newimg += tf.multiply(cond3, lower)
-        self.setter = tf.assign(self.newimg, self.assign_newimg)
-        if self.fista:
-            self.assign_slack = self.assign_newimg
-            self.assign_slack += tf.multiply(self.zt,
-                                             self.assign_newimg - self.newimg)
-            self.setter_y = tf.assign(self.slack, self.assign_slack)
+
+        self.assign_slack = self.assign_newimg
+        self.assign_slack += tf.multiply(self.zt,
+                                         self.assign_newimg - self.newimg)
+
         """--------------------------------"""
+        self.setter = tf.assign(self.newimg, self.assign_newimg)
+        self.setter_y = tf.assign(self.slack, self.assign_slack)
 
         # prediction BEFORE-SOFTMAX of the model
         self.output = model.get_logits(self.newimg)
+        self.output_y = model.get_logits(self.slack)
 
         # distance to the input data
-        self.l2dist = reduce_sum(
-            tf.square(self.newimg - self.timg), list(range(1, len(shape))))
-        self.l1dist = reduce_sum(
-            tf.abs(self.newimg - self.timg), list(range(1, len(shape))))
-        self.elasticdist = self.l2dist + tf.multiply(self.l1dist, self.beta_t)
+        self.l2dist = reduce_sum(tf.square(self.newimg-self.timg),
+                                 list(range(1, len(shape))))
+        self.l2dist_y = reduce_sum(tf.square(self.slack-self.timg),
+                                   list(range(1, len(shape))))
+        self.l1dist = reduce_sum(tf.abs(self.newimg-self.timg),
+                                 list(range(1, len(shape))))
+        self.l1dist_y = reduce_sum(tf.abs(self.slack-self.timg),
+                                   list(range(1, len(shape))))
+        self.elasticdist = self.l2dist + tf.multiply(self.l1dist,
+                                                     self.beta_t)
+        self.elasticdist_y = self.l2dist_y + tf.multiply(self.l1dist_y,
+                                                         self.beta_t)
         if self.decision_rule == 'EN':
             self.crit = self.elasticdist
             self.crit_p = 'Elastic'
@@ -1092,43 +1097,30 @@ class ElasticNetMethod(object):
 
         # compute the probability of the label class versus the maximum other
         real = reduce_sum((self.tlab) * self.output, 1)
-        other = reduce_max((1 - self.tlab) * self.output - (self.tlab * 10000),
-                           1)
+        real_y = reduce_sum((self.tlab) * self.output_y, 1)
+        other = reduce_max((1 - self.tlab) * self.output -
+                           (self.tlab * 10000), 1)
+        other_y = reduce_max((1 - self.tlab) * self.output_y -
+                             (self.tlab * 10000), 1)
 
         if self.TARGETED:
             # if targeted, optimize for making the other class most likely
             loss1 = tf.maximum(ZERO(), other - real + self.CONFIDENCE)
+            loss1_y = tf.maximum(ZERO(), other_y - real_y + self.CONFIDENCE)
         else:
             # if untargeted, optimize for making this class least likely.
             loss1 = tf.maximum(ZERO(), real - other + self.CONFIDENCE)
+            loss1_y = tf.maximum(ZERO(), real_y - other_y + self.CONFIDENCE)
 
         # sum up the losses
         self.loss21 = reduce_sum(self.l1dist)
+        self.loss21_y = reduce_sum(self.l1dist_y)
         self.loss2 = reduce_sum(self.l2dist)
+        self.loss2_y = reduce_sum(self.l2dist_y)
         self.loss1 = reduce_sum(self.const * loss1)
-
-        if self.fista:
-            self.output_y = model.get_logits(self.slack)
-            self.l2dist_y = reduce_sum(
-                tf.square(self.slack - self.timg), list(range(1, len(shape))))
-            real_y = reduce_sum((self.tlab) * self.output_y, 1)
-            other_y = reduce_max(
-                (1 - self.tlab) * self.output_y - (self.tlab * 10000), 1)
-            if self.TARGETED:
-                loss1_y = tf.maximum(ZERO(),
-                                     other_y - real_y + self.CONFIDENCE)
-            else:
-                loss1_y = tf.maximum(ZERO(),
-                                     real_y - other_y + self.CONFIDENCE)
-
-            self.loss2_y = reduce_sum(self.l2dist_y)
-            self.loss1_y = reduce_sum(self.const * loss1_y)
-
-            self.loss_opt = self.loss1_y + self.loss2_y
-        else:
-            self.loss_opt = self.loss1 + self.loss2
-        self.loss = self.loss1 + self.loss2 + tf.multiply(
-            self.beta_t, self.loss21)
+        self.loss1_y = reduce_sum(self.const * loss1_y)
+        self.loss_opt = self.loss1_y + self.loss2_y
+        self.loss = self.loss1+self.loss2+tf.multiply(self.beta_t, self.loss21)
 
         self.learning_rate = tf.train.polynomial_decay(
             self.LEARNING_RATE,
@@ -1140,8 +1132,9 @@ class ElasticNetMethod(object):
         # Setup the optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
-        self.train = optimizer.minimize(
-            self.loss_opt, var_list=[var], global_step=self.global_step)
+        self.train = optimizer.minimize(self.loss_opt,
+                                        var_list=[self.slack],
+                                        global_step=self.global_step)
         end_vars = tf.global_variables()
         new_vars = [x for x in end_vars if x.name not in start_vars]
 
@@ -1151,9 +1144,7 @@ class ElasticNetMethod(object):
         self.setup.append(self.tlab.assign(self.assign_tlab))
         self.setup.append(self.const.assign(self.assign_const))
 
-        var_list = [self.global_step] + [self.newimg] + new_vars
-        if self.fista:
-            var_list += [self.slack]
+        var_list = [self.global_step]+[self.slack]+[self.newimg]+new_vars
         self.init = tf.variables_initializer(var_list=var_list)
 
     def attack(self, imgs, targets):
@@ -1243,24 +1234,18 @@ class ElasticNetMethod(object):
                     self.assign_const: CONST
                 })
             self.sess.run(self.setter, {self.assign_newimg: batch})
-            if self.fista:
-                self.sess.run(self.setter_y, {self.assign_slack: batch})
+            self.sess.run(self.setter_y, {self.assign_slack: batch})
             prev = 1e6
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack
                 self.sess.run([self.train])
-                if self.fista:
-                    _, _, l, l2s, l1s, crit = self.sess.run([
-                        self.setter, self.setter_y, self.loss, self.l2dist,
-                        self.l1dist, self.crit
-                    ])
-                else:
-                    _, l, l2s, l1s, crit = self.sess.run([
-                        self.setter, self.loss, self.l2dist, self.l1dist,
-                        self.crit
-                    ])
-                scores, nimg = self.sess.run([self.output, self.newimg])
-
+                self.sess.run([self.setter, self.setter_y])
+                l, l2s, l1s, crit, scores, nimg = self.sess.run([self.loss,
+                                                                 self.l2dist,
+                                                                 self.l1dist,
+                                                                 self.crit,
+                                                                 self.output,
+                                                                 self.newimg])
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
                     _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
                                    "l2={:.3g} l1={:.3g} f={:.3g}").format(
