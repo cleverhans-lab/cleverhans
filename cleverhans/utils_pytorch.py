@@ -79,5 +79,13 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
                                      grad_func=_tf_gradient_fn)[0]
         out.set_shape([None, out_dims])
         return out
+      
+    def _tf_fprop_fn(x_np):
+      x_tensor = torch.Tensor(x_np)
+      if torch.cuda.is_available():
+          x_tensor = x_tensor.cuda()
+      torch_state['x'] = Variable(x_tensor, requires_grad=True)
+      torch_state['logits'] = model(torch_state['x'])
+      return torch_state['logits'].data.cpu().numpy()
 
     return tf_model_fn
