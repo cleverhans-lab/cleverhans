@@ -2,6 +2,7 @@ import json
 import os
 
 from .model import Model
+from .compat import softmax_cross_entropy_with_logits
 import tensorflow as tf
 
 
@@ -58,7 +59,7 @@ class LossCrossEntropy(Loss):
         y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], tf.float32))
         logits = [self.model.get_logits(x, **kwargs) for x in x]
         loss = sum(
-            tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logit)
+            softmax_cross_entropy_with_logits(labels=y, logits=logit)
             for logit in logits)
         return loss
 
@@ -79,8 +80,7 @@ class LossMixUp(Loss):
         xm = x + mix * (x[::-1] - x)
         ym = y + mix * (y[::-1] - y)
         logits = self.model.get_logits(xm, **kwargs)
-        loss = tf.nn.softmax_cross_entropy_with_logits(labels=ym,
-                                                       logits=logits)
+        loss = softmax_cross_entropy_with_logits(labels=ym, logits=logits)
         return loss
 
 
@@ -103,9 +103,9 @@ class LossFeaturePairing(Loss):
                         for a, b in
                         zip(d1[Model.O_FEATURES], d2[Model.O_FEATURES])]
         pairing_loss = tf.reduce_mean(pairing_loss)
-        loss = tf.nn.softmax_cross_entropy_with_logits(
+        loss = softmax_cross_entropy_with_logits(
             labels=y, logits=d1[Model.O_LOGITS])
-        loss += tf.nn.softmax_cross_entropy_with_logits(
+        loss += softmax_cross_entropy_with_logits(
             labels=y, logits=d2[Model.O_LOGITS])
         return loss + self.weight * pairing_loss
 
@@ -120,5 +120,5 @@ def attack_softmax_cross_entropy(y, probs, mean=True):
              sample loss
     """
     logits = probs.op.inputs[0] if probs.op.type == 'Softmax' else probs
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+    out = softmax_cross_entropy_with_logits(logits=logits, labels=y)
     return tf.reduce_mean(out) if mean else out

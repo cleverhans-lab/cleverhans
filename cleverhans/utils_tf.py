@@ -16,6 +16,7 @@ from .utils import batch_indices, _ArgsWrapper, create_logger
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max, reduce_min
 from cleverhans.compat import reduce_any
+from cleverhans.compat import softmax_cross_entropy_with_logits
 
 _logger = create_logger("cleverhans.utils.tf")
 
@@ -37,18 +38,7 @@ def model_loss(y, model, mean=True):
     else:
         logits = model
 
-    try:
-        y = tf.stop_gradient(y)
-        out = tf.nn.softmax_cross_entropy_with_logits_v2(
-                                                logits=logits, labels=y)
-    except AttributeError:
-        warning = "Running on tensorflow version " + \
-                   LooseVersion(tf.__version__).vstring + \
-                   ". This version will not be supported by CleverHans" + \
-                   "in the future."
-        warnings.warn(warning)
-        out = tf.nn.softmax_cross_entropy_with_logits(
-                                                logits=logits, labels=y)
+    out = softmax_cross_entropy_with_logits(logits=logits, labels=y)
 
     if mean:
         out = reduce_mean(out)

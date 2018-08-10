@@ -32,7 +32,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=6, batch_size=128,
                    learning_rate=0.001, train_dir="train_dir",
                    filename="mnist.ckpt", load_model=False,
-                   testing=False, label_smoothing=True):
+                   testing=False, label_smoothing=0.1):
     """
     MNIST CleverHans tutorial
     :param train_start: index of first training set example
@@ -46,6 +46,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     :param filename: Filename to save model under
     :param load_model: True for load, False for not load
     :param testing: if true, test error is calculated
+    :param label_smoothing: float, amount of label smoothing for cross entropy
     :return: an AccuracyReport object
     """
     keras.layers.core.K.set_learning_phase(0)
@@ -78,11 +79,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Obtain Image Parameters
     img_rows, img_cols, nchannels = x_train.shape[1:4]
     nb_classes = y_train.shape[1]
-
-    if label_smoothing:
-        label_smooth = .1
-        y_train = y_train.clip(label_smooth / (nb_classes-1),
-                               1. - label_smooth)
 
     # Define input TF placeholder
     x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
@@ -130,7 +126,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         evaluate()
     else:
         print("Model was not loaded, training from scratch.")
-        loss = LossCrossEntropy(wrap, smoothing=0.1)
+        loss = LossCrossEntropy(wrap, smoothing=label_smoothing)
         train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
               args=train_params, save=True, rng=rng)
 
@@ -176,7 +172,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         return fgsm2.generate(x, **fgsm_params)
 
     preds_2_adv = model_2(attack(x))
-    loss_2 = LossCrossEntropy(wrap_2, smoothing=0.1, attack=attack)
+    loss_2 = LossCrossEntropy(wrap_2, smoothing=label_smoothing, attack=attack)
 
     def evaluate_2():
         # Accuracy of adversarially trained model on legitimate test inputs

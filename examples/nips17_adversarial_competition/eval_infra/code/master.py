@@ -136,7 +136,7 @@ class EvaluationMaster(object):
     else:
       return True
 
-  def preprare_attacks(self):
+  def prepare_attacks(self):
     """Prepares all data needed for evaluation of attacks."""
     print_header('PREPARING ATTACKS DATA')
     # verify that attacks data not written yet
@@ -710,7 +710,7 @@ def main(args):
       batch_size=batch_size,
       max_dataset_num_images=max_dataset_num_images)
   if args.command == 'attack':
-    eval_master.preprare_attacks()
+    eval_master.prepare_attacks()
   elif args.command == 'defense':
     eval_master.prepare_defenses()
   elif args.command == 'cleanup_defenses':

@@ -403,7 +403,7 @@ class BasicIterativeMethod(Attack):
 
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model.get_probs(x)
-        preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
+        preds_max = reduce_max(model_preds, 1, keepdims=True)
         if self.y_target is not None:
             y = self.y_target
             targeted = True
@@ -560,17 +560,19 @@ class MomentumIterativeMethod(Attack):
 
         # Fix labels to the first model predictions for loss computation
         y, nb_classes = self.get_or_guess_labels(x, kwargs)
-        y = y / tf.reduce_sum(y, 1, keep_dims=True)
+        y = y / reduce_sum(y, 1, keepdims=True)
         targeted = (self.y_target is not None)
 
         from . import utils_tf
+        from . import loss as loss_module
 
         def cond(i, _, __):
             return tf.less(i, self.nb_iter)
 
         def body(i, ax, m):
             preds = self.model.get_probs(ax)
-            loss = utils_tf.model_loss(y, preds, mean=False)
+            loss = loss_module.attack_softmax_cross_entropy(
+                y, preds, mean=False)
             if targeted:
                 loss = -loss
 
@@ -582,7 +584,7 @@ class MomentumIterativeMethod(Attack):
             avoid_zero_div = tf.cast(1e-12, grad.dtype)
             grad = grad / tf.maximum(
                 avoid_zero_div,
-                tf.reduce_mean(tf.abs(grad), red_ind, keep_dims=True))
+                reduce_mean(tf.abs(grad), red_ind, keepdims=True))
             m = self.decay_factor * m + grad
 
             if self.ord == np.inf:
@@ -590,10 +592,10 @@ class MomentumIterativeMethod(Attack):
             elif self.ord == 1:
                 norm = tf.maximum(
                     avoid_zero_div,
-                    tf.reduce_sum(tf.abs(m), red_ind, keep_dims=True))
+                    reduce_sum(tf.abs(m), red_ind, keepdims=True))
                 normalized_grad = m / norm
             elif self.ord == 2:
-                square = tf.reduce_sum(tf.square(m), red_ind, keep_dims=True)
+                square = reduce_sum(tf.square(m), red_ind, keepdims=True)
                 norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
                 normalized_grad = m / norm
             else:
@@ -786,6 +788,7 @@ class SaliencyMapMethod(Attack):
 
                 # Attack is untargeted, target values will be chosen at random
                 x_adv = tf.py_func(jsma_wrap, [x], self.tf_dtype)
+                x_adv.set_shape(x.get_shape())
 
         return x_adv
 
@@ -994,6 +997,7 @@ class CarliniWagnerL2(Attack):
             return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
         wrap = tf.py_func(cw_wrap, [x, labels], self.tf_dtype)
+        wrap.set_shape(x.get_shape())
 
         return wrap
 
@@ -1051,7 +1055,7 @@ class ElasticNetMethod(Attack):
         self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
 
         self.structural_kwargs = [
-            'fista', 'beta', 'decision_rule', 'batch_size', 'confidence',
+            'beta', 'decision_rule', 'batch_size', 'confidence',
             'targeted', 'learning_rate', 'binary_search_steps',
             'max_iterations', 'abort_early', 'initial_const', 'clip_min',
             'clip_max'
@@ -1068,8 +1072,6 @@ class ElasticNetMethod(Attack):
                   original labels the classifier assigns.
         :param y_target: (optional) A tensor with the target labels for a
                   targeted attack.
-        :param fista: FISTA or ISTA. FISTA has better convergence properties
-                      but performs an additional query per iteration
         :param beta: Trades off L2 distortion with L1 distortion: higher
                      produces examples with lower L1 distortion, at the
                      cost of higher L2 (and typically Linf) distortion
@@ -1086,7 +1088,9 @@ class ElasticNetMethod(Attack):
         :param binary_search_steps: The number of times we perform binary
                                     search to find the optimal tradeoff-
                                     constant between norm of the perturbation
-                                    and confidence of the classification.
+                                    and confidence of the classification. Set
+                                    'initial_const' to a large value and fix
+                                    this param to 1 for speed.
         :param max_iterations: The maximum number of iterations. Setting this
                                to a larger value will produce lower distortion
                                results. Using only a few iterations requires
@@ -1101,6 +1105,9 @@ class ElasticNetMethod(Attack):
                               If binary_search_steps is large, the initial
                               constant is not important. A smaller value of
                               this constant gives lower distortion results.
+                              For computational efficiency, fix
+                              binary_search_steps to 1 and set this param
+                              to a large value.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
@@ -1110,7 +1117,7 @@ class ElasticNetMethod(Attack):
         from .attacks_tf import ElasticNetMethod as EAD
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
-        attack = EAD(self.sess, self.model, self.fista, self.beta,
+        attack = EAD(self.sess, self.model, self.beta,
                      self.decision_rule, self.batch_size, self.confidence,
                      'y_target' in kwargs, self.learning_rate,
                      self.binary_search_steps, self.max_iterations,
@@ -1122,6 +1129,7 @@ class ElasticNetMethod(Attack):
             return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
         wrap = tf.py_func(ead_wrap, [x, labels], self.tf_dtype)
+        wrap.set_shape(x.get_shape())
 
         return wrap
 
@@ -1129,7 +1137,6 @@ class ElasticNetMethod(Attack):
                      y=None,
                      y_target=None,
                      nb_classes=None,
-                     fista=True,
                      beta=1e-2,
                      decision_rule='EN',
                      batch_size=1,
@@ -1146,7 +1153,6 @@ class ElasticNetMethod(Attack):
         if nb_classes is not None:
             warnings.warn("The nb_classes argument is depricated and will "
                           "be removed on 2018-02-11")
-        self.fista = fista
         self.beta = beta
         self.decision_rule = decision_rule
         self.batch_size = batch_size
@@ -1222,7 +1228,9 @@ class DeepFool(Attack):
                                   self.max_iter, self.clip_min, self.clip_max,
                                   self.nb_classes)
 
-        return tf.py_func(deepfool_wrap, [x], self.tf_dtype)
+        wrap = tf.py_func(deepfool_wrap, [x], self.tf_dtype)
+        wrap.set_shape(x.get_shape())
+        return wrap
 
     def parse_params(self,
                      nb_candidate=10,
@@ -1315,6 +1323,7 @@ class LBFGS(Attack):
             return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
         wrap = tf.py_func(lbfgs_wrap, [x, self.y_target], self.tf_dtype)
+        wrap.set_shape(x.get_shape())
 
         return wrap
 

@@ -21,5 +21,6 @@ setup(name='cleverhans',
           "test": [
               "keras == 2.1.5",  # Keras 2.1.6 is incompatible with TF 1.4
           ],
+          "pytorch": ["torch==0.4.0", "torchvision==0.2.1"],
       },
       packages=find_packages())
