@@ -25,6 +25,7 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.contrib.slim.nets import inception
 
+from cleverhans.utils import CLEVERHANS_ROOT
 from cleverhans.attacks import SPSA
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
@@ -38,10 +39,9 @@ $ cd ../dev_toolkit/sample_attacks
 $ ./download_checkpoints.sh
 """
 
-
-DEFAULT_INCEPTION_PATH = (
-    '../examples/nips17_adversarial_competition/dev_toolkit/sample_attacks/fgsm/'
-    'inception_v3.ckpt')
+DEFAULT_INCEPTION_PATH = os.path.join(CLEVERHANS_ROOT,
+    ('examples/nips17_adversarial_competition/dev_toolkit/sample_attacks/fgsm/'
+    'inception_v3.ckpt'))
 
 tf.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
@@ -52,13 +52,16 @@ tf.flags.DEFINE_string(
 
 tf.flags.DEFINE_string(
     'input_image_dir',
-    '../examples/nips17_adversarial_competition/dataset/images',
-    'Path to image directory.')
+    os.path.join(CLEVERHANS_ROOT,
+                 'examples/nips17_adversarial_competition/dataset/images'),
+                 'Path to image directory.')
 
 tf.flags.DEFINE_string(
     'metadata_file_path',
-    '../examples/nips17_adversarial_competition/dataset/dev_dataset.csv',
-    'Path to metadata file.')
+    os.path.join(CLEVERHANS_ROOT,
+                 'examples/nips17_adversarial_competition/dataset/dev_dataset.csv'),
+                 'Path to metadata file.')
+
 
 FLAGS = tf.flags.FLAGS
 
