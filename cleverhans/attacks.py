@@ -150,6 +150,11 @@ class Attack(object):
 
         if hash_key not in self.graphs:
             self.construct_graph(fixed, feedable, x_val, hash_key)
+        else:
+            # remove the None arguments, they are just left blank
+            for k in list(feedable.keys()):
+                if feedable[k] is None:
+                    del feedable[k]
 
         x, new_kwargs, x_adv = self.graphs[hash_key]
 
