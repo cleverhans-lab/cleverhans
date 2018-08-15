@@ -5,12 +5,7 @@ as well as image data. The easiest way to provide these is using the data from
 cleverhans/examples/nips17_adversarial_competition, and then the default flag
 values will just work.
 
-Setup:
-$ cd cleverhans/examples/nips17_adversarial_competition
-$ mkdir images
-$ python download_images.py
-$ cd sample_attacks
-$ ./download_checkpoints.sh
+Setup: see SETUP_INSTRUCTIONS
 """
 
 # pylint: disable=bad-indentation
@@ -33,8 +28,18 @@ from cleverhans.attacks import SPSA
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
 
+
+SETUP_INSTRUCTIONS = """
+$ cd cleverhans/examples/nips17_adversarial_competition/dataset
+$ mkdir images
+$ python download_images.py --input_file=dev_dataset.csv --output_dir=images
+$ cd ../dev_toolkit/sample_attacks
+$ ./download_checkpoints.sh
+"""
+
+
 DEFAULT_INCEPTION_PATH = (
-    '../examples/nips17_adversarial_competition/sample_attacks/fgsm/'
+    '../examples/nips17_adversarial_competition/dev_toolkit/sample_attacks/fgsm/'
     'inception_v3.ckpt')
 
 tf.flags.DEFINE_string(
@@ -84,8 +89,8 @@ def load_images(input_dir, metadata_file_path, batch_shape):
 class InceptionModel(Model):
     """Model class for CleverHans library."""
 
-    def __init__(self, num_classes):
-        self.num_classes = num_classes
+    def __init__(self, nb_classes):
+        self.nb_classes = nb_classes
         self.built = False
 
     def __call__(self, x_input, return_logits=False):
@@ -95,7 +100,7 @@ class InceptionModel(Model):
             # Inception preprocessing uses [-1, 1]-scaled input.
             x_input = x_input * 2.0 - 1.0
             _, end_points = inception.inception_v3(
-                x_input, num_classes=self.num_classes, is_training=False,
+                x_input, num_classes=self.nb_classes, is_training=False,
                 reuse=reuse)
         self.built = True
         self.logits = end_points['Logits']
@@ -141,6 +146,7 @@ class TestInception(CleverHansTest):
 
             # Run computation
             saver = tf.train.Saver(slim.get_model_variables())
+
             session_creator = tf.train.ChiefSessionCreator(
                 scaffold=tf.train.Scaffold(saver=saver),
                 checkpoint_filename_with_path=FLAGS.checkpoint_path,
