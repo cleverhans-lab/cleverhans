@@ -20,6 +20,7 @@ import os
 import unittest
 import numpy as np
 from PIL import Image
+from six.moves import xrange
 import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.contrib.slim.nets import inception
