@@ -39,7 +39,12 @@ import uuid
 import eval_lib
 
 from six import iteritems
+from six import text_type
 
+try:
+    long        # Python 2
+except NameError:
+    long = int  # Python 3
 
 # Sleep time while waiting for next available piece of work
 SLEEP_TIME = 30
@@ -692,9 +697,9 @@ class EvaluationWorker(object):
       image_path = '{0}/adversarial_images/{1}/{1}.zip/{2}.png'.format(
           self.round_name, adv_batch_id, adv_img_id)
       adv_batch['images'][adv_img_id] = {
-          'clean_image_id': unicode(clean_image_id),
-          'image_path': unicode(image_path),
-          'image_hash': unicode(hash_val),
+          'clean_image_id': text_type(clean_image_id),
+          'image_path': text_type(image_path),
+          'image_hash': text_type(hash_val),
       }
     # archive all images and copy to storage
     zipped_images_filename = os.path.join(LOCAL_ZIPPED_OUTPUT_DIR,

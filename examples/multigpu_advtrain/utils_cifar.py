@@ -31,6 +31,7 @@ import cPickle as pkl
 
 import numpy as np
 import tensorflow as tf
+from six.moves import xrange
 
 # Global constants describing the CIFAR-10 data set.
 IMAGE_HEIGHT = 32

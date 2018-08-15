@@ -15,7 +15,11 @@ import numpy as np
 from PIL import Image
 
 from six import iteritems
-from six import PY3
+
+try:
+    long        # Python 2
+except NameError:
+    long = int  # Python 3
 
 
 EXTRACT_COMMAND = {
@@ -255,9 +259,8 @@ class SubmissionValidator(object):
     """
     shell_call(['docker', 'pull', image_name])
     try:
-      image_size = subprocess.check_output(
-          ['docker', 'inspect', '--format={{.Size}}', image_name]).strip()
-      image_size = int(image_size) if PY3 else long(image_size)
+      image_size = long(subprocess.check_output(
+          ['docker', 'inspect', '--format={{.Size}}', image_name]).strip())
     except (ValueError, subprocess.CalledProcessError) as e:
       logging.error('Failed to determine docker image size: %s', e)
       return False

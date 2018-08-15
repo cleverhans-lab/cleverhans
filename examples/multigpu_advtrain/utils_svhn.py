@@ -33,6 +33,7 @@ import os
 import numpy as np
 import tensorflow as tf
 import scipy.io as sio
+from six.moves import xrange
 
 # Global constants describing the SVHN data set.
 IMAGE_HEIGHT = 32

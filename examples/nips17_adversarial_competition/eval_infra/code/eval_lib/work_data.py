@@ -14,9 +14,12 @@ import numpy as np
 
 from six import iteritems
 from six import itervalues
-from six import PY3
 from six import text_type
 
+try:
+    long        # Python 2
+except NameError:
+    long = int  # Python 3
 
 # Cloud Datastore constants
 KIND_WORK_TYPE = u'WorkType'
@@ -40,10 +43,7 @@ MAX_WORK_RECORDS_READ = 1000
 
 def get_integer_time():
   """Returns current time in long integer format."""
-  if PY3:
-    return int(time.time())
-  else:
-    return long(time.time())
+  return long(time.time())
 
 
 def is_unclaimed(work):
