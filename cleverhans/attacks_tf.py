@@ -95,12 +95,19 @@ def fgm(x,
         normalized_grad = tf.stop_gradient(normalized_grad)
     elif ord == 1:
         red_ind = list(xrange(1, len(x.get_shape())))
-        normalized_grad = grad / reduce_sum(
-            tf.abs(grad), reduction_indices=red_ind, keepdims=True)
+        avoid_zero_div = 1e-12
+        avoid_nan_norm = tf.maximum(avoid_zero_div,
+                                    reduce_sum(tf.abs(grad),
+                                               reduction_indices=red_ind,
+                                               keepdims=True))
+        normalized_grad = grad / avoid_nan_norm
     elif ord == 2:
         red_ind = list(xrange(1, len(x.get_shape())))
-        square = reduce_sum(
-            tf.square(grad), reduction_indices=red_ind, keepdims=True)
+        avoid_zero_div = 1e-12
+        square = tf.maximum(avoid_zero_div,
+                            reduce_sum(tf.square(grad),
+                                       reduction_indices=red_ind,
+                                       keepdims=True))
         normalized_grad = grad / tf.sqrt(square)
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
