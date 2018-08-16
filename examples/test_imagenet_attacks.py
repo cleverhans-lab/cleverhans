@@ -32,11 +32,7 @@ from cleverhans.model import Model
 
 
 SETUP_INSTRUCTIONS = """
-$ cd cleverhans/examples/nips17_adversarial_competition/dataset
-$ mkdir images
-$ python download_images.py --input_file=dev_dataset.csv --output_dir=images
-$ cd ../dev_toolkit/sample_attacks
-$ ./download_checkpoints.sh
+$ ./examples/nips17_adversarial_competition/dev_toolkit/download_data.sh
 """
 
 DEFAULT_INCEPTION_PATH = os.path.join(CLEVERHANS_ROOT,
