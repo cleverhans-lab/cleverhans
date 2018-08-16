@@ -1745,7 +1745,7 @@ class SPSA(Attack):
                  early_stop_loss_threshold=None,
                  learning_rate=0.01,
                  delta=0.01,
-                 batch_size=128,
+                 spsa_samples=128,
                  spsa_iters=1,
                  is_debug=False):
         """
@@ -1764,11 +1764,12 @@ class SPSA(Attack):
                                           is below `early_stop_loss_threshold`.
         :param learning_rate: Learning rate of ADAM optimizer.
         :param delta: Perturbation size used for SPSA approximation.
-        :param batch_size: Number of inputs to evaluate at a single time. Note
+        :param spsa_samples: Number of inputs to evaluate at a single time. Note
                            that the true batch size (the number of evaluated
-                           inputs for each update) is `batch_size * spsa_iters`
+                           inputs for each update) is `spsa_samples *
+                           spsa_iters`
         :param spsa_iters: Number of model evaluations before performing an
-                           update, where each evaluation is on `batch_size`
+                           update, where each evaluation is on `spsa_samples`
                            different inputs.
         :param is_debug: If True, print the adversarial loss after each update.
         """
@@ -1777,7 +1778,7 @@ class SPSA(Attack):
         optimizer = SPSAAdam(
             lr=learning_rate,
             delta=delta,
-            num_samples=batch_size,
+            num_samples=spsa_samples,
             num_iters=spsa_iters)
 
         def loss_fn(x, label):
