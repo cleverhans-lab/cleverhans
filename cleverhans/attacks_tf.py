@@ -1836,6 +1836,11 @@ def pgd_attack(loss_fn,
     methods. The method uses a tf.while_loop to optimize a loss function in
     a single sess.run() call.
     """
+    assertions = []
+    assertions.append(tf.assert_less_equal(input_image, 1.0,
+                         message="Input image must have a maximum of 1.0"))
+    assertions.append(tf.assert_greater_equal(input_image, 0.0,
+                         message="Input image must have a minimum of 0.0"))
 
     init_perturbation = tf.random_uniform(
         tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
@@ -1878,12 +1883,14 @@ def pgd_attack(loss_fn,
         loop_vars=[tf.constant(0.), init_perturbation, flat_init_optim_state],
         parallel_iterations=1,
         back_prop=False)
-
     if project_perturbation == _project_perturbation:
-        check_diff = tf.assert_less_equal(final_perturbation, epsilon * 1.1)
-    else:
-        check_diff = tf.no_op()
-    with tf.control_dependencies([check_diff]):
+        perturbation_max = epsilon * 1.1
+        check_diff = tf.assert_less_equal(
+            final_perturbation,perturbation_max,
+            message="final_perturbation must change no pixel by more than "
+                    "%s" % perturbation_max)
+        assertions.append(check_diff)
+    with tf.control_dependencies(assertions):
         adversarial_image = input_image + final_perturbation
     return tf.stop_gradient(adversarial_image)
 
