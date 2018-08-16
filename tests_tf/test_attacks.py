@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import functools
+
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import unittest
@@ -23,7 +25,10 @@ from cleverhans.attacks import FastFeatureAdversaries
 from cleverhans.attacks import LSPGA
 from cleverhans.discretization_utils import discretize_uniform
 from cleverhans.discretization_utils import undiscretize_uniform
+from cleverhans.attacks import LBFGS
 from cleverhans.model import Model
+from cleverhans_tutorials.tutorial_models import HeReLuNormalInitializer
+
 
 
 class SimpleDiscretizedModel(Model):
@@ -48,36 +53,58 @@ class SimpleModel(Model):
     A very simple neural network
     """
 
-    def get_logits(self, x):
-        W1 = tf.constant([[1.5, .3], [-2, 0.3]], dtype=tf.float32)
-        h1 = tf.nn.sigmoid(tf.matmul(x, W1))
-        W2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]], dtype=tf.float32)
-        res = tf.matmul(h1, W2)
-        return res
+    def __init__(self, scope='simple', nb_classes=2, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
+
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            w1 = tf.constant([[1.5, .3], [-2, 0.3]],
+                             dtype=tf.as_dtype(x.dtype))
+            w2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]],
+                             dtype=tf.as_dtype(x.dtype))
+        h1 = tf.nn.sigmoid(tf.matmul(x, w1))
+        res = tf.matmul(h1, w2)
+        return {self.O_LOGITS: res,
+                self.O_PROBS: tf.nn.softmax(res)}
+
 
 
 class TrivialModel(Model):
-    """A linear model with two weights."""
+    """
+    A linear model with two weights
+    """
 
-    def get_logits(self, x):
-        W1 = tf.constant([[1, -1]], dtype=tf.float32)
-        res = tf.matmul(x, W1)
-        return res
+    def __init__(self, scope='trivial', nb_classes=2, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
+
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            w1 = tf.constant([[1, -1]], dtype=tf.float32)
+        res = tf.matmul(x, w1)
+        return {self.O_LOGITS: res,
+                self.O_PROBS: tf.nn.softmax(res)}
 
 
 class DummyModel(Model):
     """
     A simple model based on slim
     """
+    def __init__(self, scope='dummy_model', nb_classes=10, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
 
-    def __init__(self):
-        def template_fn(x):
+    def fprop(self, x, **kwargs):
+        del kwargs
+        with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
             net = slim.fully_connected(x, 60)
-            return slim.fully_connected(net, 10, activation_fn=None)
-        self.template = tf.make_template('dummy_model', template_fn)
+            logits = slim.fully_connected(net, 10, activation_fn=None)
+            return {self.O_LOGITS: logits,
+                    self.O_PROBS: tf.nn.softmax(logits)}
 
-    def get_logits(self, x):
-        return self.template(x)
 
 
 class TestAttackClassInitArguments(CleverHansTest):
@@ -92,22 +119,17 @@ class TestAttackClassInitArguments(CleverHansTest):
         self.assertTrue(context.exception)
 
     def test_back(self):
-        model = Model()
-
         # Exception is thrown when back is not tf or th
         with self.assertRaises(Exception) as context:
-            Attack(model, back='test', sess=None)
+            Attack(None, back='test', sess=None)
         self.assertTrue(context.exception)
 
     def test_sess(self):
-        # Define empty model
-        model = Model()
-
         # Test that it is permitted to provide no session
-        Attack(model, back='tf', sess=None)
+        Attack(Model('model', 10, {}), back='tf', sess=None)
 
     def test_sess_generate_np(self):
-        model = Model()
+        model = Model('model', 10, {})
 
         class DummyAttack(Attack):
             def generate(self, x, **kwargs):
@@ -123,7 +145,7 @@ class TestParseParams(CleverHansTest):
     def test_parse(self):
         sess = tf.Session()
 
-        test_attack = Attack(Model(), back='tf', sess=sess)
+        test_attack = Attack(Model('model', 10, {}), back='tf', sess=sess)
         self.assertTrue(test_attack.parse_params({}))
 
 
@@ -166,20 +188,25 @@ class TestFastGradientMethod(CleverHansTest):
         self.model = SimpleModel()
         self.attack = FastGradientMethod(self.model, sess=self.sess)
 
-    def help_generate_np_gives_adversarial_example(self, ord):
+    def generate_adversarial_examples_np(self, ord, eps, **kwargs):
         x_val = np.random.rand(100, 2)
         x_val = np.array(x_val, dtype=np.float32)
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=ord,
-                                        clip_min=-5, clip_max=5)
+        x_adv = self.attack.generate_np(x_val, eps=eps, ord=ord,
+                                        clip_min=-5, clip_max=5, **kwargs)
         if ord == np.inf:
             delta = np.max(np.abs(x_adv - x_val), axis=1)
         elif ord == 1:
             delta = np.sum(np.abs(x_adv - x_val), axis=1)
         elif ord == 2:
             delta = np.sum(np.square(x_adv - x_val), axis=1)**.5
-        self.assertClose(delta, 0.5)
 
+        return x_val, x_adv, delta
+
+    def help_generate_np_gives_adversarial_example(self, ord, eps=.5, **kwargs):
+        x_val, x_adv, delta = self.generate_adversarial_examples_np(ord, eps,
+                                                                    **kwargs)
+        self.assertClose(delta, eps)
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
         self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
@@ -193,18 +220,19 @@ class TestFastGradientMethod(CleverHansTest):
     def test_generate_np_gives_adversarial_example_l2(self):
         self.help_generate_np_gives_adversarial_example(2)
 
+    def test_generate_respects_dtype(self):
+        x = tf.placeholder(dtype=tf.float64, shape=(100, 2))
+        x_adv = self.attack.generate(x)
+        self.assertEqual(x_adv.dtype, tf.float64)
+
     def test_targeted_generate_np_gives_adversarial_example(self):
-        x_val = np.random.rand(100, 2)
-        x_val = np.array(x_val, dtype=np.float32)
         random_labs = np.random.random_integers(0, 1, 100)
         random_labs_one_hot = np.zeros((100, 2))
         random_labs_one_hot[np.arange(100), random_labs] = 1
 
-        x_adv = self.attack.generate_np(x_val, eps=.5, ord=np.inf,
-                                        clip_min=-5, clip_max=5,
-                                        y_target=random_labs_one_hot)
+        _, x_adv, delta = self.generate_adversarial_examples_np(
+            eps=.5, ord=np.inf, y_target=random_labs_one_hot)
 
-        delta = np.max(np.abs(x_adv - x_val), axis=1)
         self.assertClose(delta, 0.5)
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -260,6 +288,29 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
         self.sess = tf.Session()
         self.model = SimpleModel()
         self.attack = BasicIterativeMethod(self.model, sess=self.sess)
+
+    def test_generate_np_gives_adversarial_example_linfinity(self):
+        self.help_generate_np_gives_adversarial_example(ord=np.infty, eps=.5,
+                                                        nb_iter=20)
+
+    def test_generate_np_gives_adversarial_example_l1(self):
+        self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
+                                                        nb_iter=20)
+
+    def test_generate_np_gives_adversarial_example_l2(self):
+        self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
+                                                        nb_iter=20)
+
+    def test_do_not_reach_lp_boundary(self):
+        """
+        Make sure that iterative attack don't reach boundary of Lp
+        neighbourhood if nb_iter * eps_iter is relatively small compared to
+        epsilon.
+        """
+        for ord in [1, 2, np.infty]:
+            _, _, delta = self.generate_adversarial_examples_np(
+                ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
+            self.assertTrue(np.max(0.5 - delta) > 0.25)
 
     def test_attack_strength(self):
         """
@@ -389,6 +440,7 @@ class TestCarliniWagnerL2(CleverHansTest):
                                        initial_const=1,
                                        clip_min=-5, clip_max=5,
                                        batch_size=100, y=y)
+        self.assertEqual(x_val.shape, x_adv_p.shape)
         x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -527,6 +579,7 @@ class TestElasticNetMethod(CleverHansTest):
                                        initial_const=1,
                                        clip_min=-5, clip_max=5,
                                        batch_size=100, y=y)
+        self.assertEqual(x_val.shape, x_adv_p.shape)
         x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -671,6 +724,7 @@ class TestDeepFool(CleverHansTest):
 
         x_adv_p = self.attack.generate(x, over_shoot=0.02, max_iter=50,
                                        nb_candidate=2, clip_min=-5, clip_max=5)
+        self.assertEqual(x_val.shape, x_adv_p.shape)
         x_adv = self.sess.run(x_adv_p, {x: x_val})
 
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
@@ -771,28 +825,34 @@ class TestFastFeatureAdversaries(CleverHansTest):
             """
             Similar CNN to AlexNet.
             """
-            import cleverhans_tutorials.tutorial_models as t_models
-            layers = [t_models.Conv2D(96, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Conv2D(256, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Conv2D(384, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Conv2D(384, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Conv2D(256, (3, 3), (2, 2), "VALID"),
-                      t_models.ReLU(),
-                      t_models.Flatten(),
-                      t_models.Linear(4096),
-                      t_models.ReLU(),
-                      t_models.Linear(4096),
-                      t_models.ReLU(),
-                      t_models.Linear(1000),
-                      t_models.Softmax()]
-            layers[-3].name = 'fc7'
 
-            model = t_models.MLP(layers, input_shape)
-            return model
+            class ModelImageNetCNN(Model):
+                def __init__(self, scope, nb_classes=1000, **kwargs):
+                    del kwargs
+                    Model.__init__(self, scope, nb_classes, locals())
+
+                def fprop(self, x, **kwargs):
+                    del kwargs
+                    my_conv = functools.partial(tf.layers.conv2d,
+                                                kernel_size=3,
+                                                strides=2,
+                                                padding='valid',
+                                                activation=tf.nn.relu,
+                                                kernel_initializer=HeReLuNormalInitializer)
+                    my_dense = functools.partial(tf.layers.dense,
+                                                 kernel_initializer=HeReLuNormalInitializer)
+                    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+                        for depth in [96, 256, 384, 384, 256]:
+                            x = my_conv(x, depth)
+                        y = tf.layers.flatten(x)
+                        y = my_dense(y, 4096, tf.nn.relu)
+                        y = fc7 = my_dense(y, 4096, tf.nn.relu)
+                        y = my_dense(y, 1000)
+                        return {'fc7': fc7,
+                                self.O_LOGITS: y,
+                                self.O_PROBS: tf.nn.softmax(logits=y)}
+
+            return ModelImageNetCNN('imagenet')
 
         self.input_shape = [10, 224, 224, 3]
         self.sess = tf.Session()
@@ -837,7 +897,7 @@ class TestFastFeatureAdversaries(CleverHansTest):
         print("d_ag/d_sg*100 `%s`: %.4f" % (layer, d_ag*100/d_sg))
         self.assertTrue(d_ag*100/d_sg < 50.)
 
-
+        
 class TestLogitSpaceProjectedGradientAscent(CleverHansTest):
     def setUp(self):
         super(TestLogitSpaceProjectedGradientAscent, self).setUp()
@@ -861,6 +921,70 @@ class TestLogitSpaceProjectedGradientAscent(CleverHansTest):
         diff = tf.norm(tf.abs(x_adv - x_t), ord=np.inf)
         tol = 1e-1
         self.assertTrue(np.all(np.less_equal(self.sess.run(diff), eps + tol)))
+
+        
+class TestLBFGS(CleverHansTest):
+    def setUp(self):
+        super(TestLBFGS, self).setUp()
+
+        self.sess = tf.Session()
+        self.model = SimpleModel()
+        self.attack = LBFGS(self.model, sess=self.sess)
+
+    def test_generate_np_targeted_gives_adversarial_example(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        feed_labs = np.zeros((100, 2))
+        feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
+        x_adv = self.attack.generate_np(x_val, max_iterations=100,
+                                        binary_search_steps=3,
+                                        initial_const=1,
+                                        clip_min=-5, clip_max=5,
+                                        batch_size=100, y_target=feed_labs)
+
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+        self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs)
+                        > 0.9)
+
+    def test_generate_targeted_gives_adversarial_example(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        feed_labs = np.zeros((100, 2))
+        feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
+        x = tf.placeholder(tf.float32, x_val.shape)
+        y = tf.placeholder(tf.float32, feed_labs.shape)
+
+        x_adv_p = self.attack.generate(x, max_iterations=100,
+                                       binary_search_steps=3,
+                                       initial_const=1,
+                                       clip_min=-5, clip_max=5,
+                                       batch_size=100, y_target=y)
+        self.assertEqual(x_val.shape, x_adv_p.shape)
+        x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
+
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+
+        self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs)
+                        > 0.9)
+
+    def test_generate_np_gives_clipped_adversarial_examples(self):
+        x_val = np.random.rand(100, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        feed_labs = np.zeros((100, 2))
+        feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
+        x_adv = self.attack.generate_np(x_val, max_iterations=10,
+                                        binary_search_steps=1,
+                                        initial_const=1,
+                                        clip_min=-0.2, clip_max=0.3,
+                                        batch_size=100, y_target=feed_labs)
+
+        self.assertTrue(-0.201 < np.min(x_adv))
+        self.assertTrue(np.max(x_adv) < .301)
+
 
 if __name__ == '__main__':
     unittest.main()

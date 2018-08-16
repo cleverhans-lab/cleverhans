@@ -12,9 +12,9 @@ import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
 
-from cleverhans.attacks import fgsm
+from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils_keras import cnn_model
-from cleverhans.utils_tf import model_train, model_eval, batch_eval
+from cleverhans.utils_tf import train, model_eval, batch_eval
 
 FLAGS = flags.FLAGS
 
@@ -113,11 +113,12 @@ def main(argv=None):
         'batch_size': FLAGS.batch_size,
         'learning_rate': FLAGS.learning_rate
     }
-    model_train(sess, x, y, predictions, X_train, Y_train,
-                evaluate=evaluate, args=train_params)
+    train(sess, x, y, predictions, X_train, Y_train,
+          evaluate=evaluate, args=train_params)
 
     # Craft adversarial examples using Fast Gradient Sign Method (FGSM)
-    adv_x = fgsm(x, predictions, eps=0.3)
+    fgsm = FastGradientMethod(model)
+    adv_x = fgsm.generate(x, eps=0.3)
     eval_params = {'batch_size': FLAGS.batch_size}
     X_test_adv, = batch_eval(sess, [x], [adv_x], [X_test], args=eval_params)
     assert X_test_adv.shape[0] == 10000, X_test_adv.shape
@@ -131,7 +132,8 @@ def main(argv=None):
     # Redefine TF model graph
     model_2 = cnn_model(img_rows=32, img_cols=32, channels=3)
     predictions_2 = model_2(x)
-    adv_x_2 = fgsm(x, predictions_2, eps=0.3)
+    fgsm_2 = FastGradientMethod(model_2)
+    adv_x_2 = fgsm_2.generate(x, eps=0.3)
     predictions_2_adv = model_2(adv_x_2)
 
     def evaluate_2():
@@ -149,9 +151,9 @@ def main(argv=None):
         print('Test accuracy on adversarial examples: ' + str(accuracy_adv))
 
     # Perform adversarial training
-    model_train(sess, x, y, predictions_2, X_train, Y_train,
-                predictions_adv=predictions_2_adv, evaluate=evaluate_2,
-                args=train_params)
+    train(sess, x, y, predictions_2, X_train, Y_train,
+          predictions_adv=predictions_2_adv, evaluate=evaluate_2,
+          args=train_params)
 
     # Evaluate the accuracy of the CIFAR10 model on adversarial examples
     accuracy = model_eval(sess, x, y, predictions_2_adv, X_test, Y_test,

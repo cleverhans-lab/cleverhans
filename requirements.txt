@@ -1,5 +1,0 @@
-nose
-pycodestyle
-scipy
-tensorflow
-matplotlib

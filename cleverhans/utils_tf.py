@@ -11,10 +11,12 @@ from six.moves import xrange
 import tensorflow as tf
 import time
 import warnings
-import logging
 
 from .utils import batch_indices, _ArgsWrapper, create_logger
-from .utils import set_log_level, get_log_level
+from cleverhans.compat import reduce_sum, reduce_mean
+from cleverhans.compat import reduce_max, reduce_min
+from cleverhans.compat import reduce_any
+from cleverhans.compat import softmax_cross_entropy_with_logits
 
 _logger = create_logger("cleverhans.utils.tf")
 
@@ -29,17 +31,17 @@ def model_loss(y, model, mean=True):
     :return: return mean of loss if True, otherwise return vector with per
              sample loss
     """
-
+    warnings.warn('This function is deprecated.', DeprecationWarning)
     op = model.op
-    if "softmax" in str(op).lower():
+    if op.type == "Softmax":
         logits, = op.inputs
     else:
         logits = model
 
-    out = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
+    out = softmax_cross_entropy_with_logits(logits=logits, labels=y)
 
     if mean:
-        out = tf.reduce_mean(out)
+        out = reduce_mean(out)
     return out
 
 
@@ -66,26 +68,23 @@ def initialize_uninitialized_global_variables(sess):
         sess.run(tf.variables_initializer(not_initialized_vars))
 
 
-def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
-                predictions_adv=None, init_all=True, evaluate=None,
-                verbose=True, feed=None, args=None, rng=None):
+def train(sess, loss, x, y, X_train, Y_train, save=False,
+          init_all=True, evaluate=None, feed=None, args=None,
+          rng=None, var_list=None, fprop_args=None, optimizer=None):
     """
     Train a TF graph
     :param sess: TF session to use when training the graph
+    :param loss: tensor, the model training loss.
     :param x: input placeholder
     :param y: output placeholder (for labels)
-    :param predictions: model output predictions
     :param X_train: numpy array with training inputs
     :param Y_train: numpy array with training outputs
     :param save: boolean controlling the save operation
-    :param predictions_adv: if set with the adversarial example tensor,
-                            will run adversarial training
     :param init_all: (boolean) If set to true, all TF variables in the session
                      are (re)initialized, otherwise only previously
                      uninitialized variables are initialized before training.
     :param evaluate: function that is run after each training iteration
                      (typically to display the test/validation accuracy).
-    :param verbose: (boolean) all print statements disabled when set to False.
     :param feed: An optional dictionary that is appended to the feeding
                  dictionary before the session runs. Can be used to feed
                  the learning phase of a Keras model for instance.
@@ -95,9 +94,13 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                  If save is True, should also contain 'train_dir'
                  and 'filename'
     :param rng: Instance of numpy.random.RandomState
+    :param var_list: Optional list of parameters to train.
+    :param fprop_args: dict, extra arguments to pass to fprop (loss and model).
+    :param optimizer: Optimizer to be used for training
     :return: True if model trained
     """
     args = _ArgsWrapper(args or {})
+    fprop_args = fprop_args or {}
 
     # Check that necessary arguments were given (see doc above)
     assert args.nb_epochs, "Number of epochs was not given in args dict"
@@ -108,24 +111,20 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         assert args.train_dir, "Directory for save was not given in args dict"
         assert args.filename, "Filename for save was not given in args dict"
 
-    if not verbose:
-        old_log_level = get_log_level(name=_logger.name)
-        set_log_level(logging.WARNING, name=_logger.name)
-        warnings.warn("verbose argument is deprecated and will be removed"
-                      " on 2018-02-11. Instead, use utils.set_log_level()."
-                      " For backward compatibility, log_level was set to"
-                      " logging.WARNING (30).")
-
     if rng is None:
         rng = np.random.RandomState()
 
-    # Define loss
-    loss = model_loss(y, predictions)
-    if predictions_adv is not None:
-        loss = (loss + model_loss(y, predictions_adv)) / 2
-
-    train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
-    train_step = train_step.minimize(loss)
+    # Define optimizer
+    loss_value = loss.fprop(x, y, **fprop_args)
+    if optimizer is None:
+        optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    else:
+        if not isinstance(optimizer, tf.train.Optimizer):
+            raise ValueError("optimizer object must be from a child class of "
+                             "tf.train.Optimizer")
+    # Trigger update operations within the default graph (such as batch_norm).
+    with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+        train_step = optimizer.minimize(loss_value, var_list=var_list)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
@@ -162,9 +161,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                 train_step.run(feed_dict=feed_dict)
             assert end >= len(X_train)  # Check that all examples were used
             cur = time.time()
-            if verbose:
-                _logger.info("Epoch " + str(epoch) + " took " +
-                             str(cur - prev) + " seconds")
+            _logger.info("Epoch " + str(epoch) + " took " +
+                         str(cur - prev) + " seconds")
             if evaluate is not None:
                 evaluate()
 
@@ -176,9 +174,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
                          str(save_path))
         else:
             _logger.info("Completed model training.")
-
-    if not verbose:
-        set_log_level(old_log_level, name=_logger.name)
 
     return True
 
@@ -270,10 +265,8 @@ def tf_model_load(sess, file_path=None):
     with sess.as_default():
         saver = tf.train.Saver()
         if file_path is None:
-            warnings.warn("Please provide file_path argument, "
-                          "support for FLAGS.train_dir and FLAGS.filename "
-                          "will be removed on 2018-04-23.")
-            file_path = os.path.join(FLAGS.train_dir, FLAGS.filename)
+            error = 'file_path argument is missing.'
+            raise ValueError(error)
         saver.restore(sess, file_path)
 
     return True
@@ -371,8 +364,8 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
     with tf.name_scope(scope, "l2_batch_normalize") as scope:
         x_shape = tf.shape(x)
         x = tf.contrib.layers.flatten(x)
-        x /= (epsilon + tf.reduce_max(tf.abs(x), 1, keep_dims=True))
-        square_sum = tf.reduce_sum(tf.square(x), 1, keep_dims=True)
+        x /= (epsilon + reduce_max(tf.abs(x), 1, keepdims=True))
+        square_sum = reduce_sum(tf.square(x), 1, keepdims=True)
         x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
         x_norm = tf.multiply(x, x_inv_norm)
         return tf.reshape(x_norm, x_shape, scope)
@@ -386,8 +379,8 @@ def kl_with_logits(p_logits, q_logits, scope=None,
         p = tf.nn.softmax(p_logits)
         p_log = tf.nn.log_softmax(p_logits)
         q_log = tf.nn.log_softmax(q_logits)
-        loss = tf.reduce_mean(tf.reduce_sum(p * (p_log - q_log), axis=1),
-                              name=name)
+        loss = reduce_mean(reduce_sum(p * (p_log - q_log), axis=1),
+                           name=name)
         tf.losses.add_loss(loss, loss_collection)
         return loss
 
@@ -411,17 +404,123 @@ def clip_eta(eta, ord, eps):
     else:
         if ord == 1:
             norm = tf.maximum(avoid_zero_div,
-                              tf.reduce_sum(tf.abs(eta),
-                                            reduc_ind, keep_dims=True))
+                              reduce_sum(tf.abs(eta),
+                                         reduc_ind, keepdims=True))
         elif ord == 2:
             # avoid_zero_div must go inside sqrt to avoid a divide by zero
             # in the gradient through this operation
             norm = tf.sqrt(tf.maximum(avoid_zero_div,
-                                      tf.reduce_sum(tf.square(eta),
-                                                    reduc_ind,
-                                                    keep_dims=True)))
+                                      reduce_sum(tf.square(eta),
+                                                 reduc_ind,
+                                                 keepdims=True)))
         # We must *clip* to within the norm ball, not *normalize* onto the
         # surface of the ball
         factor = tf.minimum(1., eps / norm)
         eta = eta * factor
     return eta
+
+
+def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
+                predictions_adv=None, init_all=True, evaluate=None,
+                feed=None, args=None, rng=None, var_list=None):
+    """
+    Train a TF graph
+    :param sess: TF session to use when training the graph
+    :param x: input placeholder
+    :param y: output placeholder (for labels)
+    :param predictions: model output predictions
+    :param X_train: numpy array with training inputs
+    :param Y_train: numpy array with training outputs
+    :param save: boolean controlling the save operation
+    :param predictions_adv: if set with the adversarial example tensor,
+                            will run adversarial training
+    :param init_all: (boolean) If set to true, all TF variables in the session
+                     are (re)initialized, otherwise only previously
+                     uninitialized variables are initialized before training.
+    :param evaluate: function that is run after each training iteration
+                     (typically to display the test/validation accuracy).
+    :param feed: An optional dictionary that is appended to the feeding
+                 dictionary before the session runs. Can be used to feed
+                 the learning phase of a Keras model for instance.
+    :param args: dict or argparse `Namespace` object.
+                 Should contain `nb_epochs`, `learning_rate`,
+                 `batch_size`
+                 If save is True, should also contain 'train_dir'
+                 and 'filename'
+    :param rng: Instance of numpy.random.RandomState
+    :param var_list: Optional list of parameters to train.
+    :return: True if model trained
+    """
+    warnings.warn('This function is deprecated.', DeprecationWarning)
+    args = _ArgsWrapper(args or {})
+
+    # Check that necessary arguments were given (see doc above)
+    assert args.nb_epochs, "Number of epochs was not given in args dict"
+    assert args.learning_rate, "Learning rate was not given in args dict"
+    assert args.batch_size, "Batch size was not given in args dict"
+
+    if save:
+        assert args.train_dir, "Directory for save was not given in args dict"
+        assert args.filename, "Filename for save was not given in args dict"
+
+    if rng is None:
+        rng = np.random.RandomState()
+
+    # Define loss
+    loss = model_loss(y, predictions)
+    if predictions_adv is not None:
+        loss = (loss + model_loss(y, predictions_adv)) / 2
+
+    train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    train_step = train_step.minimize(loss, var_list=var_list)
+
+    with sess.as_default():
+        if hasattr(tf, "global_variables_initializer"):
+            if init_all:
+                tf.global_variables_initializer().run()
+            else:
+                initialize_uninitialized_global_variables(sess)
+        else:
+            warnings.warn("Update your copy of tensorflow; future versions of "
+                          "CleverHans may drop support for this version.")
+            sess.run(tf.initialize_all_variables())
+
+        for epoch in xrange(args.nb_epochs):
+            # Compute number of batches
+            nb_batches = int(math.ceil(float(len(X_train)) / args.batch_size))
+            assert nb_batches * args.batch_size >= len(X_train)
+
+            # Indices to shuffle training set
+            index_shuf = list(range(len(X_train)))
+            rng.shuffle(index_shuf)
+
+            prev = time.time()
+            for batch in range(nb_batches):
+
+                # Compute batch start and end indices
+                start, end = batch_indices(
+                    batch, len(X_train), args.batch_size)
+
+                # Perform one training step
+                feed_dict = {x: X_train[index_shuf[start:end]],
+                             y: Y_train[index_shuf[start:end]]}
+                if feed is not None:
+                    feed_dict.update(feed)
+                train_step.run(feed_dict=feed_dict)
+            assert end >= len(X_train)  # Check that all examples were used
+            cur = time.time()
+            _logger.info("Epoch " + str(epoch) + " took " +
+                         str(cur - prev) + " seconds")
+            if evaluate is not None:
+                evaluate()
+
+        if save:
+            save_path = os.path.join(args.train_dir, args.filename)
+            saver = tf.train.Saver()
+            saver.save(sess, save_path)
+            _logger.info("Completed model training and saved at: " +
+                         str(save_path))
+        else:
+            _logger.info("Completed model training.")
+
+    return True

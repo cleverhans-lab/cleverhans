@@ -1,14 +1,14 @@
 """
 Model construction utilities based on keras
 """
-from .model import Model
-
+import warnings
+from distutils.version import LooseVersion
 import keras
-from keras.utils import np_utils
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
 
-from distutils.version import LooseVersion
+from .model import Model, NoSuchLayerError
+
 if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
     from keras.layers import Conv2D
 else:
@@ -106,12 +106,12 @@ class KerasModelWrapper(Model):
     in-place operations can incur an overhead.
     """
 
-    def __init__(self, model=None):
+    def __init__(self, model):
         """
         Create a wrapper for a Keras model
         :param model: A Keras model
         """
-        super(KerasModelWrapper, self).__init__()
+        super(KerasModelWrapper, self).__init__(None, None, {})
 
         if model is None:
             raise ValueError('model argument must be supplied.')
@@ -138,7 +138,20 @@ class KerasModelWrapper(Model):
         """
         softmax_name = self._get_softmax_name()
         softmax_layer = self.model.get_layer(softmax_name)
-        node = softmax_layer.inbound_nodes[0]
+
+        if not isinstance(softmax_layer, Activation):
+            # In this case, the activation is part of another layer
+            return softmax_name
+
+        if hasattr(softmax_layer, 'inbound_nodes'):
+            warnings.warn(
+                "Please update your version to keras >= 2.1.3; "
+                "support for earlier keras versions will be dropped on "
+                "2018-07-22")
+            node = softmax_layer.inbound_nodes[0]
+        else:
+            node = softmax_layer._inbound_nodes[0]
+
         logits_name = node.inbound_layers[0].name
 
         return logits_name
@@ -149,8 +162,17 @@ class KerasModelWrapper(Model):
         :return: A symbolic representation of the logits
         """
         logits_name = self._get_logits_name()
+        logits_layer = self.get_layer(x, logits_name)
 
-        return self.get_layer(x, logits_name)
+        # Need to deal with the case where softmax is part of the
+        # logits layer
+        if logits_name == self._get_softmax_name():
+            softmax_logit_layer = self.get_layer(x, logits_name)
+
+            # The final op is the softmax. Return its input
+            logits_layer = softmax_logit_layer._op.inputs[0]
+
+        return logits_layer
 
     def get_probs(self, x):
         """
@@ -197,3 +219,19 @@ class KerasModelWrapper(Model):
         fprop_dict = dict(zip(self.get_layer_names(), outputs))
 
         return fprop_dict
+
+    def get_layer(self, x, layer):
+        """
+        Expose the hidden features of a model given a layer name.
+        :param x: A symbolic representation of the network input
+        :param layer: The name of the hidden layer to return features at.
+        :return: A symbolic representation of the hidden features
+        :raise: NoSuchLayerError if `layer` is not in the model.
+        """
+        # Return the symbolic representation for this layer.
+        output = self.fprop(x)
+        try:
+            requested = output[layer]
+        except KeyError:
+            raise NoSuchLayerError()
+        return requested

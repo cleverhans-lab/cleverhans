@@ -7,10 +7,7 @@ WORKDIR /root
 RUN pip3 install --no-cache-dir foolbox
 RUN pip3 install --no-cache-dir robust_vision_benchmark
 RUN pip3 install --no-cache-dir -e git+http://github.com/tensorflow/cleverhans.git#egg=cleverhans
-
-# install other python packages
-COPY requirements.txt requirements.txt
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install tensorflow
 
 # add your model script
 COPY main.py main.py

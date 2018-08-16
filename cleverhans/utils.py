@@ -101,6 +101,10 @@ def to_categorical(y, num_classes=None):
     y = np.array(y, dtype='int').ravel()
     if not num_classes:
         num_classes = np.max(y) + 1
+        warnings.warn("FutureWarning: the default value of the second"
+                      "argument in function \"to_categorical\" is deprecated."
+                      "On 2018-9-19, the second argument"
+                      "will become mandatory.")
     n = y.shape[0]
     categorical = np.zeros((n, num_classes))
     categorical[np.arange(n), y] = 1
@@ -156,6 +160,10 @@ def pair_visual(original, adversarial, figure=None):
     :return: the matplot figure to reuse for future samples
     """
     import matplotlib.pyplot as plt
+
+    # Squeeze the image to remove single-dimensional entries from array shape
+    original = np.squeeze(original)
+    adversarial = np.squeeze(adversarial)
 
     # Ensure our inputs are of proper shape
     assert(len(original.shape) == 2 or len(original.shape) == 3)
@@ -339,6 +347,28 @@ def get_log_level(name="cleverhans"):
     :param name: the name used for the cleverhans logger
     """
     return logging.getLogger(name).getEffectiveLevel()
+
+
+class TemporaryLogLevel(object):
+    """
+    A ContextManager that changes a log level temporarily.
+
+    Note that the log level will be set back to its original value when
+    the context manager exits, even if the log level has been changed
+    again in the meantime.
+    """
+
+    def __init__(self, level, name):
+        self.name = name
+        self.level = level
+
+    def __enter__(self):
+        self.old_level = get_log_level(self.name)
+        set_log_level(self.level, self.name)
+
+    def __exit__(self, type, value, traceback):
+        set_log_level(self.old_level, self.name)
+        return True
 
 
 def create_logger(name):
