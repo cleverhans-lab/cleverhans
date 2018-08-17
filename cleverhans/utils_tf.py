@@ -31,7 +31,7 @@ def model_loss(y, model, mean=True):
     :return: return mean of loss if True, otherwise return vector with per
              sample loss
     """
-    warnings.warn('This function is deprecated.', DeprecationWarning)
+    warnings.warn('This function is deprecated.')
     op = model.op
     if op.type == "Softmax":
         logits, = op.inputs
@@ -451,7 +451,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     :param var_list: Optional list of parameters to train.
     :return: True if model trained
     """
-    warnings.warn('This function is deprecated.', DeprecationWarning)
+    warnings.warn('This function is deprecated.')
     args = _ArgsWrapper(args or {})
 
     # Check that necessary arguments were given (see doc above)
