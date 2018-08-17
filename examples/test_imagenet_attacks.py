@@ -18,26 +18,26 @@ from __future__ import unicode_literals
 import csv
 import os
 import unittest
-import numpy as np
-from PIL import Image
-from six.moves import xrange
-import tensorflow as tf
-from tensorflow.contrib import slim
-from tensorflow.contrib.slim.nets import inception
 
-from cleverhans.utils import CLEVERHANS_ROOT
+import numpy as np
+import tensorflow as tf
+from PIL import Image
 from cleverhans.attacks import SPSA
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
-
+from cleverhans.utils import CLEVERHANS_ROOT
+from six.moves import xrange
+from tensorflow.contrib import slim
+from tensorflow.contrib.slim.nets import inception
 
 SETUP_INSTRUCTIONS = """
 $ ./examples/nips17_adversarial_competition/dev_toolkit/download_data.sh
 """
 
 DEFAULT_INCEPTION_PATH = os.path.join(CLEVERHANS_ROOT,
-    ('examples/nips17_adversarial_competition/dev_toolkit/sample_attacks/fgsm/'
-    'inception_v3.ckpt'))
+                                      (
+                                      'examples/nips17_adversarial_competition/dev_toolkit/sample_attacks/fgsm/'
+                                      'inception_v3.ckpt'))
 
 tf.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
@@ -50,14 +50,13 @@ tf.flags.DEFINE_string(
     'input_image_dir',
     os.path.join(CLEVERHANS_ROOT,
                  'examples/nips17_adversarial_competition/dataset/images'),
-                 'Path to image directory.')
+    'Path to image directory.')
 
 tf.flags.DEFINE_string(
     'metadata_file_path',
     os.path.join(CLEVERHANS_ROOT,
                  'examples/nips17_adversarial_competition/dataset/dev_dataset.csv'),
-                 'Path to metadata file.')
-
+    'Path to metadata file.')
 
 FLAGS = tf.flags.FLAGS
 
@@ -124,7 +123,6 @@ def _top_1_accuracy(logits, labels):
 
 
 class TestInception(CleverHansTest):
-
     def test_clean_accuracy(self):
         """Check model is accurate on unperturbed images."""
         input_dir = FLAGS.input_image_dir
@@ -161,7 +159,6 @@ class TestInception(CleverHansTest):
 
 
 class TestSPSA(CleverHansTest):
-
     def test_attack_bounds(self):
         """Check SPSA respects perturbation limits."""
         epsilon = 4. / 255
