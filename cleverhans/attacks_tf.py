@@ -549,19 +549,19 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
         # Subtract 2 times the maximum value from those value so that
         # they won't be picked later
         increase_coef = (4 * int(increase) - 2) \
-            * tf.cast(tf.equal(domain_in, 0), tf_dtype)
+                        * tf.cast(tf.equal(domain_in, 0), tf_dtype)
 
         target_tmp = grads_target
         target_tmp -= increase_coef \
-            * reduce_max(tf.abs(grads_target), axis=1, keepdims=True)
+                      * reduce_max(tf.abs(grads_target), axis=1, keepdims=True)
         target_sum = tf.reshape(target_tmp, shape=[-1, nb_features, 1]) \
-            + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
+                     + tf.reshape(target_tmp, shape=[-1, 1, nb_features])
 
         other_tmp = grads_other
         other_tmp += increase_coef \
-            * reduce_max(tf.abs(grads_other), axis=1, keepdims=True)
+                     * reduce_max(tf.abs(grads_other), axis=1, keepdims=True)
         other_sum = tf.reshape(other_tmp, shape=[-1, nb_features, 1]) \
-            + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
+                    + tf.reshape(other_tmp, shape=[-1, 1, nb_features])
 
         # Create a mask to only keep features that match conditions
         if increase:
@@ -571,7 +571,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
         # Create a 2D numpy array of scores for each pair of candidate features
         scores = tf.cast(scores_mask, tf_dtype) \
-            * (-target_sum * other_sum) * zero_diagonal
+                 * (-target_sum * other_sum) * zero_diagonal
 
         # Extract the best two pixels
         best = tf.argmax(
@@ -765,7 +765,7 @@ class CarliniWagnerL2(object):
 
         # distance to the input data
         self.other = (tf.tanh(self.timg) + 1) / \
-            2 * (clip_max - clip_min) + clip_min
+                     2 * (clip_max - clip_min) + clip_min
         self.l2dist = reduce_sum(
             tf.square(self.newimg - self.other), list(range(1, len(shape))))
 
@@ -893,12 +893,14 @@ class CarliniWagnerL2(object):
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
                     _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
                                    "l2={:.3g} f={:.3g}").format(
-                                       iteration, self.MAX_ITERATIONS, l,
-                                       np.mean(l2s), np.mean(scores)))
+                        iteration, self.MAX_ITERATIONS, l,
+                        np.mean(l2s), np.mean(scores)))
 
                 # check if we should abort search if we're getting nowhere.
                 if self.ABORT_EARLY and \
-                   iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
+                                        iteration % (
+                                            (
+                                                self.MAX_ITERATIONS // 10) or 1) == 0:
                     if l > prev * .9999:
                         msg = "    Failed to make progress; stop early"
                         _logger.debug(msg)
@@ -919,7 +921,7 @@ class CarliniWagnerL2(object):
             # adjust the constant as needed
             for e in range(batch_size):
                 if compare(bestscore[e], np.argmax(batchlab[e])) and \
-                   bestscore[e] != -1:
+                                bestscore[e] != -1:
                     # success, divide const by two
                     upper_bound[e] = min(upper_bound[e], CONST[e])
                     if upper_bound[e] < 1e9:
@@ -1083,13 +1085,13 @@ class ElasticNetMethod(object):
         self.output_y = model.get_logits(self.slack)
 
         # distance to the input data
-        self.l2dist = reduce_sum(tf.square(self.newimg-self.timg),
+        self.l2dist = reduce_sum(tf.square(self.newimg - self.timg),
                                  list(range(1, len(shape))))
-        self.l2dist_y = reduce_sum(tf.square(self.slack-self.timg),
+        self.l2dist_y = reduce_sum(tf.square(self.slack - self.timg),
                                    list(range(1, len(shape))))
-        self.l1dist = reduce_sum(tf.abs(self.newimg-self.timg),
+        self.l1dist = reduce_sum(tf.abs(self.newimg - self.timg),
                                  list(range(1, len(shape))))
-        self.l1dist_y = reduce_sum(tf.abs(self.slack-self.timg),
+        self.l1dist_y = reduce_sum(tf.abs(self.slack - self.timg),
                                    list(range(1, len(shape))))
         self.elasticdist = self.l2dist + tf.multiply(self.l1dist,
                                                      self.beta_t)
@@ -1127,7 +1129,8 @@ class ElasticNetMethod(object):
         self.loss1 = reduce_sum(self.const * loss1)
         self.loss1_y = reduce_sum(self.const * loss1_y)
         self.loss_opt = self.loss1_y + self.loss2_y
-        self.loss = self.loss1+self.loss2+tf.multiply(self.beta_t, self.loss21)
+        self.loss = self.loss1 + self.loss2 + tf.multiply(self.beta_t,
+                                                          self.loss21)
 
         self.learning_rate = tf.train.polynomial_decay(
             self.LEARNING_RATE,
@@ -1151,7 +1154,7 @@ class ElasticNetMethod(object):
         self.setup.append(self.tlab.assign(self.assign_tlab))
         self.setup.append(self.const.assign(self.assign_const))
 
-        var_list = [self.global_step]+[self.slack]+[self.newimg]+new_vars
+        var_list = [self.global_step] + [self.slack] + [self.newimg] + new_vars
         self.init = tf.variables_initializer(var_list=var_list)
 
     def attack(self, imgs, targets):
@@ -1177,8 +1180,8 @@ class ElasticNetMethod(object):
             _logger.debug(
                 ("Running EAD attack on instance " + "{} of {}").format(
                     last_elements, len(imgs)))
-            temp_imgs = np.zeros((batch_size, ) + imgs.shape[2:])
-            temp_targets = np.zeros((batch_size, ) + targets.shape[2:])
+            temp_imgs = np.zeros((batch_size,) + imgs.shape[2:])
+            temp_targets = np.zeros((batch_size,) + targets.shape[2:])
             temp_imgs[:(len(imgs) % batch_size)] = imgs[last_elements:]
             temp_targets[:(len(imgs) % batch_size)] = targets[last_elements:]
             temp_data = self.attack_batch(temp_imgs, temp_targets)
@@ -1256,13 +1259,15 @@ class ElasticNetMethod(object):
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
                     _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
                                    "l2={:.3g} l1={:.3g} f={:.3g}").format(
-                                       iteration, self.MAX_ITERATIONS, l,
-                                       np.mean(l2s), np.mean(l1s),
-                                       np.mean(scores)))
+                        iteration, self.MAX_ITERATIONS, l,
+                        np.mean(l2s), np.mean(l1s),
+                        np.mean(scores)))
 
                 # check if we should abort search if we're getting nowhere.
                 if self.ABORT_EARLY and \
-                   iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
+                                        iteration % (
+                                            (
+                                                self.MAX_ITERATIONS // 10) or 1) == 0:
                     if l > prev * .9999:
                         msg = "    Failed to make progress; stop early"
                         _logger.debug(msg)
@@ -1283,7 +1288,7 @@ class ElasticNetMethod(object):
             # adjust the constant as needed
             for e in range(batch_size):
                 if compare(bestscore[e], np.argmax(batchlab[e])) and \
-                   bestscore[e] != -1:
+                                bestscore[e] != -1:
                     # success, divide const by two
                     upper_bound[e] = min(upper_bound[e], CONST[e])
                     if upper_bound[e] < 1e9:
@@ -1566,7 +1571,7 @@ class LBFGS_attack(object):
 
             adv_x = adv_x.reshape(oimgs.shape)
             assert np.amax(adv_x) <= self.clip_max and \
-                np.amin(adv_x) >= self.clip_min, \
+                   np.amin(adv_x) >= self.clip_min, \
                 'fmin_l_bfgs_b returns are invalid'
 
             # adjust the best result (i.e., the adversarial example with the
@@ -1837,10 +1842,12 @@ def pgd_attack(loss_fn,
     a single sess.run() call.
     """
     assertions = []
-    assertions.append(tf.assert_less_equal(input_image, 1.0,
-                         message="Input image must have a maximum of 1.0"))
-    assertions.append(tf.assert_greater_equal(input_image, 0.0,
-                         message="Input image must have a minimum of 0.0"))
+    assertions.append(tf.assert_less_equal(
+        input_image, 1.0,
+        message="Input image must have a maximum of 1.0"))
+    assertions.append(tf.assert_greater_equal(
+        input_image, 0.0,
+        message="Input image must have a minimum of 0.0"))
 
     init_perturbation = tf.random_uniform(
         tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
@@ -1886,7 +1893,7 @@ def pgd_attack(loss_fn,
     if project_perturbation == _project_perturbation:
         perturbation_max = epsilon * 1.1
         check_diff = tf.assert_less_equal(
-            final_perturbation,perturbation_max,
+            final_perturbation, perturbation_max,
             message="final_perturbation must change no pixel by more than "
                     "%s" % perturbation_max)
         assertions.append(check_diff)
