@@ -1218,7 +1218,7 @@ class DeepFool(Attack):
         # Define graph wrt to this input placeholder
         logits = self.model.get_logits(x)
         self.nb_classes = logits.get_shape().as_list()[-1]
-        assert self.nb_candidate <= self.nb_classes,\
+        assert self.nb_candidate <= self.nb_classes, \
             'nb_candidate should not be greater than nb_classes'
         preds = tf.reshape(
             tf.nn.top_k(logits, k=self.nb_candidate)[0],
@@ -1340,7 +1340,6 @@ class LBFGS(Attack):
                      initial_const=1e-2,
                      clip_min=0,
                      clip_max=1):
-
         self.y_target = y_target
         self.batch_size = batch_size
         self.binary_search_steps = binary_search_steps
