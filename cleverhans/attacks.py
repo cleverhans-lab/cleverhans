@@ -1765,7 +1765,7 @@ class SPSA(Attack):
                                           is below `early_stop_loss_threshold`.
         :param learning_rate: Learning rate of ADAM optimizer.
         :param delta: Perturbation size used for SPSA approximation.
-        :param spsa_samples: Number of inputs to evaluate at a single time. 
+        :param spsa_samples: Number of inputs to evaluate at a single time.
                            The true batch size (the number of evaluated
                            inputs for each update) is `spsa_samples *
                            spsa_iters`
