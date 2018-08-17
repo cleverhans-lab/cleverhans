@@ -1838,9 +1838,9 @@ def pgd_attack(loss_fn,
     """
     assertions = []
     assertions.append(tf.assert_less_equal(input_image, 1.0,
-                         message="Input image must have a maximum of 1.0"))
+                      message="Input image must have a maximum of 1.0"))
     assertions.append(tf.assert_greater_equal(input_image, 0.0,
-                         message="Input image must have a minimum of 0.0"))
+                      message="Input image must have a minimum of 0.0"))
 
     init_perturbation = tf.random_uniform(
         tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
@@ -1886,7 +1886,7 @@ def pgd_attack(loss_fn,
     if project_perturbation == _project_perturbation:
         perturbation_max = epsilon * 1.1
         check_diff = tf.assert_less_equal(
-            final_perturbation,perturbation_max,
+            final_perturbation, perturbation_max,
             message="final_perturbation must change no pixel by more than "
                     "%s" % perturbation_max)
         assertions.append(check_diff)
