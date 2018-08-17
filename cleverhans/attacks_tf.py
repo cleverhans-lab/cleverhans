@@ -1793,9 +1793,16 @@ class SPSAAdam(UnrolledAdam):
 
 def _project_perturbation(perturbation, epsilon, input_image):
     """Project `perturbation` onto L-infinity ball of radius `epsilon`."""
-    clipped_perturbation = tf.clip_by_value(perturbation, -epsilon, epsilon)
-    new_image = tf.clip_by_value(input_image + clipped_perturbation, 0., 1.)
-    return new_image - input_image
+    # Ensure inputs are in the correct range
+    with tf.control_dependencies([
+        tf.assert_less_equal(input_image, 1.0),
+        tf.assert_greater_equal(input_image, 0.0)
+    ]):
+        clipped_perturbation = tf.clip_by_value(
+            perturbation, -epsilon, epsilon)
+        new_image = tf.clip_by_value(
+            input_image + clipped_perturbation, 0., 1.)
+        return new_image - input_image
 
 
 def pgd_attack(loss_fn,
@@ -1836,12 +1843,6 @@ def pgd_attack(loss_fn,
     methods. The method uses a tf.while_loop to optimize a loss function in
     a single sess.run() call.
     """
-    assertions = []
-    assertions.append(tf.assert_less_equal(input_image, 1.0,
-                      message="Input image must have a maximum of 1.0"))
-    assertions.append(tf.assert_greater_equal(input_image, 0.0,
-                      message="Input image must have a minimum of 0.0"))
-
     init_perturbation = tf.random_uniform(
         tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
     init_perturbation = project_perturbation(init_perturbation, epsilon,
@@ -1889,8 +1890,10 @@ def pgd_attack(loss_fn,
             final_perturbation, perturbation_max,
             message="final_perturbation must change no pixel by more than "
                     "%s" % perturbation_max)
-        assertions.append(check_diff)
-    with tf.control_dependencies(assertions):
+    else:
+        check_diff = tf.no_op()
+
+    with tf.control_dependencies([check_diff]):
         adversarial_image = input_image + final_perturbation
     return tf.stop_gradient(adversarial_image)
 
