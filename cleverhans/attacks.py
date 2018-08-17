@@ -1746,6 +1746,7 @@ class SPSA(Attack):
                  learning_rate=0.01,
                  delta=0.01,
                  spsa_samples=128,
+                 batch_size=None,
                  spsa_iters=1,
                  is_debug=False):
         """
@@ -1768,12 +1769,20 @@ class SPSA(Attack):
                            that the true batch size (the number of evaluated
                            inputs for each update) is `spsa_samples *
                            spsa_iters`
+        :param batch_size: Deprecated param that is an alias for spsa_samples
         :param spsa_iters: Number of model evaluations before performing an
                            update, where each evaluation is on `spsa_samples`
                            different inputs.
         :param is_debug: If True, print the adversarial loss after each update.
         """
         from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
+
+        if batch_size is not None:
+            warnings.warn(
+                'The "batch_size" argument to SPSA is deprecated, and will '
+                'be removed on March 17th 2019. '
+                'Please use spsa_samples instead.', DeprecationWarning)
+            spsa_samples = batch_size
 
         optimizer = SPSAAdam(
             lr=learning_rate,
