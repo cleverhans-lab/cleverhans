@@ -1776,12 +1776,11 @@ class SPSA(Attack):
         :param is_debug: If True, print the adversarial loss after each update.
         """
         from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
-
         if batch_size is not None:
             warnings.warn(
                 'The "batch_size" argument to SPSA is deprecated, and will '
                 'be removed on March 17th 2019. '
-                'Please use spsa_samples instead.', DeprecationWarning)
+                'Please use spsa_samples instead.')
             spsa_samples = batch_size
 
         optimizer = SPSAAdam(
