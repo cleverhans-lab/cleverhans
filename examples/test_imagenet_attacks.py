@@ -5,16 +5,8 @@ as well as image data. The easiest way to provide these is using the data from
 cleverhans/examples/nips17_adversarial_competition, and then the default flag
 values will just work.
 
-Setup:
-$ cd cleverhans/examples/nips17_adversarial_competition
-$ mkdir images
-$ python download_images.py
-$ cd sample_attacks
-$ ./download_checkpoints.sh
+Setup: see SETUP_INSTRUCTIONS
 """
-
-# pylint: disable=bad-indentation
-# pylint: disable=g-bad-import-order
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,19 +15,26 @@ from __future__ import unicode_literals
 import csv
 import os
 import unittest
-import numpy as np
-from PIL import Image
-import tensorflow as tf
-from tensorflow.contrib import slim
-from tensorflow.contrib.slim.nets import inception
 
+import numpy as np
+import tensorflow as tf
+from PIL import Image
 from cleverhans.attacks import SPSA
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
+from cleverhans.utils import CLEVERHANS_ROOT
+from six.moves import xrange
+from tensorflow.contrib import slim
+from tensorflow.contrib.slim.nets import inception
 
-DEFAULT_INCEPTION_PATH = (
-    '../examples/nips17_adversarial_competition/sample_attacks/fgsm/'
-    'inception_v3.ckpt')
+SETUP_INSTRUCTIONS = """
+$ ./examples/nips17_adversarial_competition/dev_toolkit/download_data.sh
+"""
+
+DEFAULT_INCEPTION_PATH = os.path.join(
+    CLEVERHANS_ROOT,
+    ('examples/nips17_adversarial_competition/dev_toolkit/sample_attacks/fgsm/'
+     'inception_v3.ckpt'))
 
 tf.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
@@ -46,12 +45,15 @@ tf.flags.DEFINE_string(
 
 tf.flags.DEFINE_string(
     'input_image_dir',
-    '../examples/nips17_adversarial_competition/dataset/images',
+    os.path.join(CLEVERHANS_ROOT,
+                 'examples/nips17_adversarial_competition/dataset/images'),
     'Path to image directory.')
 
 tf.flags.DEFINE_string(
     'metadata_file_path',
-    '../examples/nips17_adversarial_competition/dataset/dev_dataset.csv',
+    os.path.join(
+        CLEVERHANS_ROOT,
+        'examples/nips17_adversarial_competition/dataset/dev_dataset.csv'),
     'Path to metadata file.')
 
 FLAGS = tf.flags.FLAGS
@@ -73,7 +75,7 @@ def load_images(input_dir, metadata_file_path, batch_shape):
         row = rows[idx]
         filepath = os.path.join(input_dir, row[row_idx_image_id] + '.png')
 
-        with tf.gfile.Open(filepath) as f:
+        with tf.gfile.Open(filepath, 'rb') as f:
             image = np.array(
                 Image.open(f).convert('RGB')).astype(np.float) / 255.0
         images[idx, :, :, :] = image
@@ -84,8 +86,8 @@ def load_images(input_dir, metadata_file_path, batch_shape):
 class InceptionModel(Model):
     """Model class for CleverHans library."""
 
-    def __init__(self, num_classes):
-        self.num_classes = num_classes
+    def __init__(self, nb_classes):
+        self.nb_classes = nb_classes
         self.built = False
 
     def __call__(self, x_input, return_logits=False):
@@ -95,7 +97,7 @@ class InceptionModel(Model):
             # Inception preprocessing uses [-1, 1]-scaled input.
             x_input = x_input * 2.0 - 1.0
             _, end_points = inception.inception_v3(
-                x_input, num_classes=self.num_classes, is_training=False,
+                x_input, num_classes=self.nb_classes, is_training=False,
                 reuse=reuse)
         self.built = True
         self.logits = end_points['Logits']
@@ -119,7 +121,6 @@ def _top_1_accuracy(logits, labels):
 
 
 class TestInception(CleverHansTest):
-
     def test_clean_accuracy(self):
         """Check model is accurate on unperturbed images."""
         input_dir = FLAGS.input_image_dir
@@ -141,6 +142,7 @@ class TestInception(CleverHansTest):
 
             # Run computation
             saver = tf.train.Saver(slim.get_model_variables())
+
             session_creator = tf.train.ChiefSessionCreator(
                 scaffold=tf.train.Scaffold(saver=saver),
                 checkpoint_filename_with_path=FLAGS.checkpoint_path,
@@ -155,7 +157,6 @@ class TestInception(CleverHansTest):
 
 
 class TestSPSA(CleverHansTest):
-
     def test_attack_bounds(self):
         """Check SPSA respects perturbation limits."""
         epsilon = 4. / 255
