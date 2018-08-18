@@ -11,7 +11,7 @@ import unittest
 import numpy as np
 
 from cleverhans.devtools.checks import CleverHansTest
-from cleverhans.attacks import Attack
+from cleverhans.attacks import Attack, SPSA
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import MomentumIterativeMethod
@@ -257,6 +257,47 @@ class TestFastGradientMethod(CleverHansTest):
                                 xi=1e-5)
 
         tf.gradients = old_grads
+
+
+class TestSPSA(CleverHansTest):
+    def setUp(self):
+        super(TestSPSA, self).setUp()
+
+        self.sess = tf.Session()
+        self.model = SimpleModel()
+        self.attack = SPSA(self.model, sess=self.sess)
+
+    def test_attack_strength(self):
+        # This uses the existing input structure for SPSA. Tom tried for ~40
+        # minutes to get generate_np to work correctly but could not.
+
+        n_samples = 10
+        x_val = np.random.rand(n_samples, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        # The SPSA attack currently uses non-one-hot labels
+        # TODO: change this to use standard cleverhans label conventions
+        feed_labs = np.random.randint(0, 2, n_samples)
+
+        x_input = tf.placeholder(tf.float32, shape=(1,2))
+        y_label = tf.placeholder(tf.int32, shape=(1,))
+
+        x_adv_op = self.attack.generate(
+            x_input, y=y_label,
+            epsilon=.5, num_steps=100, batch_size=64, spsa_iters=1,
+        )
+
+        all_x_adv = []
+        for i in range(n_samples):
+            x_adv_np = self.sess.run(x_adv_op, feed_dict={
+                            x_input: np.expand_dims(x_val[i], axis=0),
+                             y_label: np.expand_dims(feed_labs[i], axis=0),
+            })
+            all_x_adv.append(x_adv_np[0])
+
+        x_adv = np.vstack(all_x_adv)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
 
 
 class TestBasicIterativeMethod(TestFastGradientMethod):
