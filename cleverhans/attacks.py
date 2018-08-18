@@ -1218,7 +1218,7 @@ class DeepFool(Attack):
         # Define graph wrt to this input placeholder
         logits = self.model.get_logits(x)
         self.nb_classes = logits.get_shape().as_list()[-1]
-        assert self.nb_candidate <= self.nb_classes,\
+        assert self.nb_candidate <= self.nb_classes, \
             'nb_candidate should not be greater than nb_classes'
         preds = tf.reshape(
             tf.nn.top_k(logits, k=self.nb_candidate)[0],
@@ -1340,7 +1340,6 @@ class LBFGS(Attack):
                      initial_const=1e-2,
                      clip_min=0,
                      clip_max=1):
-
         self.y_target = y_target
         self.batch_size = batch_size
         self.binary_search_steps = binary_search_steps
@@ -1745,7 +1744,8 @@ class SPSA(Attack):
                  early_stop_loss_threshold=None,
                  learning_rate=0.01,
                  delta=0.01,
-                 batch_size=128,
+                 spsa_samples=128,
+                 batch_size=None,
                  spsa_iters=1,
                  is_debug=False):
         """
@@ -1764,20 +1764,28 @@ class SPSA(Attack):
                                           is below `early_stop_loss_threshold`.
         :param learning_rate: Learning rate of ADAM optimizer.
         :param delta: Perturbation size used for SPSA approximation.
-        :param batch_size: Number of inputs to evaluate at a single time. Note
-                           that the true batch size (the number of evaluated
-                           inputs for each update) is `batch_size * spsa_iters`
+        :param spsa_samples: Number of inputs to evaluate at a single time.
+                           The true batch size (the number of evaluated
+                           inputs for each update) is `spsa_samples *
+                           spsa_iters`
+        :param batch_size: Deprecated param that is an alias for spsa_samples
         :param spsa_iters: Number of model evaluations before performing an
-                           update, where each evaluation is on `batch_size`
+                           update, where each evaluation is on `spsa_samples`
                            different inputs.
         :param is_debug: If True, print the adversarial loss after each update.
         """
         from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
+        if batch_size is not None:
+            warnings.warn(
+                'The "batch_size" argument to SPSA is deprecated, and will '
+                'be removed on March 17th 2019. '
+                'Please use spsa_samples instead.')
+            spsa_samples = batch_size
 
         optimizer = SPSAAdam(
             lr=learning_rate,
             delta=delta,
-            num_samples=batch_size,
+            num_samples=spsa_samples,
             num_iters=spsa_iters)
 
         def loss_fn(x, label):

@@ -177,7 +177,7 @@ class TestSPSA(CleverHansTest):
             attack = SPSA(model)
             x_adv = attack.generate(
                 x_input, y=y_label, epsilon=epsilon, num_steps=10,
-                early_stop_loss_threshold=-1., batch_size=32, spsa_iters=1,
+                early_stop_loss_threshold=-1., spsa_samples=32, spsa_iters=1,
                 is_debug=True)
 
             # Run computation
@@ -220,7 +220,7 @@ class TestSPSA(CleverHansTest):
             attack = SPSA(model)
             x_adv = attack.generate(
                 x_input, y=y_label, epsilon=epsilon, num_steps=30,
-                early_stop_loss_threshold=-1., batch_size=32, spsa_iters=16,
+                early_stop_loss_threshold=-1., spsa_samples=32, spsa_iters=16,
                 is_debug=True)
 
             logits = model.get_logits(x_adv)
