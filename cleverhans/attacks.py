@@ -1721,8 +1721,8 @@ class FastFeatureAdversaries(Attack):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
         return adv_x
-
-      
+    
+    
 class LSPGA(Attack):
     """
     This attack was originally proposed by Buckman, Roy, Raffel and
@@ -1824,6 +1824,7 @@ class LSPGA(Attack):
         self.noisy_grads = noisy_grads
         self.clip_min = clip_min
         self.clip_max = clip_max
+        
         
 class SPSA(Attack):
     """
