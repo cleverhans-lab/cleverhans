@@ -56,7 +56,14 @@ class LossCrossEntropy(Loss):
             x = x, self.attack(x)
         else:
             x = x,
-        y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], tf.float32))
+
+        # Catching RuntimeError: Variable -= value not supported by tf.eager.
+        try:
+            y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], tf.float32))
+        except RuntimeError:
+            y.assign_sub(self.smoothing * (y - 1. / tf.cast(y.shape[-1],
+                                                            tf.float32)))
+
         logits = [self.model.get_logits(x, **kwargs) for x in x]
         loss = sum(
             softmax_cross_entropy_with_logits(labels=y, logits=logit)
