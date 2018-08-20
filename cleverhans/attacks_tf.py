@@ -1843,6 +1843,12 @@ def pgd_attack(loss_fn,
     methods. The method uses a tf.while_loop to optimize a loss function in
     a single sess.run() call.
     """
+    if is_debug:
+        with tf.device("/cpu:0"):
+            input_image = tf.Print(
+                input_image, [],
+                "Starting PGD attack with epsilon: %s" % epsilon)
+
     init_perturbation = tf.random_uniform(
         tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
     init_perturbation = project_perturbation(init_perturbation, epsilon,
