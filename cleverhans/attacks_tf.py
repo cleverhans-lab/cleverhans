@@ -1451,7 +1451,7 @@ def deepfool_attack(sess,
     adv_x = np.clip((1 + overshoot) * r_tot + sample, clip_min, clip_max)
     return adv_x
 
-  
+
 def compute_mask(levels, low, high, clip_min=0., clip_max=1.,
                  thermometer=False):
     """Get a mask of allowable perturbations in the interval (low, high).
@@ -1601,7 +1601,7 @@ def lspga(x, model, levels, steps, eps, attack_step=.01, clip_min=0.,
 
     return flattened_inp
 
-  
+
 class LBFGS_attack(object):
     def __init__(self, sess, x, model_preds, targeted_label,
                  binary_search_steps, max_iterations, initial_const, clip_min,
@@ -2052,6 +2052,3 @@ def margin_logit_loss(model_logits, label, num_classes=10):
         logits_with_target_label_neg_inf, axis=-1)
     loss = highest_nonlabel_logits - label_logits
     return loss
-
-
-
