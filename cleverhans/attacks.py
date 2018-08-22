@@ -1732,6 +1732,21 @@ class SPSA(Attack):
 
     def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         super(SPSA, self).__init__(model, back, sess, dtypestr)
+
+        self.feedable_kwargs = {
+            'epsilon': self.np_dtype,
+            'y': self.np_dtype,
+            'y_target': self.np_dtype,
+        }
+        self.structural_kwargs = [
+            'num_steps',
+            'batch_size',
+            'spsa_iters',
+            'early_stop_loss_threshold',
+            'is_debug',
+            'is_targeted',
+        ]
+
         assert isinstance(self.model, Model)
 
     def generate(self,

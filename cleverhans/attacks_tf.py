@@ -1793,9 +1793,16 @@ class SPSAAdam(UnrolledAdam):
 
 def _project_perturbation(perturbation, epsilon, input_image):
     """Project `perturbation` onto L-infinity ball of radius `epsilon`."""
-    clipped_perturbation = tf.clip_by_value(perturbation, -epsilon, epsilon)
-    new_image = tf.clip_by_value(input_image + clipped_perturbation, 0., 1.)
-    return new_image - input_image
+    # Ensure inputs are in the correct range
+    with tf.control_dependencies([
+        tf.assert_less_equal(input_image, 1.0),
+        tf.assert_greater_equal(input_image, 0.0)
+    ]):
+        clipped_perturbation = tf.clip_by_value(
+            perturbation, -epsilon, epsilon)
+        new_image = tf.clip_by_value(
+            input_image + clipped_perturbation, 0., 1.)
+        return new_image - input_image
 
 
 def pgd_attack(loss_fn,
@@ -1883,11 +1890,15 @@ def pgd_attack(loss_fn,
         loop_vars=[tf.constant(0.), init_perturbation, flat_init_optim_state],
         parallel_iterations=1,
         back_prop=False)
-
     if project_perturbation == _project_perturbation:
-        check_diff = tf.assert_less_equal(final_perturbation, epsilon * 1.1)
+        perturbation_max = epsilon * 1.1
+        check_diff = tf.assert_less_equal(
+            final_perturbation, perturbation_max,
+            message="final_perturbation must change no pixel by more than "
+                    "%s" % perturbation_max)
     else:
         check_diff = tf.no_op()
+
     with tf.control_dependencies([check_diff]):
         adversarial_image = input_image + final_perturbation
     return tf.stop_gradient(adversarial_image)
