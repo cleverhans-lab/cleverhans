@@ -1390,7 +1390,6 @@ def vatm(model,
         clip_min=clip_min,
         clip_max=clip_max)
 
-
 class MadryEtAl(Attack):
     """
     The Projected Gradient Descent Attack (Madry et al. 2017).
@@ -1432,21 +1431,68 @@ class MadryEtAl(Attack):
                     Possible values: np.inf, 1 or 2.
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
-        :param rand_init: (optional bool) If True, an initial random
-                    perturbation is added.
         """
+        import tensorflow as tf
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
-        self.targeted = self.y_target is not None
+        if self.rand_init:
+            eta = tf.random_uniform(
+                tf.shape(x), -self.eps, self.eps, dtype=self.tf_dtype)
+            eta = clip_eta(eta, self.ord, self.eps)
+        else:
+            eta = tf.zeros_like(x)
 
-        # Initialize loop variables
-        adv_x = self.attack(x, labels)
+        # Fix labels to the first model predictions for loss computation
+        model_preds = self.model.get_probs(x)
+        preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
+        if self.y_target is not None:
+            y = self.y_target
+            targeted = True
+        elif self.y is not None:
+            y = self.y
+            targeted = False
+        else:
+            y = tf.to_float(tf.equal(model_preds, preds_max))
+            y = tf.stop_gradient(y)
+            targeted = False
+
+        y_kwarg = 'y_target' if targeted else 'y'
+        fgm_params = {
+            'eps': self.eps_iter,
+            y_kwarg: y,
+            'ord': self.ord,
+            'clip_min': self.clip_min,
+            'clip_max': self.clip_max
+        }
+
+        FGM = FastGradientMethod(self.model, back=self.back, sess=self.sess)
+
+        def cond(i, _):
+            return tf.less(i, self.nb_iter)
+
+        def body(i, e):
+            adv_x = FGM.generate(x + e, **fgm_params)
+
+            # Clipping perturbation according to clip_min and clip_max
+            if self.clip_min is not None and self.clip_max is not None:
+                adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+            # Clipping perturbation eta to self.ord norm ball
+            eta = adv_x - x
+            from cleverhans.utils_tf import clip_eta
+            eta = clip_eta(eta, self.ord, self.eps)
+            return i + 1, eta
+
+        _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
+
+        # Define adversarial example (and clip if necessary)
+        adv_x = x + eta
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
         return adv_x
-
     def parse_params(self,
                      eps=0.3,
                      eps_iter=0.01,
@@ -1498,68 +1544,6 @@ class MadryEtAl(Attack):
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
 
         return True
-
-    def attack_single_step(self, x, eta, y):
-        """
-        Given the original image and the perturbation computed so far, computes
-        a new perturbation.
-
-        :param x: A tensor with the original input.
-        :param eta: A tensor the same shape as x that holds the perturbation.
-        :param y: A tensor with the target labels or ground-truth labels.
-        """
-        import tensorflow as tf
-        from cleverhans.utils_tf import clip_eta
-        from cleverhans.loss import attack_softmax_cross_entropy
-
-        adv_x = x + eta
-        logits = self.model.get_logits(adv_x)
-        loss = attack_softmax_cross_entropy(y, logits)
-        if self.targeted:
-            loss = -loss
-        grad, = tf.gradients(loss, adv_x)
-        scaled_signed_grad = self.eps_iter * tf.sign(grad)
-        adv_x = adv_x + scaled_signed_grad
-        if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
-        eta = adv_x - x
-        eta = clip_eta(eta, self.ord, self.eps)
-        return eta
-
-    def attack(self, x, y):
-        """
-        This method creates a symbolic graph that given an input image,
-        first randomly perturbs the image. The
-        perturbation is bounded to an epsilon ball. Then multiple steps of
-        gradient descent is performed to increase the probability of a target
-        label or decrease the probability of the ground-truth label.
-
-        :param x: A tensor with the input image.
-        """
-        import tensorflow as tf
-        from cleverhans.utils_tf import clip_eta
-
-        if self.rand_init:
-            eta = tf.random_uniform(
-                tf.shape(x), -self.eps, self.eps, dtype=self.tf_dtype)
-            eta = clip_eta(eta, self.ord, self.eps)
-        else:
-            eta = tf.zeros_like(x)
-
-        def cond(i, _):
-            return tf.less(i, self.nb_iter)
-
-        def body(i, e):
-            new_eta = self.attack_single_step(x, e, y)
-            return i + 1, new_eta
-
-        _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
-
-        adv_x = x + eta
-        if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
-
-        return adv_x
 
 
 class FastFeatureAdversaries(Attack):
