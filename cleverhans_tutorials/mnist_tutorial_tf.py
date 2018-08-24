@@ -50,7 +50,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     :param backprop_through_attack: If True, backprop through adversarial
                                     example construction process during
                                     adversarial training.
-    :param clean_train: if true, train on clean examples
     :param label_smoothing: float, amount of label smoothing for cross entropy
     :return: an AccuracyReport object
     """
