@@ -83,7 +83,7 @@ def evaluate_model(filepath,
             print('Test accuracy on %s examples: %0.4f' % (report_text, acc))
 
     with sess.as_default():
-      model = load(filepath)
+        model = load(filepath)
     assert len(model.get_params()) > 0
 
     # Initialize the Fast Gradient Sign Method (FGSM) attack object and
@@ -97,8 +97,9 @@ def evaluate_model(filepath,
     do_eval(preds, x_test, y_test, 'train_clean_train_clean_eval', False)
     do_eval(preds_adv, x_test, y_test, 'clean_train_adv_eval', True)
 
+
 def main(argv=None):
-  evaluate_model(filepath=FLAGS.filepath)
+    evaluate_model(filepath=FLAGS.filepath)
 
 
 if __name__ == '__main__':

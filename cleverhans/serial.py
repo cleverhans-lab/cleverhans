@@ -32,16 +32,16 @@ class PicklableVariable(object):
     def __getstate__(self):
         sess = tf.get_default_session()
         if sess is None:
-          raise RuntimeError("PicklableVariable requires a default TensorFlow"
-                             " session")
+            raise RuntimeError("PicklableVariable requires a default "
+                               "TensorFlow session")
         return {'var': sess.run(self.var)}
 
     def __setstate__(self, d):
         self.var = tf.Variable(d['var'])
         sess = tf.get_default_session()
         if sess is None:
-          raise RuntimeError("PicklableVariable requires a default TensorFlow"
-                             " session")
+            raise RuntimeError("PicklableVariable requires a default "
+                               "TensorFlow session")
         sess.run(self.var.initializer)
 
 

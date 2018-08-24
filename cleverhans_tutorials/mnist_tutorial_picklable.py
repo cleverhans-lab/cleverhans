@@ -120,13 +120,12 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
               args=train_params, rng=rng, var_list=model.get_params())
 
-
         with sess.as_default():
-          save("clean_model.joblib", model)
-          # Now that the model has been saved, you can evaluate it in a
-          # separate process using `evaluate_pickled_model.py`.
-          # You should get exactly the same result for both clean and
-          # adversarial accuracy as you get within this program.
+            save("clean_model.joblib", model)
+            # Now that the model has been saved, you can evaluate it in a
+            # separate process using `evaluate_pickled_model.py`.
+            # You should get exactly the same result for both clean and
+            # adversarial accuracy as you get within this program.
 
         # Calculate training error
         if testing:
@@ -179,11 +178,11 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
           args=train_params, rng=rng, var_list=model2.get_params())
 
     with sess.as_default():
-      save("adv_model.joblib", model2)
-      # Now that the model has been saved, you can evaluate it in a
-      # separate process using `evaluate_pickled_model.py`.
-      # You should get exactly the same result for both clean and
-      # adversarial accuracy as you get within this program.
+        save("adv_model.joblib", model2)
+        # Now that the model has been saved, you can evaluate it in a
+        # separate process using `evaluate_pickled_model.py`.
+        # You should get exactly the same result for both clean and
+        # adversarial accuracy as you get within this program.
 
     # Calculate training errors
     if testing:
