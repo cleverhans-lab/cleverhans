@@ -9,6 +9,7 @@ from distutils.version import LooseVersion
 import cleverhans.utils as utils
 from cleverhans.attacks import Attack
 from cleverhans.attacks import FastGradientMethod
+from cleverhans.compat import reduce_sum
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
 
@@ -90,10 +91,11 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
     the Fast Gradient Method.
     Paper link: https://arxiv.org/abs/1412.6572
     """
+
     def __init__(self, model, dtypestr='float32'):
         """
         Creates a FastGradientMethodTFE instance.
-        :model: CNN netwok, should be an instance of
+        :model: CNN network, should be an instance of
                 cleverhans.model.Model, if not wrap
                 the output to probs.
         :dtypestr: datatype in the string format.
@@ -158,14 +160,19 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
             normalized_grad = tf.stop_gradient(normalized_grad)
         elif self.ord == 1:
             red_ind = list(xrange(1, len(x.get_shape())))
-            normalized_grad = grad / tf.reduce_sum(tf.abs(grad),
+            avoid_zero_div = 1e-12
+            avoid_nan_norm = tf.maximum(avoid_zero_div,
+                                        reduce_sum(tf.abs(grad),
                                                    reduction_indices=red_ind,
-                                                   keep_dims=True)
+                                                   keepdims=True))
+            normalized_grad = grad / avoid_nan_norm
         elif self.ord == 2:
             red_ind = list(xrange(1, len(x.get_shape())))
-            square = tf.reduce_sum(tf.square(grad),
-                                   reduction_indices=red_ind,
-                                   keep_dims=True)
+            avoid_zero_div = 1e-12
+            square = tf.maximum(avoid_zero_div,
+                                reduce_sum(tf.square(grad),
+                                           reduction_indices=red_ind,
+                                           keepdims=True))
             normalized_grad = grad / tf.sqrt(square)
         else:
             raise NotImplementedError("Only L-inf, L1 and L2 norms are "
