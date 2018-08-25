@@ -1926,10 +1926,6 @@ def margin_logit_loss(model_logits, label, num_classes=10):
     return loss
 
 
-from six.moves import xrange
-import tensorflow as tf
-
-
 def _transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
     """Spatial Transformer Layer
     Implements a spatial transformer layer as described in [1]_.
