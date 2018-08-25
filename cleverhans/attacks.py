@@ -1735,8 +1735,8 @@ class SPSA(Attack):
 
         self.feedable_kwargs = {
             'epsilon': self.np_dtype,
-            'y': self.np_dtype,
-            'y_target': self.np_dtype,
+            'y': np.int32,
+            'y_target': np.int32,
         }
         self.structural_kwargs = [
             'num_steps',
@@ -1821,3 +1821,8 @@ class SPSA(Attack):
             is_debug=is_debug,
         )
         return adv_x
+
+    def generate_np(self, x_val, **kwargs):
+        # Add shape check for batch size=1, then call parent class generate_np
+        assert x_val.shape[0] == 1, 'x_val should be a batch of a single image'
+        return super(SPSA, self).generate_np(x_val, **kwargs)

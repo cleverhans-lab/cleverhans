@@ -1760,7 +1760,13 @@ class SPSAAdam(UnrolledAdam):
     def _compute_gradients(self, loss_fn, x, unused_optim_state):
         """Compute gradient estimates using SPSA."""
         # Assumes `x` is a list, containing a [1, H, W, C] image
-        assert len(x) == 1 and x[0].get_shape().as_list()[0] == 1
+        # If static batch dimension is None, tf.reshape to batch size 1
+        # so that static shape can be inferred
+        assert len(x) == 1
+        static_x_shape = x[0].get_shape().as_list()
+        if static_x_shape[0] is None:
+            x[0] = tf.reshape(x[0], [1] + static_x_shape[1:])
+        assert x[0].get_shape().as_list()[0] == 1
         x = x[0]
         x_shape = x.get_shape().as_list()
 
