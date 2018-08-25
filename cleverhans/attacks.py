@@ -1841,3 +1841,106 @@ class SPSA(Attack):
             adv_img = super(SPSA, self).generate_np(x, y=y_single, **kwargs)
             x_adv.append(adv_img)
         return np.concatenate(x_adv, axis=0)
+
+
+class SpatialTransformationMethod(Attack):
+    """
+    """
+
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+        """
+        Create a SpatialTransformationMethod instance.
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
+
+        super(SpatialTransformationMethod, self).__init__(
+            model, back, sess, dtypestr)
+        self.feedable_kwargs = {
+            'batch_size': self.np_dtype,
+            'n_samples': self.np_dtype,
+            'dx_min': self.np_dtype,
+            'dx_max': self.np_dtype,
+            'n_dxs': self.np_dtype,
+            'dy_min': self.np_dtype,
+            'dy_max': self.np_dtype,
+            'n_dys': self.np_dtype,
+            'angle_min': self.np_dtype,
+            'angle_max': self.np_dtype,
+            'n_angles': self.np_dtype
+        }
+
+    def generate(self, x, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param eps: (optional float) attack step size (input variation)
+        :param ord: (optional) Order of the norm (mimics NumPy).
+                    Possible values: np.inf, 1 or 2.
+        :param y: (optional) A tensor with the model labels. Only provide
+                  this parameter if you'd like to use true labels when crafting
+                  adversarial samples. Otherwise, model predictions are used as
+                  labels to avoid the "label leaking" effect (explained in this
+                  paper: https://arxiv.org/abs/1611.01236). Default is None.
+                  Labels should be one-hot-encoded.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        from .attacks_tf import spm
+
+        labels, _ = self.get_or_guess_labels(x, kwargs)
+
+        return spm(
+            x,
+            self.model,
+            batch_size=self.batch_size,
+            y=labels,
+            n_samples=self.n_samples,
+            dx_min=self.dx_min, dx_max=self.dx_max, n_dxs=self.n_dxs,
+            dy_min=self.dy_min, dy_max=self.dy_max, n_dys=self.n_dys,
+            angle_min=self.angle_min, angle_max=self.angle_max,
+            n_angles=self.n_angles)
+
+    def parse_params(self,
+                     batch_size=128,
+                     n_samples=10,
+                     dx_min=-0.1,
+                     dx_max=0.1,
+                     n_dxs=2,
+                     dy_min=-0.1,
+                     dy_max=0.1,
+                     n_dys=2,
+                     angle_min=-30,
+                     angle_max=30,
+                     n_angles=6,
+                     **kwargs):
+        """
+        """
+        self.batch_size = batch_size
+        self.n_samples = n_samples
+        self.dx_min = dx_min
+        self.dx_max = dx_max
+        self.n_dxs = n_dxs
+        self.dy_min = dy_min
+        self.dy_max = dy_max
+        self.n_dys = n_dys
+        self.angle_min = angle_min
+        self.angle_max = angle_max
+        self.n_angles = n_angles
+
+        if self.angle_min < -30 or self.angle_max > 30:
+            raise ValueError("The value of angle must be bounded "
+                             "within [-30, 30]")
+        if self.dx_min < -1 or self.dy_min < -1 or \
+           self.dx_max > 1 or self.dy_max > 1:
+            raise ValueError("The value of translation must be bounded "
+                             "within [-1, 1]")
+        return True

@@ -1924,3 +1924,60 @@ def margin_logit_loss(model_logits, label, num_classes=10):
         logits_with_target_label_neg_inf, axis=-1)
     loss = highest_nonlabel_logits - label_logits
     return loss
+
+
+def spm(x, model, batch_size=128, y=None, n_samples=10, dx_min=-0.1,
+        dx_max=0.1, n_dxs=5, dy_min=-0.1, dy_max=0.1, n_dys=5,
+        angle_min=-30, angle_max=30, n_angles=11):
+    """
+    TensorFlow implementation of the Spatial Transformation Method.
+    :return: a tensor for the adversarial example
+    """
+
+    preds = model.get_probs(x)
+    if y is None:
+        # Using model predictions as ground truth to avoid label leaking
+        preds_max = reduce_max(preds, 1, keepdims=True)
+        y = tf.to_float(tf.equal(preds, preds_max))
+        y = tf.stop_gradient(y)
+    y = y / reduce_sum(y, 1, keepdims=True)
+
+    img_rows = x.get_shape()[1]
+    img_cols = x.get_shape()[2]
+
+    # Define the range of transformations
+    dxs = np.linspace(dx_min, dx_max, n_dxs)
+    dys = np.linspace(dy_min, dy_max, n_dys)
+    angles = np.linspace(angle_min, angle_max, n_angles)
+
+    sampled_dxs = np.random.choice(dxs, n_samples)
+    sampled_dys = np.random.choice(dys, n_samples)
+    sampled_angles = np.random.choice(angles, n_samples)
+
+    import math
+    from cleverhans.spatial_transformer import transformer
+
+    adv_xs = []
+    accs = []
+
+    # Perform the transformation
+    for (dx, dy, angle) in zip(sampled_dxs, sampled_dys, sampled_angles):
+        cos_angle = np.cos(angle / 180.0 * math.pi)
+        sin_angle = np.sin(angle / 180.0 * math.pi)
+        M = np.array([cos_angle, -sin_angle, dx,
+                      sin_angle, cos_angle, dy] * batch_size)
+        theta = tf.constant(M, shape=(batch_size, 6))
+
+        # Transform the input and get preds
+        out_size = (img_rows, img_cols)
+        adv_xs.append(tf.reshape(transformer(x, theta, out_size),
+                                 (-1, img_rows, img_cols, 1)))
+        preds_adv = model.get_logits(adv_xs[-1])
+
+        # Compute accuracy
+        accs.append(tf.count_nonzero(tf.equal(tf.argmax(y, axis=-1),
+                                              tf.argmax(preds_adv, axis=-1))))
+    # Return the adv_x with worst accuracy
+    adv_xs = tf.stack(adv_xs)
+    accs = tf.stack(accs)
+    return tf.gather(adv_xs, tf.argmin(accs))
