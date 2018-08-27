@@ -265,22 +265,8 @@ class Tanh(Layer):
 
 class LeakyReLU(Layer):
 
-    def __init__(self, left_slope=.2, **kwargs):
-        super(LeakyReLU, self).__init__(**kwargs)
-        self.left_slope = left_slope
-
-    def set_input_shape(self, shape):
-        self.input_shape = shape
-        self.output_shape = shape
-
-    def get_output_shape(self):
-        return self.output_shape
-
-    def fprop(self, x):
-        return tf.maximum(x, self.left_slope * x)
-
-    def get_params(self):
-        return []
+    def __init__(self, leak=.2, **kwargs):
+        super(LeakyReLU, self).__init__(leak=leak, **kwargs)
 
 
 class ELU(Layer):
