@@ -180,11 +180,12 @@ class Conv2D(Layer):
         if self.use_bias:
             self.b = PV(np.zeros((self.output_channels,)).astype('float32'))
         input_shape = list(input_shape)
+        orig_batch_size = input_shape[0]
         input_shape[0] = 1
         dummy_batch = tf.zeros(input_shape)
         dummy_output = self.fprop(dummy_batch)
         output_shape = [int(e) for e in dummy_output.get_shape()]
-        output_shape[0] = 1
+        output_shape[0] = orig_batch_size
         self.output_shape = tuple(output_shape)
 
     def fprop(self, x):
