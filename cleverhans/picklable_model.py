@@ -179,7 +179,6 @@ class Conv2D(Layer):
         self.kernels = PV(init)
         if self.use_bias:
             self.b = PV(np.zeros((self.output_channels,)).astype('float32'))
-        orig_input_batch_size = input_shape[0]
         input_shape = list(input_shape)
         input_shape[0] = 1
         dummy_batch = tf.zeros(input_shape)
