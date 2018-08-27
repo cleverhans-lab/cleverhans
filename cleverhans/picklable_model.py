@@ -125,7 +125,7 @@ class Layer(PicklableModel):
     def __init__(self, name=None, parent=None):
         if name is not None:
             self.name = name
-        self.parent = None
+        self.parent = parent
 
     def get_output_shape(self):
         return self.output_shape
