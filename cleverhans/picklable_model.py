@@ -161,9 +161,7 @@ class Linear(Layer):
 class Conv2D(Layer):
 
     def __init__(self, output_channels, kernel_shape, strides, padding,
-                 use_bias=False,
-                 init_scale=1.,
-                 **kwargs):
+                 use_bias=False, init_scale=1., **kwargs):
         self.__dict__.update(locals())
         del self.self
         super(Conv2D, self).__init__(**kwargs)
