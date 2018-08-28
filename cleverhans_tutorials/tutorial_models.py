@@ -11,6 +11,8 @@ import functools
 
 import tensorflow as tf
 from cleverhans.model import Model
+from cleverhans.picklable_model import MLP, Conv2D, ReLU, Flatten, Linear
+from cleverhans.picklable_model import Softmax
 
 
 class ModelBasicCNN(Model):
@@ -18,6 +20,12 @@ class ModelBasicCNN(Model):
         del kwargs
         Model.__init__(self, scope, nb_classes, locals())
         self.nb_filters = nb_filters
+
+        # Do a dummy run of fprop to make sure the variables are created from
+        # the start
+        self.fprop(tf.placeholder(tf.float32, [128, 28, 28, 1]))
+        # Put a reference to the params in self so that the params get pickled
+        self.params = self.get_params()
 
     def fprop(self, x, **kwargs):
         del kwargs
@@ -46,3 +54,20 @@ class HeReLuNormalInitializer(tf.initializers.random_normal):
         dtype = self.dtype if dtype is None else dtype
         std = tf.rsqrt(tf.cast(tf.reduce_prod(shape[:-1]), tf.float32) + 1e-7)
         return tf.random_normal(shape, stddev=std, dtype=dtype)
+
+
+def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
+                             input_shape=(None, 28, 28, 1)):
+    """The model for the picklable models tutorial.
+    """
+    layers = [Conv2D(nb_filters, (8, 8), (2, 2), "SAME"),
+              ReLU(),
+              Conv2D(nb_filters * 2, (6, 6), (2, 2), "VALID"),
+              ReLU(),
+              Conv2D(nb_filters * 2, (5, 5), (1, 1), "VALID"),
+              ReLU(),
+              Flatten(),
+              Linear(nb_classes),
+              Softmax()]
+    model = MLP(layers, input_shape)
+    return model

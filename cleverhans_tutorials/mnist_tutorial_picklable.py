@@ -1,10 +1,6 @@
 """
-This tutorial shows how to generate adversarial examples using FGSM
-and train a model using adversarial training with TensorFlow.
-It is very similar to mnist_tutorial_keras_tf.py, which does the same
-thing but with a dependence on keras.
-The original paper can be found at:
-https://arxiv.org/abs/1412.6572
+This tutorial shows how to use cleverhans.picklable_model
+to create models that can be saved for evaluation later.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -21,7 +17,8 @@ from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import train, model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport, set_log_level
-from cleverhans_tutorials.tutorial_models import ModelBasicCNN
+from cleverhans_tutorials.tutorial_models import make_basic_picklable_cnn
+from cleverhans.serial import save
 
 FLAGS = flags.FLAGS
 
@@ -112,8 +109,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
             print('Test accuracy on %s examples: %0.4f' % (report_text, acc))
 
     if clean_train:
-        model = ModelBasicCNN('model1', nb_classes, nb_filters)
+        model = make_basic_picklable_cnn()
         preds = model.get_logits(x)
+        assert len(model.get_params()) > 0
         loss = LossCrossEntropy(model, smoothing=label_smoothing)
 
         def evaluate():
@@ -121,6 +119,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
         train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
               args=train_params, rng=rng, var_list=model.get_params())
+
+        with sess.as_default():
+            save("clean_model.joblib", model)
+            # Now that the model has been saved, you can evaluate it in a
+            # separate process using `evaluate_pickled_model.py`.
+            # You should get exactly the same result for both clean and
+            # adversarial accuracy as you get within this program.
 
         # Calculate training error
         if testing:
@@ -142,7 +147,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         print('Repeating the process, using adversarial training')
 
     # Create a new model and train it to be robust to FastGradientMethod
-    model2 = ModelBasicCNN('model2', nb_classes, nb_filters)
+    model2 = make_basic_picklable_cnn()
     fgsm2 = FastGradientMethod(model2, sess=sess)
 
     def attack(x):
@@ -171,6 +176,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     # Perform and evaluate adversarial training
     train(sess, loss2, x, y, x_train, y_train, evaluate=evaluate2,
           args=train_params, rng=rng, var_list=model2.get_params())
+
+    with sess.as_default():
+        save("adv_model.joblib", model2)
+        # Now that the model has been saved, you can evaluate it in a
+        # separate process using `evaluate_pickled_model.py`.
+        # You should get exactly the same result for both clean and
+        # adversarial accuracy as you get within this program.
 
     # Calculate training errors
     if testing:
