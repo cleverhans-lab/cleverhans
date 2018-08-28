@@ -1945,7 +1945,8 @@ def _transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
     .. [1]  Spatial Transformer Networks
             Max Jaderberg, Karen Simonyan, Andrew Zisserman, Koray Kavukcuoglu
             Submitted on 5 Jun 2015
-    .. [2]  https://github.com/skaae/transformer_network/blob/master/transformerlayer.py
+    .. [2]  https://github.com/skaae/transformer_network/
+              blob/master/transformerlayer.py
     Notes
     -----
     To initialize the network to the identity transform init
@@ -1959,7 +1960,8 @@ def _transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
     def _repeat(x, n_repeats):
         with tf.variable_scope('_repeat'):
             rep = tf.transpose(
-                tf.expand_dims(tf.ones(shape=tf.stack([n_repeats, ])), 1), [1, 0])
+                tf.expand_dims(tf.ones(
+                    shape=tf.stack([n_repeats, ])), 1), [1, 0])
             rep = tf.cast(rep, 'int32')
             x = tf.matmul(tf.reshape(x, (-1, 1)), rep)
             return tf.reshape(x, [-1])
@@ -2035,7 +2037,8 @@ def _transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
             #  ones = np.ones(np.prod(x_t.shape))
             #  grid = np.vstack([x_t.flatten(), y_t.flatten(), ones])
             x_t = tf.matmul(tf.ones(shape=tf.stack([height, 1])),
-                            tf.transpose(tf.expand_dims(tf.linspace(-1.0, 1.0, width), 1), [1, 0]))
+                            tf.transpose(tf.expand_dims(
+                                tf.linspace(-1.0, 1.0, width), 1), [1, 0]))
             y_t = tf.matmul(tf.expand_dims(tf.linspace(-1.0, 1.0, height), 1),
                             tf.ones(shape=tf.stack([1, width])))
 
@@ -2078,7 +2081,8 @@ def _transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
                 out_size)
 
             output = tf.reshape(
-                input_transformed, tf.stack([num_batch, out_height, out_width, num_channels]))
+                input_transformed,
+                tf.stack([num_batch, out_height, out_width, num_channels]))
             return output
 
     with tf.variable_scope(name):
