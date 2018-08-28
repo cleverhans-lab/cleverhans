@@ -1876,20 +1876,21 @@ class SpatialTransformationMethod(Attack):
         """
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
-        :param eps: (optional float) attack step size (input variation)
-        :param ord: (optional) Order of the norm (mimics NumPy).
-                    Possible values: np.inf, 1 or 2.
-        :param y: (optional) A tensor with the model labels. Only provide
-                  this parameter if you'd like to use true labels when crafting
-                  adversarial samples. Otherwise, model predictions are used as
-                  labels to avoid the "label leaking" effect (explained in this
-                  paper: https://arxiv.org/abs/1611.01236). Default is None.
-                  Labels should be one-hot-encoded.
-        :param y_target: (optional) A tensor with the labels to target. Leave
-                         y_target=None if y is also set. Labels should be
-                         one-hot-encoded.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
+        :param batch_size: (optional int) The size of batch during evaluation.
+        :param n_samples: (optional) The number of transformations sampled to
+                          construct the attack.
+        :param dx_min: (optional float) Minimum translation ratio along x-axis.
+        :param dx_max: (optional float) Maximum translation ratio along x-axis.
+        :param n_dxs: (optional int) Number of discretized translation ratios
+                      along x-axis.
+        :param dy_min: (optional float) Minimum translation ratio along y-axis.
+        :param dy_max: (optional float) Maximum translation ratio along y-axis.
+        :param n_dys: (optional int) Number of discretized translation ratios
+                      along y-axis.
+        :param angle_min: (optional float) Largest counter-clockwise rotation
+                          angle.
+        :param angle_max: (optional float) Largest clockwise rotation angle.
+        :param n_angles: (optional int) Number of discretized angles.
         """
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
@@ -1923,6 +1924,8 @@ class SpatialTransformationMethod(Attack):
                      n_angles=6,
                      **kwargs):
         """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
         """
         self.batch_size = batch_size
         self.n_samples = n_samples
