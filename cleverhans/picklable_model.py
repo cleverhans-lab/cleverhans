@@ -355,6 +355,7 @@ class Flatten(Layer):
     def get_params(self):
         return []
 
+
 class Add(Layer):
     """
     A Layer that adds a function to its input.
@@ -367,12 +368,12 @@ class Add(Layer):
         return hash(id(self))
 
     def set_input_shape(self, shape):
-      self.input_shape = shape
-      shapes = {"input" : shape}
-      for layer in self.layers:
-        layer.set_input_shape(shapes[layer.parent])
-        shapes[layer.name] = layer.get_output_shape()
-      self.output_shape = shapes[self.layers[-1].name]
+        self.input_shape = shape
+        shapes = {"input": shape}
+        for layer in self.layers:
+            layer.set_input_shape(shapes[layer.parent])
+            shapes[layer.name] = layer.get_output_shape()
+        self.output_shape = shapes[self.layers[-1].name]
 
     def __init__(self, layers):
         super(Add, self).__init__()
