@@ -97,7 +97,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         'clip_max': 1.
     }
     rng = np.random.RandomState([2017, 8, 30])
-    sess = tf.Session()
 
     def do_eval(preds, x_set, y_set, report_key, is_adv=None):
         acc = model_eval(sess, x, y, preds, x_set, y_set, args=eval_params)
