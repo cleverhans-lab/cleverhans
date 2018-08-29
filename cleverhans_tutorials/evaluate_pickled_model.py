@@ -69,7 +69,6 @@ def evaluate_model(filepath,
         'clip_min': 0.,
         'clip_max': 1.
     }
-    sess = tf.Session()
 
     def do_eval(preds, x_set, y_set, report_key, is_adv=None):
         acc = model_eval(sess, x, y, preds, x_set, y_set, args=eval_params)
