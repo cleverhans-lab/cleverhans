@@ -32,6 +32,7 @@ except AttributeError:
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import AccuracyReport, set_log_level
 from cleverhans.utils_tfe import train, model_eval
+from cleverhans.attacks_tfe import BasicIterativeMethodTFE
 from cleverhans.attacks_tfe import FastGradientMethodTFE
 from cleverhans_tutorials.tutorial_models_tfe import ModelBasicCNNTFE
 
@@ -49,12 +50,12 @@ FLAGS = flags.FLAGS
 # -- 'fgsm' : FastGradientMethod
 
 AVAILABLE_ATTACKS = {
-                     'fgsm': FastGradientMethodTFE
-                    }
+    'fgsm': FastGradientMethodTFE,
+    'bim': BasicIterativeMethodTFE
+}
 
 
 def attack_selection(attack_string):
-
     """
     Selects the Attack Class using string input.
     :param attack_string: adversarial attack name in string format

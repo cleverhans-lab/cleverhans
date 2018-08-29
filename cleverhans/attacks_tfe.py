@@ -8,7 +8,9 @@ import tensorflow as tf
 from distutils.version import LooseVersion
 import cleverhans.utils as utils
 from cleverhans.attacks import Attack
+from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import FastGradientMethod
+from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_sum
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
@@ -142,6 +144,9 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
         """
         # Compute loss
         with tf.GradientTape() as tape:
+            # input should be watched because it may be
+            # combination of trainable and non-trainable variables
+            tape.watch(x)
             loss_obj = LossCrossEntropy(self.model, smoothing=0.)
             loss = loss_obj.fprop(x=x, y=labels)
             if targeted:
@@ -188,4 +193,101 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
         # reset all values outside of [clip_min, clip_max]
         if (self.clip_min is not None) and (self.clip_max is not None):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+        return adv_x
+
+
+class BasicIterativeMethodTFE(AttackTFE, BasicIterativeMethod):
+    """
+    Inherited class from AttackTFE and BasicIterativeMethod.
+
+    The Basic Iterative Method (Kurakin et al. 2016). The original paper used
+    hard labels for this attack; no label smoothing.
+    Paper link: https://arxiv.org/pdf/1607.02533.pdf
+    """
+
+    def __init__(self, model, dtypestr='float32'):
+        """
+        Creates a BasicIterativeMethodTFE instance.
+        :model: CNN network, should be an instance of
+                cleverhans.model.Model, if not wrap
+                the output to probs.
+        :dtypestr: datatype in the string format.
+        """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
+
+        super(BasicIterativeMethodTFE, self).__init__(model, dtypestr)
+
+    def generate(self, x, **kwargs):
+        """
+        Generates the adversarial sample for the given input.
+
+        :param x: The model's symbolic inputs.
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        # Initialize loop variables
+        eta = tf.zeros_like(x)
+
+        # Fix labels to the first model predictions for loss computation
+        model_preds = self.model.get_probs(x)
+        preds_max = reduce_max(model_preds, 1, keepdims=True)
+        if self.y_target is not None:
+            y = self.y_target
+            targeted = True
+        elif self.y is not None:
+            y = self.y
+            targeted = False
+        else:
+            y = tf.to_float(tf.equal(model_preds, preds_max))
+            y = tf.stop_gradient(y)
+            targeted = False
+
+        y_kwarg = 'y_target' if targeted else 'y'
+        fgm_params = {
+            'eps': self.eps_iter,
+            y_kwarg: y,
+            'ord': self.ord,
+            'clip_min': self.clip_min,
+            'clip_max': self.clip_max
+        }
+
+        FGM = FastGradientMethodTFE(self.model, dtypestr=self.dtypestr)
+
+        def cond(i, _):
+            return tf.less(i, self.nb_iter)
+
+        def body(i, e):
+            adv_x = FGM.generate(x + e, **fgm_params)
+
+            # Clipping perturbation according to clip_min and clip_max
+            if self.clip_min is not None and self.clip_max is not None:
+                adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+            # Clipping perturbation eta to self.ord norm ball
+            eta = adv_x - x
+            from cleverhans.utils_tf import clip_eta
+            eta = clip_eta(eta, self.ord, self.eps)
+            return i + 1, eta
+
+        _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
+
+        # Define adversarial example (and clip if necessary)
+        adv_x = x + eta
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
         return adv_x
