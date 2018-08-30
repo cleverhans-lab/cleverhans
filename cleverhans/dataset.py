@@ -8,7 +8,7 @@ from __future__ import print_function
 
 from cleverhans.utils_mnist import data_mnist
 
-keras = None # Only load keras if user tries to use a dataset that requires it
+keras = None  # Only load keras if user tries to use a dataset that requires it
 
 
 class Dataset(object):
@@ -58,6 +58,7 @@ class MNIST(Dataset):
         self.x_test = x_test
         self.y_test = y_test
 
+
 class CIFAR10(Dataset):
     """The CIFAR-10 dataset"""
 
@@ -67,10 +68,11 @@ class CIFAR10(Dataset):
                  test_end=10000, center=False):
         self.kwargs = locals()
         del self.kwargs["self"]
-        x_train, y_train, x_test, y_test = data_cifar10(train_start=train_start,
-                                                      train_end=train_end,
-                                                      test_start=test_start,
-                                                      test_end=test_end)
+        packed = data_cifar10(train_start=train_start,
+                              train_end=train_end,
+                              test_start=test_start,
+                              test_end=test_end)
+        x_train, y_train, x_test, y_test = packed
 
         if center:
             x_train = x_train * 2. - 1.
@@ -97,6 +99,7 @@ class Factory(object):
         """
         return self.cls(*self.args, **self.kwargs)
 
+
 def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
     """
     Preprocess CIFAR10 dataset
@@ -105,8 +108,9 @@ def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
 
     global keras
     if keras is None:
-      import keras
-      from keras.datasets import cifar10
+        import keras
+        from keras.datasets import cifar10
+        from keras.utils import np_utils
 
     # These values are specific to CIFAR10
     img_rows = 32

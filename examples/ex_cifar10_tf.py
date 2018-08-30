@@ -27,8 +27,6 @@ flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
 
-
-
 def main(argv=None):
     """
     CIFAR10 CleverHans tutorial
