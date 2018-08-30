@@ -79,7 +79,7 @@ class MLP(PicklableModel):
             out = ordered_union(out, layer.get_params())
         return out
 
-    def fprop(self, x=None, set_ref=False, given=None):
+    def fprop(self, x=None, given=None):
 
         # Note: this currently isn't great.
         # A layer can have any parent it wants, but the parent
@@ -113,8 +113,6 @@ class MLP(PicklableModel):
 
         for layer in layers:
             x = out[layer.parent]
-            if set_ref:
-                layer.ref = x
             x = layer.fprop(x)
             assert x is not None
             out[layer.name] = x
@@ -354,3 +352,74 @@ class Flatten(Layer):
 
     def get_params(self):
         return []
+
+
+class Add(Layer):
+    """
+    A Layer that adds a function to its input.
+    The function to add is specified in terms of multiple layers, just like
+    in the MLP class.
+    The Add layer is useful for implementing residual networks.
+    """
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def set_input_shape(self, shape):
+        self.input_shape = shape
+        shapes = {"input": shape}
+        for layer in self.layers:
+            layer.set_input_shape(shapes[layer.parent])
+            shapes[layer.name] = layer.get_output_shape()
+        self.output_shape = shapes[self.layers[-1].name]
+
+    def __init__(self, layers):
+        super(Add, self).__init__()
+
+        self.layer_names = []
+        self.layers = layers
+
+        for i, layer in enumerate(self.layers):
+            if layer.parent is None:
+                if i == 0:
+                    layer.parent = "input"
+                else:
+                    layer.parent = layers[i - 1].name
+            if hasattr(layer, 'name'):
+                name = layer.name
+            else:
+                name = layer.__class__.__name__ + str(i)
+                layer.name = name
+            self.layer_names.append(name)
+
+    def get_params(self):
+        out = []
+        for layer in self.layers:
+            out = ordered_union(out, layer.get_params())
+        return out
+
+    def fprop(self, x):
+
+        orig_x = x
+
+        # Note: this currently isn't great.
+        # A layer can have any parent it wants, but the parent
+        # must come earlier in the list.
+        # There's no way to have > 1 parent.
+        # This means we can support branched structures that split,
+        # e.g. for multiple output heads, but not structures
+        # that converge.
+        # We can feed a value in the middle using "given" but
+        # only layers after the given one are run using the current
+        # implementation, so the feed must happen before any branch
+        # point.
+
+        out = {'input': x}
+
+        for layer in self.layers:
+            x = out[layer.parent]
+            x = layer.fprop(x)
+            assert x is not None
+            out[layer.name] = x
+
+        return orig_x + out[self.layers[-1].name]
