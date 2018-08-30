@@ -15,6 +15,7 @@ from tensorflow.python.platform import flags
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_tf import train, model_eval, batch_eval
+from cleverhans.dataset import data_cifar10
 
 FLAGS = flags.FLAGS
 
@@ -26,38 +27,6 @@ flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
 flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
 
 
-def data_cifar10():
-    """
-    Preprocess CIFAR10 dataset
-    :return:
-    """
-
-    # These values are specific to CIFAR10
-    img_rows = 32
-    img_cols = 32
-    nb_classes = 10
-
-    # the data, shuffled and split between train and test sets
-    (X_train, y_train), (X_test, y_test) = cifar10.load_data()
-
-    if keras.backend.image_dim_ordering() == 'th':
-        X_train = X_train.reshape(X_train.shape[0], 3, img_rows, img_cols)
-        X_test = X_test.reshape(X_test.shape[0], 3, img_rows, img_cols)
-    else:
-        X_train = X_train.reshape(X_train.shape[0], img_rows, img_cols, 3)
-        X_test = X_test.reshape(X_test.shape[0], img_rows, img_cols, 3)
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
-    X_train /= 255
-    X_test /= 255
-    print('X_train shape:', X_train.shape)
-    print(X_train.shape[0], 'train samples')
-    print(X_test.shape[0], 'test samples')
-
-    # convert class vectors to binary class matrices
-    Y_train = np_utils.to_categorical(y_train, nb_classes)
-    Y_test = np_utils.to_categorical(y_test, nb_classes)
-    return X_train, Y_train, X_test, Y_test
 
 
 def main(argv=None):
