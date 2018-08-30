@@ -8,6 +8,8 @@ from __future__ import print_function
 
 from cleverhans.utils_mnist import data_mnist
 
+keras = None # Only load keras if user tries to use a dataset that requires it
+
 
 class Dataset(object):
     """Abstract base class representing a dataset.
@@ -100,6 +102,11 @@ def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
     Preprocess CIFAR10 dataset
     :return:
     """
+
+    global keras
+    if keras is None:
+      import keras
+      from keras.datasets import cifar10
 
     # These values are specific to CIFAR10
     img_rows = 32
