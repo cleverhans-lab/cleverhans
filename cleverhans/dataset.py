@@ -95,7 +95,7 @@ class Factory(object):
         """
         return self.cls(*self.args, **self.kwargs)
 
-def data_cifar10():
+def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
     """
     Preprocess CIFAR10 dataset
     :return:
@@ -126,4 +126,10 @@ def data_cifar10():
     # convert class vectors to binary class matrices
     Y_train = np_utils.to_categorical(y_train, nb_classes)
     Y_test = np_utils.to_categorical(y_test, nb_classes)
+
+    X_train = X_train[train_start:train_end, :, :, :]
+    Y_train = Y_train[train_start:train_end, :]
+    X_test = X_test[test_start:test_end, :]
+    Y_test = Y_test[test_start:test_end, :]
+
     return X_train, Y_train, X_test, Y_test
