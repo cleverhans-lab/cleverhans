@@ -79,7 +79,7 @@ class MLP(PicklableModel):
             out = ordered_union(out, layer.get_params())
         return out
 
-    def fprop(self, x=None, set_ref=False, given=None):
+    def fprop(self, x=None, given=None):
 
         # Note: this currently isn't great.
         # A layer can have any parent it wants, but the parent
@@ -113,8 +113,6 @@ class MLP(PicklableModel):
 
         for layer in layers:
             x = out[layer.parent]
-            if set_ref:
-                layer.ref = x
             x = layer.fprop(x)
             assert x is not None
             out[layer.name] = x
@@ -400,7 +398,7 @@ class Add(Layer):
             out = ordered_union(out, layer.get_params())
         return out
 
-    def fprop(self, x, set_ref=False):
+    def fprop(self, x):
 
         orig_x = x
 
@@ -420,8 +418,6 @@ class Add(Layer):
 
         for layer in self.layers:
             x = out[layer.parent]
-            if set_ref:
-                layer.ref = x
             x = layer.fprop(x)
             assert x is not None
             out[layer.name] = x
