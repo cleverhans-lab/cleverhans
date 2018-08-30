@@ -57,9 +57,9 @@ class MNIST(Dataset):
         self.y_test = y_test
 
 class CIFAR10(Dataset):
-  """The CIFAR-10 dataset"""
+    """The CIFAR-10 dataset"""
 
-  nb_classes = 10
+    nb_classes = 10
 
     def __init__(self, train_start=0, train_end=60000, test_start=0,
                  test_end=10000, center=False):
