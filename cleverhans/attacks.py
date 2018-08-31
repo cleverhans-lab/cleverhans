@@ -361,6 +361,8 @@ class BasicIterativeMethod(Attack):
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
 
+    FGM_CLASS = FastGradientMethod
+
     def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a BasicIterativeMethod instance.
@@ -430,20 +432,12 @@ class BasicIterativeMethod(Attack):
             'clip_max': self.clip_max
         }
 
-        try:
-            eager_executing = tf.executing_eagerly()
-        except:
-            eager_executing = False
-
-        if not eager_executing:
-            FGM = FastGradientMethod(
-                self.model, back=self.back,
-                sess=self.sess, dtypestr=self.dtypestr)
-        else:
-            # eager execution
-            import cleverhans.attacks_tfe as attacks_tfe
-            FGM = attacks_tfe.FastGradientMethod(
-                self.model, dtypestr=self.dtypestr)
+        # Use getattr() to avoid errors in eager execution attacks
+        FGM = self.FGM_CLASS(
+            self.model,
+            back=getattr(self, 'back', None),
+            sess=getattr(self, 'sess', None),
+            dtypestr=self.dtypestr)
 
         def cond(i, _):
             return tf.less(i, self.nb_iter)

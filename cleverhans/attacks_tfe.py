@@ -92,7 +92,7 @@ class FastGradientMethod(Attack, attacks.FastGradientMethod):
     Paper link: https://arxiv.org/abs/1412.6572
     """
 
-    def __init__(self, model, dtypestr='float32'):
+    def __init__(self, model, dtypestr='float32', **kwargs):
         """
         Creates a FastGradientMethod instance in eager execution.
         :model: CNN network, should be an instance of
@@ -100,6 +100,7 @@ class FastGradientMethod(Attack, attacks.FastGradientMethod):
                 the output to probs.
         :dtypestr: datatype in the string format.
         """
+        del kwargs
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
@@ -201,6 +202,8 @@ class BasicIterativeMethod(Attack, attacks.BasicIterativeMethod):
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
+
+    FGM_CLASS = FastGradientMethod
 
     def __init__(self, model, dtypestr='float32'):
         """
