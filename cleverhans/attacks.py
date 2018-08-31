@@ -49,6 +49,7 @@ class Attack(object):
         self.model = model
         self.back = back
         self.sess = sess
+        self.dtypestr = dtypestr
 
         # We are going to keep track of old graphs and cache them.
         self.graphs = {}
@@ -429,7 +430,12 @@ class BasicIterativeMethod(Attack):
             'clip_max': self.clip_max
         }
 
-        FGM = FastGradientMethod(self.model, back=self.back, sess=self.sess)
+        if not tf.executing_eagerly():
+            FGM = FastGradientMethod(self.model, back=self.back, sess=self.sess, dtypestr=self.dtypestr)
+        else:
+            # eager execution
+            import cleverhans.attacks_tfe as attacks_tfe
+            FGM = attacks_tfe.FastGradientMethod(self.model, dtypestr=self.dtypestr)
 
         def cond(i, _):
             return tf.less(i, self.nb_iter)
