@@ -31,7 +31,8 @@ class PicklableModel(Model):
         del self.scope  # Must not use Variable scopes / names for anything
 
     def get_params(self):
-        raise NotImplementedError()
+        raise NotImplementedError(str(type(self)) + " does not implement"
+                                  " get_params.")
 
 
 class MLP(PicklableModel):
