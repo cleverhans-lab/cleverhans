@@ -27,12 +27,7 @@ class Dataset(object):
         """Returns a picklable callable that recreates the dataset.
         """
 
-        if hasattr(self, 'kwargs'):
-            kwargs = self.kwargs
-        else:
-            kwargs = {}
-
-        return Factory(type(self), kwargs)
+        return Factory(type(self), self.kwargs)
 
 
 class MNIST(Dataset):
