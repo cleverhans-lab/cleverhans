@@ -317,6 +317,19 @@ class TestSPSA(CleverHansTest):
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
         self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
 
+    def test_attack_strength_np_batched(self):
+        # Same test as test_attack_strength_np, but batched
+        n_samples = 10
+        x_val = np.random.rand(n_samples, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        feed_labs = np.random.randint(0, 2, n_samples)
+        x_adv = self.attack.generate_np(
+            x_val, y=feed_labs, epsilon=.5, num_steps=100, batch_size=64,
+            spsa_iters=1)
+
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
 
 
 class TestBasicIterativeMethod(TestFastGradientMethod):

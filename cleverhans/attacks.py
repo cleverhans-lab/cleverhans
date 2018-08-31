@@ -1823,6 +1823,13 @@ class SPSA(Attack):
         return adv_x
 
     def generate_np(self, x_val, **kwargs):
-        # Add shape check for batch size=1, then call parent class generate_np
-        assert x_val.shape[0] == 1, 'x_val should be a batch of a single image'
-        return super(SPSA, self).generate_np(x_val, **kwargs)
+        # Call self.generate() sequentially for each image in the batch
+        x_adv = []
+        batch_size = x_val.shape[0]
+        y = kwargs.pop('y', [None] * batch_size)
+        assert len(x_val) == len(y), '# of images and labels given do not match'
+        for x_single, y_single in zip(x_val, y):
+            x = np.expand_dims(x_single, axis=0)
+            adv_img = super(SPSA, self).generate_np(x, y=y_single, **kwargs)
+            x_adv.append(adv_img)
+        return np.concatenate(x_adv, axis=0)
