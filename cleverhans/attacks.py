@@ -435,7 +435,7 @@ class BasicIterativeMethod(Attack):
         except:
             eager_executing = False
 
-        if eager_executing:
+        if not eager_executing:
             FGM = FastGradientMethod(
                 self.model, back=self.back,
                 sess=self.sess, dtypestr=self.dtypestr)
