@@ -20,7 +20,7 @@ class Dataset(object):
 
     def __init__(self, **kwargs):
         if "self" in kwargs:
-          del kwargs[self]
+            del kwargs[self]
         self.kwargs = kwargs
 
     def get_factory(self):
