@@ -49,6 +49,7 @@ class Attack(object):
         self.model = model
         self.back = back
         self.sess = sess
+        self.dtypestr = dtypestr
 
         # We are going to keep track of old graphs and cache them.
         self.graphs = {}
@@ -360,6 +361,8 @@ class BasicIterativeMethod(Attack):
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
 
+    FGM_CLASS = FastGradientMethod
+
     def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
         Create a BasicIterativeMethod instance.
@@ -429,7 +432,12 @@ class BasicIterativeMethod(Attack):
             'clip_max': self.clip_max
         }
 
-        FGM = FastGradientMethod(self.model, back=self.back, sess=self.sess)
+        # Use getattr() to avoid errors in eager execution attacks
+        FGM = self.FGM_CLASS(
+            self.model,
+            back=getattr(self, 'back', None),
+            sess=getattr(self, 'sess', None),
+            dtypestr=self.dtypestr)
 
         def cond(i, _):
             return tf.less(i, self.nb_iter)

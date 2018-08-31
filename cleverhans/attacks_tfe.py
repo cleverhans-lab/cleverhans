@@ -5,13 +5,13 @@ import warnings
 import collections
 import tensorflow as tf
 
-from distutils.version import LooseVersion
+import cleverhans.attacks as attacks
 import cleverhans.utils as utils
-from cleverhans.attacks import Attack
-from cleverhans.attacks import FastGradientMethod
+from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_sum
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
+from distutils.version import LooseVersion
 
 _logger = utils.create_logger("cleverhans.attacks_tfe")
 
@@ -22,7 +22,7 @@ if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
     raise ValueError(error)
 
 
-class AttackTFE(Attack):
+class Attack(attacks.Attack):
     """
     Abstract base class for all eager attack classes.
     """
@@ -81,9 +81,9 @@ class AttackTFE(Attack):
         raise AttributeError(error)
 
 
-class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
+class FastGradientMethod(Attack, attacks.FastGradientMethod):
     """
-    Inherited class from AttackTFE and FastGradientMethod.
+    Inherited class from Attack and cleverhans.attacks.FastGradientMethod.
 
     This attack was originally implemented by Goodfellow et al. (2015) with the
     infinity norm (and is known as the "Fast Gradient Sign Method"). This
@@ -92,23 +92,23 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
     Paper link: https://arxiv.org/abs/1412.6572
     """
 
-    def __init__(self, model, dtypestr='float32'):
+    def __init__(self, model, dtypestr='float32', **kwargs):
         """
-        Creates a FastGradientMethodTFE instance.
+        Creates a FastGradientMethod instance in eager execution.
         :model: CNN network, should be an instance of
                 cleverhans.model.Model, if not wrap
                 the output to probs.
         :dtypestr: datatype in the string format.
         """
+        del kwargs
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(FastGradientMethodTFE, self).__init__(model, dtypestr)
+        super(FastGradientMethod, self).__init__(model, dtypestr)
 
     def generate(self, x, **kwargs):
         """
         Generates the adversarial sample for the given input.
-
         :param x: The model's inputs.
         :param eps: (optional float) attack step size (input variation)
         :param ord: (optional) Order of the norm (mimics NumPy).
@@ -142,6 +142,9 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
         """
         # Compute loss
         with tf.GradientTape() as tape:
+            # input should be watched because it may be
+            # combination of trainable and non-trainable variables
+            tape.watch(x)
             loss_obj = LossCrossEntropy(self.model, smoothing=0.)
             loss = loss_obj.fprop(x=x, y=labels)
             if targeted:
@@ -189,3 +192,28 @@ class FastGradientMethodTFE(AttackTFE, FastGradientMethod):
         if (self.clip_min is not None) and (self.clip_max is not None):
             adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
         return adv_x
+
+
+class BasicIterativeMethod(Attack, attacks.BasicIterativeMethod):
+    """
+    Inherited class from Attack and cleverhans.attacks.BasicIterativeMethod.
+
+    The Basic Iterative Method (Kurakin et al. 2016). The original paper used
+    hard labels for this attack; no label smoothing.
+    Paper link: https://arxiv.org/pdf/1607.02533.pdf
+    """
+
+    FGM_CLASS = FastGradientMethod
+
+    def __init__(self, model, dtypestr='float32'):
+        """
+        Creates a BasicIterativeMethod instance in eager execution.
+        :model: CNN network, should be an instance of
+                cleverhans.model.Model, if not wrap
+                the output to probs.
+        :dtypestr: datatype in the string format.
+        """
+        if not isinstance(model, Model):
+            model = CallableModelWrapper(model, 'probs')
+
+        super(BasicIterativeMethod, self).__init__(model, dtypestr)
