@@ -431,11 +431,14 @@ class BasicIterativeMethod(Attack):
         }
 
         if not tf.executing_eagerly():
-            FGM = FastGradientMethod(self.model, back=self.back, sess=self.sess, dtypestr=self.dtypestr)
+            FGM = FastGradientMethod(
+                self.model, back=self.back,
+                sess=self.sess, dtypestr=self.dtypestr)
         else:
             # eager execution
             import cleverhans.attacks_tfe as attacks_tfe
-            FGM = attacks_tfe.FastGradientMethod(self.model, dtypestr=self.dtypestr)
+            FGM = attacks_tfe.FastGradientMethod(
+                self.model, dtypestr=self.dtypestr)
 
         def cond(i, _):
             return tf.less(i, self.nb_iter)
