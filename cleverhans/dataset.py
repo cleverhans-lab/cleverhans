@@ -43,7 +43,6 @@ class MNIST(Dataset):
     def __init__(self, train_start=0, train_end=60000, test_start=0,
                  test_end=10000, center=False):
         super(MNIST, self).__init__(**locals())
-        self.kwargs = locals()
         x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                       train_end=train_end,
                                                       test_start=test_start,
