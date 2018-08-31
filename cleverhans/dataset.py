@@ -16,7 +16,7 @@ class Dataset(object):
     """
 
     # The number of classes in the dataset. Should be specified by subclasses.
-    nb_classes = None
+    NB_CLASSES = None
 
     def get_factory(self):
         """Returns a picklable callable that recreates the dataset.
@@ -38,7 +38,7 @@ class Dataset(object):
 class MNIST(Dataset):
     """The MNIST dataset"""
 
-    nb_classes = 10
+    NB_CLASSES = 10
 
     def __init__(self, train_start=0, train_end=60000, test_start=0,
                  test_end=10000, center=False):
@@ -62,7 +62,7 @@ class MNIST(Dataset):
 class CIFAR10(Dataset):
     """The CIFAR-10 dataset"""
 
-    nb_classes = 10
+    NB_CLASSES = 10
 
     def __init__(self, train_start=0, train_end=60000, test_start=0,
                  test_end=10000, center=False):
