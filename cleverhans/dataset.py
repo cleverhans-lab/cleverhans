@@ -82,8 +82,7 @@ class Factory(object):
     A callable that creates an object of the specified type and configuration.
     """
 
-    def __init__(self, cls, args, kwargs):
-        self.cls = cls
+    def __init__(self, cls, kwargs):
         self.kwargs = kwargs
 
     def __call__(self):
