@@ -18,9 +18,9 @@ class Dataset(object):
     # The number of classes in the dataset. Should be specified by subclasses.
     NB_CLASSES = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, kwargs):
         if "self" in kwargs:
-            del kwargs[self]
+            del kwargs["self"]
         self.kwargs = kwargs
 
     def get_factory(self):
@@ -37,7 +37,7 @@ class MNIST(Dataset):
 
     def __init__(self, train_start=0, train_end=60000, test_start=0,
                  test_end=10000, center=False):
-        super(MNIST, self).__init__(**locals())
+        super(MNIST, self).__init__(locals())
         x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                       train_end=train_end,
                                                       test_start=test_start,
@@ -60,7 +60,7 @@ class CIFAR10(Dataset):
 
     def __init__(self, train_start=0, train_end=60000, test_start=0,
                  test_end=10000, center=False):
-        super(CIFAR10, self).__init__(**locals())
+        super(CIFAR10, self).__init__(locals())
         packed = data_cifar10(train_start=train_start,
                               train_end=train_end,
                               test_start=test_start,
