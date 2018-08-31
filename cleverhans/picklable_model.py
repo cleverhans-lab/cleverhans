@@ -262,7 +262,7 @@ class Tanh(Layer):
         return []
 
 
-class LeakyReLU(Layer):
+class LeakyReLU(ReLU):
 
     def __init__(self, leak=.2, **kwargs):
         super(LeakyReLU, self).__init__(leak=leak, **kwargs)
