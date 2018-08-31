@@ -430,7 +430,12 @@ class BasicIterativeMethod(Attack):
             'clip_max': self.clip_max
         }
 
-        if not tf.executing_eagerly():
+        try:
+            eager_executing = tf.executing_eagerly()
+        except:
+            eager_executing = False
+
+        if eager_executing:
             FGM = FastGradientMethod(
                 self.model, back=self.back,
                 sess=self.sess, dtypestr=self.dtypestr)
