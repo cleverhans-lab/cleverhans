@@ -18,7 +18,9 @@ class Dataset(object):
     # The number of classes in the dataset. Should be specified by subclasses.
     NB_CLASSES = None
 
-    def __init__(self, kwargs):
+    def __init__(self, kwargs=None):
+        if kwargs is None:
+            kwargs = {}
         if "self" in kwargs:
             del kwargs["self"]
         self.kwargs = kwargs
