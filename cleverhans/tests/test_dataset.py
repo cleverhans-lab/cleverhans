@@ -1,5 +1,6 @@
 from cleverhans.dataset import Dataset
 
+
 class LightweightDataset(Dataset):
     """
     A dataset that does not actually load any data so it is cheap to run
