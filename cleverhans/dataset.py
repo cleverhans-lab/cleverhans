@@ -31,6 +31,12 @@ class Dataset(object):
 
         return Factory(type(self), self.kwargs)
 
+    def get_set(self, which_set):
+        """Returns the training set or test set as an (x_data, y_data) tuple.
+        :param which_set: 'train' or 'test'
+        """
+        return (getattr(self, 'x_' + which_set), getattr(self, 'y_' + which_set))
+
 
 class MNIST(Dataset):
     """The MNIST dataset"""
