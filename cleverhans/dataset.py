@@ -18,7 +18,9 @@ class Dataset(object):
     # The number of classes in the dataset. Should be specified by subclasses.
     NB_CLASSES = None
 
-    def __init__(self, kwargs):
+    def __init__(self, kwargs=None):
+        if kwargs is None:
+            kwargs = {}
         if "self" in kwargs:
             del kwargs["self"]
         self.kwargs = kwargs
@@ -28,6 +30,13 @@ class Dataset(object):
         """
 
         return Factory(type(self), self.kwargs)
+
+    def get_set(self, which_set):
+        """Returns the training set or test set as an (x_data, y_data) tuple.
+        :param which_set: 'train' or 'test'
+        """
+        return (getattr(self, 'x_' + which_set),
+                getattr(self, 'y_' + which_set))
 
 
 class MNIST(Dataset):
@@ -83,6 +92,7 @@ class Factory(object):
     """
 
     def __init__(self, cls, kwargs):
+        self.cls = cls
         self.kwargs = kwargs
 
     def __call__(self):
