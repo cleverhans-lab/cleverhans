@@ -85,6 +85,7 @@ class Factory(object):
     """
 
     def __init__(self, cls, kwargs):
+        self.cls = cls
         self.kwargs = kwargs
 
     def __call__(self):
