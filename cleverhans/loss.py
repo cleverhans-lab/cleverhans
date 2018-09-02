@@ -39,7 +39,7 @@ class Loss(object):
 
 
 class LossCrossEntropy(Loss):
-    def __init__(self, model, smoothing, attack=None, **kwargs):
+    def __init__(self, model, smoothing=0., attack=None, **kwargs):
         """Constructor.
         :param model: Model instance, the model on which to apply the loss.
         :param smoothing: float, amount of label smoothing for cross-entropy.
