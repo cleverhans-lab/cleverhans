@@ -56,10 +56,10 @@ class MNIST(Dataset):
             x_train = x_train * 2. - 1.
             x_test = x_test * 2. - 1.
 
-        self.x_train = x_train
-        self.y_train = y_train
-        self.x_test = x_test
-        self.y_test = y_test
+        self.x_train = x_train.astype('float32')
+        self.y_train = y_train.astype('float32')
+        self.x_test = x_test.astype('float32')
+        self.y_test = y_test.astype('float32')
 
 
 class CIFAR10(Dataset):
