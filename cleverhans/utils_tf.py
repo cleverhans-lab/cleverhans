@@ -105,7 +105,8 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
     # Check that necessary arguments were given (see doc above)
     assert args.nb_epochs, "Number of epochs was not given in args dict"
     if optimizer is None:
-        assert args.learning_rate is not None, "Learning rate was not given in args dict"
+        assert args.learning_rate is not None, ("Learning rate was not given "
+                                                "in args dict")
     assert args.batch_size, "Batch size was not given in args dict"
 
     if save:
