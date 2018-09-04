@@ -80,7 +80,7 @@ class LossCrossEntropy(Loss):
         logits = [self.model.get_logits(x, **kwargs) for x in x]
         loss = sum(
             tf.reduce_mean(softmax_cross_entropy_with_logits(labels=y,
-                logits=logit))
+                                                             logits=logit))
             for logit in logits)
         return loss
 
