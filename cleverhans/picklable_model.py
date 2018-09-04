@@ -355,6 +355,23 @@ class Flatten(Layer):
         return []
 
 
+class Print(Layer):
+
+    def set_input_shape(self, shape):
+        self.input_shape = shape
+        self.output_shape = shape
+
+    def get_params(self):
+        return []
+
+    def fprop(self, x):
+        mean = tf.reduce_mean(x)
+        std = tf.sqrt(tf.reduce_mean(tf.square(x - mean)))
+        return tf.Print(x,
+                        [tf.reduce_min(x), mean, tf.reduce_max(x), std],
+                        "Print layer")
+
+
 class Add(Layer):
     """
     A Layer that adds a function to its input.
