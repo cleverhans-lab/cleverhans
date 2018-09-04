@@ -13,7 +13,7 @@ class Loss(object):
     for defenses (during model training).
     """
 
-    def __init__(self, model, hparams, attack=None):
+    def __init__(self, model, hparams=None, attack=None):
         """
         :param model: Model instance, the model on which to apply the loss.
         :param hparams: dict, hyper-parameters for the loss.
