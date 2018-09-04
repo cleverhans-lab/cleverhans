@@ -132,7 +132,8 @@ class Layer(PicklableModel):
 
 class Linear(Layer):
 
-    def __init__(self, num_hid, init_scale=1., init_b=0., use_bias=True, **kwargs):
+    def __init__(self, num_hid, init_scale=1., init_b=0., use_bias=True,
+                 **kwargs):
         super(Linear, self).__init__(**kwargs)
         self.num_hid = num_hid
         self.init_scale = init_scale
@@ -150,7 +151,7 @@ class Linear(Layer):
         self.W = PV(init)
         if self.use_bias:
             self.b = PV((np.zeros((self.num_hid,))
-                     + self.init_b).astype('float32'))
+                         + self.init_b).astype('float32'))
 
     def fprop(self, x):
         out = tf.matmul(x, self.W.var)
