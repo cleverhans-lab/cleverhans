@@ -51,8 +51,8 @@ class TestDefenses(CleverHansTest):
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
             vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-        self.assertClose(vl1, [2.210599660, 1.53666997], atol=1e-6)
-        self.assertClose(vl2, [2.210599660, 1.53666997], atol=1e-6)
+        self.assertClose(vl1, sum([2.210599660, 1.53666997]) / 2., atol=1e-6)
+        self.assertClose(vl2, sum([2.210599660, 1.53666997]) / 2., atol=1e-6)
 
     def test_xe_smoothing(self):
         loss = LossCrossEntropy(self.model, smoothing=0.1)
@@ -60,8 +60,8 @@ class TestDefenses(CleverHansTest):
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
             vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-        self.assertClose(vl1, [2.10587597, 1.47194624], atol=1e-6)
-        self.assertClose(vl2, [2.10587597, 1.47194624], atol=1e-6)
+        self.assertClose(vl1, sum([2.10587597, 1.47194624]) / 2., atol=1e-6)
+        self.assertClose(vl2, sum([2.10587597, 1.47194624]) / 2., atol=1e-6)
 
     def test_mixup(self):
         def eval_loss(l, count=1000):
@@ -88,16 +88,16 @@ class TestDefenses(CleverHansTest):
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
             vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-        self.assertClose(vl1, [4.296023369, 2.963884830], atol=1e-6)
-        self.assertClose(vl2, [4.296023369, 2.963884830], atol=1e-6)
+        self.assertClose(vl1, sum([4.296023369, 2.963884830]) / 2., atol=1e-6)
+        self.assertClose(vl2, sum([4.296023369, 2.963884830]) / 2., atol=1e-6)
 
         loss = LossFeaturePairing(self.model, weight=10., attack=attack)
         l = loss.fprop(self.x, self.y)
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
             vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-        self.assertClose(vl1, [4.333082676, 3.00094414], atol=1e-6)
-        self.assertClose(vl2, [4.333082676, 3.00094414], atol=1e-6)
+        self.assertClose(vl1, sum([4.333082676, 3.00094414]) / 2., atol=1e-6)
+        self.assertClose(vl2, sum([4.333082676, 3.00094414]) / 2., atol=1e-6)
 
 
 if __name__ == '__main__':

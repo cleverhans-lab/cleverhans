@@ -124,10 +124,10 @@ class LossFeaturePairing(Loss):
                         for a, b in
                         zip(d1[Model.O_FEATURES], d2[Model.O_FEATURES])]
         pairing_loss = tf.reduce_mean(pairing_loss)
-        loss = softmax_cross_entropy_with_logits(
-            labels=y, logits=d1[Model.O_LOGITS])
-        loss += softmax_cross_entropy_with_logits(
-            labels=y, logits=d2[Model.O_LOGITS])
+        loss = tf.reduce_mean(softmax_cross_entropy_with_logits(
+            labels=y, logits=d1[Model.O_LOGITS]))
+        loss += tf.reduce_mean(softmax_cross_entropy_with_logits(
+            labels=y, logits=d2[Model.O_LOGITS]))
         return loss + self.weight * pairing_loss
 
 
