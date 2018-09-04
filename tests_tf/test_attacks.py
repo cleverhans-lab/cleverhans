@@ -910,11 +910,13 @@ class TestLogitSpaceProjectedGradientAscent(CleverHansTest):
         eps = 0.3
         levels = 10
         x = np.random.rand(10, 32, 32, 3)
+        y = np.ones(10)
         x_t = tf.constant(x, tf.float32)
+        y_t = tf.one_hot(tf.constant(y), depth=10)
         x_thermometer = discretize_uniform(
             x_t, levels, thermometer=True)
         x_adv = self.attack.generate(x, eps=eps, levels=levels, steps=steps,
-                                     thermometer=True, attack_step=1.0)
+                                     thermometer=True, attack_step=1.0, y=y_t)
         self.assertTrue(np.shape(x_adv) == np.shape(x_thermometer))
         x_adv = undiscretize_uniform(x_adv, levels=levels,
                                      thermometer=True, flattened=True)
