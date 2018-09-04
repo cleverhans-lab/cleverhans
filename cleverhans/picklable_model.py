@@ -132,11 +132,13 @@ class Layer(PicklableModel):
 
 class Linear(Layer):
 
-    def __init__(self, num_hid, init_scale=1., init_b=0., **kwargs):
+    def __init__(self, num_hid, init_scale=1., init_b=0., use_bias=True,
+                 **kwargs):
         super(Linear, self).__init__(**kwargs)
         self.num_hid = num_hid
         self.init_scale = init_scale
         self.init_b = init_b
+        self.use_bias = use_bias
 
     def set_input_shape(self, input_shape):
         batch_size, dim = input_shape
@@ -147,14 +149,21 @@ class Linear(Layer):
                                                    keep_dims=True))
         init = init * self.init_scale
         self.W = PV(init)
-        self.b = PV((np.zeros((self.num_hid,))
-                     + self.init_b).astype('float32'))
+        if self.use_bias:
+            self.b = PV((np.zeros((self.num_hid,))
+                         + self.init_b).astype('float32'))
 
     def fprop(self, x):
-        return tf.matmul(x, self.W.var) + self.b.var
+        out = tf.matmul(x, self.W.var)
+        if self.use_bias:
+            out = out + self.b.var
+        return out
 
     def get_params(self):
-        return [self.W.var, self.b.var]
+        out = [self.W.var]
+        if self.use_bias:
+            out.append(self.b.var)
+        return out
 
 
 class Conv2D(Layer):
