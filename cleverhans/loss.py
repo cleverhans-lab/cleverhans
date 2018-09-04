@@ -117,6 +117,16 @@ class LossFeaturePairing(Loss):
         return loss + self.weight * pairing_loss
 
 
+class WeightDecay(Loss):
+    def fprop(self, x, y, **kwargs):
+        terms = [tf.nn.l2_loss(param)
+                 for param in self.model.get_params()
+                 if len(param.get_shape()) > 1]
+        out = tf.add_n(terms)
+        assert len(out.get_shape()) == 0
+        return out
+
+
 def attack_softmax_cross_entropy(y, probs, mean=True):
     """
     Define target loss for an Attack.
