@@ -911,7 +911,7 @@ class TestLogitSpaceProjectedGradientAscent(CleverHansTest):
         levels = 10
         x = np.random.rand(10, 32, 32, 3)
         y = np.ones(10)
-        x_t = tf.constant(x, tf.float32)
+        x_t = tf.constant(x, tf.int32)
         y_t = tf.one_hot(tf.constant(y), depth=10)
         x_thermometer = discretize_uniform(
             x_t, levels, thermometer=True)
