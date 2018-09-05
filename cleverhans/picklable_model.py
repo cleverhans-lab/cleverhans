@@ -184,7 +184,7 @@ class Conv2D(Layer):
         init = self.init_scale * init / tf.sqrt(1e-7 +
                                                 tf.reduce_sum(tf.square(init),
                                                               axis=(0, 1, 2)))
-        self.kernels = PV(init)
+        self.kernels = PV(init, name=self.name + "_kernels")
         if self.use_bias:
             self.b = PV(np.zeros((self.output_channels,)).astype('float32'))
         input_shape = list(input_shape)
