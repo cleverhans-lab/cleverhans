@@ -450,3 +450,16 @@ class Add(Layer):
             out[layer.name] = x
 
         return orig_x + out[self.layers[-1].name]
+
+
+class PerImageStandardize(Layer):
+
+    def set_input_shape(self, shape):
+        self.input_shape = shape
+        self.output_shape = shape
+
+    def get_params(self):
+        return []
+
+    def fprop(self, x):
+        return tf.map_fn(lambda ex: tf.image.per_image_standardization(ex), x)
