@@ -38,6 +38,19 @@ class Loss(object):
         raise NotImplementedError
 
 
+class WeightedSum(Loss):
+    def __init__(self, model, terms):
+        self.terms = terms
+        Loss.__init__(self, model, locals())
+
+    def fprop(self, x, y, **kwargs):
+        terms = [weight * loss.fprop(x, y, **kwargs)
+                 for weight, loss in self.terms]
+        assert all(len(term.get_shape()) == 0 for term in terms)
+
+        return tf.add_n(terms)
+
+
 class LossCrossEntropy(Loss):
     def __init__(self, model, smoothing=0., attack=None, **kwargs):
         """Constructor.
