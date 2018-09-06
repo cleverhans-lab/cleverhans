@@ -4,6 +4,7 @@ import os
 from .model import Model
 from .compat import softmax_cross_entropy_with_logits
 import tensorflow as tf
+import warnings
 
 
 class Loss(object):
@@ -55,8 +56,7 @@ class WeightedSum(Loss):
 
         return tf.add_n(terms)
 
-
-class LossCrossEntropy(Loss):
+class CrossEntropy(Loss):
     def __init__(self, model, smoothing=0., attack=None, **kwargs):
         """Constructor.
         :param model: Model instance, the model on which to apply the loss.
@@ -90,7 +90,7 @@ class LossCrossEntropy(Loss):
         return loss
 
 
-class LossMixUp(Loss):
+class MixUp(Loss):
     def __init__(self, model, beta, **kwargs):
         """Constructor.
         :param model: Model instance, the model on which to apply the loss.
@@ -106,11 +106,12 @@ class LossMixUp(Loss):
         xm = x + mix * (x[::-1] - x)
         ym = y + mix * (y[::-1] - y)
         logits = self.model.get_logits(xm, **kwargs)
-        loss = softmax_cross_entropy_with_logits(labels=ym, logits=logits)
+        loss = tf.reduce_mean(softmax_cross_entropy_with_logits(labels=ym,
+            logits=logits))
         return loss
 
 
-class LossFeaturePairing(Loss):
+class FeaturePairing(Loss):
     def __init__(self, model, weight, attack, **kwargs):
         """Constructor.
         :param model: Model instance, the model on which to apply the loss.
@@ -158,3 +159,98 @@ def attack_softmax_cross_entropy(y, probs, mean=True):
     logits = probs.op.inputs[0] if probs.op.type == 'Softmax' else probs
     out = softmax_cross_entropy_with_logits(logits=logits, labels=y)
     return tf.reduce_mean(out) if mean else out
+
+class LossCrossEntropy(Loss):
+    """
+    Deprecated version of `CrossEntropy` that returns per-example loss rather
+    than mean loss.
+    """
+    def __init__(self, model, smoothing=0., attack=None, **kwargs):
+        """Constructor.
+        :param model: Model instance, the model on which to apply the loss.
+        :param smoothing: float, amount of label smoothing for cross-entropy.
+        :param attack: function, given an input x, return an attacked x'.
+        """
+        if smoothing < 0 or smoothing > 1:
+            raise ValueError('Smoothing must be in [0, 1]', smoothing)
+        del kwargs
+        Loss.__init__(self, model, locals(), attack)
+        self.smoothing = smoothing
+
+    def fprop(self, x, y, **kwargs):
+        if self.attack is not None:
+            x = x, self.attack(x)
+        else:
+            x = x,
+
+        # Catching RuntimeError: Variable -= value not supported by tf.eager.
+        try:
+            y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], tf.float32))
+        except RuntimeError:
+            y.assign_sub(self.smoothing * (y - 1. / tf.cast(y.shape[-1],
+                                                            tf.float32)))
+
+        logits = [self.model.get_logits(x, **kwargs) for x in x]
+        loss = sum(
+            softmax_cross_entropy_with_logits(labels=y,
+                                                             logits=logit)
+            for logit in logits)
+        warnings.warn("LossCrossEntropy is deprecated, switch to "
+                      "CrossEntropy. LossCrossEntropy may be removed on "
+                      "or after 2019-03-06.")
+        return loss
+
+class LossFeaturePairing(Loss):
+    """Deprecated version of `FeaturePairing` that returns per-example loss
+    rather than mean loss."""
+
+    def __init__(self, model, weight, attack, **kwargs):
+        """Constructor.
+        :param model: Model instance, the model on which to apply the loss.
+        :param weight: float, with of logic pairing loss.
+        :param attack: function, given an input x, return an attacked x'.
+        """
+        del kwargs
+        Loss.__init__(self, model, locals(), attack)
+        self.weight = weight
+
+    def fprop(self, x, y, **kwargs):
+        x_adv = self.attack(x)
+        d1 = self.model.fprop(x, **kwargs)
+        d2 = self.model.fprop(x_adv, **kwargs)
+        pairing_loss = [tf.reduce_mean(tf.square(a - b))
+                        for a, b in
+                        zip(d1[Model.O_FEATURES], d2[Model.O_FEATURES])]
+        pairing_loss = tf.reduce_mean(pairing_loss)
+        loss = softmax_cross_entropy_with_logits(
+            labels=y, logits=d1[Model.O_LOGITS])
+        loss += softmax_cross_entropy_with_logits(
+            labels=y, logits=d2[Model.O_LOGITS])
+        warnings.warn("LossFeaturePairing is deprecated, switch to "
+                      "FeaturePairing. LossFeaturePairing may be removed "
+                      "on or after 2019-03-06.")
+        return loss + self.weight * pairing_loss
+
+class LossMixUp(Loss):
+    """Deprecated version of `MixUp` that returns per-example loss
+    rather than mean loss."""
+    def __init__(self, model, beta, **kwargs):
+        """Constructor.
+        :param model: Model instance, the model on which to apply the loss.
+        :param beta: float, beta distribution parameter for MixUp.
+        """
+        del kwargs
+        Loss.__init__(self, model, locals())
+        self.beta = beta
+
+    def fprop(self, x, y, **kwargs):
+        mix = tf.distributions.Beta(self.beta, self.beta)
+        mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
+        xm = x + mix * (x[::-1] - x)
+        ym = y + mix * (y[::-1] - y)
+        logits = self.model.get_logits(xm, **kwargs)
+        loss = softmax_cross_entropy_with_logits(labels=ym, logits=logits)
+        warnings.warn("LossMixUp is deprecated, switch to "
+                      "MixUp. LossFeaturePairing may be removed "
+                      "on or after 2019-03-06.")
+        return loss
