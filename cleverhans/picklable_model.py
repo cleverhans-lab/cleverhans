@@ -131,23 +131,40 @@ class Layer(PicklableModel):
 
 
 class Linear(Layer):
+    """
+    Linear, fully connected layer.
+    :param init_mode: string
+        "norm" : the weight vector for each output is initialized to have
+                 the same norm, given by `init_scale`
+       "uniform_unit_scaling" :  U(-sqrt(3/input_dim), sqrt(3/input_dim))
+            from https://arxiv.org/abs/1412.6558
+    """
 
     def __init__(self, num_hid, init_scale=1., init_b=0., use_bias=True,
+                 init_mode="norm",
                  **kwargs):
         super(Linear, self).__init__(**kwargs)
         self.num_hid = num_hid
         self.init_scale = init_scale
         self.init_b = init_b
         self.use_bias = use_bias
+        self.init_mode = init_mode
 
     def set_input_shape(self, input_shape):
         batch_size, dim = input_shape
         self.input_shape = [batch_size, dim]
         self.output_shape = [batch_size, self.num_hid]
-        init = tf.random_normal([dim, self.num_hid], dtype=tf.float32)
-        init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
-                                                   keep_dims=True))
-        init = init * self.init_scale
+        if self.init_mode == "norm":
+            init = tf.random_normal([dim, self.num_hid], dtype=tf.float32)
+            init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
+                                                       keep_dims=True))
+            init = init * self.init_scale
+        elif self.init_mode == "uniform_unit_scaling":
+            scale = np.sqrt(3. / dim)
+            init = tf.random_uniform([dim, self.num_hid], dtype=tf.float32,
+                                     minval=-scale, maxval=scale)
+        else:
+            raise ValueError(self.init_mode)
         self.W = PV(init)
         if self.use_bias:
             self.b = PV((np.zeros((self.num_hid,))
@@ -169,6 +186,8 @@ class Linear(Layer):
 class Conv2D(Layer):
     """
     2-D Convolution.
+    :param use_bias: bool
+        If True (default is False) adds a per-channel bias term to the output
     :param init_mode: string
         "norm" : each kernel is initialized to have the same norm,
                  given by `init_scale`
