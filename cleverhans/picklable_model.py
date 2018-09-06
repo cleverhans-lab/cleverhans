@@ -190,13 +190,14 @@ class Conv2D(Layer):
         assert all(isinstance(e, int) for e in kernel_shape), kernel_shape
         if self.init_mode == "norm":
             init = tf.random_normal(kernel_shape, dtype=tf.float32)
-            init = self.init_scale * init / tf.sqrt(1e-7 +
-                                                tf.reduce_sum(tf.square(init),
-                                                              axis=(0, 1, 2)))
+            squared_norms = tf.reduce_sum(tf.square(init), axis=(0, 1, 2))
+            denom = tf.sqrt(1e-7 + squared_norms)
+            init = self.init_scale * init / denom
         elif self.init_mode == "inv_sqrt":
-            fan_out = self.kernel_shape[0] * self.kernel_shape[1] * self.output_channels
+            fan_out = self.kernel_shape[0] * \
+                self.kernel_shape[1] * self.output_channels
             init = tf.random_normal(kernel_shape, dtype=tf.float32,
-                    stddev=np.sqrt(2.0 / fan_out))
+                                    stddev=np.sqrt(2.0 / fan_out))
         else:
             raise ValueError(self.init_mode)
         self.kernels = PV(init, name=self.name + "_kernels")
