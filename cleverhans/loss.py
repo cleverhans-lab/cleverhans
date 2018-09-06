@@ -107,7 +107,7 @@ class MixUp(Loss):
         ym = y + mix * (y[::-1] - y)
         logits = self.model.get_logits(xm, **kwargs)
         loss = tf.reduce_mean(softmax_cross_entropy_with_logits(labels=ym,
-            logits=logits))
+                                                                logits=logits))
         return loss
 
 
@@ -160,11 +160,13 @@ def attack_softmax_cross_entropy(y, probs, mean=True):
     out = softmax_cross_entropy_with_logits(logits=logits, labels=y)
     return tf.reduce_mean(out) if mean else out
 
+
 class LossCrossEntropy(Loss):
     """
     Deprecated version of `CrossEntropy` that returns per-example loss rather
     than mean loss.
     """
+
     def __init__(self, model, smoothing=0., attack=None, **kwargs):
         """Constructor.
         :param model: Model instance, the model on which to apply the loss.
@@ -193,12 +195,13 @@ class LossCrossEntropy(Loss):
         logits = [self.model.get_logits(x, **kwargs) for x in x]
         loss = sum(
             softmax_cross_entropy_with_logits(labels=y,
-                                                             logits=logit)
+                                              logits=logit)
             for logit in logits)
         warnings.warn("LossCrossEntropy is deprecated, switch to "
                       "CrossEntropy. LossCrossEntropy may be removed on "
                       "or after 2019-03-06.")
         return loss
+
 
 class LossFeaturePairing(Loss):
     """Deprecated version of `FeaturePairing` that returns per-example loss
@@ -231,9 +234,11 @@ class LossFeaturePairing(Loss):
                       "on or after 2019-03-06.")
         return loss + self.weight * pairing_loss
 
+
 class LossMixUp(Loss):
     """Deprecated version of `MixUp` that returns per-example loss
     rather than mean loss."""
+
     def __init__(self, model, beta, **kwargs):
         """Constructor.
         :param model: Model instance, the model on which to apply the loss.
