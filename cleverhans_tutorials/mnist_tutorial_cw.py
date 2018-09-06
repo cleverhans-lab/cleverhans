@@ -16,7 +16,7 @@ from tensorflow.python.platform import flags
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
-from cleverhans.loss import LossCrossEntropy as CrossEntropy
+from cleverhans.loss import CrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
