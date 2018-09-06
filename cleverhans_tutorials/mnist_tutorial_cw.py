@@ -239,7 +239,8 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
-    flags.DEFINE_float('learning_rate', LEARNING_RATE, 'Learning rate for training')
+    flags.DEFINE_float('learning_rate', LEARNING_RATE,
+                       'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
                         'Path to save or load the model file')
     flags.DEFINE_integer('attack_iterations', 100,
