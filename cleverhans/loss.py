@@ -32,6 +32,11 @@ class Loss(object):
 
     def fprop(self, x, y):
         """Forward propagate the loss.
+        Loss should be a scalar value, independent of batch size (i.e. use
+        reduce_mean over batch axis, don't use reduce_sum or return a tensor).
+        Scalar losses are easier to add together, e.g. through `WeightedSum`.
+        Mean losses are easier to redistribute across multiple replicas without
+        needing to change learning rates, etc.
         :param x: tensor, a batch of inputs.
         :param y: tensor, a batch of outputs (1-hot labels typically).
         """
