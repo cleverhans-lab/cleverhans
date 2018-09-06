@@ -16,7 +16,7 @@ from tensorflow.python.platform import flags
 import logging
 
 from cleverhans.attacks import SaliencyMapMethod
-from cleverhans.loss import LossCrossEntropy
+from cleverhans.loss import CrossEntropy
 from cleverhans.utils import other_classes, set_log_level
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
