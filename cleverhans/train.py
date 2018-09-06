@@ -26,8 +26,6 @@ _logger = create_logger("train")
 _logger.setLevel(logging.INFO)
 
 
-
-
 def train(sess, loss, x_train, y_train,
           init_all=True, evaluate=None, feed=None, args=None,
           rng=None, var_list=None, fprop_args=None, optimizer=None,
@@ -64,12 +62,12 @@ def train(sess, loss, x_train, y_train,
     # Check that necessary arguments were given (see doc above)
     assert args.nb_epochs, "Number of epochs was not given in args dict"
     if optimizer is None:
-        assert args.learning_rate is not None, "Learning rate was not given in args dict"
+        if args.learning_rate is None:
+            raise ValueError("Learning rate was not given in args dict")
     assert args.batch_size, "Batch size was not given in args dict"
 
     if rng is None:
         rng = np.random.RandomState()
-
 
     if optimizer is None:
         optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
@@ -101,7 +99,8 @@ def train(sess, loss, x_train, y_train,
 
             loss_value = loss.fprop(x, y, **fprop_args)
 
-            grads.append(optimizer.compute_gradients(loss_value, var_list=var_list))
+            grads.append(optimizer.compute_gradients(
+                loss_value, var_list=var_list))
     num_devices = len(devices)
     print("num_devices: ", num_devices)
     grad = avg_grads(grads)
@@ -116,7 +115,6 @@ def train(sess, loss, x_train, y_train,
             sess.run(tf.global_variables_initializer())
         else:
             initialize_uninitialized_global_variables(sess)
-
 
         for epoch in xrange(args.nb_epochs):
             # Indices to shuffle training set
@@ -139,7 +137,7 @@ def train(sess, loss, x_train, y_train,
                 # Compute batch start and end indices
                 start = batch * batch_size
                 end = (batch + 1) * batch_size
-                #start, end = batch_indices(
+                # start, end = batch_indices(
                 #    batch, len(x_train), args.batch_size)
 
                 # Perform one training step
@@ -150,8 +148,10 @@ def train(sess, loss, x_train, y_train,
                 for dev_idx in xrange(num_devices):
                     cur_start = start + dev_idx * stride
                     cur_end = start + (dev_idx + 1) * stride
-                    feed_dict[xs[dev_idx]] = x_train_shuffled[cur_start:cur_end]
-                    feed_dict[ys[dev_idx]] = y_train_shuffled[cur_start:cur_end]
+                    feed_dict[xs[dev_idx]
+                              ] = x_train_shuffled[cur_start:cur_end]
+                    feed_dict[ys[dev_idx]
+                              ] = y_train_shuffled[cur_start:cur_end]
                 if cur_end != end:
                     msg = ("batch_size (%d) must be a multiple of num_devices "
                            "(%d).\nCUDA_VISIBLE_DEVICES: %s"
@@ -179,39 +179,37 @@ def get_available_gpus():
 
 
 def avg_grads(tower_grads):
-  """Calculate the average gradient for each shared variable across all towers.
-  Note that this function provides a synchronization point across all towers.
-  Args:
-    tower_grads: List of lists of (gradient, variable) tuples. The outer list
-      is over individual gradients. The inner list is over the gradient
-      calculation for each tower.
-  Returns:
-     List of pairs of (gradient, variable) where the gradient has been averaged
-     across all towers.
+    """Calculate the average gradient for each shared variable across all
+    towers.
+    Note that this function provides a synchronization point across all towers.
+    Args:
+      tower_grads: List of lists of (gradient, variable) tuples. The outer list
+        is over individual gradients. The inner list is over the gradient
+        calculation for each tower.
+    Returns:
+       List of pairs of (gradient, variable) where the gradient has been
+       averaged across all towers.
 
-  Modified from this tutorial: https://github.com/tensorflow/models/blob/master/tutorials/image/cifar10/cifar10_multi_gpu_train.py
-  """
-  if len(tower_grads) == 1:
-      return tower_grads[0]
-  average_grads = []
-  for grad_and_vars in zip(*tower_grads):
-    # Note that each grad_and_vars looks like the following:
-    #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
-    grads = [g for g, _ in grad_and_vars]
+    Modified from this tutorial: https://tinyurl.com/n3jr2vm
+    """
+    if len(tower_grads) == 1:
+        return tower_grads[0]
+    average_grads = []
+    for grad_and_vars in zip(*tower_grads):
+        # Note that each grad_and_vars looks like the following:
+        #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
+        grads = [g for g, _ in grad_and_vars]
 
-    v = grad_and_vars[0][1]
-    # grads = [tf.Print(g, [tf.sqrt(tf.reduce_sum(tf.square(g)))], v.name + " grad norm " + str(i))
-    #         for i, g in enumerate(grads)]
+        v = grad_and_vars[0][1]
 
-    # Average over the 'tower' dimension.
-    grad = tf.add_n(grads) / len(grads)
+        # Average over the 'tower' dimension.
+        grad = tf.add_n(grads) / len(grads)
 
-    # Keep in mind that the Variables are redundant because they are shared
-    # across towers. So .. we will just return the first tower's pointer to
-    # the Variable.
-    v = grad_and_vars[0][1]
-    # print("device: ", v.device)
-    assert all(v is grad_and_var[1] for grad_and_var in grad_and_vars)
-    grad_and_var = (grad, v)
-    average_grads.append(grad_and_var)
-  return average_grads
+        # Keep in mind that the Variables are redundant because they are shared
+        # across towers. So .. we will just return the first tower's pointer to
+        # the Variable.
+        v = grad_and_vars[0][1]
+        assert all(v is grad_and_var[1] for grad_and_var in grad_and_vars)
+        grad_and_var = (grad, v)
+        average_grads.append(grad_and_var)
+    return average_grads
