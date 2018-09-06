@@ -167,9 +167,17 @@ class Linear(Layer):
 
 
 class Conv2D(Layer):
+    """
+    2-D Convolution.
+    :param init_mode: string
+        "norm" : each kernel is initialized to have the same norm,
+                 given by `init_scale`
+       "inv_sqrt" :  Gaussian with standard devation given by sqrt(2/fan_out)
+    """
 
     def __init__(self, output_channels, kernel_shape, strides, padding,
-                 use_bias=False, init_scale=1., **kwargs):
+                 use_bias=False, init_scale=1.,
+                 init_mode="norm", **kwargs):
         self.__dict__.update(locals())
         del self.self
         super(Conv2D, self).__init__(**kwargs)
@@ -180,10 +188,18 @@ class Conv2D(Layer):
                                                    self.output_channels)
         assert len(kernel_shape) == 4
         assert all(isinstance(e, int) for e in kernel_shape), kernel_shape
-        init = tf.random_normal(kernel_shape, dtype=tf.float32)
-        init = self.init_scale * init / tf.sqrt(1e-7 +
-                                                tf.reduce_sum(tf.square(init),
-                                                              axis=(0, 1, 2)))
+        if self.init_mode == "norm":
+            init = tf.random_normal(kernel_shape, dtype=tf.float32)
+            squared_norms = tf.reduce_sum(tf.square(init), axis=(0, 1, 2))
+            denom = tf.sqrt(1e-7 + squared_norms)
+            init = self.init_scale * init / denom
+        elif self.init_mode == "inv_sqrt":
+            fan_out = self.kernel_shape[0] * \
+                self.kernel_shape[1] * self.output_channels
+            init = tf.random_normal(kernel_shape, dtype=tf.float32,
+                                    stddev=np.sqrt(2.0 / fan_out))
+        else:
+            raise ValueError(self.init_mode)
         self.kernels = PV(init, name=self.name + "_kernels")
         if self.use_bias:
             self.b = PV(np.zeros((self.output_channels,)).astype('float32'))
