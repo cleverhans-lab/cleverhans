@@ -56,6 +56,7 @@ class WeightedSum(Loss):
 
         return tf.add_n(terms)
 
+
 class CrossEntropy(Loss):
     def __init__(self, model, smoothing=0., attack=None, **kwargs):
         """Constructor.
