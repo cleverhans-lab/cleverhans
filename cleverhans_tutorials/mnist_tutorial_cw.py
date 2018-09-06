@@ -26,7 +26,7 @@ from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 FLAGS = flags.FLAGS
 
 LEARNING_RATE = .001
-CW_LEARNING_RATE = .001
+CW_LEARNING_RATE = .1
 
 
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
