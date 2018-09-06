@@ -85,10 +85,13 @@ def train(sess, loss, x_train, y_train,
         devices = get_available_gpus()
         if len(devices) == 0:
             warnings.warn("No GPUS, running on CPU")
-            local_device_protos = device_lib.list_local_devices()
-            devices = [x.name for x in local_device_protos]
+            # Set device to empy string, tf will figure out whether to use
+            # XLA or not, etc., automatically
+            devices = [""]
     else:
         assert len(devices) > 0
+        for device in devices:
+            assert isinstance(device, str), type(device)
     for idx, device in enumerate(devices):
         with tf.device(device):
             x = tf.placeholder(x_train.dtype, (None,) + x_train.shape[1:])
@@ -150,9 +153,13 @@ def train(sess, loss, x_train, y_train,
                     feed_dict[xs[dev_idx]] = x_train_shuffled[cur_start:cur_end]
                     feed_dict[ys[dev_idx]] = y_train_shuffled[cur_start:cur_end]
                 if cur_end != end:
-                    raise ValueError(("batch size (%d) must be a multiple of "
-                                     "num_gpus (%d)") % (batch_size,
-                                                         num_gpus))
+                    msg = ("batch_size (%d) must be a multiple of num_devices "
+                           "(%d).\nCUDA_VISIBLE_DEVICES: %s"
+                           "\ndevices: %s")
+                    args = (batch_size, num_devices,
+                            os.environ['CUDA_VISIBLE_DEVICES'],
+                            str(devices))
+                    raise ValueError(msg % args)
                 if feed is not None:
                     feed_dict.update(feed)
                 sess.run(train_step, feed_dict=feed_dict)

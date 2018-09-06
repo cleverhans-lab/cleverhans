@@ -103,7 +103,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         'nb_epochs': nb_epochs,
         'batch_size': batch_size,
         'learning_rate': learning_rate,
-        'train_dir': os.path.join(*os.path.split(model_path)[:-1]),
         'filename': os.path.split(model_path)[-1]
     }
 
@@ -112,8 +111,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     if os.path.exists(model_path + ".meta"):
         tf_model_load(sess, model_path)
     else:
-        train(sess, loss, x, y, x_train, y_train, args=train_params,
-              save=os.path.exists("models"), rng=rng)
+        train(sess, loss, x, y, x_train, y_train, args=train_params, rng=rng)
+        saver = tf.train.Saver()
+        saver.save(sess, model_path)
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
