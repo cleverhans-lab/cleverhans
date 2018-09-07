@@ -508,3 +508,35 @@ class PerImageStandardize(Layer):
 
     def fprop(self, x, **kwargs):
         return tf.map_fn(lambda ex: tf.image.per_image_standardization(ex), x)
+
+class Dropout(Layer):
+    """Dropout layer.
+
+    By default, is a no-op. Activate it during training using the kwargs
+    of MLP.fprop.
+    """
+
+
+    def set_input_shape(self, shape):
+        self.input_shape = shape
+        self.output_shape = shape
+
+    def get_params(self):
+        return []
+
+    def fprop(self, x, dropout_dict=None, **kwargs):
+        """
+        Forward propagation as either no-op or dropping random units.
+        :param x: The input to the layer
+        :param dropout_dict: dict mapping layer names to dropout inclusion
+            probabilities.
+            This dictionary should be passed as a named argument to the MLP
+            class, which will then pass it to *all* layers' fprop methods.
+            Other layers will just recieve this as an ignored kwargs entry.
+            Each dropout layer looks up its own name in this dictionary
+            to read out its include probability.
+        """
+        if dropout_dict is not None:
+            return tf.nn.dropout(x, dropout_dict[self.name])
+        return x
+
