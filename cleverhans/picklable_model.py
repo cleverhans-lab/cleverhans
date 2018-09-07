@@ -509,13 +509,13 @@ class PerImageStandardize(Layer):
     def fprop(self, x, **kwargs):
         return tf.map_fn(lambda ex: tf.image.per_image_standardization(ex), x)
 
+
 class Dropout(Layer):
     """Dropout layer.
 
     By default, is a no-op. Activate it during training using the kwargs
     of MLP.fprop.
     """
-
 
     def set_input_shape(self, shape):
         self.input_shape = shape
@@ -539,4 +539,3 @@ class Dropout(Layer):
         if dropout_dict is not None:
             return tf.nn.dropout(x, dropout_dict[self.name])
         return x
-
