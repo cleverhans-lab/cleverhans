@@ -116,7 +116,7 @@ class MLP(PicklableModel):
             x = out[layer.parent]
             try:
                 x = layer.fprop(x, **kwargs)
-            except TypeError, e:
+            except TypeError as e:
                 msg = "TypeError in fprop for %s of type %s: %s"
                 msg = msg % (layer.name, str(type(layer)), str(e))
                 raise TypeError(msg)
@@ -487,7 +487,7 @@ class Add(Layer):
             x = out[layer.parent]
             try:
                 x = layer.fprop(x)
-            except TypeError, e:
+            except TypeError as e:
                 msg = "TypeError in fprop for layer %s of type %s: %s"
                 msg = msg % (layer.name, str(type(layer)), str(e))
                 raise TypeError(msg)
