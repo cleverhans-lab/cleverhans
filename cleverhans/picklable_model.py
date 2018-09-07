@@ -576,6 +576,63 @@ class Dropout(Layer):
             return tf.nn.dropout(x, include_prob)
         return x
 
+class Residual(Layer):
+  """A residual network layer that uses group normalization."""
+
+  def __init__(self, out_filter, stride, activate_before_residual=False):
+    self.__dict__.update(locals())
+    del self.self
+    self.lrelu = LeakyReLU(0.1)
+    super(Residual, self).__init__()
+
+  def set_input_shape(self, shape):
+    self.input_shape = tuple(shape)
+    self.in_filter = shape[-1]
+    self.gn1 = GroupNorm()
+    self.gn1.set_input_shape(shape)
+    self.conv1 = Conv2D(self.out_filter, (3, 3), (self.stride, self.stride), "SAME",
+                        name=self.name + "_conv1", init_mode="inv_sqrt")
+    self.conv1.set_input_shape(shape)
+    self.gn2 = GroupNorm()
+    self.gn2.set_input_shape(self.conv1.get_output_shape())
+    self.conv2 = Conv2D(self.out_filter, (3, 3), (1, 1), "SAME",
+                        name=self.name + "_conv2", init_mode="inv_sqrt")
+    self.conv2.set_input_shape(self.conv1.get_output_shape())
+    self.output_shape = self.conv2.get_output_shape()
+
+  def get_params(self):
+    sublayers = [self.conv1, self.conv2, self.gn1, self.gn2]
+    params = []
+    for sublayer in sublayers:
+        params = params = sublayer.get_params()
+    return params
+
+  def fprop(self, x, **kwargs):
+    if self.activate_before_residual:
+      x = self.gn1.fprop(x)
+      x = self.lrelu.fprop(x)
+      orig_x = x
+    else:
+      orig_x = x
+      x = self.gn1.fprop(x)
+      x = self.lrelu.fprop(x)
+    x = self.conv1.fprop(x)
+    x = self.gn2.fprop(x)
+    x = self.lrelu.fprop(x)
+    x = self.conv2.fprop(x)
+    if self.stride != 1:
+      stride = [1, self.stride, self.stride, 1]
+      orig_x = tf.nn.avg_pool(orig_x, stride, stride, 'VALID')
+    out_filter = self.out_filter
+    in_filter = self.in_filter
+    if in_filter != out_filter:
+      orig_x = tf.pad(orig_x, [[0, 0], [0, 0], [0, 0],
+                               [(out_filter - in_filter) // 2,
+                                (out_filter - in_filter) // 2]])
+    x_shape = x.get_shape()
+    orig_x_shape = orig_x.get_shape()
+    x = x + orig_x
+    return x
 
 class GlobalAveragePool(Layer):
 
