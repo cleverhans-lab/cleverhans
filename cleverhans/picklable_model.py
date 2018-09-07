@@ -80,7 +80,7 @@ class MLP(PicklableModel):
             out = ordered_union(out, layer.get_params())
         return out
 
-    def fprop(self, x=None, given=None):
+    def fprop(self, x=None, given=None, **kwargs):
 
         # Note: this currently isn't great.
         # A layer can have any parent it wants, but the parent
@@ -114,7 +114,12 @@ class MLP(PicklableModel):
 
         for layer in layers:
             x = out[layer.parent]
-            x = layer.fprop(x)
+            try:
+                x = layer.fprop(x, **kwargs)
+            except TypeError, e:
+                msg = "TypeError in fprop for %s of type %s: %s"
+                msg = msg % (layer.name, str(type(layer)), str(e))
+                raise TypeError(msg)
             assert x is not None
             out[layer.name] = x
         return out
@@ -170,7 +175,7 @@ class Linear(Layer):
             self.b = PV((np.zeros((self.num_hid,))
                          + self.init_b).astype('float32'))
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         out = tf.matmul(x, self.W.var)
         if self.use_bias:
             out = out + self.b.var
@@ -231,7 +236,7 @@ class Conv2D(Layer):
         output_shape[0] = orig_batch_size
         self.output_shape = tuple(output_shape)
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         out = tf.nn.conv2d(x, self.kernels.var,
                            (1,) + tuple(self.strides) + (1,), self.padding)
         if self.use_bias:
@@ -258,7 +263,7 @@ class ReLU(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         out = tf.nn.relu(x)
         if self.leak != 0.0:
             out = out - self.leak * tf.nn.relu(-x)
@@ -280,7 +285,7 @@ class Sigmoid(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.nn.sigmoid(x)
 
     def get_params(self):
@@ -299,7 +304,7 @@ class Tanh(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.nn.tanh(x)
 
     def get_params(self):
@@ -321,7 +326,7 @@ class ELU(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.nn.elu(x)
 
     def get_params(self):
@@ -340,7 +345,7 @@ class SELU(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         alpha = 1.6732632423543772848170429916717
         scale = 1.0507009873554804934193349852946
         mask = tf.to_float(x >= 0.)
@@ -364,7 +369,7 @@ class TanH(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.nn.tanh(x)
 
 
@@ -374,7 +379,7 @@ class Softmax(Layer):
         self.input_shape = shape
         self.output_shape = shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         out = tf.nn.softmax(x)
         return out
 
@@ -392,7 +397,7 @@ class Flatten(Layer):
         self.output_width = output_width
         self.output_shape = [None, output_width]
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.reshape(x, [-1, self.output_width])
 
     def get_params(self):
@@ -408,7 +413,7 @@ class Print(Layer):
     def get_params(self):
         return []
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         mean = tf.reduce_mean(x)
         std = tf.sqrt(tf.reduce_mean(tf.square(x - mean)))
         return tf.Print(x,
@@ -460,7 +465,7 @@ class Add(Layer):
             out = ordered_union(out, layer.get_params())
         return out
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
 
         orig_x = x
 
@@ -480,7 +485,12 @@ class Add(Layer):
 
         for layer in self.layers:
             x = out[layer.parent]
-            x = layer.fprop(x)
+            try:
+                x = layer.fprop(x)
+            except TypeError, e:
+                msg = "TypeError in fprop for layer %s of type %s: %s"
+                msg = msg % (layer.name, str(type(layer)), str(e))
+                raise TypeError(msg)
             assert x is not None
             out[layer.name] = x
 
@@ -496,5 +506,5 @@ class PerImageStandardize(Layer):
     def get_params(self):
         return []
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.map_fn(lambda ex: tf.image.per_image_standardization(ex), x)
