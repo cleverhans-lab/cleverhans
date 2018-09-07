@@ -16,7 +16,7 @@ from tensorflow.python.platform import flags
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
-from cleverhans.loss import LossCrossEntropy
+from cleverhans.loss import CrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
@@ -25,11 +25,16 @@ from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
+LEARNING_RATE = .001
+CW_LEARNING_RATE = .2
+ATTACK_ITERATIONS = 100
+
 
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
                       test_end=10000, viz_enabled=True, nb_epochs=6,
                       batch_size=128, source_samples=10,
-                      learning_rate=0.001, attack_iterations=100,
+                      learning_rate=LEARNING_RATE,
+                      attack_iterations=ATTACK_ITERATIONS,
                       model_path=os.path.join("models", "mnist"),
                       targeted=True):
     """
@@ -79,7 +84,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     # Define TF model graph
     model = ModelBasicCNN('model1', nb_classes, nb_filters)
     preds = model.get_logits(x)
-    loss = LossCrossEntropy(model, smoothing=0.1)
+    loss = CrossEntropy(model, smoothing=0.1)
     print("Defined TensorFlow model graph.")
 
     ###########################################################################
@@ -165,7 +170,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     cw_params = {'binary_search_steps': 1,
                  yname: adv_ys,
                  'max_iterations': attack_iterations,
-                 'learning_rate': 0.1,
+                 'learning_rate': CW_LEARNING_RATE,
                  'batch_size': source_samples * nb_classes if
                  targeted else source_samples,
                  'initial_const': 10}
@@ -236,10 +241,11 @@ if __name__ == '__main__':
     flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
     flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
-    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
+    flags.DEFINE_float('learning_rate', LEARNING_RATE,
+                       'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
                         'Path to save or load the model file')
-    flags.DEFINE_integer('attack_iterations', 100,
+    flags.DEFINE_integer('attack_iterations', ATTACK_ITERATIONS,
                          'Number of iterations to run attack; 1000 is good')
     flags.DEFINE_boolean('targeted', True,
                          'Run the tutorial in targeted mode?')

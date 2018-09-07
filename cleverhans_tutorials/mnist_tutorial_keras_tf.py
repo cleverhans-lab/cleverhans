@@ -12,7 +12,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.loss import LossCrossEntropy
+from cleverhans.loss import CrossEntropy
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
@@ -126,7 +126,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         evaluate()
     else:
         print("Model was not loaded, training from scratch.")
-        loss = LossCrossEntropy(wrap, smoothing=label_smoothing)
+        loss = CrossEntropy(wrap, smoothing=label_smoothing)
         train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
               args=train_params, save=True, rng=rng)
 
@@ -172,7 +172,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         return fgsm2.generate(x, **fgsm_params)
 
     preds_2_adv = model_2(attack(x))
-    loss_2 = LossCrossEntropy(wrap_2, smoothing=label_smoothing, attack=attack)
+    loss_2 = CrossEntropy(wrap_2, smoothing=label_smoothing, attack=attack)
 
     def evaluate_2():
         # Accuracy of adversarially trained model on legitimate test inputs

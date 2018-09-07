@@ -12,7 +12,7 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 import logging
 
-from cleverhans.loss import LossCrossEntropy
+from cleverhans.loss import CrossEntropy
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import train, model_eval
 from cleverhans.attacks import FastGradientMethod

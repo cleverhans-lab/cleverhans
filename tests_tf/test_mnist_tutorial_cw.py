@@ -21,12 +21,12 @@ class TestMNISTTutorialCW(CleverHansTest):
             report = mnist_tutorial_cw.mnist_tutorial_cw(**cw_tutorial_args)
 
         # Check accuracy values contained in the AccuracyReport object
-        self.assertTrue(report.clean_train_clean_eval > 0.85)
-        self.assertTrue(report.clean_train_adv_eval == 0.00)
+        self.assertGreater(report.clean_train_clean_eval, 0.85)
+        self.assertEqual(report.clean_train_adv_eval, 0.00)
 
         # There is no adversarial training in the CW tutorial
-        self.assertTrue(report.adv_train_clean_eval == 0.)
-        self.assertTrue(report.adv_train_adv_eval == 0.)
+        self.assertEqual(report.adv_train_clean_eval, 0.)
+        self.assertEqual(report.adv_train_adv_eval, 0.)
 
         g = tf.Graph()
         with g.as_default():

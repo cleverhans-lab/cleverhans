@@ -16,7 +16,7 @@ from tensorflow.python.platform import flags
 import logging
 
 from cleverhans.attacks import SaliencyMapMethod
-from cleverhans.loss import LossCrossEntropy
+from cleverhans.loss import CrossEntropy
 from cleverhans.utils import other_classes, set_log_level
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_mnist import data_mnist
@@ -75,7 +75,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     # Define TF model graph
     model = ModelBasicCNN('model1', nb_classes, nb_filters)
     preds = model.get_logits(x)
-    loss = LossCrossEntropy(model, smoothing=0.1)
+    loss = CrossEntropy(model, smoothing=0.1)
     print("Defined TensorFlow model graph.")
 
     ###########################################################################

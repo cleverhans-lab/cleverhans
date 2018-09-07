@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import unittest
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.loss import LossCrossEntropy, LossMixUp, LossFeaturePairing
+from cleverhans.loss import CrossEntropy, MixUp, FeaturePairing
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
 import numpy as np
@@ -46,22 +46,22 @@ class TestDefenses(CleverHansTest):
         self.y = tf.placeholder(tf.float32, [None, 2], 'y')
 
     def test_xe(self):
-        loss = LossCrossEntropy(self.model, smoothing=0.)
+        loss = CrossEntropy(self.model, smoothing=0.)
         l = loss.fprop(self.x, self.y)
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
             vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-        self.assertClose(vl1, [2.210599660, 1.53666997], atol=1e-6)
-        self.assertClose(vl2, [2.210599660, 1.53666997], atol=1e-6)
+        self.assertClose(vl1, sum([2.210599660, 1.53666997]) / 2., atol=1e-6)
+        self.assertClose(vl2, sum([2.210599660, 1.53666997]) / 2., atol=1e-6)
 
     def test_xe_smoothing(self):
-        loss = LossCrossEntropy(self.model, smoothing=0.1)
+        loss = CrossEntropy(self.model, smoothing=0.1)
         l = loss.fprop(self.x, self.y)
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
             vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-        self.assertClose(vl1, [2.10587597, 1.47194624], atol=1e-6)
-        self.assertClose(vl2, [2.10587597, 1.47194624], atol=1e-6)
+        self.assertClose(vl1, sum([2.10587597, 1.47194624]) / 2., atol=1e-6)
+        self.assertClose(vl2, sum([2.10587597, 1.47194624]) / 2., atol=1e-6)
 
     def test_mixup(self):
         def eval_loss(l, count=1000):
@@ -72,32 +72,32 @@ class TestDefenses(CleverHansTest):
                                                  self.y: self.vy})
             return vl / count
 
-        loss = LossMixUp(self.model, beta=1.)
+        loss = MixUp(self.model, beta=1.)
         vl = eval_loss(loss.fprop(self.x, self.y))
         self.assertClose(vl, [1.23, 1.23], atol=5e-2)
 
-        loss = LossMixUp(self.model, beta=0.5)
+        loss = MixUp(self.model, beta=0.5)
         vl = eval_loss(loss.fprop(self.x, self.y))
         self.assertClose(vl, [1.40, 1.40], atol=5e-2)
 
     def test_feature_pairing(self):
         fgsm = FastGradientMethod(self.model)
         attack = lambda x: fgsm.generate(x)
-        loss = LossFeaturePairing(self.model, weight=0.1, attack=attack)
+        loss = FeaturePairing(self.model, weight=0.1, attack=attack)
         l = loss.fprop(self.x, self.y)
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
             vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-        self.assertClose(vl1, [4.296023369, 2.963884830], atol=1e-6)
-        self.assertClose(vl2, [4.296023369, 2.963884830], atol=1e-6)
+        self.assertClose(vl1, sum([4.296023369, 2.963884830]) / 2., atol=1e-6)
+        self.assertClose(vl2, sum([4.296023369, 2.963884830]) / 2., atol=1e-6)
 
-        loss = LossFeaturePairing(self.model, weight=10., attack=attack)
+        loss = FeaturePairing(self.model, weight=10., attack=attack)
         l = loss.fprop(self.x, self.y)
         with tf.Session() as sess:
             vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
             vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-        self.assertClose(vl1, [4.333082676, 3.00094414], atol=1e-6)
-        self.assertClose(vl2, [4.333082676, 3.00094414], atol=1e-6)
+        self.assertClose(vl1, sum([4.333082676, 3.00094414]) / 2., atol=1e-6)
+        self.assertClose(vl2, sum([4.333082676, 3.00094414]) / 2., atol=1e-6)
 
 
 if __name__ == '__main__':
