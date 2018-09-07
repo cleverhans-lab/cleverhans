@@ -577,6 +577,19 @@ class Dropout(Layer):
         return x
 
 
+class GlobalAveragePool(Layer):
+
+  def set_input_shape(self, shape):
+    self.input_shape = shape
+    self.output_shape = [shape[0], shape[-1]]
+
+  def get_params(self):
+    return []
+
+  def fprop(self, x, **kwargs):
+    assert len(list(x.get_shape())) == 4
+    return tf.reduce_mean(x, [1, 2])
+
 class GroupNorm(Layer):
     """
     Group normalization
