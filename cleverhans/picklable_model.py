@@ -575,3 +575,40 @@ class Dropout(Layer):
         if dropout:
             return tf.nn.dropout(x, include_prob)
         return x
+
+
+class GroupNorm(Layer):
+    """
+    Group normalization
+
+    https://arxiv.org/abs/1803.08494
+    """
+
+    def __init__(self, num_groups=32, eps=1e-5, init_gamma=1.):
+        self.num_groups = num_groups
+        self.eps = eps
+        self.init_gamma = init_gamma
+        super(GroupNorm, self).__init__()
+
+    def set_input_shape(self, shape):
+        self.channels = shape[-1]
+        self.actual_num_groups = min(self.channels, self.num_groups)
+        extra_dims = (self.channels // self.actual_num_groups,
+                      self.actual_num_groups)
+        self.expanded_shape = shape[1:3] + extra_dims
+        self.gamma = PV(
+            np.ones((self.channels,), dtype='float32') * self.init_gamma)
+        self.beta = PV(np.zeros((self.channels,), dtype='float32'))
+
+    def fprop(self, x, **kwargs):
+        shape = tf.shape(x)
+        batch_size = shape[0]
+        x = tf.reshape(x, (batch_size,) + self.expanded_shape)
+        mean, var = tf.nn.moments(x, [1, 2, 3], keep_dims=True)
+        x = (x - mean) / tf.sqrt(var + self.eps)
+        x = tf.reshape(x, shape)
+        x = x * self.gamma.var + self.beta.var
+        return x
+
+    def get_params(self):
+        return [self.gamma.var, self.beta.var]
