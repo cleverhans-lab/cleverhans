@@ -28,6 +28,10 @@ from cleverhans.utils_pytorch import convert_pytorch_model_to_tf
 
 FLAGS = flags.FLAGS
 
+NB_EPOCHS = 6
+BATCH_SIZE = 128
+LEARNING_RATE = .001
+
 
 class PytorchMnistModel(nn.Module):
     """ Basic MNIST model from github
