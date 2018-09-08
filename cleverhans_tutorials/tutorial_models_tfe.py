@@ -14,6 +14,7 @@ class ModelBasicCNNTFE(Model):
     """
     Basic CNN model for tensorflow eager execution.
     """
+
     def __init__(self, nb_classes=10,
                  nb_filters=64, dummy_input=tf.zeros((32, 28, 28, 1))):
         Model.__init__(self, nb_classes=nb_classes)
@@ -63,12 +64,12 @@ class ModelBasicCNNTFE(Model):
                 continue
             else:
                 self.layer_acts[layer_name] = self.layers[layer_name](
-                                                                prev_layer_act)
+                    prev_layer_act)
                 prev_layer_act = self.layer_acts[layer_name]
 
         # Adding softmax values to list of activations.
         self.layer_acts['probs'] = tf.nn.softmax(
-                                        logits=self.layer_acts['logits'])
+            logits=self.layer_acts['logits'])
         return self.layer_acts
 
     def get_layer_params(self, layer_name):
