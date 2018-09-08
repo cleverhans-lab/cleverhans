@@ -27,10 +27,14 @@ import os
 
 FLAGS = flags.FLAGS
 
+NB_EPOCHS = 6
+BATCH_SIZE = 128
+LEARNING_RATE = .001
+
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
-                   test_end=10000, nb_epochs=6, batch_size=128,
-                   learning_rate=0.001, train_dir="train_dir",
+                   test_end=10000, nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
+                   learning_rate=LEARNING_RATE, train_dir="train_dir",
                    filename="mnist.ckpt", load_model=False,
                    testing=False, label_smoothing=0.1):
     """
@@ -215,9 +219,11 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
-    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
+    flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
+                         'Number of epochs to train model')
+    flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Size of training batches')
+    flags.DEFINE_float('learning_rate', LEARNING_RATE,
+                       'Learning rate for training')
     flags.DEFINE_string('train_dir', './train_dir',
                         'Directory where to save model.')
     flags.DEFINE_string('filename', 'mnist.ckpt', 'Checkpoint filename.')

@@ -25,14 +25,17 @@ from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
+BATCH_SIZE = 128
+NB_EPOCHS = 6
+SOURCE_SAMPLES = 10
 LEARNING_RATE = .001
 CW_LEARNING_RATE = .2
 ATTACK_ITERATIONS = 100
 
 
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
-                      test_end=10000, viz_enabled=True, nb_epochs=6,
-                      batch_size=128, source_samples=10,
+                      test_end=10000, viz_enabled=True, nb_epochs=NB_EPOCHS,
+                      batch_size=BATCH_SIZE, source_samples=SOURCE_SAMPLES,
                       learning_rate=LEARNING_RATE,
                       attack_iterations=ATTACK_ITERATIONS,
                       model_path=os.path.join("models", "mnist"),
@@ -238,9 +241,11 @@ def main(argv=None):
 
 if __name__ == '__main__':
     flags.DEFINE_boolean('viz_enabled', True, 'Visualize adversarial ex.')
-    flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
-    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
+    flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
+                         'Number of epochs to train model')
+    flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Size of training batches')
+    flags.DEFINE_integer('source_samples', SOURCE_SAMPLES,
+                         'Number of test inputs to attack')
     flags.DEFINE_float('learning_rate', LEARNING_RATE,
                        'Learning rate for training')
     flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
