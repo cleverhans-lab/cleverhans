@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from distutils.version import LooseVersion
+import logging
 import math
 import numpy as np
 import os
@@ -11,7 +12,6 @@ from six.moves import xrange
 import tensorflow as tf
 import time
 import warnings
-import logging
 
 from cleverhans.utils import batch_indices, _ArgsWrapper, create_logger
 from cleverhans.compat import reduce_sum, reduce_mean
