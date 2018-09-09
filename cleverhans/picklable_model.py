@@ -520,6 +520,10 @@ class Dropout(Layer):
     of MLP.fprop.
     """
 
+    def __init__(self, include_prob=0.5, **kwargs):
+        super(Dropout, self).__init__(**kwargs)
+        self.include_prob = include_prob
+
     def set_input_shape(self, shape):
         self.input_shape = shape
         self.output_shape = shape
@@ -527,18 +531,26 @@ class Dropout(Layer):
     def get_params(self):
         return []
 
-    def fprop(self, x, dropout_dict=None, **kwargs):
+    def fprop(self, x, dropout=False, dropout_dict=None, **kwargs):
         """
         Forward propagation as either no-op or dropping random units.
         :param x: The input to the layer
-        :param dropout_dict: dict mapping layer names to dropout inclusion
-            probabilities.
+        :param dropout: bool specifying whether to drop units
+        :param dropout_dict: dict
+            This dictionary is usually not needed.
+            In rare cases, generally for research purposes, this dictionary
+            makes it possible to run forward propagation with a different
+            dropout include probability.
             This dictionary should be passed as a named argument to the MLP
             class, which will then pass it to *all* layers' fprop methods.
-            Other layers will just recieve this as an ignored kwargs entry.
+            Other layers will just receive this as an ignored kwargs entry.
             Each dropout layer looks up its own name in this dictionary
             to read out its include probability.
         """
+        include_prob = self.include_prob
         if dropout_dict is not None:
-            return tf.nn.dropout(x, dropout_dict[self.name])
+            assert dropout
+            include_prob = dropout_dict[self.name]
+        if dropout:
+            return tf.nn.dropout(x, include_prob)
         return x
