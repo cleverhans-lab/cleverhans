@@ -280,64 +280,13 @@ def tf_model_load(sess, file_path=None):
 
     return True
 
+def batch_eval(*args, **kwargs):
+    # Inside function to avoid circul import
+    from cleverhans.evaluation import batch_eval
+    warnings.warn("batch_eval has moved to cleverhans.evaluation. "
+                  "batch_eval will be removed from utils_tf on or after "
+                  "2019-03-09.")
 
-def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, feed=None,
-               args=None):
-    """
-    A helper function that computes a tensor on numpy inputs by batches.
-
-    :param sess:
-    :param tf_inputs:
-    :param tf_outputs:
-    :param numpy_inputs:
-    :param feed: An optional dictionary that is appended to the feeding
-             dictionary before the session runs. Can be used to feed
-             the learning phase of a Keras model for instance.
-    :param args: dict or argparse `Namespace` object.
-                 Should contain `batch_size`
-    """
-    args = _ArgsWrapper(args or {})
-
-    assert args.batch_size, "Batch size was not given in args dict"
-
-    n = len(numpy_inputs)
-    assert n > 0
-    assert n == len(tf_inputs)
-    m = numpy_inputs[0].shape[0]
-    for i in xrange(1, n):
-        assert numpy_inputs[i].shape[0] == m
-    out = []
-    for _ in tf_outputs:
-        out.append([])
-    with sess.as_default():
-        for start in xrange(0, m, args.batch_size):
-            batch = start // args.batch_size
-            if batch % 100 == 0 and batch > 0:
-                _logger.debug("Batch " + str(batch))
-
-            # Compute batch start and end indices
-            start = batch * args.batch_size
-            end = start + args.batch_size
-            numpy_input_batches = [numpy_input[start:end]
-                                   for numpy_input in numpy_inputs]
-            cur_batch_size = numpy_input_batches[0].shape[0]
-            assert cur_batch_size <= args.batch_size
-            for e in numpy_input_batches:
-                assert e.shape[0] == cur_batch_size
-
-            feed_dict = dict(zip(tf_inputs, numpy_input_batches))
-            if feed is not None:
-                feed_dict.update(feed)
-            numpy_output_batches = sess.run(tf_outputs, feed_dict=feed_dict)
-            for e in numpy_output_batches:
-                assert e.shape[0] == cur_batch_size, e.shape
-            for out_elem, numpy_output_batch in zip(out, numpy_output_batches):
-                out_elem.append(numpy_output_batch)
-
-    out = [np.concatenate(x, axis=0) for x in out]
-    for e in out:
-        assert e.shape[0] == m, e.shape
-    return out
 
 
 def model_argmax(sess, x, predictions, samples, feed=None):
