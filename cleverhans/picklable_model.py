@@ -46,6 +46,9 @@ class MLP(PicklableModel):
     def __init__(self, layers, input_shape):
         super(MLP, self).__init__()
 
+        if not isinstance(layers, list):
+            raise ValueError("`layers` must be a list.")
+
         self.layer_names = []
         self.layers = layers
         self.input_shape = input_shape
