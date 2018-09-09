@@ -25,11 +25,18 @@ from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
+VIZ_ENABLED = True
+NB_EPOCHS = 6
+BATCH_SIZE = 128
+LEARNING_RATE = .001
+SOURCE_SAMPLES = 10
+
 
 def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
-                        test_end=10000, viz_enabled=True, nb_epochs=6,
-                        batch_size=128, source_samples=10,
-                        learning_rate=0.001):
+                        test_end=10000, viz_enabled=VIZ_ENABLED,
+                        nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
+                        source_samples=SOURCE_SAMPLES,
+                        learning_rate=LEARNING_RATE):
     """
     MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
     :param train_start: index of first training set example
@@ -103,7 +110,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     # Craft adversarial examples using the Jacobian-based saliency map approach
     ###########################################################################
-    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes-1) +
+    print('Crafting ' + str(source_samples) + ' * ' + str(nb_classes - 1) +
           ' adversarial examples')
 
     # Keep track of success (adversarial example classified in target)
@@ -127,7 +134,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
     for sample_ind in xrange(0, source_samples):
         print('--------------------------------------')
         print('Attacking input %i/%i' % (sample_ind + 1, source_samples))
-        sample = x_test[sample_ind:(sample_ind+1)]
+        sample = x_test[sample_ind:(sample_ind + 1)]
 
         # We want to find an adversarial example for each possible target class
         # (i.e. all classes that differ from the label given in the dataset)
@@ -209,10 +216,14 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_boolean('viz_enabled', True, 'Visualize adversarial ex.')
-    flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
-    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_integer('source_samples', 10, 'Nb of test inputs to attack')
-    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
+    flags.DEFINE_boolean('viz_enabled', VIZ_ENABLED,
+                         'Visualize adversarial ex.')
+    flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
+                         'Number of epochs to train model')
+    flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Size of training batches')
+    flags.DEFINE_integer('source_samples', SOURCE_SAMPLES,
+                         'Nb of test inputs to attack')
+    flags.DEFINE_float('learning_rate', LEARNING_RATE,
+                       'Learning rate for training')
 
     tf.app.run()

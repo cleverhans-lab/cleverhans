@@ -27,11 +27,18 @@ import os
 
 FLAGS = flags.FLAGS
 
+NB_EPOCHS = 6
+BATCH_SIZE = 128
+LEARNING_RATE = .001
+TRAIN_DIR = 'train_dir'
+FILENAME = 'mnist.ckpt'
+LOAD_MODEL = False
+
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
-                   test_end=10000, nb_epochs=6, batch_size=128,
-                   learning_rate=0.001, train_dir="train_dir",
-                   filename="mnist.ckpt", load_model=False,
+                   test_end=10000, nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
+                   learning_rate=LEARNING_RATE, train_dir=TRAIN_DIR,
+                   filename=FILENAME, load_model=LOAD_MODEL,
                    testing=False, label_smoothing=0.1):
     """
     MNIST CleverHans tutorial
@@ -215,11 +222,14 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
-    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
-    flags.DEFINE_string('train_dir', './train_dir',
+    flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
+                         'Number of epochs to train model')
+    flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Size of training batches')
+    flags.DEFINE_float('learning_rate', LEARNING_RATE,
+                       'Learning rate for training')
+    flags.DEFINE_string('train_dir', TRAIN_DIR,
                         'Directory where to save model.')
-    flags.DEFINE_string('filename', 'mnist.ckpt', 'Checkpoint filename.')
-    flags.DEFINE_boolean('load_model', False, 'Load saved model or train.')
+    flags.DEFINE_string('filename', FILENAME, 'Checkpoint filename.')
+    flags.DEFINE_boolean('load_model', LOAD_MODEL,
+                         'Load saved model or train.')
     tf.app.run()

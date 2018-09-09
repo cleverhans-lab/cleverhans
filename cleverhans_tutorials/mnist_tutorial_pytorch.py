@@ -28,6 +28,10 @@ from cleverhans.utils_pytorch import convert_pytorch_model_to_tf
 
 FLAGS = flags.FLAGS
 
+NB_EPOCHS = 6
+BATCH_SIZE = 128
+LEARNING_RATE = .001
+
 
 class PytorchMnistModel(nn.Module):
     """ Basic MNIST model from github
@@ -55,8 +59,8 @@ class PytorchMnistModel(nn.Module):
         return F.log_softmax(x, dim=-1)
 
 
-def mnist_tutorial(nb_epochs=6, batch_size=128, train_end=-1, test_end=-1,
-                   learning_rate=0.001):
+def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
+                   train_end=-1, test_end=-1, learning_rate=LEARNING_RATE):
     """
     MNIST cleverhans tutorial
     :param nb_epochs: number of epochs to train model
@@ -80,7 +84,7 @@ def mnist_tutorial(nb_epochs=6, batch_size=128, train_end=-1, test_end=-1,
 
     # Truncate the datasets so that our test run more quickly
     train_loader.dataset.train_data = train_loader.dataset.train_data[
-                                      :train_end]
+        :train_end]
     test_loader.dataset.test_data = test_loader.dataset.test_data[:test_end]
 
     # Train our model
@@ -167,8 +171,11 @@ def main(_=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
-    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
+    flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
+                         'Number of epochs to train model')
+    flags.DEFINE_integer('batch_size', BATCH_SIZE,
+                         'Size of training batches')
+    flags.DEFINE_float('learning_rate', LEARNING_RATE,
+                       'Learning rate for training')
 
     tf.app.run()

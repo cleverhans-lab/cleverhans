@@ -25,13 +25,19 @@ from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
+NB_EPOCHS = 6
+BATCH_SIZE = 128
+LEARNING_RATE = 0.001
+CLEAN_TRAIN = True
+BACKPROP_THROUGH_ATTACK = False
+
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
-                   test_end=10000, nb_epochs=6, batch_size=128,
-                   learning_rate=0.001,
-                   clean_train=True,
+                   test_end=10000, nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
+                   learning_rate=LEARNING_RATE,
+                   clean_train=CLEAN_TRAIN,
                    testing=False,
-                   backprop_through_attack=False,
+                   backprop_through_attack=BACKPROP_THROUGH_ATTACK,
                    nb_filters=64, num_threads=None,
                    label_smoothing=0.1):
     """
@@ -188,12 +194,16 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_integer('nb_filters', 64, 'Model size multiplier')
-    flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
-    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
-    flags.DEFINE_bool('clean_train', True, 'Train on clean examples')
-    flags.DEFINE_bool('backprop_through_attack', False,
+    flags.DEFINE_integer('nb_filters', NB_FILTERS,
+                         'Model size multiplier')
+    flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
+                         'Number of epochs to train model')
+    flags.DEFINE_integer('batch_size', BATCH_SIZE,
+                         'Size of training batches')
+    flags.DEFINE_float('learning_rate', LEARNING_RATE,
+                       'Learning rate for training')
+    flags.DEFINE_bool('clean_train', CLEAN_TRAIN, 'Train on clean examples')
+    flags.DEFINE_bool('backprop_through_attack', BACKPROP_THROUGH_ATTACK,
                       ('If True, backprop through adversarial example '
                        'construction process during adversarial training'))
 

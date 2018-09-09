@@ -33,6 +33,16 @@ from cleverhans.utils import TemporaryLogLevel
 
 FLAGS = flags.FLAGS
 
+NB_CLASSES = 10
+BATCH_SIZE = 128
+LEARNING_RATE = .001
+NB_EPOCHS = 10
+HOLDOUT = 150
+DATA_AUG = 6
+NB_EPOCHS_S = 10
+LMBDA = .1
+AUG_BATCH_SIZE = 512
+
 
 def setup_tutorial():
     """
@@ -167,22 +177,24 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
             Y_sub = np.hstack([Y_sub, Y_sub])
-            X_sub_prev = X_sub[int(len(X_sub)/2):]
+            X_sub_prev = X_sub[int(len(X_sub) / 2):]
             eval_params = {'batch_size': batch_size}
             bbox_val = batch_eval(sess, [x], [bbox_preds], [X_sub_prev],
                                   args=eval_params)[0]
             # Note here that we take the argmax because the adversary
             # only has access to the label (not the probabilities) output
             # by the black-box model
-            Y_sub[int(len(X_sub)/2):] = np.argmax(bbox_val, axis=1)
+            Y_sub[int(len(X_sub) / 2):] = np.argmax(bbox_val, axis=1)
 
     return model_sub, preds_sub
 
 
 def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
-                   test_end=10000, nb_classes=10, batch_size=128,
-                   learning_rate=0.001, nb_epochs=10, holdout=150, data_aug=6,
-                   nb_epochs_s=10, lmbda=0.1, aug_batch_size=512):
+                   test_end=10000, nb_classes=NB_CLASSES,
+                   batch_size=BATCH_SIZE, learning_rate=LEARNING_RATE,
+                   nb_epochs=NB_EPOCHS, holdout=HOLDOUT, data_aug=DATA_AUG,
+                   nb_epochs_s=NB_EPOCHS_S, lmbda=LMBDA,
+                   aug_batch_size=AUG_BATCH_SIZE):
     """
     MNIST tutorial for the black-box attack from arxiv.org/abs/1602.02697
     :param train_start: index of first training set example
@@ -282,19 +294,26 @@ def main(argv=None):
 
 if __name__ == '__main__':
     # General flags
-    flags.DEFINE_integer('nb_classes', 10, 'Number of classes in problem')
-    flags.DEFINE_integer('batch_size', 128, 'Size of training batches')
-    flags.DEFINE_float('learning_rate', 0.001, 'Learning rate for training')
+    flags.DEFINE_integer('nb_classes', NB_CLASSES,
+                         'Number of classes in problem')
+    flags.DEFINE_integer('batch_size', BATCH_SIZE,
+                         'Size of training batches')
+    flags.DEFINE_float('learning_rate', LEARNING_RATE,
+                       'Learning rate for training')
 
     # Flags related to oracle
-    flags.DEFINE_integer('nb_epochs', 10, 'Number of epochs to train model')
+    flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
+                         'Number of epochs to train model')
 
     # Flags related to substitute
-    flags.DEFINE_integer('holdout', 150, 'Test set holdout for adversary')
-    flags.DEFINE_integer('data_aug', 6, 'Nb of substitute data augmentations')
-    flags.DEFINE_integer('nb_epochs_s', 10, 'Training epochs for substitute')
-    flags.DEFINE_float('lmbda', 0.1, 'Lambda from arxiv.org/abs/1602.02697')
-    flags.DEFINE_integer('data_aug_batch_size', 512,
+    flags.DEFINE_integer('holdout', HOLDOUT,
+                         'Test set holdout for adversary')
+    flags.DEFINE_integer('data_aug', DATA_AUG,
+                         'Number of substitute data augmentations')
+    flags.DEFINE_integer('nb_epochs_s', NB_EPOCHS_S,
+                         'Training epochs for substitute')
+    flags.DEFINE_float('lmbda', LMBDA, 'Lambda from arxiv.org/abs/1602.02697')
+    flags.DEFINE_integer('data_aug_batch_size', AUG_BATCH_SIZE,
                          'Batch size for augmentation')
 
     tf.app.run()
