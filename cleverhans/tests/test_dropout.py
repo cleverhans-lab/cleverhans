@@ -1,6 +1,7 @@
 from cleverhans.picklable_model import MLP, Dropout
 import tensorflow as tf
 
+
 def test_no_drop():
     # Make sure dropout does nothing by default (so it does not cause
     # stochasticity at test time)
@@ -47,7 +48,7 @@ def test_override():
     model = MLP(input_shape=[1, 1], layers=[Dropout(name='output',
                                                     include_prob=1e-8)])
     x = tf.constant([[1]], dtype=tf.float32)
-    dropout_dict = {'output' : 1.}
+    dropout_dict = {'output': 1.}
     y = model.get_layer(x, 'output', dropout=True, dropout_dict=dropout_dict)
     sess = tf.Session()
     y_value = sess.run(y)
