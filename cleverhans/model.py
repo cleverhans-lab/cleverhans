@@ -124,7 +124,6 @@ class Model(object):
         return self is other
 
 
-
 class CallableModelWrapper(Model):
 
     def __init__(self, callable_fn, output_layer):

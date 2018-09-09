@@ -390,6 +390,7 @@ class Softmax(Layer):
     def make_label_placeholder(self):
         return tf.placeholder(tf.float32, self.output_shape)
 
+
 class Flatten(Layer):
 
     def set_input_shape(self, shape):

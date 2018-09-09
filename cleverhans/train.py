@@ -21,7 +21,6 @@ from cleverhans.compat import reduce_any
 from cleverhans.compat import softmax_cross_entropy_with_logits
 
 
-
 _logger = create_logger("train")
 _logger.setLevel(logging.INFO)
 
@@ -79,7 +78,6 @@ def train(sess, loss, x_train, y_train,
     grads = []
     xs = []
     ys = []
-
 
     devices = infer_devices(devices)
     for idx, device in enumerate(devices):
@@ -163,8 +161,6 @@ def train(sess, loss, x_train, y_train,
                 evaluate()
 
     return True
-
-
 
 
 def avg_grads(tower_grads):

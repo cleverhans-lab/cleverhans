@@ -32,19 +32,19 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
     :return: a float with the accuracy value
     """
 
-
-
     factory = _CorrectFactory(model)
 
     correct, = batch_eval_multi_worker(sess, factory, [x, y],
-                                      batch_size=batch_size, devices=devices,
-                                      feed=feed)
+                                       batch_size=batch_size, devices=devices,
+                                       feed=feed)
 
     return correct.mean()
+
 
 # Cache for storing output of `batch_eval_multi_worker`'s calls to
 # `graph_factory`, to avoid making the tf graph too big
 _batch_eval_multi_worker_cache = {}
+
 
 def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
                             devices=None, feed=None):
@@ -105,14 +105,12 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
         # should just specify batch_size
         batch_size = len(devices) * DEFAULT_EXAMPLES_PER_DEVICE
 
-
     n = len(numpy_inputs)
     assert n > 0
     m = numpy_inputs[0].shape[0]
     for i in range(1, n):
         assert numpy_inputs[i].shape[0] == m
     out = []
-
 
     replicated_tf_inputs = []
     replicated_tf_outputs = []
@@ -167,7 +165,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
         raise NotImplementedError("Your batch size is bigger than the"
                                   " dataset, this function is probably"
                                   " overkill.")
-    
+
     def pad(array):
         if excess > 0:
             array = np.concatenate((array, array[:excess]), axis=0)
@@ -206,7 +204,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
             device_values = flat_output_batches[o_start:o_end]
             assert len(device_values) == num_devices
             output_batches.append(device_values)
-        
+
         for out_elem, device_values in zip(out, output_batches):
             assert len(device_values) == num_devices, (len(device_values),
                                                        num_devices)
@@ -223,6 +221,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
     assert len(out) == p, (len(out), p)
 
     return out
+
 
 def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, batch_size=None,
                feed=None,
@@ -251,7 +250,7 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, batch_size=None,
                 Deprecated and included only for backwards compatibility.
                  Should contain `batch_size`
     """
-    
+
     if args is not None:
         warnings.warn("`args` is deprecated and will be removde on or "
                       "after 2019-03-09. Pass `batch_size` directly.")
@@ -301,7 +300,9 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, batch_size=None,
         assert e.shape[0] == m, e.shape
     return out
 
+
 DEFAULT_EXAMPLES_PER_DEVICE = 128
+
 
 class _CorrectFactory(object):
     """
@@ -323,7 +324,7 @@ class _CorrectFactory(object):
         if not isinstance(other, _CorrectFactory):
             return False
         return self.model == other.model
-   
+
     def __call__(self):
         x_batch = self.model.make_input_placeholder()
         y_batch = self.model.make_label_placeholder()

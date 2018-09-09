@@ -280,13 +280,13 @@ def tf_model_load(sess, file_path=None):
 
     return True
 
+
 def batch_eval(*args, **kwargs):
     # Inside function to avoid circul import
     from cleverhans.evaluation import batch_eval
     warnings.warn("batch_eval has moved to cleverhans.evaluation. "
                   "batch_eval will be removed from utils_tf on or after "
                   "2019-03-09.")
-
 
 
 def model_argmax(sess, x, predictions, samples, feed=None):
@@ -506,6 +506,7 @@ def infer_devices(devices=None):
         for device in devices:
             assert isinstance(device, str), type(device)
     return devices
+
 
 def get_available_gpus():
     """

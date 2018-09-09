@@ -1,6 +1,7 @@
 from cleverhans.evaluation import _CorrectFactory
 from cleverhans.model import Model
 
+
 def test_cache():
     # Test that _CorrectFactory can be cached
     model = Model()
