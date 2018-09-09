@@ -117,6 +117,12 @@ class Model(object):
         raise NotImplementedError(str(type(self)) + " does not implement "
                                   "make_label_placeholder")
 
+    def __hash__(self):
+        return hash(id(self))
+
+    def __eq__(self, other):
+        return self is other
+
 
 
 class CallableModelWrapper(Model):

@@ -32,30 +32,9 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
     :return: a float with the accuracy value
     """
 
-    class CorrectFactory(object):
-        """
-        A factory for an expression for one bool per example indicating
-        whether each example is correct.
-        """
-
-        def __init__(self, model):
-            self.model = model
-       
-        def __call__(self):
-            x_batch = self.model.make_input_placeholder()
-            y_batch = self.model.make_label_placeholder()
-
-            if LooseVersion(tf.__version__) < LooseVersion('1.0.0'):
-                raise NotImplementedError()
-
-            predictions = model.get_probs(x_batch)
-            correct = tf.equal(tf.argmax(y_batch, axis=-1),
-                               tf.argmax(predictions, axis=-1))
-
-            return (x_batch, y_batch), (correct,)
 
 
-    factory = CorrectFactory(model)
+    factory = _CorrectFactory(model)
 
     correct, = batch_eval_multi_worker(sess, factory, [x, y],
                                       batch_size=batch_size, devices=devices,
@@ -63,14 +42,26 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
 
     return correct.mean()
 
+# Cache for storing output of `batch_eval_multi_worker`'s calls to
+# `graph_factory`, to avoid making the tf graph too big
+_batch_eval_multi_worker_cache = {}
+
 def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
                             devices=None, feed=None):
     """
     Generic computation engine for evaluating an expression across a whole
     dataset, divided into batches.
+
     This function assumes that the work can be parallelized with one worker
     device handling one batch of data. If you need multiple devices per
     batch, use `batch_eval`.
+
+    The tensorflow graph for multiple workers is large, so the first few
+    runs of the graph will be very slow. If you expect to run the graph
+    few times (few calls to `batch_eval_multi_worker` that each run few
+    batches) the startup cost might dominate the runtime, and it might be
+    preferable to use the single worker `batch_eval` just because its
+    startup cost will be lower.
 
     :param sess: tensorflow Session
     :param graph_factory: callable
@@ -105,6 +96,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
              dictionary before the session runs. Can be used to feed
              the learning phase of a Keras model for instance.
     """
+    global _batch_eval_multi_worker_cache
 
     devices = infer_devices(devices)
 
@@ -127,22 +119,40 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
     p = None
 
     num_devices = len(devices)
+    print("NUM_DEVICES: ", len(devices))
     assert batch_size % num_devices == 0
     device_batch_size = batch_size // num_devices
 
-    for device in devices:
-        with tf.device(device):
-            tf_inputs, tf_outputs = graph_factory()
-            assert len(tf_inputs) == n
-            if p is None:
-                p = len(tf_outputs)
-                assert p > 0
-                for _ in tf_outputs:
-                    out.append([])
-            else:
-                assert len(tf_outputs) == p
-            replicated_tf_inputs.append(tf_inputs)
-            replicated_tf_outputs.append(tf_outputs)
+    cache_key = (graph_factory, tuple(devices))
+    if cache_key in _batch_eval_multi_worker_cache:
+        # Retrieve graph for multi-GPU inference from cache.
+        # This avoids adding tf ops to the graph
+        packed = _batch_eval_multi_worker_cache[cache_key]
+        replicated_tf_inputs, replicated_tf_outputs = packed
+        p = len(replicated_tf_outputs[0])
+        assert p > 0
+    else:
+        # This graph has not been built before.
+        # Build it now.
+
+        for device in devices:
+            with tf.device(device):
+                tf_inputs, tf_outputs = graph_factory()
+                assert len(tf_inputs) == n
+                if p is None:
+                    p = len(tf_outputs)
+                    assert p > 0
+                else:
+                    assert len(tf_outputs) == p
+                replicated_tf_inputs.append(tf_inputs)
+                replicated_tf_outputs.append(tf_outputs)
+        del tf_inputs
+        del tf_outputs
+        # Store the result in the cache
+        packed = replicated_tf_inputs, replicated_tf_outputs
+        _batch_eval_multi_worker_cache[cache_key] = packed
+    for _ in range(p):
+        out.append([])
     flat_tf_outputs = []
     for output in range(p):
         for dev_idx in range(num_devices):
@@ -210,6 +220,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
 
     # Trim off the examples we used to pad up to batch size
     out = [e[:orig_m] for e in out]
+    assert len(out) == p, (len(out), p)
 
     return out
 
@@ -291,3 +302,37 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, batch_size=None,
     return out
 
 DEFAULT_EXAMPLES_PER_DEVICE = 128
+
+class _CorrectFactory(object):
+    """
+    A factory for an expression for one bool per example indicating
+    whether each example is correct.
+    """
+
+    def __init__(self, model):
+        self.model = model
+
+    def __hash__(self):
+        # Make factory hashable so that no two factories for the
+        # same model will be used to build redundant tf graphs
+        return self.model.__hash__()
+
+    def __eq__(self, other):
+        # Make factory hashable so that no two factories for the
+        # same model will be used to build redundant tf graphs
+        if not isinstance(other, _CorrectFactory):
+            return False
+        return self.model == other.model
+   
+    def __call__(self):
+        x_batch = self.model.make_input_placeholder()
+        y_batch = self.model.make_label_placeholder()
+
+        if LooseVersion(tf.__version__) < LooseVersion('1.0.0'):
+            raise NotImplementedError()
+
+        predictions = self.model.get_probs(x_batch)
+        correct = tf.equal(tf.argmax(y_batch, axis=-1),
+                           tf.argmax(predictions, axis=-1))
+
+        return (x_batch, y_batch), (correct,)
