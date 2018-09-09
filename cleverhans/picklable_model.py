@@ -387,6 +387,8 @@ class Softmax(Layer):
     def get_params(self):
         return []
 
+    def make_label_placeholder(self):
+        return tf.placeholder(tf.float32, self.output_shape)
 
 class Flatten(Layer):
 
