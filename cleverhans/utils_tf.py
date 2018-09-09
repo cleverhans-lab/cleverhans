@@ -72,7 +72,13 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
           init_all=True, evaluate=None, feed=None, args=None,
           rng=None, var_list=None, fprop_args=None, optimizer=None):
     """
-    Train a TF graph
+    Train a TF graph.
+    This function is not yet deprecated, but is likely to become deprecated
+    soon. Prefer cleverhans.train.train when possible.
+    cleverhans.train.train supports multiple GPUs but this function is still
+    needed to support legacy models that do not support calling fprop more
+    than once.
+
     :param sess: TF session to use when training the graph
     :param loss: tensor, the model training loss.
     :param x: input placeholder

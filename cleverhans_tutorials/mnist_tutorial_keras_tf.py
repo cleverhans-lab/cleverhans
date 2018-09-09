@@ -17,7 +17,8 @@ from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import train, model_eval
+from cleverhans.train import train
+from cleverhans.utils_tf import model_eval
 import keras
 from keras import backend
 import numpy as np
@@ -134,8 +135,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     else:
         print("Model was not loaded, training from scratch.")
         loss = CrossEntropy(wrap, smoothing=label_smoothing)
-        train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
-              args=train_params, save=True, rng=rng)
+        train(sess, loss, x_train, y_train, evaluate=evaluate,
+              args=train_params, rng=rng)
 
     # Calculate training error
     if testing:
@@ -196,8 +197,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
         report.adv_train_adv_eval = accuracy
 
     # Perform and evaluate adversarial training
-    train(sess, loss_2, x, y, x_train, y_train, evaluate=evaluate_2,
-          args=train_params, save=False, rng=rng)
+    train(sess, loss_2, x_train, y_train, evaluate=evaluate_2,
+          args=train_params, rng=rng)
 
     # Calculate training errors
     if testing:

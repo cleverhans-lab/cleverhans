@@ -56,7 +56,7 @@ def setup_tutorial():
     return True
 
 
-def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
+def prep_bbox(sess, x, y, x_train, y_train, x_test, y_test,
               nb_epochs, batch_size, learning_rate,
               rng, nb_classes=10, img_rows=28, img_cols=28, nchannels=1):
     """
@@ -65,10 +65,10 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
     :param sess: the TF session
     :param x: the input placeholder for MNIST
     :param y: the ouput placeholder for MNIST
-    :param X_train: the training data for the oracle
-    :param Y_train: the training labels for the oracle
-    :param X_test: the testing data for the oracle
-    :param Y_test: the testing labels for the oracle
+    :param x_train: the training data for the oracle
+    :param y_train: the training labels for the oracle
+    :param x_test: the testing data for the oracle
+    :param y_test: the testing labels for the oracle
     :param nb_epochs: number of epochs to train model
     :param batch_size: size of training batches
     :param learning_rate: learning rate for training
@@ -89,11 +89,11 @@ def prep_bbox(sess, x, y, X_train, Y_train, X_test, Y_test,
         'batch_size': batch_size,
         'learning_rate': learning_rate
     }
-    train(sess, loss, x, y, X_train, Y_train, args=train_params, rng=rng)
+    train(sess, loss, x, y, x_train, y_train, args=train_params, rng=rng)
 
     # Print out the accuracy on legitimate data
     eval_params = {'batch_size': batch_size}
-    accuracy = model_eval(sess, x, y, predictions, X_test, Y_test,
+    accuracy = model_eval(sess, x, y, predictions, x_test, y_test,
                           args=eval_params)
     print('Test accuracy of black-box on legitimate test '
           'examples: ' + str(accuracy))
@@ -120,7 +120,7 @@ class ModelSubstitute(Model):
                     self.O_PROBS: tf.nn.softmax(logits=logits)}
 
 
-def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
+def train_sub(sess, x, y, bbox_preds, x_sub, y_sub, nb_classes,
               nb_epochs_s, batch_size, learning_rate, data_aug, lmbda,
               aug_batch_size, rng, img_rows=28, img_cols=28,
               nchannels=1):
@@ -131,8 +131,8 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
     :param x: input TF placeholder
     :param y: output TF placeholder
     :param bbox_preds: output of black-box model predictions
-    :param X_sub: initial substitute training data
-    :param Y_sub: initial substitute training labels
+    :param x_sub: initial substitute training data
+    :param y_sub: initial substitute training labels
     :param nb_classes: number of output classes
     :param nb_epochs_s: number of epochs to train substitute model
     :param batch_size: size of training batches
@@ -161,8 +161,8 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             'learning_rate': learning_rate
         }
         with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
-            train(sess, loss_sub, x, y, X_sub,
-                  to_categorical(Y_sub, nb_classes),
+            train(sess, loss_sub, x, y, x_sub,
+                  to_categorical(y_sub, nb_classes),
                   init_all=False, args=train_params, rng=rng,
                   var_list=model_sub.get_params())
 
@@ -171,20 +171,20 @@ def train_sub(sess, x, y, bbox_preds, X_sub, Y_sub, nb_classes,
             print("Augmenting substitute training data.")
             # Perform the Jacobian augmentation
             lmbda_coef = 2 * int(int(rho / 3) != 0) - 1
-            X_sub = jacobian_augmentation(sess, x, X_sub, Y_sub, grads,
+            x_sub = jacobian_augmentation(sess, x, x_sub, y_sub, grads,
                                           lmbda_coef * lmbda, aug_batch_size)
 
             print("Labeling substitute training data.")
             # Label the newly generated synthetic points using the black-box
-            Y_sub = np.hstack([Y_sub, Y_sub])
-            X_sub_prev = X_sub[int(len(X_sub) / 2):]
+            y_sub = np.hstack([y_sub, y_sub])
+            x_sub_prev = x_sub[int(len(x_sub)/2):]
             eval_params = {'batch_size': batch_size}
-            bbox_val = batch_eval(sess, [x], [bbox_preds], [X_sub_prev],
+            bbox_val = batch_eval(sess, [x], [bbox_preds], [x_sub_prev],
                                   args=eval_params)[0]
             # Note here that we take the argmax because the adversary
             # only has access to the label (not the probabilities) output
             # by the black-box model
-            Y_sub[int(len(X_sub) / 2):] = np.argmax(bbox_val, axis=1)
+            y_sub[int(len(x_sub)/2):] = np.argmax(bbox_val, axis=1)
 
     return model_sub, preds_sub
 
@@ -226,8 +226,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
                                                   test_start=test_start,
                                                   test_end=test_end)
     # Initialize substitute training set reserved for adversary
-    X_sub = x_test[:holdout]
-    Y_sub = np.argmax(y_test[:holdout], axis=1)
+    x_sub = x_test[:holdout]
+    y_sub = np.argmax(y_test[:holdout], axis=1)
 
     # Redefine test set as remaining samples unavailable to adversaries
     x_test = x_test[holdout:]
@@ -255,7 +255,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
     # Train substitute using method from https://arxiv.org/abs/1602.02697
     print("Training the substitute model.")
-    train_sub_out = train_sub(sess, x, y, bbox_preds, X_sub, Y_sub,
+    train_sub_out = train_sub(sess, x, y, bbox_preds, x_sub, y_sub,
                               nb_classes, nb_epochs_s, batch_size,
                               learning_rate, data_aug, lmbda, aug_batch_size,
                               rng, img_rows, img_cols, nchannels)

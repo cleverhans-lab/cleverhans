@@ -78,10 +78,10 @@ class CrossEntropy(Loss):
 
         # Catching RuntimeError: Variable -= value not supported by tf.eager.
         try:
-            y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], tf.float32))
+            y -= self.smoothing * (y - 1. / tf.cast(y.shape[-1], y.dtype))
         except RuntimeError:
             y.assign_sub(self.smoothing * (y - 1. / tf.cast(y.shape[-1],
-                                                            tf.float32)))
+                                                            y.dtype)))
 
         logits = [self.model.get_logits(x, **kwargs) for x in x]
         loss = sum(
