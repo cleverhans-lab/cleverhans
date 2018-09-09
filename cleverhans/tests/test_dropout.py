@@ -1,4 +1,5 @@
 from cleverhans.picklable_model import MLP, Dropout
+from six.moves import range
 import tensorflow as tf
 
 
@@ -11,7 +12,7 @@ def test_no_drop():
     y = model.get_layer(x, 'output')
     sess = tf.Session()
     # Do multiple runs because dropout is stochastic
-    for i in xrange(10):
+    for i in range(10):
         y_value = sess.run(y)
         assert y_value == 1.
 
