@@ -14,12 +14,12 @@ import time
 import warnings
 
 from cleverhans.utils import batch_indices, _ArgsWrapper, create_logger
+from cleverhans.utils_tf import infer_devices
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max, reduce_min
 from cleverhans.compat import reduce_any
 from cleverhans.compat import softmax_cross_entropy_with_logits
 
-from tensorflow.python.client import device_lib
 
 
 _logger = create_logger("train")
@@ -79,17 +79,9 @@ def train(sess, loss, x_train, y_train,
     grads = []
     xs = []
     ys = []
-    if devices is None:
-        devices = get_available_gpus()
-        if len(devices) == 0:
-            warnings.warn("No GPUS, running on CPU")
-            # Set device to empy string, tf will figure out whether to use
-            # XLA or not, etc., automatically
-            devices = [""]
-    else:
-        assert len(devices) > 0
-        for device in devices:
-            assert isinstance(device, str), type(device)
+
+
+    devices = infer_devices(devices)
     for idx, device in enumerate(devices):
         with tf.device(device):
             x = tf.placeholder(x_train.dtype, (None,) + x_train.shape[1:])
@@ -173,9 +165,6 @@ def train(sess, loss, x_train, y_train,
     return True
 
 
-def get_available_gpus():
-    local_device_protos = device_lib.list_local_devices()
-    return [x.name for x in local_device_protos if x.device_type == 'GPU']
 
 
 def avg_grads(tower_grads):

@@ -9,6 +9,7 @@ import numpy as np
 import os
 from six.moves import xrange
 import tensorflow as tf
+from tensorflow.python.client import device_lib
 import time
 import warnings
 
@@ -532,3 +533,34 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
             _logger.info("Completed model training.")
 
     return True
+
+
+def infer_devices(devices=None):
+    """
+    Returns the list of devices that multi-replica code should use.
+    :param devices: list of string device names, e.g. ["/GPU:0"]
+        If the user specifies this, `infer_devices` checks that it is
+        valid, and then uses this user-specified list.
+        If the user does not specify this, infer_devices uses:
+            - All available GPUs, if there are any
+            - CPU otherwise
+    """
+    if devices is None:
+        devices = get_available_gpus()
+        if len(devices) == 0:
+            warnings.warn("No GPUS, running on CPU")
+            # Set device to empy string, tf will figure out whether to use
+            # XLA or not, etc., automatically
+            devices = [""]
+    else:
+        assert len(devices) > 0
+        for device in devices:
+            assert isinstance(device, str), type(device)
+    return devices
+
+def get_available_gpus():
+    """
+    Returns a list of string names of all available GPUs
+    """
+    local_device_protos = device_lib.list_local_devices()
+    return [x.name for x in local_device_protos if x.device_type == 'GPU']
