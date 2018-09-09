@@ -200,8 +200,6 @@ def avg_grads(tower_grads):
         #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
         grads = [g for g, _ in grad_and_vars]
 
-        v = grad_and_vars[0][1]
-
         # Average over the 'tower' dimension.
         grad = tf.add_n(grads) / len(grads)
 
