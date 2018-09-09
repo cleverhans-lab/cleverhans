@@ -47,12 +47,26 @@ class Loss(object):
 class WeightedSum(Loss):
     def __init__(self, model, terms):
         self.terms = terms
+
         Loss.__init__(self, model, locals())
 
     def fprop(self, x, y, **kwargs):
-        terms = [weight * loss.fprop(x, y, **kwargs)
-                 for weight, loss in self.terms]
-        assert all(len(term.get_shape()) == 0 for term in terms)
+        weights = [weight for weight, loss_object in self.terms]
+        for weight in weights:
+            if isinstance(weight, float):
+                continue
+            if hasattr(weight, 'ndim'):
+                assert weight.ndim == 0
+                continue
+            raise TypeError("weight of %s is not a type that this function "
+                            "knows it can accept yet" % str(weight))
+        loss_objects = [loss_object for weight, loss_object in self.terms]
+        losses = [loss.fprop(x, y, **kwargs) for loss in loss_objects]
+        for loss, loss_object in zip(losses, loss_objects):
+            if len(loss.get_shape()) > 0:
+                raise ValueError("%s.fprop returned a non-scalar value" %
+                                 str(loss_object))
+        terms = [weight * loss for weight, loss in zip(weights, losses)]
 
         return tf.add_n(terms)
 
