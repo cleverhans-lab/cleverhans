@@ -44,6 +44,9 @@ tfe = tf.contrib.eager
 
 FLAGS = flags.FLAGS
 
+NB_EPOCHS = 6
+BATCH_SIZE = 128
+LEARNING_RATE = .001
 
 # Keeps track of implemented attacks.
 # Maps attack string taken from bash to attack class

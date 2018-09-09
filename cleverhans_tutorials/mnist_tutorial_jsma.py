@@ -25,14 +25,17 @@ from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
+VIZ_ENABLED = True
 NB_EPOCHS = 6
 BATCH_SIZE = 128
 LEARNING_RATE = .001
+SOURCE_SAMPLES = 10
 
 
 def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
-                        test_end=10000, viz_enabled=True, nb_epochs=NB_EPOCHS,
-                        batch_size=BATCH_SIZE, source_samples=10,
+                        test_end=10000, viz_enabled=VIZ_ENABLED,
+                        nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
+                        source_samples=SOURCE_SAMPLES,
                         learning_rate=LEARNING_RATE):
     """
     MNIST tutorial for the Jacobian-based saliency map approach (JSMA)
@@ -213,7 +216,8 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_boolean('viz_enabled', True, 'Visualize adversarial ex.')
+    flags.DEFINE_boolean('viz_enabled', VIZ_ENABLED,
+                         'Visualize adversarial ex.')
     flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
                          'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Size of training batches')

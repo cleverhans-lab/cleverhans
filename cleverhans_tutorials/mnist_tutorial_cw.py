@@ -25,21 +25,25 @@ from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
+VIZ_ENABLED = True
 BATCH_SIZE = 128
 NB_EPOCHS = 6
 SOURCE_SAMPLES = 10
 LEARNING_RATE = .001
 CW_LEARNING_RATE = .2
 ATTACK_ITERATIONS = 100
+MODEL_PATH = os.path.join('models', 'mnist')
+TARGETED = True
 
 
 def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
-                      test_end=10000, viz_enabled=True, nb_epochs=NB_EPOCHS,
-                      batch_size=BATCH_SIZE, source_samples=SOURCE_SAMPLES,
+                      test_end=10000, viz_enabled=VIZ_ENABLED,
+                      nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
+                      source_samples=SOURCE_SAMPLES,
                       learning_rate=LEARNING_RATE,
                       attack_iterations=ATTACK_ITERATIONS,
-                      model_path=os.path.join("models", "mnist"),
-                      targeted=True):
+                      model_path=MODEL_PATH,
+                      targeted=TARGETED):
     """
     MNIST tutorial for Carlini and Wagner's attack
     :param train_start: index of first training set example
@@ -240,7 +244,8 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    flags.DEFINE_boolean('viz_enabled', True, 'Visualize adversarial ex.')
+    flags.DEFINE_boolean('viz_enabled', VIZ_ENABLED,
+                         'Visualize adversarial ex.')
     flags.DEFINE_integer('nb_epochs', NB_EPOCHS,
                          'Number of epochs to train model')
     flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Size of training batches')
@@ -248,11 +253,11 @@ if __name__ == '__main__':
                          'Number of test inputs to attack')
     flags.DEFINE_float('learning_rate', LEARNING_RATE,
                        'Learning rate for training')
-    flags.DEFINE_string('model_path', os.path.join("models", "mnist"),
+    flags.DEFINE_string('model_path', MODEL_PATH,
                         'Path to save or load the model file')
     flags.DEFINE_integer('attack_iterations', ATTACK_ITERATIONS,
                          'Number of iterations to run attack; 1000 is good')
-    flags.DEFINE_boolean('targeted', True,
+    flags.DEFINE_boolean('targeted', TARGETED,
                          'Run the tutorial in targeted mode?')
 
     tf.app.run()
