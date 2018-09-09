@@ -191,7 +191,7 @@ def model_eval(sess, x, y, predictions, X_test=None, Y_test=None,
                feed=None, args=None):
     """
     Compute the accuracy of a TF model on some data
-    :param sess: TF session to use when training the graph
+    :param sess: TF session to use
     :param x: input placeholder
     :param y: output placeholder (for labels)
     :param predictions: model output predictions
