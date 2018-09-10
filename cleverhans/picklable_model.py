@@ -570,7 +570,8 @@ class Dropout(Layer):
         include_prob = self.include_prob
         if dropout_dict is not None:
             assert dropout
-            include_prob = dropout_dict[self.name]
+            if self.name in dropout_dict:
+                include_prob = dropout_dict[self.name]
         if dropout:
             return tf.nn.dropout(x, include_prob)
         return x
