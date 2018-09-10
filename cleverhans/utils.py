@@ -415,6 +415,6 @@ def safe_zip(*args):
     """zip, with a guarantee that all arguments are the same length.
     (normal zip silently drops entries to make them the same length)
     """
-    l = len(args[0])
-    assert all(len(arg) == l for arg in args)
+    length = len(args[0])
+    assert all(len(arg) == length for arg in args)
     return zip(*args)
