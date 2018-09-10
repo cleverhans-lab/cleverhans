@@ -6,6 +6,8 @@ from .compat import softmax_cross_entropy_with_logits
 import tensorflow as tf
 import warnings
 
+from cleverhans.utils import safe_zip
+
 
 class Loss(object):
     """
@@ -45,14 +47,30 @@ class Loss(object):
 
 
 class WeightedSum(Loss):
+    """
+    A Loss that adds up a weighted sum of other losses.
+    """
     def __init__(self, model, terms):
         self.terms = terms
+
         Loss.__init__(self, model, locals())
 
     def fprop(self, x, y, **kwargs):
-        terms = [weight * loss.fprop(x, y, **kwargs)
-                 for weight, loss in self.terms]
-        assert all(len(term.get_shape()) == 0 for term in terms)
+        weights, loss_objects = safe_zip(*self.terms)
+        for weight in weights:
+            if isinstance(weight, float):
+                continue
+            if hasattr(weight, 'ndim'):
+                assert weight.ndim == 0
+                continue
+            raise TypeError("weight of %s is not a type that this function "
+                            "knows it can accept yet" % str(weight))
+        losses = [loss.fprop(x, y, **kwargs) for loss in loss_objects]
+        for loss, loss_object in safe_zip(losses, loss_objects):
+            if len(loss.get_shape()) > 0:
+                raise ValueError("%s.fprop returned a non-scalar value" %
+                                 str(loss_object))
+        terms = [weight * loss for weight, loss in safe_zip(weights, losses)]
 
         return tf.add_n(terms)
 
