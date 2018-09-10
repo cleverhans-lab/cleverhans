@@ -117,7 +117,6 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
     p = None
 
     num_devices = len(devices)
-    print("NUM_DEVICES: ", len(devices))
     assert batch_size % num_devices == 0
     device_batch_size = batch_size // num_devices
 
