@@ -66,11 +66,12 @@ class CrossEntropy(Loss):
         """
         if smoothing < 0 or smoothing > 1:
             raise ValueError('Smoothing must be in [0, 1]', smoothing)
-        del kwargs
+        self.kwargs = kwargs
         Loss.__init__(self, model, locals(), attack)
         self.smoothing = smoothing
 
     def fprop(self, x, y, **kwargs):
+        kwargs.update(self.kwargs)
         if self.attack is not None:
             x = x, self.attack(x)
         else:

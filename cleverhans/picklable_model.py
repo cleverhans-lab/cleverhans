@@ -46,6 +46,9 @@ class MLP(PicklableModel):
     def __init__(self, layers, input_shape):
         super(MLP, self).__init__()
 
+        if not isinstance(layers, list):
+            raise ValueError("`layers` must be a list.")
+
         self.layer_names = []
         self.layers = layers
         self.input_shape = input_shape
@@ -80,7 +83,7 @@ class MLP(PicklableModel):
             out = ordered_union(out, layer.get_params())
         return out
 
-    def fprop(self, x=None, given=None):
+    def fprop(self, x=None, given=None, **kwargs):
 
         # Note: this currently isn't great.
         # A layer can have any parent it wants, but the parent
@@ -114,7 +117,12 @@ class MLP(PicklableModel):
 
         for layer in layers:
             x = out[layer.parent]
-            x = layer.fprop(x)
+            try:
+                x = layer.fprop(x, **kwargs)
+            except TypeError as e:
+                msg = "TypeError in fprop for %s of type %s: %s"
+                msg = msg % (layer.name, str(type(layer)), str(e))
+                raise TypeError(msg)
             assert x is not None
             out[layer.name] = x
         return out
@@ -170,7 +178,7 @@ class Linear(Layer):
             self.b = PV((np.zeros((self.num_hid,))
                          + self.init_b).astype('float32'))
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         out = tf.matmul(x, self.W.var)
         if self.use_bias:
             out = out + self.b.var
@@ -231,7 +239,7 @@ class Conv2D(Layer):
         output_shape[0] = orig_batch_size
         self.output_shape = tuple(output_shape)
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         out = tf.nn.conv2d(x, self.kernels.var,
                            (1,) + tuple(self.strides) + (1,), self.padding)
         if self.use_bias:
@@ -258,7 +266,7 @@ class ReLU(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         out = tf.nn.relu(x)
         if self.leak != 0.0:
             out = out - self.leak * tf.nn.relu(-x)
@@ -280,7 +288,7 @@ class Sigmoid(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.nn.sigmoid(x)
 
     def get_params(self):
@@ -299,7 +307,7 @@ class Tanh(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.nn.tanh(x)
 
     def get_params(self):
@@ -321,7 +329,7 @@ class ELU(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.nn.elu(x)
 
     def get_params(self):
@@ -340,7 +348,7 @@ class SELU(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         alpha = 1.6732632423543772848170429916717
         scale = 1.0507009873554804934193349852946
         mask = tf.to_float(x >= 0.)
@@ -364,7 +372,7 @@ class TanH(Layer):
     def get_output_shape(self):
         return self.output_shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.nn.tanh(x)
 
 
@@ -374,7 +382,7 @@ class Softmax(Layer):
         self.input_shape = shape
         self.output_shape = shape
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         out = tf.nn.softmax(x)
         return out
 
@@ -392,7 +400,7 @@ class Flatten(Layer):
         self.output_width = output_width
         self.output_shape = [None, output_width]
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.reshape(x, [-1, self.output_width])
 
     def get_params(self):
@@ -408,7 +416,7 @@ class Print(Layer):
     def get_params(self):
         return []
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         mean = tf.reduce_mean(x)
         std = tf.sqrt(tf.reduce_mean(tf.square(x - mean)))
         return tf.Print(x,
@@ -460,7 +468,7 @@ class Add(Layer):
             out = ordered_union(out, layer.get_params())
         return out
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
 
         orig_x = x
 
@@ -480,7 +488,12 @@ class Add(Layer):
 
         for layer in self.layers:
             x = out[layer.parent]
-            x = layer.fprop(x)
+            try:
+                x = layer.fprop(x)
+            except TypeError as e:
+                msg = "TypeError in fprop for layer %s of type %s: %s"
+                msg = msg % (layer.name, str(type(layer)), str(e))
+                raise TypeError(msg)
             assert x is not None
             out[layer.name] = x
 
@@ -496,5 +509,69 @@ class PerImageStandardize(Layer):
     def get_params(self):
         return []
 
-    def fprop(self, x):
+    def fprop(self, x, **kwargs):
         return tf.map_fn(lambda ex: tf.image.per_image_standardization(ex), x)
+
+
+class Dropout(Layer):
+    """Dropout layer.
+
+    By default, is a no-op. Activate it during training using the kwargs
+
+    The default use case is that you never specify include_prob anywhere.
+    During evaluation, you don't do anything special regarding dropout,
+    and nothing gets dropped. During training, you pass "dropout=True"
+    to make units get randomly dropped.
+    If you've done nothing else, include_prob defaults to 0.5 in the
+    Dropout class constructor.
+
+    A slightly more advanced use case is that you want to use different
+    include_probs for some layer. For example, people usually use
+    include_prob=0.8 for the input layer. To do this, you specify
+    include_prob in the constructor arguments for those layers.
+    Other than that, it's the same as the basic use case case. You do
+    nothing special at test time and nothing is dropped.
+    You pass dropout=True at train time and units in each layer are dropped
+    based on their include_prob specified in their layer's constructor.
+
+    The most advanced use case is if you want to change dropout include
+    probabilities for a specific fprop call. In this case, you pass
+    dropout=True and dropout_dict for that call. Each layer uses the
+    include_prob specified in the dropout_dict for that call.of MLP.fprop.
+    """
+
+    def __init__(self, include_prob=0.5, **kwargs):
+        super(Dropout, self).__init__(**kwargs)
+        self.include_prob = include_prob
+
+    def set_input_shape(self, shape):
+        self.input_shape = shape
+        self.output_shape = shape
+
+    def get_params(self):
+        return []
+
+    def fprop(self, x, dropout=False, dropout_dict=None, **kwargs):
+        """
+        Forward propagation as either no-op or dropping random units.
+        :param x: The input to the layer
+        :param dropout: bool specifying whether to drop units
+        :param dropout_dict: dict
+            This dictionary is usually not needed.
+            In rare cases, generally for research purposes, this dictionary
+            makes it possible to run forward propagation with a different
+            dropout include probability.
+            This dictionary should be passed as a named argument to the MLP
+            class, which will then pass it to *all* layers' fprop methods.
+            Other layers will just receive this as an ignored kwargs entry.
+            Each dropout layer looks up its own name in this dictionary
+            to read out its include probability.
+        """
+        include_prob = self.include_prob
+        if dropout_dict is not None:
+            assert dropout
+            if self.name in dropout_dict:
+                include_prob = dropout_dict[self.name]
+        if dropout:
+            return tf.nn.dropout(x, include_prob)
+        return x
