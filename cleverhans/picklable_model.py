@@ -517,7 +517,27 @@ class Dropout(Layer):
     """Dropout layer.
 
     By default, is a no-op. Activate it during training using the kwargs
-    of MLP.fprop.
+
+    The default use case is that you never specify include_prob anywhere.
+    During evaluation, you don't do anything special regarding dropout,
+    and nothing gets dropped. During training, you pass "dropout=True"
+    to make units get randomly dropped.
+    If you've done nothing else, include_prob defaults to 0.5 in the
+    Dropout class constructor.
+
+    A slightly more advanced use case is that you want to use different
+    include_probs for some layer. For example, people usually use
+    include_prob=0.8 for the input layer. To do this, you specify
+    include_prob in the constructor arguments for those layers.
+    Other than that, it's the same as the basic use case case. You do
+    nothing special at test time and nothing is dropped.
+    You pass dropout=True at train time and units in each layer are dropped
+    based on their include_prob specified in their layer's constructor.
+
+    The most advanced use case is if you want to change dropout include
+    probabilities for a specific fprop call. In this case, you pass
+    dropout=True and dropout_dict for that call. Each layer uses the
+    include_prob specified in the dropout_dict for that call.of MLP.fprop.
     """
 
     def __init__(self, include_prob=0.5, **kwargs):
