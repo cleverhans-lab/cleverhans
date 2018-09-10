@@ -410,6 +410,7 @@ def ordered_union(l1, l2):
             out.append(e)
     return out
 
+
 def safe_zip(*args):
     """zip, with a guarantee that all arguments are the same length.
     (normal zip silently drops entries to make them the same length)
