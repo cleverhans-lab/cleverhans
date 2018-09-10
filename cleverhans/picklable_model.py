@@ -576,6 +576,7 @@ class Dropout(Layer):
             return tf.nn.dropout(x, include_prob)
         return x
 
+
 class Residual(Layer):
     """A residual network layer that uses group normalization."""
 
