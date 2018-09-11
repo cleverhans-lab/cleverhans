@@ -96,6 +96,8 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
     :param feed: An optional dictionary that is appended to the feeding
              dictionary before the session runs. Can be used to feed
              the learning phase of a Keras model for instance.
+    :returns: List of numpy arrays corresponding to the outputs produced by
+        the graph_factory
     """
     global _batch_eval_multi_worker_cache
 
