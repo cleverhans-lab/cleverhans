@@ -95,6 +95,34 @@ class Model(object):
         """
         return self.fprop(x, **kwargs)[layer]
 
+    def make_input_placeholder(self):
+        """Create and return a placeholder representing an input to the model.
+
+        This method should respect context managers (e.g. "with tf.device")
+        and should not just return a reference to a single pre-created
+        placeholder.
+        """
+
+        raise NotImplementedError(str(type(self)) + " does not implement "
+                                  "make_input_placeholder")
+
+    def make_label_placeholder(self):
+        """Create and return a placeholder representing class labels.
+
+        This method should respect context managers (e.g. "with tf.device")
+        and should not just return a reference to a single pre-created
+        placeholder.
+        """
+
+        raise NotImplementedError(str(type(self)) + " does not implement "
+                                  "make_label_placeholder")
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def __eq__(self, other):
+        return self is other
+
 
 class CallableModelWrapper(Model):
 

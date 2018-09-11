@@ -127,6 +127,12 @@ class MLP(PicklableModel):
             out[layer.name] = x
         return out
 
+    def make_input_placeholder(self):
+        return tf.placeholder(tf.float32, tuple(self.input_shape))
+
+    def make_label_placeholder(self):
+        return self.layers[-1].make_label_placeholder()
+
 
 class Layer(PicklableModel):
     def __init__(self, name=None, parent=None):
@@ -388,6 +394,9 @@ class Softmax(Layer):
 
     def get_params(self):
         return []
+
+    def make_label_placeholder(self):
+        return tf.placeholder(tf.float32, self.output_shape)
 
 
 class Flatten(Layer):
