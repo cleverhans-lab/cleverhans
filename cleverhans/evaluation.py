@@ -272,30 +272,29 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, batch_size=None,
     out = []
     for _ in tf_outputs:
         out.append([])
-    with sess.as_default():
-        for start in range(0, m, batch_size):
-            batch = start // batch_size
-            if batch % 100 == 0 and batch > 0:
-                _logger.debug("Batch " + str(batch))
+    for start in range(0, m, batch_size):
+        batch = start // batch_size
+        if batch % 100 == 0 and batch > 0:
+            _logger.debug("Batch " + str(batch))
 
-            # Compute batch start and end indices
-            start = batch * batch_size
-            end = start + batch_size
-            numpy_input_batches = [numpy_input[start:end]
-                                   for numpy_input in numpy_inputs]
-            cur_batch_size = numpy_input_batches[0].shape[0]
-            assert cur_batch_size <= batch_size
-            for e in numpy_input_batches:
-                assert e.shape[0] == cur_batch_size
+        # Compute batch start and end indices
+        start = batch * batch_size
+        end = start + batch_size
+        numpy_input_batches = [numpy_input[start:end]
+                               for numpy_input in numpy_inputs]
+        cur_batch_size = numpy_input_batches[0].shape[0]
+        assert cur_batch_size <= batch_size
+        for e in numpy_input_batches:
+            assert e.shape[0] == cur_batch_size
 
-            feed_dict = dict(zip(tf_inputs, numpy_input_batches))
-            if feed is not None:
-                feed_dict.update(feed)
-            numpy_output_batches = sess.run(tf_outputs, feed_dict=feed_dict)
-            for e in numpy_output_batches:
-                assert e.shape[0] == cur_batch_size, e.shape
-            for out_elem, numpy_output_batch in zip(out, numpy_output_batches):
-                out_elem.append(numpy_output_batch)
+        feed_dict = dict(zip(tf_inputs, numpy_input_batches))
+        if feed is not None:
+            feed_dict.update(feed)
+        numpy_output_batches = sess.run(tf_outputs, feed_dict=feed_dict)
+        for e in numpy_output_batches:
+            assert e.shape[0] == cur_batch_size, e.shape
+        for out_elem, numpy_output_batch in zip(out, numpy_output_batches):
+            out_elem.append(numpy_output_batch)
 
     out = [np.concatenate(x, axis=0) for x in out]
     for e in out:
