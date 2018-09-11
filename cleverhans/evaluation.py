@@ -83,7 +83,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
         The list should have the same length as tf_inputs.
         Each array should have the same number of examples (shape[0]).
         Example: numpy_inputs is [MNIST().x_test, MNIST().y_test]
-    :batch_size: Number of examples to use in a single evaluation batch.
+    :param batch_size: Number of examples to use in a single evaluation batch.
         If not specified, this function will use a reasonable guess and
         may run out of memory.
         When choosing the batch size, keep in mind that the batch will
