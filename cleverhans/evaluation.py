@@ -19,7 +19,7 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
     :param model: cleverhans.model.Model instance
     :param x: numpy array containing input examples (e.g. MNIST().x_test )
     :param y: numpy array containing example labels (e.g. MNIST().y_test )
-    :batch_size: Number of examples to use in a single evaluation batch.
+    :param batch_size: Number of examples to use in a single evaluation batch.
         If not specified, this function will use a reasonable guess and
         may run out of memory.
         When choosing the batch size, keep in mind that the batch will
