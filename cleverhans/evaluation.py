@@ -8,6 +8,7 @@ import numpy as np
 from six.moves import range
 import tensorflow as tf
 
+from cleverhans.utils import create_logger
 from cleverhans.utils_tf import infer_devices
 
 
@@ -336,3 +337,5 @@ class _CorrectFactory(object):
                            tf.argmax(predictions, axis=-1))
 
         return (x_batch, y_batch), (correct,)
+
+_logger = create_logger("cleverhans.evaluation")
