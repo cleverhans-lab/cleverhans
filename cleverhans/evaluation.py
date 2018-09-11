@@ -339,4 +339,5 @@ class _CorrectFactory(object):
 
         return (x_batch, y_batch), (correct,)
 
+
 _logger = create_logger("cleverhans.evaluation")
