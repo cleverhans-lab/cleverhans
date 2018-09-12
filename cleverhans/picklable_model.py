@@ -199,7 +199,15 @@ class Linear(Layer):
 
 class Conv2D(Layer):
     """
-    2-D Convolution.
+    2-D Convolution. Uses NHWC format for input and output.
+    :param output_channels: int
+        The number of channels to output
+    :param kernel_shape: tuple of two ints
+        (kernel rows, kernel columns)
+        Do not include input channels or output channels in kernel_shape.
+    :param strides: tuple of two ints
+        (row stride, column stride)
+        Do not include channel or batch strides.
     :param use_bias: bool
         If True (default is False) adds a per-channel bias term to the output
     :param init_mode: string
@@ -217,6 +225,7 @@ class Conv2D(Layer):
 
     def set_input_shape(self, input_shape):
         batch_size, rows, cols, input_channels = input_shape
+        assert len(self.kernel_shape) == 2
         kernel_shape = tuple(self.kernel_shape) + (input_channels,
                                                    self.output_channels)
         assert len(kernel_shape) == 4
@@ -246,6 +255,7 @@ class Conv2D(Layer):
         self.output_shape = tuple(output_shape)
 
     def fprop(self, x, **kwargs):
+        assert len(self.strides) == 2
         out = tf.nn.conv2d(x, self.kernels.var,
                            (1,) + tuple(self.strides) + (1,), self.padding)
         if self.use_bias:
@@ -601,10 +611,16 @@ class Dropout(Layer):
 
 
 class ResidualWithGroupNorm(Layer):
-    """A residual network layer that uses group normalization."""
+    """A residual network layer that uses group normalization.
+    
+    :param out_filter: Number of output filters
+    :param stride: int
+        Stride for convolutional layers. Replicated to both row and column.
+    """
 
     def __init__(self, out_filter, stride, activate_before_residual=False,
                  leak=0.1, **kwargs):
+        assert isinstance(stride, int)
         self.__dict__.update(locals())
         del self.self
         self.lrelu = LeakyReLU(leak)
@@ -697,7 +713,7 @@ class GroupNorm(Layer):
         self.actual_num_groups = min(self.channels, self.num_groups)
         extra_dims = (self.channels // self.actual_num_groups,
                       self.actual_num_groups)
-        self.expanded_shape = shape[1:3] + extra_dims
+        self.expanded_shape = tuple(shape[1:3]) + tuple(extra_dims)
         init_value = np.ones((channels,), dtype='float32') * self.init_gamma
         self.gamma = PV(init_value, name=self.name + "_gamma")
         self.beta = PV(np.zeros((self.channels,), dtype='float32'),
