@@ -275,7 +275,21 @@ class ReLU(Layer):
     def fprop(self, x, **kwargs):
         out = tf.nn.relu(x)
         if self.leak != 0.0:
-            out = out - self.leak * tf.nn.relu(-x)
+            # The code commented below resulted in the time per epoch of
+            # an 8-GPU wide resnet increasing by about 5% relative to the
+            # code now in use.
+            # The two different implementations have the same forward prop
+            # down to machine precision on all inputs I have tested, but
+            # sometimes have different derivatives.
+            # Both obtain about the same training accuracy but the faster
+            # version seems to also be slightly more accurate.
+            # The commented code and these performance notes are included to
+            # aid future revision efforts.
+            #
+            # out = out - self.leak * tf.nn.relu(-x)
+            #
+
+            out = tf.where(tf.less(x, 0.0), self.leak * x, x)
         return out
 
     def get_params(self):
