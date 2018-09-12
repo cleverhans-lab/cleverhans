@@ -577,14 +577,15 @@ class Dropout(Layer):
         return x
 
 
-class Residual(Layer):
+class ResidualWithGroupNorm(Layer):
     """A residual network layer that uses group normalization."""
 
-    def __init__(self, out_filter, stride, activate_before_residual=False):
+    def __init__(self, out_filter, stride, activate_before_residual=False,
+                 leak=0.1):
         self.__dict__.update(locals())
         del self.self
-        self.lrelu = LeakyReLU(0.1)
-        super(Residual, self).__init__()
+        self.lrelu = LeakyReLU(leak)
+        super(ResidualWithGroupNorm, self).__init__()
 
     def set_input_shape(self, shape):
         self.input_shape = tuple(shape)
