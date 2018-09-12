@@ -630,7 +630,8 @@ class ResidualWithGroupNorm(Layer):
         sublayers = [self.conv1, self.conv2, self.gn1, self.gn2]
         params = []
         for sublayer in sublayers:
-            params = params = sublayer.get_params()
+            params = params + sublayer.get_params()
+        assert self.conv1.kernels.var in params
         return params
 
     def fprop(self, x, **kwargs):
