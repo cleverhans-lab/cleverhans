@@ -615,7 +615,8 @@ class ResidualWithGroupNorm(Layer):
         self.in_filter = shape[-1]
         self.gn1 = GroupNorm(name=self.name + "_gn1")
         self.gn1.set_input_shape(shape)
-        self.conv1 = Conv2D(self.out_filter, (3, 3), (self.stride, self.stride), "SAME",
+        strides = (self.stride, self.stride)
+        self.conv1 = Conv2D(self.out_filter, (3, 3), strides, "SAME",
                             name=self.name + "_conv1", init_mode="inv_sqrt")
         self.conv1.set_input_shape(shape)
         self.gn2 = GroupNorm(name=self.name + "_gn2")
@@ -691,13 +692,14 @@ class GroupNorm(Layer):
     def set_input_shape(self, shape):
         self.input_shape = shape
         self.output_shape = shape
-        self.channels = shape[-1]
+        channels = shape[-1]
+        self.channels = channels
         self.actual_num_groups = min(self.channels, self.num_groups)
         extra_dims = (self.channels // self.actual_num_groups,
                       self.actual_num_groups)
         self.expanded_shape = shape[1:3] + extra_dims
-        self.gamma = PV(np.ones((self.channels,), dtype='float32') * self.init_gamma,
-                        name=self.name + "_gamma")
+        init_value = np.ones((channels,), dtype='float32') * self.init_gamma
+        self.gamma = PV(init_value, name=self.name + "_gamma")
         self.beta = PV(np.zeros((self.channels,), dtype='float32'),
                        name=self.name + "_beta")
 
