@@ -604,22 +604,21 @@ class ResidualWithGroupNorm(Layer):
     """A residual network layer that uses group normalization."""
 
     def __init__(self, out_filter, stride, activate_before_residual=False,
-                 leak=0.1):
+                 leak=0.1, **kwargs):
         self.__dict__.update(locals())
         del self.self
         self.lrelu = LeakyReLU(leak)
-        super(ResidualWithGroupNorm, self).__init__()
+        super(ResidualWithGroupNorm, self).__init__(**kwargs)
 
     def set_input_shape(self, shape):
         self.input_shape = tuple(shape)
         self.in_filter = shape[-1]
-        self.gn1 = GroupNorm()
+        self.gn1 = GroupNorm(name=self.name + "_gn1")
         self.gn1.set_input_shape(shape)
-        self.conv1 = Conv2D(self.out_filter, (3, 3),
-                            (self.stride, self.stride), "SAME",
+        self.conv1 = Conv2D(self.out_filter, (3, 3), (self.stride, self.stride), "SAME",
                             name=self.name + "_conv1", init_mode="inv_sqrt")
         self.conv1.set_input_shape(shape)
-        self.gn2 = GroupNorm()
+        self.gn2 = GroupNorm(name=self.name + "_gn2")
         self.gn2.set_input_shape(self.conv1.get_output_shape())
         self.conv2 = Conv2D(self.out_filter, (3, 3), (1, 1), "SAME",
                             name=self.name + "_conv2", init_mode="inv_sqrt")
@@ -682,21 +681,25 @@ class GroupNorm(Layer):
     https://arxiv.org/abs/1803.08494
     """
 
-    def __init__(self, num_groups=32, eps=1e-5, init_gamma=1.):
+    def __init__(self, num_groups=32, eps=1e-5, init_gamma=1.,
+                 **kwargs):
         self.num_groups = num_groups
         self.eps = eps
         self.init_gamma = init_gamma
-        super(GroupNorm, self).__init__()
+        super(GroupNorm, self).__init__(**kwargs)
 
     def set_input_shape(self, shape):
+        self.input_shape = shape
+        self.output_shape = shape
         self.channels = shape[-1]
         self.actual_num_groups = min(self.channels, self.num_groups)
         extra_dims = (self.channels // self.actual_num_groups,
                       self.actual_num_groups)
         self.expanded_shape = shape[1:3] + extra_dims
-        self.gamma = PV(
-            np.ones((self.channels,), dtype='float32') * self.init_gamma)
-        self.beta = PV(np.zeros((self.channels,), dtype='float32'))
+        self.gamma = PV(np.ones((self.channels,), dtype='float32') * self.init_gamma,
+                        name=self.name + "_gamma")
+        self.beta = PV(np.zeros((self.channels,), dtype='float32'),
+                       name=self.name + "_beta")
 
     def fprop(self, x, **kwargs):
         shape = tf.shape(x)
