@@ -612,7 +612,7 @@ class Dropout(Layer):
 
 class ResidualWithGroupNorm(Layer):
     """A residual network layer that uses group normalization.
-    
+
     :param out_filter: Number of output filters
     :param stride: int
         Stride for convolutional layers. Replicated to both row and column.
