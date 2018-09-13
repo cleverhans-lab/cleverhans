@@ -1,3 +1,14 @@
+"""
+Multi-replica synchronous training
+
+
+NOTE: This module is much more free to change than many other modules
+in CleverHans. CleverHans is very conservative about changes to any
+code that affects the output of benchmark tests (attacks, evaluation
+methods, etc.). This module provides *model training* functionality
+not *benchmarks* and thus is free to change rapidly to provide better
+speed, accuracy, etc.
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
