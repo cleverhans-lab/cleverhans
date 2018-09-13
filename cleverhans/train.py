@@ -102,7 +102,8 @@ def train(sess, loss, x_train, y_train,
             xs.append(x)
             ys.append(y)
 
-            x = x_batch_preprocessor(x)
+            if x_batch_preprocessor is not None:
+                x = x_batch_preprocessor(x)
             loss_value = loss.fprop(x, y, **fprop_args)
 
             grads.append(optimizer.compute_gradients(
