@@ -552,9 +552,9 @@ class PerImageStandardize(Layer):
         # TODO: before adding dataset augmentation, we didn't have to do this.
         # Why?
         with tf.device("/CPU:0"):
-            out = tf.map_fn(lambda ex: tf.image.per_image_standardization(ex), x)
+            out = tf.map_fn(
+                lambda ex: tf.image.per_image_standardization(ex), x)
         return out
-
 
 
 class Dropout(Layer):
