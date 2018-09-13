@@ -717,6 +717,7 @@ class GroupNorm(Layer):
     def get_params(self):
         return [self.gamma.var, self.beta.var]
 
+
 class BatchNorm(Layer):
     """
     This BatchNorm is always run in train mode for now
@@ -747,6 +748,7 @@ class BatchNorm(Layer):
 
     def get_params(self):
         return [self.gamma.var, self.beta.var]
+
 
 class ResidualWithBatchNorm(Layer):
     """A residual network layer that uses batch normalization.
