@@ -39,7 +39,7 @@ _logger.setLevel(logging.INFO)
 def train(sess, loss, x_train, y_train,
           init_all=True, evaluate=None, feed=None, args=None,
           rng=None, var_list=None, fprop_args=None, optimizer=None,
-          devices=None):
+          devices=None, x_batch_preprocessor=None):
     """
     Run (optionally multi-replica, synchronous) training to minimize `loss`
     :param sess: TF session to use when training the graph
@@ -64,6 +64,10 @@ def train(sess, loss, x_train, y_train,
     :param devices: list of device names to use for training
         If None, defaults to: all GPUs, if GPUs are available
                               all devices, if no GPUs are available
+    :param x_batch_preprocessor: callable
+        Takes a single tensor containing an x_train batch as input
+        Returns a single tensor containing an x_train batch as output
+        Called to preprocess the data before passing the data to the Loss
     :return: True if model trained
     """
     args = _ArgsWrapper(args or {})
@@ -98,6 +102,7 @@ def train(sess, loss, x_train, y_train,
             xs.append(x)
             ys.append(y)
 
+            x = x_batch_preprocessor(x)
             loss_value = loss.fprop(x, y, **fprop_args)
 
             grads.append(optimizer.compute_gradients(
