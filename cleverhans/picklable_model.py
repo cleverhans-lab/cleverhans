@@ -682,7 +682,7 @@ class GroupNorm(Layer):
     https://arxiv.org/abs/1803.08494
     """
 
-    def __init__(self, num_groups=32, eps=1e-5, init_gamma=1.,
+    def __init__(self, num_groups=32, eps=1e-3, init_gamma=1.,
                  **kwargs):
         self.num_groups = num_groups
         self.eps = eps
