@@ -736,7 +736,6 @@ class GroupNorm(Layer):
         batch_size = shape[0]
         x = tf.reshape(x, (batch_size,) + self.expanded_shape)
         mean, var = tf.nn.moments(x, [1, 2, 3], keep_dims=True)
-        # mean, var = tf.nn.moments(x, [0, 1, 2], keep_dims=True)
         x = (x - mean) * tf.rsqrt(var + self.eps)
         x = tf.reshape(x, shape)
         x = x * self.gamma.var + self.beta.var
