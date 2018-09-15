@@ -391,7 +391,7 @@ class BasicIterativeMethod(Attack):
     :param x: The model's symbolic inputs.
     :param eps: (required float) maximum attack perturbation magnitude
                 (input variation)
-    :param step_size: (required float) attack parturbation magnitude for 
+    :param step_size: (required float) attack parturbation magnitude for
                       each attack iteration
     :param step_count: (required int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
@@ -484,7 +484,7 @@ class BasicIterativeMethod(Attack):
 
     :param eps: (required float) maximum attack perturbation magnitude
                 (input variation)
-    :param step_size: (required float) attack parturbation magnitude for 
+    :param step_size: (required float) attack parturbation magnitude for
                       each attack iteration
     :param step_count: (required int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
@@ -556,7 +556,7 @@ class MomentumIterativeMethod(Attack):
     :param x: The model's symbolic inputs.
     :param eps: (required float) maximum attack perturbation magnitude
                 (input variation)
-    :param step_size: (required float) attack parturbation magnitude for 
+    :param step_size: (required float) attack parturbation magnitude for
                       each attack iteration
     :param step_count: (required int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
@@ -655,7 +655,7 @@ class MomentumIterativeMethod(Attack):
 
     :param eps: (required float) maximum attack perturbation magnitude
                 (input variation)
-    :param step_size: (required float) attack parturbation magnitude for 
+    :param step_size: (required float) attack parturbation magnitude for
                       each attack iteration
     :param step_count: (required int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
@@ -1434,7 +1434,7 @@ class MadryEtAl(Attack):
     :param x: The model's symbolic inputs.
     :param eps: (required float) maximum attack perturbation magnitude
                 (input variation)
-    :param step_size: (required float) attack parturbation magnitude for 
+    :param step_size: (required float) attack parturbation magnitude for
                       each attack iteration
     :param step_count: (required int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
@@ -1479,7 +1479,7 @@ class MadryEtAl(Attack):
 
     :param eps: (required float) maximum attack perturbation magnitude
                 (input variation)
-    :param step_size: (required float) attack parturbation magnitude for 
+    :param step_size: (required float) attack parturbation magnitude for
                       each attack iteration
     :param step_count: (required int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
@@ -1626,7 +1626,7 @@ class FastFeatureAdversaries(Attack):
     :param layer: (required str) name of the layer to target.
     :param eps: (required float) maximum attack perturbation magnitude
                 (input variation)
-    :param step_size: (required float) attack parturbation magnitude for 
+    :param step_size: (required float) attack parturbation magnitude for
                       each attack iteration
     :param step_count: (required int) Number of attack iterations.
     :param ord: (optional) Order of the norm (mimics Numpy).
@@ -1703,7 +1703,7 @@ class FastFeatureAdversaries(Attack):
     :param g: The target's symbolic representation.
     :param eps: (required float) maximum attack perturbation magnitude
                 (input variation)
-    :param step_size: (required float) attack parturbation magnitude for 
+    :param step_size: (required float) attack parturbation magnitude for
                       each attack iteration
     :param step_count: (required int) Number of attack iterations.
     :param ord: (optional) Order of the norm (mimics Numpy).
