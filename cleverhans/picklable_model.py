@@ -137,7 +137,11 @@ class MLP(PicklableModel):
         return tf.placeholder(tf.float32, tuple(self.input_shape))
 
     def make_label_placeholder(self):
-        return self.layers[-1].make_label_placeholder()
+        try:
+            return self.layers[-1].make_label_placeholder()
+        except NotImplementedError:
+            return tf.placeholder(tf.float32,
+                                  self.layers[-1].get_output_shape())
 
 
 class Layer(PicklableModel):
@@ -238,9 +242,9 @@ class Conv2D(Layer):
         assert len(kernel_shape) == 4
         assert all(isinstance(e, int) for e in kernel_shape), kernel_shape
         fan_in = self.kernel_shape[0] * \
-                self.kernel_shape[1] * input_channels
+            self.kernel_shape[1] * input_channels
         fan_out = self.kernel_shape[0] * \
-                self.kernel_shape[1] * self.output_channels
+            self.kernel_shape[1] * self.output_channels
         if self.init_mode == "norm":
             init = tf.random_normal(kernel_shape, dtype=tf.float32)
             squared_norms = tf.reduce_sum(tf.square(init), axis=(0, 1, 2))
