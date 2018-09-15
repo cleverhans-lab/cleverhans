@@ -376,7 +376,7 @@ class BasicIterativeMethod(Attack):
     super(BasicIterativeMethod, self).__init__(model, back, sess, dtypestr)
     self.feedable_kwargs = {
         'eps': self.np_dtype,
-        'eps_iter': self.np_dtype,
+        'step_size': self.np_dtype,
         'y': self.np_dtype,
         'y_target': self.np_dtype,
         'clip_min': self.np_dtype,
@@ -427,7 +427,7 @@ class BasicIterativeMethod(Attack):
 
     y_kwarg = 'y_target' if targeted else 'y'
     fgm_params = {
-        'eps': self.eps_iter,
+        'eps': self.step_size,
         y_kwarg: y,
         'ord': self.ord,
         'clip_min': self.clip_min,
@@ -442,7 +442,7 @@ class BasicIterativeMethod(Attack):
         dtypestr=self.dtypestr)
 
     def cond(i, _):
-      return tf.less(i, self.nb_iter)
+      return tf.less(i, self.step_count)
 
     def body(i, e):
       adv_x = FGM.generate(x + e, **fgm_params)
@@ -1365,7 +1365,7 @@ def vatm(model,
          logits,
          eps,
          back='tf',
-         num_iterations=1,
+         step_count=1,
          xi=1e-6,
          clip_min=None,
          clip_max=None):
@@ -1397,7 +1397,7 @@ def vatm(model,
       x,
       logits,
       eps,
-      num_iterations=num_iterations,
+      step_count=step_count,
       xi=xi,
       clip_min=clip_min,
       clip_max=clip_max)
@@ -1500,8 +1500,8 @@ class MadryEtAl(Attack):
     assert step_count is not None, "`step_count` is a required parameter"
 
     self.eps = eps
-    self.eps_iter = eps_iter
-    self.nb_iter = nb_iter
+    self.step_size = step_size
+    self.step_count = step_count
     self.y = y
     self.y_target = y_target
     self.ord = ord
@@ -1611,8 +1611,8 @@ class FastFeatureAdversaries(Attack):
   def parse_params(self,
                    layer=None,
                    eps=0.3,
-                   step_count=0.05,
-                   nb_iter=10,
+                   step_size=0.05,
+                   step_count=10,
                    ord=np.inf,
                    clip_min=None,
                    clip_max=None,
@@ -1833,7 +1833,7 @@ class SPSA(Attack):
         loss_fn,
         x,
         y_attack,
-        epsilon,
+        eps,
         step_count=step_count,
         optimizer=optimizer,
         early_stop_loss_threshold=early_stop_loss_threshold,
