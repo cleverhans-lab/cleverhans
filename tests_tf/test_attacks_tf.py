@@ -62,8 +62,8 @@ class TestAttackTF(CleverHansTest):
   def helper_pgd_attack(self,
                         unrolled_optimizer,
                         targeted,
-                        nb_iters=20,
-                        epsilon=.5,
+                        step_count=20,
+                        eps=.5,
                         clip_min=-5.,
                         clip_max=5.,
                         assert_threshold=0.5):
@@ -95,8 +95,8 @@ class TestAttackTF(CleverHansTest):
         loss_fn=partial(loss_fn, targeted=targeted),
         input_image=x_val_ph,
         label=labels,
-        epsilon=epsilon,
-        num_steps=nb_iters,
+        eps=eps,
+        step_count=step_count,
         optimizer=unrolled_optimizer,
         project_perturbation=_project_perturbation)
 
@@ -125,8 +125,8 @@ class TestAttackTF(CleverHansTest):
     self.helper_pgd_attack(
         unrolled_optimizer=unrolled_optimizer,
         targeted=False,
-        epsilon=.5,
-        nb_iters=20,
+        eps=.5,
+        step_count=20,
         clip_min=-10.,
         clip_max=10.,
         assert_threshold=0.7)
@@ -136,8 +136,8 @@ class TestAttackTF(CleverHansTest):
     self.helper_pgd_attack(
         unrolled_optimizer=unrolled_optimizer,
         targeted=False,
-        epsilon=5.,
-        nb_iters=100,
+        eps=5.,
+        step_count=100,
         clip_min=-10.,
         clip_max=10.,
         assert_threshold=0.1)
@@ -147,8 +147,8 @@ class TestAttackTF(CleverHansTest):
     self.helper_pgd_attack(
         unrolled_optimizer=unrolled_optimizer,
         targeted=True,
-        epsilon=.5,
-        nb_iters=20,
+        eps=.5,
+        step_count=20,
         clip_min=-10.,
         clip_max=10.,
         assert_threshold=0.7)
@@ -158,8 +158,8 @@ class TestAttackTF(CleverHansTest):
     self.helper_pgd_attack(
         unrolled_optimizer=unrolled_optimizer,
         targeted=True,
-        epsilon=5.,
-        nb_iters=100,
+        eps=5.,
+        step_count=100,
         clip_min=-10.,
         clip_max=10.,
         assert_threshold=0.9)
@@ -169,8 +169,8 @@ class TestAttackTF(CleverHansTest):
     self.helper_pgd_attack(
         unrolled_optimizer=unrolled_optimizer,
         targeted=False,
-        epsilon=.5,
-        nb_iters=20,
+        eps=.5,
+        step_count=20,
         clip_min=-10.,
         clip_max=10.,
         assert_threshold=0.6)
@@ -180,8 +180,8 @@ class TestAttackTF(CleverHansTest):
     self.helper_pgd_attack(
         unrolled_optimizer=unrolled_optimizer,
         targeted=False,
-        epsilon=5.,
-        nb_iters=100,
+        eps=5.,
+        step_count=100,
         clip_min=-10.,
         clip_max=10.,
         assert_threshold=0.1)
@@ -191,8 +191,8 @@ class TestAttackTF(CleverHansTest):
     self.helper_pgd_attack(
         unrolled_optimizer=unrolled_optimizer,
         targeted=True,
-        epsilon=.5,
-        nb_iters=20,
+        eps=.5,
+        step_count=20,
         clip_min=-10.,
         clip_max=10.,
         assert_threshold=0.6)
@@ -202,8 +202,8 @@ class TestAttackTF(CleverHansTest):
     self.helper_pgd_attack(
         unrolled_optimizer=unrolled_optimizer,
         targeted=True,
-        epsilon=5.,
-        nb_iters=100,
+        eps=5.,
+        step_count=100,
         clip_min=-10.,
         clip_max=10.,
         assert_threshold=0.9)
