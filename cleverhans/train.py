@@ -25,6 +25,7 @@ import time
 import warnings
 
 from cleverhans.utils import batch_indices, _ArgsWrapper, create_logger
+from cleverhans.utils import safe_zip
 from cleverhans.utils_tf import infer_devices
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max, reduce_min
@@ -92,6 +93,7 @@ def train(sess, loss, x_train, y_train,
 
     grads = []
     xs = []
+    preprocessed_xs = []
     ys = []
 
     devices = infer_devices(devices)
@@ -104,78 +106,126 @@ def train(sess, loss, x_train, y_train,
 
             if x_batch_preprocessor is not None:
                 x = x_batch_preprocessor(x)
+
+            # We need to keep track of these so that the canary can feed
+            # preprocessed values. If the canary had to feed raw values,
+            # stochastic preprocessing could make the canary fail.
+            preprocessed_xs.append(x)
+
+            loss.model.get_params()
             loss_value = loss.fprop(x, y, **fprop_args)
+            loss.model.get_params()
 
             grads.append(optimizer.compute_gradients(
                 loss_value, var_list=var_list))
     num_devices = len(devices)
     print("num_devices: ", num_devices)
+
+
     grad = avg_grads(grads)
     # Trigger update operations within the default graph (such as batch_norm).
     with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
         train_step = optimizer.apply_gradients(grad)
 
     batch_size = args.batch_size
+    
+    assert batch_size % num_devices == 0
+    device_batch_size = batch_size // num_devices
 
-    with sess.as_default():
-        if init_all:
-            sess.run(tf.global_variables_initializer())
-        else:
-            initialize_uninitialized_global_variables(sess)
+    if init_all:
+        sess.run(tf.global_variables_initializer())
+    else:
+        initialize_uninitialized_global_variables(sess)
 
-        for epoch in xrange(args.nb_epochs):
-            # Indices to shuffle training set
-            index_shuf = list(range(len(x_train)))
-            # Randomly repeat a few training examples each epoch to avoid
-            # having a too-small batch
-            while len(index_shuf) % batch_size != 0:
-                index_shuf.append(rng.randint(len(x_train)))
-            nb_batches = len(index_shuf) // batch_size
-            rng.shuffle(index_shuf)
-            # Shuffling here versus inside the loop doesn't seem to affect
-            # timing very much, but shuffling here makes the code slightly
-            # easier to read
-            x_train_shuffled = x_train[index_shuf]
-            y_train_shuffled = y_train[index_shuf]
+    # Check whether the hardware is working correctly
+    
+    # So far the failure has only been observed with 3 or more GPUs
+    run_canary = num_devices > 2
+    run_canary = num_devices > 1 # debugging hack, remove this line
+    if run_canary:
+        canary_feed_dict = {}
+        for x, y in safe_zip(preprocessed_xs, ys):
+            canary_feed_dict[x] = x_train[:device_batch_size].copy()
+            canary_feed_dict[y] = y_train[:device_batch_size].copy()
+        param_to_test = 0
+        grad_vars = []
+        for i in xrange(num_devices):
+            dev_grads = grads[i]
+            grad_vars.append(dev_grads[param_to_test][0])
+        grad_values = sess.run(grad_vars, feed_dict=canary_feed_dict)
+        failed = False
+        for i in xrange(1, num_devices):
+            if grad_values[0].shape != grad_values[i].shape:
+                print("shape 0 does not match shape %d:" % i, grad_values[0].shape,
+                        grad_values[i].shape)
+                failed = True
+                continue
+            if not np.allclose(grad_values[0], grad_values[i], atol=1e-6):
+                print("grad_values[0]: ", grad_values[0].mean(), grad_values[0].max())
+                print("grad_values[%d]: " %i, grad_values[i].mean(), grad_values[i].max())
+                print("max diff: ", np.abs(grad_values[0] - grad_values[1]).max())
+                failed = True
+        if failed:
+            print("Canary failed.")
+            quit()
+        #else:
+        #    #print("Canary succeeded.")
+        #    #print("grad_values[0]: ", grad_values[0].mean(), grad_values[0].max())
+        #    # print("grad_values[%d]: " %i, grad_values[i].mean(), grad_values[i].max())
 
-            prev = time.time()
-            for batch in range(nb_batches):
 
-                # Compute batch start and end indices
-                start = batch * batch_size
-                end = (batch + 1) * batch_size
-                # start, end = batch_indices(
-                #    batch, len(x_train), args.batch_size)
+    for epoch in xrange(args.nb_epochs):
+        # Indices to shuffle training set
+        index_shuf = list(range(len(x_train)))
+        # Randomly repeat a few training examples each epoch to avoid
+        # having a too-small batch
+        while len(index_shuf) % batch_size != 0:
+            index_shuf.append(rng.randint(len(x_train)))
+        nb_batches = len(index_shuf) // batch_size
+        rng.shuffle(index_shuf)
+        # Shuffling here versus inside the loop doesn't seem to affect
+        # timing very much, but shuffling here makes the code slightly
+        # easier to read
+        x_train_shuffled = x_train[index_shuf]
+        y_train_shuffled = y_train[index_shuf]
 
-                # Perform one training step
-                feed_dict = {}
-                diff = end - start
-                assert diff == batch_size
-                stride = diff // num_devices
-                for dev_idx in xrange(num_devices):
-                    cur_start = start + dev_idx * stride
-                    cur_end = start + (dev_idx + 1) * stride
-                    feed_dict[xs[dev_idx]
-                              ] = x_train_shuffled[cur_start:cur_end]
-                    feed_dict[ys[dev_idx]
-                              ] = y_train_shuffled[cur_start:cur_end]
-                if cur_end != end:
-                    msg = ("batch_size (%d) must be a multiple of num_devices "
-                           "(%d).\nCUDA_VISIBLE_DEVICES: %s"
-                           "\ndevices: %s")
-                    args = (batch_size, num_devices,
-                            os.environ['CUDA_VISIBLE_DEVICES'],
-                            str(devices))
-                    raise ValueError(msg % args)
-                if feed is not None:
-                    feed_dict.update(feed)
-                sess.run(train_step, feed_dict=feed_dict)
-            assert end == len(index_shuf)  # Check that all examples were used
-            cur = time.time()
-            _logger.info("Epoch " + str(epoch) + " took " +
-                         str(cur - prev) + " seconds")
-            if evaluate is not None:
-                evaluate()
+        prev = time.time()
+        for batch in range(nb_batches):
+
+            # Compute batch start and end indices
+            start = batch * batch_size
+            end = (batch + 1) * batch_size
+            # start, end = batch_indices(
+            #    batch, len(x_train), args.batch_size)
+
+            # Perform one training step
+            feed_dict = {}
+            diff = end - start
+            assert diff == batch_size
+            for dev_idx in xrange(num_devices):
+                cur_start = start + dev_idx * device_batch_size
+                cur_end = start + (dev_idx + 1) * device_batch_size
+                feed_dict[xs[dev_idx]
+                          ] = x_train_shuffled[cur_start:cur_end]
+                feed_dict[ys[dev_idx]
+                          ] = y_train_shuffled[cur_start:cur_end]
+            if cur_end != end:
+                msg = ("batch_size (%d) must be a multiple of num_devices "
+                       "(%d).\nCUDA_VISIBLE_DEVICES: %s"
+                       "\ndevices: %s")
+                args = (batch_size, num_devices,
+                        os.environ['CUDA_VISIBLE_DEVICES'],
+                        str(devices))
+                raise ValueError(msg % args)
+            if feed is not None:
+                feed_dict.update(feed)
+            sess.run(train_step, feed_dict=feed_dict)
+        assert end == len(index_shuf)  # Check that all examples were used
+        cur = time.time()
+        _logger.info("Epoch " + str(epoch) + " took " +
+                     str(cur - prev) + " seconds")
+        if evaluate is not None:
+            evaluate()
 
     return True
 
