@@ -6,9 +6,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
 import joblib
+import tensorflow as tf
 
+from cleverhans.model import Model
+from cleverhans.utils import safe_zip
 
 class PicklableVariable(object):
     """
@@ -24,6 +26,12 @@ class PicklableVariable(object):
     Session has been selected.
 
     Pickle is not secure. Unpickle only files you made yourself.
+
+    See cleverhans_tutorials/mnist_tutorial_picklable.py for examples of a
+    complete model training, pickling, and unpickling process using
+    PicklableVariable.
+
+    See cleverhans.picklable_model for models built using PicklableVariable.
     """
 
     def __init__(self, *args, **kwargs):
@@ -43,6 +51,46 @@ class PicklableVariable(object):
             raise RuntimeError("PicklableVariable requires a default "
                                "TensorFlow session")
         sess.run(self.var.initializer)
+
+class NoRefModel(Model):
+    """
+    A Model that can be pickled because it contains no references to any
+    Variables (e.g. it identifies Variables only by name).
+    The Model must be able to find all of its Variables via get_params
+    for them to be pickled.
+    Note that NoRefModel may have different Variable names after it is
+    restored, e.g. if the unpickling is run with a different enclosing
+    scope. NoRefModel will still work in these circumstances as long
+    as get_params returns the same order of Variables after unpickling
+    as it did before pickling.
+    See also cleverhans.picklable_model for a different, complementary
+    pickling strategy: models that can be pickled because they use *only*
+    references to Variables and work regardless of Variable names.
+    """
+
+    def __getstate__(self):
+        # Serialize everything except the Variables
+        out = self.__dict__.copy()
+        # Add the Variables
+        sess = tf.get_default_session()
+        if sess is None:
+            raise RuntimeError("NoRefModel requires a default "
+                               "TensorFlow session")
+        out["_tf_variables"] = sess.run(self.get_params())
+        return out
+
+    def __setstate__(self, d):
+        tf_variables = d["_tf_variables"]
+        del d["_tf_variables"]
+        # Deserialize everything except the Variables
+        self.__dict__ = d
+        # Deserialize the Variables
+        sess = tf.get_default_session()
+        if sess is None:
+            raise RuntimeError("NoRefModel requires a default "
+                               "TensorFlow session")
+        for var, value in safe_zip(self.get_params(), tf_variables):
+            var.load(value, sess)
 
 
 def save(filepath, obj):
