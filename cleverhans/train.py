@@ -140,7 +140,6 @@ def train(sess, loss, x_train, y_train,
 
     # So far the failure has only been observed with 3 or more GPUs
     run_canary = num_devices > 2
-    run_canary = num_devices > 1  # debugging hack, remove this line
     if run_canary:
         canary_feed_dict = {}
         for x, y in safe_zip(preprocessed_xs, ys):
@@ -155,8 +154,8 @@ def train(sess, loss, x_train, y_train,
         failed = False
         for i in xrange(1, num_devices):
             if grad_values[0].shape != grad_values[i].shape:
-                print("shape 0 does not match shape %d:" % i, grad_values[0].shape,
-                      grad_values[i].shape)
+                print("shape 0 does not match shape %d:" % i,
+                      grad_values[0].shape, grad_values[i].shape)
                 failed = True
                 continue
             if not np.allclose(grad_values[0], grad_values[i], atol=1e-6):
@@ -170,10 +169,6 @@ def train(sess, loss, x_train, y_train,
         if failed:
             print("Canary failed.")
             quit()
-        # else:
-        #    #print("Canary succeeded.")
-        #    #print("grad_values[0]: ", grad_values[0].mean(), grad_values[0].max())
-        #    # print("grad_values[%d]: " %i, grad_values[i].mean(), grad_values[i].max())
 
     for epoch in xrange(args.nb_epochs):
         # Indices to shuffle training set
