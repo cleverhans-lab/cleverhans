@@ -143,6 +143,14 @@ def train(sess, loss, x_train, y_train,
         for x, y in safe_zip(preprocessed_xs, ys):
             canary_feed_dict[x] = x_train[:device_batch_size].copy()
             canary_feed_dict[y] = y_train[:device_batch_size].copy()
+        # To reduce the runtime and memory cost of this canary,
+        # we test the gradient of only one parameter.
+        # For now this is just set to the first parameter in the list,
+        # because it is an index that is always guaranteed to work.
+        # If we think that this is causing false negatives and we should
+        # test other parameters, we could test a random parameter from
+        # the list or we could rewrite the canary to examine more than
+        # one parameter.
         param_to_test = 0
         grad_vars = []
         for i in xrange(num_devices):
