@@ -418,5 +418,5 @@ def safe_zip(*args):
     length = len(args[0])
     if not all(len(arg) == length for arg in args):
         raise ValueError("Lengths of arguments do not match: "
-                + str([len(arg) for arg in args]))
+                         + str([len(arg) for arg in args]))
     return zip(*args)

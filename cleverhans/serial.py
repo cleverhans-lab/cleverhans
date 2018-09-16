@@ -12,6 +12,7 @@ import tensorflow as tf
 from cleverhans.model import Model
 from cleverhans.utils import safe_zip
 
+
 class PicklableVariable(object):
     """
     A wrapper around a Variable that makes it picklable.
@@ -51,6 +52,7 @@ class PicklableVariable(object):
             raise RuntimeError("PicklableVariable requires a default "
                                "TensorFlow session")
         sess.run(self.var.initializer)
+
 
 class NoRefModel(Model):
     """
