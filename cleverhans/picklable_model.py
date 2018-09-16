@@ -137,7 +137,11 @@ class MLP(PicklableModel):
         return tf.placeholder(tf.float32, tuple(self.input_shape))
 
     def make_label_placeholder(self):
-        return self.layers[-1].make_label_placeholder()
+        try:
+            return self.layers[-1].make_label_placeholder()
+        except NotImplementedError:
+            return tf.placeholder(tf.float32,
+                                  self.layers[-1].get_output_shape())
 
 
 class Layer(PicklableModel):
@@ -220,6 +224,7 @@ class Conv2D(Layer):
         "norm" : each kernel is initialized to have the same norm,
                  given by `init_scale`
        "inv_sqrt" :  Gaussian with standard devation given by sqrt(2/fan_out)
+       "glorot_uniform" : U(+/- sqrt(6/(fan_in+fan_out))
     """
 
     def __init__(self, output_channels, kernel_shape, strides, padding,
@@ -236,16 +241,22 @@ class Conv2D(Layer):
                                                    self.output_channels)
         assert len(kernel_shape) == 4
         assert all(isinstance(e, int) for e in kernel_shape), kernel_shape
+        fan_in = self.kernel_shape[0] * \
+            self.kernel_shape[1] * input_channels
+        fan_out = self.kernel_shape[0] * \
+            self.kernel_shape[1] * self.output_channels
         if self.init_mode == "norm":
             init = tf.random_normal(kernel_shape, dtype=tf.float32)
             squared_norms = tf.reduce_sum(tf.square(init), axis=(0, 1, 2))
             denom = tf.sqrt(1e-7 + squared_norms)
             init = self.init_scale * init / denom
         elif self.init_mode == "inv_sqrt":
-            fan_out = self.kernel_shape[0] * \
-                self.kernel_shape[1] * self.output_channels
             init = tf.random_normal(kernel_shape, dtype=tf.float32,
                                     stddev=np.sqrt(2.0 / fan_out))
+        elif self.init_mode == "glorot_uniform":
+            scale = np.sqrt(6. / (fan_in + fan_out))
+            init = tf.random_uniform(kernel_shape, dtype=tf.float32,
+                                     minval=-scale, maxval=scale)
         else:
             raise ValueError(self.init_mode)
         self.kernels = PV(init, name=self.name + "_kernels")
