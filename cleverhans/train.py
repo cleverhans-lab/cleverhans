@@ -112,9 +112,7 @@ def train(sess, loss, x_train, y_train,
             # stochastic preprocessing could make the canary fail.
             preprocessed_xs.append(x)
 
-            loss.model.get_params()
             loss_value = loss.fprop(x, y, **fprop_args)
-            loss.model.get_params()
 
             grads.append(optimizer.compute_gradients(
                 loss_value, var_list=var_list))
