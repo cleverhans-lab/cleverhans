@@ -14,16 +14,20 @@ class Model(object):
     __metaclass__ = ABCMeta
     O_LOGITS, O_PROBS, O_FEATURES = 'logits probs features'.split()
 
-    def __init__(self, scope=None, nb_classes=None, hparams=None):
+    def __init__(self, scope=None, nb_classes=None, hparams=None,
+                 needs_dummy_fprop=False):
         """
         Constructor.
         :param scope: str, the name of model.
         :param nb_classes: integer, the number of classes.
         :param hparams: dict, hyper-parameters for the model.
+        :needs_dummy_fprop: bool, if True the model's parameters are not
+            created until fprop is called.
         """
         self.scope = scope or self.__class__.__name__
         self.nb_classes = nb_classes
         self.hparams = hparams or {}
+        self.needs_dummy_fprop = needs_dummy_fprop
 
     def __call__(self, *args, **kwargs):
         """
@@ -80,7 +84,34 @@ class Model(object):
         # For Graoh based execution
         scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                        self.scope)
+
+        if len(scope_vars) == 0:
+            self.make_params()
+            scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                           self.scope)
+            assert len(scope_vars) > 0
+
+        # Make sure no parameters have been added or removed
+        if hasattr(self, "num_params"):
+            assert self.num_params == len(scope_vars)
+        else:
+            self.num_params = len(scope_vars)
+
         return scope_vars
+
+    def make_params(self):
+        """
+        Create all Variables to be returned later by get_params.
+        By default this is a no-op.
+        Models that need their fprop to be called for their params to be
+        created can set `needs_dummy_fprop=True` in the constructor.
+        """
+
+        if self.needs_dummy_fprop:
+            if hasattr(self, "_dummy_input"):
+                return
+            self._dummy_input = self.make_input_placeholder()
+            self.fprop(self._dummy_input)
 
     def get_layer_names(self):
         """Return the list of exposed layers for this model."""
