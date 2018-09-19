@@ -10,6 +10,7 @@ import operator
 import os
 import struct
 import tempfile
+import sys
 
 import numpy as np
 
