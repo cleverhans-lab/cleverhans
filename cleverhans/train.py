@@ -129,20 +129,22 @@ def train(sess, loss, x_train, y_train,
     with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
         train_step = optimizer.apply_gradients(grad)
 
-
     if use_ema:
         ema = tf.train.ExponentialMovingAverage(decay=ema_decay)
         with tf.control_dependencies([train_step]):
             train_step = ema.apply(var_list)
         avg_params = [ema.average(param) for param in var_list]
-        tmp_params = [tf.Variable(param, trainable=False) for param in var_list]
-        param_to_tmp = [tf.assign(tmp, param) for tmp, param in safe_zip(tmp_params, var_list)]
+        tmp_params = [tf.Variable(param, trainable=False)
+                      for param in var_list]
+        param_to_tmp = [tf.assign(tmp, param)
+                        for tmp, param in safe_zip(tmp_params, var_list)]
         with tf.control_dependencies(param_to_tmp):
-            avg_to_param = [tf.assign(param, avg) for param, avg in safe_zip(var_list, avg_params)]
+            avg_to_param = [tf.assign(param, avg)
+                            for param, avg in safe_zip(var_list, avg_params)]
         with tf.control_dependencies(param_to_tmp):
-            tmp_to_avg = [tf.assign(avg, tmp) for avg, tmp in safe_zip(avg_params, tmp_params)]
+            tmp_to_avg = [tf.assign(avg, tmp)
+                          for avg, tmp in safe_zip(avg_params, tmp_params)]
         swap = tmp_to_avg
-
 
     batch_size = args.batch_size
 
