@@ -1926,171 +1926,23 @@ def margin_logit_loss(model_logits, label, num_classes=10):
     return loss
 
 
-def _transformer(U, theta, out_size, name='SpatialTransformer', **kwargs):
-    """Spatial Transformer Layer
-    Implements a spatial transformer layer as described in [1]_.
-    Based on [2]_ and edited by David Dao for Tensorflow.
-    Parameters
-    ----------
-    U : float
-        The output of a convolutional net should have the
-        shape [num_batch, height, width, num_channels].
-    theta: float
-        The output of the
-        localisation network should be [num_batch, 6].
-    out_size: tuple of two ints
-        The size of the output of the network (height, width)
-    References
-    ----------
-    .. [1]  Spatial Transformer Networks
-            Max Jaderberg, Karen Simonyan, Andrew Zisserman, Koray Kavukcuoglu
-            Submitted on 5 Jun 2015
-    .. [2]  https://github.com/skaae/transformer_network/
-              blob/master/transformerlayer.py
-    Notes
-    -----
-    To initialize the network to the identity transform init
-    ``theta`` to :
-        identity = np.array([[1., 0., 0.],
-                             [0., 1., 0.]])
-        identity = identity.flatten()
-        theta = tf.Variable(initial_value=identity)
-    """
+def _apply_transformation(x, dx, dy, angle, batch_size):
+    # Map a transformation onto the input
+    angle *= np.pi / 180
+    height = x.get_shape().as_list()[1]
+    width = x.get_shape().as_list()[2]
+    M = np.array([1, 0, -dx*height,
+                  0, 1, -dy*width, 0, 0] * batch_size, dtype=np.float32)
+    theta = tf.constant(M, shape=(batch_size, 8))
 
-    def _repeat(x, n_repeats):
-        with tf.variable_scope('_repeat'):
-            rep = tf.transpose(
-                tf.expand_dims(tf.ones(
-                    shape=tf.stack([n_repeats, ])), 1), [1, 0])
-            rep = tf.cast(rep, 'int32')
-            x = tf.matmul(tf.reshape(x, (-1, 1)), rep)
-            return tf.reshape(x, [-1])
+    # transfrom image
+    x = tf.contrib.image.rotate(x, angle, interpolation='BILINEAR')
+    x = tf.contrib.image.transform(x, theta, interpolation='BILINEAR')
 
-    def _interpolate(im, x, y, out_size):
-        with tf.variable_scope('_interpolate'):
-            # constants
-            num_batch = tf.shape(im)[0]
-            height = tf.shape(im)[1]
-            width = tf.shape(im)[2]
-            channels = tf.shape(im)[3]
-
-            x = tf.cast(x, 'float32')
-            y = tf.cast(y, 'float32')
-            height_f = tf.cast(height, 'float32')
-            width_f = tf.cast(width, 'float32')
-            out_height = out_size[0]
-            out_width = out_size[1]
-            zero = tf.zeros([], dtype='int32')
-            max_y = tf.cast(tf.shape(im)[1] - 1, 'int32')
-            max_x = tf.cast(tf.shape(im)[2] - 1, 'int32')
-
-            # scale indices from [-1, 1] to [0, width/height]
-            x = (x + 1.0)*(width_f) / 2.0
-            y = (y + 1.0)*(height_f) / 2.0
-
-            # do sampling
-            x0 = tf.cast(tf.floor(x), 'int32')
-            x1 = x0 + 1
-            y0 = tf.cast(tf.floor(y), 'int32')
-            y1 = y0 + 1
-
-            x0 = tf.clip_by_value(x0, zero, max_x)
-            x1 = tf.clip_by_value(x1, zero, max_x)
-            y0 = tf.clip_by_value(y0, zero, max_y)
-            y1 = tf.clip_by_value(y1, zero, max_y)
-            dim2 = width
-            dim1 = width*height
-            base = _repeat(tf.range(num_batch)*dim1, out_height*out_width)
-            base_y0 = base + y0*dim2
-            base_y1 = base + y1*dim2
-            idx_a = base_y0 + x0
-            idx_b = base_y1 + x0
-            idx_c = base_y0 + x1
-            idx_d = base_y1 + x1
-
-            # use indices to lookup pixels in the flat image and restore
-            # channels dim
-            im_flat = tf.reshape(im, tf.stack([-1, channels]))
-            im_flat = tf.cast(im_flat, 'float32')
-            Ia = tf.gather(im_flat, idx_a)
-            Ib = tf.gather(im_flat, idx_b)
-            Ic = tf.gather(im_flat, idx_c)
-            Id = tf.gather(im_flat, idx_d)
-
-            # and finally calculate interpolated values
-            x0_f = tf.cast(x0, 'float32')
-            x1_f = tf.cast(x1, 'float32')
-            y0_f = tf.cast(y0, 'float32')
-            y1_f = tf.cast(y1, 'float32')
-            wa = tf.expand_dims(((x1_f-x) * (y1_f-y)), 1)
-            wb = tf.expand_dims(((x1_f-x) * (y-y0_f)), 1)
-            wc = tf.expand_dims(((x-x0_f) * (y1_f-y)), 1)
-            wd = tf.expand_dims(((x-x0_f) * (y-y0_f)), 1)
-            output = tf.add_n([wa*Ia, wb*Ib, wc*Ic, wd*Id])
-            return output
-
-    def _meshgrid(height, width):
-        with tf.variable_scope('_meshgrid'):
-            # This should be equivalent to:
-            #  x_t, y_t = np.meshgrid(np.linspace(-1, 1, width),
-            #                         np.linspace(-1, 1, height))
-            #  ones = np.ones(np.prod(x_t.shape))
-            #  grid = np.vstack([x_t.flatten(), y_t.flatten(), ones])
-            x_t = tf.matmul(tf.ones(shape=tf.stack([height, 1])),
-                            tf.transpose(tf.expand_dims(
-                                tf.linspace(-1.0, 1.0, width), 1), [1, 0]))
-            y_t = tf.matmul(tf.expand_dims(tf.linspace(-1.0, 1.0, height), 1),
-                            tf.ones(shape=tf.stack([1, width])))
-
-            x_t_flat = tf.reshape(x_t, (1, -1))
-            y_t_flat = tf.reshape(y_t, (1, -1))
-
-            ones = tf.ones_like(x_t_flat)
-            grid = tf.concat(axis=0, values=[x_t_flat, y_t_flat, ones])
-            return grid
-
-    def _transform(theta, input_dim, out_size):
-        with tf.variable_scope('_transform'):
-            num_batch = tf.shape(input_dim)[0]
-            height = tf.shape(input_dim)[1]
-            width = tf.shape(input_dim)[2]
-            num_channels = tf.shape(input_dim)[3]
-            theta = tf.reshape(theta, (-1, 2, 3))
-            theta = tf.cast(theta, 'float32')
-
-            # grid of (x_t, y_t, 1), eq (1) in ref [1]
-            height_f = tf.cast(height, 'float32')
-            width_f = tf.cast(width, 'float32')
-            out_height = out_size[0]
-            out_width = out_size[1]
-            grid = _meshgrid(out_height, out_width)
-            grid = tf.expand_dims(grid, 0)
-            grid = tf.reshape(grid, [-1])
-            grid = tf.tile(grid, tf.stack([num_batch]))
-            grid = tf.reshape(grid, tf.stack([num_batch, 3, -1]))
-
-            # Transform A x (x_t, y_t, 1)^T -> (x_s, y_s)
-            T_g = tf.matmul(theta, grid)
-            x_s = tf.slice(T_g, [0, 0, 0], [-1, 1, -1])
-            y_s = tf.slice(T_g, [0, 1, 0], [-1, 1, -1])
-            x_s_flat = tf.reshape(x_s, [-1])
-            y_s_flat = tf.reshape(y_s, [-1])
-
-            input_transformed = _interpolate(
-                input_dim, x_s_flat, y_s_flat,
-                out_size)
-
-            output = tf.reshape(
-                input_transformed,
-                tf.stack([num_batch, out_height, out_width, num_channels]))
-            return output
-
-    with tf.variable_scope(name):
-        output = _transform(theta, U, out_size)
-        return output
+    return x
 
 
-def spm(x, model, batch_size=128, y=None, n_samples=10, dx_min=-0.1,
+def spm(x, model, batch_size=128, y=None, n_samples=None, dx_min=-0.1,
         dx_max=0.1, n_dxs=5, dy_min=-0.1, dy_max=0.1, n_dys=5,
         angle_min=-30, angle_max=30, n_angles=11):
     """
@@ -2106,35 +1958,26 @@ def spm(x, model, batch_size=128, y=None, n_samples=10, dx_min=-0.1,
         y = tf.stop_gradient(y)
     y = y / reduce_sum(y, 1, keepdims=True)
 
-    img_rows = x.get_shape()[1]
-    img_cols = x.get_shape()[2]
-
     # Define the range of transformations
     dxs = np.linspace(dx_min, dx_max, n_dxs)
     dys = np.linspace(dy_min, dy_max, n_dys)
     angles = np.linspace(angle_min, angle_max, n_angles)
 
-    sampled_dxs = np.random.choice(dxs, n_samples)
-    sampled_dys = np.random.choice(dys, n_samples)
-    sampled_angles = np.random.choice(angles, n_samples)
-
-    import math
+    if n_samples is None:
+        import itertools
+        transforms = list(itertools.product(*[dxs, dys, angles]))
+    else:
+        sampled_dxs = np.random.choice(dxs, n_samples)
+        sampled_dys = np.random.choice(dys, n_samples)
+        sampled_angles = np.random.choice(angles, n_samples)
+        transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
 
     adv_xs = []
     accs = []
 
     # Perform the transformation
-    for (dx, dy, angle) in zip(sampled_dxs, sampled_dys, sampled_angles):
-        cos_angle = np.cos(angle / 180.0 * math.pi)
-        sin_angle = np.sin(angle / 180.0 * math.pi)
-        M = np.array([cos_angle, -sin_angle, dx,
-                      sin_angle, cos_angle, dy] * batch_size)
-        theta = tf.constant(M, shape=(batch_size, 6))
-
-        # Transform the input and get preds
-        out_size = (img_rows, img_cols)
-        adv_xs.append(tf.reshape(_transformer(x, theta, out_size),
-                                 (-1, img_rows, img_cols, 1)))
+    for (dx, dy, angle) in transforms:
+        adv_xs.append(_apply_transformation(x, dx, dy, angle, batch_size))
         preds_adv = model.get_logits(adv_xs[-1])
 
         # Compute accuracy

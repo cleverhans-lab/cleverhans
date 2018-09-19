@@ -1878,7 +1878,8 @@ class SpatialTransformationMethod(Attack):
         :param x: The model's symbolic inputs.
         :param batch_size: (optional int) The size of batch during evaluation.
         :param n_samples: (optional) The number of transformations sampled to
-                          construct the attack.
+                          construct the attack. Set it to None to run
+                          full grid attack.
         :param dx_min: (optional float) Minimum translation ratio along x-axis.
         :param dx_max: (optional float) Maximum translation ratio along x-axis.
         :param n_dxs: (optional int) Number of discretized translation ratios
@@ -1912,7 +1913,7 @@ class SpatialTransformationMethod(Attack):
 
     def parse_params(self,
                      batch_size=128,
-                     n_samples=10,
+                     n_samples=None,
                      dx_min=-0.1,
                      dx_max=0.1,
                      n_dxs=2,
@@ -1939,9 +1940,6 @@ class SpatialTransformationMethod(Attack):
         self.angle_max = angle_max
         self.n_angles = n_angles
 
-        if self.angle_min < -30 or self.angle_max > 30:
-            raise ValueError("The value of angle must be bounded "
-                             "within [-30, 30]")
         if self.dx_min < -1 or self.dy_min < -1 or \
            self.dx_max > 1 or self.dy_max > 1:
             raise ValueError("The value of translation must be bounded "
