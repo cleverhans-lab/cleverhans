@@ -29,7 +29,9 @@ def maybe_download_mnist_file(file_name, datadir=None, force=False):
         datadir = tempfile.gettempdir()
     dest_file = os.path.join(datadir, file_name)
 
-    if force or not os.path.isfile(file_name):
+    isfile = os.path.isfile(dest_file)
+
+    if force or not isfile:
         url = urljoin('http://yann.lecun.com/exdb/mnist/', file_name)
         urlretrieve(url, dest_file)
     return dest_file

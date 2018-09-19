@@ -30,6 +30,7 @@ BATCH_SIZE = 128
 LEARNING_RATE = 0.001
 CLEAN_TRAIN = True
 BACKPROP_THROUGH_ATTACK = False
+NB_FILTERS = 64
 
 
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
@@ -38,7 +39,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    clean_train=CLEAN_TRAIN,
                    testing=False,
                    backprop_through_attack=BACKPROP_THROUGH_ATTACK,
-                   nb_filters=64, num_threads=None,
+                   nb_filters=NB_FILTERS, num_threads=None,
                    label_smoothing=0.1):
     """
     MNIST cleverhans tutorial
