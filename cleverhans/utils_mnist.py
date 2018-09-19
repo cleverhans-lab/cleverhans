@@ -62,7 +62,8 @@ def download_and_parse_mnist_file(file_name, datadir=None, force=False):
         data_type = hex_to_data_type[data_type]
 
         # data_type unicode to ascii conversion (Python2 fix)
-        data_type = data_type.encode('ascii', 'ignore')
+        if sys.version_info[0] < 3:
+            data_type = data_type.encode('ascii', 'ignore')
 
         dim_sizes = struct.unpack(
             '>' + 'I' * n_dims,
