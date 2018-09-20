@@ -47,6 +47,7 @@ FLAGS = flags.FLAGS
 NB_EPOCHS = 6
 BATCH_SIZE = 128
 LEARNING_RATE = .001
+NB_FILTERS = 64
 
 # Keeps track of implemented attacks.
 # Maps attack string taken from bash to attack class
