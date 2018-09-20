@@ -133,9 +133,13 @@ def train(sess, loss, x_train, y_train,
         ema = tf.train.ExponentialMovingAverage(decay=ema_decay)
         with tf.control_dependencies([train_step]):
             train_step = ema.apply(var_list)
+        # Get pointers to the EMA's running average variables
         avg_params = [ema.average(param) for param in var_list]
+        # Make temporary buffers used for swapping the live and running average
+        # parameters
         tmp_params = [tf.Variable(param, trainable=False)
                       for param in var_list]
+        # Define the swapping operation
         param_to_tmp = [tf.assign(tmp, param)
                         for tmp, param in safe_zip(tmp_params, var_list)]
         with tf.control_dependencies(param_to_tmp):
@@ -248,11 +252,18 @@ def train(sess, loss, x_train, y_train,
                      str(cur - prev) + " seconds")
         if evaluate is not None:
             if use_ema:
+                # Before running evaluation, load the running average
+                # parameters into the live slot, so we can see how well
+                # the EMA parameters are performing
                 sess.run(swap)
             evaluate()
             if use_ema:
+                # Swap the parameters back, so that we continue training
+                # on the live parameters
                 sess.run(swap)
     if use_ema:
+        # When training is done, swap the running average parameters into
+        # the live slot, so that we use them when we deploy the model
         sess.run(swap)
 
     return True
