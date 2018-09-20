@@ -145,7 +145,7 @@ def train(sess, loss, x_train, y_train,
         with tf.control_dependencies(param_to_tmp):
             avg_to_param = [tf.assign(param, avg)
                             for param, avg in safe_zip(var_list, avg_params)]
-        with tf.control_dependencies(param_to_tmp):
+        with tf.control_dependencies(avg_to_param):
             tmp_to_avg = [tf.assign(avg, tmp)
                           for avg, tmp in safe_zip(avg_params, tmp_params)]
         swap = tmp_to_avg
