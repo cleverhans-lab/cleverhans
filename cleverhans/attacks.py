@@ -1827,7 +1827,7 @@ class SPSA(Attack):
         x_adv = []
         batch_size = x_val.shape[0]
         y = kwargs.pop('y', [None] * batch_size)
-        assert len(x_val) == len(y), '# of images and labels given do not match'
+        assert len(x_val) == len(y), '# of images and labels should match'
         for x_single, y_single in zip(x_val, y):
             x = np.expand_dims(x_single, axis=0)
             adv_img = super(SPSA, self).generate_np(x, y=y_single, **kwargs)
