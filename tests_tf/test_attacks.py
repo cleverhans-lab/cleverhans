@@ -268,9 +268,6 @@ class TestSPSA(CleverHansTest):
         self.attack = SPSA(self.model, sess=self.sess)
 
     def test_attack_strength(self):
-        # This uses the existing input structure for SPSA. Tom tried for ~40
-        # minutes to get generate_np to work correctly but could not.
-
         n_samples = 10
         x_val = np.random.rand(n_samples, 2)
         x_val = np.array(x_val, dtype=np.float32)
@@ -296,6 +293,41 @@ class TestSPSA(CleverHansTest):
             all_x_adv.append(x_adv_np[0])
 
         x_adv = np.vstack(all_x_adv)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
+
+    def test_attack_strength_np(self):
+        # Same test as test_attack_strength, but uses generate_np interface
+        n_samples = 10
+        x_val = np.random.rand(n_samples, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        feed_labs = np.random.randint(0, 2, n_samples)
+
+        all_x_adv = []
+        for i in range(n_samples):
+            x_adv_np = self.attack.generate_np(
+                np.expand_dims(x_val[i], axis=0),
+                y=np.expand_dims(feed_labs[i], axis=0),
+                epsilon=.5, num_steps=100, batch_size=64, spsa_iters=1,
+            )
+            all_x_adv.append(x_adv_np[0])
+
+        x_adv = np.vstack(all_x_adv)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
+
+    def test_attack_strength_np_batched(self):
+        # Same test as test_attack_strength_np, but batched
+        n_samples = 10
+        x_val = np.random.rand(n_samples, 2)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        feed_labs = np.random.randint(0, 2, n_samples)
+        x_adv = self.attack.generate_np(
+            x_val, y=feed_labs, epsilon=.5, num_steps=100, batch_size=64,
+            spsa_iters=1)
+
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
         self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
 

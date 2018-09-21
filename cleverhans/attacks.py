@@ -1743,8 +1743,8 @@ class SPSA(Attack):
 
         self.feedable_kwargs = {
             'epsilon': self.np_dtype,
-            'y': self.np_dtype,
-            'y_target': self.np_dtype,
+            'y': np.int32,
+            'y_target': np.int32,
         }
         self.structural_kwargs = [
             'num_steps',
@@ -1829,3 +1829,15 @@ class SPSA(Attack):
             is_debug=is_debug,
         )
         return adv_x
+
+    def generate_np(self, x_val, **kwargs):
+        # Call self.generate() sequentially for each image in the batch
+        x_adv = []
+        batch_size = x_val.shape[0]
+        y = kwargs.pop('y', [None] * batch_size)
+        assert len(x_val) == len(y), '# of images and labels should match'
+        for x_single, y_single in zip(x_val, y):
+            x = np.expand_dims(x_single, axis=0)
+            adv_img = super(SPSA, self).generate_np(x, y=y_single, **kwargs)
+            x_adv.append(adv_img)
+        return np.concatenate(x_adv, axis=0)
