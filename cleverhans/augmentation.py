@@ -22,7 +22,8 @@ def random_crop_and_flip(x, pad_rows=4, pad_cols=4):
                                                       cols + pad_cols)
 
     def _random_crop_image(img):
-        return tf.random_crop(img, [rows, cols, 3])
+        channels = img.get_shape()[2]
+        return tf.random_crop(img, [rows, cols, channels])
     # Some of these ops are only on CPU.
     # This function will often be called with the device set to GPU.
     # We need to set it to CPU temporarily to avoid an exception.
