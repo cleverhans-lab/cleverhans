@@ -41,7 +41,7 @@ def train(sess, loss, x_train, y_train,
           init_all=True, evaluate=None, feed=None, args=None,
           rng=None, var_list=None, fprop_args=None, optimizer=None,
           devices=None, x_batch_preprocessor=None, use_ema=False,
-          ema_decay=.998):
+          ema_decay=.998, run_canary=True):
     """
     Run (optionally multi-replica, synchronous) training to minimize `loss`
     :param sess: TF session to use when training the graph
@@ -74,6 +74,12 @@ def train(sess, loss, x_train, y_train,
         If true, uses an exponential moving average of the model parameters
     :param ema_decay: float
         The decay parameter for EMA, if EMA is used
+    :param run_canary: bool
+        If True and using 3 or more GPUs, runs some canary code that should
+        fail if there is a multi-GPU driver problem.
+        Turn this off if your gradients are inherently stochastic (e.g.
+        if you use dropout). The canary code checks that all GPUs give
+        approximately the same gradient.
     :return: True if model trained
     """
     args = _ArgsWrapper(args or {})
@@ -163,7 +169,7 @@ def train(sess, loss, x_train, y_train,
     # Check whether the hardware is working correctly
 
     # So far the failure has only been observed with 3 or more GPUs
-    run_canary = num_devices > 2
+    run_canary = run_canary and num_devices > 2
     if run_canary:
         canary_feed_dict = {}
         for x, y in safe_zip(preprocessed_xs, ys):
