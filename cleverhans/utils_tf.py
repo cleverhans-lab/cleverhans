@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from distutils.version import LooseVersion
+import logging
 import math
 import numpy as np
 import os
@@ -20,6 +21,7 @@ from cleverhans.compat import reduce_any
 from cleverhans.compat import softmax_cross_entropy_with_logits
 
 _logger = create_logger("cleverhans.utils.tf")
+_logger.setLevel(logging.INFO)
 
 
 def model_loss(y, model, mean=True):
