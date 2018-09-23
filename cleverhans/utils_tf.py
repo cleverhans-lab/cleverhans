@@ -23,6 +23,7 @@ from cleverhans.compat import softmax_cross_entropy_with_logits
 _logger = create_logger("cleverhans.utils.tf")
 _logger.setLevel(logging.INFO)
 
+
 def model_loss(y, model, mean=True):
     """
     Define loss of TF graph
