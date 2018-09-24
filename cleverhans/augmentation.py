@@ -33,7 +33,4 @@ def random_crop_and_flip(x, pad_rows=4, pad_cols=4):
   # We need to set it to CPU temporarily to avoid an exception.
   with tf.device('/CPU:0'):
     x = tf.map_fn(random_crop_and_flip_image, x)
-    # x = tf.map_fn(_pad_image, x)
-    # x = tf.map_fn(_random_crop_image, x)
-    # x = tf.map_fn(tf.image.random_flip_left_right, x)
   return x
