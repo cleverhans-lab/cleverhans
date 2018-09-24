@@ -4,6 +4,8 @@
 import numpy as np
 from functools import partial
 import tensorflow as tf
+from cleverhans.attacks_tf import compute_mask
+from cleverhans.discretization_utils import discretize_uniform
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.attacks_tf import fgm, pgd_attack,\
     UnrolledAdam, UnrolledGradientDescent
@@ -12,6 +14,36 @@ import unittest
 from cleverhans.model import Model
 
 
+class testComputeMask(unittest.TestCase):
+    def test_compute_mask(self):
+        eps = 1.0
+        levels = 10
+        np.random.seed(123)
+        x = np.random.rand(10, 32, 32, 3)
+        x_t = tf.constant(x, tf.float32)
+        x_one_hot = discretize_uniform(x_t, levels,
+                                       thermometer=False)
+        x_thermometer = discretize_uniform(x_t, levels,
+                                           thermometer=True)
+        mask = [1] * 10
+        mask = np.stack([mask] * 3, axis=1)
+        mask = mask.flatten()
+        mask = np.full((10, 32, 32, 30), mask)
+        mask_o = compute_mask(
+            levels,
+            x - eps,
+            x + eps,
+            thermometer=False)
+        mask_t = compute_mask(
+            levels,
+            x - eps,
+            x + eps,
+            thermometer=True)
+        sess = tf.Session()
+        self.assertTrue(np.all(mask == sess.run(mask_o)))
+        self.assertTrue(np.all(mask == sess.run(mask_t)))
+
+        
 class SimpleModel(Model):
     """
     A very simple neural network

@@ -22,9 +22,30 @@ from cleverhans.attacks import ElasticNetMethod
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import MadryEtAl
 from cleverhans.attacks import FastFeatureAdversaries
+from cleverhans.attacks import LSPGA
+from cleverhans.discretization_utils import discretize_uniform
+from cleverhans.discretization_utils import undiscretize_uniform
 from cleverhans.attacks import LBFGS
 from cleverhans.model import Model
 from cleverhans_tutorials.tutorial_models import HeReLuNormalInitializer
+
+
+
+class SimpleDiscretizedModel(Model):
+    """
+    A very simple neural network for discretized inputs
+    """
+
+    def get_logits(self, x):
+        shape = x.get_shape().as_list()
+        batch_size = shape[0]
+        x = tf.reshape(x, [-1, shape[-1]])
+        W1 = tf.constant(np.random.rand(shape[-1], 10), dtype=tf.float32)
+        h1 = tf.nn.sigmoid(tf.matmul(x, W1))
+        W2 = tf.constant(np.random.rand(10, 10), dtype=tf.float32)
+        res = tf.matmul(h1, W2)
+        res = tf.reshape(res, [batch_size, -1])
+        return res
 
 
 class SimpleModel(Model):
@@ -49,6 +70,7 @@ class SimpleModel(Model):
                 self.O_PROBS: tf.nn.softmax(res)}
 
 
+
 class TrivialModel(Model):
     """
     A linear model with two weights
@@ -71,7 +93,6 @@ class DummyModel(Model):
     """
     A simple model based on slim
     """
-
     def __init__(self, scope='dummy_model', nb_classes=10, **kwargs):
         del kwargs
         Model.__init__(self, scope, nb_classes, locals())
@@ -83,6 +104,7 @@ class DummyModel(Model):
             logits = slim.fully_connected(net, 10, activation_fn=None)
             return {self.O_LOGITS: logits,
                     self.O_PROBS: tf.nn.softmax(logits)}
+
 
 
 class TestAttackClassInitArguments(CleverHansTest):
@@ -948,7 +970,34 @@ class TestFastFeatureAdversaries(CleverHansTest):
         print("d_ag/d_sg*100 `%s`: %.4f" % (layer, d_ag*100/d_sg))
         self.assertTrue(d_ag*100/d_sg < 50.)
 
+        
+class TestLogitSpaceProjectedGradientAscent(CleverHansTest):
+    def setUp(self):
+        super(TestLogitSpaceProjectedGradientAscent, self).setUp()
+        self.sess = tf.Session()
+        self.model = SimpleDiscretizedModel()
+        self.attack = LSPGA(self.model, sess=self.sess)
 
+    def test_eps_ball(self):
+        steps = 10
+        eps = 0.3
+        levels = 10
+        x = np.random.rand(10, 32, 32, 3)
+        y = np.ones(10)
+        x_t = tf.constant(x, tf.float32)
+        y_t = tf.one_hot(tf.constant(y, dtype=tf.int32), depth=10)
+        x_thermometer = discretize_uniform(
+            x_t, levels, thermometer=True)
+        x_adv = self.attack.generate(x, eps=eps, levels=levels, steps=steps,
+                                     thermometer=True, attack_step=1.0, y=y_t)
+        self.assertTrue(np.shape(x_adv) == np.shape(x_thermometer))
+        x_adv = undiscretize_uniform(x_adv, levels=levels,
+                                     thermometer=True, flattened=True)
+        diff = tf.norm(tf.abs(x_adv - x_t), ord=np.inf)
+        tol = 1e-1
+        self.assertTrue(np.all(np.less_equal(self.sess.run(diff), eps + tol)))
+
+        
 class TestLBFGS(CleverHansTest):
     def setUp(self):
         super(TestLBFGS, self).setUp()
