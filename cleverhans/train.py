@@ -266,7 +266,8 @@ def train(sess, loss, x_train, y_train,
             if feed is not None:
                 feed_dict.update(feed)
 
-            _, loss_numpy = sess.run([train_step, loss_value], feed_dict=feed_dict)
+            _, loss_numpy = sess.run(
+                [train_step, loss_value], feed_dict=feed_dict)
 
             if np.abs(loss_numpy) > loss_threshold:
                 raise ValueError("Extreme loss during training: ", loss_numpy)
