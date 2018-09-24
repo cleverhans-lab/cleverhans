@@ -72,8 +72,11 @@ def train(sess, loss, x_train, y_train,
         Called to preprocess the data before passing the data to the Loss
     :param use_ema: bool
         If true, uses an exponential moving average of the model parameters
-    :param ema_decay: float
+    :param ema_decay: float or callable
         The decay parameter for EMA, if EMA is used
+        If a callable rather than a float, this is a callable that takes
+        the epoch and batch as arguments and returns the ema_decay for
+        the current batch.
     :param run_canary: bool
         If True and using 3 or more GPUs, runs some canary code that should
         fail if there is a multi-GPU driver problem.
@@ -135,7 +138,12 @@ def train(sess, loss, x_train, y_train,
     with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
         train_step = optimizer.apply_gradients(grad)
 
+    epoch_tf = tf.placeholder(tf.int32, [])
+    batch_tf = tf.placeholder(tf.int32, [])
+
     if use_ema:
+        if callable(ema_decay):
+            ema_decay = ema_decay(epoch_tf, batch_tf)
         ema = tf.train.ExponentialMovingAverage(decay=ema_decay)
         with tf.control_dependencies([train_step]):
             train_step = ema.apply(var_list)
@@ -231,7 +239,7 @@ def train(sess, loss, x_train, y_train,
             end = (batch + 1) * batch_size
 
             # Perform one training step
-            feed_dict = {}
+            feed_dict = {epoch_tf: epoch, batch_tf: batch}
             diff = end - start
             assert diff == batch_size
             for dev_idx in xrange(num_devices):
