@@ -17,18 +17,20 @@ def random_crop_and_flip(x, pad_rows=4, pad_cols=4):
     rows = tf.shape(x)[1]
     cols = tf.shape(x)[2]
 
-    def _pad_image(img):
+    def _pad_img(img):
         return tf.image.resize_image_with_crop_or_pad(img, rows + pad_rows,
                                                       cols + pad_cols)
 
-    def _random_crop_image(img):
+    def _rand_crop_img(img):
         channels = img.get_shape()[2]
         return tf.random_crop(img, [rows, cols, channels])
+
+    def random_crop_and_flip_image(img):
+        return tf.image.random_flip_left_right(_rand_crop_img(_pad_img(img)))
+
     # Some of these ops are only on CPU.
     # This function will often be called with the device set to GPU.
     # We need to set it to CPU temporarily to avoid an exception.
     with tf.device('/CPU:0'):
-        x = tf.map_fn(_pad_image, x)
-        x = tf.map_fn(_random_crop_image, x)
-        x = tf.map_fn(tf.image.random_flip_left_right, x)
+        x = tf.map_fn(random_crop_and_flip_image, x)
     return x
