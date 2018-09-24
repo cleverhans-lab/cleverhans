@@ -73,6 +73,13 @@ class NoRefModel(Model):
     def __getstate__(self):
         # Serialize everything except the Variables
         out = self.__dict__.copy()
+
+        # The base Model class adds this tf reference to self
+        # We mustn't pickle anything tf, this will need to be
+        # regenerated after the model is reloaded.
+        if "_dummy_input" in out:
+            del out["_dummy_input"]
+
         # Add the Variables
         sess = tf.get_default_session()
         if sess is None:
