@@ -10,6 +10,7 @@ from distutils.version import LooseVersion
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max, reduce_min
 from cleverhans.compat import reduce_any
+from cleverhans.utils_tf import clip_eta
 
 _logger = utils.create_logger("cleverhans.attacks")
 
@@ -354,25 +355,29 @@ class FastGradientMethod(Attack):
         return True
 
 
-class BasicIterativeMethod(Attack):
+class ProjectedGradientDescent(Attack):
     """
-    The Basic Iterative Method (Kurakin et al. 2016). The original paper used
+    Class implements either the Basic Iterative Method (Kurakin et al. 2016)
+    when rand_minmax is set to 0. or the Madry et al. (2017) method when
+    rand_minmax is larger than 0. The original Kurakin et al. (2016) paper used
     hard labels for this attack; no label smoothing.
-    Paper link: https://arxiv.org/pdf/1607.02533.pdf
+    Paper link (Kurakin et al. 2016): https://arxiv.org/pdf/1607.02533.pdf
+    Paper link (Madry et al. 2017): https://arxiv.org/pdf/1706.06083.pdf
     """
 
     FGM_CLASS = FastGradientMethod
 
     def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         """
-        Create a BasicIterativeMethod instance.
+        Create a ProjectedGradientDescent instance.
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
         if not isinstance(model, Model):
             model = CallableModelWrapper(model, 'probs')
 
-        super(BasicIterativeMethod, self).__init__(model, back, sess, dtypestr)
+        super(ProjectedGradientDescent, self).__init__(model, back, sess=sess,
+                                                       dtypestr=dtypestr)
         self.feedable_kwargs = {
             'eps': self.np_dtype,
             'eps_iter': self.np_dtype,
@@ -381,7 +386,8 @@ class BasicIterativeMethod(Attack):
             'clip_min': self.np_dtype,
             'clip_max': self.np_dtype
         }
-        self.structural_kwargs = ['ord', 'nb_iter']
+        self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
+        self.child = None
 
     def generate(self, x, **kwargs):
         """
@@ -407,7 +413,9 @@ class BasicIterativeMethod(Attack):
         assert self.parse_params(**kwargs)
 
         # Initialize loop variables
-        eta = tf.zeros_like(x)
+        eta = tf.random_uniform(tf.shape(x), -self.rand_minmax,
+                                self.rand_minmax, dtype=self.tf_dtype)
+        eta = clip_eta(eta, self.ord, self.eps)
 
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model.get_probs(x)
@@ -473,6 +481,7 @@ class BasicIterativeMethod(Attack):
                      clip_min=None,
                      clip_max=None,
                      y_target=None,
+                     rand_minmax=0.3,
                      **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
@@ -493,6 +502,12 @@ class BasicIterativeMethod(Attack):
         :param clip_min: (optional float) Minimum input component value
         :param clip_max: (optional float) Maximum input component value
         """
+        if self.child is not None:
+            if self.child == 'BasicIterativeMethod':
+                rand_minmax = 0.
+            elif self.child == 'MadryEtAl':
+                if 'rand_init' in kwargs and not kwargs['rand_init']:
+                    rand_minmax = 0.
 
         # Save attack-specific parameters
         self.eps = eps
@@ -503,6 +518,7 @@ class BasicIterativeMethod(Attack):
         self.ord = ord
         self.clip_min = clip_min
         self.clip_max = clip_max
+        self.rand_minmax = rand_minmax
 
         if self.y is not None and self.y_target is not None:
             raise ValueError("Must not set both y and y_target")
@@ -511,6 +527,20 @@ class BasicIterativeMethod(Attack):
             raise ValueError("Norm order must be either np.inf, 1, or 2.")
 
         return True
+
+
+class BasicIterativeMethod(ProjectedGradientDescent):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+        super(BasicIterativeMethod, self).__init__(model, back, sess=sess,
+                                                   dtypestr=dtypestr)
+        self.child = 'BasicIterativeMethod'
+
+
+class MadryEtAl(ProjectedGradientDescent):
+    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+        super(MadryEtAl, self).__init__(model, back, sess=sess,
+                                        dtypestr=dtypestr)
+        self.child = 'MadryEtAl'
 
 
 class MomentumIterativeMethod(Attack):
@@ -1397,177 +1427,6 @@ def vatm(model,
         xi=xi,
         clip_min=clip_min,
         clip_max=clip_max)
-
-
-class MadryEtAl(Attack):
-    """
-    The Projected Gradient Descent Attack (Madry et al. 2017).
-    Paper link: https://arxiv.org/pdf/1706.06083.pdf
-    """
-
-    def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
-        """
-        Create a MadryEtAl instance.
-        """
-        if not isinstance(model, Model):
-            model = CallableModelWrapper(model, 'probs')
-
-        super(MadryEtAl, self).__init__(model, back, sess, dtypestr)
-        self.feedable_kwargs = {
-            'eps': self.np_dtype,
-            'eps_iter': self.np_dtype,
-            'y': self.np_dtype,
-            'y_target': self.np_dtype,
-            'clip_min': self.np_dtype,
-            'clip_max': self.np_dtype
-        }
-        self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
-
-    def generate(self, x, **kwargs):
-        """
-        Generate symbolic graph for adversarial examples and return.
-
-        :param x: The model's symbolic inputs.
-        :param eps: (required float) maximum distortion of adversarial example
-                    compared to original input
-        :param eps_iter: (required float) step size for each attack iteration
-        :param nb_iter: (required int) Number of attack iterations.
-        :param y: (optional) A tensor with the model labels.
-        :param y_target: (optional) A tensor with the labels to target. Leave
-                         y_target=None if y is also set. Labels should be
-                         one-hot-encoded.
-        :param ord: (optional) Order of the norm (mimics Numpy).
-                    Possible values: np.inf, 1 or 2.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
-        :param rand_init: (optional bool) If True, an initial random
-                    perturbation is added.
-        """
-
-        # Parse and save attack-specific parameters
-        assert self.parse_params(**kwargs)
-
-        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
-        self.targeted = self.y_target is not None
-
-        # Initialize loop variables
-        adv_x = self.attack(x, labels)
-
-        return adv_x
-
-    def parse_params(self,
-                     eps=0.3,
-                     eps_iter=0.01,
-                     nb_iter=40,
-                     y=None,
-                     ord=np.inf,
-                     clip_min=None,
-                     clip_max=None,
-                     y_target=None,
-                     rand_init=True,
-                     **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks
-        before saving them as attributes.
-
-        Attack-specific parameters:
-
-        :param eps: (required float) maximum distortion of adversarial example
-                    compared to original input
-        :param eps_iter: (required float) step size for each attack iteration
-        :param nb_iter: (required int) Number of attack iterations.
-        :param y: (optional) A tensor with the model labels.
-        :param y_target: (optional) A tensor with the labels to target. Leave
-                         y_target=None if y is also set. Labels should be
-                         one-hot-encoded.
-        :param ord: (optional) Order of the norm (mimics Numpy).
-                    Possible values: np.inf, 1 or 2.
-        :param clip_min: (optional float) Minimum input component value
-        :param clip_max: (optional float) Maximum input component value
-        :param rand_init: (optional bool) If True, an initial random
-                    perturbation is added.
-        """
-
-        # Save attack-specific parameters
-        self.eps = eps
-        self.eps_iter = eps_iter
-        self.nb_iter = nb_iter
-        self.y = y
-        self.y_target = y_target
-        self.ord = ord
-        self.clip_min = clip_min
-        self.clip_max = clip_max
-        self.rand_init = rand_init
-
-        if self.y is not None and self.y_target is not None:
-            raise ValueError("Must not set both y and y_target")
-        # Check if order of the norm is acceptable given current implementation
-        if self.ord not in [np.inf, 1, 2]:
-            raise ValueError("Norm order must be either np.inf, 1, or 2.")
-
-        return True
-
-    def attack_single_step(self, x, eta, y):
-        """
-        Given the original image and the perturbation computed so far, computes
-        a new perturbation.
-
-        :param x: A tensor with the original input.
-        :param eta: A tensor the same shape as x that holds the perturbation.
-        :param y: A tensor with the target labels or ground-truth labels.
-        """
-        import tensorflow as tf
-        from cleverhans.utils_tf import clip_eta
-        from cleverhans.loss import attack_softmax_cross_entropy
-
-        adv_x = x + eta
-        logits = self.model.get_logits(adv_x)
-        loss = attack_softmax_cross_entropy(y, logits)
-        if self.targeted:
-            loss = -loss
-        grad, = tf.gradients(loss, adv_x)
-        scaled_signed_grad = self.eps_iter * tf.sign(grad)
-        adv_x = adv_x + scaled_signed_grad
-        if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
-        eta = adv_x - x
-        eta = clip_eta(eta, self.ord, self.eps)
-        return eta
-
-    def attack(self, x, y):
-        """
-        This method creates a symbolic graph that given an input image,
-        first randomly perturbs the image. The
-        perturbation is bounded to an epsilon ball. Then multiple steps of
-        gradient descent is performed to increase the probability of a target
-        label or decrease the probability of the ground-truth label.
-
-        :param x: A tensor with the input image.
-        """
-        import tensorflow as tf
-        from cleverhans.utils_tf import clip_eta
-
-        if self.rand_init:
-            eta = tf.random_uniform(
-                tf.shape(x), -self.eps, self.eps, dtype=self.tf_dtype)
-            eta = clip_eta(eta, self.ord, self.eps)
-        else:
-            eta = tf.zeros_like(x)
-
-        def cond(i, _):
-            return tf.less(i, self.nb_iter)
-
-        def body(i, e):
-            new_eta = self.attack_single_step(x, e, y)
-            return i + 1, new_eta
-
-        _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
-
-        adv_x = x + eta
-        if self.clip_min is not None and self.clip_max is not None:
-            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
-
-        return adv_x
 
 
 class FastFeatureAdversaries(Attack):
