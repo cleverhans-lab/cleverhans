@@ -1935,11 +1935,14 @@ def _apply_transformation(x, dx, dy, angle, batch_size):
                   0, 1, -dy*width, 0, 0] * batch_size, dtype=np.float32)
     theta = tf.constant(M, shape=(batch_size, 8))
 
-    # transfrom image
+
+    # Pad the image to prevent two-step rotation / translation
+    x = tf.pad(x, [[0, 0], [50, 50], [50, 50], [0, 0]], 'CONSTANT')
+    # Rotate and translate the image
     x = tf.contrib.image.rotate(x, angle, interpolation='BILINEAR')
     x = tf.contrib.image.transform(x, theta, interpolation='BILINEAR')
 
-    return x
+    return tf.image.resize_image_with_crop_or_pad(x, height, width)
 
 
 def spm(x, model, batch_size=128, y=None, n_samples=None, dx_min=-0.1,
