@@ -41,7 +41,8 @@ def train(sess, loss, x_train, y_train,
           init_all=True, evaluate=None, feed=None, args=None,
           rng=None, var_list=None, fprop_args=None, optimizer=None,
           devices=None, x_batch_preprocessor=None, use_ema=False,
-          ema_decay=.998, run_canary=True):
+          ema_decay=.998, run_canary=True,
+          loss_threshold=1e5):
     """
     Run (optionally multi-replica, synchronous) training to minimize `loss`
     :param sess: TF session to use when training the graph
@@ -83,6 +84,11 @@ def train(sess, loss, x_train, y_train,
         Turn this off if your gradients are inherently stochastic (e.g.
         if you use dropout). The canary code checks that all GPUs give
         approximately the same gradient.
+    :param loss_threshold: float
+        Raise an exception if the loss exceeds this value.
+        This is intended to rapidly detect numerical problems.
+        Sometimes the loss may legitimately be higher than this value. In
+        such cases, raise the value. If needed it can be np.inf.
     :return: True if model trained
     """
     args = _ArgsWrapper(args or {})
@@ -259,7 +265,14 @@ def train(sess, loss, x_train, y_train,
                 raise ValueError(msg % args)
             if feed is not None:
                 feed_dict.update(feed)
-            sess.run(train_step, feed_dict=feed_dict)
+
+            _, loss_numpy = sess.run(
+                [train_step, loss_value], feed_dict=feed_dict)
+
+            if np.abs(loss_numpy) > loss_threshold:
+                raise ValueError("Extreme loss during training: ", loss_numpy)
+            if np.isnan(loss_numpy) or np.isinf(loss_numpy):
+                raise ValueError("NaN/Inf loss during training")
         assert end == len(index_shuf)  # Check that all examples were used
         cur = time.time()
         _logger.info("Epoch " + str(epoch) + " took " +
