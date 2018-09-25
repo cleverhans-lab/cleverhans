@@ -1935,9 +1935,9 @@ def _apply_transformation(x, dx, dy, angle, batch_size):
                   0, 1, -dy*width, 0, 0] * batch_size, dtype=np.float32)
     theta = tf.constant(M, shape=(batch_size, 8))
 
-
     # Pad the image to prevent two-step rotation / translation
-    x = tf.pad(x, [[0, 0], [50, 50], [50, 50], [0, 0]], 'CONSTANT')
+    x = tf.pad(x, [[0, 0], [height, height], [width, width], [0, 0]],
+               'CONSTANT')
     # Rotate and translate the image
     x = tf.contrib.image.rotate(x, angle, interpolation='BILINEAR')
     x = tf.contrib.image.transform(x, theta, interpolation='BILINEAR')
