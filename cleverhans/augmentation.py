@@ -19,7 +19,7 @@ def random_horizontal_flip(x):
 
 def random_shift(x, pad=(4, 4), mode='REFLECT'):
     assert mode in 'REFLECT SYMMETRIC CONSTANT'.split()
-    xp = tf.pad(x, [[pad[0], pad[0]], [pad[1], pad[1]]], mode)
+    xp = tf.pad(x, [[pad[0], pad[0]], [pad[1], pad[1]], [0, 0]], mode)
     return tf.random_crop(xp, tf.shape(x))
 
 
