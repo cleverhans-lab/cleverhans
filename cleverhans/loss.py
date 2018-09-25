@@ -121,8 +121,11 @@ class MixUp(Loss):
         self.beta = beta
 
     def fprop(self, x, y, **kwargs):
-        mix = tf.distributions.Beta(self.beta, self.beta)
-        mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
+        with tf.device('/CPU:0'):
+            # Prevent error complaining GPU kernels unavailable for this.
+            mix = tf.distributions.Beta(self.beta, self.beta)
+            mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
+        mix = tf.maximum(mix, 1 - mix)
         xm = x + mix * (x[::-1] - x)
         ym = y + mix * (y[::-1] - y)
         logits = self.model.get_logits(xm, **kwargs)
