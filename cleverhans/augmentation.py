@@ -13,6 +13,21 @@ etc.
 import tensorflow as tf
 
 
+def random_horizontal_flip(x):
+    return tf.image.random_flip_left_right(x)
+
+
+def random_shift(x, pad=(4, 4), mode='REFLECT'):
+    assert mode in 'REFLECT SYMMETRIC CONSTANT'.split()
+    xp = tf.pad(x, [[pad[0], pad[0]], [pad[1], pad[1]], [0, 0]], mode)
+    return tf.random_crop(xp, tf.shape(x))
+
+
+def batch_augment(x, func, device='/CPU:0'):
+    with tf.device(device):
+        return tf.map_fn(func, x)
+
+
 def random_crop_and_flip(x, pad_rows=4, pad_cols=4):
     rows = tf.shape(x)[1]
     cols = tf.shape(x)[2]
