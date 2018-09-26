@@ -336,7 +336,7 @@ class TestSPSA(CleverHansTest):
 
 class TestBasicIterativeMethod(TestFastGradientMethod):
     def setUp(self):
-        super(TestBasicIterativeMethod, self).setUp()
+        TestFastGradientMethod.setUp(self)
 
         self.sess = tf.Session()
         self.model = SimpleModel()
@@ -874,6 +874,15 @@ class TestProjectedGradientDescent(TestMadryEtAl):
   def setUp(self):
     super(TestProjectedGradientDescent, self).setUp()
     self.attack = ProjectedGradientDescent(self.model, sess=self.sess)
+
+class TestBasicIterativeMethod(TestMadryEtAl):
+  def setUp(self):
+    super(TestBasicIterativeMethod, self).setUp()
+    self.attack = BasicIterativeMethod(self.model, sess=self.sess)
+
+  def test_multiple_initial_random_step(self):
+    # There is no initial random step, so nothing to test here
+    pass
 
 
 class TestFastFeatureAdversaries(CleverHansTest):
