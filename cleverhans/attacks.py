@@ -416,10 +416,10 @@ class ProjectedGradientDescent(Attack):
 
         # Initialize loop variables
         if self.rand_init:
-          eta = tf.random_uniform(tf.shape(x), -self.rand_minmax,
-                                self.rand_minmax, dtype=self.tf_dtype)
+            eta = tf.random_uniform(tf.shape(x), -self.rand_minmax,
+                                    self.rand_minmax, dtype=self.tf_dtype)
         else:
-          eta = tf.zeros(tf.shape(x))
+            eta = tf.zeros(tf.shape(x))
         eta = clip_eta(eta, self.ord, self.eps)
 
         # Fix labels to the first model predictions for loss computation
@@ -508,13 +508,12 @@ class ProjectedGradientDescent(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
 
-
         # Save attack-specific parameters
         self.eps = eps
         if self.rand_init:
-          self.rand_minmax = eps
+            self.rand_minmax = eps
         else:
-          self.rand_minmax = 0.
+            self.rand_minmax = 0.
         self.eps_iter = eps_iter
         self.nb_iter = nb_iter
         self.y = y
