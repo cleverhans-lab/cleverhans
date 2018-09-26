@@ -1018,11 +1018,11 @@ class TestSpatialTransformationMethod(CleverHansTest):
         super(TestSpatialTransformationMethod, self).setUp()
 
         self.sess = tf.Session()
-        self.model = DummyModel()
+        self.model = DummyModel(scope='dummy_model_spatial')
         self.attack = SpatialTransformationMethod(self.model, sess=self.sess)
 
         # initialize model
-        with tf.name_scope('dummy_model'):
+        with tf.name_scope('dummy_model_spatial'):
             self.model(tf.placeholder(tf.float32, shape=(None, 2, 2, 3)))
         self.sess.run(tf.global_variables_initializer())
 
