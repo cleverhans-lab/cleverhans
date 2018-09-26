@@ -21,6 +21,7 @@ from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.attacks import ElasticNetMethod
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import MadryEtAl
+from cleverhans.attacks import ProjectedGradientDescent
 from cleverhans.attacks import FastFeatureAdversaries
 from cleverhans.attacks import LBFGS
 from cleverhans.model import Model
@@ -199,6 +200,7 @@ class TestFastGradientMethod(CleverHansTest):
         self.help_generate_np_gives_adversarial_example(2)
 
     def test_generate_respects_dtype(self):
+        self.attack = FastGradientMethod(self.model, sess=self.sess, dtypestr='float64')
         x = tf.placeholder(dtype=tf.float64, shape=(100, 2))
         x_adv = self.attack.generate(x)
         self.assertEqual(x_adv.dtype, tf.float64)
@@ -334,7 +336,7 @@ class TestSPSA(CleverHansTest):
 
 class TestBasicIterativeMethod(TestFastGradientMethod):
     def setUp(self):
-        super(TestBasicIterativeMethod, self).setUp()
+        TestFastGradientMethod.setUp(self)
 
         self.sess = tf.Session()
         self.model = SimpleModel()
@@ -865,7 +867,22 @@ class TestMadryEtAl(CleverHansTest):
             I = (orig_labs == new_labs_multi)
             new_labs_multi[I] = new_labs[I]
 
-        self.assertTrue(np.mean(orig_labs == new_labs_multi) < 0.1)
+        self.assertTrue(np.mean(orig_labs == new_labs_multi) < 0.5)
+
+
+class TestProjectedGradientDescent(TestMadryEtAl):
+  def setUp(self):
+    super(TestProjectedGradientDescent, self).setUp()
+    self.attack = ProjectedGradientDescent(self.model, sess=self.sess)
+
+class TestBasicIterativeMethod(TestMadryEtAl):
+  def setUp(self):
+    super(TestBasicIterativeMethod, self).setUp()
+    self.attack = BasicIterativeMethod(self.model, sess=self.sess)
+
+  def test_multiple_initial_random_step(self):
+    # There is no initial random step, so nothing to test here
+    pass
 
 
 class TestFastFeatureAdversaries(CleverHansTest):
