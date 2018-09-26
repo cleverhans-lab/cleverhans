@@ -367,7 +367,7 @@ class ProjectedGradientDescent(Attack):
     FGM_CLASS = FastGradientMethod
 
     def __init__(self, model, back='tf', sess=None, dtypestr='float32',
-                 rand_init=True):
+                 default_rand_init=True):
         """
         Create a ProjectedGradientDescent instance.
         Note: the model parameter should be an instance of the
@@ -386,8 +386,8 @@ class ProjectedGradientDescent(Attack):
             'clip_min': self.np_dtype,
             'clip_max': self.np_dtype
         }
-        self.structural_kwargs = ['ord', 'nb_iter']
-        self.rand_init = rand_init
+        self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
+        self.default_rand_init = default_rand_init
 
     def generate(self, x, **kwargs):
         """
@@ -398,6 +398,7 @@ class ProjectedGradientDescent(Attack):
                     compared to original input
         :param eps_iter: (required float) step size for each attack iteration
         :param nb_iter: (required int) Number of attack iterations.
+        :param rand_init: (optional) Whether to use random initialization
         :param y: (optional) A tensor with the true class labels
           NOTE: do not use smoothed labels here
         :param y_target: (optional) A tensor with the labels to target. Leave
@@ -486,6 +487,7 @@ class ProjectedGradientDescent(Attack):
                      clip_min=None,
                      clip_max=None,
                      y_target=None,
+                     rand_init=None,
                      rand_minmax=0.3,
                      **kwargs):
         """
@@ -510,6 +512,9 @@ class ProjectedGradientDescent(Attack):
 
         # Save attack-specific parameters
         self.eps = eps
+        if rand_init is None:
+            rand_init = self.default_rand_init
+        self.rand_init = rand_init
         if self.rand_init:
             self.rand_minmax = eps
         else:
@@ -535,13 +540,14 @@ class BasicIterativeMethod(ProjectedGradientDescent):
     def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         super(BasicIterativeMethod, self).__init__(model, back, sess=sess,
                                                    dtypestr=dtypestr,
-                                                   rand_init=False)
+                                                   default_rand_init=False)
 
 
 class MadryEtAl(ProjectedGradientDescent):
     def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
         super(MadryEtAl, self).__init__(model, back, sess=sess,
-                                        dtypestr=dtypestr, rand_init=True)
+                                        dtypestr=dtypestr,
+                                        default_rand_init=True)
 
 
 class MomentumIterativeMethod(Attack):
