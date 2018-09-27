@@ -257,7 +257,8 @@ class EvaluationMaster(object):
       writer.writerow(['SubmissionID', 'ExternalTeamId', 'Score',
                        'MedianTime', 'ImageCount'])
 
-      def get_second(x): return x[1]
+      def get_second(x):
+        return x[1]
       for s_id, score in sorted(iteritems(scores),
                                 key=get_second, reverse=True):
         external_id = self.submissions.get_external_id(s_id)

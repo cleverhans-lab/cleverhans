@@ -281,8 +281,7 @@ class ResNetTF(MLPnGPU):
     else:
       for layer in self.layers:
         for var in layer.params_device[self.device_name].values():
-          if (isinstance(var, tf.Variable) and
-                  var.op.name.find(r'DW') > 0):
+          if (isinstance(var, tf.Variable) and var.op.name.find(r'DW') > 0):
             costs.append(tf.nn.l2_loss(var))
 
     self.decay_cost = tf.multiply(self.hps.weight_decay_rate,

@@ -21,13 +21,13 @@ class Runner(object):
     return self.proc_fvals(fvals)
 
   def set_input(self, X_batch=None):
-    raise NotImplemented('set_input not implemented.')
+    raise NotImplementedError('set_input not implemented.')
 
   def proc_fvals(self, fvals):
-    raise NotImplemented('proc_fvals not implemented.')
+    raise NotImplementedError('proc_fvals not implemented.')
 
   def is_finished(self):
-    raise NotImplemented('is_finished not implemented.')
+    raise NotImplementedError('is_finished not implemented.')
 
 
 class RunnerMultiGPU(Runner):

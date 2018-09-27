@@ -289,7 +289,7 @@ class TrainManager(object):
     return last_fvals
 
   def _sync_params(self, forced=False):
-    raise NotImplemented('sync_params should be implemented.')
+    raise NotImplementedError('sync_params should be implemented.')
 
   def _create_train_graph(self):
     """

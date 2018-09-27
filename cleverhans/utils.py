@@ -458,5 +458,5 @@ def shell_call(command, **kwargs):
       if var_id in kwargs:
         command[i] = kwargs[var_id]
   str_command = ' '.join(command)
-  logging.debug('Executing shell command: ', str_command)
+  logging.debug('Executing shell command: %s' % str_command)
   return subprocess.check_output(command)

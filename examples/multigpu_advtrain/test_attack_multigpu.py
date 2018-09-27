@@ -28,8 +28,6 @@ class TestMadryEtAlMultiGPU(TestMadryEtAl):
     super(TestMadryEtAlMultiGPU, self).setUp()
 
     class SimpleLayer(LayernGPU):
-      def __init__(self):
-        super(SimpleLayer, self).__init__()
 
       def set_input_shape(self, input_shape):
         self.input_shape = input_shape

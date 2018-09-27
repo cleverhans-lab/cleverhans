@@ -29,8 +29,8 @@ def _py_func_with_gradient(func, inp, Tout, stateful=True, name=None,
   g = tf.get_default_graph()
 
   # Add gradient override map
-  with g.gradient_override_map(
-          {"PyFunc": rnd_name, "PyFuncStateless": rnd_name}):
+  with g.gradient_override_map({"PyFunc": rnd_name,
+                                "PyFuncStateless": rnd_name}):
     return tf.py_func(func, inp, Tout, stateful=stateful, name=name)
 
 

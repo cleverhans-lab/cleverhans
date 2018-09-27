@@ -219,7 +219,7 @@ class ExecutableSubmission(object):
     self.submission_dir = os.path.join(LOCAL_SUBMISSIONS_DIR,
                                        self.submission_id)
     if (os.path.isdir(self.submission_dir)
-            and os.path.isdir(os.path.join(self.submission_dir, 'extracted'))):
+        and os.path.isdir(os.path.join(self.submission_dir, 'extracted'))):
       # submission already there, just re-read metadata
       self.extracted_submission_dir = os.path.join(self.submission_dir,
                                                    'extracted')
@@ -272,7 +272,7 @@ class ExecutableSubmission(object):
       root_dir_content = [d for d in os.listdir(tmp_root_dir)
                           if d != '__MACOSX']
       if (len(root_dir_content) == 1
-              and os.path.isdir(os.path.join(tmp_root_dir, root_dir_content[0]))):
+          and os.path.isdir(os.path.join(tmp_root_dir, root_dir_content[0]))):
         tmp_root_dir = os.path.join(tmp_root_dir, root_dir_content[0])
       # move files to extract subdirectory
       self.extracted_submission_dir = os.path.join(self.submission_dir,

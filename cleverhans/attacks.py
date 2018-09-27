@@ -27,14 +27,13 @@ class Attack(object):
     :param back: The backend to use. Currently 'tf' is the only option.
     :param sess: The tf session to run graphs in
     """
-    if not (back == 'tf'):
-      raise ValueError("Backend argument must be 'tf'.")
-
     if back == 'tf':
       import tensorflow as tf
       self.tf_dtype = tf.as_dtype(dtypestr)
       if sess is None:
         sess = tf.get_default_session()
+    else:
+      raise ValueError("Backend argument must be 'tf'.")
 
     self.np_dtype = np.dtype(dtypestr)
 
@@ -190,9 +189,8 @@ class Attack(object):
                     "used in the graph computation. They have been "
                     "ignored.")
 
-    if not all(
-            isinstance(value, collections.Hashable)
-            for value in fixed.values()):
+    if not all(isinstance(value, collections.Hashable)
+               for value in fixed.values()):
       # we have received a fixed value that isn't hashable
       # this means we can't cache this graph for later use,
       # and it will have to be discarded later
@@ -1711,6 +1709,7 @@ class SPSA(Attack):
 
 class SpatialTransformationMethod(Attack):
   """
+  Spatial transformation attack
   """
 
   def __init__(self, model, back='tf', sess=None, dtypestr='float32'):

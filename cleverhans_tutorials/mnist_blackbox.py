@@ -240,7 +240,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
   # Define input TF placeholder
   x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
                                         nchannels))
-  y = tf.placeholder(tf.float32, shape=(None,     nb_classes))
+  y = tf.placeholder(tf.float32, shape=(None, nb_classes))
 
   # Seed random number generator so tutorial is reproducible
   rng = np.random.RandomState([2017, 8, 30])

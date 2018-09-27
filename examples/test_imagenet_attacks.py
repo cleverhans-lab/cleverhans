@@ -148,10 +148,8 @@ class TestInception(CleverHansTest):
           checkpoint_filename_with_path=FLAGS.checkpoint_path,
           master=FLAGS.master)
 
-      with tf.train.MonitoredSession(
-              session_creator=session_creator) as sess:
-        acc_val = sess.run(acc, feed_dict={
-            x_input: images, y_label: labels})
+      with tf.train.MonitoredSession(session_creator=session_creator) as sess:
+        acc_val = sess.run(acc, feed_dict={x_input: images, y_label: labels})
         tf.logging.info('Accuracy: %s', acc_val)
         assert acc_val > 0.8
 
@@ -188,13 +186,13 @@ class TestSPSA(CleverHansTest):
           checkpoint_filename_with_path=FLAGS.checkpoint_path,
           master=FLAGS.master)
 
-      with tf.train.MonitoredSession(
-              session_creator=session_creator) as sess:
+      with tf.train.MonitoredSession(session_creator=session_creator) as sess:
         for i in xrange(num_images):
-          adv_image = sess.run(x_adv, feed_dict={
-              x_input: np.expand_dims(images[i], axis=0),
-              y_label: np.expand_dims(labels[i], axis=0),
-          })
+          x_expanded = np.expand_dims(images[i], axis=0)
+          y_expanded = np.expand_dims(labels[i], axis=0)
+
+          adv_image = sess.run(x_adv, feed_dict={x_input: x_expanded,
+                                                 y_label: y_exapnded})
           diff = adv_image - images[i]
           assert np.max(np.abs(diff)) < epsilon + 1e-4
           assert np.max(adv_image < 1. + 1e-4)
@@ -235,13 +233,11 @@ class TestSPSA(CleverHansTest):
           master=FLAGS.master)
 
       num_correct = 0.
-      with tf.train.MonitoredSession(
-              session_creator=session_creator) as sess:
+      with tf.train.MonitoredSession(session_creator=session_creator) as sess:
         for i in xrange(num_images):
-          acc_val = sess.run(acc, feed_dict={
-              x_input: np.expand_dims(images[i], axis=0),
-              y_label: np.expand_dims(labels[i], axis=0),
-          })
+          feed_dict_i = {x_input: np.expand_dims(images[i], axis=0),
+                         y_label: np.expand_dims(labels[i], axis=0)}
+          acc_val = sess.run(acc, feed_dict=feed_dict_i)
           tf.logging.info('Accuracy: %s', acc_val)
           num_correct += acc_val
         assert (num_correct / num_images) < 0.1

@@ -399,8 +399,6 @@ class MaxPool(LayernGPU):
 
 
 class LayerNorm(LayernGPU):
-  def __init__(self):
-    super(LayerNorm, self).__init__()
 
   def set_input_shape(self, input_shape):
     self.input_shape = list(input_shape)

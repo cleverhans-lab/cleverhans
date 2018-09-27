@@ -108,7 +108,7 @@ class SubmissionsTest(unittest.TestCase):
         (('SubmissionType', 'Attacks'), self.submissions.attacks),
         (('SubmissionType', 'TargetedAttacks'),
          self.submissions.targeted_attacks),
-            (('SubmissionType', 'Defenses'), self.submissions.defenses)]:
+        (('SubmissionType', 'Defenses'), self.submissions.defenses)]:
       for k, v in submission_entries.items():
         entity = self.datastore_client.entity(
             fake_cloud_client.FakeDatastoreKey(

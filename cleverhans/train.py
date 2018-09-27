@@ -251,10 +251,8 @@ def train(sess, loss, x_train, y_train,
       for dev_idx in xrange(num_devices):
         cur_start = start + dev_idx * device_batch_size
         cur_end = start + (dev_idx + 1) * device_batch_size
-        feed_dict[xs[dev_idx]
-                  ] = x_train_shuffled[cur_start:cur_end]
-        feed_dict[ys[dev_idx]
-                  ] = y_train_shuffled[cur_start:cur_end]
+        feed_dict[xs[dev_idx]] = x_train_shuffled[cur_start:cur_end]
+        feed_dict[ys[dev_idx]] = y_train_shuffled[cur_start:cur_end]
       if cur_end != end:
         msg = ("batch_size (%d) must be a multiple of num_devices "
                "(%d).\nCUDA_VISIBLE_DEVICES: %s"

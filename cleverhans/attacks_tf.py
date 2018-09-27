@@ -665,9 +665,8 @@ def jacobian_augmentation(sess,
     grad_val = sess.run([tf.sign(grads)], feed_dict=feed_dict)[0]
 
     # Create new synthetic point in adversary substitute training set
-    for (indx, ind) in zip(
-            range(p_idxs, p_idxs + X_batch.shape[0]),
-            range(X_batch.shape[0])):
+    for (indx, ind) in zip(range(p_idxs, p_idxs + X_batch.shape[0]),
+                           range(X_batch.shape[0])):
       X_sub[num_samples + indx] = (
           X_batch[ind] + lmbda * grad_val[Y_sub[indx], ind, ...])
 
@@ -1049,8 +1048,7 @@ class ElasticNetMethod(object):
     self.global_step = tf.Variable(0, trainable=False)
     self.global_step_t = tf.cast(self.global_step, tf_dtype)
 
-    """Fast Iterative Shrinkage Thresholding"""
-    """--------------------------------"""
+    # Fast Iterative Shrinkage Thresholding
     self.zt = tf.divide(self.global_step_t,
                         self.global_step_t + tf.cast(3, tf_dtype))
     cond1 = tf.cast(tf.greater(tf.subtract(self.slack, self.timg),
@@ -1074,7 +1072,7 @@ class ElasticNetMethod(object):
     self.assign_slack += tf.multiply(self.zt,
                                      self.assign_newimg - self.newimg)
 
-    """--------------------------------"""
+    # --------------------------------
     self.setter = tf.assign(self.newimg, self.assign_newimg)
     self.setter_y = tf.assign(self.slack, self.assign_slack)
 

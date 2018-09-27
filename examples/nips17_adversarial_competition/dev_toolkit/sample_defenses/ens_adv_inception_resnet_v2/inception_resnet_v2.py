@@ -278,7 +278,7 @@ def inception_resnet_v2_base(inputs,
       if add_and_check_final('Conv2d_7b_1x1', net):
         return net, end_points
 
-    raise ValueError('final_endpoint (%s) not recognized', final_endpoint)
+    raise ValueError('final_endpoint (%s) not recognized' % final_endpoint)
 
 
 def inception_resnet_v2(inputs, num_classes=1001, is_training=True,

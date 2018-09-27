@@ -31,9 +31,8 @@ def py_func_grad(func, inp, Tout, stateful=True, name=None, grad=None):
 
   tf.RegisterGradient(rnd_name)(grad)
   g = tf.get_default_graph()
-  with g.gradient_override_map({
-          "PyFunc": rnd_name,
-          "PyFuncStateless": rnd_name}):
+  with g.gradient_override_map({"PyFunc": rnd_name,
+                                "PyFuncStateless": rnd_name}):
     return tf.py_func(func, inp, Tout, stateful=stateful, name=name)
 
 

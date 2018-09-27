@@ -113,11 +113,3 @@ class ModelBasicCNNTFE(Model):
   def get_layer_names(self):
     """:return: the list of exposed layers for this model."""
     return self.layer_names
-
-  def call(x):
-    """
-    :x: input to the network.
-    :return: logits from the network.
-    """
-    logits = self.fprop(x)['logits']
-    return logits

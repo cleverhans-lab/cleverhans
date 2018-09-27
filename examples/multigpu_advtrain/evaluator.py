@@ -35,8 +35,8 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
                   'MadryEtAl': MadryEtAl,
                   'MadryEtAl_y': MadryEtAl,
                   'MadryEtAl_multigpu': MadryEtAlMultiGPU,
-                  'MadryEtAl_y_multigpu': MadryEtAlMultiGPU,
-                  }
+                  'MadryEtAl_y_multigpu': MadryEtAlMultiGPU
+                 }
 
   if attack_type not in attack_names:
     raise Exception('Attack %s not defined.' % attack_type)
@@ -71,9 +71,8 @@ class Evaluator(object):
   This class evaluates a model against multiple attacks.
   """
 
-  def __init__(self, sess, model, batch_size, x_pre, x, y,
-               data,
-               writer, hparams={}):
+  def __init__(self, sess, model, batch_size, x_pre, x, y, data, writer,
+               hparams=None):
     """
     :param sess: Tensorflow session.
     :param model: an object of Model class
@@ -86,6 +85,8 @@ class Evaluator(object):
     :param writer: Tensorflow summary writer.
     :param hparams: Flags to control the evaluation.
     """
+    if hparams is None:
+      hparams = {}
     model.set_training(False)
     self.preds = model.get_probs(x)
     self.sess = sess

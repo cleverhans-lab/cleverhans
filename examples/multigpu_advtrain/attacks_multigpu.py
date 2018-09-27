@@ -97,10 +97,8 @@ class MadryEtAlMultiGPU(MadryEtAl):
           else:
             # adv_x, not eta is the output of the last step
             adv_x = x + eta
-            if (self.clip_min is not None
-                    and self.clip_max is not None):
-              adv_x = tf.clip_by_value(adv_x, self.clip_min,
-                                       self.clip_max)
+            if (self.clip_min is not None and self.clip_max is not None):
+              adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
             adv_x = tf.stop_gradient(adv_x, name='adv_x')
             outputs[i]['adv_x'] = adv_x
 

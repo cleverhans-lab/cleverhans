@@ -174,12 +174,15 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     adv_ys = None
     yname = "y"
 
+  if targeted:
+    cw_params_batch_size = source_samples * nb_classes
+  else:
+    cw_params_batch_size = source_samples
   cw_params = {'binary_search_steps': 1,
                yname: adv_ys,
                'max_iterations': attack_iterations,
                'learning_rate': CW_LEARNING_RATE,
-               'batch_size': source_samples * nb_classes if
-               targeted else source_samples,
+               'batch_size': cw_params_batch_size,
                'initial_const': 10}
 
   adv = cw.generate_np(adv_inputs,
@@ -191,13 +194,12 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         sess, x, y, preds, adv, adv_ys, args=eval_params)
   else:
     if viz_enabled:
-      adv_accuracy = 1 - \
-          model_eval(sess, x, y, preds, adv, y_test[
-                     idxs], args=eval_params)
+      err = model_eval(sess, x, y, preds, adv, y_test[idxs], args=eval_params)
+      adv_accuracy = 1 - err
     else:
-      adv_accuracy = 1 - \
-          model_eval(sess, x, y, preds, adv, y_test[
-                     :source_samples], args=eval_params)
+      err = model_eval(sess, x, y, preds, adv, y_test[:source_samples],
+                       args=eval_params)
+      adv_accuracy = 1 - err
 
   if viz_enabled:
     for j in range(nb_classes):

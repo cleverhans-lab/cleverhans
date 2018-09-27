@@ -180,7 +180,7 @@ class SubmissionValidator(object):
     root_dir = self._tmp_extracted_dir
     root_dir_content = [d for d in os.listdir(root_dir) if d != '__MACOSX']
     if (len(root_dir_content) == 1
-            and os.path.isdir(os.path.join(root_dir, root_dir_content[0]))):
+        and os.path.isdir(os.path.join(root_dir, root_dir_content[0]))):
       logging.info('Looks like submission root is in subdirectory "%s" of '
                    'the archive', root_dir_content[0])
       root_dir = os.path.join(root_dir, root_dir_content[0])

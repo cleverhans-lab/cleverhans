@@ -35,8 +35,7 @@ class TestRunMultiGPU(CleverHansTest):
                   'adv_train': True,
                   'save': False,
                   'model_type': 'basic',
-                  'attack_type_test': 'MadryEtAl_y',
-                  })
+                  'attack_type_test': 'MadryEtAl_y'})
     if extra_flags is not None:
       flags.update(extra_flags)
 
@@ -57,9 +56,7 @@ class TestRunMultiGPU(CleverHansTest):
     report_m.adv_train_clean_eval = report_dict['test']
     report_m.adv_train_adv_eval = report_dict['MadryEtAl_y']
 
-    flags.update({'ngpu': 1,
-                  'attack_type_train': 'MadryEtAl_y',
-                  })
+    flags.update({'ngpu': 1, 'attack_type_train': 'MadryEtAl_y'})
     hparams = HParams(**flags)
     np.random.seed(42)
     tf.set_random_seed(42)
@@ -119,9 +116,7 @@ class TestRunMultiGPU(CleverHansTest):
     report_2.clean_train_adv_eval = report_dict['FGSM']
 
     # Run the multi-gpu trainer for adversarial training
-    flags.update({'adv_train': True,
-                  'attack_type_train': 'FGSM',
-                  })
+    flags.update({'adv_train': True, 'attack_type_train': 'FGSM'})
     HParams = namedtuple('HParams', flags.keys())
 
     hparams = HParams(**flags)
