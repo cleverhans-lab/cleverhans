@@ -9,6 +9,8 @@ from six.moves import xrange
 import warnings
 import logging
 import os
+import re
+import subprocess
 
 known_number_types = (int, float, np.float16, np.float32, np.float64,
                       np.int8, np.int16, np.int32, np.int32, np.int64,
@@ -454,5 +456,6 @@ def shell_call(command, **kwargs):
       var_id = m.group(1)
       if var_id in kwargs:
         command[i] = kwargs[var_id]
-  logging.debug('Executing shell command: %s', ' '.join(command))
+  str_command = ' '.join(command)
+  logging.debug('Executing shell command: ', str_command)
   return subprocess.check_output(command)
