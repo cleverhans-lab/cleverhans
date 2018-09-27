@@ -1990,8 +1990,7 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
 
     # Perform the transformation
     for (dx, dy, angle) in transforms:
-        # TODO: replace this with a tf.while loop instead of building this giant graph
-        # This could prevent OOM errors
+        # TODO: replace this with a tf.while loop over the elements in the batch
         all_adv_x.append(_apply_transformation(x, dx, dy, angle))
         preds_adv = model.get_logits(all_adv_x[-1])
 
@@ -2005,14 +2004,12 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
 
     # all_xents is n_total_samples x batch_size
     all_xents_samples_by_bs = tf.stack(all_xents)
-    # import ipdb; ipdb.set_trace()
 
     worst_sample_idx = tf.argmin(all_xents_samples_by_bs, axis=0) # B
 
-    out = tf.gather(all_adv_x, worst_sample_idx, axis=0)  # B x B x CHW
-
-    shp = tf.shape(out)
-    prnt_op = tf.Print(shp, [shp])
-    with tf.control_dependencies([tf.identity(prnt_op)]):
-
-        return tf.identity(out)
+    keys = tf.stack([
+        tf.range(batch_size, dtype=tf.int32),
+        tf.cast(worst_sample_idx, tf.int32)
+    ], axis=1)
+    after_lookup = tf.gather_nd(all_adv_x, keys) # B x CHW
+    return after_lookup
