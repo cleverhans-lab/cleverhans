@@ -1926,14 +1926,15 @@ def margin_logit_loss(model_logits, label, num_classes=10):
     return loss
 
 
-def _apply_transformation(x, dx, dy, angle, batch_size):
+def _apply_transformation(x, dx, dy, angle):
     # Map a transformation onto the input
     angle *= np.pi / 180
     height = x.get_shape().as_list()[1]
     width = x.get_shape().as_list()[2]
-    M = np.array([1, 0, -dx*height,
-                  0, 1, -dy*width, 0, 0] * batch_size, dtype=np.float32)
-    theta = tf.constant(M, shape=(batch_size, 8))
+
+    theta = tf.constant(np.array(
+        [1, 0, -dx*height, 0, 1, -dy*width, 0, 0],
+        dtype=np.float32), shape=(1, 8))
 
     # Pad the image to prevent two-step rotation / translation from truncating corners
     max_dist_from_center = (float(np.max([height, width])) * np.sqrt(2)) / 2
@@ -1952,7 +1953,7 @@ def _apply_transformation(x, dx, dy, angle, batch_size):
     return tf.image.resize_image_with_crop_or_pad(x, height, width)
 
 
-def spm(x, model, batch_size=128, y=None, n_samples=None, dx_min=-0.1,
+def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         dx_max=0.1, n_dxs=5, dy_min=-0.1, dy_max=0.1, n_dys=5,
         angle_min=-30, angle_max=30, n_angles=11):
     """
@@ -1984,9 +1985,12 @@ def spm(x, model, batch_size=128, y=None, n_samples=None, dx_min=-0.1,
     adv_xs = []
     accs = []
 
+
     # Perform the transformation
     for (dx, dy, angle) in transforms:
-        adv_xs.append(_apply_transformation(x, dx, dy, angle, batch_size))
+        # TODO: replace this with a tf.while loop instead of building this giant graph
+        # This could prevent OOM errors
+        adv_xs.append(_apply_transformation(x, dx, dy, angle))
         preds_adv = model.get_logits(adv_xs[-1])
 
         # Compute accuracy
