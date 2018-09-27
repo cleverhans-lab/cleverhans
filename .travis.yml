@@ -57,6 +57,8 @@ install:
   # install dependencies for adversarial competition eval infra tests
   - pip install google-cloud==0.33.1
   - pip install Pillow
+  # Style checks
+  - pip install pylint
 
 # command to run tests
 script:
