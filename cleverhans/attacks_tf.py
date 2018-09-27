@@ -1952,9 +1952,8 @@ def spm(x, model, batch_size=128, y=None, n_samples=None, dx_min=-0.1,
     TensorFlow implementation of the Spatial Transformation Method.
     :return: a tensor for the adversarial example
     """
-
-    preds = model.get_probs(x)
     if y is None:
+        preds = model.get_probs(x)
         # Using model predictions as ground truth to avoid label leaking
         preds_max = reduce_max(preds, 1, keepdims=True)
         y = tf.to_float(tf.equal(preds, preds_max))
