@@ -198,7 +198,8 @@ class ClassificationResultsTest(unittest.TestCase):
             ('SUBD001', 'SUBT000'): 1,
         },
         hit_target_class_matrix._items)
-    self.assertDictEqual({'SUBD000': 10, 'SUBD001': 14}, processed_images_count)
+    self.assertDictEqual({'SUBD000': 10, 'SUBD001': 14},
+                         processed_images_count)
 
   def test_read_classification_results(self):
     self.storage_client = fake_cloud_client.FakeStorageClient(

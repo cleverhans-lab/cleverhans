@@ -53,7 +53,7 @@ def is_unclaimed(work):
   cutoff_time = time.time() - MAX_PROCESSING_TIME
   if (work['claimed_worker_id']
       and work['claimed_worker_start_time'] is not None
-      and work['claimed_worker_start_time'] >= cutoff_time):
+          and work['claimed_worker_start_time'] >= cutoff_time):
     return False
   return True
 

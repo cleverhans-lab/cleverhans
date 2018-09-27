@@ -299,7 +299,8 @@ class ClassificationBatches(object):
     if result is not None:
       return dict(result)
     else:
-      raise KeyError('Key {0} not found in the datastore'.format(key.flat_path))
+      raise KeyError(
+          'Key {0} not found in the datastore'.format(key.flat_path))
 
   def compute_classification_results(self, adv_batches, dataset_batches,
                                      dataset_meta, defense_work=None):

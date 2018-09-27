@@ -15,15 +15,15 @@ import unittest
 
 class CleverHansTest(unittest.TestCase):
 
-    def setUp(self):
-        self.test_start = time.time()
-        # seed the randomness
-        np.random.seed(1234)
+  def setUp(self):
+    self.test_start = time.time()
+    # seed the randomness
+    np.random.seed(1234)
 
-    def tearDown(self):
-        print(self.id(), "took", time.time() - self.test_start, "seconds")
+  def tearDown(self):
+    print(self.id(), "took", time.time() - self.test_start, "seconds")
 
-    def assertClose(self, x, y, *args, **kwargs):
-        # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
-        # on failure
-        assert np.allclose(x, y, *args, **kwargs), (x, y)
+  def assertClose(self, x, y, *args, **kwargs):
+    # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
+    # on failure
+    assert np.allclose(x, y, *args, **kwargs), (x, y)

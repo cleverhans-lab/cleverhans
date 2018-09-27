@@ -36,9 +36,9 @@ IMAGE_NAME_PATTERN = 'IMG{0:04}.png'
 
 ALLOWED_EPS = [4, 8, 12, 16]
 
-MAX_SUBMISSION_SIZE_ZIPPED = 8*1024*1024*1024      #  8 GiB
+MAX_SUBMISSION_SIZE_ZIPPED = 8*1024*1024*1024  # 8 GiB
 MAX_SUBMISSION_SIZE_UNPACKED = 16*1024*1024*1024   # 16 GiB
-MAX_DOCKER_IMAGE_SIZE = 8*1024*1024*1024           #  8 GiB
+MAX_DOCKER_IMAGE_SIZE = 8*1024*1024*1024  # 8 GiB
 
 
 def get_extract_command_template(filename):
@@ -177,7 +177,7 @@ class SubmissionValidator(object):
     root_dir = self._tmp_extracted_dir
     root_dir_content = [d for d in os.listdir(root_dir) if d != '__MACOSX']
     if (len(root_dir_content) == 1
-        and os.path.isdir(os.path.join(root_dir, root_dir_content[0]))):
+            and os.path.isdir(os.path.join(root_dir, root_dir_content[0]))):
       logging.info('Looks like submission root is in subdirectory "%s" of '
                    'the archive', root_dir_content[0])
       root_dir = os.path.join(root_dir, root_dir_content[0])

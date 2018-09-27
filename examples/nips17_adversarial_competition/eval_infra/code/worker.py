@@ -91,9 +91,6 @@ METADATA_JSON_TYPE_TO_TYPE = {
 }
 
 
-
-
-
 def make_directory_writable(dirname):
   """Makes directory readable and writable by everybody.
 
@@ -211,7 +208,7 @@ class ExecutableSubmission(object):
 
   def download(self):
     """Method which downloads submission to local directory."""
-    ## Structure of the download directory:
+    # Structure of the download directory:
     # submission_dir=LOCAL_SUBMISSIONS_DIR/submission_id
     # submission_dir/s.ext   <-- archived submission
     # submission_dir/extracted      <-- extracted submission
@@ -222,7 +219,7 @@ class ExecutableSubmission(object):
     self.submission_dir = os.path.join(LOCAL_SUBMISSIONS_DIR,
                                        self.submission_id)
     if (os.path.isdir(self.submission_dir)
-        and os.path.isdir(os.path.join(self.submission_dir, 'extracted'))):
+            and os.path.isdir(os.path.join(self.submission_dir, 'extracted'))):
       # submission already there, just re-read metadata
       self.extracted_submission_dir = os.path.join(self.submission_dir,
                                                    'extracted')
@@ -258,7 +255,8 @@ class ExecutableSubmission(object):
         raise WorkerError('Can''t copy submission locally', e)
       # extract archive
       try:
-        shell_call(extract_command_tmpl, src=download_path, dst=tmp_extract_dir)
+        shell_call(extract_command_tmpl,
+                   src=download_path, dst=tmp_extract_dir)
       except subprocess.CalledProcessError as e:
         # proceed even if extraction returned non zero error code,
         # sometimes it's just warning
@@ -274,7 +272,7 @@ class ExecutableSubmission(object):
       root_dir_content = [d for d in os.listdir(tmp_root_dir)
                           if d != '__MACOSX']
       if (len(root_dir_content) == 1
-          and os.path.isdir(os.path.join(tmp_root_dir, root_dir_content[0]))):
+              and os.path.isdir(os.path.join(tmp_root_dir, root_dir_content[0]))):
         tmp_root_dir = os.path.join(tmp_root_dir, root_dir_content[0])
       # move files to extract subdirectory
       self.extracted_submission_dir = os.path.join(self.submission_dir,
@@ -675,7 +673,8 @@ class EvaluationWorker(object):
     # upload archive to storage
     dst_filename = '{0}/adversarial_images/{1}/{1}.zip'.format(
         self.round_name, adv_batch_id)
-    logging.debug('Copying archive with adversarial images to %s', dst_filename)
+    logging.debug(
+        'Copying archive with adversarial images to %s', dst_filename)
     self.storage_client.new_blob(dst_filename).upload_from_filename(
         zipped_images_filename)
     # writing adv batch to datastore
@@ -905,7 +904,8 @@ def main(args):
                + '#' * len(title) + '\n'
                + '##' + ' ' * (len(title)-2) + '##' + '\n')
   if args.blacklisted_submissions:
-    logging.warning('BLACKLISTED SUBMISSIONS: %s', args.blacklisted_submissions)
+    logging.warning('BLACKLISTED SUBMISSIONS: %s',
+                    args.blacklisted_submissions)
   random.seed()
   logging.info('Running nvidia-docker to ensure that GPU works')
   shell_call(['docker', 'run', '--runtime=nvidia',

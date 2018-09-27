@@ -43,7 +43,8 @@ def block35(net, scale=1.0, activation_fn=tf.nn.relu, scope=None, reuse=None):
       tower_conv2_0 = slim.conv2d(net, 32, 1, scope='Conv2d_0a_1x1')
       tower_conv2_1 = slim.conv2d(tower_conv2_0, 48, 3, scope='Conv2d_0b_3x3')
       tower_conv2_2 = slim.conv2d(tower_conv2_1, 64, 3, scope='Conv2d_0c_3x3')
-    mixed = tf.concat(axis=3, values=[tower_conv, tower_conv1_1, tower_conv2_2])
+    mixed = tf.concat(
+        axis=3, values=[tower_conv, tower_conv1_1, tower_conv2_2])
     up = slim.conv2d(mixed, net.get_shape()[3], 1, normalizer_fn=None,
                      activation_fn=None, scope='Conv2d_1x1')
     net += scale * up
@@ -142,31 +143,38 @@ def inception_resnet_v2_base(inputs,
       # 149 x 149 x 32
       net = slim.conv2d(inputs, 32, 3, stride=2, padding=padding,
                         scope='Conv2d_1a_3x3')
-      if add_and_check_final('Conv2d_1a_3x3', net): return net, end_points
+      if add_and_check_final('Conv2d_1a_3x3', net):
+        return net, end_points
 
       # 147 x 147 x 32
       net = slim.conv2d(net, 32, 3, padding=padding,
                         scope='Conv2d_2a_3x3')
-      if add_and_check_final('Conv2d_2a_3x3', net): return net, end_points
+      if add_and_check_final('Conv2d_2a_3x3', net):
+        return net, end_points
       # 147 x 147 x 64
       net = slim.conv2d(net, 64, 3, scope='Conv2d_2b_3x3')
-      if add_and_check_final('Conv2d_2b_3x3', net): return net, end_points
+      if add_and_check_final('Conv2d_2b_3x3', net):
+        return net, end_points
       # 73 x 73 x 64
       net = slim.max_pool2d(net, 3, stride=2, padding=padding,
                             scope='MaxPool_3a_3x3')
-      if add_and_check_final('MaxPool_3a_3x3', net): return net, end_points
+      if add_and_check_final('MaxPool_3a_3x3', net):
+        return net, end_points
       # 73 x 73 x 80
       net = slim.conv2d(net, 80, 1, padding=padding,
                         scope='Conv2d_3b_1x1')
-      if add_and_check_final('Conv2d_3b_1x1', net): return net, end_points
+      if add_and_check_final('Conv2d_3b_1x1', net):
+        return net, end_points
       # 71 x 71 x 192
       net = slim.conv2d(net, 192, 3, padding=padding,
                         scope='Conv2d_4a_3x3')
-      if add_and_check_final('Conv2d_4a_3x3', net): return net, end_points
+      if add_and_check_final('Conv2d_4a_3x3', net):
+        return net, end_points
       # 35 x 35 x 192
       net = slim.max_pool2d(net, 3, stride=2, padding=padding,
                             scope='MaxPool_5a_3x3')
-      if add_and_check_final('MaxPool_5a_3x3', net): return net, end_points
+      if add_and_check_final('MaxPool_5a_3x3', net):
+        return net, end_points
 
       # 35 x 35 x 320
       with tf.variable_scope('Mixed_5b'):
@@ -190,7 +198,8 @@ def inception_resnet_v2_base(inputs,
         net = tf.concat(
             [tower_conv, tower_conv1_1, tower_conv2_2, tower_pool_1], 3)
 
-      if add_and_check_final('Mixed_5b', net): return net, end_points
+      if add_and_check_final('Mixed_5b', net):
+        return net, end_points
       # TODO(alemi): Register intermediate endpoints
       net = slim.repeat(net, 10, block35, scale=0.17)
 
@@ -217,12 +226,14 @@ def inception_resnet_v2_base(inputs,
                                        scope='MaxPool_1a_3x3')
         net = tf.concat([tower_conv, tower_conv1_2, tower_pool], 3)
 
-      if add_and_check_final('Mixed_6a', net): return net, end_points
+      if add_and_check_final('Mixed_6a', net):
+        return net, end_points
 
       # TODO(alemi): register intermediate endpoints
       with slim.arg_scope([slim.conv2d], rate=2 if use_atrous else 1):
         net = slim.repeat(net, 20, block17, scale=0.10)
-      if add_and_check_final('PreAuxLogits', net): return net, end_points
+      if add_and_check_final('PreAuxLogits', net):
+        return net, end_points
 
       if output_stride == 8:
         # TODO(gpapan): Properly support output_stride for the rest of the net.
@@ -255,7 +266,8 @@ def inception_resnet_v2_base(inputs,
         net = tf.concat(
             [tower_conv_1, tower_conv1_1, tower_conv2_2, tower_pool], 3)
 
-      if add_and_check_final('Mixed_7a', net): return net, end_points
+      if add_and_check_final('Mixed_7a', net):
+        return net, end_points
 
       # TODO(alemi): register intermediate endpoints
       net = slim.repeat(net, 9, block8, scale=0.20)
@@ -263,7 +275,8 @@ def inception_resnet_v2_base(inputs,
 
       # 8 x 8 x 1536
       net = slim.conv2d(net, 1536, 1, scope='Conv2d_7b_1x1')
-      if add_and_check_final('Conv2d_7b_1x1', net): return net, end_points
+      if add_and_check_final('Conv2d_7b_1x1', net):
+        return net, end_points
 
     raise ValueError('final_endpoint (%s) not recognized', final_endpoint)
 
@@ -326,6 +339,8 @@ def inception_resnet_v2(inputs, num_classes=1001, is_training=True,
         end_points['Predictions'] = tf.nn.softmax(logits, name='Predictions')
 
     return logits, end_points
+
+
 inception_resnet_v2.default_image_size = 299
 
 

@@ -103,12 +103,12 @@ class ImageBatchesBase(object):
     """Initializes batches by reading from the datastore."""
     self._data = {}
     for entity in self._datastore_client.query_fetch(
-        kind=self._entity_kind_batches):
+            kind=self._entity_kind_batches):
       batch_id = entity.key.flat_path[-1]
       self._data[batch_id] = dict(entity)
       self._data[batch_id]['images'] = {}
     for entity in self._datastore_client.query_fetch(
-        kind=self._entity_kind_images):
+            kind=self._entity_kind_images):
       batch_id = entity.key.flat_path[-3]
       image_id = entity.key.flat_path[-1]
       self._data[batch_id]['images'][image_id] = dict(entity)
@@ -270,7 +270,7 @@ class AversarialBatches(ImageBatchesBase):
         entity_kind_images=KIND_ADVERSARIAL_IMAGE)
 
   def init_from_dataset_and_submissions_write_to_datastore(
-      self, dataset_batches, attack_submission_ids):
+          self, dataset_batches, attack_submission_ids):
     """Init list of adversarial batches from dataset batches and submissions.
 
     Args:

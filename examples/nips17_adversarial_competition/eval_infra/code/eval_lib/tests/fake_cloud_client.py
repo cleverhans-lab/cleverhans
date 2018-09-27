@@ -280,7 +280,8 @@ class FakeDatastoreClient(object):
       self._entities = {}
     else:
       raise ValueError('Invalid type of entities: ' + str(type(entities)))
-    assert all([isinstance(k, FakeDatastoreKey) for k in self._entities.keys()])
+    assert all([isinstance(k, FakeDatastoreKey)
+                for k in self._entities.keys()])
 
   @property
   def entities(self):
@@ -337,7 +338,7 @@ class FakeDatastoreClient(object):
       raise ValueError('Invalid ancestor type: ' + str(type(ancestor)))
     if (('projection' in kwargs) or
         ('order' in kwargs) or
-        ('distinct_on' in kwargs)):
+            ('distinct_on' in kwargs)):
       raise ValueError('Unsupported clause in arguments: ' + str(kwargs))
     for f in filters:
       if not isinstance(f, tuple) or len(f) != 3:
