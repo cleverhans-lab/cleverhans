@@ -24,6 +24,7 @@ from cleverhans.attacks import MadryEtAl
 from cleverhans.attacks import ProjectedGradientDescent
 from cleverhans.attacks import FastFeatureAdversaries
 from cleverhans.attacks import LBFGS
+from cleverhans.attacks import SpatialTransformationMethod
 from cleverhans.model import Model
 from cleverhans_tutorials.tutorial_models import HeReLuNormalInitializer
 
@@ -1027,6 +1028,48 @@ class TestLBFGS(CleverHansTest):
 
         self.assertTrue(-0.201 < np.min(x_adv))
         self.assertTrue(np.max(x_adv) < .301)
+
+
+class TestSpatialTransformationMethod(CleverHansTest):
+    def setUp(self):
+        super(TestSpatialTransformationMethod, self).setUp()
+
+        self.sess = tf.Session()
+        self.model = DummyModel(scope='dummy_model_spatial')
+        self.attack = SpatialTransformationMethod(self.model, sess=self.sess)
+
+        # initialize model
+        with tf.name_scope('dummy_model_spatial'):
+            self.model(tf.placeholder(tf.float32, shape=(None, 2, 2, 3)))
+        self.sess.run(tf.global_variables_initializer())
+
+    def test_no_transformation(self):
+        x_val = np.random.rand(100, 2, 2, 3)
+        x_val = np.array(x_val, dtype=np.float32)
+        x = tf.placeholder(tf.float32, shape=(None, 2, 2, 3))
+
+        x_adv_p = self.attack.generate(x, batch_size=100, dx_min=0.0,
+                                       dx_max=0.0, n_dxs=1, dy_min=0.0,
+                                       dy_max=0.0, n_dys=1, angle_min=0,
+                                       angle_max=0, n_angles=1)
+        x_adv = self.sess.run(x_adv_p, {x: x_val})
+        self.assertClose(x_adv, x_val)
+
+    def test_attack_strength(self):
+        x_val = np.random.rand(100, 2, 2, 3)
+        x_val = np.array(x_val, dtype=np.float32)
+        ttt = self.sess.run(self.model(x_val))
+        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+        x = tf.placeholder(tf.float32, shape=(None, 2, 2, 3))
+
+        x_adv_p = self.attack.generate(x, batch_size=100, dx_min=-0.2,
+                                       dx_max=0.2, n_dxs=3, dy_min=-0.2,
+                                       dy_max=0.2, n_dys=3, angle_min=-45,
+                                       angle_max=45, n_angles=3)
+        x_adv = self.sess.run(x_adv_p, {x: x_val})
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        self.assertTrue(np.mean(orig_labs == new_labs) < 0.7)
+        print(np.mean(orig_labs == new_labs) )
 
 
 if __name__ == '__main__':
