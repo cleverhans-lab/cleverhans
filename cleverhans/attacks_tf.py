@@ -1932,9 +1932,12 @@ def _apply_transformation(x, dx, dy, angle):
     height = x.get_shape().as_list()[1]
     width = x.get_shape().as_list()[2]
 
-    theta = tf.constant(np.array(
-        [1, 0, -dx*height, 0, 1, -dy*width, 0, 0],
-        dtype=np.float32), shape=(1, 8))
+    M = np.array(
+        [1, 0, -dx*height,
+         0, 1, -dy*width,
+         0, 0],
+        dtype=np.float32)
+    theta = tf.constant(M, shape=(1, 8))
 
     # Pad the image to prevent two-step rotation / translation from truncating corners
     max_dist_from_center = (float(np.max([height, width])) * np.sqrt(2)) / 2
@@ -1991,13 +1994,15 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     # Perform the transformation
     for (dx, dy, angle) in transforms:
         # TODO: replace this with a tf.while loop over the elements in the batch
-        all_adv_x.append(_apply_transformation(x, dx, dy, angle))
-        preds_adv = model.get_logits(all_adv_x[-1])
+        x_adv = _apply_transformation(x, dx, dy, angle)
+        preds_adv = model.get_logits(x_adv)
 
         # Compute loss
         xents = tf.nn.softmax_cross_entropy_with_logits(
             labels=y, logits=preds_adv)
+
         all_xents.append(xents)
+        all_adv_x.append(x_adv)
 
     # Return the adv_x with worst accuracy
     all_adv_x = tf.stack(all_adv_x) # 6xBxCHW
