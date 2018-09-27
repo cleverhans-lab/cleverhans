@@ -1982,21 +1982,37 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         sampled_angles = np.random.choice(angles, n_samples)
         transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
 
-    adv_xs = []
-    accs = []
+    all_adv_x = []
+    all_xents = []
 
+    n_total_samples = len(transforms)
+    batch_size = tf.shape(x)[0]
 
     # Perform the transformation
     for (dx, dy, angle) in transforms:
         # TODO: replace this with a tf.while loop instead of building this giant graph
         # This could prevent OOM errors
-        adv_xs.append(_apply_transformation(x, dx, dy, angle))
-        preds_adv = model.get_logits(adv_xs[-1])
+        all_adv_x.append(_apply_transformation(x, dx, dy, angle))
+        preds_adv = model.get_logits(all_adv_x[-1])
 
-        # Compute accuracy
-        accs.append(tf.count_nonzero(tf.equal(tf.argmax(y, axis=-1),
-                                              tf.argmax(preds_adv, axis=-1))))
+        # Compute loss
+        xents = tf.nn.softmax_cross_entropy_with_logits(
+            labels=y, logits=preds_adv)
+        all_xents.append(xents)
+
     # Return the adv_x with worst accuracy
-    adv_xs = tf.stack(adv_xs)
-    accs = tf.stack(accs)
-    return tf.gather(adv_xs, tf.argmin(accs))
+    all_adv_x = tf.stack(all_adv_x) # 6xBxCHW
+
+    # all_xents is n_total_samples x batch_size
+    all_xents_samples_by_bs = tf.stack(all_xents)
+    # import ipdb; ipdb.set_trace()
+
+    worst_sample_idx = tf.argmin(all_xents_samples_by_bs, axis=0) # B
+
+    out = tf.gather(all_adv_x, worst_sample_idx, axis=0)  # B x B x CHW
+
+    shp = tf.shape(out)
+    prnt_op = tf.Print(shp, [shp])
+    with tf.control_dependencies([tf.identity(prnt_op)]):
+
+        return tf.identity(out)
