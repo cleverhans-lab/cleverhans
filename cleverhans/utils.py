@@ -420,3 +420,37 @@ def safe_zip(*args):
         raise ValueError("Lengths of arguments do not match: "
                          + str([len(arg) for arg in args]))
     return zip(*args)
+
+def shell_call(command, **kwargs):
+  """Calls shell command with argument substitution.
+
+  Args:
+    command: command represented as a list. Each element of the list is one
+      token of the comman. For example "cp a b" becomes ['cp', 'a', 'b']
+      If any element of the list looks like '${NAME}' then it will be replaced
+      by value from **kwargs with key 'NAME'.
+    **kwargs: dictionary with argument substitution
+
+  Returns:
+    output of the command
+
+  Raises:
+    subprocess.CalledProcessError if command return value is not zero
+
+  This function is useful when you need to do variable substitution prior
+  running the command. Below are few examples of how it works:
+
+    shell_call(['cp', 'a', 'b'], a='asd') calls command 'cp a b'
+
+    shell_call(['cp', '${a}', 'b'], a='asd') calls command 'cp asd b',
+    '${a}; was replaced with 'asd' before calling the command
+  """
+  command = list(command)
+  for i in range(len(command)):
+    m = CMD_VARIABLE_RE.match(command[i])
+    if m:
+      var_id = m.group(1)
+      if var_id in kwargs:
+        command[i] = kwargs[var_id]
+  logging.debug('Executing shell command: %s', ' '.join(command))
+  return subprocess.check_output(command)
