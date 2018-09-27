@@ -1742,7 +1742,6 @@ class SpatialTransformationMethod(Attack):
         """
         Generate symbolic graph for adversarial examples and return.
         :param x: The model's symbolic inputs.
-        :param batch_size: (optional int) The size of batch during evaluation.
         :param n_samples: (optional) The number of transformations sampled to
                           construct the attack. Set it to None to run
                           full grid attack.
@@ -1769,7 +1768,6 @@ class SpatialTransformationMethod(Attack):
         return spm(
             x,
             self.model,
-            batch_size=self.batch_size,
             y=labels,
             n_samples=self.n_samples,
             dx_min=self.dx_min, dx_max=self.dx_max, n_dxs=self.n_dxs,
