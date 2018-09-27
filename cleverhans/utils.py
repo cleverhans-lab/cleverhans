@@ -426,7 +426,7 @@ def shell_call(command, **kwargs):
 
   Args:
     command: command represented as a list. Each element of the list is one
-      token of the comman. For example "cp a b" becomes ['cp', 'a', 'b']
+      token of the command. For example "cp a b" becomes ['cp', 'a', 'b']
       If any element of the list looks like '${NAME}' then it will be replaced
       by value from **kwargs with key 'NAME'.
     **kwargs: dictionary with argument substitution
@@ -445,6 +445,8 @@ def shell_call(command, **kwargs):
     shell_call(['cp', '${a}', 'b'], a='asd') calls command 'cp asd b',
     '${a}; was replaced with 'asd' before calling the command
   """
+  # Regular expression to find instances of '${NAME}' in a string
+  CMD_VARIABLE_RE = re.compile('^\\$\\{(\\w+)\\}$')
   command = list(command)
   for i in range(len(command)):
     m = CMD_VARIABLE_RE.match(command[i])

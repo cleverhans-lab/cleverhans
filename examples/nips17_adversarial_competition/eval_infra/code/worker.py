@@ -91,8 +91,6 @@ METADATA_JSON_TYPE_TO_TYPE = {
     'defense': TYPE_DEFENSE,
 }
 
-# Regular experssion to find instances of '${NAME}' in a string
-CMD_VARIABLE_RE = re.compile('^\\$\\{(\\w+)\\}$')
 
 
 
