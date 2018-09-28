@@ -1,3 +1,4 @@
 FROM alpine
 COPY helloworld.sh /
-CMD ["/helloworld.sh"]
+RUN ["/helloworld.sh"]
+CMD ["echo hello"]
