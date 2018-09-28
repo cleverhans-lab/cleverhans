@@ -1,3 +1,5 @@
+steps:
+- name: 'ubuntu'
 # Code below is our travis file, needs to be ported to cloudbuild
 # adapted from https://github.com/fchollet/keras/blob/master/.travis.yml
 #sudo: required
