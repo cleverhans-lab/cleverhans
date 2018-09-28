@@ -73,15 +73,7 @@ def test_format_pep8():
     try:
       out = shell_call(['pylint', '--rcfile', rcpath, f])
     except subprocess.CalledProcessError as e:
-      try:
-        bad_out = bad_out + "\n" + e.output
-      except TypeError:
-        endline_type_str = str(type("\n"))
-        raise TypeError(("Could not add: bad_out (type %s), "
-                         "endline char (type %s), "
-                         " and e.output (type %s)") %
-                        (str(type(bad_out)), endline_type_str,
-                         str(type(e.output))))
+      bad_out = bad_out + "\n" + e.output.decode("utf-8")
   if len(bad_out) > 0:
     raise ValueError(bad_out)
 
