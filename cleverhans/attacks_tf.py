@@ -1984,16 +1984,17 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     sampled_angles = np.random.choice(angles, n_samples)
     transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
 
+  # Pass a copy of x and a transformation to each iteration of the map_fn callable
   tiled_x = tf.reshape(
-    tf.tile(x, [len(transforms), 1, 1, 1]),
-    [len(transforms), -1] + x.get_shape().as_list()[1:])
+      tf.tile(x, [len(transforms), 1, 1, 1]),
+      [len(transforms), -1] + x.get_shape().as_list()[1:])
   elems = [tiled_x, tf.constant(transforms)]
   all_adv_x = tf.map_fn(_apply_transformation, elems, dtype=tf.float32)
 
   def _compute_xent(x):
     preds = model.get_logits(x)
     return tf.nn.softmax_cross_entropy_with_logits(
-      labels=y, logits=preds)
+        labels=y, logits=preds)
 
   all_xents = tf.map_fn(_compute_xent, all_adv_x)
 
@@ -2006,8 +2007,8 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
 
   batch_size = tf.shape(x)[0]
   keys = tf.stack([
-    tf.range(batch_size, dtype=tf.int32),
-    tf.cast(worst_sample_idx, tf.int32)
+      tf.range(batch_size, dtype=tf.int32),
+      tf.cast(worst_sample_idx, tf.int32)
   ], axis=1)
   after_lookup = tf.gather_nd(all_adv_x, keys)  # BCHW
   return after_lookup
