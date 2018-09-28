@@ -1031,23 +1031,45 @@ class TestLBFGS(CleverHansTest):
         self.assertTrue(np.max(x_adv) < .301)
 
 
+class SimpleSpatialBrightPixelModel(Model):
+    """
+    If there is a bright pixel in the image returns the first class.
+    Otherwise returns the second class. Spatial attack should push the
+    bright pixels off of the image
+    """
+
+    def __init__(self, scope='simple', nb_classes=2, **kwargs):
+        del kwargs
+        Model.__init__(self, scope, nb_classes, locals())
+
+    def fprop(self, x, **kwargs):
+        del kwargs
+
+        flat_x = slim.flatten(x)
+        first_logit = tf.reduce_max(flat_x, axis=1)
+        second_logit = tf.ones_like(first_logit) * 0.5
+        res = tf.stack([second_logit, first_logit], axis=1)
+        return {self.O_LOGITS: res,
+                self.O_PROBS: tf.nn.softmax(res)}
+
+
 class TestSpatialTransformationMethod(CleverHansTest):
     def setUp(self):
         super(TestSpatialTransformationMethod, self).setUp()
 
         self.sess = tf.Session()
-        self.model = DummyModel(scope='dummy_model_spatial')
+        self.model = SimpleSpatialBrightPixelModel(scope='dummy_model_spatial')
         self.attack = SpatialTransformationMethod(self.model, sess=self.sess)
 
         # initialize model
         with tf.name_scope('dummy_model_spatial'):
-            self.model(tf.placeholder(tf.float32, shape=(None, 2, 2, 3)))
+            self.model(tf.placeholder(tf.float32, shape=(None, 2, 2, 1)))
         self.sess.run(tf.global_variables_initializer())
 
     def test_no_transformation(self):
-        x_val = np.random.rand(100, 2, 2, 3)
+        x_val = np.random.rand(100, 2, 2, 1)
         x_val = np.array(x_val, dtype=np.float32)
-        x = tf.placeholder(tf.float32, shape=(None, 2, 2, 3))
+        x = tf.placeholder(tf.float32, shape=(None, 2, 2, 1))
 
         x_adv_p = self.attack.generate(x, batch_size=100, dx_min=0.0,
                                        dx_max=0.0, n_dxs=1, dy_min=0.0,
@@ -1056,20 +1078,50 @@ class TestSpatialTransformationMethod(CleverHansTest):
         x_adv = self.sess.run(x_adv_p, {x: x_val})
         self.assertClose(x_adv, x_val)
 
-    def test_attack_strength(self):
-        x_val = np.random.rand(100, 2, 2, 3)
+    def test_push_pixels_off_image(self):
+        x_val = np.random.rand(100, 2, 2, 1)
         x_val = np.array(x_val, dtype=np.float32)
-        orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-        x = tf.placeholder(tf.float32, shape=(None, 2, 2, 3))
 
-        x_adv_p = self.attack.generate(x, batch_size=100, dx_min=-0.2,
-                                       dx_max=0.2, n_dxs=3, dy_min=-0.2,
-                                       dy_max=0.2, n_dys=3, angle_min=-45,
-                                       angle_max=45, n_angles=3)
+        # The correct answer is that they are bright
+        # So the attack must push the pixels off the edge
+        y = np.zeros([100, 2])
+        y[:, 0] = 1.
+
+        x = tf.placeholder(tf.float32, shape=(None, 2, 2, 1))
+        x_adv_p = self.attack.generate(x,
+                                       y=y, batch_size=100, dx_min=-0.5,
+                                       dx_max=0.5, n_dxs=3, dy_min=-0.5,
+                                       dy_max=0.5, n_dys=3, angle_min=0,
+                                       angle_max=0, n_angles=1)
         x_adv = self.sess.run(x_adv_p, {x: x_val})
+
+        old_labs = np.argmax(y, axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        self.assertTrue(np.mean(orig_labs == new_labs) < 0.7)
-        print(np.mean(orig_labs == new_labs) )
+        print(np.mean(old_labs == new_labs))
+        self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
+
+
+    def test_keep_pixels_on_image(self):
+        x_val = np.random.rand(100, 2, 2, 1)
+        x_val = np.array(x_val, dtype=np.float32)
+
+        # The correct answer is that they are NOT bright
+        # So the attack must NOT push the pixels off the edge
+        y = np.zeros([100, 2])
+        y[:, 0] = 1.
+
+        x = tf.placeholder(tf.float32, shape=(None, 2, 2, 1))
+        x_adv_p = self.attack.generate(x,
+                                       y=y, batch_size=100, dx_min=-0.5,
+                                       dx_max=0.5, n_dxs=3, dy_min=-0.5,
+                                       dy_max=0.5, n_dys=3, angle_min=0,
+                                       angle_max=0, n_angles=1)
+        x_adv = self.sess.run(x_adv_p, {x: x_val})
+
+        old_labs = np.argmax(y, axis=1)
+        new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+        print(np.mean(old_labs == new_labs))
+        self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
 
 
 if __name__ == '__main__':
