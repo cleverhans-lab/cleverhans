@@ -11,15 +11,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import cleverhans
 import numpy as np
+import os
 import tensorflow as tf
+from tensorflow.python.platform import flags
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from tensorflow.python.platform import flags
 from torch.autograd import Variable
 from torchvision import datasets, transforms
+import warnings
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.model import CallableModelWrapper
@@ -165,6 +168,13 @@ def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
 
 
 def main(_=None):
+  # Warn user if running cleverhans from a different directory than tutorial.
+  cur_dir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
+  ch_dir = os.path.split(cleverhans.__path__[0])[0]
+  if cur_dir != ch_dir:
+    warnings.warn("Rnning cleverhans from a different directory than "
+                  "current tutorial file. This may cause a version mismatch.")
+
   mnist_tutorial(nb_epochs=FLAGS.nb_epochs,
                  batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate)

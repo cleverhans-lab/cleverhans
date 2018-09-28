@@ -9,12 +9,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import cleverhans
+import logging
 import numpy as np
+import os
 import tensorflow as tf
 from tensorflow.python.platform import flags
+import warnings
 
-import logging
-import os
 from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport
@@ -235,6 +237,13 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  # Warn user if running cleverhans from a different directory than tutorial.
+  cur_dir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
+  ch_dir = os.path.split(cleverhans.__path__[0])[0]
+  if cur_dir != ch_dir:
+    warnings.warn("Rnning cleverhans from a different directory than "
+                  "current tutorial file. This may cause a version mismatch.")
+
   mnist_tutorial_cw(viz_enabled=FLAGS.viz_enabled,
                     nb_epochs=FLAGS.nb_epochs,
                     batch_size=FLAGS.batch_size,

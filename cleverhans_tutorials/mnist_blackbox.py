@@ -9,14 +9,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import cleverhans
 import functools
-
-import numpy as np
-from six.moves import xrange
-
 import logging
+import numpy as np
+import os
+from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import flags
+import warnings
 
 from cleverhans.loss import CrossEntropy
 from cleverhans.model import Model
@@ -285,6 +286,13 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  # Warn user if running cleverhans from a different directory than tutorial.
+  cur_dir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
+  ch_dir = os.path.split(cleverhans.__path__[0])[0]
+  if cur_dir != ch_dir:
+    warnings.warn("Rnning cleverhans from a different directory than "
+                  "current tutorial file. This may cause a version mismatch.")
+
   mnist_blackbox(nb_classes=FLAGS.nb_classes, batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate,
                  nb_epochs=FLAGS.nb_epochs, holdout=FLAGS.holdout,
@@ -293,6 +301,7 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
+
   # General flags
   flags.DEFINE_integer('nb_classes', NB_CLASSES,
                        'Number of classes in problem')

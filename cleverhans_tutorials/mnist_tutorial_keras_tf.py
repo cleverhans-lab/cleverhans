@@ -11,6 +11,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import cleverhans
+import keras
+from keras import backend
+import numpy as np
+import os
+import tensorflow as tf
+from tensorflow.python.platform import flags
+import warnings
+
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import AccuracyReport
@@ -19,12 +28,6 @@ from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.train import train
 from cleverhans.utils_tf import model_eval
-import keras
-from keras import backend
-import numpy as np
-import tensorflow as tf
-from tensorflow.python.platform import flags
-import os
 
 FLAGS = flags.FLAGS
 
@@ -214,6 +217,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  # Warn user if running cleverhans from a different directory than tutorial.
+  cur_dir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
+  ch_dir = os.path.split(cleverhans.__path__[0])[0]
+  if cur_dir != ch_dir:
+    warnings.warn("Rnning cleverhans from a different directory than "
+                  "current tutorial file. This may cause a version mismatch.")
+
   mnist_tutorial(nb_epochs=FLAGS.nb_epochs,
                  batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate,

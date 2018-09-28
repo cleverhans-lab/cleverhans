@@ -13,13 +13,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
+import cleverhans
+from distutils.version import LooseVersion
 import logging
-import sys
+import numpy as np
 import os
+import sys
 import tensorflow as tf
 from tensorflow.python.platform import flags
-from distutils.version import LooseVersion
+import warnings
 
 try:
   tf.enable_eager_execution()
@@ -233,6 +235,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  # Warn user if running cleverhans from a different directory than tutorial.
+  cur_dir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
+  ch_dir = os.path.split(cleverhans.__path__[0])[0]
+  if cur_dir != ch_dir:
+    warnings.warn("Rnning cleverhans from a different directory than "
+                  "current tutorial file. This may cause a version mismatch.")
+
   mnist_tutorial(
       nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
       learning_rate=FLAGS.learning_rate, clean_train=FLAGS.clean_train,
