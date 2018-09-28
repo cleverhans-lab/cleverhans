@@ -11,10 +11,10 @@ from __future__ import unicode_literals
 
 import functools
 
+import logging
 import numpy as np
 from six.moves import xrange
 
-import logging
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
