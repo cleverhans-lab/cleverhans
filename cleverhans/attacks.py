@@ -1338,7 +1338,7 @@ class LBFGS(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'probs')
 
-    super(LBFGS, self).__init__(model,  sess, dtypestr, **kwargs)
+    super(LBFGS, self).__init__(model, sess, dtypestr, **kwargs)
 
     import tensorflow as tf
     self.feedable_kwargs = {'y_target': self.tf_dtype}
