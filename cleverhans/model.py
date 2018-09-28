@@ -1,6 +1,5 @@
 from abc import ABCMeta
 import tensorflow as tf
-from distutils.version import LooseVersion
 
 
 class Model(object):

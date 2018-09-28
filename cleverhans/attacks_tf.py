@@ -4,17 +4,18 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
+import warnings
+
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
-import warnings
 
-from . import utils_tf
-from . import utils
 from cleverhans.compat import reduce_max, reduce_min
 from cleverhans.compat import reduce_mean, reduce_sum
 from cleverhans.compat import reduce_any
-from . import loss as loss_module
+from cleverhans import loss as loss_module
+from cleverhans import utils_tf
+from cleverhans import utils
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
 

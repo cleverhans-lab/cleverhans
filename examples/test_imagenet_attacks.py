@@ -18,14 +18,14 @@ import unittest
 
 import numpy as np
 import tensorflow as tf
+from six.moves import xrange
+from tensorflow.contrib import slim
+from tensorflow.contrib.slim.nets import inception
 from PIL import Image
 from cleverhans.attacks import SPSA
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
 from cleverhans.utils import CLEVERHANS_ROOT
-from six.moves import xrange
-from tensorflow.contrib import slim
-from tensorflow.contrib.slim.nets import inception
 
 SETUP_INSTRUCTIONS = """
 $ ./examples/nips17_adversarial_competition/dev_toolkit/download_data.sh

@@ -6,12 +6,12 @@ from __future__ import print_function
 
 import os
 
-from cleverhans.attacks import FastGradientMethod
 import numpy as np
-from PIL import Image
-
 import tensorflow as tf
 from tensorflow.contrib.slim.nets import inception
+from PIL import Image
+
+from cleverhans.attacks import FastGradientMethod
 
 slim = tf.contrib.slim
 

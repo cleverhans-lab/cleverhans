@@ -3,14 +3,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
 from collections import OrderedDict
-from six.moves import xrange
 import warnings
 import logging
 import os
 import re
 import subprocess
+
+import numpy as np
+from six.moves import xrange
 
 known_number_types = (int, float, np.float16, np.float32, np.float64,
                       np.int8, np.int16, np.int32, np.int32, np.int64,

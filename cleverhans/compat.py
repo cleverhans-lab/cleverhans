@@ -1,7 +1,11 @@
-import tensorflow as tf
-import warnings
-
+"""
+Wrapper functions for writing code that is compatible with many versions
+of TensorFlow.
+"""
 from distutils.version import LooseVersion
+import warnings
+import tensorflow as tf
+
 
 
 def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
