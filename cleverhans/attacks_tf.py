@@ -1999,13 +1999,18 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     return tf.nn.softmax_cross_entropy_with_logits_v2(
         labels=y, logits=preds)
 
-  all_xents = tf.map_fn(_compute_xent, transformed_ims)
+  all_xents = tf.map_fn(
+    _compute_xent,
+    transformed_ims,
+    parallel_iterations=1) # Must be 1 to avoid keras race conditions
 
   # Return the adv_x with worst accuracy
 
   # all_xents is n_total_samples x batch_size (SB)
-  all_xents = tf.stack(all_xents)
-  worst_sample_idx = tf.argmin(all_xents, axis=0)  # B
+  all_xents = tf.stack(all_xents) # SB
+
+  # We want the worst case sample, with the largest xent_loss
+  worst_sample_idx = tf.argmax(all_xents, axis=0)  # B
 
   batch_size = tf.shape(x)[0]
   keys = tf.stack([
@@ -2029,6 +2034,11 @@ def parallel_apply_transformations(x, transforms, black_border_size=0):
     tf.tile(x, [num_transforms, 1, 1, 1]),
     [num_transforms, -1] + im_shape)
   elems = [tiled_x, transforms]
-  return tf.map_fn(_apply_transformation, elems,
-                   dtype=tf.float32, parallel_iterations=1)
+  transformed_ims = tf.map_fn(
+    _apply_transformation,
+    elems,
+    dtype=tf.float32,
+    parallel_iterations=1,  # Must be 1 to avoid keras race conditions
+  )
+  return transformed_ims
 
