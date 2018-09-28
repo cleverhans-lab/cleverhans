@@ -4,14 +4,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy as np
 import os
 
-from cleverhans.attacks import FastGradientMethod
-import numpy as np
 from PIL import Image
 
 import tensorflow as tf
 from tensorflow.contrib.slim.nets import inception
+
+from cleverhans.attacks import FastGradientMethod
 
 slim = tf.contrib.slim
 
