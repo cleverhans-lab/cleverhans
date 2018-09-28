@@ -1810,4 +1810,3 @@ class SpatialTransformationMethod(Attack):
       raise ValueError("The value of translation must be bounded "
                        "within [-1, 1]")
     return True
-
