@@ -186,6 +186,7 @@ class WorkPiecesBaseTest(unittest.TestCase):
     self.work_pieces.work['w20'] = self.work2
     self.work_pieces.write_all_to_datastore()
     # any concurrent change in the entity will cause transaction to fail
+
     def transaction_hook(client):
       key = client.key('WorkType', TEST_WORK_TYPE_ENTITY_ID, 'Work', 'w20')
       client.entities[key]['output_adversarial_batch_id'] = 'o3'
@@ -200,6 +201,7 @@ class WorkPiecesBaseTest(unittest.TestCase):
     self.work_pieces.write_all_to_datastore()
     # concurrent change in entity which is not touched by the transaction
     # won't prevent transaction from completing
+
     def transaction_hook(client):
       key = client.key('WorkType', TEST_WORK_TYPE_ENTITY_ID, 'Work', 'w10')
       client.entities[key]['output_adversarial_batch_id'] = 'o3'
@@ -398,6 +400,7 @@ class DefenseWorkPiecesTest(unittest.TestCase):
     defense_work = work_data.DefenseWorkPieces(self.datastore_client)
     defense_work.read_all_from_datastore()
     assertCountEqual(self, expected_values, defense_work.work.values())
+
 
 if __name__ == '__main__':
   unittest.main()

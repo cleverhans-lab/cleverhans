@@ -70,10 +70,6 @@ class Submission(object):
 class Attack(Submission):
   """Class which stores and runs attack."""
 
-  def __init__(self, directory, container, entry_point, use_gpu):
-    """Initializes instance of Attack class."""
-    super(Attack, self).__init__(directory, container, entry_point, use_gpu)
-
   def run(self, input_dir, output_dir, epsilon):
     """Runs attack inside Docker.
 
@@ -100,10 +96,6 @@ class Attack(Submission):
 
 class Defense(Submission):
   """Class which stores and runs defense."""
-
-  def __init__(self, directory, container, entry_point, use_gpu):
-    """Initializes instance of Defense class."""
-    super(Defense, self).__init__(directory, container, entry_point, use_gpu)
 
   def run(self, input_dir, output_dir):
     """Runs defense inside Docker.
@@ -159,7 +151,7 @@ def read_submissions_from_directory(dirname, use_gpu):
       elif submission_type == 'defense':
         submission = Defense(submission_path, container, entry_point, use_gpu)
       else:
-        raise ValueError('Invalid type of submission: %s', submission_type)
+        raise ValueError('Invalid type of submission: %s' % submission_type)
       result.append(submission)
     except (IOError, KeyError, ValueError):
       print('Failed to read submission from directory ', submission_path)

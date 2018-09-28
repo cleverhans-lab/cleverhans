@@ -1,0 +1,72 @@
+# Config file for pylint for CleverHans
+# Used by cleverhans.devtools
+
+[FORMAT]
+# TensorFlow 2 space style
+indent-string='  '
+
+# pylint should print out the file path, line number, and ID code for the
+# messages it prints. This is partly so we can turn off the ID codes that
+# we do not actually want to enforce.
+msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}'
+
+# ID codes to disable
+# C0103: Complains about the variable name 'x'
+# C0411: Import order
+# C0111: Missing docstring
+# W0613: Unused argument
+# E1101: pylint seems to have a bug. Says numpy.random has no member RandomState
+# E0611: pylint seems to have a bug. Complains about imports of tensorflow
+# R0913: Too many arguments
+# R0914: Too many local variables
+# W0611: Unused import
+# W0231: Super init not called
+# W0223: doesn't allow subclass of an abstract base class to still be abstract
+# E0203: pylint seems to have a bug. Doesn't know self.x can be defined before
+#        method call.
+# W0201: doesn't let any attributes be added outside __init__
+# C1801: do not use len(s) to tell if s is empty
+# C0123: uniodimatic typecheck
+# W0612: unused variable
+# E1129: something to do with context managers
+# C0325: unnecessary parens (sometimes we use them to be extra-explicit)
+# E1120: no value for parameter
+# R1705: unnecessary else after return
+# W0621: redefining name
+# E0602: undefined variable
+# W0703: catching too general exception
+# W0101: unreachable code
+# W0122: use of exec
+# R0912: too many branches
+# R0903: too few public methods
+# W0221: parameters differ from overridden method
+# W0212: protected access
+# R1703: simplifiable if statement
+# R0201: method could be a function
+# W0603: global statement
+# R0915: too many statements
+# R1704: redefining argument
+# W0404: reimport
+# R0902: too many attributes
+# C0200: consider using enumerate
+# W1201: logging not lazy
+# W1202: logging format
+# C0302: too many lines in module
+# W0511: forbids TODOs
+# W0108: unnecessary lambda
+# C0413: wrong import position
+# C0412: import grouping
+# R0911: too many return statements
+# E1121: too many arguments
+# W0222: signature differs
+# E0401: cannot import module
+# R0205: this one is apparently asking us to drop python 2 support?
+# C0414: useless import alias
+# R1714: use x in [a,b] instead of x == a or x == b
+# E1111: assigning to function that doesn't return
+# R1718: didn't look closely at what it is
+# W0143: didn't look closely at what it is
+# W1505: didn't look closely at what it is
+# R1707: didn't look closely at what it is
+# R1717: didn't look closely at what it is
+disable=C0103,C0411,C0111,W0613,E1101,E0611,R0913,R0914,W0611,W0231,W0223,E0203,W0201,C1801,C0123,W0612,E1129,C0325,E1120,R1705,W0621,E0602,W0622,W0703,W0101,W0122,R0912,R0903,W0221,W0212,R1703,R0201,W0603,R0915,R1704,W0404,R0902,C0200,W1201,W1202,C0302,W0511,W0108,C0413,C0412,R0911,E1121,W0222,E0401,R0205,C0414,R1714,E1111,R1718,W0143,W1505,R1707,R1717

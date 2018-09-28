@@ -30,7 +30,6 @@ import json
 import logging
 import os
 import random
-import re
 import shutil
 import subprocess
 import time
@@ -39,6 +38,7 @@ import uuid
 import eval_lib
 
 from six import iteritems
+from cleverhans.utils import shell_call
 
 
 # Sleep time while waiting for next available piece of work
@@ -89,44 +89,6 @@ METADATA_JSON_TYPE_TO_TYPE = {
     'targeted_attack': TYPE_TARGETED,
     'defense': TYPE_DEFENSE,
 }
-
-# Regular experssion to find instances of '${NAME}' in a string
-CMD_VARIABLE_RE = re.compile('^\\$\\{(\\w+)\\}$')
-
-
-def shell_call(command, **kwargs):
-  """Calls shell command with argument substitution.
-
-  Args:
-    command: command represented as a list. Each element of the list is one
-      token of the comman. For example "cp a b" becomes ['cp', 'a', 'b']
-      If any element of the list looks like '${NAME}' then it will be replaced
-      by value from **kwargs with key 'NAME'.
-    **kwargs: dictionary with argument substitution
-
-  Returns:
-    output of the command
-
-  Raises:
-    subprocess.CalledProcessError if command return value is not zero
-
-  This function is useful when you need to do variable substitution prior
-  running the command. Below are few examples of how it works:
-
-    shell_call(['cp', 'a', 'b'], a='asd') calls command 'cp a b'
-
-    shell_call(['cp', '${a}', 'b'], a='asd') calls command 'cp asd b',
-    '${a}; was replaced with 'asd' before calling the command
-  """
-  command = list(command)
-  for i in range(len(command)):
-    m = CMD_VARIABLE_RE.match(command[i])
-    if m:
-      var_id = m.group(1)
-      if var_id in kwargs:
-        command[i] = kwargs[var_id]
-  logging.debug('Executing shell command: %s', ' '.join(command))
-  return subprocess.check_output(command)
 
 
 def make_directory_writable(dirname):
@@ -246,7 +208,7 @@ class ExecutableSubmission(object):
 
   def download(self):
     """Method which downloads submission to local directory."""
-    ## Structure of the download directory:
+    # Structure of the download directory:
     # submission_dir=LOCAL_SUBMISSIONS_DIR/submission_id
     # submission_dir/s.ext   <-- archived submission
     # submission_dir/extracted      <-- extracted submission
@@ -293,7 +255,8 @@ class ExecutableSubmission(object):
         raise WorkerError('Can''t copy submission locally', e)
       # extract archive
       try:
-        shell_call(extract_command_tmpl, src=download_path, dst=tmp_extract_dir)
+        shell_call(extract_command_tmpl,
+                   src=download_path, dst=tmp_extract_dir)
       except subprocess.CalledProcessError as e:
         # proceed even if extraction returned non zero error code,
         # sometimes it's just warning
@@ -710,7 +673,8 @@ class EvaluationWorker(object):
     # upload archive to storage
     dst_filename = '{0}/adversarial_images/{1}/{1}.zip'.format(
         self.round_name, adv_batch_id)
-    logging.debug('Copying archive with adversarial images to %s', dst_filename)
+    logging.debug(
+        'Copying archive with adversarial images to %s', dst_filename)
     self.storage_client.new_blob(dst_filename).upload_from_filename(
         zipped_images_filename)
     # writing adv batch to datastore
@@ -940,7 +904,8 @@ def main(args):
                + '#' * len(title) + '\n'
                + '##' + ' ' * (len(title)-2) + '##' + '\n')
   if args.blacklisted_submissions:
-    logging.warning('BLACKLISTED SUBMISSIONS: %s', args.blacklisted_submissions)
+    logging.warning('BLACKLISTED SUBMISSIONS: %s',
+                    args.blacklisted_submissions)
   random.seed()
   logging.info('Running nvidia-docker to ensure that GPU works')
   shell_call(['docker', 'run', '--runtime=nvidia',
