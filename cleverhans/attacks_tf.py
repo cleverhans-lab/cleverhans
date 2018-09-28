@@ -1939,20 +1939,11 @@ def _apply_black_border(x, border_size):
 def _apply_transformation(inputs):
   x, trans = inputs[0], inputs[1]
   dx, dy, angle = trans[0], trans[1], trans[2]
-
-  # Map a transformation onto the input
-  angle *= np.pi / 180
   height = x.get_shape().as_list()[1]
   width = x.get_shape().as_list()[2]
 
-  M = [1, 0, -dx * height,  # Height
-       0, 1, -dy * width,  # Width
-       0, 0]
-  theta = tf.convert_to_tensor(M)
-  theta = tf.expand_dims(theta, axis=0)
-
   # Pad the image to prevent two-step rotation / translation from truncating corners
-  max_dist_from_center = (float(np.max([height, width])) * np.sqrt(2)) / 2
+  max_dist_from_center = float(np.max([height, width])) * np.sqrt(2) / 2
   min_edge_from_center = float(np.min([height, width])) / 2
   padding = np.ceil(max_dist_from_center - min_edge_from_center).astype(np.int32)
   x = tf.pad(x, [[0, 0],
@@ -1961,9 +1952,15 @@ def _apply_transformation(inputs):
                  [0, 0]],
              'CONSTANT')
 
-  # Rotate and translate the image
+  # Apply rotation
+  angle *= np.pi / 180
   x = tf.contrib.image.rotate(x, angle, interpolation='BILINEAR')
-  x = tf.contrib.image.transform(x, theta, interpolation='BILINEAR')
+
+  # Apply translation
+  dx_in_px = -dx * height
+  dy_in_px = -dy * width
+  translation = tf.convert_to_tensor([dx_in_px, dy_in_px])
+  x = tf.contrib.image.translate(x, translation, interpolation='BILINEAR')
   return tf.image.resize_image_with_crop_or_pad(x, height, width)
 
 
@@ -1995,25 +1992,16 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     sampled_dys = np.random.choice(dys, n_samples)
     sampled_angles = np.random.choice(angles, n_samples)
     transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
-
-  x = _apply_black_border(x, black_border_size)
-
-  # Pass a copy of x and a transformation to each iteration of the map_fn callable
-  tiled_x = tf.reshape(
-      tf.tile(x, [len(transforms), 1, 1, 1]),
-      [len(transforms), -1] + x.get_shape().as_list()[1:])
-  elems = [tiled_x, tf.constant(transforms)]
-  all_adv_x = tf.map_fn(_apply_transformation, elems, dtype=tf.float32)
+  transformed_ims = parallel_apply_transformations(x, transforms, black_border_size)
 
   def _compute_xent(x):
     preds = model.get_logits(x)
     return tf.nn.softmax_cross_entropy_with_logits_v2(
         labels=y, logits=preds)
 
-  all_xents = tf.map_fn(_compute_xent, all_adv_x)
+  all_xents = tf.map_fn(_compute_xent, transformed_ims)
 
   # Return the adv_x with worst accuracy
-  all_adv_x = tf.stack(all_adv_x)  # SBCHW
 
   # all_xents is n_total_samples x batch_size (SB)
   all_xents = tf.stack(all_xents)
@@ -2024,5 +2012,23 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
       tf.range(batch_size, dtype=tf.int32),
       tf.cast(worst_sample_idx, tf.int32)
   ], axis=1)
-  after_lookup = tf.gather_nd(all_adv_x, keys)  # BCHW
+  transformed_ims_bshwc = tf.einsum('sbhwc->bshwc', transformed_ims)
+  after_lookup = tf.gather_nd(transformed_ims_bshwc, keys)  # BHWC
   return after_lookup
+
+
+def parallel_apply_transformations(x, transforms, black_border_size=0):
+  transforms = tf.convert_to_tensor(transforms, dtype=tf.float32)
+  x = _apply_black_border(x, black_border_size)
+
+  num_transforms = transforms.get_shape().as_list()[0]
+  im_shape = x.get_shape().as_list()[1:]
+
+  # Pass a copy of x and a transformation to each iteration of the map_fn callable
+  tiled_x = tf.reshape(
+    tf.tile(x, [num_transforms, 1, 1, 1]),
+    [num_transforms, -1] + im_shape)
+  elems = [tiled_x, transforms]
+  return tf.map_fn(_apply_transformation, elems,
+                   dtype=tf.float32, parallel_iterations=1)
+
