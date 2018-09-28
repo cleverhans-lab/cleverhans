@@ -62,21 +62,18 @@ def test_format_pep8():
   repo_dir = os.path.join(module_dir, os.pardir)
   rcpath = os.path.join(repo_dir, '.pylintrc')
   assert os.path.exists(rcpath)
-  bad_out = ""
-  for f in files_to_check:
-    # We must run pylint via the command line and subprocess because of
-    # problems with the pylint module.
-    # The documentation claims you can run it as a python module, but
-    # the documentation is wrong: https://github.com/PyCQA/pylint/issues/1870
-    # If you run the version described in the linked issue, pylint
-    # calls sys.exit once it is done, so it kills the test.
-    try:
-      out = shell_call(['pylint', '--rcfile', rcpath, f])
-    except subprocess.CalledProcessError as e:
-      bad_out = bad_out + "\n" + e.output.decode("utf-8")
-  if len(bad_out) > 0:
-    raise ValueError(bad_out)
 
+  # We must run pylint via the command line and subprocess because of
+  # problems with the pylint module.
+  # The documentation claims you can run it as a python module, but
+  # the documentation is wrong: https://github.com/PyCQA/pylint/issues/1870
+  # If you run the version described in the linked issue, pylint
+  # calls sys.exit once it is done, so it kills the test.
+
+  try:
+    shell_call(['pylint', '--rcfile', rcpath] + files_to_check)
+  except subprocess.CalledProcessError as e:
+    raise ValueError(e.output.decode("utf-8"))
 
 def print_files_information_pep8():
   """
