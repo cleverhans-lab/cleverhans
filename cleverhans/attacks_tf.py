@@ -1924,6 +1924,18 @@ def margin_logit_loss(model_logits, label, num_classes=10):
   return loss
 
 
+def _apply_black_border(x, border_size):
+  orig_height = x.get_shape().as_list()[1]
+  orig_width = x.get_shape().as_list()[2]
+  x = tf.image.resize_images(x, (orig_width - 2*border_size,
+                                 orig_height - 2*border_size))
+
+  return tf.pad(x, [[0, 0],
+                 [border_size, border_size],
+                 [border_size, border_size],
+                 [0, 0]], 'CONSTANT')
+
+
 def _apply_transformation(inputs):
   x, trans = inputs[0], inputs[1]
   dx, dy, angle = trans[0], trans[1], trans[2]
@@ -1957,7 +1969,7 @@ def _apply_transformation(inputs):
 
 def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         dx_max=0.1, n_dxs=5, dy_min=-0.1, dy_max=0.1, n_dys=5,
-        angle_min=-30, angle_max=30, n_angles=11):
+        angle_min=-30, angle_max=30, n_angles=11, black_border_size=0):
   """
   TensorFlow implementation of the Spatial Transformation Method.
   :return: a tensor for the adversarial example
@@ -1984,6 +1996,8 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     sampled_angles = np.random.choice(angles, n_samples)
     transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
 
+  x = _apply_black_border(x, black_border_size)
+
   # Pass a copy of x and a transformation to each iteration of the map_fn callable
   tiled_x = tf.reshape(
       tf.tile(x, [len(transforms), 1, 1, 1]),
@@ -1993,7 +2007,7 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
 
   def _compute_xent(x):
     preds = model.get_logits(x)
-    return tf.nn.softmax_cross_entropy_with_logits(
+    return tf.nn.softmax_cross_entropy_with_logits_v2(
         labels=y, logits=preds)
 
   all_xents = tf.map_fn(_compute_xent, all_adv_x)
