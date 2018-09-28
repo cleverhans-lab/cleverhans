@@ -2000,9 +2000,9 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     all_xents = tf.map_fn(_compute_xent, all_adv_x)
 
     # Return the adv_x with worst accuracy
-    all_adv_x = tf.stack(all_adv_x) # 6xBxCHW
+    all_adv_x = tf.stack(all_adv_x) # SBCHW
 
-    # all_xents is n_total_samples x batch_size
+    # all_xents is n_total_samples x batch_size (SB)
     all_xents = tf.stack(all_xents)
     worst_sample_idx = tf.argmin(all_xents, axis=0) # B
 
@@ -2011,5 +2011,5 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         tf.range(batch_size, dtype=tf.int32),
         tf.cast(worst_sample_idx, tf.int32)
     ], axis=1)
-    after_lookup = tf.gather_nd(all_adv_x, keys) # B x CHW
+    after_lookup = tf.gather_nd(all_adv_x, keys) # BCHW
     return after_lookup
