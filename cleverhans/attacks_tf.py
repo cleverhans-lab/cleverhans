@@ -1931,9 +1931,9 @@ def _apply_black_border(x, border_size):
                                  orig_height - 2*border_size))
 
   return tf.pad(x, [[0, 0],
-                 [border_size, border_size],
-                 [border_size, border_size],
-                 [0, 0]], 'CONSTANT')
+                    [border_size, border_size],
+                    [border_size, border_size],
+                    [0, 0]], 'CONSTANT')
 
 
 def _apply_transformation(inputs):
@@ -2000,9 +2000,9 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         labels=y, logits=preds)
 
   all_xents = tf.map_fn(
-    _compute_xent,
-    transformed_ims,
-    parallel_iterations=1) # Must be 1 to avoid keras race conditions
+      _compute_xent,
+      transformed_ims,
+      parallel_iterations=1) # Must be 1 to avoid keras race conditions
 
   # Return the adv_x with worst accuracy
 
@@ -2031,14 +2031,13 @@ def parallel_apply_transformations(x, transforms, black_border_size=0):
 
   # Pass a copy of x and a transformation to each iteration of the map_fn callable
   tiled_x = tf.reshape(
-    tf.tile(x, [num_transforms, 1, 1, 1]),
-    [num_transforms, -1] + im_shape)
+      tf.tile(x, [num_transforms, 1, 1, 1]),
+      [num_transforms, -1] + im_shape)
   elems = [tiled_x, transforms]
   transformed_ims = tf.map_fn(
-    _apply_transformation,
-    elems,
-    dtype=tf.float32,
-    parallel_iterations=1,  # Must be 1 to avoid keras race conditions
+      _apply_transformation,
+      elems,
+      dtype=tf.float32,
+      parallel_iterations=1,  # Must be 1 to avoid keras race conditions
   )
   return transformed_ims
-
