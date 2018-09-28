@@ -1966,7 +1966,7 @@ def _apply_transformation(inputs):
 
 def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         dx_max=0.1, n_dxs=5, dy_min=-0.1, dy_max=0.1, n_dys=5,
-        angle_min=-30, angle_max=30, n_angles=11, black_border_size=0):
+        angle_min=-30, angle_max=30, n_angles=31, black_border_size=0):
   """
   TensorFlow implementation of the Spatial Transformation Method.
   :return: a tensor for the adversarial example
