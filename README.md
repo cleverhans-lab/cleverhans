@@ -141,7 +141,10 @@ Contributions are welcomed! To speed the code review process, we ask that:
 * New efforts and features be coordinated
 on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
 * When making code contributions to CleverHans, you follow the
-`PEP8` coding style in your pull requests.
+`PEP8 with two spaces` coding style (the same as the one used
+by TensorFlow) in your pull requests.
+In most cases this can be done by running `autopep8 -i --indent-size 2 <file>`
+on the files you have edited.
 * When making your first pull request, you [sign the Google CLA](https://cla.developers.google.com/clas)
 * We do not accept pull requests that add git submodules because of [the
   problems that arise when maintaining git

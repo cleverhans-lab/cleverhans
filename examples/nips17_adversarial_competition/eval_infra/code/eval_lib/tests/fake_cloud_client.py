@@ -195,14 +195,14 @@ class FakeDatastoreClientTransaction(object):
   def _check_transaction_started(self):
     """Helper method to check that transaction has been started."""
     if self._state != 'started':
-      raise ValueError('Invalid state of transaction, expected started, was %s',
-                       self._state)
+      raise ValueError(("Invalid state of transaction, "
+                        "expected started, was %s") % self._state)
 
   def _check_update_state(self, old_state, new_state):
     """Checks old state and updates it to new state."""
     if self._state != old_state:
-      raise ValueError('Invalid state of transaction, expected %s, was %s',
-                       old_state, self._state)
+      raise ValueError('Invalid state of transaction, expected %s, was %s' %
+                       (old_state, self._state))
     self._state = new_state
 
   def begin(self):
@@ -280,7 +280,8 @@ class FakeDatastoreClient(object):
       self._entities = {}
     else:
       raise ValueError('Invalid type of entities: ' + str(type(entities)))
-    assert all([isinstance(k, FakeDatastoreKey) for k in self._entities.keys()])
+    assert all([isinstance(k, FakeDatastoreKey)
+                for k in self._entities.keys()])
 
   @property
   def entities(self):
@@ -335,8 +336,7 @@ class FakeDatastoreClient(object):
     filters = kwargs.get('filters', [])
     if ancestor and not isinstance(ancestor, FakeDatastoreKey):
       raise ValueError('Invalid ancestor type: ' + str(type(ancestor)))
-    if (('projection' in kwargs) or
-        ('order' in kwargs) or
+    if (('projection' in kwargs) or ('order' in kwargs) or
         ('distinct_on' in kwargs)):
       raise ValueError('Unsupported clause in arguments: ' + str(kwargs))
     for f in filters:

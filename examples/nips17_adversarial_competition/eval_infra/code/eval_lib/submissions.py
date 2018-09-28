@@ -147,7 +147,8 @@ class CompetitionSubmissions(object):
       for root_key, submissions in roots_and_submissions:
         batch.put(client.entity(client.key(*root_key)))
         for k, v in iteritems(submissions):
-          entity = client.entity(client.key(*(root_key + [KIND_SUBMISSION, k])))
+          entity = client.entity(client.key(
+              *(root_key + [KIND_SUBMISSION, k])))
           entity['submission_path'] = v.path
           entity.update(participant_from_submission_path(v.path))
           batch.put(entity)
