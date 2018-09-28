@@ -1,8 +1,9 @@
 from abc import ABCMeta
+import collections
 import numpy as np
 from six.moves import xrange
+import tensorflow as tf
 import warnings
-import collections
 
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
@@ -21,21 +22,29 @@ class Attack(object):
   """
   __metaclass__ = ABCMeta
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     :param model: An instance of the cleverhans.model.Model class.
-    :param back: The backend to use. Currently 'tf' is the only option.
-    :param sess: The tf session to run graphs in
+    :param sess: The tf session to run graphs in.
+    :param dtypestr: Floating point precision to use (change to float64
+                     to avoid numerical instabilities).
+    :param back: (deprecated and will be removed on or after 2019-03-26).
+                 The backend to use. Currently 'tf' is the only option.
     """
-    if back == 'tf':
-      import tensorflow as tf
-      self.tf_dtype = tf.as_dtype(dtypestr)
-      if sess is None:
-        sess = tf.get_default_session()
-    else:
-      raise ValueError("Backend argument must be 'tf'.")
+    if 'back' in kwargs:
+      if kwargs['back'] == 'tf':
+        warnings.warn("Argument back to attack constructors is not needed"
+                      " anymore and will be removed on or after 2019-03-26."
+                      " All attacks are implemented using TensorFlow.")
+      else:
+        raise ValueError("Backend argument must be 'tf' and is now deprecated"
+                         "It will be removed on or after 2019-03-26.")
 
+    self.tf_dtype = tf.as_dtype(dtypestr)
     self.np_dtype = np.dtype(dtypestr)
+
+    if sess is None:
+      sess = tf.get_default_session()
 
     import cleverhans.attacks_tf as attacks_tf
     attacks_tf.np_dtype = self.np_dtype
@@ -47,7 +56,7 @@ class Attack(object):
 
     # Prepare attributes
     self.model = model
-    self.back = back
+    self.back = 'tf'
     self.sess = sess
     self.dtypestr = dtypestr
 
@@ -251,7 +260,7 @@ class FastGradientMethod(Attack):
   Paper link: https://arxiv.org/abs/1412.6572
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Create a FastGradientMethod instance.
     Note: the model parameter should be an instance of the
@@ -260,7 +269,7 @@ class FastGradientMethod(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'probs')
 
-    super(FastGradientMethod, self).__init__(model, back, sess, dtypestr)
+    super(FastGradientMethod, self).__init__(model, sess, dtypestr, **kwargs)
     self.feedable_kwargs = {
         'eps': self.np_dtype,
         'y': self.np_dtype,
@@ -364,8 +373,8 @@ class ProjectedGradientDescent(Attack):
 
   FGM_CLASS = FastGradientMethod
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32',
-               default_rand_init=True):
+  def __init__(self, model, sess=None, dtypestr='float32',
+               default_rand_init=True, **kwargs):
     """
     Create a ProjectedGradientDescent instance.
     Note: the model parameter should be an instance of the
@@ -374,8 +383,8 @@ class ProjectedGradientDescent(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'probs')
 
-    super(ProjectedGradientDescent, self).__init__(model, back, sess=sess,
-                                                   dtypestr=dtypestr)
+    super(ProjectedGradientDescent, self).__init__(model, sess=sess,
+                                                   dtypestr=dtypestr, **kwargs)
     self.feedable_kwargs = {
         'eps': self.np_dtype,
         'eps_iter': self.np_dtype,
@@ -535,17 +544,19 @@ class ProjectedGradientDescent(Attack):
 
 
 class BasicIterativeMethod(ProjectedGradientDescent):
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
-    super(BasicIterativeMethod, self).__init__(model, back, sess=sess,
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
+    super(BasicIterativeMethod, self).__init__(model, sess=sess,
                                                dtypestr=dtypestr,
-                                               default_rand_init=False)
+                                               default_rand_init=False,
+                                               **kwargs)
 
 
 class MadryEtAl(ProjectedGradientDescent):
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
-    super(MadryEtAl, self).__init__(model, back, sess=sess,
+  def __init__(self, model, sess=None, dtypestr='float32'):
+    super(MadryEtAl, self).__init__(model, sess=sess,
                                     dtypestr=dtypestr,
-                                    default_rand_init=True)
+                                    default_rand_init=True,
+                                    **kwargs)
 
 
 class MomentumIterativeMethod(Attack):
@@ -557,7 +568,7 @@ class MomentumIterativeMethod(Attack):
   Paper link: https://arxiv.org/pdf/1710.06081.pdf
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Create a MomentumIterativeMethod instance.
     Note: the model parameter should be an instance of the
@@ -566,8 +577,8 @@ class MomentumIterativeMethod(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'probs')
 
-    super(MomentumIterativeMethod, self).__init__(model, back, sess,
-                                                  dtypestr)
+    super(MomentumIterativeMethod, self).__init__(model, sess, dtypestr,
+                                                  **kwargs)
     self.feedable_kwargs = {
         'eps': self.np_dtype,
         'eps_iter': self.np_dtype,
@@ -725,7 +736,7 @@ class SaliencyMapMethod(Attack):
   Paper link: https://arxiv.org/pdf/1511.07528.pdf
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Create a SaliencyMapMethod instance.
     Note: the model parameter should be an instance of the
@@ -734,7 +745,7 @@ class SaliencyMapMethod(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'probs')
 
-    super(SaliencyMapMethod, self).__init__(model, back, sess, dtypestr)
+    super(SaliencyMapMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
     import tensorflow as tf
     self.feedable_kwargs = {'y_target': self.tf_dtype}
@@ -885,7 +896,7 @@ class VirtualAdversarialMethod(Attack):
 
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
@@ -893,8 +904,8 @@ class VirtualAdversarialMethod(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'logits')
 
-    super(VirtualAdversarialMethod, self).__init__(model, back, sess,
-                                                   dtypestr)
+    super(VirtualAdversarialMethod, self).__init__(model, sess, dtypestr,
+                                                   **kwargs)
 
     import tensorflow as tf
     self.feedable_kwargs = {
@@ -970,7 +981,7 @@ class CarliniWagnerL2(Attack):
   as this attack is often much slower than others.
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
@@ -978,7 +989,7 @@ class CarliniWagnerL2(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'logits')
 
-    super(CarliniWagnerL2, self).__init__(model, back, sess, dtypestr)
+    super(CarliniWagnerL2, self).__init__(model, sess, dtypestr, **kwargs)
 
     import tensorflow as tf
     self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
@@ -1089,7 +1100,7 @@ class ElasticNetMethod(Attack):
   Paper link: https://arxiv.org/abs/1709.04114
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
@@ -1097,7 +1108,7 @@ class ElasticNetMethod(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'logits')
 
-    super(ElasticNetMethod, self).__init__(model, back, sess, dtypestr)
+    super(ElasticNetMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
     import tensorflow as tf
     self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
@@ -1222,14 +1233,14 @@ class DeepFool(Attack):
   Paper link: "https://arxiv.org/pdf/1511.04599.pdf"
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Create a DeepFool instance.
     """
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'logits')
 
-    super(DeepFool, self).__init__(model, back, sess, dtypestr)
+    super(DeepFool, self).__init__(model, sess, dtypestr, **kwargs)
 
     self.structural_kwargs = [
         'over_shoot', 'max_iter', 'clip_max', 'clip_min', 'nb_candidate'
@@ -1319,7 +1330,7 @@ class LBFGS(Attack):
   Paper link: "https://arxiv.org/pdf/1312.6199.pdf"
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
@@ -1327,7 +1338,7 @@ class LBFGS(Attack):
     if not isinstance(model, Model):
       model = CallableModelWrapper(model, 'probs')
 
-    super(LBFGS, self).__init__(model, back, sess, dtypestr)
+    super(LBFGS, self).__init__(model,  sess, dtypestr, **kwargs)
 
     import tensorflow as tf
     self.feedable_kwargs = {'y_target': self.tf_dtype}
@@ -1446,12 +1457,12 @@ class FastFeatureAdversaries(Attack):
   (Kurakin et al. 2016) but applied to the internal representations.
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Create a FastFeatureAdversaries instance.
     """
-    super(FastFeatureAdversaries, self).__init__(model, back, sess,
-                                                 dtypestr)
+    super(FastFeatureAdversaries, self).__init__(model, sess, dtypestr,
+                                                 **kwargs)
     self.feedable_kwargs = {
         'eps': self.np_dtype,
         'eps_iter': self.np_dtype,
@@ -1602,8 +1613,8 @@ class SPSA(Attack):
   gradients do not point in useful directions.
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
-    super(SPSA, self).__init__(model, back, sess, dtypestr)
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
+    super(SPSA, self).__init__(model, sess, dtypestr, **kwargs)
 
     self.feedable_kwargs = {
         'epsilon': self.np_dtype,
@@ -1712,7 +1723,7 @@ class SpatialTransformationMethod(Attack):
   Spatial transformation attack
   """
 
-  def __init__(self, model, back='tf', sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32'):
     """
     Create a SpatialTransformationMethod instance.
     Note: the model parameter should be an instance of the
@@ -1722,7 +1733,7 @@ class SpatialTransformationMethod(Attack):
       model = CallableModelWrapper(model, 'probs')
 
     super(SpatialTransformationMethod, self).__init__(
-        model, back, sess, dtypestr)
+        model, sess, dtypestr, **kwargs)
     self.feedable_kwargs = {
         'batch_size': self.np_dtype,
         'n_samples': self.np_dtype,
