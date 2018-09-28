@@ -1723,7 +1723,7 @@ class SpatialTransformationMethod(Attack):
   Spatial transformation attack
   """
 
-  def __init__(self, model, sess=None, dtypestr='float32'):
+  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     Create a SpatialTransformationMethod instance.
     Note: the model parameter should be an instance of the
