@@ -1926,18 +1926,20 @@ def margin_logit_loss(model_logits, label, num_classes=10):
     return loss
 
 
-def _apply_transformation(x, dx, dy, angle):
+def _apply_transformation(inputs):
+    x, trans = inputs[0], inputs[1]
+    dx, dy, angle = trans[0], trans[1], trans[2]
+
     # Map a transformation onto the input
     angle *= np.pi / 180
     height = x.get_shape().as_list()[1]
     width = x.get_shape().as_list()[2]
 
-    M = np.array(
-        [1, 0, -dx*height,
-         0, 1, -dy*width,
-         0, 0],
-        dtype=np.float32)
-    theta = tf.constant(M, shape=(1, 8))
+    M = [1, 0, -dx*height, # Height
+         0, 1, -dy*width, # Width
+         0, 0]
+    theta = tf.convert_to_tensor(M)
+    theta = tf.expand_dims(theta, axis =0)
 
     # Pad the image to prevent two-step rotation / translation from truncating corners
     max_dist_from_center = (float(np.max([height, width])) * np.sqrt(2)) / 2
@@ -1954,7 +1956,6 @@ def _apply_transformation(x, dx, dy, angle):
     x = tf.contrib.image.transform(x, theta, interpolation='BILINEAR')
 
     return tf.image.resize_image_with_crop_or_pad(x, height, width)
-
 
 def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         dx_max=0.1, n_dxs=5, dy_min=-0.1, dy_max=0.1, n_dys=5,
@@ -1985,33 +1986,27 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         sampled_angles = np.random.choice(angles, n_samples)
         transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
 
-    all_adv_x = []
-    all_xents = []
+    tiled_x = tf.reshape(
+        tf.tile(x, [len(transforms), 1, 1, 1]),
+        [len(transforms), -1] + x.get_shape().as_list()[1:])
+    elems = [tiled_x, tf.constant(transforms)]
+    all_adv_x = tf.map_fn(_apply_transformation, elems, dtype=tf.float32)
 
-    n_total_samples = len(transforms)
-    batch_size = tf.shape(x)[0]
+    def _compute_xent(x):
+        preds = model.get_logits(x)
+        return tf.nn.softmax_cross_entropy_with_logits(
+            labels=y, logits=preds)
 
-    # Perform the transformation
-    for (dx, dy, angle) in transforms:
-        # TODO: replace this with a tf.while loop over the elements in the batch
-        x_adv = _apply_transformation(x, dx, dy, angle)
-        preds_adv = model.get_logits(x_adv)
-
-        # Compute loss
-        xents = tf.nn.softmax_cross_entropy_with_logits(
-            labels=y, logits=preds_adv)
-
-        all_xents.append(xents)
-        all_adv_x.append(x_adv)
+    all_xents = tf.map_fn(_compute_xent, all_adv_x)
 
     # Return the adv_x with worst accuracy
     all_adv_x = tf.stack(all_adv_x) # 6xBxCHW
 
     # all_xents is n_total_samples x batch_size
-    all_xents_samples_by_bs = tf.stack(all_xents)
+    all_xents = tf.stack(all_xents)
+    worst_sample_idx = tf.argmin(all_xents, axis=0) # B
 
-    worst_sample_idx = tf.argmin(all_xents_samples_by_bs, axis=0) # B
-
+    batch_size = tf.shape(x)[0]
     keys = tf.stack([
         tf.range(batch_size, dtype=tf.int32),
         tf.cast(worst_sample_idx, tf.int32)
