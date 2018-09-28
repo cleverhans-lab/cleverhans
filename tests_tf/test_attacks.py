@@ -81,7 +81,8 @@ class DummyModel(Model):
     def fprop(self, x, **kwargs):
         del kwargs
         with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
-            net = slim.fully_connected(x, 60)
+            net = slim.flatten(x)
+            net = slim.fully_connected(net, 60)
             logits = slim.fully_connected(net, 10, activation_fn=None)
             return {self.O_LOGITS: logits,
                     self.O_PROBS: tf.nn.softmax(logits)}
@@ -135,11 +136,11 @@ class TestVirtualAdversarialMethod(CleverHansTest):
 
         self.sess = tf.Session()
         self.sess.as_default()
-        self.model = DummyModel()
+        self.model = DummyModel('virtual_adv_dummy_model')
         self.attack = VirtualAdversarialMethod(self.model, sess=self.sess)
 
         # initialize model
-        with tf.name_scope('dummy_model'):
+        with tf.name_scope('virtual_adv_dummy_model'):
             self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
         self.sess.run(tf.global_variables_initializer())
 
@@ -1058,7 +1059,6 @@ class TestSpatialTransformationMethod(CleverHansTest):
     def test_attack_strength(self):
         x_val = np.random.rand(100, 2, 2, 3)
         x_val = np.array(x_val, dtype=np.float32)
-        ttt = self.sess.run(self.model(x_val))
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         x = tf.placeholder(tf.float32, shape=(None, 2, 2, 3))
 
