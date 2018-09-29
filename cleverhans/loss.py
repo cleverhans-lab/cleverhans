@@ -9,6 +9,8 @@ from cleverhans.model import Model
 from cleverhans.utils import safe_zip
 
 
+make the tests fail
+
 class Loss(object):
   """
   An abstract interface for loss wrappers that allows flexible control of
