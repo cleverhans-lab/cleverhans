@@ -1,7 +1,7 @@
 import numpy as np
+import tensorflow as tf
 from cleverhans.utils_tf import clip_eta
 from cleverhans.devtools.checks import CleverHansTest
-import tensorflow as tf
 
 
 class TestUtils(CleverHansTest):
