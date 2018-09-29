@@ -31,6 +31,8 @@ conda update -q conda
 conda info -a
 
 conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py six mkl-service
+# Enable `conda activate`
+sudo ln -s /root/miniconda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
 conda activate test-environment
 
 # install TensorFlow
