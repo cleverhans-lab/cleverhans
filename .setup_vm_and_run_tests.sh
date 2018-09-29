@@ -32,7 +32,7 @@ conda update -q conda
 conda info -a
 
 conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py six mkl-service
-source activate test-environment
+conda activate test-environment
 
 # install TensorFlow
 if [[ "$CLOUD_BUILD_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.4.1" ]]; then
