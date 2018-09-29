@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 sudo apt-get install python python-pip
 pip install tensorflow keras pytorch
