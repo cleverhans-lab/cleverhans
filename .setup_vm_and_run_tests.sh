@@ -1,7 +1,10 @@
 #!/bin/sh
 set -e
-apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
-sudo apt-get install python python-pip
+apt-get update
+apt-get -y install curl
+apt-get install -y wget
+rm -rf /var/lib/apt/lists/*
+sudo apt-get install -y python python-pip
 pip install tensorflow keras pytorch
 
 # code below is taken from http://conda.pydata.org/docs/travis.html
