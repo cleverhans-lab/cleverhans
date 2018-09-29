@@ -15,6 +15,8 @@ from cleverhans.utils_tf import clip_eta
 _logger = utils.create_logger("cleverhans.attacks")
 
 
+make tests fail
+
 class Attack(object):
   """
   Abstract base class for all attack classes.
