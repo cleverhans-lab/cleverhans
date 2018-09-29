@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+sudo apt-get update
 sudo apt-get install software-properties-common
 sudo apt-add-repository universe
 apt-get update
