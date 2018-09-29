@@ -1,8 +1,12 @@
 #!/bin/sh
 set -e
+# Run update once so apt-get will work at all
 sudo apt-get update
-sudo apt-get install software-properties-common
+# Install apt-add-repository
+sudo apt-get install -y software-properties-common
+# Add universe repository so python-pip is available
 sudo apt-add-repository universe
+# Run update again now that universe is a source
 apt-get update
 apt-get -y install curl
 apt-get install -y wget
