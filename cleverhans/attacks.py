@@ -2,6 +2,8 @@ from abc import ABCMeta
 import collections
 import warnings
 
+make tests fail
+
 import numpy as np
 from six.moves import xrange
 
