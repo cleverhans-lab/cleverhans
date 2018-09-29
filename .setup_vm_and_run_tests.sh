@@ -11,7 +11,6 @@ apt-get update
 apt-get -y install curl
 apt-get install -y wget
 rm -rf /var/lib/apt/lists/*
-pip install tensorflow keras pytorch
 
 # code below is taken from http://conda.pydata.org/docs/travis.html
 # We do this conditionally because it saves us some downloading if the
