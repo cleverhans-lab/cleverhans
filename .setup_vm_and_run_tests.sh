@@ -31,6 +31,7 @@ conda update -q conda
 conda info -a
 
 conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py six mkl-service
+# Use `conda activate` because our vm seems not to have `source`
 conda activate test-environment
 
 # install TensorFlow
