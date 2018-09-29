@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+source activate test-environment
 # run keras backend init to initialize backend config
 python -c "import keras.backend"
 # create dataset directory to avoid concurrent directory creation at runtime
