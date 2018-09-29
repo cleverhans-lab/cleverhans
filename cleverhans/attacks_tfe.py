@@ -1,8 +1,10 @@
 from abc import ABCMeta
-import numpy as np
-from six.moves import xrange
+from distutils.version import LooseVersion
 import warnings
 import collections
+
+import numpy as np
+from six.moves import xrange
 import tensorflow as tf
 
 import cleverhans.attacks as attacks
@@ -11,7 +13,6 @@ from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_sum
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
-from distutils.version import LooseVersion
 
 _logger = utils.create_logger("cleverhans.attacks_tfe")
 

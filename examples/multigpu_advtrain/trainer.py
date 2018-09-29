@@ -3,12 +3,14 @@ This module provides Trainer classes that given a set of flags, create,
 initialize and train a model. These classes use Runner objects to handle
 multigpu/singlegpu training.
 """
-import six
+from collections import OrderedDict
+import logging
 import math
 import time
 import os
 
 import numpy as np
+import six
 import tensorflow as tf
 
 from cleverhans.loss import attack_softmax_cross_entropy
@@ -21,9 +23,7 @@ from utils import preprocess_batch
 from make_model import make_model
 from evaluator import Evaluator
 
-import logging
 
-from collections import OrderedDict
 
 from model import clone_variable
 from evaluator import create_adv_by_name

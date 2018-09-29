@@ -35,9 +35,10 @@ import subprocess
 import time
 import uuid
 
+from six import iteritems
+
 import eval_lib
 
-from six import iteritems
 from cleverhans.utils import shell_call
 
 

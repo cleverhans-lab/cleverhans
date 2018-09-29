@@ -6,10 +6,12 @@ from __future__ import print_function
 
 import copy
 import unittest
-from eval_lib import work_data
-from eval_lib.tests import fake_cloud_client
+
 from six import assertCountEqual
 from six import itervalues
+
+from eval_lib import work_data
+from eval_lib.tests import fake_cloud_client
 
 
 TEST_WORK_TYPE_ENTITY_ID = 'AllWork'
