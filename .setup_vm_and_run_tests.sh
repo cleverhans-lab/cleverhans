@@ -1,8 +1,7 @@
 #!/bin/sh
 set -e
-apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
-sudo apt-get install python python-pip
-pip install tensorflow keras pytorch
+apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+apt-get install -y python-pip
 
 # code below is taken from http://conda.pydata.org/docs/travis.html
 # We do this conditionally because it saves us some downloading if the
