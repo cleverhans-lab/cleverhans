@@ -15,6 +15,9 @@ from cleverhans.utils_tf import clip_eta
 _logger = utils.create_logger("cleverhans.attacks")
 
 
+this is not valid python and should fail the pylint tests
+trigger another build
+
 class Attack(object):
   """
   Abstract base class for all attack classes.
