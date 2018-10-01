@@ -16,7 +16,6 @@ from cleverhans.utils import deterministic_dict
 from cleverhans.dataset import Factory, MNIST
 
 
-
 class MadryMNIST(Model):
 
   def __init__(self, nb_classes=10):
@@ -43,7 +42,7 @@ class MadryMNIST(Model):
         self.b_fc1,
         self.W_fc2,
         self.b_fc2,
-        ]
+    ]
 
   def fprop(self, x):
 
