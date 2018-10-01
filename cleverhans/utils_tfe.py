@@ -4,15 +4,16 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
+from distutils.version import LooseVersion
 import math
-import numpy as np
 import os
-import tensorflow as tf
 import time
 import warnings
+
+import numpy as np
+import tensorflow as tf
 from six.moves import xrange
 
-from distutils.version import LooseVersion
 from cleverhans.loss import LossCrossEntropy
 from .utils import batch_indices, _ArgsWrapper, create_logger
 

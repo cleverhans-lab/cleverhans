@@ -11,6 +11,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
+
+import tensorflow as tf
+from tensorflow.python.platform import flags
+import numpy as np
+import keras
+from keras import backend
+
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import AccuracyReport
@@ -19,12 +27,6 @@ from cleverhans.utils_keras import KerasModelWrapper
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.train import train
 from cleverhans.utils_tf import model_eval
-import keras
-from keras import backend
-import numpy as np
-import tensorflow as tf
-from tensorflow.python.platform import flags
-import os
 
 FLAGS = flags.FLAGS
 

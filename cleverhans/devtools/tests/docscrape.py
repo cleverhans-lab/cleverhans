@@ -5,10 +5,10 @@
 from __future__ import print_function
 
 import inspect
-from nose.plugins.skip import SkipTest
 import re
 import sys
 
+from nose.plugins.skip import SkipTest
 import six
 
 

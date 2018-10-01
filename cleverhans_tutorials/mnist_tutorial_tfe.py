@@ -13,13 +13,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
+from distutils.version import LooseVersion
 import logging
-import sys
 import os
+import sys
+
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
-from distutils.version import LooseVersion
 
 try:
   tf.enable_eager_execution()

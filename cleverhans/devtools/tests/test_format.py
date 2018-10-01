@@ -4,10 +4,11 @@ Unit tests for format checking
 
 from __future__ import print_function
 
-from nose.plugins.skip import SkipTest
 
 import os
 import subprocess
+
+from nose.plugins.skip import SkipTest
 
 import cleverhans
 from cleverhans.devtools.tests.docscrape import docstring_errors
