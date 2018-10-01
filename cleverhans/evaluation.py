@@ -3,11 +3,10 @@ Functionality for evaluating expressions across entire datasets.
 Includes multi-GPU support for fast evaluation.
 """
 
-import warnings
-
 from distutils.version import LooseVersion
 import numpy as np
 from six.moves import range
+import warnings
 import tensorflow as tf
 
 from cleverhans.utils import create_logger
