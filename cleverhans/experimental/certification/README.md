@@ -7,8 +7,8 @@ Original author: [Aditi Raghunathan](https://github.com/RAditi)
 
 ## Dependencies
 
-TensorFlow 1.10.1 or higher (to have
-[autograph](https://www.tensorflow.org/guide/autograph) support)
+TensorFlow 1.9.0 or higher (to have support of necessary
+[autograph](https://www.tensorflow.org/guide/autograph) features)
 
 ## Usage
 
