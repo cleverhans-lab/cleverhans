@@ -127,8 +127,10 @@ class MixUp(Loss):
       mix = tf.distributions.Beta(self.beta, self.beta)
       mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
     mix = tf.maximum(mix, 1 - mix)
+    dims_to_remove = range(len(x.shape))[2:]
+    mix_label = tf.squeeze(mix, dims_to_remove)
     xm = x + mix * (x[::-1] - x)
-    ym = y + mix * (y[::-1] - y)
+    ym = y + mix_label * (y[::-1] - y)
     logits = self.model.get_logits(xm, **kwargs)
     loss = tf.reduce_mean(softmax_cross_entropy_with_logits(labels=ym,
                                                             logits=logits))
