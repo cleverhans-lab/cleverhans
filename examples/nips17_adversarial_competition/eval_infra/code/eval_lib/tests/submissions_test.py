@@ -6,9 +6,10 @@ from __future__ import print_function
 
 import unittest
 
+from six import assertCountEqual
+
 from eval_lib import submissions
 from eval_lib.tests import fake_cloud_client
-from six import assertCountEqual
 
 
 ROUND_NAME = 'round-name'

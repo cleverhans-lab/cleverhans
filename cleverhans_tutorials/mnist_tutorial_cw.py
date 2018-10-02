@@ -9,12 +9,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+
+import logging
+import os
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-import logging
-import os
 from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport

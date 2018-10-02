@@ -1,6 +1,6 @@
-from cleverhans.picklable_model import MLP, Dropout
 from six.moves import range
 import tensorflow as tf
+from cleverhans.picklable_model import MLP, Dropout
 
 
 def test_no_drop():

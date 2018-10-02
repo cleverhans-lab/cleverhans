@@ -13,11 +13,11 @@ from __future__ import unicode_literals
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.platform import flags
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from tensorflow.python.platform import flags
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 

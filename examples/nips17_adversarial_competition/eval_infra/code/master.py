@@ -22,12 +22,12 @@ import pickle
 import random
 import time
 
-import eval_lib
-
 from six import iteritems
 from six import iterkeys
 from six import itervalues
 from six.moves import input as input_str
+
+import eval_lib
 
 
 # List of allowed sizes of adversarial perturbation

@@ -1,11 +1,11 @@
 import json
 import os
-
-from .model import Model
-from .compat import softmax_cross_entropy_with_logits
-import tensorflow as tf
 import warnings
 
+import tensorflow as tf
+
+from cleverhans.compat import softmax_cross_entropy_with_logits
+from cleverhans.model import Model
 from cleverhans.utils import safe_zip
 
 

@@ -7,7 +7,6 @@ import warnings
 
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
-from distutils.version import LooseVersion
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max, reduce_min
 from cleverhans.compat import reduce_any

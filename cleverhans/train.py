@@ -17,12 +17,13 @@ from __future__ import unicode_literals
 from distutils.version import LooseVersion
 import logging
 import math
-import numpy as np
 import os
-from six.moves import xrange
-import tensorflow as tf
 import time
 import warnings
+
+import numpy as np
+from six.moves import xrange
+import tensorflow as tf
 
 from cleverhans.utils import batch_indices, _ArgsWrapper, create_logger
 from cleverhans.utils import safe_zip
