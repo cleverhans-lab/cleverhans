@@ -11,6 +11,7 @@ import cleverhans.attacks as attacks
 import cleverhans.utils as utils
 from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_sum
+from cleverhans.model import CallableModelWrapper
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
 

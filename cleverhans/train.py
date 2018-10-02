@@ -28,6 +28,7 @@ import tensorflow as tf
 from cleverhans.utils import batch_indices, _ArgsWrapper, create_logger
 from cleverhans.utils import safe_zip
 from cleverhans.utils_tf import infer_devices
+from cleverhans.utils_tf import initialize_uninitialized_global_variables
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max, reduce_min
 from cleverhans.compat import reduce_any

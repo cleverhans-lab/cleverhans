@@ -4,6 +4,8 @@ Includes multi-GPU support for fast evaluation.
 """
 
 from distutils.version import LooseVersion
+import warnings
+
 import numpy as np
 from six.moves import range
 import tensorflow as tf
@@ -254,7 +256,7 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, batch_size=None,
   """
 
   if args is not None:
-    warnings.warn("`args` is deprecated and will be removde on or "
+    warnings.warn("`args` is deprecated and will be removed on or "
                   "after 2019-03-09. Pass `batch_size` directly.")
     if "batch_size" in args:
       assert batch_size is None

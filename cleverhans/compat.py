@@ -101,6 +101,7 @@ def softmax_cross_entropy_with_logits(sentinel=None,
   """
   # Make sure that all arguments were passed as named arguments.
   if sentinel is not None:
+    name = "softmax_cross_entropy_with_logits"
     raise ValueError("Only call `%s` with "
                      "named arguments (labels=..., logits=..., ...)"
                      % name)
