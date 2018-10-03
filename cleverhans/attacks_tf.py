@@ -1944,7 +1944,7 @@ def _apply_transformation(inputs):
   width = x.get_shape().as_list()[2]
 
   # Pad the image to prevent two-step rotation / translation from truncating corners
-  max_dist_from_center = float(np.max([height, width])) * np.sqrt(2) / 2
+  max_dist_from_center = np.sqrt(height**2+width**2) / 2
   min_edge_from_center = float(np.min([height, width])) / 2
   padding = np.ceil(max_dist_from_center - min_edge_from_center).astype(np.int32)
   x = tf.pad(x, [[0, 0],

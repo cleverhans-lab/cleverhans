@@ -1037,7 +1037,7 @@ class SimpleSpatialBrightPixelModel(Model):
     bright pixels off of the image
     """
 
-    def __init__(self, scope='simple', nb_classes=2, **kwargs):
+    def __init__(self, scope='simple_spatial', nb_classes=2, **kwargs):
         del kwargs
         Model.__init__(self, scope, nb_classes, locals())
 
@@ -1057,7 +1057,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
         super(TestSpatialTransformationMethod, self).setUp()
 
         self.sess = tf.Session()
-        self.model = SimpleSpatialBrightPixelModel(scope='dummy_model_spatial')
+        self.model = SimpleSpatialBrightPixelModel()
         self.attack = SpatialTransformationMethod(self.model, sess=self.sess)
 
         # initialize model
