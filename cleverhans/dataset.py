@@ -10,12 +10,12 @@ from __future__ import unicode_literals
 import array
 import functools
 import gzip
-import numpy as np
 import operator
 import os
 import struct
 import tempfile
 import sys
+import numpy as np
 
 from cleverhans import utils
 
