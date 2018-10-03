@@ -133,7 +133,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
   print("This could take some time ...")
 
   # Instantiate a CW attack object
-  cw = CarliniWagnerL2(model, back='tf', sess=sess)
+  cw = CarliniWagnerL2(model, sess=sess)
 
   if viz_enabled:
     assert source_samples == nb_classes
