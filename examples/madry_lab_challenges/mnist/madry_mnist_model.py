@@ -13,6 +13,7 @@ from collections import OrderedDict
 import tensorflow as tf
 from cleverhans.model import Model
 from cleverhans.utils import deterministic_dict
+from cleverhans.dataset import Factory, MNIST
 
 
 class MadryMNIST(Model):
@@ -29,6 +30,19 @@ class MadryMNIST(Model):
     self.W_fc2 = self._weight_variable([1024, nb_classes])
     self.b_fc2 = self._bias_variable([nb_classes])
     Model.__init__(self, '', nb_classes, {})
+    self.dataset_factory = Factory(MNIST, {"center": False})
+
+  def get_params(self):
+    return [
+        self.W_conv1,
+        self.b_conv1,
+        self.W_conv2,
+        self.b_conv2,
+        self.W_fc1,
+        self.b_fc1,
+        self.W_fc2,
+        self.b_fc2,
+    ]
 
   def fprop(self, x):
 

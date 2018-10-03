@@ -96,18 +96,14 @@ class TestAttackClassInitArguments(CleverHansTest):
         # Exception is thrown when model does not have __call__ attribute
         with self.assertRaises(Exception) as context:
             model = tf.placeholder(tf.float32, shape=(None, 10))
-            Attack(model, back='tf', sess=sess)
-        self.assertTrue(context.exception)
-
-    def test_back(self):
-        # Exception is thrown when back is not tf or th
-        with self.assertRaises(Exception) as context:
-            Attack(None, back='test', sess=None)
+            Attack(model, sess=sess)
         self.assertTrue(context.exception)
 
     def test_sess(self):
-        # Test that it is permitted to provide no session
-        Attack(Model('model', 10, {}), back='tf', sess=None)
+        # Test that it is permitted to provide no session.
+        # The session still needs to be created prior to running the attack.
+        with tf.Session() as sess:
+            Attack(Model('model', 10, {}), sess=None)
 
     def test_sess_generate_np(self):
         model = Model('model', 10, {})
@@ -116,17 +112,20 @@ class TestAttackClassInitArguments(CleverHansTest):
             def generate(self, x, **kwargs):
                 return x
 
-        attack = DummyAttack(model, back='tf', sess=None)
-        with self.assertRaises(Exception) as context:
-            attack.generate_np(0.)
-        self.assertTrue(context.exception)
+        # Test that generate_np is NOT permitted without a session.
+        # The session still needs to be created prior to running the attack.
+        with tf.Session() as sess:
+            attack = DummyAttack(model, sess=None)
+            with self.assertRaises(Exception) as context:
+                attack.generate_np(0.)
+            self.assertTrue(context.exception)
 
 
 class TestParseParams(CleverHansTest):
     def test_parse(self):
         sess = tf.Session()
 
-        test_attack = Attack(Model('model', 10, {}), back='tf', sess=sess)
+        test_attack = Attack(Model('model', 10, {}), sess=sess)
         self.assertTrue(test_attack.parse_params({}))
 
 
@@ -927,7 +926,7 @@ class TestFastFeatureAdversaries(CleverHansTest):
         self.input_shape = [10, 224, 224, 3]
         self.sess = tf.Session()
         self.model = make_imagenet_cnn(self.input_shape)
-        self.attack = FastFeatureAdversaries(self.model)
+        self.attack = FastFeatureAdversaries(self.model, sess=self.sess)
 
     def test_attack_strength(self):
         """
@@ -1077,6 +1076,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
                                        angle_max=0, n_angles=1)
         x_adv = self.sess.run(x_adv_p, {x: x_val})
         self.assertClose(x_adv, x_val)
+
 
     def test_push_pixels_off_image(self):
         x_val = np.random.rand(100, 2, 2, 1)

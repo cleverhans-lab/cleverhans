@@ -192,7 +192,7 @@ class TestSPSA(CleverHansTest):
           y_expanded = np.expand_dims(labels[i], axis=0)
 
           adv_image = sess.run(x_adv, feed_dict={x_input: x_expanded,
-                                                 y_label: y_exapnded})
+                                                 y_label: y_expanded})
           diff = adv_image - images[i]
           assert np.max(np.abs(diff)) < epsilon + 1e-4
           assert np.max(adv_image < 1. + 1e-4)

@@ -285,11 +285,12 @@ def tf_model_load(sess, file_path=None):
 
 
 def batch_eval(*args, **kwargs):
-  # Inside function to avoid circul import
+  # Inside function to avoid circular import
   from cleverhans.evaluation import batch_eval
   warnings.warn("batch_eval has moved to cleverhans.evaluation. "
                 "batch_eval will be removed from utils_tf on or after "
                 "2019-03-09.")
+  return batch_eval(*args, **kwargs)
 
 
 def model_argmax(sess, x, predictions, samples, feed=None):
