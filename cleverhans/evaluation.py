@@ -4,9 +4,9 @@ Includes multi-GPU support for fast evaluation.
 """
 
 from distutils.version import LooseVersion
+import warnings
 import numpy as np
 from six.moves import range
-import warnings
 import tensorflow as tf
 
 from cleverhans.utils import create_logger
