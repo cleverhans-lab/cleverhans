@@ -456,7 +456,6 @@ class ProjectedGradientDescent(Attack):
     # Use getattr() to avoid errors in eager execution attacks
     FGM = self.FGM_CLASS(
         self.model,
-        back=getattr(self, 'back', None),
         sess=getattr(self, 'sess', None),
         dtypestr=self.dtypestr)
 
