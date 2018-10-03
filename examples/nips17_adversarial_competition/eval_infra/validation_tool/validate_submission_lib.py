@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from builtins import int
 
 import csv
 import json
@@ -257,7 +258,7 @@ class SubmissionValidator(object):
     try:
       image_size = subprocess.check_output(
           ['docker', 'inspect', '--format={{.Size}}', image_name]).strip()
-      image_size = int(image_size) if PY3 else long(image_size)
+      image_size = int(image_size)
     except (ValueError, subprocess.CalledProcessError) as e:
       logging.error('Failed to determine docker image size: %s', e)
       return False
