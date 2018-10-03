@@ -201,7 +201,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
       assert e.shape[0] == device_batch_size, e.shape
 
     output_batches = []
-    for output in xrange(p):
+    for output in range(p):
       o_start = output * num_devices
       o_end = (output + 1) * num_devices
       device_values = flat_output_batches[o_start:o_end]
@@ -255,7 +255,7 @@ def batch_eval(sess, tf_inputs, tf_outputs, numpy_inputs, batch_size=None,
   """
 
   if args is not None:
-    warnings.warn("`args` is deprecated and will be removde on or "
+    warnings.warn("`args` is deprecated and will be removed on or "
                   "after 2019-03-09. Pass `batch_size` directly.")
     if "batch_size" in args:
       assert batch_size is None
