@@ -127,8 +127,7 @@ class MixUp(Loss):
       mix = tf.distributions.Beta(self.beta, self.beta)
       mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
     mix = tf.maximum(mix, 1 - mix)
-    dims_to_remove = range(len(x.shape))[2:]
-    mix_label = tf.squeeze(mix, dims_to_remove)
+    mix_label = tf.reshape(mix, [-1, 1])
     xm = x + mix * (x[::-1] - x)
     ym = y + mix_label * (y[::-1] - y)
     logits = self.model.get_logits(xm, **kwargs)
