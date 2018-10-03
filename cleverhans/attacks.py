@@ -57,7 +57,6 @@ class Attack(object):
 
     # Prepare attributes
     self.model = model
-    self.back = 'tf'
     self.sess = sess
     self.dtypestr = dtypestr
 
