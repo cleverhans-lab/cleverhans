@@ -1054,22 +1054,6 @@ class TestSpatialTransformationMethod(CleverHansTest):
         x_adv = self.sess.run(x_adv_p, {x: x_val})
         self.assertClose(x_adv, x_val)
 
-    # def test_attack_strength(self):
-    #     x_val = np.random.rand(100, 2, 2, 3)
-    #     x_val = np.array(x_val, dtype=np.float32)
-    #     ttt = self.sess.run(self.model(x_val))
-    #     orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    #     x = tf.placeholder(tf.float32, shape=(None, 2, 2, 3))
-
-    #     x_adv_p = self.attack.generate(x, batch_size=100, dx_min=-0.2,
-    #                                    dx_max=0.2, n_dxs=3, dy_min=-0.2,
-    #                                    dy_max=0.2, n_dys=3, angle_min=-45,
-    #                                    angle_max=45, n_angles=3)
-    #     x_adv = self.sess.run(x_adv_p, {x: x_val})
-    #     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-    #     print(np.mean(orig_labs == new_labs))
-    #     self.assertTrue(np.mean(orig_labs == new_labs) < 0.7)
-
 
 if __name__ == '__main__':
     unittest.main()
