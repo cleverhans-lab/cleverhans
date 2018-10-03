@@ -44,7 +44,8 @@ class Attack(object):
 
     if sess is None:
       sess = tf.get_default_session()
-    assert isinstance(sess, tf.Session)
+    if not isinstance(sess, tf.Session):
+      raise ValueError("sess is not an instance of tf.Session")
 
     import cleverhans.attacks_tf as attacks_tf
     attacks_tf.np_dtype = self.np_dtype
