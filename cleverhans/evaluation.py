@@ -5,7 +5,6 @@ Includes multi-GPU support for fast evaluation.
 
 from distutils.version import LooseVersion
 import warnings
-
 import numpy as np
 from six.moves import range
 import tensorflow as tf
