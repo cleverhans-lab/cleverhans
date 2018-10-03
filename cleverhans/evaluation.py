@@ -202,7 +202,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
       assert e.shape[0] == device_batch_size, e.shape
 
     output_batches = []
-    for output in xrange(p):
+    for output in range(p):
       o_start = output * num_devices
       o_end = (output + 1) * num_devices
       device_values = flat_output_batches[o_start:o_end]
