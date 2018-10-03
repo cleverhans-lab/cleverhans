@@ -1,9 +1,9 @@
 from abc import ABCMeta
 import collections
+import warnings
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
-import warnings
 
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
