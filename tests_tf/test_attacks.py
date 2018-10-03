@@ -95,18 +95,12 @@ class TestAttackClassInitArguments(CleverHansTest):
         # Exception is thrown when model does not have __call__ attribute
         with self.assertRaises(Exception) as context:
             model = tf.placeholder(tf.float32, shape=(None, 10))
-            Attack(model, back='tf', sess=sess)
-        self.assertTrue(context.exception)
-
-    def test_back(self):
-        # Exception is thrown when back is not tf or th
-        with self.assertRaises(Exception) as context:
-            Attack(None, back='test', sess=None)
+            Attack(model, sess=sess)
         self.assertTrue(context.exception)
 
     def test_sess(self):
         # Test that it is permitted to provide no session
-        Attack(Model('model', 10, {}), back='tf', sess=None)
+        Attack(Model('model', 10, {}), sess=None)
 
     def test_sess_generate_np(self):
         model = Model('model', 10, {})
@@ -115,7 +109,7 @@ class TestAttackClassInitArguments(CleverHansTest):
             def generate(self, x, **kwargs):
                 return x
 
-        attack = DummyAttack(model, back='tf', sess=None)
+        attack = DummyAttack(model, sess=None)
         with self.assertRaises(Exception) as context:
             attack.generate_np(0.)
         self.assertTrue(context.exception)
@@ -125,7 +119,7 @@ class TestParseParams(CleverHansTest):
     def test_parse(self):
         sess = tf.Session()
 
-        test_attack = Attack(Model('model', 10, {}), back='tf', sess=sess)
+        test_attack = Attack(Model('model', 10, {}), sess=sess)
         self.assertTrue(test_attack.parse_params({}))
 
 
