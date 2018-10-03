@@ -11,15 +11,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import cleverhans
 import keras
+import os
+import warnings
 from keras import backend
 import numpy as np
-import os
 import tensorflow as tf
 from tensorflow.python.platform import flags
-import warnings
 
+import cleverhans
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import AccuracyReport

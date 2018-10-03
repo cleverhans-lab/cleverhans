@@ -13,15 +13,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import cleverhans
 from distutils.version import LooseVersion
 import logging
-import numpy as np
 import os
 import sys
+import warnings
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
-import warnings
 
 try:
   tf.enable_eager_execution()
@@ -31,6 +30,7 @@ except AttributeError:
           "use Tensorflow version greather than 1.8.0.")
     exit(1)
 
+import cleverhans
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import AccuracyReport, set_log_level
 from cleverhans.utils_tfe import train, model_eval

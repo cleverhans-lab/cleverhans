@@ -11,14 +11,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import cleverhans
 import logging
-import numpy as np
 import os
+import warnings
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
-import warnings
 
+import cleverhans
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import train, model_eval

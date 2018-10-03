@@ -11,19 +11,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import cleverhans
-import numpy as np
 import os
+import torch
+import warnings
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
-import warnings
 
+import cleverhans
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.model import CallableModelWrapper
 from cleverhans.utils import AccuracyReport
