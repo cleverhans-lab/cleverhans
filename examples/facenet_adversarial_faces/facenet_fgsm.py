@@ -12,7 +12,7 @@ class InceptionResnetV1Model(Model):
   model_path = "models/facenet/20170512-110547/20170512-110547.pb"
 
   def __init__(self):
-    super(InceptionResnetV1Model, self).__init__('model', None, {})
+    super(InceptionResnetV1Model, self).__init__(scope='model')
 
     # Load Facenet CNN
     facenet.load_model(self.model_path)
