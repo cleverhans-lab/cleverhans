@@ -1,3 +1,4 @@
+"""Tests for cleverhans.serial"""
 import tensorflow as tf
 import numpy as np
 from cleverhans.serial import PicklableVariable

@@ -84,6 +84,7 @@ def save_images(images, filenames, output_dir):
 
 
 def main(_):
+  """Run the sample attack"""
   eps = FLAGS.max_epsilon / 255.0
   batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
 

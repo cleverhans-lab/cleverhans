@@ -1,3 +1,4 @@
+"""Loss functions for training models."""
 import json
 import os
 import warnings
@@ -29,6 +30,8 @@ class Loss(object):
     self.attack = attack
 
   def save(self, path):
+    """Save loss in json format
+    """
     json.dump(dict(loss=self.__class__.__name__,
                    params=self.hparams),
               open(os.path.join(path, 'loss.json'), 'wb'))
@@ -77,12 +80,12 @@ class WeightedSum(Loss):
 
 
 class CrossEntropy(Loss):
+  """Cross-entropy loss for a multiclass softmax classifier.
+  :param model: Model instance, the model on which to apply the loss.
+  :param smoothing: float, amount of label smoothing for cross-entropy.
+  :param attack: function, given an input x, return an attacked x'.
+  """
   def __init__(self, model, smoothing=0., attack=None, **kwargs):
-    """Constructor.
-    :param model: Model instance, the model on which to apply the loss.
-    :param smoothing: float, amount of label smoothing for cross-entropy.
-    :param attack: function, given an input x, return an attacked x'.
-    """
     if smoothing < 0 or smoothing > 1:
       raise ValueError('Smoothing must be in [0, 1]', smoothing)
     self.kwargs = kwargs
@@ -112,11 +115,11 @@ class CrossEntropy(Loss):
 
 
 class MixUp(Loss):
+  """Mixup ( https://arxiv.org/abs/1710.09412 )
+  :param model: Model instance, the model on which to apply the loss.
+  :param beta: float, beta distribution parameter for MixUp.
+  """
   def __init__(self, model, beta, **kwargs):
-    """Constructor.
-    :param model: Model instance, the model on which to apply the loss.
-    :param beta: float, beta distribution parameter for MixUp.
-    """
     del kwargs
     Loss.__init__(self, model, locals())
     self.beta = beta
@@ -137,12 +140,13 @@ class MixUp(Loss):
 
 
 class FeaturePairing(Loss):
+  """Feature pairing loss.
+  :param model: Model instance, the model on which to apply the loss.
+  :param weight: float, with of logic pairing loss.
+  :param attack: function, given an input x, return an attacked x'.
+  """
+
   def __init__(self, model, weight, attack, **kwargs):
-    """Constructor.
-    :param model: Model instance, the model on which to apply the loss.
-    :param weight: float, with of logic pairing loss.
-    :param attack: function, given an input x, return an attacked x'.
-    """
     del kwargs
     Loss.__init__(self, model, locals(), attack)
     self.weight = weight
@@ -163,6 +167,7 @@ class FeaturePairing(Loss):
 
 
 class WeightDecay(Loss):
+  """Weight decay"""
   def fprop(self, x, y, **kwargs):
     terms = [tf.nn.l2_loss(param)
              for param in self.model.get_params()

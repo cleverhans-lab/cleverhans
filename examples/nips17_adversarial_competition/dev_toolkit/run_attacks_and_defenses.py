@@ -466,6 +466,8 @@ def compute_and_save_scores_and_ranking(attacks_output,
 
 
 def main():
+  """Run all attacks against all defenses and compute results.
+  """
   args = parse_args()
   attacks_output_dir = os.path.join(args.intermediate_results_dir,
                                     'attacks_output')

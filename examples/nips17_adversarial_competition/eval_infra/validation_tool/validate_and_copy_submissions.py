@@ -227,6 +227,7 @@ class SubmissionValidator(object):
 
 
 def main(args):
+  """Validate all submissions and copy them into place"""
   random.seed()
   temp_dir = tempfile.mkdtemp()
   logging.info('Created temporary directory: %s', temp_dir)

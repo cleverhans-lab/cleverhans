@@ -258,6 +258,7 @@ class EvaluationMaster(object):
                        'MedianTime', 'ImageCount'])
 
       def get_second(x):
+        """Returns second entry of a list/tuple"""
         return x[1]
       for s_id, score in sorted(iteritems(scores),
                                 key=get_second, reverse=True):
