@@ -7,8 +7,8 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
-import cleverhans.attacks as attacks
-import cleverhans.utils as utils
+from cleverhans import attacks
+from cleverhans import utils
 from cleverhans.compat import reduce_sum
 from cleverhans.model import CallableModelWrapper
 from cleverhans.model import Model
@@ -39,7 +39,6 @@ class Attack(attacks.Attack):
     if dtypestr != 'float32' and dtypestr != 'float64':
       raise ValueError("Unexpected input for argument dtypestr.")
     import tensorflow as tf
-    tfe = tf.contrib.eager
     self.tf_dtype = tf.as_dtype(dtypestr)
     self.np_dtype = np.dtype(dtypestr)
 
@@ -128,7 +127,7 @@ class FastGradientMethod(Attack, attacks.FastGradientMethod):
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
-    labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+    labels, _nb_classes = self.get_or_guess_labels(x, kwargs)
     return self.fgm(x, labels=labels, targeted=(self.y_target is not None))
 
   def fgm(self, x, labels, targeted=False):

@@ -48,10 +48,10 @@ class RunnerMultiGPU(Runner):
         'Inputs and Outputs should match in length.')
     for i in range(len(inputs)):
       device = inputs[i].values()[0].device
-      for k, v in inputs[i].iteritems():
+      for _k, v in inputs[i].iteritems():
         assert v.device == device, (
             'Inputs should be on the same device.')
-      for k, v in outputs[i].iteritems():
+      for _k, v in outputs[i].iteritems():
         assert v.device == device, (
             'Outputs should be on the same device.')
       if i > 0:

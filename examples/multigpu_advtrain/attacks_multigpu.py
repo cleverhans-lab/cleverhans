@@ -108,7 +108,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
     """
     Facilitates testing this attack.
     """
-    fixed, feedable, hash_key = self.construct_variables(kwargs)
+    _, feedable, hash_key = self.construct_variables(kwargs)
 
     if hash_key not in self.graphs:
       with tf.variable_scope(None, 'attack_%d' % len(self.graphs)):

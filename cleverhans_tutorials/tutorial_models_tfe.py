@@ -49,7 +49,7 @@ class ModelBasicCNNTFE(Model):
                                             activation=None)
 
     # Dummy fprop to activate the network.
-    output = self.fprop(dummy_input)
+    self.fprop(dummy_input)
 
   def fprop(self, x):
     """

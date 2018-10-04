@@ -195,7 +195,7 @@ class Evaluator(object):
     # Evaluate against adversarial attacks
     if self.epoch % self.hparams.eval_iters == 0:
       for att_type in self.attack_type_test:
-        adv_x, preds_adv = self.attacks[att_type]
+        _, preds_adv = self.attacks[att_type]
         acc = self.eval_advs(x, y, preds_adv, X_test, Y_test, att_type)
         report[att_type] = acc
 
