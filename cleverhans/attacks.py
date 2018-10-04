@@ -1740,7 +1740,6 @@ class SpatialTransformationMethod(Attack):
     super(SpatialTransformationMethod, self).__init__(
         model, sess, dtypestr, **kwargs)
     self.feedable_kwargs = {
-        'batch_size': self.np_dtype,
         'n_samples': self.np_dtype,
         'dx_min': self.np_dtype,
         'dx_max': self.np_dtype,
@@ -1750,14 +1749,14 @@ class SpatialTransformationMethod(Attack):
         'n_dys': self.np_dtype,
         'angle_min': self.np_dtype,
         'angle_max': self.np_dtype,
-        'n_angles': self.np_dtype
+        'n_angles': self.np_dtype,
+        'black_border_size': self.np_dtype,
     }
 
   def generate(self, x, **kwargs):
     """
     Generate symbolic graph for adversarial examples and return.
     :param x: The model's symbolic inputs.
-    :param batch_size: (optional int) The size of batch during evaluation.
     :param n_samples: (optional) The number of transformations sampled to
                       construct the attack. Set it to None to run
                       full grid attack.
@@ -1773,27 +1772,27 @@ class SpatialTransformationMethod(Attack):
                       angle.
     :param angle_max: (optional float) Largest clockwise rotation angle.
     :param n_angles: (optional int) Number of discretized angles.
+    :param black_border_size: (optional int) size of the black border in pixels.
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
     from .attacks_tf import spm
 
+
     labels, _ = self.get_or_guess_labels(x, kwargs)
 
     return spm(
         x,
         self.model,
-        batch_size=self.batch_size,
         y=labels,
         n_samples=self.n_samples,
         dx_min=self.dx_min, dx_max=self.dx_max, n_dxs=self.n_dxs,
         dy_min=self.dy_min, dy_max=self.dy_max, n_dys=self.n_dys,
         angle_min=self.angle_min, angle_max=self.angle_max,
-        n_angles=self.n_angles)
+        n_angles=self.n_angles, black_border_size=self.black_border_size)
 
   def parse_params(self,
-                   batch_size=128,
                    n_samples=None,
                    dx_min=-0.1,
                    dx_max=0.1,
@@ -1804,12 +1803,12 @@ class SpatialTransformationMethod(Attack):
                    angle_min=-30,
                    angle_max=30,
                    n_angles=6,
+                   black_border_size=0,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
     before saving them as attributes.
     """
-    self.batch_size = batch_size
     self.n_samples = n_samples
     self.dx_min = dx_min
     self.dx_max = dx_max
@@ -1820,6 +1819,7 @@ class SpatialTransformationMethod(Attack):
     self.angle_min = angle_min
     self.angle_max = angle_max
     self.n_angles = n_angles
+    self.black_border_size = black_border_size
 
     if self.dx_min < -1 or self.dy_min < -1 or \
        self.dx_max > 1 or self.dy_max > 1:

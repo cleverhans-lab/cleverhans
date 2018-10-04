@@ -174,4 +174,4 @@ def verify_format_docstrings():
 
 
 if __name__ == "__main__":
-  print_files_information_pep8()
+  test_format_pep8()

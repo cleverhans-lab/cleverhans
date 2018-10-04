@@ -1925,35 +1925,61 @@ def margin_logit_loss(model_logits, label, num_classes=10):
   return loss
 
 
-def _apply_transformation(x, dx, dy, angle, batch_size):
-  # Map a transformation onto the input
-  angle *= np.pi / 180
+def _apply_black_border(x, border_size):
+  orig_height = x.get_shape().as_list()[1]
+  orig_width = x.get_shape().as_list()[2]
+  x = tf.image.resize_images(x, (orig_width - 2*border_size,
+                                 orig_height - 2*border_size))
+
+  return tf.pad(x, [[0, 0],
+                    [border_size, border_size],
+                    [border_size, border_size],
+                    [0, 0]], 'CONSTANT')
+
+
+def _apply_transformation(inputs):
+  x, trans = inputs[0], inputs[1]
+  dx, dy, angle = trans[0], trans[1], trans[2]
   height = x.get_shape().as_list()[1]
   width = x.get_shape().as_list()[2]
-  M = np.array([1, 0, -dx*height,
-                0, 1, -dy*width, 0, 0] * batch_size, dtype=np.float32)
-  theta = tf.constant(M, shape=(batch_size, 8))
 
-  # Pad the image to prevent two-step rotation / translation
-  x = tf.pad(x, [[0, 0], [height, height], [width, width], [0, 0]],
+  # Pad the image to prevent two-step rotation / translation from truncating corners
+  max_dist_from_center = np.sqrt(height**2+width**2) / 2
+  min_edge_from_center = float(np.min([height, width])) / 2
+  padding = np.ceil(max_dist_from_center - min_edge_from_center).astype(np.int32)
+  x = tf.pad(x, [[0, 0],
+                 [padding, padding],
+                 [padding, padding],
+                 [0, 0]],
              'CONSTANT')
-  # Rotate and translate the image
-  x = tf.contrib.image.rotate(x, angle, interpolation='BILINEAR')
-  x = tf.contrib.image.transform(x, theta, interpolation='BILINEAR')
 
+  # Apply rotation
+  angle *= np.pi / 180
+  x = tf.contrib.image.rotate(x, angle, interpolation='BILINEAR')
+
+  # Apply translation
+  dx_in_px = -dx * height
+  dy_in_px = -dy * width
+  translation = tf.convert_to_tensor([dx_in_px, dy_in_px])
+
+  try:
+    x = tf.contrib.image.translate(x, translation, interpolation='BILINEAR')
+  except AttributeError as e:
+    print("WARNING: SpatialAttack requires tf 1.6 or higher")
+    raise e
+  x = tf.contrib.image.translate(x, translation, interpolation='BILINEAR')
   return tf.image.resize_image_with_crop_or_pad(x, height, width)
 
 
-def spm(x, model, batch_size=128, y=None, n_samples=None, dx_min=-0.1,
+def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
         dx_max=0.1, n_dxs=5, dy_min=-0.1, dy_max=0.1, n_dys=5,
-        angle_min=-30, angle_max=30, n_angles=11):
+        angle_min=-30, angle_max=30, n_angles=31, black_border_size=0):
   """
   TensorFlow implementation of the Spatial Transformation Method.
   :return: a tensor for the adversarial example
   """
-
-  preds = model.get_probs(x)
   if y is None:
+    preds = model.get_probs(x)
     # Using model predictions as ground truth to avoid label leaking
     preds_max = reduce_max(preds, 1, keepdims=True)
     y = tf.to_float(tf.equal(preds, preds_max))
@@ -1973,19 +1999,52 @@ def spm(x, model, batch_size=128, y=None, n_samples=None, dx_min=-0.1,
     sampled_dys = np.random.choice(dys, n_samples)
     sampled_angles = np.random.choice(angles, n_samples)
     transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
+  transformed_ims = parallel_apply_transformations(x, transforms, black_border_size)
 
-  adv_xs = []
-  accs = []
+  def _compute_xent(x):
+    preds = model.get_logits(x)
+    return tf.nn.softmax_cross_entropy_with_logits_v2(
+        labels=y, logits=preds)
 
-  # Perform the transformation
-  for (dx, dy, angle) in transforms:
-    adv_xs.append(_apply_transformation(x, dx, dy, angle, batch_size))
-    preds_adv = model.get_logits(adv_xs[-1])
+  all_xents = tf.map_fn(
+      _compute_xent,
+      transformed_ims,
+      parallel_iterations=1) # Must be 1 to avoid keras race conditions
 
-    # Compute accuracy
-    accs.append(tf.count_nonzero(tf.equal(tf.argmax(y, axis=-1),
-                                          tf.argmax(preds_adv, axis=-1))))
   # Return the adv_x with worst accuracy
-  adv_xs = tf.stack(adv_xs)
-  accs = tf.stack(accs)
-  return tf.gather(adv_xs, tf.argmin(accs))
+
+  # all_xents is n_total_samples x batch_size (SB)
+  all_xents = tf.stack(all_xents) # SB
+
+  # We want the worst case sample, with the largest xent_loss
+  worst_sample_idx = tf.argmax(all_xents, axis=0)  # B
+
+  batch_size = tf.shape(x)[0]
+  keys = tf.stack([
+      tf.range(batch_size, dtype=tf.int32),
+      tf.cast(worst_sample_idx, tf.int32)
+  ], axis=1)
+  transformed_ims_bshwc = tf.einsum('sbhwc->bshwc', transformed_ims)
+  after_lookup = tf.gather_nd(transformed_ims_bshwc, keys)  # BHWC
+  return after_lookup
+
+
+def parallel_apply_transformations(x, transforms, black_border_size=0):
+  transforms = tf.convert_to_tensor(transforms, dtype=tf.float32)
+  x = _apply_black_border(x, black_border_size)
+
+  num_transforms = transforms.get_shape().as_list()[0]
+  im_shape = x.get_shape().as_list()[1:]
+
+  # Pass a copy of x and a transformation to each iteration of the map_fn callable
+  tiled_x = tf.reshape(
+      tf.tile(x, [num_transforms, 1, 1, 1]),
+      [num_transforms, -1] + im_shape)
+  elems = [tiled_x, transforms]
+  transformed_ims = tf.map_fn(
+      _apply_transformation,
+      elems,
+      dtype=tf.float32,
+      parallel_iterations=1,  # Must be 1 to avoid keras race conditions
+  )
+  return transformed_ims
