@@ -1034,7 +1034,7 @@ class SimpleSpatialBrightPixelModel(Model):
     """
     If there is a bright pixel in the image returns the first class.
     Otherwise returns the second class. Spatial attack should push the
-    bright pixels off of the image
+    bright pixels off of the image.
     """
 
     def __init__(self, scope='simple_spatial', nb_classes=2, **kwargs):
