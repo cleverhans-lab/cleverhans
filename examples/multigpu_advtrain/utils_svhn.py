@@ -31,6 +31,7 @@ from __future__ import (absolute_import, division, print_function,
 import os
 
 import numpy as np
+from six.moves import range
 import tensorflow as tf
 import scipy.io as sio
 
@@ -56,7 +57,7 @@ def read_SVHN(data_folder):
   ]
   test_file_list = ["test_32x32.mat"]
 
-  for i in xrange(len(train_file_list)):
+  for i in range(len(train_file_list)):
     tmp_dict = sio.loadmat(os.path.join(data_folder, train_file_list[i]))
     train_img.append(tmp_dict["X"])
     train_label.append(tmp_dict["y"])

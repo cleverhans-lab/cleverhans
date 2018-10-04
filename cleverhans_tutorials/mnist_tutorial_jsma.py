@@ -127,7 +127,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
   grid_viz_data = np.zeros(grid_shape, dtype='f')
 
   # Instantiate a SaliencyMapMethod attack object
-  jsma = SaliencyMapMethod(model, back='tf', sess=sess)
+  jsma = SaliencyMapMethod(model, sess=sess)
   jsma_params = {'theta': 1., 'gamma': 0.1,
                  'clip_min': 0., 'clip_max': 1.,
                  'y_target': None}

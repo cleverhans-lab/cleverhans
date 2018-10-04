@@ -1,6 +1,8 @@
 FROM ubuntu:14.04
-COPY .setup_vm.sh /
-RUN chmod +x /.setup_vm.sh
-RUN ["/.setup_vm.sh"]
-COPY .run_tests.sh /
-RUN chmod +x /.run_tests.sh
+RUN apt-get update
+RUN apt-get install -y python
+RUN apt-get install -y python-pip
+RUN pip install --upgrade pip
+COPY .setup_vm_and_run_tests.sh /
+RUN chmod +x /.setup_vm_and_run_tests.sh
+CMD ["/.setup_vm_and_run_tests.sh"]

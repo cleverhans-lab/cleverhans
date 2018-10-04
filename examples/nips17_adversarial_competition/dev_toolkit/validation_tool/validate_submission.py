@@ -24,10 +24,13 @@ import logging
 import random
 import subprocess
 import tempfile
-import validate_submission_lib
+import submission_validator_lib
 
 
 def print_in_box(text):
+  """
+  Prints `text` surrounded by a box made of *s
+  """
   print('')
   print('*' * (len(text) + 6))
   print('** ' + text + ' **')
@@ -36,6 +39,9 @@ def print_in_box(text):
 
 
 def main(args):
+  """
+  Validates the submission.
+  """
   print_in_box('Validating submission ' + args.submission_filename)
   random.seed()
   temp_dir = args.temp_dir
@@ -44,8 +50,8 @@ def main(args):
     temp_dir = tempfile.mkdtemp()
     logging.info('Created temporary directory: %s', temp_dir)
     delete_temp_dir = True
-  validator = validate_submission_lib.SubmissionValidator(temp_dir,
-                                                          args.use_gpu)
+  validator = submission_validator_lib.SubmissionValidator(temp_dir,
+                                                           args.use_gpu)
   if validator.validate_submission(args.submission_filename,
                                    args.submission_type):
     print_in_box('Submission is VALID!')

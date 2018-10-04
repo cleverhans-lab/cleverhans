@@ -9,15 +9,13 @@ from __future__ import unicode_literals
 
 import logging
 
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-from cleverhans.loss import CrossEntropy
 from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import train, model_eval
+from cleverhans.utils_tf import model_eval
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.utils import AccuracyReport, set_log_level
+from cleverhans.utils import set_log_level
 from cleverhans.serial import load
 
 FLAGS = flags.FLAGS

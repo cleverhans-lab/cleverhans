@@ -1,7 +1,16 @@
 #!/bin/sh
-apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
-sudo apt-get install python python-pip
-pip install tensorflow keras pytorch
+set -e
+# Run update once so apt-get will work at all
+sudo apt-get update
+# Install apt-add-repository
+sudo apt-get install -y software-properties-common
+# Add universe repository so python-pip is available
+sudo apt-add-repository universe
+# Run update again now that universe is a source
+apt-get update
+apt-get -y install curl
+apt-get install -y wget
+rm -rf /var/lib/apt/lists/*
 
 # code below is taken from http://conda.pydata.org/docs/travis.html
 # We do this conditionally because it saves us some downloading if the
@@ -22,7 +31,9 @@ conda update -q conda
 conda info -a
 
 conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pyqt=4.11 matplotlib pandas h5py six mkl-service
-source activate test-environment
+# Enable `conda activate`
+sudo ln -s /root/miniconda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
+conda activate test-environment
 
 # install TensorFlow
 if [[ "$CLOUD_BUILD_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.4.1" ]]; then

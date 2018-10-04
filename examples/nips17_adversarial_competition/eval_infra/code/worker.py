@@ -24,6 +24,7 @@ directory. That's why it's highly recommended to run worker only in VM.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from builtins import int # long in python 2
 
 import argparse
 import json
@@ -340,7 +341,7 @@ class ExecutableSubmission(object):
     logging.info('Docker command: %s', ' '.join(cmd))
     start_time = time.time()
     retval = subprocess.call(cmd)
-    elapsed_time_sec = long(time.time() - start_time)
+    elapsed_time_sec = int(time.time() - start_time)
     logging.info('Elapsed time of attack: %d', elapsed_time_sec)
     logging.info('Docker retval: %d', retval)
     if retval != 0:
@@ -373,7 +374,7 @@ class ExecutableSubmission(object):
     start_time = time.time()
     elapsed_time_sec = 0
     while is_docker_still_running(container_name):
-      elapsed_time_sec = long(time.time() - start_time)
+      elapsed_time_sec = int(time.time() - start_time)
       if elapsed_time_sec < time_limit:
         time.sleep(1)
       else:
@@ -553,6 +554,7 @@ class EvaluationWorker(object):
     self.dataset_meta = None
 
   def read_dataset_metadata(self):
+    """Read `dataset_meta` field from bucket"""
     if self.dataset_meta:
       return
     shell_call(['gsutil', 'cp',
@@ -655,10 +657,11 @@ class EvaluationWorker(object):
       # populate values which will be written to datastore
       image_path = '{0}/adversarial_images/{1}/{1}.zip/{2}.png'.format(
           self.round_name, adv_batch_id, adv_img_id)
+      # u'' + foo is a a python 2/3 compatible way of casting foo to unicode
       adv_batch['images'][adv_img_id] = {
-          'clean_image_id': unicode(clean_image_id),
-          'image_path': unicode(image_path),
-          'image_hash': unicode(hash_val),
+          'clean_image_id': u'' + str(clean_image_id),
+          'image_path': u'' + str(image_path),
+          'image_hash': u'' + str(hash_val),
       }
     # archive all images and copy to storage
     zipped_images_filename = os.path.join(LOCAL_ZIPPED_OUTPUT_DIR,
@@ -887,6 +890,7 @@ class EvaluationWorker(object):
     logging.info('******** Finished evaluation of defenses ********')
 
   def run_work(self):
+    """Run attacks and defenses"""
     if os.path.exists(LOCAL_EVAL_ROOT_DIR):
       sudo_remove_dirtree(LOCAL_EVAL_ROOT_DIR)
     self.run_attacks()
