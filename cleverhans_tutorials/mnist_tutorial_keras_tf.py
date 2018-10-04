@@ -12,12 +12,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-
-import tensorflow as tf
-from tensorflow.python.platform import flags
-import numpy as np
 import keras
 from keras import backend
+import numpy as np
+import tensorflow as tf
+from tensorflow.python.platform import flags
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
@@ -216,6 +215,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_tutorial(nb_epochs=FLAGS.nb_epochs,
                  batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate,

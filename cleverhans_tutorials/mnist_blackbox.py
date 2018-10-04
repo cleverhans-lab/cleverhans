@@ -10,11 +10,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import functools
-
 import logging
 import numpy as np
 from six.moves import xrange
-
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
@@ -285,6 +283,9 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_blackbox(nb_classes=FLAGS.nb_classes, batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate,
                  nb_epochs=FLAGS.nb_epochs, holdout=FLAGS.holdout,
@@ -293,6 +294,7 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
+
   # General flags
   flags.DEFINE_integer('nb_classes', NB_CLASSES,
                        'Number of classes in problem')

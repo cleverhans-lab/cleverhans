@@ -9,10 +9,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 import logging
 import os
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
@@ -237,6 +235,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_tutorial_cw(viz_enabled=FLAGS.viz_enabled,
                     nb_epochs=FLAGS.nb_epochs,
                     batch_size=FLAGS.batch_size,
