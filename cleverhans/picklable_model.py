@@ -562,10 +562,22 @@ class PerImageStandardize(Layer):
   def fprop(self, x, **kwargs):
     # TODO: before adding dataset augmentation, we didn't have to do this.
     # Why?
-    with tf.device("/CPU:0"):
-      out = tf.map_fn(
-          lambda ex: tf.image.per_image_standardization(ex), x)
-    return out
+    axis = [1, 2, 3]
+    mean = tf.reduce_mean(x, axis=axis, keepdims=True)
+    variance = tf.reduce_mean(
+        tf.square(x), axis=axis, keepdims=True) - tf.square(mean)
+    variance = tf.nn.relu(variance)
+    stddev = tf.sqrt(variance)
+
+    num_pixels = tf.reduce_prod(tf.shape(x)[1:])
+
+    min_stddev = tf.rsqrt(tf.to_float(num_pixels))
+    pixel_value_scale = tf.maximum(stddev, min_stddev)
+    pixel_value_offset = mean
+
+    x = tf.subtract(x, pixel_value_offset)
+    x = tf.div(x, pixel_value_scale)
+    return x
 
 
 class Dropout(Layer):
