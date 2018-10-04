@@ -20,7 +20,6 @@ setup(name='cleverhans',
           "tf_gpu": ["tensorflow-gpu>=1.0.0"],
           "test": [
               "keras == 2.1.5",  # Keras 2.1.6 is incompatible with TF 1.4
-              'pylint ~= 2.1.1', # pylint for pep8
           ],
           "pytorch": ["torch==0.4.0", "torchvision==0.2.1"],
       },
