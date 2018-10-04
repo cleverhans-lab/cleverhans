@@ -1395,8 +1395,6 @@ def deepfool_attack(sess,
   :param clip_max: Maximum value for components of the example returned
   :return: Adversarial examples
   """
-  import copy
-
   adv_x = copy.copy(sample)
   # Initialize the loop variables
   iteration = 0

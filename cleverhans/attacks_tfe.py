@@ -38,7 +38,6 @@ class Attack(attacks.Attack):
     # Validate the input arguments.
     if dtypestr != 'float32' and dtypestr != 'float64':
       raise ValueError("Unexpected input for argument dtypestr.")
-    import tensorflow as tf
     self.tf_dtype = tf.as_dtype(dtypestr)
     self.np_dtype = np.dtype(dtypestr)
 
