@@ -5,7 +5,7 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
-import cleverhans.utils as utils
+import cleverhans import utils
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max
@@ -46,7 +46,7 @@ class Attack(object):
     if not isinstance(sess, tf.Session):
       raise ValueError("sess is not an instance of tf.Session")
 
-    import cleverhans.attacks_tf as attacks_tf
+    from cleverhans import attacks_tf
     attacks_tf.np_dtype = self.np_dtype
     attacks_tf.tf_dtype = self.tf_dtype
 
@@ -106,8 +106,6 @@ class Attack(object):
     # try our very best to create a TF placeholder for each of the
     # feedable keyword arguments, and check the types are one of
     # the allowed types
-    import tensorflow as tf
-
     class_name = str(self.__class__).split(".")[-1][:-2]
     _logger.info("Constructing new graph for attack " + class_name)
 
@@ -222,8 +220,6 @@ class Attack(object):
     Otherwise, use the model's prediction as the label and perform an
     untargeted attack.
     """
-    import tensorflow as tf
-
     if 'y' in kwargs and 'y_target' in kwargs:
       raise ValueError("Can not set both 'y' and 'y_target'.")
     elif 'y' in kwargs:
@@ -418,8 +414,6 @@ class ProjectedGradientDescent(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    import tensorflow as tf
-
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
@@ -472,7 +466,6 @@ class ProjectedGradientDescent(Attack):
 
       # Clipping perturbation eta to self.ord norm ball
       eta = adv_x - x
-      from cleverhans.utils_tf import clip_eta
       eta = clip_eta(eta, self.ord, self.eps)
       return i + 1, eta
 
@@ -608,8 +601,6 @@ class MomentumIterativeMethod(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    import tensorflow as tf
-
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
@@ -747,7 +738,6 @@ class SaliencyMapMethod(Attack):
 
     super(SaliencyMapMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {'y_target': self.tf_dtype}
     self.structural_kwargs = [
         'theta', 'gamma', 'clip_max', 'clip_min', 'symbolic_impl'
@@ -765,8 +755,6 @@ class SaliencyMapMethod(Attack):
     :param clip_max: (optional float) Maximum component value for clipping
     :param y_target: (optional) Target tensor if the attack is targeted
     """
-    import tensorflow as tf
-
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
@@ -907,7 +895,6 @@ class VirtualAdversarialMethod(Attack):
     super(VirtualAdversarialMethod, self).__init__(model, sess, dtypestr,
                                                    **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {
         'eps': self.tf_dtype,
         'xi': self.tf_dtype,
@@ -991,7 +978,6 @@ class CarliniWagnerL2(Attack):
 
     super(CarliniWagnerL2, self).__init__(model, sess, dtypestr, **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
 
     self.structural_kwargs = [
@@ -1039,7 +1025,6 @@ class CarliniWagnerL2(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    import tensorflow as tf
     from .attacks_tf import CarliniWagnerL2 as CWL2
     self.parse_params(**kwargs)
 
@@ -1110,7 +1095,6 @@ class ElasticNetMethod(Attack):
 
     super(ElasticNetMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
 
     self.structural_kwargs = [
@@ -1170,7 +1154,6 @@ class ElasticNetMethod(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    import tensorflow as tf
     self.parse_params(**kwargs)
 
     from .attacks_tf import ElasticNetMethod as EAD
@@ -1263,7 +1246,6 @@ class DeepFool(Attack):
     :param clip_max: Maximum component value for clipping
     """
 
-    import tensorflow as tf
     from .attacks_tf import jacobian_graph, deepfool_batch
 
     # Parse and save attack-specific parameters
@@ -1340,7 +1322,6 @@ class LBFGS(Attack):
 
     super(LBFGS, self).__init__(model, sess, dtypestr, **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {'y_target': self.tf_dtype}
     self.structural_kwargs = [
         'batch_size', 'binary_search_steps', 'max_iterations',
@@ -1367,7 +1348,6 @@ class LBFGS(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    import tensorflow as tf
     from .attacks_tf import LBFGS_attack
     self.parse_params(**kwargs)
 
@@ -1526,8 +1506,6 @@ class FastFeatureAdversaries(Attack):
     :param g_feat: model's internal tensor for guide
     :return: a tensor for the adversarial example
     """
-    import tensorflow as tf
-    from cleverhans.utils_tf import clip_eta
 
     adv_x = x + eta
     a_feat = self.model.fprop(adv_x)[self.layer]
@@ -1575,8 +1553,6 @@ class FastFeatureAdversaries(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    import tensorflow as tf
-    from cleverhans.utils_tf import clip_eta
 
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
