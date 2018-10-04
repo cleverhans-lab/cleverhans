@@ -8,8 +8,6 @@ from __future__ import print_function
 import os
 import subprocess
 
-from nose.plugins.skip import SkipTest
-
 import cleverhans
 from cleverhans.devtools.list_files import list_files
 from cleverhans.utils import shell_call
