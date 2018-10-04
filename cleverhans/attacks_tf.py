@@ -1961,6 +1961,12 @@ def _apply_transformation(inputs):
   dx_in_px = -dx * height
   dy_in_px = -dy * width
   translation = tf.convert_to_tensor([dx_in_px, dy_in_px])
+
+  try:
+    x = tf.contrib.image.translate(x, translation, interpolation='BILINEAR')
+  except AttributeError as e:
+    print("WARNING: SpatialAttack requires tf 1.6 or higher")
+    raise e
   x = tf.contrib.image.translate(x, translation, interpolation='BILINEAR')
   return tf.image.resize_image_with_crop_or_pad(x, height, width)
 

@@ -1052,6 +1052,9 @@ class SimpleSpatialBrightPixelModel(Model):
                 self.O_PROBS: tf.nn.softmax(res)}
 
 
+@unittest.skipIf(
+    [int(v) for v in tf.__version__.split('.')[:2]] < [1, 6],
+    "SpatialAttack requires tf 1.6 or higher")
 class TestSpatialTransformationMethod(CleverHansTest):
     def setUp(self):
         super(TestSpatialTransformationMethod, self).setUp()
