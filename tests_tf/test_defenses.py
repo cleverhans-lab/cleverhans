@@ -81,21 +81,20 @@ class TestDefenses(CleverHansTest):
         self.assertClose(vl, [1.40, 1.40], atol=5e-2)
 
     def test_feature_pairing(self):
-        fgsm = FastGradientMethod(self.model)
+        sess = tf.Session()
+        fgsm = FastGradientMethod(self.model, sess=sess)
         attack = lambda x: fgsm.generate(x)
         loss = FeaturePairing(self.model, weight=0.1, attack=attack)
         l = loss.fprop(self.x, self.y)
-        with tf.Session() as sess:
-            vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-            vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
+        vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
+        vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
         self.assertClose(vl1, sum([4.296023369, 2.963884830]) / 2., atol=1e-6)
         self.assertClose(vl2, sum([4.296023369, 2.963884830]) / 2., atol=1e-6)
 
         loss = FeaturePairing(self.model, weight=10., attack=attack)
         l = loss.fprop(self.x, self.y)
-        with tf.Session() as sess:
-            vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
-            vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
+        vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
+        vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
         self.assertClose(vl1, sum([4.333082676, 3.00094414]) / 2., atol=1e-6)
         self.assertClose(vl2, sum([4.333082676, 3.00094414]) / 2., atol=1e-6)
 

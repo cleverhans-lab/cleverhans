@@ -114,7 +114,7 @@ def print_files_information_pep8():
   infracting_files = []
   non_infracting_files = []
   # We must replace StyleGuide with pylint, as is done in the tests
-  pep8_checker = StyleGuide(quiet=True)
+  pep8_checker = None # StyleGuide(quiet=True)
   for path in list_files(".py"):
     number_of_infractions = pep8_checker.input_file(path)
     rel_path = os.path.relpath(path, cleverhans.__path__[0])
