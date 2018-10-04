@@ -6,19 +6,19 @@ from __future__ import unicode_literals
 from distutils.version import LooseVersion
 import logging
 import math
-import numpy as np
 import os
-from six.moves import xrange
-import tensorflow as tf
-from tensorflow.python.client import device_lib
 import time
 import warnings
 
-from .utils import batch_indices, _ArgsWrapper, create_logger
+import numpy as np
+from six.moves import xrange
+import tensorflow as tf
+from tensorflow.python.client import device_lib
+
 from cleverhans.compat import reduce_sum, reduce_mean
-from cleverhans.compat import reduce_max, reduce_min
-from cleverhans.compat import reduce_any
+from cleverhans.compat import reduce_max
 from cleverhans.compat import softmax_cross_entropy_with_logits
+from cleverhans.utils import batch_indices, _ArgsWrapper, create_logger
 
 _logger = create_logger("cleverhans.utils.tf")
 _logger.setLevel(logging.INFO)
@@ -284,11 +284,12 @@ def tf_model_load(sess, file_path=None):
 
 
 def batch_eval(*args, **kwargs):
-  # Inside function to avoid circul import
+  # Inside function to avoid circular import
   from cleverhans.evaluation import batch_eval
   warnings.warn("batch_eval has moved to cleverhans.evaluation. "
                 "batch_eval will be removed from utils_tf on or after "
                 "2019-03-09.")
+  return batch_eval(*args, **kwargs)
 
 
 def model_argmax(sess, x, predictions, samples, feed=None):

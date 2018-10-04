@@ -1,3 +1,4 @@
+"""Tests for cleverhans.dataset"""
 from cleverhans.dataset import Dataset
 
 
@@ -9,6 +10,7 @@ class LightweightDataset(Dataset):
 
 
 def test_factory():
+  """test_factory: Test that dataset->factory->dataset preserves type"""
   d1 = LightweightDataset()
   factory = d1.get_factory()
   d2 = factory()

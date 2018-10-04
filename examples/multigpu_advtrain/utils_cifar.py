@@ -30,6 +30,7 @@ import os
 import cPickle as pkl
 
 import numpy as np
+from six.moves import range
 import tensorflow as tf
 
 # Global constants describing the CIFAR-10 data set.
@@ -67,7 +68,7 @@ def read_CIFAR10(data_folder):
   else:
     cifar10_path = 'cifar-10-batches-py'
 
-  for i in xrange(len(train_file_list)):
+  for i in range(len(train_file_list)):
     tmp_dict = unpickle(os.path.join(data_folder, cifar10_path,
                                      train_file_list[i]))
 

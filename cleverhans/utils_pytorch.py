@@ -1,3 +1,4 @@
+"""Basic utilities for pytorch code"""
 from random import getrandbits
 
 import tensorflow as tf
@@ -50,6 +51,7 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
     out_dims = list(model.modules())[-1].out_features
 
   def _fprop_fn(x_np):
+    """TODO: write this"""
     x_tensor = torch.Tensor(x_np)
     if torch.cuda.is_available():
       x_tensor = x_tensor.cuda()
@@ -58,6 +60,7 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
     return torch_state['logits'].data.cpu().numpy()
 
   def _bprop_fn(x_np, grads_in_np):
+    """TODO: write this"""
     _fprop_fn(x_np)
 
     grads_in_tensor = torch.Tensor(grads_in_np)
@@ -70,10 +73,12 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
     return torch_state['x'].grad.cpu().data.numpy()
 
   def _tf_gradient_fn(op, grads_in):
+    """TODO: write this"""
     return tf.py_func(_bprop_fn, [op.inputs[0], grads_in],
                       Tout=[tf.float32])
 
   def tf_model_fn(x_op):
+    """TODO: write this"""
     out = _py_func_with_gradient(_fprop_fn, [x_op], Tout=[tf.float32],
                                  stateful=True,
                                  grad_func=_tf_gradient_fn)[0]

@@ -14,23 +14,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from distutils.version import LooseVersion
 import logging
-import math
-import numpy as np
 import os
+import time
+
+import numpy as np
 from six.moves import xrange
 import tensorflow as tf
-import time
-import warnings
 
-from cleverhans.utils import batch_indices, _ArgsWrapper, create_logger
+from cleverhans.utils import _ArgsWrapper, create_logger
 from cleverhans.utils import safe_zip
 from cleverhans.utils_tf import infer_devices
-from cleverhans.compat import reduce_sum, reduce_mean
-from cleverhans.compat import reduce_max, reduce_min
-from cleverhans.compat import reduce_any
-from cleverhans.compat import softmax_cross_entropy_with_logits
+from cleverhans.utils_tf import initialize_uninitialized_global_variables
 
 
 _logger = create_logger("train")

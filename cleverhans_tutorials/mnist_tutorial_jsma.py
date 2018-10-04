@@ -9,11 +9,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import flags
-import logging
 
 from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.dataset import MNIST
@@ -124,7 +124,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
   grid_viz_data = np.zeros(grid_shape, dtype='f')
 
   # Instantiate a SaliencyMapMethod attack object
-  jsma = SaliencyMapMethod(model, back='tf', sess=sess)
+  jsma = SaliencyMapMethod(model, sess=sess)
   jsma_params = {'theta': 1., 'gamma': 0.1,
                  'clip_min': 0., 'clip_max': 1.,
                  'y_target': None}
@@ -208,6 +208,9 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_tutorial_jsma(viz_enabled=FLAGS.viz_enabled,
                       nb_epochs=FLAGS.nb_epochs,
                       batch_size=FLAGS.batch_size,

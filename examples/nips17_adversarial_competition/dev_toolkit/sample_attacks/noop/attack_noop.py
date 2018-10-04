@@ -84,6 +84,7 @@ def save_images(images, filenames, output_dir):
 
 
 def main(_):
+  """Run the sample attack"""
   batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
   for filenames, images in load_images(FLAGS.input_dir, batch_shape):
     save_images(images, filenames, FLAGS.output_dir)

@@ -1,6 +1,8 @@
+"""
+The Model class and related functionality.
+"""
 from abc import ABCMeta
 import tensorflow as tf
-from distutils.version import LooseVersion
 
 
 class Model(object):
@@ -156,6 +158,7 @@ class Model(object):
 
 
 class CallableModelWrapper(Model):
+  """A wrapper that turns a callable into a valid Model"""
 
   def __init__(self, callable_fn, output_layer):
     """

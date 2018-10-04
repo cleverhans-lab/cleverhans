@@ -5,8 +5,8 @@ import numpy as np
 from functools import partial
 import tensorflow as tf
 from cleverhans.devtools.checks import CleverHansTest
-from cleverhans.attacks_tf import fgm, pgd_attack,\
-    UnrolledAdam, UnrolledGradientDescent
+from cleverhans.attacks_tf import fgm, pgd_attack, \
+    UnrolledAdam, UnrolledGradientDescent, parallel_apply_transformations
 from cleverhans.devtools.mocks import random_feed_dict
 import unittest
 from cleverhans.model import Model
@@ -209,6 +209,50 @@ class TestAttackTF(CleverHansTest):
             clip_min=-10.,
             clip_max=10.,
             assert_threshold=0.9)
+
+    @unittest.skip("This test requires human inspection of the images")
+    def test_parallel_apply(self):
+        def _save_image_to_png(image_np, filename):
+            from PIL import Image
+            import os
+
+            dirname = os.path.dirname(filename)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+
+            if image_np.shape[-1] == 3:
+                img = Image.fromarray(np.uint8(image_np * 255.), 'RGB')
+            else:
+                img = Image.fromarray(np.uint8(image_np[:, :, 0] * 255.), 'L')
+            img.save(filename)
+
+        x = tf.ones([3, 200, 200, 3])
+
+        transforms = [
+            [0.2, 0, 20],
+            [0, 0, 0],
+            # [-0.2, 0, 20],
+            # [-0.4, 0, 20],
+        ]
+        transformed_ims = parallel_apply_transformations(
+            x, transforms, black_border_size=30)
+
+        worst_sample_idx = tf.convert_to_tensor([0, 1, 1])
+        batch_size = tf.shape(x)[0]
+        keys = tf.stack([
+            tf.range(batch_size, dtype=tf.int32),
+            tf.cast(worst_sample_idx, tf.int32)
+        ], axis=1)
+
+        transformed_ims_bshwc = tf.einsum('sbhwc->bshwc', transformed_ims)
+        after_lookup = tf.gather_nd(transformed_ims_bshwc, keys)  # BHWC
+
+        with tf.Session() as sess:
+            img_batch_np = sess.run(after_lookup)[:,:,:,:]
+
+        for i, img in enumerate(img_batch_np):
+            filename="/tmp/test_image%s.png" % (i)
+            _save_image_to_png(img, filename)
 
 
 if __name__ == '__main__':

@@ -3,10 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from collections import namedtuple
 import unittest
+
 import numpy as np
 import tensorflow as tf
-from collections import namedtuple
 
 from cleverhans.utils import AccuracyReport
 from cleverhans.devtools.checks import CleverHansTest

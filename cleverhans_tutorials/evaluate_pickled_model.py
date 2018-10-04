@@ -7,16 +7,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
-import tensorflow as tf
-from tensorflow.python.platform import flags
 import logging
 
+import tensorflow as tf
+from tensorflow.python.platform import flags
+
 from cleverhans.dataset import MNIST
-from cleverhans.loss import CrossEntropy
-from cleverhans.utils_tf import train, model_eval
+from cleverhans.utils_tf import model_eval
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.utils import AccuracyReport, set_log_level
+from cleverhans.utils import set_log_level
 from cleverhans.serial import load
 
 FLAGS = flags.FLAGS

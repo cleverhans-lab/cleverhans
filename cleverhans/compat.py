@@ -1,7 +1,11 @@
-import tensorflow as tf
-import warnings
-
+"""
+Wrapper functions for writing code that is compatible with many versions
+of TensorFlow.
+"""
 from distutils.version import LooseVersion
+import warnings
+import tensorflow as tf
+
 
 
 def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
@@ -97,6 +101,7 @@ def softmax_cross_entropy_with_logits(sentinel=None,
   """
   # Make sure that all arguments were passed as named arguments.
   if sentinel is not None:
+    name = "softmax_cross_entropy_with_logits"
     raise ValueError("Only call `%s` with "
                      "named arguments (labels=..., logits=..., ...)"
                      % name)

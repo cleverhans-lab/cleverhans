@@ -8,11 +8,11 @@ import csv
 import os
 
 import numpy as np
+import tensorflow as tf
+from tensorflow.contrib.slim.nets import inception
 from scipy.misc import imread
 from scipy.misc import imsave
 
-import tensorflow as tf
-from tensorflow.contrib.slim.nets import inception
 
 slim = tf.contrib.slim
 
@@ -107,6 +107,7 @@ def save_images(images, filenames, output_dir):
 
 
 def main(_):
+  """Run the sample attack"""
   # Images for inception classifier are normalized to be in [-1, 1] interval,
   # eps is a difference between pixels so it should be in [0, 2] interval.
   # Renormalizing epsilon from [0, 255] to [0, 2].

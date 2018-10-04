@@ -6,12 +6,12 @@ from __future__ import print_function
 
 import os
 
-from cleverhans.attacks import FastGradientMethod
 import numpy as np
-from PIL import Image
-
 import tensorflow as tf
 from tensorflow.contrib.slim.nets import inception
+from PIL import Image
+
+from cleverhans.attacks import FastGradientMethod
 
 slim = tf.contrib.slim
 
@@ -116,6 +116,7 @@ class InceptionModel(object):
 
 
 def main(_):
+  """Run the sample attack"""
   # Images for inception classifier are normalized to be in [-1, 1] interval,
   # eps is a difference between pixels so it should be in [0, 2] interval.
   # Renormalizing epsilon from [0, 255] to [0, 2].

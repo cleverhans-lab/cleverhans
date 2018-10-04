@@ -77,6 +77,7 @@ def load_images(input_dir, batch_shape):
 
 
 def main(_):
+  """Run the sample defense"""
   batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
   num_classes = 1001
 

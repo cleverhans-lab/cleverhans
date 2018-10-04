@@ -1,11 +1,12 @@
-from cleverhans.picklable_model import MLP, Dropout
+"""Tests for cleverhans.picklable_model.Dropout"""
 from six.moves import range
 import tensorflow as tf
+from cleverhans.picklable_model import MLP, Dropout
 
 
 def test_no_drop():
-  # Make sure dropout does nothing by default (so it does not cause
-  # stochasticity at test time)
+  """test_no_drop: Make sure dropout does nothing by default (so it does not
+  cause stochasticity at test time)"""
 
   model = MLP(input_shape=[1, 1], layers=[Dropout(name='output')])
   x = tf.constant([[1]], dtype=tf.float32)
@@ -18,7 +19,7 @@ def test_no_drop():
 
 
 def test_drop():
-  # Make sure dropout is activated successfully
+  """test_drop: Make sure dropout is activated successfully"""
 
   # We would like to configure the test to deterministically drop,
   # so that the test does not need to use multiple runs.
@@ -37,7 +38,8 @@ def test_drop():
 
 
 def test_override():
-  # Make sure dropout_dict changes dropout probabilities successful
+  """test_override: Make sure dropout_dict changes dropout probabilities
+  successfully."""
 
   # We would like to configure the test to deterministically drop,
   # so that the test does not need to use multiple runs.

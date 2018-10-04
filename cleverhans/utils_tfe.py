@@ -4,15 +4,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
+from distutils.version import LooseVersion
 import math
-import numpy as np
 import os
-import tensorflow as tf
 import time
-import warnings
+
+import numpy as np
+import tensorflow as tf
 from six.moves import xrange
 
-from distutils.version import LooseVersion
 from cleverhans.loss import LossCrossEntropy
 from .utils import batch_indices, _ArgsWrapper, create_logger
 
@@ -202,18 +202,6 @@ def model_eval(model, X_test=None, Y_test=None, args=None,
   accuracy /= len(X_test)
 
   return accuracy
-
-
-def tf_model_load(file_path=None):
-  """
-  :param file_path: path to the restored ckpt, if None is
-                    taken from FLAGS.train_dir and FLAGS.filename
-  :return:
-  """
-  assert file_path is not None, "pretrained model ckpt is not given."
-  saver = tf.train.Saver()
-  saver.restore(file_path)
-  return True
 
 
 def model_argmax(model, samples):

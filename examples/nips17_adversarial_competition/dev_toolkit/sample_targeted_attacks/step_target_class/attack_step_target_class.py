@@ -8,11 +8,11 @@ import csv
 import os
 
 import numpy as np
+import tensorflow as tf
+from tensorflow.contrib.slim.nets import inception
 from scipy.misc import imread
 from scipy.misc import imsave
 
-import tensorflow as tf
-from tensorflow.contrib.slim.nets import inception
 
 slim = tf.contrib.slim
 

@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from builtins import int # long in python 2
 
 from io import StringIO
 import pickle
@@ -14,7 +15,6 @@ import numpy as np
 
 from six import iteritems
 from six import itervalues
-from six import PY3
 from six import text_type
 
 
@@ -40,10 +40,7 @@ MAX_WORK_RECORDS_READ = 1000
 
 def get_integer_time():
   """Returns current time in long integer format."""
-  if PY3:
-    return int(time.time())
-  else:
-    return long(time.time())
+  return int(time.time())
 
 
 def is_unclaimed(work):

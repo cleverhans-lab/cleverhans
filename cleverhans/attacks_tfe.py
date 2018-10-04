@@ -1,17 +1,18 @@
-from abc import ABCMeta
+"""
+Attacks for TensorFlow Eager
+"""
+from distutils.version import LooseVersion
+
 import numpy as np
 from six.moves import xrange
-import warnings
-import collections
 import tensorflow as tf
 
 import cleverhans.attacks as attacks
 import cleverhans.utils as utils
-from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_sum
+from cleverhans.model import CallableModelWrapper
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
-from distutils.version import LooseVersion
 
 _logger = utils.create_logger("cleverhans.attacks_tfe")
 
@@ -49,7 +50,7 @@ class Attack(attacks.Attack):
     self.model = model
     self.dtypestr = dtypestr
 
-  def consturct_graph(self, **kwargs):
+  def construct_graph(self, **kwargs):
     """
     Constructs the graph required to run the attacks.
     Is inherited from the attack class, is overloaded

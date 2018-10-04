@@ -9,12 +9,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
+import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-import logging
-import os
 from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
@@ -131,7 +131,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
   print("This could take some time ...")
 
   # Instantiate a CW attack object
-  cw = CarliniWagnerL2(model, back='tf', sess=sess)
+  cw = CarliniWagnerL2(model, sess=sess)
 
   if viz_enabled:
     assert source_samples == nb_classes
@@ -235,6 +235,9 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_tutorial_cw(viz_enabled=FLAGS.viz_enabled,
                     nb_epochs=FLAGS.nb_epochs,
                     batch_size=FLAGS.batch_size,
