@@ -5,7 +5,7 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
-import cleverhans.utils as utils
+import cleverhans import utils
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max
@@ -46,7 +46,7 @@ class Attack(object):
     if not isinstance(sess, tf.Session):
       raise ValueError("sess is not an instance of tf.Session")
 
-    import cleverhans.attacks_tf as attacks_tf
+    from cleverhans import attacks_tf
     attacks_tf.np_dtype = self.np_dtype
     attacks_tf.tf_dtype = self.tf_dtype
 
