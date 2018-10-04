@@ -28,7 +28,19 @@ msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}'
 # W0612: unused variable
 # E1129: something to do with context managers
 # C0325: unnecessary parens (sometimes we use them to be extra-explicit)
-# R1705: unnecessary else after return
+# R1705: "unnecessary else after return"
+#  We disable this one because it is annoying. It forbids
+#  if a:
+#    return b
+#  else:
+#    return c
+#  The name "unnecessary else after return" seems misleading, and it would be
+#  annoying and use more lines to rewrite everything as:
+#  if a:
+#    out = b
+#  else:
+#    out = c
+#  return out
 # W0621: redefining name
 # W0703: catching too general exception
 # W0101: unreachable code
