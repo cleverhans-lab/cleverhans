@@ -86,7 +86,7 @@ def reduce_prod(input_tensor, axis=None, keepdims=None,
   """
   Wrapper around the tf.reduce_prod to handle argument keep_dims
   """
-  return reduce_function(tf.reduce_mean, input_tensor, axis=axis,
+  return reduce_function(tf.reduce_prod, input_tensor, axis=axis,
                          keepdims=keepdims, name=name,
                          reduction_indices=reduction_indices)
 
