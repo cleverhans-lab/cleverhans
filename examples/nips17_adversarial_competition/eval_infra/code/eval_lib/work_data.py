@@ -15,7 +15,6 @@ import numpy as np
 
 from six import iteritems
 from six import itervalues
-from six import PY3
 from six import text_type
 
 

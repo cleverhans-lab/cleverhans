@@ -16,8 +16,7 @@ import tensorflow as tf
 from tensorflow.python.client import device_lib
 
 from cleverhans.compat import reduce_sum, reduce_mean
-from cleverhans.compat import reduce_max, reduce_min
-from cleverhans.compat import reduce_any
+from cleverhans.compat import reduce_max
 from cleverhans.compat import softmax_cross_entropy_with_logits
 from cleverhans.utils import batch_indices, _ArgsWrapper, create_logger
 
