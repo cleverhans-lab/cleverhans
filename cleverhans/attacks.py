@@ -91,6 +91,8 @@ class Attack(object):
 
     error = "Sub-classes must implement generate."
     raise NotImplementedError(error)
+    # Include an unused return so pylint understands the method signature
+    return x
 
   def construct_graph(self, fixed, feedable, x_val, hash_key):
     """
