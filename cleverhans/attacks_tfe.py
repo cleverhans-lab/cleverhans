@@ -7,8 +7,8 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
-import cleverhans import attacks
-import cleverhans import utils
+from cleverhans import attacks
+from cleverhans import utils
 from cleverhans.compat import reduce_sum
 from cleverhans.model import CallableModelWrapper
 from cleverhans.model import Model
