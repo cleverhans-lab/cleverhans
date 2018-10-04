@@ -168,12 +168,8 @@ def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
 
 
 def main(_=None):
-  # Warn user if running cleverhans from a different directory than tutorial.
-  cur_dir = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
-  ch_dir = os.path.split(cleverhans.__path__[0])[0]
-  if cur_dir != ch_dir:
-    warnings.warn("Running cleverhans from a different directory than "
-                  "current tutorial file. This may cause a version mismatch.")
+  from check_installation import check_installation
+  check_installation()
 
   mnist_tutorial(nb_epochs=FLAGS.nb_epochs,
                  batch_size=FLAGS.batch_size,
