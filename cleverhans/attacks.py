@@ -1672,7 +1672,9 @@ class SPSA(Attack):
                        different inputs.
     :param is_debug: If True, print the adversarial loss after each update.
     """
-    if x.get_shape().as_list()[0] != 1:
+    if x.get_shape().as_list()[0] is None:
+      warnings.warn("For SPSA, input tensor x must have batch_size of 1.")
+    elif x.get_shape().as_list()[0] != 1:
       raise ValueError("For SPSA, input tensor x must have batch_size of 1.")
 
     from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
