@@ -3,6 +3,7 @@ import warnings
 
 import cleverhans
 
+
 def check_installation(cur_file):
   # Warn user if running cleverhans from a different directory than tutorial.
   cur_dir = os.path.split(os.path.dirname(os.path.abspath(cur_file)))[0]
