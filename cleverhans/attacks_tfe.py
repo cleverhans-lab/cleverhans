@@ -51,7 +51,7 @@ class Attack(attacks.Attack):
     self.model = model
     self.dtypestr = dtypestr
 
-  def consturct_graph(self, **kwargs):
+  def construct_graph(self, **kwargs):
     """
     Constructs the graph required to run the attacks.
     Is inherited from the attack class, is overloaded
