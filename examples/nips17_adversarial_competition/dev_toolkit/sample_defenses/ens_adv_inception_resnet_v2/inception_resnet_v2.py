@@ -134,6 +134,9 @@ def inception_resnet_v2_base(inputs,
   end_points = {}
 
   def add_and_check_final(name, net):
+    """
+    TODO: write this
+    """
     end_points[name] = net
     return name == final_endpoint
 

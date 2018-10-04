@@ -1,3 +1,6 @@
+"""
+Attacks for TensorFlow Eager
+"""
 from abc import ABCMeta
 from distutils.version import LooseVersion
 import warnings

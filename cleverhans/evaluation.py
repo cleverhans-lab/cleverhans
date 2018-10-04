@@ -170,6 +170,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
                               " overkill.")
 
   def pad(array):
+    """Pads an array with replicated examples to have `excess` more entries"""
     if excess > 0:
       array = np.concatenate((array, array[:excess]), axis=0)
     return array

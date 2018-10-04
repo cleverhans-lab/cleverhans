@@ -28,6 +28,9 @@ import validate_submission_lib
 
 
 def print_in_box(text):
+  """
+  Prints `text` surrounded by a box made of *s
+  """
   print('')
   print('*' * (len(text) + 6))
   print('** ' + text + ' **')
@@ -36,6 +39,9 @@ def print_in_box(text):
 
 
 def main(args):
+  """
+  Validates the submission.
+  """
   print_in_box('Validating submission ' + args.submission_filename)
   random.seed()
   temp_dir = args.temp_dir

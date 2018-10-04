@@ -554,6 +554,7 @@ class EvaluationWorker(object):
     self.dataset_meta = None
 
   def read_dataset_metadata(self):
+    """Read `dataset_meta` field from bucket"""
     if self.dataset_meta:
       return
     shell_call(['gsutil', 'cp',
@@ -889,6 +890,7 @@ class EvaluationWorker(object):
     logging.info('******** Finished evaluation of defenses ********')
 
   def run_work(self):
+    """Run attacks and defenses"""
     if os.path.exists(LOCAL_EVAL_ROOT_DIR):
       sudo_remove_dirtree(LOCAL_EVAL_ROOT_DIR)
     self.run_attacks()
