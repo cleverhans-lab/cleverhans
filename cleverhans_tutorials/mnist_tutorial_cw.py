@@ -237,8 +237,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
-  from check_installation import check_installation
-  check_installation()
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
 
   mnist_tutorial_cw(viz_enabled=FLAGS.viz_enabled,
                     nb_epochs=FLAGS.nb_epochs,

@@ -286,8 +286,8 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
-  from check_installation import check_installation
-  check_installation()
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
 
   mnist_blackbox(nb_classes=FLAGS.nb_classes, batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate,
