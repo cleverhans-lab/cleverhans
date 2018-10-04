@@ -14,6 +14,9 @@ msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}'
 # C0103: Complains about the variable name 'x'
 # C0111: Missing docstring
 # W0613: Unused argument
+#  This one is disabled because pylint does not implement it well.
+#  In many cases we use all arguments via `locals()` and pylint does not
+#  detect them as used.
 # E1101: pylint seems to have a bug. Says numpy.random has no member RandomState
 # E0611: pylint seems to have a bug. Complains about imports of tensorflow
 # R0913: Too many arguments
