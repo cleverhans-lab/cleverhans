@@ -24,7 +24,9 @@ msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}'
 #        method call.
 # W0201: doesn't let any attributes be added outside __init__
 # C1801: do not use len(s) to tell if s is empty
-# E1129: something to do with context managers
+# E1129: a check on context managers
+#  This is disabled because it complains about "with sess.as_default".
+#  pylint does not seem to believe that that is a real context manager.
 # C0325: unnecessary parens (sometimes we use them to be extra-explicit)
 # R1705: unnecessary else after return
 # W0621: redefining name
