@@ -24,7 +24,6 @@ msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}'
 #        method call.
 # W0201: doesn't let any attributes be added outside __init__
 # C1801: do not use len(s) to tell if s is empty
-# C0123: uniodimatic typecheck
 # W0612: unused variable
 # E1129: something to do with context managers
 # C0325: unnecessary parens (sometimes we use them to be extra-explicit)
