@@ -12,12 +12,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from cleverhans.attacks import FastGradientMethod
+from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
+from cleverhans.train import train
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model
 from cleverhans.utils_keras import KerasModelWrapper
-from cleverhans.utils_mnist import data_mnist
-from cleverhans.train import train
 from cleverhans.utils_tf import model_eval
 import keras
 from keras import backend
@@ -79,10 +79,10 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   keras.backend.set_session(sess)
 
   # Get MNIST test data
-  x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
-                                                train_end=train_end,
-                                                test_start=test_start,
-                                                test_end=test_end)
+  mnist = MNIST(train_start=train_start, train_end=train_end,
+                test_start=test_start, test_end=test_end)
+  x_train, y_train = mnist.get_set('train')
+  x_test, y_test = mnist.get_set('test')
 
   # Obtain Image Parameters
   img_rows, img_cols, nchannels = x_train.shape[1:4]

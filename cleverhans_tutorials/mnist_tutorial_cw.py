@@ -16,10 +16,10 @@ from tensorflow.python.platform import flags
 import logging
 import os
 from cleverhans.attacks import CarliniWagnerL2
+from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
-from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import train, model_eval, tf_model_load
 from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
@@ -73,10 +73,10 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
   set_log_level(logging.DEBUG)
 
   # Get MNIST test data
-  x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
-                                                train_end=train_end,
-                                                test_start=test_start,
-                                                test_end=test_end)
+  mnist = MNIST(train_start=train_start, train_end=train_end,
+                test_start=test_start, test_end=test_end)
+  x_train, y_train = mnist.get_set('train')
+  x_test, y_test = mnist.get_set('test')
 
   # Obtain Image Parameters
   img_rows, img_cols, nchannels = x_train.shape[1:4]

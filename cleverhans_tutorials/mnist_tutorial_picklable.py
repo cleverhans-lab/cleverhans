@@ -12,13 +12,13 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 import logging
 
-from cleverhans.loss import CrossEntropy
-from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import train, model_eval
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.utils import AccuracyReport, set_log_level
-from cleverhans_tutorials.tutorial_models import make_basic_picklable_cnn
+from cleverhans.dataset import MNIST
+from cleverhans.loss import CrossEntropy
 from cleverhans.serial import save
+from cleverhans_tutorials.tutorial_models im
+from cleverhans.utils_tf import train, model_eval
+from cleverhans.utils import AccuracyReport, set_log_levelport make_basic_picklable_cnn
 
 FLAGS = flags.FLAGS
 
@@ -75,10 +75,11 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   sess = tf.Session(config=tf.ConfigProto(**config_args))
 
   # Get MNIST test data
-  x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
-                                                train_end=train_end,
-                                                test_start=test_start,
-                                                test_end=test_end)
+  mnist = MNIST(train_start=train_start, train_end=train_end,
+                test_start=test_start, test_end=test_end)
+  x_train, y_train = mnist.get_set('train')
+  x_test, y_test = mnist.get_set('test')
+
   # Use Image Parameters
   img_rows, img_cols, nchannels = x_train.shape[1:4]
   nb_classes = y_train.shape[1]

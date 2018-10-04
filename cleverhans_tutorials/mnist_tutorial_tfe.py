@@ -29,7 +29,7 @@ except AttributeError:
           "use Tensorflow version greather than 1.8.0.")
     exit(1)
 
-from cleverhans.utils_mnist import data_mnist
+from cleverhans.dataset import MNIST
 from cleverhans.utils import AccuracyReport, set_log_level
 from cleverhans.utils_tfe import train, model_eval
 from cleverhans.attacks_tfe import BasicIterativeMethod
@@ -123,10 +123,10 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   set_log_level(logging.DEBUG)
 
   # Get MNIST test data
-  X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
-                                                train_end=train_end,
-                                                test_start=test_start,
-                                                test_end=test_end)
+  mnist = MNIST(train_start=train_start, train_end=train_end,
+                test_start=test_start, test_end=test_end)
+  X_train, Y_train = mnist.get_set('train')
+  X_test, Y_test = mnist.get_set('test')
 
   # Use label smoothing
   assert Y_train.shape[1] == 10
