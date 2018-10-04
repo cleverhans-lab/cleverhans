@@ -14,4 +14,4 @@ def test_factory():
   d1 = LightweightDataset()
   factory = d1.get_factory()
   d2 = factory()
-  assert type(d1) == type(d2)
+  assert type(d1) is type(d2)
