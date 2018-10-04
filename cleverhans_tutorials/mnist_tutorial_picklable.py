@@ -16,9 +16,9 @@ from cleverhans.attacks import FastGradientMethod
 from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
 from cleverhans.serial import save
-from cleverhans_tutorials.tutorial_models im
+from cleverhans_tutorials.tutorial_models import make_basic_picklable_cnn
 from cleverhans.utils_tf import train, model_eval
-from cleverhans.utils import AccuracyReport, set_log_levelport make_basic_picklable_cnn
+from cleverhans.utils import AccuracyReport, set_log_level
 
 FLAGS = flags.FLAGS
 
