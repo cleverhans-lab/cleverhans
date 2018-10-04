@@ -11,8 +11,8 @@ def test_per_image_standardize():
 
   input_shape = (128, 32, 32, 3)
 
-  model = MLP(input_shape=input_shape, layers=[
-              PerImageStandardize(name='output')])
+  model = MLP(input_shape=input_shape,
+              layers=[PerImageStandardize(name='output')])
 
   x = tf.random_normal(shape=input_shape)
   y = model.get_layer(x, 'output')
