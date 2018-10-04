@@ -155,7 +155,7 @@ def vatm(model,
   """
   with tf.name_scope(scope, "virtual_adversarial_perturbation"):
     d = tf.random_normal(tf.shape(x), dtype=tf_dtype)
-    for i in range(num_iterations):
+    for _ in range(num_iterations):
       d = xi * utils_tf.l2_batch_normalize(d)
       logits_d = model.get_logits(x + d)
       kl = utils_tf.kl_with_logits(logits, logits_d)
@@ -655,7 +655,6 @@ def jacobian_augmentation(sess,
   num_samples = X_sub_prev.shape[0]
 
   # Creating and processing as batch
-  nb_batches_aug = int((num_samples + aug_batch_size - 1) / aug_batch_size)
   for p_idxs in range(0, num_samples, aug_batch_size):
     X_batch = X_sub_prev[p_idxs:p_idxs + aug_batch_size, ...]
     feed_dict = {x: X_batch}
@@ -1489,8 +1488,8 @@ class LBFGS_attack(object):
     self.batch_size = batch_size
 
     self.repeat = self.binary_search_steps >= 10
-    self.shape = shape = tuple([self.batch_size] +
-                               list(self.x.get_shape().as_list()[1:]))
+    self.shape = tuple([self.batch_size] +
+                       list(self.x.get_shape().as_list()[1:]))
     self.ori_img = tf.Variable(
         np.zeros(self.shape), dtype=tf_dtype, name='ori_img')
     self.const = tf.Variable(
@@ -1555,7 +1554,7 @@ class LBFGS_attack(object):
         CONST = upper_bound
 
       # optimization function
-      adv_x, f, _ = fmin_l_bfgs_b(
+      adv_x, _, __ = fmin_l_bfgs_b(
           lbfgs_objective,
           oimgs.flatten().astype(float),
           args=(self, targets, oimgs, CONST),

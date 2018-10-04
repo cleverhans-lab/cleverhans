@@ -235,7 +235,7 @@ class Conv2D(Layer):
     super(Conv2D, self).__init__(**kwargs)
 
   def set_input_shape(self, input_shape):
-    batch_size, rows, cols, input_channels = input_shape
+    _batch_size, _rows, _cols, input_channels = input_shape
     assert len(self.kernel_shape) == 2
     kernel_shape = tuple(self.kernel_shape) + (input_channels,
                                                self.output_channels)
@@ -694,8 +694,6 @@ class ResidualWithGroupNorm(Layer):
       orig_x = tf.pad(orig_x, [[0, 0], [0, 0], [0, 0],
                                [(out_filter - in_filter) // 2,
                                 (out_filter - in_filter) // 2]])
-    x_shape = x.get_shape()
-    orig_x_shape = orig_x.get_shape()
     x = x + orig_x
     return x
 
@@ -777,8 +775,6 @@ class BatchNorm(Layer):
                    name=self.name + "_beta")
 
   def fprop(self, x, **kwargs):
-    shape = tf.shape(x)
-    batch_size = shape[0]
     mean, var = tf.nn.moments(x, [0, 1, 2], keep_dims=True)
     x = (x - mean) * tf.rsqrt(var + self.eps)
     x = x * self.gamma.var + self.beta.var
@@ -850,7 +846,5 @@ class ResidualWithBatchNorm(Layer):
       orig_x = tf.pad(orig_x, [[0, 0], [0, 0], [0, 0],
                                [(out_filter - in_filter) // 2,
                                 (out_filter - in_filter) // 2]])
-    x_shape = x.get_shape()
-    orig_x_shape = orig_x.get_shape()
     x = x + orig_x
     return x

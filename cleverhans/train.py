@@ -112,7 +112,7 @@ def train(sess, loss, x_train, y_train,
   ys = []
 
   devices = infer_devices(devices)
-  for idx, device in enumerate(devices):
+  for device in devices:
     with tf.device(device):
       x = tf.placeholder(x_train.dtype, (None,) + x_train.shape[1:])
       y = tf.placeholder(x_train.dtype, (None,) + y_train.shape[1:])

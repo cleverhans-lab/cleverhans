@@ -272,7 +272,6 @@ def tf_model_load(sess, file_path=None):
                     taken from FLAGS.train_dir and FLAGS.filename
   :return:
   """
-  FLAGS = tf.app.flags.FLAGS
   with sess.as_default():
     saver = tf.train.Saver()
     if file_path is None:
