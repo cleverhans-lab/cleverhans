@@ -11,12 +11,10 @@ from __future__ import unicode_literals
 
 import logging
 import os
-import warnings
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-import cleverhans
 from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport

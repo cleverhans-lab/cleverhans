@@ -8,13 +8,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-import os
-import warnings
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-import cleverhans
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import train, model_eval

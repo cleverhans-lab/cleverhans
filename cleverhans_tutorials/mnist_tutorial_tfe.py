@@ -27,7 +27,6 @@ except AttributeError:
           "use Tensorflow version greather than 1.8.0.")
     exit(1)
 
-import cleverhans
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import AccuracyReport, set_log_level
 from cleverhans.utils_tfe import train, model_eval

@@ -10,14 +10,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-import os
-import warnings
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-import cleverhans
 from cleverhans.attacks import SaliencyMapMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import other_classes, set_log_level

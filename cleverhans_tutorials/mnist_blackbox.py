@@ -11,14 +11,11 @@ from __future__ import unicode_literals
 
 import functools
 import logging
-import os
-import warnings
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-import cleverhans
 from cleverhans.loss import CrossEntropy
 from cleverhans.model import Model
 from cleverhans.utils_mnist import data_mnist
