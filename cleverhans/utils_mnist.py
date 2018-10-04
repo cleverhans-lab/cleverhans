@@ -3,20 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import array
-import functools
-import gzip
-import operator
 import os
-import struct
-import tempfile
-import sys
 import warnings
 
-import numpy as np
-
 from cleverhans import dataset
-from cleverhans import utils
 
 utils_mnist_warning = "cleverhans.utils_mnist is deprecrated and will be " \
                       "removed on or after 2019-03-26. Switch to " \
