@@ -5,7 +5,7 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
-import cleverhans import utils
+from cleverhans import utils
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max
