@@ -8,7 +8,6 @@ from distutils.version import LooseVersion
 import math
 import os
 import time
-import warnings
 
 import numpy as np
 import tensorflow as tf

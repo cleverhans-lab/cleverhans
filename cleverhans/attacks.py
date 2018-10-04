@@ -8,8 +8,7 @@ import tensorflow as tf
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.compat import reduce_sum, reduce_mean
-from cleverhans.compat import reduce_max, reduce_min
-from cleverhans.compat import reduce_any
+from cleverhans.compat import reduce_max
 from cleverhans.utils_tf import clip_eta
 
 _logger = utils.create_logger("cleverhans.attacks")

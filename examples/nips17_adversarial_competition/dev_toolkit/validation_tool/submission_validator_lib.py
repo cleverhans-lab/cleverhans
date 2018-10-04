@@ -13,10 +13,9 @@ import re
 import subprocess
 
 import numpy as np
+from six import iteritems
 from PIL import Image
 
-from six import iteritems
-from six import PY3
 
 
 EXTRACT_COMMAND = {

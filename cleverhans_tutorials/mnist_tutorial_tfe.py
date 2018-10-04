@@ -15,8 +15,6 @@ from __future__ import unicode_literals
 
 from distutils.version import LooseVersion
 import logging
-import os
-import sys
 
 import numpy as np
 import tensorflow as tf
