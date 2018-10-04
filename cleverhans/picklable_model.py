@@ -146,6 +146,7 @@ class MLP(PicklableModel):
 
 class Layer(PicklableModel):
   def __init__(self, name=None, parent=None):
+    super(Layer, self).__init__()
     if name is not None:
       self.name = name
     self.parent = parent
@@ -385,9 +386,6 @@ class ELU(Layer):
 
 class SELU(Layer):
 
-  def __init__(self):
-    pass
-
   def set_input_shape(self, shape):
     self.input_shape = shape
     self.output_shape = shape
@@ -408,9 +406,6 @@ class SELU(Layer):
 
 
 class TanH(Layer):
-
-  def __init__(self):
-    pass
 
   def set_input_shape(self, shape):
     self.input_shape = shape

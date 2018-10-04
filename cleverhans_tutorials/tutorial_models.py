@@ -44,7 +44,7 @@ class ModelBasicCNN(Model):
 
 class HeReLuNormalInitializer(tf.initializers.random_normal):
   def __init__(self, dtype=tf.float32):
-    self.dtype = tf.as_dtype(dtype)
+    super(HeReLuNormalInitializer, self).__init__(dtype=dtype)
 
   def get_config(self):
     return dict(dtype=self.dtype.name)
