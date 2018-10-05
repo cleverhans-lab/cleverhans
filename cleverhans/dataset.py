@@ -114,10 +114,8 @@ class Factory(object):
 
 def maybe_download_file(url, datadir=None, force=False):
   try:
-    from urllib.parse import urljoin
     from urllib.request import urlretrieve
   except ImportError:
-    from urlparse import urljoin
     from urllib import urlretrieve
 
   if not datadir:
