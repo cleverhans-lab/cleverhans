@@ -228,7 +228,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
   # Finally, block & display a grid of all the adversarial examples
   if viz_enabled:
-    import matplotlib.pyplot as plt
     _ = grid_visual(grid_viz_data)
 
   return report

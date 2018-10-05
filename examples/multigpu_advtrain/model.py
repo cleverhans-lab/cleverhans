@@ -109,7 +109,7 @@ class Conv2D(Layer):
     del self.self
 
   def set_input_shape(self, input_shape):
-    batch_size, rows, cols, input_channels = input_shape
+    batch_size, _, __, input_channels = input_shape
     kernel_shape = tuple(self.kernel_shape) + (input_channels,
                                                self.output_channels)
     assert len(kernel_shape) == 4
@@ -352,7 +352,8 @@ class Conv2DnGPU(LayernGPU):
     self.w_name = w_name
 
   def set_input_shape(self, input_shape):
-    batch_size, rows, cols, input_channels = input_shape
+    assert len(input_shape) == 4
+    input_channels = input_shape[3]
     kernel_shape = tuple(self.kernel_shape) + (input_channels,
                                                self.output_channels)
     assert len(kernel_shape) == 4

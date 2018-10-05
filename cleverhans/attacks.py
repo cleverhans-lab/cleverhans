@@ -5,7 +5,7 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
-import cleverhans.utils as utils
+from cleverhans import utils
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max
@@ -46,7 +46,7 @@ class Attack(object):
     if not isinstance(sess, tf.Session):
       raise ValueError("sess is not an instance of tf.Session")
 
-    import cleverhans.attacks_tf as attacks_tf
+    from cleverhans import attacks_tf
     attacks_tf.np_dtype = self.np_dtype
     attacks_tf.tf_dtype = self.tf_dtype
 
@@ -305,7 +305,7 @@ class FastGradientMethod(Attack):
 
     from .attacks_tf import fgm
 
-    labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+    labels, _nb_classes = self.get_or_guess_labels(x, kwargs)
 
     return fgm(
         x,
@@ -618,7 +618,7 @@ class MomentumIterativeMethod(Attack):
     adv_x = x
 
     # Fix labels to the first model predictions for loss computation
-    y, nb_classes = self.get_or_guess_labels(x, kwargs)
+    y, _nb_classes = self.get_or_guess_labels(x, kwargs)
     y = y / reduce_sum(y, 1, keepdims=True)
     targeted = (self.y_target is not None)
 
@@ -747,7 +747,6 @@ class SaliencyMapMethod(Attack):
 
     super(SaliencyMapMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {'y_target': self.tf_dtype}
     self.structural_kwargs = [
         'theta', 'gamma', 'clip_max', 'clip_min', 'symbolic_impl'
@@ -907,7 +906,6 @@ class VirtualAdversarialMethod(Attack):
     super(VirtualAdversarialMethod, self).__init__(model, sess, dtypestr,
                                                    **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {
         'eps': self.tf_dtype,
         'xi': self.tf_dtype,
@@ -991,7 +989,6 @@ class CarliniWagnerL2(Attack):
 
     super(CarliniWagnerL2, self).__init__(model, sess, dtypestr, **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
 
     self.structural_kwargs = [
@@ -1110,7 +1107,6 @@ class ElasticNetMethod(Attack):
 
     super(ElasticNetMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
 
     self.structural_kwargs = [
@@ -1340,7 +1336,6 @@ class LBFGS(Attack):
 
     super(LBFGS, self).__init__(model, sess, dtypestr, **kwargs)
 
-    import tensorflow as tf
     self.feedable_kwargs = {'y_target': self.tf_dtype}
     self.structural_kwargs = [
         'batch_size', 'binary_search_steps', 'max_iterations',

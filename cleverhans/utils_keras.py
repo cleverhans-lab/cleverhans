@@ -124,7 +124,7 @@ class KerasModelWrapper(Model):
     Looks for the name of the softmax layer.
     :return: Softmax layer name
     """
-    for i, layer in enumerate(self.model.layers):
+    for layer in self.model.layers:
       cfg = layer.get_config()
       if 'activation' in cfg and cfg['activation'] == 'softmax':
         return layer.name

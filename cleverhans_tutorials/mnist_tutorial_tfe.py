@@ -132,7 +132,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
 
   # Train an MNIST model
-  model_path = "models/mnist"
   train_params = {
       'nb_epochs': nb_epochs,
       'batch_size': batch_size,
@@ -185,9 +184,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
       print('Train accuracy on adversarial examples: %0.4f\n' % acc)
       report.train_clean_train_adv_eval = acc
 
-    # Clear the previous Variables
-    for var in model.get_params():
-      var = None
     attack = None
     print("Repeating the process, using adversarial training")
 

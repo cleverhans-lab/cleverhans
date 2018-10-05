@@ -42,8 +42,8 @@ def main(argv):
   with tf.Session() as sess:
     init = tf.global_variables_initializer()
     sess.run(init)
-    ha, hs, hg, xa, xs, xg = sess.run(
-        [h_adv, h_src, h_guide, x_adv, x_src, x_guide])
+    ha, hs, hg, xa, xs = sess.run(
+        [h_adv, h_src, h_guide, x_adv, x_src])
 
     print("L2 distance between source and adversarial example `%s`: %.4f" %
           (FLAGS.layer, ((hs-ha)*(hs-ha)).sum()))

@@ -8,10 +8,7 @@ from __future__ import print_function
 import os
 import subprocess
 
-from nose.plugins.skip import SkipTest
-
 import cleverhans
-from cleverhans.devtools.tests.docscrape import docstring_errors
 from cleverhans.devtools.list_files import list_files
 from cleverhans.utils import shell_call
 
@@ -130,47 +127,6 @@ def print_files_information_pep8():
   print("Files that can be removed from whitelist:")
   for file in non_infracting_files:
     print(file)
-
-
-def test_format_docstrings():
-  """
-  Test if docstrings are well formatted.
-  """
-  # Disabled for now
-  return True
-
-  try:
-    verify_format_docstrings()
-  except SkipTest as e:
-    import traceback
-    traceback.print_exc(e)
-    raise AssertionError(
-        "Some file raised SkipTest on import, and inadvertently"
-        " canceled the documentation testing."
-    )
-
-
-def verify_format_docstrings():
-  """
-  Implementation of `test_format_docstrings`. The implementation is
-  factored out so it can be placed inside a guard against SkipTest.
-  """
-  format_infractions = []
-
-  for path in list_files(".py"):
-    rel_path = os.path.relpath(path, cleverhans.__path__[0])
-    if rel_path in whitelist_docstrings:
-      continue
-    try:
-      format_infractions.extend(docstring_errors(path))
-    except Exception as e:
-      format_infractions.append(["%s failed to run so format cannot "
-                                 "be checked. Error message:\n %s" %
-                                 (rel_path, e)])
-
-  if len(format_infractions) > 0:
-    msg = "\n".join(':'.join(line) for line in format_infractions)
-    raise AssertionError("Docstring format not respected:\n%s" % msg)
 
 
 if __name__ == "__main__":

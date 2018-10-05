@@ -13,7 +13,7 @@ def test_no_drop():
   y = model.get_layer(x, 'output')
   sess = tf.Session()
   # Do multiple runs because dropout is stochastic
-  for i in range(10):
+  for _ in range(10):
     y_value = sess.run(y)
     assert y_value == 1.
 
