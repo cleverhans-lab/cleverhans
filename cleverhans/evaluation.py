@@ -28,6 +28,8 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
       examples in memory on one GPU and you have 8 GPUs, you probably
       want to use a batch size of 1024 (unless a different batch size
       runs faster with the ops you are using, etc.)
+  :param devices: An optional list of string device names to use.
+    If not specified, this function will use all visible GPUs.
   :param feed: An optional dictionary that is appended to the feeding
            dictionary before the session runs. Can be used to feed
            the learning phase of a Keras model for instance.
