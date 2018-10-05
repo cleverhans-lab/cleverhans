@@ -1755,7 +1755,6 @@ class SpatialTransformationMethod(Attack):
 
     from .attacks_tf import spm
 
-
     labels, _ = self.get_or_guess_labels(x, kwargs)
 
     return spm(
@@ -1803,6 +1802,7 @@ class SpatialTransformationMethod(Attack):
                        "within [-1, 1]")
     return True
 
+
 class Semantic(Attack):
   """
   Semantic adversarial examples
@@ -1831,4 +1831,3 @@ class Semantic(Attack):
     if self.center:
       return -x
     return 1. - x
-
