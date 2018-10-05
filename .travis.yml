@@ -8,6 +8,7 @@ python:
 env:
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.4.1 PYTORCH=False
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=False
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.9.0 PYTORCH=False
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.4.1 PYTORCH=True
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=True
 
@@ -36,10 +37,14 @@ install:
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp27-none-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.8.0" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.8.0-cp27-none-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.9.0" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.9.0-cp27-none-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.4.1" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.4.1-cp35-cp35m-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.8.0" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.8.0-cp35-cp35m-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.9.0" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.9.0-cp35-cp35m-linux_x86_64.whl;
     fi
 
   - time pip install -q -e ".[test]"
@@ -59,6 +64,8 @@ install:
   - pip install Pillow
   # Style checks
   - pip install pylint
+  # To be able to exclude subdirectories in nose tests
+  - pip install nose-exclude
 
 # command to run tests
 script:
@@ -78,6 +85,22 @@ script:
   - if [[ "$PYTORCH" == True ]]; then
       nosetests --nologcapture -v --stop tests_pytorch;
     elif [[ "$PYTORCH" == False ]]; then
-      nosetests -v --nologcapture --stop cleverhans;
-      nosetests --nologcapture -v --stop tests_tf;
+      # Right now we running only certification tests with TF 1.9
+      # and other tests with other Tensorflow versions.
+      # Certification code requires TF >= 1.9 to have proper support of
+      # autograph, which is not available in prior versions of Tensorflow used
+      # by other tests.
+      # At the same time there is no point of testing all other code with
+      # three different versions of Tensorflow.
+      # In the future these cases could be merged together once cleverhans
+      # starts using Tensorflow >=1.9 as default test environment.
+      if [[ "$TENSORFLOW_V" == "1.9.0" ]]; then
+        # Run only certification tests with Tensorflow 1.9
+        nosetests -v --nologcapture --stop cleverhans/experimental/certification;
+      else
+        # Exclude experimental/certification directory from testing
+        # because it require higher Tensorflow version.
+        nosetests -v --nologcapture --stop --exclude-dir=cleverhans/experimental/certification cleverhans;
+        nosetests --nologcapture -v --stop tests_tf;
+      fi
     fi
