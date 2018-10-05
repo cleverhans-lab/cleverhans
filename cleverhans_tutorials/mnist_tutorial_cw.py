@@ -20,7 +20,8 @@ from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
-from cleverhans.utils_tf import train, model_eval, tf_model_load
+from cleverhans.utils_tf import model_eval, tf_model_load
+from cleverhans.train import train
 from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
@@ -111,7 +112,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
   if os.path.exists(model_path + ".meta"):
     tf_model_load(sess, model_path)
   else:
-    train(sess, loss, x, y, x_train, y_train, args=train_params, rng=rng)
+    train(sess, loss, x_train, y_train, args=train_params, rng=rng)
     saver = tf.train.Saver()
     saver.save(sess, model_path)
 

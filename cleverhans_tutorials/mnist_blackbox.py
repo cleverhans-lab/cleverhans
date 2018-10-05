@@ -21,7 +21,8 @@ from cleverhans.dataset import MNIST
 from cleverhans.model import Model
 from cleverhans.utils import to_categorical
 from cleverhans.utils import set_log_level
-from cleverhans.utils_tf import train, model_eval, batch_eval
+from cleverhans.utils_tf import model_eval, batch_eval
+from cleverhans.train import train
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
@@ -87,7 +88,7 @@ def prep_bbox(sess, x, y, x_train, y_train, x_test, y_test,
       'batch_size': batch_size,
       'learning_rate': learning_rate
   }
-  train(sess, loss, x, y, x_train, y_train, args=train_params, rng=rng)
+  train(sess, loss, x_train, y_train, args=train_params, rng=rng)
 
   # Print out the accuracy on legitimate data
   eval_params = {'batch_size': batch_size}
@@ -159,8 +160,7 @@ def train_sub(sess, x, y, bbox_preds, x_sub, y_sub, nb_classes,
         'learning_rate': learning_rate
     }
     with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
-      train(sess, loss_sub, x, y, x_sub,
-            to_categorical(y_sub, nb_classes),
+      train(sess, loss_sub, x_sub, to_categorical(y_sub, nb_classes),
             init_all=False, args=train_params, rng=rng,
             var_list=model_sub.get_params())
 

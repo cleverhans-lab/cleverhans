@@ -17,7 +17,8 @@ from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
 from cleverhans.serial import save
 from cleverhans_tutorials.tutorial_models import make_basic_picklable_cnn
-from cleverhans.utils_tf import train, model_eval
+from cleverhans.utils_tf import model_eval
+from cleverhans.train import train
 from cleverhans.utils import AccuracyReport, set_log_level
 
 FLAGS = flags.FLAGS
@@ -125,7 +126,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     def evaluate():
       do_eval(preds, x_test, y_test, 'clean_train_clean_eval', False)
 
-    train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
+    train(sess, loss, x_train, y_train, evaluate=evaluate,
           args=train_params, rng=rng, var_list=model.get_params())
 
     with sess.as_default():
@@ -182,7 +183,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     do_eval(preds2_adv, x_test, y_test, 'adv_train_adv_eval', True)
 
   # Perform and evaluate adversarial training
-  train(sess, loss2, x, y, x_train, y_train, evaluate=evaluate2,
+  train(sess, loss2, x_train, y_train, evaluate=evaluate2,
         args=train_params, rng=rng, var_list=model2.get_params())
 
   with sess.as_default():
