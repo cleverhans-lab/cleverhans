@@ -16,18 +16,19 @@ from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-from cleverhans.loss import CrossEntropy
-from cleverhans.dataset import MNIST
-from cleverhans.model import Model
-from cleverhans.utils import to_categorical
-from cleverhans.utils import set_log_level
-from cleverhans.utils_tf import model_eval, batch_eval
-from cleverhans.train import train
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
+from cleverhans.dataset import MNIST
+from cleverhans.initializers import HeReLuNormalInitializer
+from cleverhans.loss import CrossEntropy
+from cleverhans.model import Model
+from cleverhans.train import train
+from cleverhans.utils import set_log_level
 from cleverhans.utils import TemporaryLogLevel
-from cleverhans_tutorials.tutorial_models import ModelBasicCNN, \
-    HeReLuNormalInitializer
+from cleverhans.utils import to_categorical
+from cleverhans.utils_tf import model_eval, batch_eval
+
+from cleverhans_tutorials.tutorial_models import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
