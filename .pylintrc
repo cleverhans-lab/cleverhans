@@ -45,6 +45,26 @@ msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}'
 #  return out
 # W0703: catching too general exception
 # W0101: unreachable code
+#  We disable this one because it does not allow:
+#
+#  class A(object):
+#    def f(self):
+#      raise NotImplementedError("Subclass must implement f")
+#      return 0
+#
+#  W0101 complains that the `return 0` is never reached.
+#  However, if we do not have the return statement, we get errors on lines
+#  such as:
+#
+#  x = a.f()
+#
+#  because pylint sees no return statement in f.
+#  We can't have both these checks, and between them, it is better to disable
+#  W0101 because dead code is less likely to be a bug than using a null return
+#  value. Also, as of this writing, the only instance of W0101 is an abstract
+#  method like in the example shown here, so we are not writing any dead code
+#  by accident in practice.
+#
 # W0122: use of exec
 # R0912: too many branches
 # R0903: too few public methods
