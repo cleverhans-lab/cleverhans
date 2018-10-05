@@ -82,6 +82,20 @@ def correctness_and_confidence(sess, model, x, y, batch_size=None,
   out = batch_eval_multi_worker(sess, factory, [x, y], batch_size=batch_size,
                                 devices=devices, feed=feed)
 
+  correctness, confidence = out
+
+  assert correctness.shape == (x.shape[0],)
+  assert confidence.shape == (x.shape[0],)
+  min_confidence = confidence.min()
+  if min_confidence < 0.:
+    raise ValueError("Model does not return valid probabilities: " +
+                     str(min_confidence))
+  max_confidence = confidence.max()
+  if max_confidence > 1.:
+    raise ValueError("Model does not return valid probablities: " +
+                     str(max_confidence))
+  assert confidence.min() >= 0., confidence.min()
+
   return out
 
 
