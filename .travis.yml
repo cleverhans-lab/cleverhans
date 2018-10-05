@@ -87,6 +87,6 @@ script:
         nosetests -v --nologcapture --stop --exclude-dir=cleverhans/experimental/certification cleverhans;
       else
         nosetests -v --nologcapture --stop cleverhans;
-      fi
+      fi;
       nosetests --nologcapture -v --stop tests_tf;
     fi
