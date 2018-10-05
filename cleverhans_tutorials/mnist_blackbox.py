@@ -17,8 +17,8 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.loss import CrossEntropy
+from cleverhans.dataset import MNIST
 from cleverhans.model import Model
-from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import to_categorical
 from cleverhans.utils import set_log_level
 from cleverhans.utils_tf import train, model_eval, batch_eval
@@ -219,10 +219,11 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
   sess = tf.Session()
 
   # Get MNIST data
-  x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
-                                                train_end=train_end,
-                                                test_start=test_start,
-                                                test_end=test_end)
+  mnist = MNIST(train_start=train_start, train_end=train_end,
+                test_start=test_start, test_end=test_end)
+  x_train, y_train = mnist.get_set('train')
+  x_test, y_test = mnist.get_set('test')
+
   # Initialize substitute training set reserved for adversary
   x_sub = x_test[:holdout]
   y_sub = np.argmax(y_test[:holdout], axis=1)
