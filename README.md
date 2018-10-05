@@ -46,9 +46,9 @@ after installing TensorFlow:
 pip install cleverhans
 ```
 
-This will install the last version uploaded to 
-[Pypi](https://pypi.org/project/cleverhans). 
-If you'd instead like to install the bleeding edge version, use: 
+This will install the last version uploaded to
+[Pypi](https://pypi.org/project/cleverhans).
+If you'd instead like to install the bleeding edge version, use:
 
 ```
 pip install -e git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
@@ -56,7 +56,7 @@ pip install -e git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
 
 #### Manual installation
 
-If you are installing CleverHans manually, install TensorFlow first. 
+If you are installing CleverHans manually, install TensorFlow first.
 Then, run the following command to clone the CleverHans repository
 into a folder of your choice:
 
@@ -75,7 +75,7 @@ pip install -e ./cleverhans
 
 Although CleverHans is likely to work on many other machine configurations, we
 currently [test it](https://travis-ci.org/tensorflow/cleverhans) it with Python
-{2.7, 3.5} and TensorFlow {1.4, 1.8} on Ubuntu 14.04.5 LTS (Trusty Tahr).
+{2.7, 3.5} and TensorFlow {1.8, 1.9} on Ubuntu 14.04.5 LTS (Trusty Tahr).
 Support for TensorFlow 1.3 and earlier is deprecated. After 2018-11-1 we will
 not fix bugs reported for these versions and we will eliminate wrapper code
 needed for backwards compatibility with these versions.
@@ -165,7 +165,7 @@ If you use CleverHans for academic research, you are highly encouraged
   Ian Goodfellow and Reuben Feinman and Alexey Kurakin and Cihang Xie and
   Yash Sharma and Tom Brown and Aurko Roy and Alexander Matyasko and
   Vahid Behzadan and Karen Hambardzumyan and Zhishuai Zhang and
-  Yi-Lin Juang and Zhi Li and Ryan Sheatsley and Abhibhav Garg and 
+  Yi-Lin Juang and Zhi Li and Ryan Sheatsley and Abhibhav Garg and
   Jonathan Uesato and Willi Gierke and Yinpeng Dong and David Berthelot and
   Paul Hendricks and Jonas Rauber and Rujun Long},
   journal={arXiv preprint arXiv:1610.00768},
