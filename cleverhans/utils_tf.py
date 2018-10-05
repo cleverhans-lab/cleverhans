@@ -11,6 +11,7 @@ import time
 import warnings
 
 import numpy as np
+import six
 from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.client import device_lib
@@ -506,7 +507,7 @@ def infer_devices(devices=None):
   else:
     assert len(devices) > 0
     for device in devices:
-      assert isinstance(device, str), type(device)
+      assert isinstance(device, six.string_types), type(device)
   return devices
 
 
