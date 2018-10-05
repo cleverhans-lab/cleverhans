@@ -13,26 +13,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from distutils.version import LooseVersion
 import logging
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-try:
-  tf.enable_eager_execution()
-except AttributeError:
-  if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-    print("For eager execution"
-          "use Tensorflow version greather than 1.8.0.")
-    exit(1)
-
-from cleverhans.dataset import MNIST
-from cleverhans.utils import AccuracyReport, set_log_level
+from cleverhans.utils import AccuracyReport
 from cleverhans.utils_tfe import train, model_eval
 from cleverhans.attacks_tfe import BasicIterativeMethod
 from cleverhans.attacks_tfe import FastGradientMethod
 from cleverhans_tutorials.tutorial_models_tfe import ModelBasicCNNTFE
+from cleverhans.dataset import MNIST
+from cleverhans.utils import set_log_level
 
 if tf.executing_eagerly() is True:
   print('TF Eager Activated.')

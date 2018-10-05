@@ -87,7 +87,8 @@ class InceptionModel(Model):
   """Model class for CleverHans library."""
 
   def __init__(self, nb_classes):
-    self.nb_classes = nb_classes
+    super(InceptionModel, self).__init__(nb_classes=nb_classes,
+                                         needs_dummy_fprop=True)
     self.built = False
 
   def __call__(self, x_input, return_logits=False):
