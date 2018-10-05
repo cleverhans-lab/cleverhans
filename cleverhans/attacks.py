@@ -1802,3 +1802,33 @@ class SpatialTransformationMethod(Attack):
       raise ValueError("The value of translation must be bounded "
                        "within [-1, 1]")
     return True
+
+class Semantic(Attack):
+  """
+  Semantic adversarial examples
+
+  https://arxiv.org/abs/1703.06857
+
+  Note: data must either be centered (so that the negative image can be
+  made by simple negation) or must be in the interval [-1, 1]
+
+  model: cleverhans.model.Model
+  center: bool
+    If True, assumes data has 0 mean so the negative image is just negation.
+    If False, assumes data is in the interval [0, 1]
+  sess: tf.Session
+  dtypestr: dtype of data
+  """
+
+  def __init__(self, model, center, sess=None, dtypestr='float32', **kwargs):
+    super(Semantic, self).__init__(model, sess, dtypestr, **kwargs)
+    self.center = center
+    if hasattr(model, 'dataset_factory'):
+      if 'center' in model.dataset_factory.kwargs:
+        assert center == model.dataset_factory.kwargs['center']
+
+  def generate(self, x, **kwargs):
+    if self.center:
+      return -x
+    return 1. - x
+
