@@ -80,11 +80,25 @@ script:
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
   # test for evaluation infrastructure are very fast, so running them first
   - nosetests -v --nologcapture -w examples/nips17_adversarial_competition/eval_infra/code/ eval_lib/tests/
+  #
   # --nologcapture: avoids a large amount of unnecessary tensorflow output
   # --stop: stop on first error. Gives feedback from travis faster
+  #
+  # Right now we running only certification tests with TF 1.9
+  # and all other tests with other Tensorflow versions.
+  # Certification code requires TF >= 1.9 for autograph features which are not
+  # not available in prior versions of Tensorflow used by other tests.
+  # At the same time there is no point of testing all other code with
+  # three different versions of Tensorflow.
+  # In the future these cases could be merged together once cleverhans
+  # starts using Tensorflow >=1.9 as default test environment.
   - if [[ "$PYTORCH" == True ]]; then
       nosetests --nologcapture -v --stop tests_pytorch;
     elif [[ "$PYTORCH" == False ]]; then
-      nosetests -v --nologcapture --stop cleverhans;
-      nosetests --nologcapture -v --stop tests_tf;
+      if [[ "$TENSORFLOW_V" == "1.9.0" ]]; then
+        nosetests -v --nologcapture --stop cleverhans/experimental/certification;
+      else
+        nosetests -v --nologcapture --stop --exclude-dir=cleverhans/experimental/certification cleverhans;
+        nosetests --nologcapture -v --stop tests_tf;
+      fi
     fi
