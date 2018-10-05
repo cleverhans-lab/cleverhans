@@ -162,7 +162,7 @@ def train_sub(sess, x, y, bbox_preds, x_sub, y_sub, nb_classes,
     with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
       train(sess, loss_sub, x_sub, to_categorical(y_sub, nb_classes),
             init_all=False, args=train_params, rng=rng,
-            var_list=model.get_params())
+            var_list=model_sub.get_params())
 
     # If we are not at last substitute training iteration, augment dataset
     if rho < data_aug - 1:
