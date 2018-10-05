@@ -12,11 +12,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-import keras
-from keras import backend
+
+from tensorflow.python.platform import flags
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import flags
+import keras
+from keras import backend
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.dataset import MNIST
