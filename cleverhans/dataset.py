@@ -19,7 +19,7 @@ import numpy as np
 
 from cleverhans import utils
 
-keras = None  # Only load keras if user tries to use a dataset that requires it
+keras_imported = False  # Only load keras if user tries to use a dataset that requires it
 
 
 class Dataset(object):
@@ -218,8 +218,8 @@ def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
   :return:
   """
 
-  global keras
-  if keras is None:
+  global keras_imported
+  if not keras_imported:
     import keras
     from keras.datasets import cifar10
     from keras.utils import np_utils

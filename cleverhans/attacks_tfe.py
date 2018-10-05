@@ -18,9 +18,9 @@ _logger = utils.create_logger("cleverhans.attacks_tfe")
 
 
 if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-  error = ('For eager execution',
-           'use Tensorflow version greather than 1.8.0.')
-  raise ValueError(error)
+  error_msg = ('For eager execution',
+               'use Tensorflow version greather than 1.8.0.')
+  raise ValueError(error_msg)
 
 
 class Attack(attacks.Attack):

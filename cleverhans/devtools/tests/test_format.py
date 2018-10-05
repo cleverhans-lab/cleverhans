@@ -18,27 +18,32 @@ whitelist_pep8 = [
     "../examples/multigpu_advtrain/test_attack_multigpu.py"
 ]
 
-# We don't want to test RL-attack because it has so many dependencies
-# not used elsewhere, and pylint wants to import them all
-whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                       for path in list_files(".py") if "RL-attack" in path])
-# Similarly, we don't want to require robust_vision_benchmark installed
-whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                       for path in list_files(".py")
-                       if "robust_vision_benchmark" in path])
-# Similarly, we don't want to require that cloud be installed
-whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                       for path in list_files(".py")
-                       if "cloud_client" in path])
-# This example has more dependencies too
-whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                       for path in list_files(".py")
-                       if "facenet_adversarial_faces" in path])
-# This too
-whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                       for path in list_files(".py")
-                       if "madry_lab_challenges" in path])
 
+def update_whitelist():
+  global whitelist_pep8
+  # We don't want to test RL-attack because it has so many dependencies
+  # not used elsewhere, and pylint wants to import them all
+  whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
+                         for path in list_files(".py") if "RL-attack" in path])
+  # Similarly, we don't want to require robust_vision_benchmark installed
+  whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
+                         for path in list_files(".py")
+                         if "robust_vision_benchmark" in path])
+  # Similarly, we don't want to require that cloud be installed
+  whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
+                         for path in list_files(".py")
+                         if "cloud_client" in path])
+  # This example has more dependencies too
+  whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
+                         for path in list_files(".py")
+                         if "facenet_adversarial_faces" in path])
+  # This too
+  whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
+                         for path in list_files(".py")
+                         if "madry_lab_challenges" in path])
+
+
+update_whitelist()
 
 
 whitelist_docstrings = [
@@ -98,35 +103,6 @@ def test_format_pep8():
     shell_call(['pylint', '--rcfile', rcpath, '--jobs', '8'] + files_to_check)
   except subprocess.CalledProcessError as e:
     raise ValueError(e.output.decode("utf-8"))
-
-def print_files_information_pep8():
-  """
-  Print the list of files which can be removed from the whitelist and the
-  list of files which do not respect PEP8 formatting that aren't in the
-  whitelist
-  """
-
-  raise NotImplementedError("Broken by move to TensorFlow style")
-
-  infracting_files = []
-  non_infracting_files = []
-  # We must replace StyleGuide with pylint, as is done in the tests
-  pep8_checker = None # StyleGuide(quiet=True)
-  for path in list_files(".py"):
-    number_of_infractions = pep8_checker.input_file(path)
-    rel_path = os.path.relpath(path, cleverhans.__path__[0])
-    if number_of_infractions > 0:
-      if rel_path not in whitelist_pep8:
-        infracting_files.append(path)
-    else:
-      if rel_path in whitelist_pep8:
-        non_infracting_files.append(path)
-  print("Files that must be corrected or added to whitelist:")
-  for file in infracting_files:
-    print(file)
-  print("Files that can be removed from whitelist:")
-  for file in non_infracting_files:
-    print(file)
 
 
 if __name__ == "__main__":
