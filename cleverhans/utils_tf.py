@@ -325,14 +325,14 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
   :param epsilon: stabilizes division
   :return: the batch of l2 normalized vector
   """
-  with tf.name_scope(scope, "l2_batch_normalize") as scope:
+  with tf.name_scope(scope, "l2_batch_normalize") as name_scope:
     x_shape = tf.shape(x)
     x = tf.contrib.layers.flatten(x)
     x /= (epsilon + reduce_max(tf.abs(x), 1, keepdims=True))
     square_sum = reduce_sum(tf.square(x), 1, keepdims=True)
     x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
     x_norm = tf.multiply(x, x_inv_norm)
-    return tf.reshape(x_norm, x_shape, scope)
+    return tf.reshape(x_norm, x_shape, name_scope)
 
 
 def kl_with_logits(p_logits, q_logits, scope=None,
