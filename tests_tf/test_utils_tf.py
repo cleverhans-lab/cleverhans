@@ -65,7 +65,7 @@ class TestUtilsTF(CleverHansTest):
     """test_clip_eta_goldilocks: Test that the clipping handles perturbations
     that are too small, just right, and too big correctly"""
     eta = tf.constant([[2.], [3.], [4.]])
-    assert eta.dtype == tf.float32, eta.dtype
+    self.assertTrue(eta.dtype == tf.float32, eta.dtype)
     eps = 3.
     for ord_arg in [np.inf, 1, 2]:
       for sign in [-1., 1.]:

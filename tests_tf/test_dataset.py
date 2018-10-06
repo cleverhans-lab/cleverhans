@@ -16,4 +16,4 @@ class TestDataset(CleverHansTest):
     d1 = LightweightDataset()
     factory = d1.get_factory()
     d2 = factory()
-    self.assertTrue(type(d1) == type(d2))
+    self.assertTrue(type(d1) is type(d2))
