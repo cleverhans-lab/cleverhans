@@ -17,8 +17,9 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.loss import CrossEntropy
-from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils_tf import train, model_eval
+from cleverhans.dataset import MNIST
+from cleverhans.utils_tf import model_eval
+from cleverhans.train import train
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport, set_log_level
 from cleverhans_tutorials.tutorial_models import ModelBasicCNN
@@ -77,11 +78,12 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     config_args = {}
   sess = tf.Session(config=tf.ConfigProto(**config_args))
 
-  # Get MNIST test data
-  x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
-                                                train_end=train_end,
-                                                test_start=test_start,
-                                                test_end=test_end)
+  # Get MNIST data
+  mnist = MNIST(train_start=train_start, train_end=train_end,
+                test_start=test_start, test_end=test_end)
+  x_train, y_train = mnist.get_set('train')
+  x_test, y_test = mnist.get_set('test')
+
   # Use Image Parameters
   img_rows, img_cols, nchannels = x_train.shape[1:4]
   nb_classes = y_train.shape[1]
@@ -125,7 +127,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     def evaluate():
       do_eval(preds, x_test, y_test, 'clean_train_clean_eval', False)
 
-    train(sess, loss, x, y, x_train, y_train, evaluate=evaluate,
+    train(sess, loss, x_train, y_train, evaluate=evaluate,
           args=train_params, rng=rng, var_list=model.get_params())
 
     # Calculate training error
@@ -175,7 +177,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     do_eval(preds2_adv, x_test, y_test, 'adv_train_adv_eval', True)
 
   # Perform and evaluate adversarial training
-  train(sess, loss2, x, y, x_train, y_train, evaluate=evaluate2,
+  train(sess, loss2, x_train, y_train, evaluate=evaluate2,
         args=train_params, rng=rng, var_list=model2.get_params())
 
   # Calculate training errors
@@ -187,6 +189,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_tutorial(nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate,
                  clean_train=FLAGS.clean_train,

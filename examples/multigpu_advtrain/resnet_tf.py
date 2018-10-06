@@ -42,13 +42,15 @@ class ResNetTF(MLPnGPU):
   """ResNet model."""
 
   def __init__(self, batch_size=None, name=None, **kwargs):
+    NUM_CLASSES = 10
+    super(ResNetTF, self).__init__(nb_classes=NUM_CLASSES, layers=[],
+                                   input_shape=None)
     self.global_step = tf.contrib.framework.get_or_create_global_step()
     self.hps = HParams(batch_size=batch_size,
-                       num_classes=10,
+                       num_classes=NUM_CLASSES,
                        min_lrn_rate=0.0001,
                        lrn_rate=0.1,
                        num_residual_units=5,
-                       # num_residual_units=4,
                        use_bottleneck=False,
                        weight_decay_rate=0.0002,
                        relu_leakiness=0.1,

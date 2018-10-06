@@ -170,6 +170,7 @@ class CallableModelWrapper(Model):
                          function. (Usually either "probs" or "logits".)
     """
 
+    super(CallableModelWrapper, self).__init__()
     self.output_layer = output_layer
     self.callable_fn = callable_fn
 

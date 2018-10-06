@@ -10,20 +10,19 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import functools
-
 import logging
 import numpy as np
 from six.moves import xrange
-
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.loss import CrossEntropy
+from cleverhans.dataset import MNIST
 from cleverhans.model import Model
-from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import to_categorical
 from cleverhans.utils import set_log_level
-from cleverhans.utils_tf import train, model_eval, batch_eval
+from cleverhans.utils_tf import model_eval, batch_eval
+from cleverhans.train import train
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
 
@@ -89,7 +88,7 @@ def prep_bbox(sess, x, y, x_train, y_train, x_test, y_test,
       'batch_size': batch_size,
       'learning_rate': learning_rate
   }
-  train(sess, loss, x, y, x_train, y_train, args=train_params, rng=rng)
+  train(sess, loss, x_train, y_train, args=train_params, rng=rng)
 
   # Print out the accuracy on legitimate data
   eval_params = {'batch_size': batch_size}
@@ -161,8 +160,7 @@ def train_sub(sess, x, y, bbox_preds, x_sub, y_sub, nb_classes,
         'learning_rate': learning_rate
     }
     with TemporaryLogLevel(logging.WARNING, "cleverhans.utils.tf"):
-      train(sess, loss_sub, x, y, x_sub,
-            to_categorical(y_sub, nb_classes),
+      train(sess, loss_sub, x_sub, to_categorical(y_sub, nb_classes),
             init_all=False, args=train_params, rng=rng,
             var_list=model_sub.get_params())
 
@@ -221,10 +219,11 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
   sess = tf.Session()
 
   # Get MNIST data
-  x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
-                                                train_end=train_end,
-                                                test_start=test_start,
-                                                test_end=test_end)
+  mnist = MNIST(train_start=train_start, train_end=train_end,
+                test_start=test_start, test_end=test_end)
+  x_train, y_train = mnist.get_set('train')
+  x_test, y_test = mnist.get_set('test')
+
   # Initialize substitute training set reserved for adversary
   x_sub = x_test[:holdout]
   y_sub = np.argmax(y_test[:holdout], axis=1)
@@ -285,6 +284,9 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_blackbox(nb_classes=FLAGS.nb_classes, batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate,
                  nb_epochs=FLAGS.nb_epochs, holdout=FLAGS.holdout,
@@ -293,6 +295,7 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
+
   # General flags
   flags.DEFINE_integer('nb_classes', NB_CLASSES,
                        'Number of classes in problem')

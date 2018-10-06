@@ -219,7 +219,6 @@ def grid_visual(data):
   num_cols = data.shape[0]
   num_rows = data.shape[1]
   num_channels = data.shape[4]
-  current_row = 0
   for y in xrange(num_rows):
     for x in xrange(num_cols):
       figure.add_subplot(num_rows, num_cols, (x + 1) + (y * num_cols))
@@ -260,7 +259,6 @@ def get_logits_over_interval(sess, model, x_data, fgsm_params,
   height = x_data.shape[0]
   width = x_data.shape[1]
   channels = x_data.shape[2]
-  size = height * width * channels
 
   x_data = np.expand_dims(x_data, axis=0)
   import tensorflow as tf

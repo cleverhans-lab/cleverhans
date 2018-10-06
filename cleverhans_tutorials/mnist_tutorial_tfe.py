@@ -13,27 +13,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from distutils.version import LooseVersion
 import logging
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
-try:
-  tf.enable_eager_execution()
-except AttributeError:
-  if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-    print("For eager execution"
-          "use Tensorflow version greather than 1.8.0.")
-    exit(1)
-
-from cleverhans.utils_mnist import data_mnist
-from cleverhans.utils import AccuracyReport, set_log_level
+from cleverhans.utils import AccuracyReport
 from cleverhans.utils_tfe import train, model_eval
 from cleverhans.attacks_tfe import BasicIterativeMethod
 from cleverhans.attacks_tfe import FastGradientMethod
 from cleverhans_tutorials.tutorial_models_tfe import ModelBasicCNNTFE
+from cleverhans.dataset import MNIST
+from cleverhans.utils import set_log_level
 
 if tf.executing_eagerly() is True:
   print('TF Eager Activated.')
@@ -122,10 +113,10 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   set_log_level(logging.DEBUG)
 
   # Get MNIST test data
-  X_train, Y_train, X_test, Y_test = data_mnist(train_start=train_start,
-                                                train_end=train_end,
-                                                test_start=test_start,
-                                                test_end=test_end)
+  mnist = MNIST(train_start=train_start, train_end=train_end,
+                test_start=test_start, test_end=test_end)
+  X_train, Y_train = mnist.get_set('train')
+  X_test, Y_test = mnist.get_set('test')
 
   # Use label smoothing
   assert Y_train.shape[1] == 10
@@ -133,7 +124,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   Y_train = Y_train.clip(label_smooth / 9., 1. - label_smooth)
 
   # Train an MNIST model
-  model_path = "models/mnist"
   train_params = {
       'nb_epochs': nb_epochs,
       'batch_size': batch_size,
@@ -186,9 +176,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
       print('Train accuracy on adversarial examples: %0.4f\n' % acc)
       report.train_clean_train_adv_eval = acc
 
-    # Clear the previous Variables
-    for var in model.get_params():
-      var = None
     attack = None
     print("Repeating the process, using adversarial training")
 
@@ -232,6 +219,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_tutorial(
       nb_epochs=FLAGS.nb_epochs, batch_size=FLAGS.batch_size,
       learning_rate=FLAGS.learning_rate, clean_train=FLAGS.clean_train,

@@ -11,6 +11,7 @@ import time
 import warnings
 
 import numpy as np
+import six
 from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.client import device_lib
@@ -272,7 +273,6 @@ def tf_model_load(sess, file_path=None):
                     taken from FLAGS.train_dir and FLAGS.filename
   :return:
   """
-  FLAGS = tf.app.flags.FLAGS
   with sess.as_default():
     saver = tf.train.Saver()
     if file_path is None:
@@ -285,11 +285,11 @@ def tf_model_load(sess, file_path=None):
 
 def batch_eval(*args, **kwargs):
   # Inside function to avoid circular import
-  from cleverhans.evaluation import batch_eval
+  from cleverhans.evaluation import batch_eval as new_batch_eval
   warnings.warn("batch_eval has moved to cleverhans.evaluation. "
                 "batch_eval will be removed from utils_tf on or after "
                 "2019-03-09.")
-  return batch_eval(*args, **kwargs)
+  return new_batch_eval(*args, **kwargs)
 
 
 def model_argmax(sess, x, predictions, samples, feed=None):
@@ -507,7 +507,7 @@ def infer_devices(devices=None):
   else:
     assert len(devices) > 0
     for device in devices:
-      assert isinstance(device, str), type(device)
+      assert isinstance(device, six.string_types), type(device)
   return devices
 
 

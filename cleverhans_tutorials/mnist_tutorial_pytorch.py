@@ -15,9 +15,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
-import torch.optim as optim
+from torch import optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
@@ -94,7 +94,7 @@ def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
   total = 0
   correct = 0
   step = 0
-  for epoch in range(nb_epochs):
+  for _epoch in range(nb_epochs):
     for xs, ys in train_loader:
       xs, ys = Variable(xs), Variable(ys)
       if torch.cuda.is_available():
@@ -165,6 +165,9 @@ def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
 
 
 def main(_=None):
+  from cleverhans_tutorials import check_installation
+  check_installation(__file__)
+
   mnist_tutorial(nb_epochs=FLAGS.nb_epochs,
                  batch_size=FLAGS.batch_size,
                  learning_rate=FLAGS.learning_rate)
