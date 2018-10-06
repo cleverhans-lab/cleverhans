@@ -109,6 +109,9 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
   :param optimizer: Optimizer to be used for training
   :return: True if model trained
   """
+  warnings.warn("This function is deprecated and will be removed on or after"
+                " 2019-04-05. Switch to cleverhans.train.train.")
+
   args = _ArgsWrapper(args or {})
   fprop_args = fprop_args or {}
 
