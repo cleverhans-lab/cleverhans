@@ -53,17 +53,17 @@ msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}'
 #      return 0
 #
 #  W0101 complains that the `return 0` is never reached.
-#  However, if we do not have the return statement, we get errors on lines
+#  However, if we do not have the return statement, we get E1111 on lines
 #  such as:
 #
 #  x = a.f()
 #
 #  because pylint sees no return statement in f.
-#  We can't have both these checks, and between them, it is better to disable
-#  W0101 because dead code is less likely to be a bug than using a null return
-#  value. Also, as of this writing, the only instance of W0101 is an abstract
-#  method like in the example shown here, so we are not writing any dead code
-#  by accident in practice.
+#  We can't have both W0101 and E1111, and between them, it is better to
+#  disable W0101 because dead code is less likely to be a bug than using a
+#  null return value. Also, as of this writing, the only instance of W0101 is
+#  an abstract method like in the example shown here, so we are not writing
+#  any dead code by accident in practice.
 #
 # W0122: use of exec
 # R0912: too many branches
