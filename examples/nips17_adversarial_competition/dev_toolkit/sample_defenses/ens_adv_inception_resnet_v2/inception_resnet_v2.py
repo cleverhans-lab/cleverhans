@@ -308,11 +308,11 @@ def inception_resnet_v2(inputs, num_classes=1001, is_training=True,
   end_points = {}
 
   with tf.variable_scope(scope, 'InceptionResnetV2', [inputs, num_classes],
-                         reuse=reuse) as scope:
+                         reuse=reuse) as var_scope:
     with slim.arg_scope([slim.batch_norm, slim.dropout],
                         is_training=is_training):
 
-      net, end_points = inception_resnet_v2_base(inputs, scope=scope)
+      net, end_points = inception_resnet_v2_base(inputs, scope=var_scope)
 
       if create_aux_logits:
         with tf.variable_scope('AuxLogits'):
