@@ -250,7 +250,7 @@ class Optimization(object):
 
       # Sometimes due to either overflow or instability in inverses,
       # the returned certificate is large and negative -- keeping a check
-      if current_certificate < 0 and current_certificate > LOWER_CERT_BOUND:
+      if LOWER_CERT_BOUND < current_certificate < 0:
         print('Found certificate of robustness')
         return True
      # Running step
