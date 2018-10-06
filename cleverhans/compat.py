@@ -81,6 +81,16 @@ def reduce_mean(input_tensor, axis=None, keepdims=None,
                          reduction_indices=reduction_indices)
 
 
+def reduce_prod(input_tensor, axis=None, keepdims=None,
+                name=None, reduction_indices=None):
+  """
+  Wrapper around the tf.reduce_prod to handle argument keep_dims
+  """
+  return reduce_function(tf.reduce_prod, input_tensor, axis=axis,
+                         keepdims=keepdims, name=name,
+                         reduction_indices=reduction_indices)
+
+
 def reduce_any(input_tensor, axis=None, keepdims=None,
                name=None, reduction_indices=None):
   """
