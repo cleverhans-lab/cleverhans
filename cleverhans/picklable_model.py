@@ -561,8 +561,6 @@ class PerImageStandardize(Layer):
     return []
 
   def fprop(self, x, **kwargs):
-    # TODO: before adding dataset augmentation, we didn't have to do this.
-    # Why?
     axis = [1, 2, 3]
     mean = reduce_mean(x, axis=axis, keepdims=True)
     variance = reduce_mean(
