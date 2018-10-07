@@ -173,8 +173,8 @@ def download_and_parse_mnist_file(file_name, datadir=None, force=False):
     return np.array(data).reshape(dim_sizes)
 
 
-def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
-               test_end=10000):
+def data_mnist(datadir=tempfile.gettempdir(), train_start=0,
+               train_end=60000, test_start=0, test_end=10000):
   """
   Load and preprocess MNIST dataset
   :param datadir: path to folder where data should be stored

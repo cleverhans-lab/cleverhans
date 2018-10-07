@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
+import tempfile
 import warnings
 
 from cleverhans import dataset
@@ -24,8 +25,8 @@ def download_and_parse_mnist_file(file_name, datadir=None, force=False):
   return dataset.download_and_parse_mnist_file(file_name, datadir=None, force=False)
 
 
-def data_mnist(datadir='/tmp/', train_start=0, train_end=60000, test_start=0,
-               test_end=10000):
+def data_mnist(datadir=tempfile.gettempdir(), train_start=0,
+               train_end=60000, test_start=0, test_end=10000):
   warnings.warn(utils_mnist_warning)
   mnist = dataset.MNIST(train_start=train_start,
                         train_end=train_end,
