@@ -162,8 +162,8 @@ class Optimization(object):
       # If smoothness parameter is too small, essentially no smoothing
       # Just output the eigen vector corresponding to min
       return tf.cond(self.smooth_placeholder < 1E-8,
-                     lambda: self.tf_min_eig_vec(),
-                     lambda: self.tf_smooth_eig_vec())
+                     self.tf_min_eig_vec,
+                     self.tf_smooth_eig_vec)
 
     # Using autograph to automatically handle the control flow of multi_steps()
     multi_steps_tf = autograph.to_graph(self.multi_steps)
