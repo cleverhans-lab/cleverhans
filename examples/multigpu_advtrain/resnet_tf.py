@@ -62,7 +62,7 @@ class ResNetTF(MLPnGPU):
     self.training = None
     self.device_name = None
 
-  def set_training(self, training):
+  def set_training(self, training=False):
     super(ResNetTF, self).set_training(training)
     self.training = training
 
