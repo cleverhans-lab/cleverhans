@@ -22,9 +22,9 @@ from cleverhans.utils import AccuracyReport
 from cleverhans.utils_tfe import train, model_eval
 from cleverhans.attacks_tfe import BasicIterativeMethod
 from cleverhans.attacks_tfe import FastGradientMethod
-from cleverhans_tutorials.tutorial_models_tfe import ModelBasicCNNTFE
 from cleverhans.dataset import MNIST
 from cleverhans.utils import set_log_level
+from cleverhans_tutorials.tutorial_models_tfe import ModelBasicCNNTFE
 
 if tf.executing_eagerly() is True:
   print('TF Eager Activated.')

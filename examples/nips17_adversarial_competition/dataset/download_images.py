@@ -25,11 +25,11 @@ from __future__ import print_function
 
 import argparse
 import csv
-import multiprocessing
 import os
 import sys
 from functools import partial
 from io import BytesIO
+import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
 
 from PIL import Image

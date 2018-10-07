@@ -22,11 +22,8 @@ from utils import preprocess_batch
 
 from make_model import make_model
 from evaluator import Evaluator
-
-
-
-from model import clone_variable
 from evaluator import create_adv_by_name
+from model import clone_variable
 
 
 class TrainManager(object):

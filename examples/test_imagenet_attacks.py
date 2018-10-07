@@ -17,8 +17,8 @@ import os
 import unittest
 
 import numpy as np
-import tensorflow as tf
 from six.moves import xrange
+import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.contrib.slim.nets import inception
 from PIL import Image
