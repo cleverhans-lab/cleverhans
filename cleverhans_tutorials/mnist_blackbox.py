@@ -25,10 +25,9 @@ from cleverhans.utils_tf import model_eval, batch_eval
 from cleverhans.train import train
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
-
+from cleverhans.utils import TemporaryLogLevel
 from cleverhans_tutorials.tutorial_models import ModelBasicCNN, \
     HeReLuNormalInitializer
-from cleverhans.utils import TemporaryLogLevel
 
 FLAGS = flags.FLAGS
 

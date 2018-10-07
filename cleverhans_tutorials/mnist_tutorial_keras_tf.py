@@ -13,9 +13,9 @@ from __future__ import unicode_literals
 
 import os
 
+import tensorflow as tf
 from tensorflow.python.platform import flags
 import numpy as np
-import tensorflow as tf
 import keras
 from keras import backend
 
