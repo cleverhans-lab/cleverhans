@@ -293,7 +293,7 @@ class LayernGPU(Layer):
         # Prevent overriding training
         self.params_names = [k for k in keys_after if isinstance(
             self.__dict__[k], tf.Variable)]
-      params = dict([(k, self.__dict__[k]) for k in self.params_names])
+      params = {k: self.__dict__[k] for k in self.params_names}
       self.params_device[device_name] = params
 
   def create_sync_ops(self, host_device):
