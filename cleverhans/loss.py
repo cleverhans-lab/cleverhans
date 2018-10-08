@@ -97,7 +97,7 @@ class CrossEntropy(Loss):
     if self.attack is not None:
       x = x, self.attack(x)
     else:
-      x = x,
+      x = tuple([x])
 
     # Catching RuntimeError: Variable -= value not supported by tf.eager.
     try:
@@ -213,7 +213,7 @@ class LossCrossEntropy(Loss):
     if self.attack is not None:
       x = x, self.attack(x)
     else:
-      x = x,
+      x = tuple([x])
 
     # Catching RuntimeError: Variable -= value not supported by tf.eager.
     try:
