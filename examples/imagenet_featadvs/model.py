@@ -1,7 +1,8 @@
 import functools
 import tensorflow as tf
+
+from cleverhans.initializers import HeReLuNormalInitializer
 from cleverhans.model import Model
-from cleverhans_tutorials.tutorial_models import HeReLuNormalInitializer
 
 
 class ModelImageNetCNN(Model):

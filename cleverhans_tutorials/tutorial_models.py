@@ -10,6 +10,8 @@ from __future__ import unicode_literals
 import functools
 
 import tensorflow as tf
+
+from cleverhans import initializers
 from cleverhans.model import Model
 from cleverhans.picklable_model import MLP, Conv2D, ReLU, Flatten, Linear
 from cleverhans.picklable_model import Softmax
@@ -29,31 +31,18 @@ class ModelBasicCNN(Model):
 
   def fprop(self, x, **kwargs):
     del kwargs
-    my_conv = functools.partial(tf.layers.conv2d, activation=tf.nn.relu,
-                                kernel_initializer=HeReLuNormalInitializer)
+    my_conv = functools.partial(
+        tf.layers.conv2d, activation=tf.nn.relu,
+        kernel_initializer=initializers.HeReLuNormalInitializer)
     with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
       y = my_conv(x, self.nb_filters, 8, strides=2, padding='same')
       y = my_conv(y, 2 * self.nb_filters, 6, strides=2, padding='valid')
       y = my_conv(y, 2 * self.nb_filters, 5, strides=1, padding='valid')
       logits = tf.layers.dense(
           tf.layers.flatten(y), self.nb_classes,
-          kernel_initializer=HeReLuNormalInitializer)
+          kernel_initializer=initializers.HeReLuNormalInitializer)
       return {self.O_LOGITS: logits,
               self.O_PROBS: tf.nn.softmax(logits=logits)}
-
-
-class HeReLuNormalInitializer(tf.initializers.random_normal):
-  def __init__(self, dtype=tf.float32):
-    super(HeReLuNormalInitializer, self).__init__(dtype=dtype)
-
-  def get_config(self):
-    return dict(dtype=self.dtype.name)
-
-  def __call__(self, shape, dtype=None, partition_info=None):
-    del partition_info
-    dtype = self.dtype if dtype is None else dtype
-    std = tf.rsqrt(tf.cast(tf.reduce_prod(shape[:-1]), tf.float32) + 1e-7)
-    return tf.random_normal(shape, stddev=std, dtype=dtype)
 
 
 def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
