@@ -85,7 +85,7 @@ def cheap_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     expensive_config = AttackConfig(pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
     expensive_pgd.append(expensive_config)
   attack_configs = [noise_attack_config] + pgd_attack_configs + expensive_pgd
-  new_work_goal = dict([(config, 5) for config in attack_configs])
+  new_work_goal = {config: 1 for config in attack_configs}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
 
@@ -138,8 +138,8 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     expensive_config = AttackConfig(pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
     expensive_pgd.append(expensive_config)
   attack_configs = [noise_attack_config] + pgd_attack_configs + expensive_pgd
-  new_work_goal = dict([(config, 5) for config in attack_configs])
-  pgd_work_goal = dict([(config, 5) for config in pgd_attack_configs])
+  new_work_goal = {config: 5 for config in attack_configs}
+  pgd_work_goal = {config: 5 for config in pgd_attack_configs}
   # TODO: lower priority: make sure bundler won't waste time running targeted
   # attacks on examples where the target class is the true class
   goals = [Misclassify(new_work_goal={noise_attack_config: 50}),
