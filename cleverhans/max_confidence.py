@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
+from six.moves import range
 import tensorflow as tf
 
 from cleverhans.attacks import Attack
@@ -75,7 +75,7 @@ class MaxConfidence(Attack):
     adv_x_list = tf.split(adv_x_cls, self.nb_classes)
     all_probs_list = tf.split(expanded_all_probs, self.nb_classes)
 
-    for cls in xrange(self.nb_classes):
+    for cls in range(self.nb_classes):
       target_y = target_ys[cls]
       all_probs = all_probs_list[cls]
       # We don't actually care whether we hit the target class.
