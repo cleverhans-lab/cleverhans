@@ -16,6 +16,7 @@ import struct
 import tempfile
 import sys
 import numpy as np
+import tensorflow as tf
 
 from cleverhans import utils
 
@@ -49,6 +50,22 @@ class Dataset(object):
     return (getattr(self, 'x_' + which_set),
             getattr(self, 'y_' + which_set))
 
+  def to_tensorflow(self):
+    raise NotImplementedError()
+
+  @classmethod
+  def in_memory_dataset(cls, x, y, shuffle=None, repeat=True):
+    assert x.shape[0] == y.shape[0]
+    d = tf.data.Dataset.range(x.shape[0])
+    if repeat:
+      d = d.repeat()
+    if shuffle:
+      d = d.shuffle(shuffle)
+    def lookup(p):
+      return x[p], y[p]
+    d = d.map(lambda i: tf.py_func(lookup, [i], [tf.float32] * 2))
+    return d
+
 
 class MNIST(Dataset):
   """The MNIST dataset"""
@@ -71,6 +88,10 @@ class MNIST(Dataset):
     self.y_train = y_train.astype('float32')
     self.x_test = x_test.astype('float32')
     self.y_test = y_test.astype('float32')
+
+  def to_tensorflow(self, shuffle=4096):
+    return (self.in_memory_dataset(self.x_train, self.y_train, shuffle),
+            self.in_memory_dataset(self.x_test, self.y_test, repeat=False))
 
 
 class CIFAR10(Dataset):
@@ -95,6 +116,11 @@ class CIFAR10(Dataset):
     self.y_train = y_train
     self.x_test = x_test
     self.y_test = y_test
+
+  def to_tensorflow(self, shuffle=4096):
+    # This is much more efficient with data augmentation, see tutorials.
+    return (self.in_memory_dataset(self.x_train, self.y_train, shuffle),
+            self.in_memory_dataset(self.x_test, self.y_test, repeat=False))
 
 
 class Factory(object):

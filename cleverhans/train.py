@@ -18,6 +18,7 @@ import logging
 import os
 import time
 
+import math
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
@@ -37,13 +38,13 @@ def train(sess, loss, x_train, y_train,
           rng=None, var_list=None, fprop_args=None, optimizer=None,
           devices=None, x_batch_preprocessor=None, use_ema=False,
           ema_decay=.998, run_canary=True,
-          loss_threshold=1e5):
+          loss_threshold=1e5, dataset_train=None, dataset_size=None):
   """
   Run (optionally multi-replica, synchronous) training to minimize `loss`
   :param sess: TF session to use when training the graph
   :param loss: tensor, the loss to minimize
-  :param x_train: numpy array with training inputs
-  :param y_train: numpy array with training outputs
+  :param x_train: numpy array with training inputs or tf Dataset
+  :param y_train: numpy array with training outputs or tf Dataset
   :param init_all: (boolean) If set to true, all TF variables in the session
                    are (re)initialized, otherwise only previously
                    uninitialized variables are initialized before training.
@@ -84,6 +85,9 @@ def train(sess, loss, x_train, y_train,
       This is intended to rapidly detect numerical problems.
       Sometimes the loss may legitimately be higher than this value. In
       such cases, raise the value. If needed it can be np.inf.
+  :param dataset_train: tf Dataset instance.
+      Used as a replacement for x_train, y_train for faster performance.
+    :param dataset_size: integer, the size of the dataset_train.
   :return: True if model trained
   """
   args = _ArgsWrapper(args or {})
@@ -110,12 +114,18 @@ def train(sess, loss, x_train, y_train,
   xs = []
   preprocessed_xs = []
   ys = []
+  if dataset_train is not None:
+    assert x_train is None and y_train is None and x_batch_preprocessor is None
+    if dataset_size is None:
+      raise ValueError("You must provide a dataset size")
+    data_iterator = dataset_train.make_one_shot_iterator().get_next()
+    x_train, y_train = sess.run(data_iterator)
 
   devices = infer_devices(devices)
   for device in devices:
     with tf.device(device):
       x = tf.placeholder(x_train.dtype, (None,) + x_train.shape[1:])
-      y = tf.placeholder(x_train.dtype, (None,) + y_train.shape[1:])
+      y = tf.placeholder(y_train.dtype, (None,) + y_train.shape[1:])
       xs.append(x)
       ys.append(y)
 
@@ -218,37 +228,43 @@ def train(sess, loss, x_train, y_train,
       quit()
 
   for epoch in xrange(args.nb_epochs):
-    # Indices to shuffle training set
-    index_shuf = list(range(len(x_train)))
-    # Randomly repeat a few training examples each epoch to avoid
-    # having a too-small batch
-    while len(index_shuf) % batch_size != 0:
-      index_shuf.append(rng.randint(len(x_train)))
-    nb_batches = len(index_shuf) // batch_size
-    rng.shuffle(index_shuf)
-    # Shuffling here versus inside the loop doesn't seem to affect
-    # timing very much, but shuffling here makes the code slightly
-    # easier to read
-    x_train_shuffled = x_train[index_shuf]
-    y_train_shuffled = y_train[index_shuf]
+    if dataset_train is not None:
+      nb_batches = int(math.ceil(float(dataset_size) / batch_size))
+    else:
+      # Indices to shuffle training set
+      index_shuf = list(range(len(x_train)))
+      # Randomly repeat a few training examples each epoch to avoid
+      # having a too-small batch
+      while len(index_shuf) % batch_size != 0:
+        index_shuf.append(rng.randint(len(x_train)))
+      nb_batches = len(index_shuf) // batch_size
+      rng.shuffle(index_shuf)
+      # Shuffling here versus inside the loop doesn't seem to affect
+      # timing very much, but shuffling here makes the code slightly
+      # easier to read
+      x_train_shuffled = x_train[index_shuf]
+      y_train_shuffled = y_train[index_shuf]
 
     prev = time.time()
     for batch in range(nb_batches):
+      if dataset_train is not None:
+        x_train_shuffled, y_train_shuffled = sess.run(data_iterator)
+        start, end = 0, batch_size
+      else:
+        # Compute batch start and end indices
+        start = batch * batch_size
+        end = (batch + 1) * batch_size
+        # Perform one training step
+        diff = end - start
+        assert diff == batch_size
 
-      # Compute batch start and end indices
-      start = batch * batch_size
-      end = (batch + 1) * batch_size
-
-      # Perform one training step
       feed_dict = {epoch_tf: epoch, batch_tf: batch}
-      diff = end - start
-      assert diff == batch_size
       for dev_idx in xrange(num_devices):
         cur_start = start + dev_idx * device_batch_size
         cur_end = start + (dev_idx + 1) * device_batch_size
         feed_dict[xs[dev_idx]] = x_train_shuffled[cur_start:cur_end]
         feed_dict[ys[dev_idx]] = y_train_shuffled[cur_start:cur_end]
-      if cur_end != end:
+      if cur_end != end and dataset_train is None:
         msg = ("batch_size (%d) must be a multiple of num_devices "
                "(%d).\nCUDA_VISIBLE_DEVICES: %s"
                "\ndevices: %s")
@@ -266,7 +282,8 @@ def train(sess, loss, x_train, y_train,
         raise ValueError("Extreme loss during training: ", loss_numpy)
       if np.isnan(loss_numpy) or np.isinf(loss_numpy):
         raise ValueError("NaN/Inf loss during training")
-    assert end == len(index_shuf)  # Check that all examples were used
+    assert (dataset_train is not None or
+            end == len(index_shuf))  # Check that all examples were used
     cur = time.time()
     _logger.info("Epoch " + str(epoch) + " took " +
                  str(cur - prev) + " seconds")
