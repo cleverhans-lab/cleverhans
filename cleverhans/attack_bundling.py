@@ -708,7 +708,7 @@ def unfinished_attack_configs(new_work_goal, work_before, run_counts, log=False)
     new = done_now - done_before
     # The work is only done when it has been done for every example
     new = new.min()
-    assert isinstance(new, int), type(new)
+    assert isinstance(new, (int, np.int64)), type(new)
     new_goal = new_work_goal[attack_config]
     assert isinstance(new_goal, int), type(new_goal)
     if new < new_goal:
