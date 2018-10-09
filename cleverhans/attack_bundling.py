@@ -19,7 +19,7 @@ from cleverhans.model import Model
 from cleverhans import serial
 from cleverhans.utils import create_logger, deep_copy, safe_zip
 from cleverhans.utils_tf import infer_devices
-from make_confidence_report import print_stats
+from cleverhans.confidence_report import print_stats
 
 _logger = create_logger("train")
 _logger.setLevel(logging.INFO)
