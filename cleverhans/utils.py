@@ -459,3 +459,13 @@ def shell_call(command, **kwargs):
   str_command = ' '.join(command)
   logging.debug('Executing shell command: %s' % str_command)
   return subprocess.check_output(command)
+
+def deep_copy(numpy_dict):
+  """
+  Returns a copy of a dictionary whose values are numpy arrays.
+  Copies their values rather than copying references to them.
+  """
+  out = {}
+  for key in numpy_dict:
+    out[key] = numpy_dict[key].copy()
+  return out
