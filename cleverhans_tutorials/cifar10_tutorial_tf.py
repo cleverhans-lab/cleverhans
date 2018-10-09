@@ -1,8 +1,6 @@
 """
 This tutorial shows how to generate adversarial examples using FGSM
 and train a model using adversarial training with TensorFlow.
-It is very similar to mnist_tutorial_keras_tf.py, which does the same
-thing but with a dependence on keras.
 The original paper can be found at:
 https://arxiv.org/abs/1412.6572
 """
@@ -17,6 +15,7 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.attacks import FastGradientMethod
+from cleverhans.augmentation import random_horizontal_flip, random_shift
 from cleverhans.dataset import CIFAR10
 from cleverhans.loss import CrossEntropy
 from cleverhans.model_zoo.all_convolutional import ModelAllConvolutional
@@ -81,12 +80,18 @@ def cifar10_tutorial(train_start=0, train_end=60000, test_start=0,
   # Get CIFAR10 data
   data = CIFAR10(train_start=train_start, train_end=train_end,
                  test_start=test_start, test_end=test_end)
+  dataset_size = data.x_train.shape[0]
+  dataset_train = data.to_tensorflow()[0]
+  dataset_train = dataset_train.map(
+      lambda x, y: (random_shift(random_horizontal_flip(x)), y), 4)
+  dataset_train = dataset_train.batch(batch_size)
+  dataset_train = dataset_train.prefetch(16)
   x_train, y_train = data.get_set('train')
   x_test, y_test = data.get_set('test')
 
   # Use Image Parameters
-  img_rows, img_cols, nchannels = x_train.shape[1:4]
-  nb_classes = y_train.shape[1]
+  img_rows, img_cols, nchannels = x_test.shape[1:4]
+  nb_classes = y_test.shape[1]
 
   # Define input TF placeholder
   x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
@@ -128,8 +133,10 @@ def cifar10_tutorial(train_start=0, train_end=60000, test_start=0,
     def evaluate():
       do_eval(preds, x_test, y_test, 'clean_train_clean_eval', False)
 
-    train(sess, loss, x_train, y_train, evaluate=evaluate,
-          args=train_params, rng=rng, var_list=model.get_params())
+    train(sess, loss, None, None,
+          dataset_train=dataset_train, dataset_size=dataset_size,
+          evaluate=evaluate, args=train_params, rng=rng,
+          var_list=model.get_params())
 
     # Calculate training error
     if testing:
@@ -179,8 +186,10 @@ def cifar10_tutorial(train_start=0, train_end=60000, test_start=0,
     do_eval(preds2_adv, x_test, y_test, 'adv_train_adv_eval', True)
 
   # Perform and evaluate adversarial training
-  train(sess, loss2, x_train, y_train, evaluate=evaluate2,
-        args=train_params, rng=rng, var_list=model2.get_params())
+  train(sess, loss2, None, None,
+        dataset_train=dataset_train, dataset_size=dataset_size,
+        evaluate=evaluate2, args=train_params, rng=rng,
+        var_list=model2.get_params())
 
   # Calculate training errors
   if testing:
