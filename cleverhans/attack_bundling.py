@@ -523,6 +523,9 @@ class Misclassify(AttackGoal):
       pairs = safe_zip(correct_idxs, run_counts)
     else:
       pairs = safe_zip(all_idxs, run_counts)
+    # In PY3, pairs is now an iterator.
+    # To support sorting, we need to make it a list.
+    pairs = list(pairs)
     def key(pair):
       return pair[1]
     pairs.sort(key=key)
