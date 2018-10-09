@@ -15,11 +15,11 @@ from __future__ import print_function
 
 import logging
 
+import numpy as np
 import tensorflow as tf
 
 from cleverhans.utils import set_log_level
-from cleverhans.serial import load, save
-from cleverhans.attack_bundling import basic_max_confidence_recipe
+from cleverhans.serial import load
 
 # Defaults. Imported elsewhere so that command line script defaults match
 # function defaults.
@@ -41,6 +41,8 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   :param test_end: index of last test set example to use
   :param which_set: 'train' or 'test'
   """
+  # Avoid circular import
+  from cleverhans.attack_bundling import basic_max_confidence_recipe
 
   # Set TF random seed to improve reproducibility
   tf.set_random_seed(1234)
@@ -61,8 +63,6 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   factory.kwargs['test_start'] = test_start
   factory.kwargs['test_end'] = test_end
   dataset = factory()
-  img_rows, img_cols, nchannels = dataset.x_train.shape[1:4]
-  nb_classes = dataset.NB_CLASSES
 
   center = factory.kwargs['center']
   value_range = 1. + center
@@ -79,7 +79,7 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     raise NotImplementedError(str(factory.cls))
 
   eps = base_eps * value_range
-  eps_iter =  base_eps_iter * value_range
+  eps_iter = base_eps_iter * value_range
   nb_iter = 40
   clip_min = min_value
   clip_max = max_value
