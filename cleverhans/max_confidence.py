@@ -37,7 +37,7 @@ class MaxConfidence(Attack):
     super(MaxConfidence, self).__init__(model, sess)
     self.base_attacker = ProjectedGradientDescent(model, sess=sess)
     self.structural_kwargs = self.base_attacker.structural_kwargs
-    self.feedable_kwargs = self.feedable_kwargs
+    self.feedable_kwargs = self.base_attacker.feedable_kwargs
 
   def generate(self, x, **kwargs):
     """
