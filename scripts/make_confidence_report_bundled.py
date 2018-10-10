@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 make_confidence_report_bundled.py
 Usage:
