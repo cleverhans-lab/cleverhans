@@ -35,9 +35,9 @@ REPORT_TIME_INTERVAL = 60
 
 
 def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
-                                    clip_min, clip_max, eps_iter, nb_iter,
-                                    report_path,
-                                    batch_size=BATCH_SIZE):
+                                     clip_min, clip_max, eps_iter, nb_iter,
+                                     report_path,
+                                     batch_size=BATCH_SIZE):
   """A reasonable attack bundling recipe for a max norm threat model and
   a defender that uses confidence thresholding. This recipe uses both
   uniform noise and randomly-initialized PGD targeted attacks.
@@ -275,7 +275,7 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_count
     run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs, run_counts,
                         goal, report, report_path)
 
-def run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs,
+def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
                         run_counts, goal, report, report_path):
   """
   Runs attack bundling on one batch of data.
