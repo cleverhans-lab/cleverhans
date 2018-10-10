@@ -30,6 +30,7 @@ from cleverhans.confidence_report import make_confidence_report_bundled
 from cleverhans.confidence_report import TRAIN_START, TRAIN_END
 from cleverhans.confidence_report import TEST_START, TEST_END
 from cleverhans.confidence_report import WHICH_SET
+from cleverhans.confidence_report import RECIPE
 
 
 FLAGS = flags.FLAGS
@@ -46,7 +47,8 @@ def main(argv=None):
   make_confidence_report_bundled(filepath=filepath,
                                  test_start=FLAGS.test_start,
                                  test_end=FLAGS.test_end,
-                                 which_set=FLAGS.which_set)
+                                 which_set=FLAGS.which_set,
+                                 recipe=FLAGS.recipe)
 
 
 if __name__ == '__main__':
@@ -58,5 +60,7 @@ if __name__ == '__main__':
                        ' of test examples to use')
   flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of range'
                        ' of test examples to use')
+  flags.DEFINE_string('recipe', RECIPE, 'Name of function from attack_bundling'
+                      ' to run')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
   tf.app.run()
