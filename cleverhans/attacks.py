@@ -398,10 +398,10 @@ class ProjectedGradientDescent(Attack):
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (required float) maximum distortion of adversarial example
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input
-    :param eps_iter: (required float) step size for each attack iteration
-    :param nb_iter: (required int) Number of attack iterations.
+    :param eps_iter: (optional float) step size for each attack iteration
+    :param nb_iter: (optional int) Number of attack iterations.
     :param rand_init: (optional) Whether to use random initialization
     :param y: (optional) A tensor with the true class labels
       NOTE: do not use smoothed labels here
@@ -496,10 +496,10 @@ class ProjectedGradientDescent(Attack):
 
     Attack-specific parameters:
 
-    :param eps: (required float) maximum distortion of adversarial example
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input
-    :param eps_iter: (required float) step size for each attack iteration
-    :param nb_iter: (required int) Number of attack iterations.
+    :param eps_iter: (optional float) step size for each attack iteration
+    :param nb_iter: (optional int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
     :param y_target: (optional) A tensor with the labels to target. Leave
                      y_target=None if y is also set. Labels should be
@@ -587,10 +587,10 @@ class MomentumIterativeMethod(Attack):
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (required float) maximum distortion of adversarial example
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input
-    :param eps_iter: (required float) step size for each attack iteration
-    :param nb_iter: (required int) Number of attack iterations.
+    :param eps_iter: (optional float) step size for each attack iteration
+    :param nb_iter: (optional int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
     :param y_target: (optional) A tensor with the labels to target. Leave
                      y_target=None if y is also set. Labels should be
@@ -686,10 +686,10 @@ class MomentumIterativeMethod(Attack):
 
     Attack-specific parameters:
 
-    :param eps: (required float) maximum distortion of adversarial example
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input
-    :param eps_iter: (required float) step size for each attack iteration
-    :param nb_iter: (required int) Number of attack iterations.
+    :param eps_iter: (optional float) step size for each attack iteration
+    :param nb_iter: (optional int) Number of attack iterations.
     :param y: (optional) A tensor with the model labels.
     :param y_target: (optional) A tensor with the labels to target. Leave
                      y_target=None if y is also set. Labels should be
@@ -1334,7 +1334,7 @@ class LBFGS(Attack):
     input. Generate uses tf.py_func in order to operate over tensors.
 
     :param x: (required) A tensor with the inputs.
-    :param y_target: (required) A tensor with the one-hot target labels.
+    :param y_target: (optional) A tensor with the one-hot target labels.
     :param batch_size: The number of inputs to include in a batch and
                        process simultaneously.
     :param binary_search_steps: The number of times we perform binary
@@ -1470,10 +1470,10 @@ class FastFeatureAdversaries(Attack):
     Attack-specific parameters:
 
     :param layer: (required str) name of the layer to target.
-    :param eps: (required float) maximum distortion of adversarial example
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input
-    :param eps_iter: (required float) step size for each attack iteration
-    :param nb_iter: (required int) Number of attack iterations.
+    :param eps_iter: (optional float) step size for each attack iteration
+    :param nb_iter: (optional int) Number of attack iterations.
     :param ord: (optional) Order of the norm (mimics Numpy).
                 Possible values: np.inf, 1 or 2.
     :param clip_min: (optional float) Minimum input component value
@@ -1544,10 +1544,10 @@ class FastFeatureAdversaries(Attack):
 
     :param x: The model's symbolic inputs.
     :param g: The target's symbolic representation.
-    :param eps: (required float) maximum distortion of adversarial example
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input
-    :param eps_iter: (required float) step size for each attack iteration
-    :param nb_iter: (required int) Number of attack iterations.
+    :param eps_iter: (optional float) step size for each attack iteration
+    :param nb_iter: (optional int) Number of attack iterations.
     :param ord: (optional) Order of the norm (mimics Numpy).
                 Possible values: np.inf, 1 or 2.
     :param clip_min: (optional float) Minimum input component value
@@ -1867,7 +1867,7 @@ class Noise(Attack):
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (required float) maximum distortion of adversarial example
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input
     :param ord: (optional) Order of the norm (mimics Numpy).
                 Possible values: np.inf
@@ -1901,7 +1901,7 @@ class Noise(Attack):
 
     Attack-specific parameters:
 
-    :param eps: (required float) maximum distortion of adversarial example
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input
     :param ord: (optional) Order of the norm (mimics Numpy).
                 Possible values: np.inf
