@@ -13,7 +13,6 @@ import tensorflow as tf
 from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_mean, reduce_sum
 from cleverhans.compat import reduce_any
-from cleverhans import loss as loss_module
 from cleverhans import utils_tf
 from cleverhans import utils
 
