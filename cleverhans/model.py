@@ -189,7 +189,7 @@ class CallableModelWrapper(Model):
     elif self.output_layer == 'logits':
       assert output.op.type != 'Softmax'
 
-    return {self.output_layer: out}
+    return {self.output_layer: output}
 
 
 class NoSuchLayerError(ValueError):
