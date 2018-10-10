@@ -485,6 +485,13 @@ class _CorrectAndProbFactory(object):
 class _AttackFactory(object):
   """
   A factory for an expression that runs an adversarial attack
+
+  :param model: cleverhans.model.Model
+  :param attack: cleverhans.attack.Attack
+  :param attack_params: dict of arguments to pass to attack.generate
+  :param pass_y: bool. If True, pass y to the attack.
+    (Some untargeted attacks prefer to infer y to avoid label leaking.
+    Targeted attacks require that y not be passed)
   """
 
   def __init__(self, model, attack=None, attack_params=None, pass_y=False):

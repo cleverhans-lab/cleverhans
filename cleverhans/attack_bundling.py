@@ -34,19 +34,21 @@ REPORT_TIME_INTERVAL = 60
 # the output of an earlier attack
 
 
-def cheap_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
-                                clip_min, clip_max, eps_iter, nb_iter,
-                                report_path,
-                                batch_size=BATCH_SIZE):
+def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
+                                    clip_min, clip_max, eps_iter, nb_iter,
+                                    report_path,
+                                    batch_size=BATCH_SIZE):
   """A reasonable attack bundling recipe for a max norm threat model and
-  a defender that uses confidence thresholding.
+  a defender that uses confidence thresholding. This recipe uses both
+  uniform noise and randomly-initialized PGD targeted attacks.
 
   References:
   https://openreview.net/forum?id=H1g0piA9tQ
 
-  This version is "cheap" because it runs each attack just once and
-  then stops. See `basic_max_confidence_recipe` for a version that runs
-  indefinitely.
+  This version runs each attack (noise, targeted PGD for each class with
+  nb_iter iterations, target PGD for each class with 25X more iterations)
+  just once and then stops. See `basic_max_confidence_recipe` for a version
+  that runs indefinitely.
 
   :param sess: tf.Session
   :param model: cleverhans.model.Model
@@ -54,13 +56,13 @@ def cheap_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   :param y: numpy array containing true labels
   :param nb_classes: int, number of classes
   :param eps: float, maximum size of perturbation (measured by max norm)
-  :param eps_iter: float, step size for cheaper PGD attacks
-    (will also run more expensive ones with 25X smaller step size)
+  :param eps_iter: float, step size for one version PGD attacks
+    (will also run another version with 25X smaller step size)
   :param nb_iter: int, number of iterations for the cheaper PGD attacks
-    (will also run more expensive ones with 25X more iterations)
+    (will also run another version with 25X more iterations)
   :param report_path: str, the path that the report will be saved to.
   :batch_size: int, the total number of examples to run simultaneously
-  """
+  ""
   noise_attack = Noise(model, sess)
   pgd_attack = ProjectedGradientDescent(model, sess)
   threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
@@ -107,10 +109,10 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   :param y: numpy array containing true labels
   :param nb_classes: int, number of classes
   :param eps: float, maximum size of perturbation (measured by max norm)
-  :param eps_iter: float, step size for cheaper PGD attacks
-    (will also run more expensive ones with 25X smaller step size)
-  :param nb_iter: int, number of iterations for the cheaper PGD attacks
-    (will also run more expensive ones with 25X more iterations)
+  :param eps_iter: float, step size for one version of PGD attacks
+    (will also run another version with 25X smaller step size)
+  :param nb_iter: int, number of iterations for one version of PGD attacks
+    (will also run another version with 25X more iterations)
   :param report_path: str, the path that the report will be saved to.
   :batch_size: int, the total number of examples to run simultaneously
   """
@@ -284,7 +286,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs,
   :param model: cleverhans.model.Model
   :param x: numpy array containing clean example inputs to attack
   :param y: numpy array containing true labels
-  :param adv_x: numpy array containing the adversarial examples made so far
+  :param adv_x_val: numpy array containing the adversarial examples made so far
     by earlier work in the bundling process
   :param criteria: dict mapping string names of criteria to numpy arrays with
     their values for each example
@@ -313,7 +315,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs,
     cur_run_counts[orig_idx] += 1
     should_copy = goal.new_wins(criteria, orig_idx, criteria_batch, batch_idx)
     if should_copy:
-      adv_x[orig_idx] = adv_x_batch[batch_idx]
+      adv_x_val[orig_idx] = adv_x_batch[batch_idx]
       for key in criteria:
         criteria[key][orig_idx] = criteria_batch[key][batch_idx]
       assert np.allclose(y[orig_idx], y_batch[batch_idx])

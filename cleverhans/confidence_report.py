@@ -44,9 +44,6 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   # Avoid circular import
   from cleverhans.attack_bundling import basic_max_confidence_recipe
 
-  # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
-
   # Set logging level to see debug information
   set_log_level(logging.INFO)
 
