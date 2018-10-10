@@ -9,20 +9,31 @@ from nose.tools import assert_raises
 import tensorflow as tf
 
 from cleverhans.attacks import ProjectedGradientDescent
+from cleverhans.model import Model
 
-def test_callable_no_softmax():
+def test_no_logits():
+  """test_no_logits: Check that a model without logits causes an error"""
   batch_size = 2
   nb_classes = 3
-  def model(x):
-    return tf.ones((batch_size, nb_classes)) / nb_classes
+  class NoLogitsModel(Model):
+    """
+    A model that neither defines logits nor makes it possible to find logits
+    by inspecting the inputs to a softmax op.
+    """
+    def fprop(self, x, **kwargs):
+      return {'probs': tf.ones((batch_size, nb_classes)) / nb_classes}
+  model = NoLogitsModel()
   sess = tf.Session()
   attack = ProjectedGradientDescent(model, sess=sess)
   x = tf.ones((batch_size, 3))
-  # Currently ProjectedGradientDescent treats the output of a callable
-  # as probs rather than logits.
-  # Since our callable does not use a softmax, it is impossible to get
-  # the logits back. The test confirms that this causes an error.
-  assert_raises(TypeError, attack.generate, x)
+  assert_raises(NotImplementedError, attack.generate, x)
+
+def test_rejects_callable():
+  """test_rejects_callable: Check that callables are not accepted as models"""
+  def model(x):
+    return x
+  sess = tf.Session()
+  assert_raises(TypeError, ProjectedGradientDescent, model, sess)
 
 if __name__ == "__main__":
-  test_callable()
+  test_rejects_callable()
