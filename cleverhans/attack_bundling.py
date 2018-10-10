@@ -62,7 +62,7 @@ def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     (will also run another version with 25X more iterations)
   :param report_path: str, the path that the report will be saved to.
   :batch_size: int, the total number of examples to run simultaneously
-  ""
+  """
   noise_attack = Noise(model, sess)
   pgd_attack = ProjectedGradientDescent(model, sess)
   threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
