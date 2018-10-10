@@ -264,8 +264,6 @@ class FastGradientMethod(Attack):
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
     """
-    if not isinstance(model, Model):
-      model = CallableModelWrapper(model, 'probs')
 
     super(FastGradientMethod, self).__init__(model, sess, dtypestr, **kwargs)
     self.feedable_kwargs = {
@@ -465,8 +463,6 @@ class ProjectedGradientDescent(Attack):
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
     """
-    if not isinstance(model, Model):
-      model = CallableModelWrapper(model, 'probs')
 
     super(ProjectedGradientDescent, self).__init__(model, sess=sess,
                                                    dtypestr=dtypestr, **kwargs)
@@ -655,8 +651,6 @@ class MomentumIterativeMethod(Attack):
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
     """
-    if not isinstance(model, Model):
-      model = CallableModelWrapper(model, 'probs')
 
     super(MomentumIterativeMethod, self).__init__(model, sess, dtypestr,
                                                   **kwargs)
@@ -819,8 +813,6 @@ class SaliencyMapMethod(Attack):
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
     """
-    if not isinstance(model, Model):
-      model = CallableModelWrapper(model, 'probs')
 
     super(SaliencyMapMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
@@ -1796,8 +1788,6 @@ class SpatialTransformationMethod(Attack):
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
     """
-    if not isinstance(model, Model):
-      model = CallableModelWrapper(model, 'probs')
 
     super(SpatialTransformationMethod, self).__init__(
         model, sess, dtypestr, **kwargs)
