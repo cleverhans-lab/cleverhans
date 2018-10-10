@@ -177,24 +177,6 @@ class WeightDecay(Loss):
     return out
 
 
-def attack_softmax_cross_entropy(y, probs, mean=True):
-  """
-  Define target loss for an Attack.
-  :param y: 2D tensor, one hot labels.
-  :param probs: 2D tensor, probability distribution output from the model.
-  :param mean: bool, reduce mean loss when true.
-  :return: return mean of loss if True, otherwise return vector with per
-           sample loss
-  """
-  if probs.op.type == 'Softmax':
-    assert len(probs.op.inputs) == 1
-    logits = probs.op.inputs[0]
-  else:
-    raise TypeError("Not clear how to recover logits from " + str(probs))
-  out = softmax_cross_entropy_with_logits(logits=logits, labels=y)
-  return tf.reduce_mean(out) if mean else out
-
-
 class LossCrossEntropy(Loss):
   """
   Deprecated version of `CrossEntropy` that returns per-example loss rather
