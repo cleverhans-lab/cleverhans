@@ -13,7 +13,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
-from cleverhans.model import Model
+from cleverhans.serial import NoRefModel
 
 
 class Layer(object):
@@ -22,7 +22,7 @@ class Layer(object):
     return self.output_shape
 
 
-class ResNet(Model):
+class ResNet(NoRefModel):
   """ResNet model."""
 
   def __init__(self, layers, input_shape):
@@ -33,36 +33,41 @@ class ResNet(Model):
       each with set_input_shape() and fprop() methods.
       input_shape: 4-tuple describing input shape (e.g None, 32, 32, 3)
     """
-    super(ResNet, self).__init__('', 10, {})
-    self.layer_names = []
-    self.layers = layers
-    self.input_shape = input_shape
-    if isinstance(layers[-1], Softmax):
-      layers[-1].name = 'probs'
-      layers[-2].name = 'logits'
-    else:
-      layers[-1].name = 'logits'
-    for i, layer in enumerate(self.layers):
-      if hasattr(layer, 'name'):
-        name = layer.name
+    super(ResNet, self).__init__('', 10, {}, True)
+    with tf.variable_scope(self.scope):
+      self.layer_names = []
+      self.layers = layers
+      self.input_shape = input_shape
+      if isinstance(layers[-1], Softmax):
+        layers[-1].name = 'probs'
+        layers[-2].name = 'logits'
       else:
-        name = layer.__class__.__name__ + str(i)
-        layer.name = name
-      self.layer_names.append(name)
+        layers[-1].name = 'logits'
+      for i, layer in enumerate(self.layers):
+        if hasattr(layer, 'name'):
+          name = layer.name
+        else:
+          name = layer.__class__.__name__ + str(i)
+          layer.name = name
+        self.layer_names.append(name)
 
-      layer.set_input_shape(input_shape)
-      input_shape = layer.get_output_shape()
+        layer.set_input_shape(input_shape)
+        input_shape = layer.get_output_shape()
+
+  def make_input_placeholder(self):
+    return tf.placeholder(tf.float32, (None, 32, 32, 3))
 
   def fprop(self, x, set_ref=False):
-    states = []
-    for layer in self.layers:
-      if set_ref:
-        layer.ref = x
-      x = layer.fprop(x)
-      assert x is not None
-      states.append(x)
-    states = dict(zip(self.layer_names, states))
-    return states
+    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+      states = []
+      for layer in self.layers:
+        if set_ref:
+          layer.ref = x
+        x = layer.fprop(x)
+        assert x is not None
+        states.append(x)
+      states = dict(zip(self.layer_names, states))
+      return states
 
   def add_internal_summaries(self):
     pass
@@ -287,7 +292,7 @@ class Flatten(Layer):
     return tf.reshape(x, [-1, self.output_width])
 
 
-def make_madry_wresnet(nb_classes=10, input_shape=(None, 32, 32, 3)):
+def make_wresnet(nb_classes=10, input_shape=(None, 32, 32, 3)):
   layers = [Input(),
             Conv2D(),  # the whole ResNet is basically created in this layer
             Flatten(),
