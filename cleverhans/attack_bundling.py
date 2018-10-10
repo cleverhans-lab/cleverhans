@@ -156,6 +156,73 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
   # This runs forever
 
+def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
+                                clip_min, clip_max, eps_iter, nb_iter,
+                                report_path,
+                                batch_size=BATCH_SIZE):
+  """A reasonable attack bundling recipe for a max norm threat model and
+  a defender that uses confidence thresholding.
+
+  References:
+  https://openreview.net/forum?id=H1g0piA9tQ
+
+  This version runs each attack a fixed number of times.
+  It is more exhaustive than `single_run_max_confidence_recipe` but because
+  it uses a fixed budget rather than running indefinitely it is more
+  appropriate for making fair comparisons between two models.
+
+  :param sess: tf.Session
+  :param model: cleverhans.model.Model
+  :param x: numpy array containing clean example inputs to attack
+  :param y: numpy array containing true labels
+  :param nb_classes: int, number of classes
+  :param eps: float, maximum size of perturbation (measured by max norm)
+  :param eps_iter: float, step size for one version of PGD attacks
+    (will also run another version with 25X smaller step size)
+  :param nb_iter: int, number of iterations for one version of PGD attacks
+    (will also run another version with 25X more iterations)
+  :param report_path: str, the path that the report will be saved to.
+  :batch_size: int, the total number of examples to run simultaneously
+  """
+  noise_attack = Noise(model, sess)
+  pgd_attack = ProjectedGradientDescent(model, sess)
+  threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
+  noise_attack_config = AttackConfig(noise_attack, threat_params)
+  attack_configs = [noise_attack_config]
+  pgd_attack_configs = []
+  pgd_params = copy.copy(threat_params)
+  pgd_params["eps_iter"] = eps_iter
+  pgd_params["nb_iter"] = nb_iter
+  assert batch_size % num_devices == 0
+  dev_batch_size = batch_size // num_devices
+  ones = tf.ones(dev_batch_size, tf.int32)
+  expensive_pgd = []
+  for cls in range(nb_classes):
+    cls_params = copy.copy(pgd_params)
+    cls_params['y_target'] = tf.to_float(tf.one_hot(ones * cls, nb_classes))
+    cls_attack_config = AttackConfig(pgd_attack, cls_params, "pgd_" + str(cls))
+    pgd_attack_configs.append(cls_attack_config)
+    expensive_params = copy.copy(cls_params)
+    expensive_params["eps_iter"] /= 25.
+    expensive_params["nb_iter"] *= 25.
+    expensive_config = AttackConfig(pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
+    expensive_pgd.append(expensive_config)
+  attack_configs = [noise_attack_config] + pgd_attack_configs + expensive_pgd
+  new_work_goal = {config: 5 for config in attack_configs}
+  pgd_work_goal = {config: 5 for config in pgd_attack_configs}
+  # TODO: lower priority: make sure bundler won't waste time running targeted
+  # attacks on examples where the target class is the true class
+  goals = [Misclassify(new_work_goal={noise_attack_config: 50}),
+           Misclassify(new_work_goal=pgd_work_goal),
+           MaxConfidence(t=0.5, new_work_goal=new_work_goal),
+           MaxConfidence(t=0.75, new_work_goal=new_work_goal),
+           MaxConfidence(t=0.875, new_work_goal=new_work_goal),
+           MaxConfidence(t=0.9375, new_work_goal=new_work_goal),
+           MaxConfidence(t=0.96875, new_work_goal=new_work_goal),
+           MaxConfidence(t=0.984375, new_work_goal=new_work_goal),
+           MaxConfidence(t=1., new_work_goal=new_work_goal)]
+  bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
+
 class AttackConfig(object):
   """
   An attack and associated parameters.
