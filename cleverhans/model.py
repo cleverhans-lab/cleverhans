@@ -175,7 +175,16 @@ class CallableModelWrapper(Model):
     self.callable_fn = callable_fn
 
   def fprop(self, x, **kwargs):
-    return {self.output_layer: self.callable_fn(x, **kwargs)}
+    output = self.callable_fn(x, **kwargs)
+
+    # Do some sanity checking to reduce the chance that probs are used
+    # as logits accidentally or vice versa
+    if self.output_layer == 'probs':
+      assert output.op.type == "Softmax"
+    elif self.output_layer == 'logits':
+      assert output.op.type != 'Softmax'
+
+    return {self.output_layer: out}
 
 
 class NoSuchLayerError(ValueError):
