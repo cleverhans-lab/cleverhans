@@ -13,6 +13,7 @@ import tensorflow as tf
 from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_mean, reduce_sum
 from cleverhans.compat import reduce_any
+from cleverhans.compat import softmax_cross_entropy_with_logits
 from cleverhans import utils_tf
 from cleverhans import utils
 

@@ -697,8 +697,6 @@ class MomentumIterativeMethod(Attack):
     y = y / reduce_sum(y, 1, keepdims=True)
     targeted = (self.y_target is not None)
 
-    from . import utils_tf
-
     def cond(i, _, __):
       return tf.less(i, self.nb_iter)
 
