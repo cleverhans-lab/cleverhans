@@ -1419,8 +1419,10 @@ class LBFGS_attack(object):
     self.const = tf.Variable(
         np.zeros(self.batch_size), dtype=tf_dtype, name='const')
 
-    self.score = loss_module.attack_softmax_cross_entropy(
-        self.targeted_label, self.model_preds, mean=False)
+    assert self.model_preds.op.type == 'Softmax'
+    logits, = self.model_preds.op.inputs
+    self.score = softmax_cross_entropy_with_logits(labels=self.targeted_label,
+                                                   logits=logits)
     self.l2dist = reduce_sum(tf.square(self.x - self.ori_img))
     # small self.const will result small adversarial perturbation
     self.loss = reduce_sum(self.score * self.const) + self.l2dist

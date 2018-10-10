@@ -11,8 +11,10 @@ from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max
 from cleverhans.compat import softmax_cross_entropy_with_logits
 from cleverhans.utils_tf import clip_eta
+from cleverhans import utils_tf
 
 _logger = utils.create_logger("cleverhans.attacks")
+tf_dtype = tf.as_dtype('float32')
 
 
 class Attack(object):
