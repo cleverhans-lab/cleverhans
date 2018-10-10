@@ -83,7 +83,7 @@ class Model(object):
     except AttributeError:
       pass
 
-    # For Graoh based execution
+    # For graph-based execution
     scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                    self.scope)
 
