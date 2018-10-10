@@ -1397,6 +1397,9 @@ class LBFGS_attack(object):
     :param batch_size: Number of attacks to run simultaneously.
 
     """
+    warnings.warn("This class is deprecated and will be removed on or after "
+                  "2019-04-10. Switch to cleverhans.attacks.LBFGS_impl. "
+                  "Note that it uses *logits* not *probabilities*.")
     self.sess = sess
     self.x = x
     self.model_preds = model_preds
