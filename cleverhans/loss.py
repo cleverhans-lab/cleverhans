@@ -186,7 +186,11 @@ def attack_softmax_cross_entropy(y, probs, mean=True):
   :return: return mean of loss if True, otherwise return vector with per
            sample loss
   """
-  logits = probs.op.inputs[0] if probs.op.type == 'Softmax' else probs
+  if probs.op.type == 'Softmax':
+    assert len(probs.op.inputs) == 1
+    logits = probs.op.inputs[0]
+  else:
+    raise TypeError("Not clear how to recover logits from " + str(probs))
   out = softmax_cross_entropy_with_logits(logits=logits, labels=y)
   return tf.reduce_mean(out) if mean else out
 
