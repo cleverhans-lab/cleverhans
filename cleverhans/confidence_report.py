@@ -28,10 +28,12 @@ TRAIN_END = 60000
 TEST_START = 0
 TEST_END = 10000
 WHICH_SET = 'test'
+RECIPE = 'basic_max_confidence_recipe'
 
 def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                                    train_end=TRAIN_END, test_start=TEST_START,
-                                   test_end=TEST_END, which_set=WHICH_SET):
+                                   test_end=TEST_END, which_set=WHICH_SET,
+                                   recipe=RECIPE):
   """
   Load a saved model, gather its predictions, and save a confidence report.
   :param filepath: path to model to evaluate
@@ -42,7 +44,8 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   :param which_set: 'train' or 'test'
   """
   # Avoid circular import
-  from cleverhans.attack_bundling import basic_max_confidence_recipe
+  from cleverhans import attack_bundling
+  run_recipe = getattr(attack_bundling, recipe)
 
   # Set logging level to see debug information
   set_log_level(logging.INFO)
@@ -85,11 +88,10 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   assert x_data.max() <= max_value
   assert x_data.min() >= min_value
 
-  basic_max_confidence_recipe(sess, model=model, x=x_data, y=y_data,
-                              nb_classes=dataset.NB_CLASSES, eps=eps,
-                              clip_min=clip_min, clip_max=clip_max,
-                              eps_iter=eps_iter, nb_iter=nb_iter,
-                              report_path=report_path)
+  run_recipe(sess, model=model, x=x_data, y=y_data,
+             nb_classes=dataset.NB_CLASSES, eps=eps, clip_min=clip_min,
+             clip_max=clip_max, eps_iter=eps_iter, nb_iter=nb_iter,
+             report_path=report_path)
 
 def print_stats(correctness, confidence, name):
   """
