@@ -187,7 +187,7 @@ def attack_softmax_cross_entropy(y, probs, mean=True):
            sample loss
   """
   if probs.op.type == 'Softmax':
-    assert len(probs.op.inputs) == 0
+    assert len(probs.op.inputs) == 1
     logits = probs.op.inputs[0]
   else:
     raise TypeError("Not clear how to recover logits from " + str(probs))
