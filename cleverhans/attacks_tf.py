@@ -84,6 +84,9 @@ def fgm(x,
 
   # Define gradient of loss wrt input
   grad, = tf.gradients(loss, x)
+  if grad is None:
+    warnings.warn("Model apparently ignores input")
+    grad = tf.zeros_like(x)
 
   if ord == np.inf:
     # Take sign of gradient
