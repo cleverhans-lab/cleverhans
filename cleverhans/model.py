@@ -94,17 +94,23 @@ class Model(object):
 
     # For graph-based execution
     scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                   self.scope)
+                                   self.scope + "/")
 
     if len(scope_vars) == 0:
       self.make_params()
       scope_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                     self.scope)
+                                     self.scope + "/")
       assert len(scope_vars) > 0
 
     # Make sure no parameters have been added or removed
     if hasattr(self, "num_params"):
-      assert self.num_params == len(scope_vars)
+      if self.num_params != len(scope_vars):
+        print("Scope: ", self.scope)
+        print("Expected " + str(self.num_params) + " variables")
+        print("Got " + str(len(scope_vars)))
+        for var in scope_vars:
+          print("\t" + str(var))
+        assert False
     else:
       self.num_params = len(scope_vars)
 
