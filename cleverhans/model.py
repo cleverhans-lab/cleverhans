@@ -80,6 +80,10 @@ class Model(object):
     Provides access to the model's parameters.
     :return: A list of all Variables defining the model parameters.
     """
+
+    if hasattr(self, 'params'):
+      return list(self.params)
+
     # Catch eager execution and assert function overload.
     try:
       if tf.executing_eagerly():
