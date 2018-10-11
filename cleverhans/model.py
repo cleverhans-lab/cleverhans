@@ -45,7 +45,12 @@ class Model(object):
     :return: A symbolic representation (Tensor) of the output logits
     (i.e., the values fed as inputs to the softmax layer).
     """
-    return self.fprop(x, **kwargs)[self.O_LOGITS]
+    outputs = self.fprop(x, **kwargs)
+    if self.O_LOGITS in outputs:
+      return outputs[self.O_LOGITS]
+    raise NotImplementedError(str(type(self)) + "must implement `get_logits`"
+                              " or must define a " + self.O_LOGITS +
+                              " output in `fprop`")
 
   def get_probs(self, x, **kwargs):
     """
@@ -175,7 +180,16 @@ class CallableModelWrapper(Model):
     self.callable_fn = callable_fn
 
   def fprop(self, x, **kwargs):
-    return {self.output_layer: self.callable_fn(x, **kwargs)}
+    output = self.callable_fn(x, **kwargs)
+
+    # Do some sanity checking to reduce the chance that probs are used
+    # as logits accidentally or vice versa
+    if self.output_layer == 'probs':
+      assert output.op.type == "Softmax"
+    elif self.output_layer == 'logits':
+      assert output.op.type != 'Softmax'
+
+    return {self.output_layer: output}
 
 
 class NoSuchLayerError(ValueError):
