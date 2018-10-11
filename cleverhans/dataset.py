@@ -73,7 +73,7 @@ class MNIST(Dataset):
   NB_CLASSES = 10
 
   def __init__(self, train_start=0, train_end=60000, test_start=0,
-               test_end=10000, center=False):
+               test_end=10000, center=False, max_val=1.):
     super(MNIST, self).__init__(locals())
     x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
@@ -83,6 +83,8 @@ class MNIST(Dataset):
     if center:
       x_train = x_train * 2. - 1.
       x_test = x_test * 2. - 1.
+    x_train *= max_val
+    x_test *= max_val
 
     self.x_train = x_train.astype('float32')
     self.y_train = y_train.astype('float32')
@@ -100,7 +102,7 @@ class CIFAR10(Dataset):
   NB_CLASSES = 10
 
   def __init__(self, train_start=0, train_end=60000, test_start=0,
-               test_end=10000, center=False):
+               test_end=10000, center=False, max_val=1.):
     super(CIFAR10, self).__init__(locals())
     packed = data_cifar10(train_start=train_start,
                           train_end=train_end,
@@ -111,6 +113,8 @@ class CIFAR10(Dataset):
     if center:
       x_train = x_train * 2. - 1.
       x_test = x_test * 2. - 1.
+    x_train *= max_val
+    x_test *= max_val
 
     self.x_train = x_train
     self.y_train = y_train
