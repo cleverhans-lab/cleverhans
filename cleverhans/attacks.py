@@ -2051,14 +2051,18 @@ class Semantic(Attack):
   model: cleverhans.model.Model
   center: bool
     If True, assumes data has 0 mean so the negative image is just negation.
-    If False, assumes data is in the interval [0, 1]
+    If False, assumes data is in the interval [0, max_val]
+  max_val: float
+    Maximum value allowed in the input data
   sess: tf.Session
   dtypestr: dtype of data
   """
 
-  def __init__(self, model, center, sess=None, dtypestr='float32', **kwargs):
+  def __init__(self, model, center, max_val=1., sess=None, dtypestr='float32',
+               **kwargs):
     super(Semantic, self).__init__(model, sess, dtypestr, **kwargs)
     self.center = center
+    self.max_val = max_val
     if hasattr(model, 'dataset_factory'):
       if 'center' in model.dataset_factory.kwargs:
         assert center == model.dataset_factory.kwargs['center']
@@ -2066,7 +2070,7 @@ class Semantic(Attack):
   def generate(self, x, **kwargs):
     if self.center:
       return -x
-    return 1. - x
+    return self.max_val - x
 
 class Noise(Attack):
   """
