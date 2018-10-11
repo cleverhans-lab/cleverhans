@@ -36,6 +36,9 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
   :return: a float with the accuracy value
   """
 
+  _check_x(x)
+  _check_y(y)
+
   factory = _CorrectFactory(model)
 
   correct, = batch_eval_multi_worker(sess, factory, [x, y],
@@ -79,6 +82,10 @@ def correctness_and_confidence(sess, model, x, y, batch_size=None,
     an ndarray of bools indicating whether each example is correct
     an ndarray of probabilities assigned to the prediction for each example
   """
+
+  _check_x(x)
+  _check_y(y)
+
   factory = _CorrectAndProbFactory(model, attack, attack_params)
 
   out = batch_eval_multi_worker(sess, factory, [x, y], batch_size=batch_size,
@@ -98,6 +105,44 @@ def correctness_and_confidence(sess, model, x, y, batch_size=None,
                      str(max_confidence))
   assert confidence.min() >= 0., confidence.min()
 
+  return out
+
+def run_attack(sess, model, x, y, attack, attack_params, batch_size=None,
+               devices=None, feed=None):
+  """
+  Run attack on every example in a dataset.
+  :param sess: tf.Session
+  :param model: cleverhans.model.Model
+  :param x: numpy array containing input examples (e.g. MNIST().x_test )
+  :param y: numpy array containing example labels (e.g. MNIST().y_test )
+  :param attack: cleverhans.attack.Attack
+  :param attack_params: dictionary
+    passed to attack.generate as keyword arguments.
+  :param batch_size: Number of examples to use in a single evaluation batch.
+      If not specified, this function will use a reasonable guess and
+      may run out of memory.
+      When choosing the batch size, keep in mind that the batch will
+      be divided up evenly among available devices. If you can fit 128
+      examples in memory on one GPU and you have 8 GPUs, you probably
+      want to use a batch size of 1024 (unless a different batch size
+      runs faster with the ops you are using, etc.)
+  :param devices: An optional list of string device names to use.
+    If not specified, this function will use all visible GPUs.
+  :param feed: An optional dictionary that is appended to the feeding
+           dictionary before the session runs. Can be used to feed
+           the learning phase of a Keras model for instance.
+  :return:
+    an ndarray of bools indicating whether each example is correct
+    an ndarray of probabilities assigned to the prediction for each example
+  """
+
+  _check_x(x)
+  _check_y(y)
+
+  factory = _AttackFactory(model, attack, attack_params)
+
+  out, = batch_eval_multi_worker(sess, factory, [x, y], batch_size=batch_size,
+                                 devices=devices, feed=feed)
   return out
 
 
@@ -448,8 +493,74 @@ class _CorrectAndProbFactory(object):
     return (x_batch, y_batch), (correct, max_probs)
 
 
+class _AttackFactory(object):
+  """
+  A factory for an expression that runs an adversarial attack
+
+  :param model: cleverhans.model.Model
+  :param attack: cleverhans.attack.Attack
+  :param attack_params: dict of arguments to pass to attack.generate
+  :param pass_y: bool. If True, pass y to the attack.
+    (Some untargeted attacks prefer to infer y to avoid label leaking.
+    Targeted attacks require that y not be passed)
+  """
+
+  def __init__(self, model, attack=None, attack_params=None, pass_y=False):
+    if attack_params is None:
+      attack_params = {}
+    self.model = model
+    self.attack = attack
+    self.attack_params = attack_params
+    self.pass_y = pass_y
+    hashable_attack_params = tuple((key, attack_params[key]) for key
+                                   in sorted(attack_params.keys()))
+    self.properties_to_hash = (model, attack, hashable_attack_params)
+
+  def __hash__(self):
+    # Make factory hashable so that no two factories for the
+    # same model will be used to build redundant tf graphs
+    return self.properties_to_hash.__hash__()
+
+  def __eq__(self, other):
+    # Make factory hashable so that no two factories for the
+    # same model will be used to build redundant tf graphs
+    if not isinstance(other, _AttackFactory):
+      return False
+    return self.properties_to_hash == other.properties_to_hash
+
+  def __call__(self):
+    x_batch = self.model.make_input_placeholder()
+    y_batch = self.model.make_label_placeholder()
+
+    attack_params = self.attack_params
+    if attack_params is None:
+      attack_params = {}
+    if self.pass_y:
+      y_arg = y_batch
+    else:
+      y_arg = None
+    x_adv = self.attack.generate(x_batch, y=y_arg, **attack_params)
+
+    return (x_batch, y_batch), tuple([x_adv])
+
 _logger = create_logger("cleverhans.evaluation")
 
 # Cache for storing output of `batch_eval_multi_worker`'s calls to
 # `graph_factory`, to avoid making the tf graph too big
 _batch_eval_multi_worker_cache = {}
+
+def _check_x(x):
+  """
+  Makes sure an `x` argument is a valid numpy dataset.
+  """
+  if not isinstance(x, np.ndarray):
+    raise TypeError("x must be a numpy array. Typically x contains "
+                    "the entire test set inputs.")
+
+def _check_y(y):
+  """
+  Makes sure a `y` argument is a vliad numpy dataset.
+  """
+  if not isinstance(y, np.ndarray):
+    raise TypeError("y must be numpy array. Typically y contains "
+                    "the entire test set labels.")
