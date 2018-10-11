@@ -25,16 +25,40 @@ class Layer(object):
 class ResNet(NoRefModel):
   """ResNet model."""
 
-  def __init__(self, layers, input_shape):
+  def __init__(self, layers, input_shape, scope=None):
     """ResNet constructor.
 
-    Args:
-      layers: a list of layers in CleverHans format
+    :param layers: a list of layers in CleverHans format
       each with set_input_shape() and fprop() methods.
-      input_shape: 4-tuple describing input shape (e.g None, 32, 32, 3)
+    :param input_shape: 4-tuple describing input shape (e.g None, 32, 32, 3)
+    :param scope: string name of scope for Variables
+      This works in two ways.
+      If scope is None, the variables are not put in a scope, and the
+      model is compatible with Saver.restore from the public downloads
+      for the CIFAR10 Challenge.
+      If the scope is a string, then Saver.restore won't work, but the
+      model functions as a picklable NoRefModels that finds its variables
+      based on the scope.
     """
-    super(ResNet, self).__init__('', 10, {}, True)
-    with tf.variable_scope(self.scope):
+    super(ResNet, self).__init__(scope, 10, {}, scope is not None)
+    if scope is None:
+      before = list(tf.trainable_variables())
+      before_vars = list(tf.global_variables())
+      self.build(layers, input_shape)
+      after = list(tf.trainable_variables())
+      after_vars = list(tf.global_variables())
+      self.params = [param for param in after if param not in before]
+      self.vars = [var for var in after_vars if var not in before_vars]
+    else:
+      with tf.variable_scope(self.scope):
+        self.build(layers, input_shape)
+
+  def get_vars(self):
+    if hasattr(self, "vars"):
+      return self.vars
+    return super(ResNet, self).get_vars()
+
+  def build(self, layers, input_shape):
       self.layer_names = []
       self.layers = layers
       self.input_shape = input_shape
@@ -57,8 +81,16 @@ class ResNet(NoRefModel):
   def make_input_placeholder(self):
     return tf.placeholder(tf.float32, (None, 32, 32, 3))
 
+  def make_label_placeholder(self):
+    return tf.placeholder(tf.float32, (None, 10))
+
   def fprop(self, x, set_ref=False):
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+    if self.scope is not None:
+      with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+        return self._fprop(x, set_ref)
+    return self._prop(x, set_ref)
+
+  def _fprop(self, x, set_ref=False):
       states = []
       for layer in self.layers:
         if set_ref:
@@ -170,18 +202,23 @@ class Linear(Layer):
   def set_input_shape(self, input_shape):
     batch_size, dim = input_shape
     self.input_shape = [batch_size, dim]
+    self.dim = dim
     self.output_shape = [batch_size, self.num_hid]
+    self.make_vars()
 
+  def make_vars(self):
     with tf.variable_scope('logit', reuse=tf.AUTO_REUSE):
-      self.w = tf.get_variable(
-          'DW', [dim, self.num_hid],
+      w = tf.get_variable(
+          'DW', [self.dim, self.num_hid],
           initializer=tf.initializers.variance_scaling(
               distribution='uniform'))
-      self.b = tf.get_variable('biases', [self.num_hid],
+      b = tf.get_variable('biases', [self.num_hid],
                                initializer=tf.initializers.constant())
+    return w, b
 
   def fprop(self, x):
-    return tf.nn.xw_plus_b(x, self.w, self.b)
+    w, b = self.make_vars()
+    return tf.nn.xw_plus_b(x, w, b)
 
 
 def _batch_norm(name, x):
@@ -292,12 +329,12 @@ class Flatten(Layer):
     return tf.reshape(x, [-1, self.output_width])
 
 
-def make_wresnet(nb_classes=10, input_shape=(None, 32, 32, 3)):
+def make_wresnet(nb_classes=10, input_shape=(None, 32, 32, 3), scope=None):
   layers = [Input(),
             Conv2D(),  # the whole ResNet is basically created in this layer
             Flatten(),
             Linear(nb_classes),
             Softmax()]
 
-  model = ResNet(layers, input_shape)
+  model = ResNet(layers, input_shape, scope)
   return model

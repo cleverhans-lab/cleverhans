@@ -58,7 +58,7 @@ class NoRefModel(Model):
   """
   A Model that can be pickled because it contains no references to any
   Variables (e.g. it identifies Variables only by name).
-  The Model must be able to find all of its Variables via get_params
+  The Model must be able to find all of its Variables via get_vars
   for them to be pickled.
   Note that NoRefModel may have different Variable names after it is
   restored, e.g. if the unpickling is run with a different enclosing
