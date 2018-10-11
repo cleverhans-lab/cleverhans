@@ -36,6 +36,9 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
   :return: a float with the accuracy value
   """
 
+  _check_x(x)
+  _check_y(y)
+
   factory = _CorrectFactory(model)
 
   correct, = batch_eval_multi_worker(sess, factory, [x, y],
@@ -79,6 +82,10 @@ def correctness_and_confidence(sess, model, x, y, batch_size=None,
     an ndarray of bools indicating whether each example is correct
     an ndarray of probabilities assigned to the prediction for each example
   """
+
+  _check_x(x)
+  _check_y(y)
+
   factory = _CorrectAndProbFactory(model, attack, attack_params)
 
   out = batch_eval_multi_worker(sess, factory, [x, y], batch_size=batch_size,
@@ -128,6 +135,10 @@ def run_attack(sess, model, x, y, attack, attack_params, batch_size=None,
     an ndarray of bools indicating whether each example is correct
     an ndarray of probabilities assigned to the prediction for each example
   """
+
+  _check_x(x)
+  _check_y(y)
+
   factory = _AttackFactory(model, attack, attack_params)
 
   out, = batch_eval_multi_worker(sess, factory, [x, y], batch_size=batch_size,
@@ -537,3 +548,19 @@ _logger = create_logger("cleverhans.evaluation")
 # Cache for storing output of `batch_eval_multi_worker`'s calls to
 # `graph_factory`, to avoid making the tf graph too big
 _batch_eval_multi_worker_cache = {}
+
+def _check_x(x):
+  """
+  Makes sure an `x` argument is a valid numpy dataset.
+  """
+  if not isinstance(x, np.ndarray):
+    raise TypeError("x must be a numpy array. Typically x contains "
+                    "the entire test set inputs.")
+
+def _check_y(y):
+  """
+  Makes sure a `y` argument is a vliad numpy dataset.
+  """
+  if not isinstance(y, np.ndarray):
+    raise TypeError("y must be numpy array. Typically y contains "
+                    "the entire test set labels.")
