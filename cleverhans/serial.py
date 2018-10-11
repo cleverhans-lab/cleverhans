@@ -85,7 +85,7 @@ class NoRefModel(Model):
     if sess is None:
       raise RuntimeError("NoRefModel requires a default "
                          "TensorFlow session")
-    out["_tf_variables"] = sess.run(self.get_params())
+    out["_tf_variables"] = sess.run(self.get_vars())
     return out
 
   def __setstate__(self, d):
@@ -98,8 +98,42 @@ class NoRefModel(Model):
     if sess is None:
       raise RuntimeError("NoRefModel requires a default "
                          "TensorFlow session")
-    for var, value in safe_zip(self.get_params(), tf_variables):
+    for var, value in safe_zip(self.get_vars(), tf_variables):
       var.load(value, sess)
+
+  def get_vars(self):
+    """
+    Provides access to the model's Variables.
+    This may include Variables that are not parameters, such as batch
+    norm running moments.
+    :return: A list of all Variables defining the model.
+    """
+
+    # Catch eager execution and assert function overload.
+    try:
+      if tf.executing_eagerly():
+        raise NotImplementedError("For Eager execution - get_vars "
+                                  "must be overridden.")
+    except AttributeError:
+      pass
+
+    # For graph-based execution
+    scope_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+                                   self.scope)
+
+    if len(scope_vars) == 0:
+      self.make_params()
+      scope_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+                                     self.scope)
+      assert len(scope_vars) > 0
+
+    # Make sure no variables have been added or removed
+    if hasattr(self, "num_vars"):
+      assert self.num_vars == len(scope_vars)
+    else:
+      self.num_vars = len(scope_vars)
+
+    return scope_vars
 
 
 def save(filepath, obj):
