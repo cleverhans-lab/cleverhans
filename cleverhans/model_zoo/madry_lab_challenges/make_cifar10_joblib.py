@@ -41,11 +41,21 @@ def main(argv):
     saver = tf.train.Saver()
     # Restore the checkpoint
     saver.restore(sess, model_file)
-    model2 = make_wresnet(scope="cifar10_challenge")
-    for var1, var2 in safe_zip(model.get_vars(), model2.get_vars()):
-      # print(var1.name, '\t', var2.name)
-      assert var2.name == "cifar10_challenge/" + var1.name
-      sess.run(tf.assign(var2, var1))
+    SCOPE = "cifar10_challenge"
+    model2 = make_wresnet(scope=SCOPE)
+    assert len(model.get_vars()) == len(model2.get_vars())
+    found = [False] * len(model2.get_vars())
+    for var1 in model.get_vars():
+      var1_found = False
+      var2_name = SCOPE + "/" + var1.name
+      for idx, var2 in enumerate(model2.get_vars()):
+        if var2.name == var2_name:
+          var1_found = True
+          found[idx] = True
+          sess.run(tf.assign(var2, var1))
+          break
+      assert var1_found, var1.name
+    assert all(found)
 
     model2.dataset_factory = Factory(CIFAR10, {"max_val": 255})
 

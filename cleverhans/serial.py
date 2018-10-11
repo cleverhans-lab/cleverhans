@@ -6,10 +6,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import warnings
+
 import joblib
 import tensorflow as tf
 
 from cleverhans.model import Model
+from cleverhans.utils import ordered_union
 from cleverhans.utils import safe_zip
 
 
@@ -85,12 +88,24 @@ class NoRefModel(Model):
     if sess is None:
       raise RuntimeError("NoRefModel requires a default "
                          "TensorFlow session")
-    out["_tf_variables"] = sess.run(self.get_vars())
+    tf_variables = self.get_vars()
+    out[VARS] = sess.run(tf_variables)
+    out[VAR_NAMES] = [var.name for var in tf_variables]
     return out
 
   def __setstate__(self, d):
-    tf_variables = d["_tf_variables"]
-    del d["_tf_variables"]
+    tf_variables = d[VARS]
+    del d[VARS]
+    tf_variable_names = None
+    # older joblib files may not have "_tf_variable_names"
+    if VAR_NAMES in d:
+      tf_variable_names = d[VAR_NAMES]
+      del d[VAR_NAMES]
+    else:
+      warnings.warn("This joblib file has no " + VAR_NAMES + " field. "
+                    "The field may become required on or after 2019-04-11."
+                    "You can make your file compatible with the new format by"
+                    " loading the file and re-saving it.")
     # Deserialize everything except the Variables
     self.__dict__ = d
     # Deserialize the Variables
@@ -98,8 +113,40 @@ class NoRefModel(Model):
     if sess is None:
       raise RuntimeError("NoRefModel requires a default "
                          "TensorFlow session")
-    for var, value in safe_zip(self.get_vars(), tf_variables):
-      var.load(value, sess)
+    cur_vars = self.get_vars()
+    if len(cur_vars) != len(tf_variables):
+      print("Model format mismatch")
+      print("Current model has " + str(len(cur_vars)) + " variables")
+      print("Saved model has " + str(len(tf_variables)) + " variables")
+      print("Names of current vars:")
+      for var in cur_vars:
+        print("\t" + var.name)
+      if tf_variable_names is not None:
+        print("Names of saved vars:")
+        for name in tf_variable_names:
+          print("\t" + name)
+      else:
+        print("Saved vars use old format, no names available for them")
+      assert False
+
+    found = [False] * len(cur_vars)
+    if tf_variable_names is not None:
+      # New version using the names to handle changes in ordering
+      for value, name in safe_zip(tf_variables, tf_variable_names):
+        value_found = False
+        for idx, cur_var in enumerate(cur_vars):
+          if cur_var.name == name:
+            assert not found[idx]
+            value_found = True
+            found[idx] = True
+            cur_var.load(value, sess)
+            break
+        assert value_found
+      assert all(found)
+    else:
+      # Old version that works if and only if the order doesn't change
+      for var, value in safe_zip(cur_vars, tf_variables):
+        var.load(value, sess)
 
   def get_vars(self):
     """
@@ -117,15 +164,26 @@ class NoRefModel(Model):
     except AttributeError:
       pass
 
-    # For graph-based execution
-    scope_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
-                                   self.scope)
+    done = False
+    tried_to_make_params = False
+    while not done:
+      # Most models in cleverhans use only trainable variables and do not
+      # make sure the other collections are updated correctly.
+      trainable_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                         self.scope + "/")
+      # When wrapping other code, such as the CIFAR 10 challenge models,
+      # we need to make sure we get the batch norm running averages as well
+      # as the trainable variables.
+      model_vars = tf.get_collection(tf.GraphKeys.MODEL_VARIABLES,
+                                     self.scope + "/")
+      scope_vars = ordered_union(trainable_vars, model_vars)
 
-    if len(scope_vars) == 0:
-      self.make_params()
-      scope_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
-                                     self.scope)
-      assert len(scope_vars) > 0
+      if len(scope_vars) > 0:
+        done = True
+      else:
+        assert not tried_to_make_params
+        tried_to_make_params = True
+        self.make_params()
 
     # Make sure no variables have been added or removed
     if hasattr(self, "num_vars"):
@@ -156,3 +214,6 @@ def load(filepath):
   obj = joblib.load(filepath)
 
   return obj
+
+VARS = "_tf_variables"
+VAR_NAMES = "_tf_variable_names"
