@@ -31,6 +31,7 @@ from cleverhans.confidence_report import TRAIN_START, TRAIN_END
 from cleverhans.confidence_report import TEST_START, TEST_END
 from cleverhans.confidence_report import WHICH_SET
 from cleverhans.confidence_report import RECIPE
+from cleverhans.confidence_report import REPORT_PATH
 
 
 FLAGS = flags.FLAGS
@@ -63,4 +64,5 @@ if __name__ == '__main__':
   flags.DEFINE_string('recipe', RECIPE, 'Name of function from attack_bundling'
                       ' to run')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
+  flags.DEFINE_string('report_path', REPORT_PATH, 'Report path')
   tf.app.run()

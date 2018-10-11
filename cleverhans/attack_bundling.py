@@ -223,20 +223,18 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
            MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
 
-def random_search_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
-                                        clip_min, clip_max, eps_iter, nb_iter,
-                                        report_path, batch_size=BATCH_SIZE):
+def random_search_max_confidence_recipe(sess, model, x, y, eps,
+                                        clip_min, clip_max,
+                                        report_path, batch_size=BATCH_SIZE,
+                                        num_noise_points=10000):
   """Max confidence using random search.
-  TODO: this is kind of messy because it has different arguments than the
-  other recipes.
 
   References:
   https://openreview.net/forum?id=H1g0piA9tQ
-
-  This version runs each attack a fixed number of times.
-  It is more exhaustive than `single_run_max_confidence_recipe` but because
-  it uses a fixed budget rather than running indefinitely it is more
-  appropriate for making fair comparisons between two models.
+    Describe the max_confidence procedure used for the bundling in this recipe
+  https://arxiv.org/abs/1802.00420
+    Describe using random search with 1e5 or more random points to avoid
+    gradient masking.
 
   :param sess: tf.Session
   :param model: cleverhans.model.Model
@@ -257,7 +255,7 @@ def random_search_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   attack_configs = [noise_attack_config]
   assert batch_size % num_devices == 0
   dev_batch_size = batch_size // num_devices
-  new_work_goal = {noise_attack_config: 10000}
+  new_work_goal = {noise_attack_config: num_noise_points}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
 
