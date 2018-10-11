@@ -100,7 +100,7 @@ class Model(object):
         print("Expected " + str(self.num_params) + " variables")
         print("Got " + str(len(scope_vars)))
         for var in scope_vars:
-            print("\t" + str(var))
+          print("\t" + str(var))
         assert False
     else:
       self.num_params = len(scope_vars)
