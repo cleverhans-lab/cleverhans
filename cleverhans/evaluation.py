@@ -264,8 +264,8 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
   excess = needed_m - m
   if excess > m:
     raise NotImplementedError(("Your batch size (%(batch_size)d) is bigger"
-                              " than the dataset (%(m)d), this function is "
-                              "probably overkill.") % locals())
+                               " than the dataset (%(m)d), this function is "
+                               "probably overkill.") % locals())
 
   def pad(array):
     """Pads an array with replicated examples to have `excess` more entries"""
