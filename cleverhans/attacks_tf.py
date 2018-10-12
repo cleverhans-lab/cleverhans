@@ -1821,13 +1821,15 @@ def pgd_attack(loss_fn,
       loop_vars=[tf.constant(0.), init_perturbation, flat_init_optim_state],
       parallel_iterations=1,
       back_prop=False)
-  if project_perturbation == _project_perturbation:
+  if project_perturbation is _project_perturbation:
     perturbation_max = epsilon * 1.1
     check_diff = tf.assert_less_equal(
         final_perturbation, perturbation_max,
         message="final_perturbation must change no pixel by more than "
                 "%s" % perturbation_max)
   else:
+    # TODO: let caller pass in a check_diff function as well as
+    # project_perturbation
     check_diff = tf.no_op()
 
   with tf.control_dependencies([check_diff]):
