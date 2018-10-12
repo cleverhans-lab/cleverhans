@@ -514,7 +514,7 @@ class AttackGoal(object):
     :param run_counts: dict mapping each AttackConfig to a numpy array
       specifying how many times it has been run for each example
     """
-    print("Working on a " + str(type(self)) + " goal.")
+    print("Working on a " + self.__class__.__name__ + " goal.")
 
 
   def get_attack_config(self, attack_configs, run_counts, criteria):
@@ -599,6 +599,26 @@ class Misclassify(AttackGoal):
       # _logger.info("Miclassify goal still has attacks to run")
     return finished
 
+  def print_progress(self, criteria, run_counts):
+    print("Working on a " + self.__class__.__name__ + " goal.")
+    num_below = criteria['correctness'].sum()
+    print(str(num_below) + " examples are still correctly classified.")
+    if self.new_work_goal is None:
+      print("No work goal: running all attacks indefinitely")
+    else:
+      print("Working until all attacks have been run enough times")
+      filtered_run_counts = self.filter(run_counts, criteria)
+      filtered_work_before = self.filter(self.work_before, criteria)
+      for ac in self.new_work_goal:
+        goal = self.new_work_goal[ac]
+        new = filtered_run_counts[ac] - filtered_work_before[ac]
+        min_new = new.min()
+        if min_new < goal:
+          num_min = (new == min_new).sum()
+          print("\t" + str(ac) + ": goal of " + str(goal) + " runs, but "
+                + str(num_min) + " examples have been run only " + str(min_new)
+                + " times")
+
   def filter(self, run_counts, criteria):
     correctness = criteria['correctness']
     assert correctness.dtype == np.bool
@@ -615,7 +635,6 @@ class Misclassify(AttackGoal):
                                                  correct_work_before,
                                                  correct_run_counts)
     attack_config = attack_configs[self.rng.randint(len(attack_configs))]
-    # _logger.info(str(type(self)) + " chose to run " + str(attack_config))
     return attack_config
 
   def extra_criteria(self):
@@ -736,28 +755,28 @@ class MaxConfidence(AttackGoal):
     return finished
 
   def print_progress(self, criteria, run_counts):
-    print("Working on a " + str(type(self)) + " goal.")
+    print("Working on a " + self.__class__.__name__ + " goal.")
     if self.t == 1.:
       print("Threshold of 1, so just driving up confidence of all examples.")
     else:
       print("Target threshold of " + str(self.t))
-      num_below = (self.criteria['wrong_confidence'] <= self.t).sum()
+      num_below = (criteria['wrong_confidence'] <= self.t).sum()
       print(str(num_below) + " examples are below the target threshold.")
     if self.new_work_goal is None:
       print("No work goal: running all attacks indefinitely")
     else:
       print("Working until all attacks have been run enough times")
-      filtered_run_counts = self.filter(run_counts, self.criteria)
-      filtered_work_before = self.filter(self.work_before, self.criteria)
+      filtered_run_counts = self.filter(run_counts, criteria)
+      filtered_work_before = self.filter(self.work_before, criteria)
       for ac in self.new_work_goal:
         goal = self.new_work_goal[ac]
         new = filtered_run_counts[ac] - filtered_work_before[ac]
         min_new = new.min()
         if min_new < goal:
           num_min = (new == min_new).sum()
-          print("\t" + str(ac) + ": goal of " + str(goal) + "runs, but "
+          print("\t" + str(ac) + ": goal of " + str(goal) + " runs, but "
                 + str(num_min) + " examples have been run only " + str(min_new)
-                + times)
+                + " times")
 
 
 
@@ -770,7 +789,6 @@ class MaxConfidence(AttackGoal):
                                                  correct_work_before,
                                                  correct_run_counts)
     attack_config = attack_configs[self.rng.randint(len(attack_configs))]
-    # _logger.info(str(type(self)) + " chose to run " + str(attack_config))
     return attack_config
 
   def start(self, run_counts):
