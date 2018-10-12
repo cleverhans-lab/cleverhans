@@ -80,6 +80,15 @@ msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}'
 # R0902: too many attributes
 # C0200: consider using enumerate
 # W1201: logging not lazy
+#  Disabled because it forbids things like
+#    logging.info('#' * pad + msg + '#' * pad)
+#  Doesn't seem useful to refactor this to
+#    padded_msg = '#' * pad + msg + '#' * pad
+#    logging.info(padded_msg)
+#  or to refactor it to
+#    logging.info('%s%s%s', pad, msg, pad)
+#  The speedup of avoiding a string concatenation is presumably negligible
+#  compared to most of the ML operations we do to generate log messages.
 # W1202: logging format
 # C0302: too many lines in module
 # W0511: forbids TODOs
