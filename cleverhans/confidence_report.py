@@ -29,12 +29,12 @@ TEST_START = 0
 TEST_END = 10000
 WHICH_SET = 'test'
 RECIPE = 'basic_max_confidence_recipe'
-REPORT_PATH = NONE
+REPORT_PATH = None
 
 def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                                    train_end=TRAIN_END, test_start=TEST_START,
                                    test_end=TEST_END, which_set=WHICH_SET,
-                                   recipe=RECIPE, report_path=NONE):
+                                   recipe=RECIPE, report_path=REPORT_PATH):
   """
   Load a saved model, gather its predictions, and save a confidence report.
   :param filepath: path to model to evaluate
@@ -94,6 +94,8 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   # For now I don't have an idea for a beautiful unifying framework, so
   # we get an if statement.
   if recipe == 'random_search_max_confidence_recipe':
+    # pylint always checks against the default recipe here
+    # pylint: disable=no-value-for-parameter
     run_recipe(sess=sess, model=model, x=x_data, y=y_data, eps=eps,
                clip_min=clip_min, clip_max=clip_max, report_path=report_path)
   else:

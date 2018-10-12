@@ -254,7 +254,6 @@ def random_search_max_confidence_recipe(sess, model, x, y, eps,
   noise_attack_config = AttackConfig(noise_attack, threat_params)
   attack_configs = [noise_attack_config]
   assert batch_size % num_devices == 0
-  dev_batch_size = batch_size // num_devices
   new_work_goal = {noise_attack_config: num_noise_points}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
