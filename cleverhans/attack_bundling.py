@@ -231,9 +231,9 @@ def random_search_max_confidence_recipe(sess, model, x, y, eps,
 
   References:
   https://openreview.net/forum?id=H1g0piA9tQ
-    Describe the max_confidence procedure used for the bundling in this recipe
+    Describes the max_confidence procedure used for the bundling in this recipe
   https://arxiv.org/abs/1802.00420
-    Describe using random search with 1e5 or more random points to avoid
+    Describes using random search with 1e5 or more random points to avoid
     gradient masking.
 
   :param sess: tf.Session
