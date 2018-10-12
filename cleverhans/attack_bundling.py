@@ -433,6 +433,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
     should_save = True
   if should_save:
     report['time'] = new_time
+    goal.print_progress(criteria, run_counts)
     print_stats(criteria['correctness'], criteria['confidence'], 'bundled')
 
     serial.save(report_path, report)
@@ -505,6 +506,16 @@ class AttackGoal(object):
     """
     raise NotImplementedError(str(type(self)) +
                               " needs to implement is_satisfied.")
+
+  def print_progress(self, criteria, run_counts):
+    """
+    Prints a progress message about how much has been done toward the goal.
+    :param criteria: dict, of the format returned by get_criteria
+    :param run_counts: dict mapping each AttackConfig to a numpy array
+      specifying how many times it has been run for each example
+    """
+    print("Working on a " + str(type(self)) + " goal.")
+
 
   def get_attack_config(self, attack_configs, run_counts, criteria):
     """
@@ -711,19 +722,44 @@ class MaxConfidence(AttackGoal):
       return True
     if self.new_work_goal is None:
       return False
-    correct_run_counts = self.filter(run_counts, criteria)
-    correct_work_before = self.filter(self.work_before, criteria)
+    filtered_run_counts = self.filter(run_counts, criteria)
+    filtered_work_before = self.filter(self.work_before, criteria)
     unfinished = unfinished_attack_configs(self.new_work_goal,
-                                           correct_work_before,
-                                           correct_run_counts,
+                                           filtered_work_before,
+                                           filtered_run_counts,
                                            log=False)
     finished = len(unfinished) == 0
     if finished:
       _logger.info("MaxConfidence timed out after running all requested attacks")
     else:
       pass
-      # _logger.info("AboveThresh goal still has attacks to run")
     return finished
+
+  def print_progress(self, criteria, run_counts):
+    print("Working on a " + str(type(self)) + " goal.")
+    if self.t == 1.:
+      print("Threshold of 1, so just driving up confidence of all examples.")
+    else:
+      print("Target threshold of " + str(self.t))
+      num_below = (self.criteria['wrong_confidence'] <= self.t).sum()
+      print(str(num_below) + " examples are below the target threshold.")
+    if self.new_work_goal is None:
+      print("No work goal: running all attacks indefinitely")
+    else:
+      print("Working until all attacks have been run enough times")
+      filtered_run_counts = self.filter(run_counts, self.criteria)
+      filtered_work_before = self.filter(self.work_before, self.criteria)
+      for ac in self.new_work_goal:
+        goal = self.new_work_goal[ac]
+        new = filtered_run_counts[ac] - filtered_work_before[ac]
+        min_new = new.min()
+        if min_new < goal:
+          num_min = (new == min_new).sum()
+          print("\t" + str(ac) + ": goal of " + str(goal) + "runs, but "
+                + str(num_min) + " examples have been run only " + str(min_new)
+                + times)
+
+
 
   def get_attack_config(self, attack_configs, run_counts, criteria):
     # TODO: refactor to avoid this duplicated method
