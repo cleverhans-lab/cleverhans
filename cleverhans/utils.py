@@ -405,6 +405,14 @@ def deterministic_dict(normal_dict):
 
 
 def ordered_union(l1, l2):
+  """
+  Return the union of l1 and l2, with a deterministic ordering.
+  (Union of python sets does not necessarily have a consisten iteration
+  order)
+  :param l1: list of items
+  :param l2: list of items
+  :returns: list containing one copy of each item that is in l1 or in l2
+  """
   out = []
   for e in l1 + l2:
     if e not in out:

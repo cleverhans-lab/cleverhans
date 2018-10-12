@@ -94,7 +94,10 @@ def train(sess, loss, x_train, y_train,
   fprop_args = fprop_args or {}
 
   # Check that necessary arguments were given (see doc above)
-  assert args.nb_epochs, "Number of epochs was not given in args dict"
+
+  # Be sure to support 0 epochs for debugging purposes
+  if args.nb_epochs is None:
+    raise ValueError("`args` must specify number of epochs")
   if optimizer is None:
     if args.learning_rate is None:
       raise ValueError("Learning rate was not given in args dict")
