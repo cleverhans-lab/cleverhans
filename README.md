@@ -82,9 +82,13 @@ needed for backwards compatibility with these versions.
 
 ## Scripts: `scripts` directory
 
-The scripts directory contains command line utilities.
+The `scripts` directory contains command line utilities.
 In many cases you can use these to run CleverHans functionality on your
 saved models without needing to write any of your own Python code.
+
+You may want to set your `.bashrc` / `.bash_profile` file to add the
+CleverHans `scripts` directory to your `PATH` environment variable
+so that these scripts will be conveniently executable from any directory.
 
 ## Tutorials: `cleverhans_tutorials` directory
 
