@@ -80,7 +80,13 @@ Support for TensorFlow 1.3 and earlier is deprecated. After 2018-11-1 we will
 not fix bugs reported for these versions and we will eliminate wrapper code
 needed for backwards compatibility with these versions.
 
-## Tutorials
+## Scripts: `scripts` directory
+
+The scripts directory contains command line utilities.
+In many cases you can use these to run CleverHans functionality on your
+saved models without needing to write any of your own Python code.
+
+## Tutorials: `cleverhans_tutorials` directory
 
 To help you get started with the functionalities provided by this library, the
 `cleverhans_tutorials/' folder comes with the following tutorials:
@@ -113,11 +119,29 @@ Note that you should configure Keras to use the TensorFlow backend. You
 can find instructions for
 setting the Keras backend [on this page](https://keras.io/backend/).
 
-## Examples
+NOTE: the tutorials are maintained carefully, in the sense that we use
+continuous integration to make sure they continue working. They are not
+considered part of the API and they can change at any time without warning.
+You should not write 3rd party code that imports the tutorials and expect
+that the interface will not break. Only the main library is subject to
+our six month interface deprecation warning rule.
+
+NOTE: please write to cleverhans-dev@googlegroups.com before writing a new
+tutorial. Because each new tutorial involves a large amount of duplicated
+code relative to the existing tutorials, and because every line of code
+requires ongoing testing and maintenance indefinitely, we generally prefer
+not to add new tutorials. Each tutorial should showcase an extremely different
+way of using the library. Just calling a different attack, model, or dataset
+is not enough to justify maintaining a parallel tutorial.
+
+
+## Examples : `examples` directory
 
 The `examples/` folder contains additional scripts to showcase different uses
 of the CleverHans library or get you started competing in different adversarial
-example contests.
+example contests. We do not offer nearly as much ongoing maintenance or support
+for this directory as the rest of the library, and if code in here gets broken
+we may just delete it without warning.
 
 ## List of attacks
 
