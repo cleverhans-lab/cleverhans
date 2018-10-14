@@ -19,6 +19,7 @@ the model got each example correct and an array containing the confidence
 that the model assigned to each prediction.
 
 This script works by running a single MaxConfidence attack on each example.
+( https://openreview.net/forum?id=H1g0piA9tQ )
 This provides a reasonable estimate of the true failure rate quickly, so
 long as the model does not suffer from gradient masking.
 However, this estimate is mostly intended for development work and not
