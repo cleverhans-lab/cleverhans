@@ -78,10 +78,10 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   factory.kwargs['test_end'] = test_end
   dataset = factory()
 
-  center = factory.kwargs['center']
+  center = dataset.kwargs['center']
   value_range = 1. + center
   min_value = 0. - center
-  max_value = 1.
+  max_value = dataset.max_val
 
   if 'CIFAR' in str(factory.cls):
     base_eps = 8. / 255.
@@ -226,7 +226,7 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
                'eps_iter': base_eps_iter * value_range,
                'nb_iter': nb_iter,
                'clip_min': min_value,
-               'clip_max': 1.}
+               'clip_max': max_val}
 
 
   x_data, y_data = dataset.get_set(which_set)
