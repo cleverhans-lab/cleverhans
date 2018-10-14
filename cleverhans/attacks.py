@@ -2127,7 +2127,8 @@ class Noise(Attack):
     eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,
                             dtype=self.tf_dtype)
     adv_x = x + eta
-    if self.clip_min is not None and self.clip_max is not None:
+    if self.clip_min is not None or self.clip_max is not None:
+      assert self.clip_min is not None and self.clip_max is not None
       adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
     return adv_x
