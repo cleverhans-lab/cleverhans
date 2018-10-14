@@ -34,6 +34,7 @@ from cleverhans.serial import load
 from cleverhans.utils import set_log_level
 from cleverhans.utils_tf import infer_devices
 from cleverhans.utils_tf import silence
+silence()
 devices = infer_devices()
 num_devices = len(devices)
 BATCH_SIZE = 128
@@ -45,7 +46,6 @@ WHICH_SET = 'test'
 NB_ITER = 40
 BASE_EPS_ITER = None # Differs by dataset
 
-silence()
 
 FLAGS = flags.FLAGS
 
