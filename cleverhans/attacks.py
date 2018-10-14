@@ -597,6 +597,7 @@ class ProjectedGradientDescent(Attack):
     """
 
     # Save attack-specific parameters
+    assert eps_iter <= eps, (eps_iter, eps)
     self.eps = eps
     if rand_init is None:
       rand_init = self.default_rand_init
@@ -618,6 +619,9 @@ class ProjectedGradientDescent(Attack):
     # Check if order of the norm is acceptable given current implementation
     if self.ord not in [np.inf, 1, 2]:
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
+    if (self.ord == np.inf and self.clip_min is not None and
+        self.clip_max is not None):
+      assert self.eps <= self.clip_max - self.clip_min
 
     return True
 
