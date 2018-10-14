@@ -21,10 +21,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
-import six
 
 from cleverhans.confidence_report import make_confidence_report_bundled
 from cleverhans.confidence_report import TRAIN_START, TRAIN_END
@@ -43,7 +41,7 @@ def main(argv=None):
   Make a confidence report and save it to disk.
   """
   try:
-    name_of_script, filepath = argv
+    _name_of_script, filepath = argv
   except ValueError:
     raise ValueError(argv)
   print(filepath)
