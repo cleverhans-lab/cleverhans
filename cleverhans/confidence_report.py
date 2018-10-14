@@ -176,6 +176,7 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
   :param test_start: index of first test set example to use
   :param test_end: index of last test set example to use
   :param batch_size: size of evaluation batches
+  :param which_set: 'train' or 'test'
   :param mc_batch_size: batch size for MaxConfidence attack
   :param base_eps_iter: step size if the data were in [0,1]
     (Step size will be rescaled proportional to the actual data range)
@@ -199,6 +200,8 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
     model = load(filepath)
   assert len(model.get_params()) > 0
   factory = model.dataset_factory
+  factory.kwargs['train_start'] = train_start
+  factory.kwargs['train_end'] = train_end
   factory.kwargs['test_start'] = test_start
   factory.kwargs['test_end'] = test_end
   dataset = factory()
