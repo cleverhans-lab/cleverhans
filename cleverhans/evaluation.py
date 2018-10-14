@@ -437,7 +437,7 @@ class _CorrectFactory(object):
   def __eq__(self, other):
     # Make factory hashable so that no two factories for the
     # same model will be used to build redundant tf graphs
-    if not isinstance(other, _CorrectAndProbFactory):
+    if not isinstance(other, _CorrectFactory):
       return False
     return self.properties_to_hash == other.properties_to_hash
 
