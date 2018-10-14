@@ -111,8 +111,7 @@ def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
                 'eps_iter': base_eps_iter * value_range,
                 'nb_iter': nb_iter,
                 'clip_min': min_value,
-                'clip_max': 1.}
-
+                'clip_max': max_val}
 
   x_data, y_data = dataset.get_set(which_set)
 
@@ -122,7 +121,6 @@ def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
   jobs = [('clean', None, None, None),
           ('Semantic', semantic, None, None),
           ('pgd', pgd, pgd_params, None)]
-
 
   for job in jobs:
     name, attack, attack_params, job_batch_size = job
@@ -145,7 +143,7 @@ def main(argv=None):
     raise ValueError(argv)
   print_accuracies(filepath=filepath, test_start=FLAGS.test_start,
                    test_end=FLAGS.test_end, which_set=FLAGS.which_set,
-                   nb_iter=FLAGS.nb_iter, base_eps_iter=FLAGS.nb_iter,
+                   nb_iter=FLAGS.nb_iter, base_eps_iter=FLAGS.base_eps_iter,
                    batch_size=FLAGS.batch_size)
 
 if __name__ == '__main__':
