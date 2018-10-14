@@ -116,8 +116,6 @@ def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
 
   x_data, y_data = dataset.get_set(which_set)
 
-  report = {}
-
   semantic = Semantic(model, center, max_val, sess)
   pgd = ProjectedGradientDescent(model, sess=sess)
 
