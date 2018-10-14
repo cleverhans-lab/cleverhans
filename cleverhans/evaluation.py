@@ -13,7 +13,8 @@ from cleverhans.utils import create_logger
 from cleverhans.utils_tf import infer_devices
 
 
-def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
+def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None,
+             attack=None, attack_params=None):
   """
   Compute the accuracy of a TF model on some data
   :param sess: TF session to use when training the graph
@@ -33,13 +34,20 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None):
   :param feed: An optional dictionary that is appended to the feeding
            dictionary before the session runs. Can be used to feed
            the learning phase of a Keras model for instance.
+  :param attack: cleverhans.attack.Attack
+    Optional. If no attack specified, evaluates the model on clean data.
+    If attack is specified, evaluates the model on adversarial examples
+    created by the attack.
+  :param attack_params: dictionary
+    If attack is specified, this dictionary is passed to attack.generate
+    as keyword arguments.
   :return: a float with the accuracy value
   """
 
   _check_x(x)
   _check_y(y)
 
-  factory = _CorrectFactory(model)
+  factory = _CorrectFactory(model, attack, attack_params)
 
   correct, = batch_eval_multi_worker(sess, factory, [x, y],
                                      batch_size=batch_size, devices=devices,
@@ -411,20 +419,27 @@ class _CorrectFactory(object):
   whether each example is correct.
   """
 
-  def __init__(self, model):
+  def __init__(self, model, attack=None, attack_params=None):
+    if attack_params is None:
+      attack_params = {}
     self.model = model
+    self.attack = attack
+    self.attack_params = attack_params
+    hashable_attack_params = tuple((key, attack_params[key]) for key
+                                   in sorted(attack_params.keys()))
+    self.properties_to_hash = (model, attack, hashable_attack_params)
 
   def __hash__(self):
     # Make factory hashable so that no two factories for the
     # same model will be used to build redundant tf graphs
-    return self.model.__hash__()
+    return self.properties_to_hash.__hash__()
 
   def __eq__(self, other):
     # Make factory hashable so that no two factories for the
     # same model will be used to build redundant tf graphs
-    if not isinstance(other, _CorrectFactory):
+    if not isinstance(other, _CorrectAndProbFactory):
       return False
-    return self.model == other.model
+    return self.properties_to_hash == other.properties_to_hash
 
   def __call__(self):
     x_batch = self.model.make_input_placeholder()
@@ -433,7 +448,15 @@ class _CorrectFactory(object):
     if LooseVersion(tf.__version__) < LooseVersion('1.0.0'):
       raise NotImplementedError()
 
-    predictions = self.model.get_probs(x_batch)
+    if self.attack is None:
+      x_input = x_batch
+    else:
+      attack_params = self.attack_params
+      if attack_params is None:
+        attack_params = {}
+      x_input = self.attack.generate(x_batch, y=y_batch, **attack_params)
+
+    predictions = self.model.get_probs(x_input)
     correct = tf.equal(tf.argmax(y_batch, axis=-1),
                        tf.argmax(predictions, axis=-1))
 
