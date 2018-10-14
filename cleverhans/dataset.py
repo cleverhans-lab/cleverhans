@@ -120,6 +120,7 @@ class CIFAR10(Dataset):
     self.y_train = y_train
     self.x_test = x_test
     self.y_test = y_test
+    self.max_val = max_val
 
   def to_tensorflow(self, shuffle=4096):
     # This is much more efficient with data augmentation, see tutorials.
