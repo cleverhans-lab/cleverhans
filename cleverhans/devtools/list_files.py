@@ -41,7 +41,14 @@ def list_files(suffix=""):
                       examples_files]
   else:
     examples_files = []
-  file_list = file_list + tutorials_files + examples_files
+
+  scripts_path = os.path.join(repo_path, "scripts")
+  if os.path.isdir(scripts_path):
+    scripts_files = _list_files(scripts_path, suffix)
+    scripts_files = [os.path.join(os.pardir, path) for path in
+                     scripts_files]
+
+  file_list = file_list + tutorials_files + examples_files + scripts_files
 
   return file_list
 

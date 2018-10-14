@@ -18,28 +18,29 @@ whitelist_pep8 = [
     "../examples/multigpu_advtrain/test_attack_multigpu.py"
 ]
 
+all_py_files = list_files('.py')
 
 def update_whitelist():
   global whitelist_pep8
   # We don't want to test RL-attack because it has so many dependencies
   # not used elsewhere, and pylint wants to import them all
   whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                         for path in list_files(".py") if "RL-attack" in path])
+                         for path in all_py_files if "RL-attack" in path])
   # Similarly, we don't want to require robust_vision_benchmark installed
   whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                         for path in list_files(".py")
+                         for path in all_py_files
                          if "robust_vision_benchmark" in path])
   # Similarly, we don't want to require that cloud be installed
   whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                         for path in list_files(".py")
+                         for path in all_py_files
                          if "cloud_client" in path])
   # This example has more dependencies too
   whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                         for path in list_files(".py")
+                         for path in all_py_files
                          if "facenet_adversarial_faces" in path])
   # This too
   whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
-                         for path in list_files(".py")
+                         for path in all_py_files
                          if "madry_lab_challenges" in path])
 
 
@@ -56,7 +57,7 @@ def test_format_pep8():
   """
   files_to_check = []
   module_dir = cleverhans.__path__[0]
-  for path in list_files(".py"):
+  for path in all_py_files:
     rel_path = os.path.relpath(path, module_dir)
     if rel_path in whitelist_pep8:
       continue
