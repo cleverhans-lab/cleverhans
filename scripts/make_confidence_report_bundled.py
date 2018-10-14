@@ -51,7 +51,8 @@ def main(argv=None):
                                  test_start=FLAGS.test_start,
                                  test_end=FLAGS.test_end,
                                  which_set=FLAGS.which_set,
-                                 recipe=FLAGS.recipe)
+                                 recipe=FLAGS.recipe,
+                                 report_path=FLAGS.report_path)
 
 
 if __name__ == '__main__':
