@@ -569,7 +569,7 @@ class ProjectedGradientDescent(Attack):
     if self.ord == np.inf and self.clip_min is not None:
       asserts.append(tf.assert_less_equal(self.eps,
                                           self.clip_max - self.clip_min))
- 
+
     with tf.control_dependencies(asserts):
       adv_x = tf.identity(adv_x)
 
