@@ -229,7 +229,7 @@ def make_curve(report, success_name, fail_names):
 
     # Process all ties
     while next_prob_to_include == all_triplets[next_idx][0]:
-      prob, correct, is_good = all_triplets[next_idx]
+      _prob, correct, is_good = all_triplets[next_idx]
       if is_good:
         good_covered_and_correct += correct
       else:
