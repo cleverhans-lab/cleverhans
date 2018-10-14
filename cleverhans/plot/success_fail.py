@@ -90,7 +90,7 @@ def plot_report(report, success_name, fail_names, label=None,
   gap = fail_upper_bound - fail_lower_bound
   if gap.size > 0:
     assert gap.min() >= 0.
-    print "Max gap: ", gap.max()
+    print("Max gap: ", gap.max())
 
 
 def make_curve(report, success_name, fail_names):
