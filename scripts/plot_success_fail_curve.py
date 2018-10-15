@@ -11,14 +11,10 @@ To make nicely labeled plots formatted to fit the page / column of a
 publication, you should probably write your own script that calls some
 of the same plotting commands.
 """
-import warnings
 import sys
 
-import numpy as np
 from matplotlib import pyplot
 
-from cleverhans.serial import load
-from cleverhans.utils import safe_zip
 from cleverhans.plot.success_fail import plot_report_from_path
 
 if __name__ == "__main__":
