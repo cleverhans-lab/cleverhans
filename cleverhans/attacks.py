@@ -2199,17 +2199,23 @@ class MaxConfidence(Attack):
   If the underlying optimizer is optimal, this attack procedure gives the
   optimal failure rate for every confidence threshold t > 0.5.
 
-
   Publication: https://openreview.net/forum?id=H1g0piA9tQ
+
+  :param model: cleverhans.model.Model
+  :param sess: tf.session.Session
+  :param base_attacker: cleverhans.attacks.Attack
   """
 
-  def __init__(self, model, sess=None):
+  def __init__(self, model, sess=None, base_attacker=None):
     if not isinstance(model, Model):
       raise TypeError("Model must be cleverhans.model.Model, got " +
                       str(type(model)))
 
     super(MaxConfidence, self).__init__(model, sess)
-    self.base_attacker = ProjectedGradientDescent(model, sess=sess)
+    if base_attacker is None:
+      self.base_attacker = ProjectedGradientDescent(model, sess=sess)
+    else:
+      self.base_attacker = base_attacker
     self.structural_kwargs = self.base_attacker.structural_kwargs
     self.feedable_kwargs = self.base_attacker.feedable_kwargs
 
