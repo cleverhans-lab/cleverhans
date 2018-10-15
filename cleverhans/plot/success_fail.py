@@ -191,7 +191,10 @@ def make_curve(report, success_name, fail_names):
 
   bounded = False
 
-  while True:
+  # NOTE: the loop always exits via an internal break statement.
+  # Copied the termination condition to the while statement for ease
+  # of reading.
+  while next_idx < len(all_triplets):
     gs = float(good_covered_and_correct) / total_good
     bf = float(bad_covered_and_incorrect) / total_bad
     # Add results for current threshold to the list
