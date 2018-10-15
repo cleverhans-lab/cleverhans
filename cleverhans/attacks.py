@@ -476,7 +476,7 @@ class ProjectedGradientDescent(Attack):
         'clip_min': self.np_dtype,
         'clip_max': self.np_dtype
     }
-    self.structural_kwargs = ['ord', 'nb_iter', 'rand_init']
+    self.structural_kwargs = ['ord', 'nb_iter', 'rand_init', 'sanity_checks']
     self.default_rand_init = default_rand_init
 
   def generate(self, x, **kwargs):
@@ -565,13 +565,20 @@ class ProjectedGradientDescent(Attack):
 
     asserts = []
 
-    asserts.append(tf.assert_less_equal(self.eps_iter, self.eps))
-    if self.ord == np.inf and self.clip_min is not None:
-      asserts.append(tf.assert_less_equal(self.eps,
-                                          self.clip_max - self.clip_min))
+    # Asserts run only on CPU.
+    # When multi-GPU eval code tries to force all PGD ops onto GPU, this
+    # can cause an error.
+    with tf.device("/CPU:0"):
+      asserts.append(tf.assert_less_equal(self.eps_iter, self.eps))
+      if self.ord == np.inf and self.clip_min is not None:
+        # The 1e-6 is needed to compensate for numerical error.
+        # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5, clip_max=.7
+        asserts.append(tf.assert_less_equal(self.eps,
+                                            1e-6 + self.clip_max - self.clip_min))
 
-    with tf.control_dependencies(asserts):
-      adv_x = tf.identity(adv_x)
+    if self.sanity_checks:
+      with tf.control_dependencies(asserts):
+        adv_x = tf.identity(adv_x)
 
     return adv_x
 
@@ -586,6 +593,7 @@ class ProjectedGradientDescent(Attack):
                    y_target=None,
                    rand_init=None,
                    rand_minmax=0.3,
+                   sanity_checks=True,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -605,6 +613,9 @@ class ProjectedGradientDescent(Attack):
                 Possible values: np.inf, 1 or 2.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param sanity_checks: bool Insert tf asserts checking values
+        (Some tests need to run with no sanity checks because the
+         tests intentionally configure the attack strangely)
     """
 
     # Save attack-specific parameters
@@ -629,6 +640,7 @@ class ProjectedGradientDescent(Attack):
     # Check if order of the norm is acceptable given current implementation
     if self.ord not in [np.inf, 1, 2]:
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
+    self.sanity_checks = sanity_checks
 
     return True
 
