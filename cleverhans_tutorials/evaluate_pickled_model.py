@@ -13,10 +13,11 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.dataset import MNIST
-from cleverhans.utils_tf import model_eval
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import set_log_level
+from cleverhans.utils_tf import model_eval, silence
 from cleverhans.serial import load
+silence()
 
 FLAGS = flags.FLAGS
 
@@ -98,10 +99,9 @@ def evaluate_model(filepath,
 
 
 def main(argv=None):
-  evaluate_model(filepath=FLAGS.filepath)
+  _, filepath = argv
+  evaluate_model(filepath=filepath)
 
 
 if __name__ == '__main__':
-  flags.DEFINE_string('filepath', 'clean_model.joblib', 'Model to evaluate')
-
   tf.app.run()

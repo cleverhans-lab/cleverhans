@@ -34,7 +34,7 @@ _logger.setLevel(logging.INFO)
 
 
 def train(sess, loss, x_train, y_train,
-          init_all=True, evaluate=None, feed=None, args=None,
+          init_all=False, evaluate=None, feed=None, args=None,
           rng=None, var_list=None, fprop_args=None, optimizer=None,
           devices=None, x_batch_preprocessor=None, use_ema=False,
           ema_decay=.998, run_canary=True,

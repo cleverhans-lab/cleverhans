@@ -73,7 +73,7 @@ def initialize_uninitialized_global_variables(sess):
 
 
 def train(sess, loss, x, y, X_train, Y_train, save=False,
-          init_all=True, evaluate=None, feed=None, args=None,
+          init_all=False, evaluate=None, feed=None, args=None,
           rng=None, var_list=None, fprop_args=None, optimizer=None):
   """
   Train a TF graph.

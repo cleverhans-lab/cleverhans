@@ -16,10 +16,12 @@ from cleverhans.attacks import FastGradientMethod
 from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
 from cleverhans.serial import save
-from cleverhans.utils_tf import model_eval
+from cleverhans.utils_tf import model_eval, silence
 from cleverhans.train import train
 from cleverhans.utils import AccuracyReport, set_log_level
 from cleverhans_tutorials.tutorial_models import make_basic_picklable_cnn
+
+silence()
 
 FLAGS = flags.FLAGS
 
@@ -103,7 +105,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
       'clip_max': 1.
   }
   rng = np.random.RandomState([2017, 8, 30])
-  sess = tf.Session()
 
   def do_eval(preds, x_set, y_set, report_key, is_adv=None):
     acc = model_eval(sess, x, y, preds, x_set, y_set, args=eval_params)
@@ -119,6 +120,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
   if clean_train:
     model = make_basic_picklable_cnn()
+    # Tag the model so that when it is saved to disk, future scripts will
+    # be able to tell what data it was trained on
+    model.dataset_factory = mnist.get_factory()
     preds = model.get_logits(x)
     assert len(model.get_params()) > 0
     loss = CrossEntropy(model, smoothing=label_smoothing)
@@ -131,10 +135,11 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
     with sess.as_default():
       save("clean_model.joblib", model)
-      # Now that the model has been saved, you can evaluate it in a
-      # separate process using `evaluate_pickled_model.py`.
-      # You should get exactly the same result for both clean and
-      # adversarial accuracy as you get within this program.
+
+      print("Now that the model has been saved, you can evaluate it in a"
+            " separate process using `evaluate_pickled_model.py`. "
+            "You should get exactly the same result for both clean and "
+            "adversarial accuracy as you get within this program.")
 
     # Calculate training error
     if testing:
@@ -157,6 +162,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
   # Create a new model and train it to be robust to FastGradientMethod
   model2 = make_basic_picklable_cnn()
+  # Tag the model so that when it is saved to disk, future scripts will
+  # be able to tell what data it was trained on
+  model2.dataset_factory = mnist.get_factory()
   fgsm2 = FastGradientMethod(model2, sess=sess)
 
   def attack(x):
@@ -186,12 +194,19 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   train(sess, loss2, x_train, y_train, evaluate=evaluate2,
         args=train_params, rng=rng, var_list=model2.get_params())
 
+
   with sess.as_default():
     save("adv_model.joblib", model2)
-    # Now that the model has been saved, you can evaluate it in a
-    # separate process using `evaluate_pickled_model.py`.
-    # You should get exactly the same result for both clean and
-    # adversarial accuracy as you get within this program.
+    print("Now that the model has been saved, you can evaluate it in a "
+          "separate process using "
+          "`python evaluate_pickled_model.py adv_model.joblib`. "
+          "You should get exactly the same result for both clean and "
+          "adversarial accuracy as you get within this program."
+          " You can also move beyond the tutorials directory and run the "
+          " real `compute_accuracy.py` script (make sure cleverhans/scripts "
+          "is in your PATH) to see that this FGSM-trained "
+          "model is actually not very robust---it's just a model that trains "
+          " quickly so the tutorial does not take a long time")
 
   # Calculate training errors
   if testing:

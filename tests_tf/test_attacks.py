@@ -820,11 +820,11 @@ class TestMadryEtAl(CleverHansTest):
 
         x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.05,
                                         clip_min=0.5, clip_max=0.7,
-                                        nb_iter=5)
+                                        nb_iter=5, sanity_checks=False)
 
         orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
         new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-        self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
+        self.assertLess(np.mean(orig_labs == new_labs), 0.1)
 
     def test_clip_eta(self):
         x_val = np.random.rand(100, 2)
@@ -842,10 +842,11 @@ class TestMadryEtAl(CleverHansTest):
 
         x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
                                         nb_iter=5,
-                                        clip_min=-0.2, clip_max=0.3)
+                                        clip_min=-0.2, clip_max=0.3,
+                                        sanity_checks=False)
 
-        self.assertTrue(-0.201 < np.min(x_adv))
-        self.assertTrue(np.max(x_adv) < .301)
+        self.assertLess(-0.201, np.min(x_adv))
+        self.assertLess(np.max(x_adv), .301)
 
     def test_multiple_initial_random_step(self):
         """
@@ -865,14 +866,14 @@ class TestMadryEtAl(CleverHansTest):
         for i in range(10):
             x_adv = self.attack.generate_np(x_val, eps=.5, eps_iter=0.05,
                                             clip_min=0.5, clip_max=0.7,
-                                            nb_iter=2)
+                                            nb_iter=2, sanity_checks=False)
             new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 
             # Examples for which we have not found adversarial examples
             I = (orig_labs == new_labs_multi)
             new_labs_multi[I] = new_labs[I]
 
-        self.assertTrue(np.mean(orig_labs == new_labs_multi) < 0.5)
+        self.assertLess(np.mean(orig_labs == new_labs_multi), 0.5)
 
 
 class TestProjectedGradientDescent(TestMadryEtAl):
