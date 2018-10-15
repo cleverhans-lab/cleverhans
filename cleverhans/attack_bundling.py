@@ -399,7 +399,6 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   :param report: dict, see `bundle_attacks_with_goal`
   :param report_path: str, path to save the report to
   """
-
   attack_config = goal.get_attack_config(attack_configs, run_counts, criteria)
   idxs = goal.request_examples(attack_config, criteria, run_counts, BATCH_SIZE)
   x_batch = x[idxs]
