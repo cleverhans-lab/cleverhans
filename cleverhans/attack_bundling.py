@@ -89,7 +89,7 @@ def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     cls_attack_config = AttackConfig(pgd_attack, cls_params, "pgd_" + str(cls))
     pgd_attack_configs.append(cls_attack_config)
     expensive_params = copy.copy(cls_params)
-    expensive_params["eps_iter"] /= eps_iter_small
+    expensive_params["eps_iter"] = eps_iter_small
     expensive_params["nb_iter"] *= 25.
     expensive_config = AttackConfig(pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
     expensive_pgd.append(expensive_config)
