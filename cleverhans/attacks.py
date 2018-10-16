@@ -1946,7 +1946,7 @@ class SPSA(Attack):
       warnings.warn("`is_targeted` is deprecated. Simply do not specify it."
                     " It may become an error to specify it on or after "
                     "2019-04-15.")
-      assert is_target == y_target is not None
+      assert is_targeted == y_target is not None
 
     is_targeted = y_target is not None
 

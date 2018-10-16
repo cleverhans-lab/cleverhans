@@ -1859,7 +1859,7 @@ def pgd_attack(loss_fn,
     check_diff = tf.no_op()
 
   if clip_min is None or clip_max is None:
-    raise NotIplementedError("SPSA only supports clipping for now")
+    raise NotImplementedError("SPSA only supports clipping for now")
   check_range = [utils_tf.assert_less_equal(input_image, clip_max),
                  utils_tf.assert_greater_equal(input_image, clip_min)]
 

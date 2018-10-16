@@ -985,7 +985,7 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
                                clip_min, clip_max, nb_iter,
                                report_path):
   """Runs the MaxConfidence attack using SPSA as the underlying optimizer.
-  
+
   Even though this runs only one attack, it must be implemented as a bundler
   because SPSA supports only batch_size=1. The cleverhans.attacks.MaxConfidence
   attack internally multiplies the batch size by nb_classes, so it can't take

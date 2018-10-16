@@ -29,19 +29,18 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-import time
 
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_tf import silence
 silence()
+# The call to silence() must precede the other imports or they will log.
+# pylint does not like this.
+# pylint: disable=C0413
 from cleverhans.attack_bundling import spsa_max_confidence_recipe
-from cleverhans.evaluation import correctness_and_confidence
 from cleverhans.serial import load
 from cleverhans.utils import set_log_level
-from cleverhans.confidence_report import devices, print_stats
-from cleverhans.confidence_report import make_confidence_report
 from cleverhans.confidence_report import BATCH_SIZE
 from cleverhans.confidence_report import TRAIN_START
 from cleverhans.confidence_report import TRAIN_END
