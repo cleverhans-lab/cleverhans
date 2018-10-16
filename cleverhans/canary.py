@@ -42,8 +42,6 @@ def run_canary():
     first = grads[0]
     for grad in grads[1:]:
       if not np.allclose(first, grad):
-        # pylint can't see when we use variables via locals()
-        # pylint: disable=unused-variable,possibly-unused-variable
         first_string = str(first)
         grad_string = str(grad)
         raise RuntimeError("Something is wrong with your GPUs or GPU driver."
@@ -51,7 +49,10 @@ def run_canary():
                            "calculate the same 2x2 gradient. One returned "
                            "%(first_string)s and another returned "
                            "%(grad_string)s. This can usually be fixed by "
-                           "rebooting the machine." % locals())
+                           "rebooting the machine." %
+                           {"num_devices" : num_devices,
+                            "first_string" : first_string,
+                            "grad_string" : grad_string})
     sess.close()
 
 if __name__ == "__main__":
