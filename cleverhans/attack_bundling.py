@@ -283,7 +283,8 @@ class AttackConfig(object):
   def __repr__(self):
     return self.__str__()
 
-def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path):
+def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
+                   attack_batch_size=BATCH_SIZE):
   """
   Runs attack bundling.
   Users of cleverhans may call this function but are more likely to call
@@ -301,6 +302,7 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path):
     Some goals may never be satisfied, in which case the bundler will run
     forever, updating the report on disk as it goes.
   :param report_path: str, the path the report will be saved to
+  :param attack_batch_size: int, batch size for the attacks
   :returns:
     adv_x: The adversarial examples, in the same format as `x`
     run_counts: dict mapping each AttackConfig to a numpy array reporting
@@ -334,15 +336,16 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path):
 
   for goal in goals:
     bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_counts,
-                             goal, report, report_path)
+                             goal, report, report_path,
+                             attack_batch_size=attack_batch_size)
 
   # Many users will set `goals` to make this run forever, so the return
   # statement is not the primary way to get information out.
   return adv_x, run_counts
 
 def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_counts,
-                             goal, report, report_path):
-
+                             goal, report, report_path,
+                             attack_batch_size=BATCH_SIZE):
   """
   Runs attack bundling, working on one specific AttackGoal.
   This function is mostly intended to be called by `bundle_attacks`.
@@ -376,14 +379,16 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_count
   assert 'confidence' in criteria
   while not goal.is_satisfied(criteria, run_counts):
     run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs, run_counts,
-                        goal, report, report_path)
+                        goal, report, report_path,
+                        attack_batch_size=attack_batch_size)
   # Save after finishing each goal.
   # The incremental saves run on a timer. This save is needed so that the last
   # few attacks after the timer don't get discarded
   save(criteria, report, report_path, adv_x)
 
 def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
-                        run_counts, goal, report, report_path):
+                        run_counts, goal, report, report_path,
+                        attack_batch_size=BATCH_SIZE):
   """
   Runs attack bundling on one batch of data.
   This function is mostly intended to be called by
@@ -405,14 +410,15 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   :param report_path: str, path to save the report to
   """
   attack_config = goal.get_attack_config(attack_configs, run_counts, criteria)
-  idxs = goal.request_examples(attack_config, criteria, run_counts, BATCH_SIZE)
+  idxs = goal.request_examples(attack_config, criteria, run_counts,
+                               attack_batch_size)
   x_batch = x[idxs]
-  assert x_batch.shape[0] == BATCH_SIZE
+  assert x_batch.shape[0] == attack_batch_size
   y_batch = y[idxs]
-  assert y_batch.shape[0] == BATCH_SIZE
+  assert y_batch.shape[0] == attack_batch_size
   adv_x_batch = run_attack(sess, model, x_batch, y_batch,
                            attack_config.attack, attack_config.params,
-                           BATCH_SIZE, devices)
+                           attack_batch_size, devices)
   criteria_batch = goal.get_criteria(sess, model, adv_x_batch, y_batch)
   # This can't be parallelized because some orig examples are copied more
   # than once into the batch
@@ -1011,4 +1017,5 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     attack_configs.append(cls_attack_config)
   new_work_goal = {config: 1 for config in attack_configs}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
-  bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
+  bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
+                 attack_batch_size=batch_size)
