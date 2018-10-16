@@ -9,6 +9,7 @@ import numpy as np
 from six.moves import range
 import tensorflow as tf
 
+import cleverhans
 from cleverhans.utils import create_logger
 from cleverhans.utils_tf import infer_devices
 
