@@ -979,7 +979,7 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, adv_x, goal,
   num_attacks = len(adv_x_list)
   assert num_attacks > 0
   adv_x_0 = adv_x_list[0]
-  assert isinstance(adv_x_0, np)
+  assert isinstance(adv_x_0, np.ndarray)
   assert all(adv_x.shape == adv_x_0.shape for adv_x in adv_x_list)
 
   # Allocate the output
@@ -996,7 +996,7 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, adv_x, goal,
   assert all('confidence' in c for c in criteria)
   _logger.info("Accuracy on each advx dataset: ")
   for c in criteria:
-    _logger.info("\t" + str(criteria['correctness'].mean()))
+    _logger.info("\t" + str(c['correctness'].mean()))
 
   for example_idx in range(m):
     # Index of the best attack for this example
@@ -1008,8 +1008,8 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, adv_x, goal,
         attack_idx = candidate_idx
     # Copy the winner into the output
     out[example_idx] = adv_x_list[attack_idx][example_idx]
-    correctness[example_idx] = criteria[attack_idx][example_idx]
-    confidence[example_idx] = criteria[attack_idx][example_idx]
+    correctness[example_idx] = criteria[attack_idx]['correctness'][example_idx]
+    confidence[example_idx] = criteria[attack_idx]['confidence'][example_idx]
 
   assert correctness.min() >= 0
   assert correctness.max() <= 1
@@ -1017,7 +1017,7 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, adv_x, goal,
   assert confidence.max() <= 1.
 
   report = {'bundled' : {'correctness': correctness, 'confidence': confidence}}
-  save(report_path, report)
+  serial.save(report_path, report)
   assert report_path.endswith('.joblib')
   adv_x_path = report_path[:-len('.joblib')] + "_adv_x.npy"
   np.save(adv_x_path, out)

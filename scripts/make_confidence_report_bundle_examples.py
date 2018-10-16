@@ -22,12 +22,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_tf import silence
 silence()
-from cleverhans.attack_bundling import bundle_attacks_with_goal, MaxConfidence
+from cleverhans.attack_bundling import bundle_examples_with_goal, MaxConfidence
+from cleverhans import serial
 from cleverhans.confidence_report import TRAIN_START, TRAIN_END
 from cleverhans.confidence_report import TEST_START, TEST_END
 from cleverhans.confidence_report import WHICH_SET
@@ -56,7 +58,7 @@ def main(argv=None):
   dataset = factory()
   
   adv_x_list = [np.load(filepath) for filepath in adv_x_filepaths]
-  x, y = dataset.get_set(which_set)
+  x, y = dataset.get_set(FLAGS.which_set)
   for adv_x in adv_x_list:
     assert adv_x.shape == x.shape
     # Make sure these were made for the right dataset with right scaling
