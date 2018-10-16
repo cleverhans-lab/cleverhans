@@ -36,7 +36,7 @@ from tensorflow.python.platform import flags
 
 from cleverhans.utils_tf import silence
 silence()
-from cleverhans.attacks import MaxConfidence, SPSA
+from cleverhans.attack_bundling import spsa_max_confidence_recipe
 from cleverhans.evaluation import correctness_and_confidence
 from cleverhans.serial import load
 from cleverhans.utils import set_log_level
@@ -119,39 +119,10 @@ def make_confidence_report_spsa(filepath, train_start=TRAIN_START,
                'clip_min': min_value,
                'clip_max': max_val}
 
-
   x_data, y_data = dataset.get_set(which_set)
 
-  report = {}
-
-  spsa = SPSA(model, sess)
-  mc = MaxConfidence(model, sess=sess, base_attacker=spsa)
-
-  jobs = [('clean', None, None, None),
-          ('mc', mc, mc_params, None)]
-
-  for job in jobs:
-    name, attack, attack_params, job_batch_size = job
-    if job_batch_size is None:
-      job_batch_size = batch_size
-    t1 = time.time()
-    packed = correctness_and_confidence(sess, model, x_data, y_data,
-                                        batch_size=job_batch_size, devices=devices,
-                                        attack=attack,
-                                        attack_params=attack_params)
-    t2 = time.time()
-    print("Evaluation took", t2 - t1, "seconds")
-    correctness, confidence = packed
-
-    report[name] = {
-        'correctness' : correctness,
-        'confidence'  : confidence
-        }
-
-    print_stats(correctness, confidence, name)
-
-
-  save(report_path, report)
+  spsa_max_confidence_recipe(sess, model, x_data, y_data, nb_classes, eps,
+                             clip_min, clip_max, nb_iter, report_path)
 
 def main(argv=None):
   """
