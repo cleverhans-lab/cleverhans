@@ -1854,10 +1854,12 @@ class SPSA(Attack):
     super(SPSA, self).__init__(model, sess, dtypestr, **kwargs)
 
     self.feedable_kwargs = {
-        'epsilon': self.np_dtype,
+        'eps': self.np_dtype,
         'y': np.int32,
         'y_target': np.int32,
     }
+    # TODO: I think that the rename of "batch_size" to "spsa_samples"
+    # broke the caching mechanism here.
     self.structural_kwargs = [
         'num_steps',
         'batch_size',
