@@ -288,6 +288,7 @@ class TestSPSA(CleverHansTest):
         x_adv_op = self.attack.generate(
             x_input, y=y_label,
             epsilon=.5, num_steps=100, batch_size=64, spsa_iters=1,
+            clip_min=0., clip_max=1.
         )
 
         all_x_adv = []
