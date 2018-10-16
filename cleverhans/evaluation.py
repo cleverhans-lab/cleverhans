@@ -9,6 +9,7 @@ import numpy as np
 from six.moves import range
 import tensorflow as tf
 
+from cleverhans import canary
 from cleverhans.utils import create_logger
 from cleverhans.utils_tf import infer_devices
 
@@ -206,6 +207,7 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
   :returns: List of numpy arrays corresponding to the outputs produced by
       the graph_factory
   """
+  canary.run_canary()
   global _batch_eval_multi_worker_cache
 
   devices = infer_devices(devices)
