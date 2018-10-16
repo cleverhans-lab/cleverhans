@@ -34,11 +34,12 @@ import time
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
+from cleverhans.utils_tf import silence
+silence()
 from cleverhans.attacks import MaxConfidence, SPSA
 from cleverhans.evaluation import correctness_and_confidence
 from cleverhans.serial import load
 from cleverhans.utils import set_log_level
-from cleverhans.utils_tf import silence
 from cleverhans.confidence_report import devices, print_stats
 from cleverhans.confidence_report import make_confidence_report
 from cleverhans.confidence_report import BATCH_SIZE
@@ -50,7 +51,6 @@ from cleverhans.confidence_report import WHICH_SET
 from cleverhans.confidence_report import NB_ITER
 from cleverhans.confidence_report import REPORT_PATH
 
-silence()
 
 FLAGS = flags.FLAGS
 
