@@ -114,12 +114,13 @@ def make_confidence_report_spsa(filepath, train_start=TRAIN_START,
   else:
     raise NotImplementedError(str(factory.cls))
 
-  mc_params = {'eps': base_eps * value_range,
-               'nb_iter': nb_iter,
-               'clip_min': min_value,
-               'clip_max': max_val}
+  eps = base_eps * value_range
+  clip_min = min_value
+  clip_max = max_val
 
   x_data, y_data = dataset.get_set(which_set)
+
+  nb_classes = dataset.NB_CLASSES
 
   spsa_max_confidence_recipe(sess, model, x_data, y_data, nb_classes, eps,
                              clip_min, clip_max, nb_iter, report_path)
