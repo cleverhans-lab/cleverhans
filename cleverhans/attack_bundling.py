@@ -437,6 +437,10 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
 
     serial.save(report_path, report)
 
+    assert report_path.endswith(".joblib")
+    adv_x_path = report_path[:-len(".joblib")] + "_adv.npy"
+    np.save(adv_x_path, adv_x_val)
+
 class AttackGoal(object):
   """Specifies goals for attack bundling.
   Different bundling recipes can have different priorities.
