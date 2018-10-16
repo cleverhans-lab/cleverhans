@@ -1875,16 +1875,20 @@ class SPSA(Attack):
                x,
                y=None,
                y_target=None,
-               epsilon=None,
-               num_steps=None,
-               is_targeted=False,
+               eps=None,
+               clip_min=None,
+               clip_max=None,
+               nb_iter=None,
+               is_targeted=None,
                early_stop_loss_threshold=None,
                learning_rate=0.01,
                delta=0.01,
                spsa_samples=128,
                batch_size=None,
                spsa_iters=1,
-               is_debug=False):
+               is_debug=False,
+               epsilon=None,
+               num_steps=None):
     """
     Generate symbolic graph for adversarial examples.
 
@@ -1892,9 +1896,11 @@ class SPSA(Attack):
     :param y: A Tensor or None. The index of the correct label.
     :param y_target: A Tensor or None. The index of the target label in a
                      targeted attack.
-    :param epsilon: The size of the maximum perturbation, measured in the
-                    L-infinity norm.
-    :param num_steps: The number of optimization steps.
+    :param eps: The size of the maximum perturbation, measured in the
+                L-infinity norm.
+    :param clip_min: If specified, the minimum input value
+    :param clip_max: If specified, the maximum input value
+    :param nb_iter: The number of optimization steps.
     :param is_targeted: Whether to use a targeted or untargeted attack.
     :param early_stop_loss_threshold: A float or None. If specified, the
                                       attack will end as soon as the loss
@@ -1911,6 +1917,39 @@ class SPSA(Attack):
                        different inputs.
     :param is_debug: If True, print the adversarial loss after each update.
     """
+
+    if epsilon is not None:
+      if eps is not None:
+        raise ValueError("Should not specify both eps and its deprecated "
+                         "alias, epsilon")
+      warnings.warn("`epsilon` is deprecated. Switch to `eps`. `epsilon` may "
+                    "be removed on or after 2019-04-15.")
+      eps = epsilon
+    del epsilon
+
+    if num_steps is not None:
+      if nb_iter is not None:
+        raise ValueError("Should not specify both nb_iter and its deprecated "
+                         "alias, num_steps")
+      warnings.warn("`num_steps` is deprecated. Switch to `nb_iter`. "
+                    "`num_steps` may be removed on or after 2019-04-15.")
+      nb_iter = num_steps
+    del num_steps
+
+    if (y is not None) + (y_target is not None) != 1:
+      raise ValueError("Must specify exactly one of y (untargeted attack, "
+                       "cause the input not to be classified as this true "
+                       "label) and y_target (targeted attack, cause the "
+                       "input to be classified as this target label).")
+
+    if is_targeted is not None:
+      warnings.warn("`is_targeted` is deprecated. Simply do not specify it."
+                    " It may become an error to specify it on or after "
+                    "2019-04-15.")
+      assert is_target == y_target is not None
+
+    is_targeted = y_target is not None
+
     if x.get_shape().as_list()[0] is None:
       warnings.warn("For SPSA, input tensor x must have batch_size of 1.")
     elif x.get_shape().as_list()[0] != 1:
@@ -1941,11 +1980,13 @@ class SPSA(Attack):
         loss_fn,
         x,
         y_attack,
-        epsilon,
-        num_steps=num_steps,
+        eps,
+        num_steps=nb_iter,
         optimizer=optimizer,
         early_stop_loss_threshold=early_stop_loss_threshold,
         is_debug=is_debug,
+        clip_min=clip_min,
+        clip_max=clip_max
     )
     return adv_x
 
