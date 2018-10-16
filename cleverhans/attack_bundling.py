@@ -13,6 +13,7 @@ import tensorflow as tf
 
 from cleverhans.attacks import Noise
 from cleverhans.attacks import ProjectedGradientDescent
+from cleverhans.attacks import SPSA
 from cleverhans.evaluation import correctness_and_confidence
 from cleverhans.evaluation import batch_eval_multi_worker, run_attack
 from cleverhans.model import Model

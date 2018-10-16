@@ -1951,7 +1951,9 @@ class SPSA(Attack):
     is_targeted = y_target is not None
 
     if x.get_shape().as_list()[0] is None:
-      warnings.warn("For SPSA, input tensor x must have batch_size of 1.")
+      check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1)
+      with tf.control_dependencies([check_batch]):
+        x = tf.identity(x)
     elif x.get_shape().as_list()[0] != 1:
       raise ValueError("For SPSA, input tensor x must have batch_size of 1.")
 
