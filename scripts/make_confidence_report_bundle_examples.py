@@ -22,11 +22,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import warnings
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_tf import silence
+# We need to disable pylint's complaints about import order because `silence`
+# works only if it is called before the other imports.
+# pylint: disable=C0413
 silence()
 from cleverhans.attack_bundling import bundle_examples_with_goal, MaxConfidence
 from cleverhans import serial
@@ -56,7 +61,7 @@ def main(argv=None):
   factory.kwargs['test_start'] = FLAGS.test_start
   factory.kwargs['test_end'] = FLAGS.test_end
   dataset = factory()
-  
+
   adv_x_list = [np.load(filepath) for filepath in adv_x_filepaths]
   x, y = dataset.get_set(FLAGS.which_set)
   for adv_x in adv_x_list:
@@ -66,7 +71,7 @@ def main(argv=None):
     assert adv_x.min() >= 0. - dataset.kwargs['center'] * dataset.max_val
     assert adv_x.max() <= dataset.max_val
     data_range = dataset.max_val * (1. + dataset.kwargs['center'])
-    
+
     if adv_x.max() - adv_x.min() <= .8 * data_range:
       warnings.warn("Something is weird. Your adversarial examples use "
                     "less than 80% of the data range."
@@ -76,15 +81,14 @@ def main(argv=None):
                     "Or it could be OK if you're evaluating on a very small "
                     "batch.")
 
-  
   report_path = FLAGS.report_path
   if report_path is None:
     suffix = "_bundled_examples_report.joblib"
-    assert model_path.endswith('.joblib')
-    report_path = model_path[:-len('.joblib')] + suffix
+    assert model_filepath.endswith('.joblib')
+    report_path = model_filepath[:-len('.joblib')] + suffix
 
   goal = MaxConfidence()
-  bundle_examples_with_goal(sess, model, adv_x_list, y, adv_x, goal,
+  bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
                             report_path)
 
 

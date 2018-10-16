@@ -958,7 +958,7 @@ class _WrongConfidenceFactory(_ExtraCriteriaFactory):
     max_wrong_probs = tf.reduce_max(predictions * (1. - y_batch), axis=1)
     return tuple([max_wrong_probs])
 
-def bundle_examples_with_goal(sess, model, adv_x_list, y, adv_x, goal,
+def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
                               report_path):
   """
   A post-processor version of attack bundling, that chooses the strongest
