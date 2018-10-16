@@ -1841,8 +1841,15 @@ def pgd_attack(loss_fn,
       parallel_iterations=1,
       back_prop=False)
   if project_perturbation is _project_perturbation:
+    # TODO: this assert looks totally wrong.
+    # Not bothering to fix it now because it's only an assert.
+    # 1) Multiplying by 1.1 gives a huge margin of error. This should probably
+    #    take the difference and allow a tolerance of 1e-6 or something like
+    #    that.
+    # 2) I think it should probably check the *absolute value* of
+    # final_perturbation
     perturbation_max = epsilon * 1.1
-    check_diff = tf.assert_less_equal(
+    check_diff = utils_tf.assert_less_equal(
         final_perturbation, perturbation_max,
         message="final_perturbation must change no pixel by more than "
                 "%s" % perturbation_max)
@@ -1851,7 +1858,12 @@ def pgd_attack(loss_fn,
     # project_perturbation
     check_diff = tf.no_op()
 
-  with tf.control_dependencies([check_diff]):
+  if clip_min is None or clip_max is None:
+    raise NotIplementedError("SPSA only supports clipping for now")
+  check_range = [utils_tf.assert_less_equal(input_image, clip_max),
+                 utils_tf.assert_greater_equal(input_image, clip_min)]
+
+  with tf.control_dependencies([check_diff] + check_range):
     adversarial_image = input_image + final_perturbation
   return tf.stop_gradient(adversarial_image)
 
