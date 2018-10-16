@@ -43,7 +43,7 @@ def run_canary():
     for grad in grads[1:]:
       if not np.allclose(first, grad):
         # pylint can't see when we use variables via locals()
-        # pylint: disable=unused-variable
+        # pylint: disable=unused-variable,possibly-unused-variable
         first_string = str(first)
         grad_string = str(grad)
         raise RuntimeError("Something is wrong with your GPUs or GPU driver."
