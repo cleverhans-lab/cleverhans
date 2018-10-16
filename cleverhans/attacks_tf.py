@@ -1722,17 +1722,29 @@ class SPSAAdam(UnrolledAdam):
     return [avg_grad]
 
 
-def _project_perturbation(perturbation, epsilon, input_image):
-  """Project `perturbation` onto L-infinity ball of radius `epsilon`."""
+def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
+                          clip_max=None):
+  """Project `perturbation` onto L-infinity ball of radius `epsilon`.
+  Also project into hypercube such that the resulting adversarial example
+  is between clip_min and clip_max, if applicable.
+  """
+
+  if clip_min is None or clip_max is None:
+    raise NotImplementedError("SPSA currently has clipping hard-coded in. "
+                              "Note: if you want to support not-clipping, "
+                              "remember that (clip_min == None) is a "
+                              "structural property and you need to make "
+                              "generate_np cache it correctly")
+
   # Ensure inputs are in the correct range
   with tf.control_dependencies([
-      tf.assert_less_equal(input_image, 1.0),
-      tf.assert_greater_equal(input_image, 0.0)
+      cleverhans.cpu.assert_less_equal(input_image, clip_max),
+      cleverhans.cpu.assert_greater_equal(input_image, clip_min)
   ]):
     clipped_perturbation = tf.clip_by_value(
         perturbation, -epsilon, epsilon)
     new_image = tf.clip_by_value(
-        input_image + clipped_perturbation, 0., 1.)
+        input_image + clipped_perturbation, clip_min, clip_max)
     return new_image - input_image
 
 
@@ -1741,6 +1753,8 @@ def pgd_attack(loss_fn,
                label,
                epsilon,
                num_steps,
+               clip_min=None,
+               clip_max=None,
                optimizer=UnrolledAdam(),
                project_perturbation=_project_perturbation,
                early_stop_loss_threshold=None,
@@ -1748,26 +1762,28 @@ def pgd_attack(loss_fn,
   """Projected gradient descent for generating adversarial images.
 
   Args:
-      :param loss_fn: A callable which takes `input_image` and `label` as
-                      arguments, and returns a batch of loss values. Same
-                      interface as UnrolledOptimizer.
-      :param input_image: Tensor, a batch of images
-      :param label: Tensor, a batch of labels
-      :param epsilon: float, the L-infinity norm of the maximum allowable
-                                      perturbation
-      :param num_steps: int, the number of steps of gradient descent
-      :param optimizer: An `UnrolledOptimizer` object
-      :param project_perturbation: A function, which will be used to enforce
-                                   some constraint. It should have the same
-                                   signature as `_project_perturbation`.
-      :param early_stop_loss_threshold: A float or None. If specified, the
-                                        attack will end if the loss is below
-                                        `early_stop_loss_threshold`.
-      :param is_debug: A bool. If True, print debug info for attack progress.
+    :param loss_fn: A callable which takes `input_image` and `label` as
+                    arguments, and returns a batch of loss values. Same
+                    interface as UnrolledOptimizer.
+    :param input_image: Tensor, a batch of images
+    :param label: Tensor, a batch of labels
+    :param epsilon: float, the L-infinity norm of the maximum allowable
+                    perturbation
+    :param num_steps: int, the number of steps of gradient descent
+    :param clip_min: float, minimum pixel value
+    :param clip_max: float, maximum pixel value
+    :param optimizer: An `UnrolledOptimizer` object
+    :param project_perturbation: A function, which will be used to enforce
+                                 some constraint. It should have the same
+                                 signature as `_project_perturbation`.
+    :param early_stop_loss_threshold: A float or None. If specified, the
+                                      attack will end if the loss is below
+                                      `early_stop_loss_threshold`.
+    :param is_debug: A bool. If True, print debug info for attack progress.
 
   Returns:
-      adversarial version of `input_image`, with L-infinity difference less
-          than epsilon, which tries to minimize loss_fn.
+    adversarial version of `input_image`, with L-infinity difference less than
+      epsilon, which tries to minimize loss_fn.
 
   Note that this function is not intended as an Attack by itself. Rather, it
   is designed as a helper function which you can use to write your own attack
@@ -1783,7 +1799,8 @@ def pgd_attack(loss_fn,
   init_perturbation = tf.random_uniform(
       tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
   init_perturbation = project_perturbation(init_perturbation, epsilon,
-                                           input_image)
+                                           input_image, clip_min=clip_min,
+                                           clip_max=clip_max)
   init_optim_state = optimizer.init_state([init_perturbation])
   nest = tf.contrib.framework.nest
 
@@ -1802,7 +1819,9 @@ def pgd_attack(loss_fn,
       with tf.device("/cpu:0"):
         loss = tf.Print(loss, [loss], "Total batch loss")
     projected_perturbation = project_perturbation(new_perturbation_list[0],
-                                                  epsilon, input_image)
+                                                  epsilon, input_image,
+                                                  clip_min=clip_min,
+                                                  clip_max=clip_max)
     with tf.control_dependencies([loss]):
       i = tf.identity(i)
       if early_stop_loss_threshold:
