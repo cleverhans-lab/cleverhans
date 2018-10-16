@@ -419,7 +419,9 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   adv_x_batch = run_attack(sess, model, x_batch, y_batch,
                            attack_config.attack, attack_config.params,
                            attack_batch_size, devices)
-  criteria_batch = goal.get_criteria(sess, model, adv_x_batch, y_batch)
+  criteria_batch = goal.get_criteria(sess, model, adv_x_batch, y_batch,
+                                     batch_size=min(attack_batch_size,
+                                                    BATCH_SIZE))
   # This can't be parallelized because some orig examples are copied more
   # than once into the batch
   cur_run_counts = run_counts[attack_config]
@@ -487,7 +489,7 @@ class AttackGoal(object):
     """
     pass
 
-  def get_criteria(self, sess, model, advx, y):
+  def get_criteria(self, sess, model, advx, y, batch_size=BATCH_SIZE):
     """
     Returns a dictionary mapping the name of each criterion to a NumPy
     array containing the value of that criterion for each adversarial
@@ -500,12 +502,13 @@ class AttackGoal(object):
     :param adv_x: numpy array containing the adversarial examples made so far
       by earlier work in the bundling process
     :param y: numpy array containing true labels
+    :param batch_size: int, batch size
     """
 
     names, factory = self.extra_criteria()
     factory = _CriteriaFactory(model, factory)
     results = batch_eval_multi_worker(sess, factory, [advx, y],
-                                      batch_size=BATCH_SIZE, devices=devices)
+                                      batch_size=batch_size, devices=devices)
     names = ['correctness', 'confidence'] + names
     out = dict(safe_zip(names, results))
     return out

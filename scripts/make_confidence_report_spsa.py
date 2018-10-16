@@ -48,8 +48,8 @@ from cleverhans.confidence_report import TRAIN_END
 from cleverhans.confidence_report import TEST_START
 from cleverhans.confidence_report import TEST_END
 from cleverhans.confidence_report import WHICH_SET
-from cleverhans.confidence_report import NB_ITER
 from cleverhans.confidence_report import REPORT_PATH
+NB_ITER_SPSA = 40
 
 
 FLAGS = flags.FLAGS
@@ -59,7 +59,7 @@ def make_confidence_report_spsa(filepath, train_start=TRAIN_START,
                                 test_start=TEST_START, test_end=TEST_END,
                                 batch_size=BATCH_SIZE, which_set=WHICH_SET,
                                 report_path=REPORT_PATH,
-                                nb_iter=NB_ITER):
+                                nb_iter=NB_ITER_SPSA):
   """
   Load a saved model, gather its predictions, and save a confidence report.
 
@@ -148,7 +148,7 @@ if __name__ == '__main__':
                        ' of test examples to use')
   flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of range'
                        ' of test examples to use')
-  flags.DEFINE_integer('nb_iter', NB_ITER, 'Number of iterations of PGD')
+  flags.DEFINE_integer('nb_iter', NB_ITER_SPSA, 'Number of iterations of SPSA')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
   flags.DEFINE_string('report_path', REPORT_PATH, 'Path to save to')
   flags.DEFINE_integer('batch_size', BATCH_SIZE,
