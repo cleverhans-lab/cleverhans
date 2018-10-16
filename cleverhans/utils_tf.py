@@ -544,3 +544,11 @@ def assert_greater_equal(*args, **kwargs):
   """
   with tf.device("/CPU:0"):
     return tf.assert_greater_equal(*args, **kwargs)
+
+def assert_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_equal that does not raise an exception if you
+  try to use it on GPU.
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_equal(*args, **kwargs)
