@@ -1738,8 +1738,8 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
 
   # Ensure inputs are in the correct range
   with tf.control_dependencies([
-      cleverhans.cpu.assert_less_equal(input_image, clip_max),
-      cleverhans.cpu.assert_greater_equal(input_image, clip_min)
+      utils_tf.assert_less_equal(input_image, clip_max),
+      utils_tf.assert_greater_equal(input_image, clip_min)
   ]):
     clipped_perturbation = tf.clip_by_value(
         perturbation, -epsilon, epsilon)

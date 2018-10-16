@@ -535,7 +535,7 @@ def assert_less_equal(*args, **kwargs):
   try to use it on GPU.
   """
   with tf.device("/CPU:0"):
-    tf.assert_less_equal(*args, **kwargs)
+    return tf.assert_less_equal(*args, **kwargs)
 
 def assert_greater_equal(*args, **kwargs):
   """
@@ -543,4 +543,4 @@ def assert_greater_equal(*args, **kwargs):
   try to use it on GPU.
   """
   with tf.device("/CPU:0"):
-    tf.assert_greater_equal(*args, **kwargs)
+    return tf.assert_greater_equal(*args, **kwargs)
