@@ -379,7 +379,7 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_count
   # Save after finishing each goal.
   # The incremental saves run on a timer. This save is needed so that the last
   # few attacks after the timer don't get discarded
-  save(criteria, report, report_path, adv_x_val)
+  save(criteria, report, report_path, adv_x)
 
 def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
                         run_counts, goal, report, report_path):
