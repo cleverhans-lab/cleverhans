@@ -101,6 +101,9 @@ class CIFAR10(Dataset):
 
   NB_CLASSES = 10
 
+  LABEL_NAMES = ["airplane", "automobile", "bird", "cat", "deer", "dog",
+                 "frog", "horse", "ship", "truck"]
+
   def __init__(self, train_start=0, train_end=60000, test_start=0,
                test_end=10000, center=False, max_val=1.):
     super(CIFAR10, self).__init__(locals())
