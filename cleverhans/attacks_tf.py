@@ -1875,7 +1875,10 @@ def margin_logit_loss(model_logits, label, num_classes=10):
   This follows the same interface as `loss_fn` for UnrolledOptimizer and
   pgd_attack, i.e. it returns a batch of loss values.
   """
-  logit_mask = tf.one_hot(label, depth=num_classes, axis=-1)
+  if label.get_shape().ndims == 1:
+    logit_mask = tf.one_hot(label, depth=num_classes, axis=-1)
+  else:
+    logit_mask = label
   label_logits = reduce_sum(logit_mask * model_logits, axis=-1)
   logits_with_target_label_neg_inf = model_logits - logit_mask * 99999
   highest_nonlabel_logits = reduce_max(
