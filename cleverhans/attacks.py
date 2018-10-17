@@ -2000,13 +2000,21 @@ class SPSA(Attack):
 
   def generate_np(self, x_val, **kwargs):
     if "epsilon" in kwargs:
+      warnings.warn("Using deprecated argument: see `generate`")
       assert "eps" not in kwargs
       kwargs["eps"] = kwargs["epsilon"]
+      del kwargs["epsilon"]
     assert "eps" in kwargs
     # This class has never supported eps=None correctly.
     # eps has been treated as a purely feedable kwarg but setting eps=None
     # versus eps=<some float> has structural consequences.
     assert kwargs["eps"] is not None
+    if "num_steps" in kwargs:
+      warnings.warn("Using deprecated argument: see `generate`")
+      assert "nb_iter" not in kwargs
+      kwargs["nb_iter"] = kwargs["num_steps"]
+      del kwargs["num_steps"]
+    
     # Call self.generate() sequentially for each image in the batch
     x_adv = []
     batch_size = x_val.shape[0]
