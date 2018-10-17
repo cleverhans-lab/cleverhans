@@ -76,6 +76,8 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     model = load(filepath)
   assert len(model.get_params()) > 0
   factory = model.dataset_factory
+  factory.kwargs['train_start'] = train_start
+  factory.kwargs['train_end'] = train_end
   factory.kwargs['test_start'] = test_start
   factory.kwargs['test_end'] = test_end
   dataset = factory()
