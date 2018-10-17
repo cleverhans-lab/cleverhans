@@ -376,6 +376,10 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_count
   while not goal.is_satisfied(criteria, run_counts):
     run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs, run_counts,
                         goal, report, report_path)
+  # Save after finishing each goal.
+  # The incremental saves run on a timer. This save is needed so that the last
+  # few attacks after the timer don't get discarded
+  save(criteria, report, report_path, adv_x)
 
 def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
                         run_counts, goal, report, report_path):
@@ -433,13 +437,23 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   if should_save:
     report['time'] = new_time
     goal.print_progress(criteria, run_counts)
-    print_stats(criteria['correctness'], criteria['confidence'], 'bundled')
+    save(criteria, report, report_path, adv_x_val)
 
-    serial.save(report_path, report)
+def save(criteria, report, report_path, adv_x_val):
+  """
+  Saves the report and adversarial examples.
+  :param criteria: dict, of the form returned by AttackGoal.get_criteria
+  :param report: dict containing a confidence report
+  :param report_path: string, filepath
+  :param adv_x_val: numpy array containing dataset of adversarial examples
+  """
+  print_stats(criteria['correctness'], criteria['confidence'], 'bundled')
 
-    assert report_path.endswith(".joblib")
-    adv_x_path = report_path[:-len(".joblib")] + "_adv.npy"
-    np.save(adv_x_path, adv_x_val)
+  serial.save(report_path, report)
+
+  assert report_path.endswith(".joblib")
+  adv_x_path = report_path[:-len(".joblib")] + "_adv.npy"
+  np.save(adv_x_path, adv_x_val)
 
 class AttackGoal(object):
   """Specifies goals for attack bundling.
