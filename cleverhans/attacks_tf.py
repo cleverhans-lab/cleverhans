@@ -1539,14 +1539,14 @@ class LBFGS_attack(object):
 
 
 class UnrolledOptimizer(object):
-  """Functional-stype optimizer which does not use TF Variables.
+  """Optimizer for Tensors rather than tf.Variables.
 
   UnrolledOptimizers implement optimizers where the values being optimized
   are ordinary Tensors, rather than Variables. TF Variables can have strange
   behaviors when being assigned multiple times within a single sess.run()
   call, particularly in Distributed TF, so this avoids thinking about those
   issues. In cleverhans, these are helper classes for the `pgd_attack`
-  method.
+  method. Otherwise, they follow the same interface as tf.Optimizer.
   """
 
   def _compute_gradients(self, loss_fn, x, unused_optim_state):
