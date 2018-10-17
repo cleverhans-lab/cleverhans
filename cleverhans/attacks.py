@@ -1940,6 +1940,7 @@ class SPSA(Attack):
                     "`num_steps` may be removed on or after 2019-04-15.")
       nb_iter = num_steps
     del num_steps
+    assert nb_iter is not None
 
     if (y is not None) + (y_target is not None) != 1:
       raise ValueError("Must specify exactly one of y (untargeted attack, "
