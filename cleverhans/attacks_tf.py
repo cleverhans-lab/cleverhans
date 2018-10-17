@@ -1790,6 +1790,7 @@ def pgd_attack(loss_fn,
   methods. The method uses a tf.while_loop to optimize a loss function in
   a single sess.run() call.
   """
+  assert num_steps is not None
   if is_debug:
     with tf.device("/cpu:0"):
       input_image = tf.Print(
