@@ -1,6 +1,11 @@
+import time
+
 import numpy as np
 import tensorflow as tf
 from cleverhans.utils_tf import infer_devices
+
+last_run = None
+
 
 def run_canary():
   """
@@ -13,6 +18,14 @@ def run_canary():
   # with GPUs suffering from the bug and can verify that the canary still
   # crashes after your edits. Due to the transient nature of the GPU bug it is
   # not possible to unit test the canary in our continuous integration system.
+
+  global last_run
+  current = time.time()
+  if last_run is None or current - last_run > 3600:
+    last_run = current
+  else:
+    # Run the canary at most once per hour
+    return
 
   # Try very hard not to let the canary affect the graph for the rest of the
   # python process
