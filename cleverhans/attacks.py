@@ -154,6 +154,7 @@ class Attack(object):
     :param **kwargs: optional parameters used by child classes.
     :return: A NumPy array holding the adversarial examples.
     """
+
     if self.sess is None:
       raise ValueError("Cannot use `generate_np` when no `sess` was"
                        " provided")
@@ -1926,6 +1927,11 @@ class SPSA(Attack):
                     "be removed on or after 2019-04-15.")
       eps = epsilon
     del epsilon
+    # While the interface for this class has tried to make eps optional,
+    # that has never actually been supported correctly.
+    # eps has always been treated as a purely feedable kwarg but there
+    # are structural differences between eps=None and eps=<some float>
+    assert eps is not None
 
     if num_steps is not None:
       if nb_iter is not None:
@@ -1993,6 +1999,14 @@ class SPSA(Attack):
     return adv_x
 
   def generate_np(self, x_val, **kwargs):
+    if "epsilon" in kwargs:
+      assert "eps" not in kwargs
+      kwargs["eps"] = kwargs["epsilon"]
+    assert "eps" in kwargs
+    # This class has never supported eps=None correctly.
+    # eps has been treated as a purely feedable kwarg but setting eps=None
+    # versus eps=<some float> has structural consequences.
+    assert kwargs["eps"] is not None
     # Call self.generate() sequentially for each image in the batch
     x_adv = []
     batch_size = x_val.shape[0]
