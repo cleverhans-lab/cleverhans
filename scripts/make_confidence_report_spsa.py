@@ -48,7 +48,7 @@ from cleverhans.confidence_report import TEST_START
 from cleverhans.confidence_report import TEST_END
 from cleverhans.confidence_report import WHICH_SET
 from cleverhans.confidence_report import REPORT_PATH
-NB_ITER_SPSA = 40
+NB_ITER_SPSA = 80
 
 
 FLAGS = flags.FLAGS
