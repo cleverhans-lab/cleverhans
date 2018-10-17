@@ -100,7 +100,8 @@ class TestAttackTF(CleverHansTest):
             epsilon=epsilon,
             num_steps=nb_iters,
             optimizer=unrolled_optimizer,
-            project_perturbation=_project_perturbation)
+            project_perturbation=_project_perturbation,
+            clip_min=clip_min, clip_max=clip_max)
 
         final_model_output = self.model.fprop(x_adv)
         final_model_logits = final_model_output[self.model.O_LOGITS]
