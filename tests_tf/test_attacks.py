@@ -296,6 +296,7 @@ class TestSPSA(CleverHansTest):
           np.expand_dims(x_val[i], axis=0),
           y=np.expand_dims(feed_labs[i], axis=0),
           epsilon=.5, num_steps=100, spsa_samples=64, spsa_iters=1,
+          clip_min=0., clip_max=1.
       )
       all_x_adv.append(x_adv_np[0])
 
