@@ -9,6 +9,7 @@ import numpy as np
 from six.moves import range
 import tensorflow as tf
 
+import cleverhans
 from cleverhans import canary
 from cleverhans.utils import create_logger
 from cleverhans.utils_tf import infer_devices
@@ -530,7 +531,13 @@ class _AttackFactory(object):
     Targeted attacks require that y not be passed)
   """
 
-  def __init__(self, model, attack=None, attack_params=None, pass_y=False):
+  def __init__(self, model, attack, attack_params=None, pass_y=False):
+    assert isinstance(model, cleverhans.model.Model)
+    if not isinstance(attack, cleverhans.attacks.Attack):
+      raise TypeError("`attack` must be an instance of cleverhans.attacks."
+                      "attack. Got %s with type %s " % (str(attack),
+                                                        str(type(attack))))
+
     if attack_params is None:
       attack_params = {}
     self.model = model
