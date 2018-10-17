@@ -195,10 +195,9 @@ class Attack(object):
     feedable = dict(
         (k, v) for k, v in kwargs.items() if k in self.feedable_kwargs)
 
-    if len(fixed) + len(feedable) < len(kwargs):
-      warnings.warn("Supplied extra keyword arguments that are not "
-                    "used in the graph computation. They have been "
-                    "ignored.")
+    for key in kwargs:
+      if key not in fixed and key not in feedable:
+        raise ValueError("Undeclared argument: " + key)
 
     if not all(isinstance(value, collections.Hashable)
                for value in fixed.values()):
