@@ -101,7 +101,8 @@ def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
 def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
                                 clip_min, clip_max, eps_iter, nb_iter,
                                 report_path,
-                                batch_size=BATCH_SIZE):
+                                batch_size=BATCH_SIZE,
+                                eps_iter_small=None):
   """A reasonable attack bundling recipe for a max norm threat model and
   a defender that uses confidence thresholding.
 
@@ -117,11 +118,15 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   :param nb_classes: int, number of classes
   :param eps: float, maximum size of perturbation (measured by max norm)
   :param eps_iter: float, step size for one version of PGD attacks
-    (will also run another version with 25X smaller step size)
+    (will also run another version with eps_iter_small)
   :param nb_iter: int, number of iterations for one version of PGD attacks
     (will also run another version with 25X more iterations)
   :param report_path: str, the path that the report will be saved to.
   :batch_size: int, the total number of examples to run simultaneously
+  :param eps_iter_small: optional, float.
+    The second version of the PGD attack is run with 25 * nb_iter iterations
+    and eps_iter_small step size. If eps_iter_small is not specified it is
+    set to eps_iter / 25.
   """
   noise_attack = Noise(model, sess)
   pgd_attack = ProjectedGradientDescent(model, sess)
@@ -136,21 +141,21 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   dev_batch_size = batch_size // num_devices
   ones = tf.ones(dev_batch_size, tf.int32)
   expensive_pgd = []
+  if eps_iter_small is None:
+    eps_iter_small = eps_iter / 25.
   for cls in range(nb_classes):
     cls_params = copy.copy(pgd_params)
     cls_params['y_target'] = tf.to_float(tf.one_hot(ones * cls, nb_classes))
     cls_attack_config = AttackConfig(pgd_attack, cls_params, "pgd_" + str(cls))
     pgd_attack_configs.append(cls_attack_config)
     expensive_params = copy.copy(cls_params)
-    expensive_params["eps_iter"] /= 25.
+    expensive_params["eps_iter"] = eps_iter_small
     expensive_params["nb_iter"] *= 25.
     expensive_config = AttackConfig(pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
     expensive_pgd.append(expensive_config)
   attack_configs = [noise_attack_config] + pgd_attack_configs + expensive_pgd
   new_work_goal = {config: 5 for config in attack_configs}
   pgd_work_goal = {config: 5 for config in pgd_attack_configs}
-  # TODO: lower priority: make sure bundler won't waste time running targeted
-  # attacks on examples where the target class is the true class
   goals = [Misclassify(new_work_goal={noise_attack_config: 50}),
            Misclassify(new_work_goal=pgd_work_goal),
            MaxConfidence(t=0.5, new_work_goal=new_work_goal),
