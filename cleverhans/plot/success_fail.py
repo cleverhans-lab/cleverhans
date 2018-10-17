@@ -18,7 +18,8 @@ DEFAULT_FAIL_NAMES = ('mc', 'bundled')
 def plot_report_from_path(path, success_name=DEFAULT_SUCCESS_NAME,
                           fail_names=DEFAULT_FAIL_NAMES, label=None,
                           is_max_confidence=True,
-                          linewidth=LINEWIDTH):
+                          linewidth=LINEWIDTH,
+                          plot_upper_bound=True):
   """
   Plots a success-fail curve from a confidence report stored on disk,
   :param path: string filepath for the stored report.
@@ -46,15 +47,17 @@ def plot_report_from_path(path, success_name=DEFAULT_SUCCESS_NAME,
     If False, the attack procedure is regarded as an ad hoc way of obtaining
     a loose lower bound, and thus the whole curve is drawn with dashed lines.
   :param linewidth: thickness of the line to draw
+  :param plot_upper_bound: include upper bound on error rate in plot
   """
   report = load(path)
   plot_report(report, success_name, fail_names, label, is_max_confidence,
-              linewidth)
+              linewidth, plot_upper_bound)
 
 
 def plot_report(report, success_name, fail_names, label=None,
                 is_max_confidence=True,
-                linewidth=LINEWIDTH):
+                linewidth=LINEWIDTH,
+                plot_upper_bound=True):
   """
   Plot a success fail curve from a confidence report
   :param report: A confidence report
@@ -77,7 +80,8 @@ def plot_report(report, success_name, fail_names, label=None,
                      linewidth=linewidth)
     color = p.get_color()
     pyplot.plot(fail_lower_bound, success_bounded, '--', color=color)
-    pyplot.plot(fail_upper_bound, success_bounded, '--', color=color)
+    if plot_upper_bound:
+      pyplot.plot(fail_upper_bound, success_bounded, '--', color=color)
   else:
     # If the attack was not MaxConfidence, then this whole curve is just
     # a loose lower bound
