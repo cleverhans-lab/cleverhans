@@ -46,6 +46,7 @@ from cleverhans.confidence_report import WHICH_SET
 from cleverhans.confidence_report import NB_ITER
 from cleverhans.confidence_report import BASE_EPS_ITER
 from cleverhans.confidence_report import REPORT_PATH
+from cleverhans.confidence_report import SAVE_ADVX
 
 silence()
 
@@ -65,7 +66,8 @@ def main(argv=None):
                          mc_batch_size=FLAGS.mc_batch_size,
                          nb_iter=FLAGS.nb_iter,
                          base_eps_iter=FLAGS.base_eps_iter,
-                         batch_size=FLAGS.batch_size)
+                         batch_size=FLAGS.batch_size,
+                         save_advx=FLAGS.save_advx)
 
 if __name__ == '__main__':
   flags.DEFINE_integer('train_start', TRAIN_START, 'Starting point (inclusive)'
@@ -85,4 +87,7 @@ if __name__ == '__main__':
                        'Batch size for most jobs')
   flags.DEFINE_float('base_eps_iter', BASE_EPS_ITER,
                      'epsilon per iteration, if data were in [0, 1]')
+  flags.DEFINE_integer('save_advx', SAVE_ADVX,
+                       'If True, saves the adversarial examples to the '
+                       'filesystem.')
   tf.app.run()
