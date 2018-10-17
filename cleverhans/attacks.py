@@ -141,7 +141,7 @@ class Attack(object):
 
     if len(self.graphs) >= 10:
       warnings.warn("Calling generate_np() with multiple different "
-                    "structural paramaters is inefficient and should"
+                    "structural parameters is inefficient and should"
                     " be avoided. Calling generate() is preferred.")
 
   def generate_np(self, x_val, **kwargs):
