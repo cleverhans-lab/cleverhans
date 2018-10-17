@@ -1857,12 +1857,12 @@ class SPSA(Attack):
         'eps': self.np_dtype,
         'y': np.int32,
         'y_target': np.int32,
+        'clip_min': self.np_dtype,
+        'clip_max': self.np_dtype
     }
-    # TODO: I think that the rename of "batch_size" to "spsa_samples"
-    # broke the caching mechanism here.
     self.structural_kwargs = [
-        'num_steps',
-        'batch_size',
+        'nb_iter',
+        'spsa_samples',
         'spsa_iters',
         'early_stop_loss_threshold',
         'is_debug',
