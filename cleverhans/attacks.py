@@ -2041,7 +2041,7 @@ class SPSA(Attack):
       assert kwargs['y'].dtype == np.int32
     if 'y_target' in kwargs and kwargs['y_target'] is not None:
       assert kwargs['y_target'].dtype == np.int32
-    
+
     # Call self.generate() sequentially for each image in the batch
     x_adv = []
     batch_size = x_val.shape[0]
