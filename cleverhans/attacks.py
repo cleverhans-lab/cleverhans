@@ -135,7 +135,14 @@ class Attack(object):
     x = tf.placeholder(self.tf_dtype, shape=x_shape)
 
     # now we generate the graph that we want
-    x_adv = self.generate(x, **new_kwargs)
+    # Need to not pass the meta-keyword arguments used to track whether
+    # args are None
+    censored_kwargs = {}
+    for key in new_kwargs:
+      if key.endswith("_passed") or key.endswith("_passed_and_not_none"):
+        continue
+      censored_kwargs[key] = new_kwargs[key]
+    x_adv = self.generate(x, **censored_kwargs)
 
     self.graphs[hash_key] = (x, new_kwargs, x_adv)
 
@@ -1855,12 +1862,18 @@ class SPSA(Attack):
 
     self.feedable_kwargs = {
         'eps': self.np_dtype,
-        'y': np.int32,
-        'y_target': np.int32,
         'clip_min': self.np_dtype,
-        'clip_max': self.np_dtype
+        'clip_max': self.np_dtype,
+        'y' : np.int32,
+        'y_target' : np.int32,
     }
+    # y and y_target can have structural effects based on whether or not
+    # they are None
     self.structural_kwargs = [
+        'y_passed',
+        'y_passed_and_not_none',
+        'y_target_passed',
+        'y_target_passed_and_not_none',
         'nb_iter',
         'spsa_samples',
         'spsa_iters',
@@ -2014,6 +2027,20 @@ class SPSA(Attack):
       assert "nb_iter" not in kwargs
       kwargs["nb_iter"] = kwargs["num_steps"]
       del kwargs["num_steps"]
+
+    def extra_args(name):
+      kwargs[name + "_passed"] = name in kwargs
+      if name in kwargs:
+        kwargs[name + "_passed_and_not_none"] = kwargs[name] is not None
+      else:
+        kwargs[name + "_passed_and_not_none"] = False
+    extra_args("y")
+    extra_args("y_target")
+
+    if 'y' in kwargs and kwargs['y'] is not None:
+      assert kwargs['y'].dtype == np.int32
+    if 'y_target' in kwargs and kwargs['y_target'] is not None:
+      assert kwargs['y_target'].dtype == np.int32
     
     # Call self.generate() sequentially for each image in the batch
     x_adv = []
