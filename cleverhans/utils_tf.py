@@ -527,3 +527,28 @@ def silence():
   Silences tensorflaw's default printed messages
   """
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+
+def assert_less_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_less_equal that does not raise an exception if you
+  try to use it on GPU.
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_less_equal(*args, **kwargs)
+
+def assert_greater_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_greater_equal that does not raise an exception if you
+  try to use it on GPU.
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_greater_equal(*args, **kwargs)
+
+def assert_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_equal that does not raise an exception if you
+  try to use it on GPU.
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_equal(*args, **kwargs)
