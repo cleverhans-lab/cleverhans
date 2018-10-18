@@ -195,10 +195,9 @@ class Attack(object):
     feedable = dict(
         (k, v) for k, v in kwargs.items() if k in self.feedable_kwargs)
 
-    if len(fixed) + len(feedable) < len(kwargs):
-      warnings.warn("Supplied extra keyword arguments that are not "
-                    "used in the graph computation. They have been "
-                    "ignored.")
+    for key in kwargs:
+      if key not in fixed and key not in feedable:
+        raise ValueError("Undeclared argument: " + key)
 
     if not all(isinstance(value, collections.Hashable)
                for value in fixed.values()):
@@ -948,7 +947,6 @@ class SaliencyMapMethod(Attack):
   def parse_params(self,
                    theta=1.,
                    gamma=1.,
-                   nb_classes=None,
                    clip_min=0.,
                    clip_max=1.,
                    y_target=None,
@@ -963,15 +961,10 @@ class SaliencyMapMethod(Attack):
     :param theta: (optional float) Perturbation introduced to modified
                   components (can be positive or negative)
     :param gamma: (optional float) Maximum percentage of perturbed features
-    :param nb_classes: (optional int) Number of model output classes
     :param clip_min: (optional float) Minimum component value for clipping
     :param clip_max: (optional float) Maximum component value for clipping
     :param y_target: (optional) Target tensor if the attack is targeted
     """
-
-    if nb_classes is not None:
-      warnings.warn("The nb_classes argument is depricated and will "
-                    "be removed on 2018-02-11")
     self.theta = theta
     self.gamma = gamma
     self.clip_min = clip_min
@@ -1154,7 +1147,6 @@ class CarliniWagnerL2(Attack):
   def parse_params(self,
                    y=None,
                    y_target=None,
-                   nb_classes=None,
                    batch_size=1,
                    confidence=0,
                    learning_rate=5e-3,
@@ -1166,9 +1158,6 @@ class CarliniWagnerL2(Attack):
                    clip_max=1):
 
     # ignore the y and y_target argument
-    if nb_classes is not None:
-      warnings.warn("The nb_classes argument is depricated and will "
-                    "be removed on 2018-02-11")
     self.batch_size = batch_size
     self.confidence = confidence
     self.learning_rate = learning_rate
@@ -1284,7 +1273,6 @@ class ElasticNetMethod(Attack):
   def parse_params(self,
                    y=None,
                    y_target=None,
-                   nb_classes=None,
                    beta=1e-2,
                    decision_rule='EN',
                    batch_size=1,
@@ -1298,9 +1286,6 @@ class ElasticNetMethod(Attack):
                    clip_max=1):
 
     # ignore the y and y_target argument
-    if nb_classes is not None:
-      warnings.warn("The nb_classes argument is depricated and will "
-                    "be removed on 2018-02-11")
     self.beta = beta
     self.decision_rule = decision_rule
     self.batch_size = batch_size
@@ -1383,7 +1368,6 @@ class DeepFool(Attack):
                    nb_candidate=10,
                    overshoot=0.02,
                    max_iter=50,
-                   nb_classes=None,
                    clip_min=0.,
                    clip_max=1.,
                    **kwargs):
@@ -1395,13 +1379,9 @@ class DeepFool(Attack):
                          confidence during implementation.
     :param overshoot: A termination criterion to prevent vanishing updates
     :param max_iter: Maximum number of iteration for deepfool
-    :param nb_classes: The number of model output classes
     :param clip_min: Minimum component value for clipping
     :param clip_max: Maximum component value for clipping
     """
-    if nb_classes is not None:
-      warnings.warn("The nb_classes argument is depricated and will "
-                    "be removed on 2018-02-11")
     self.nb_candidate = nb_candidate
     self.overshoot = overshoot
     self.max_iter = max_iter

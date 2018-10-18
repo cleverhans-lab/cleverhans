@@ -22,6 +22,7 @@ import tensorflow as tf
 from cleverhans.attacks import MaxConfidence
 from cleverhans.attacks import Semantic
 from cleverhans.evaluation import correctness_and_confidence
+from cleverhans.evaluation import run_attack
 from cleverhans.utils import set_log_level
 from cleverhans.serial import load, save
 from cleverhans.utils_tf import infer_devices
@@ -42,6 +43,7 @@ BATCH_SIZE = 128 * num_devices
 MC_BATCH_SIZE = 16 * num_devices
 NB_ITER = 40
 BASE_EPS_ITER = None # Differs by dataset
+SAVE_ADVX = 1
 
 def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                                    train_end=TRAIN_END, test_start=TEST_START,
@@ -74,6 +76,8 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     model = load(filepath)
   assert len(model.get_params()) > 0
   factory = model.dataset_factory
+  factory.kwargs['train_start'] = train_start
+  factory.kwargs['train_end'] = train_end
   factory.kwargs['test_start'] = test_start
   factory.kwargs['test_end'] = test_end
   dataset = factory()
@@ -167,7 +171,7 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
                            mc_batch_size=MC_BATCH_SIZE,
                            report_path=REPORT_PATH,
                            base_eps_iter=BASE_EPS_ITER,
-                           nb_iter=NB_ITER):
+                           nb_iter=NB_ITER, save_advx=SAVE_ADVX):
   """
   Load a saved model, gather its predictions, and save a confidence report.
 
@@ -190,6 +194,8 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
   :param base_eps_iter: step size if the data were in [0,1]
     (Step size will be rescaled proportional to the actual data range)
   :param nb_iter: Number of iterations of PGD to run per class
+  :param save_advx: bool. If True, saves the adversarial examples to disk.
+    On by default, but can be turned off to save memory, etc.
   """
 
   # Set TF random seed to improve reproducibility
@@ -245,16 +251,38 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
   semantic = Semantic(model, center, max_val, sess)
   mc = MaxConfidence(model, sess=sess)
 
-  jobs = [('clean', None, None, None),
-          ('Semantic', semantic, None, None),
-          ('mc', mc, mc_params, mc_batch_size)]
+  jobs = [('clean', None, None, None, False),
+          ('Semantic', semantic, None, None, False),
+          ('mc', mc, mc_params, mc_batch_size, True)]
 
 
   for job in jobs:
-    name, attack, attack_params, job_batch_size = job
+    name, attack, attack_params, job_batch_size, save_this_job = job
     if job_batch_size is None:
       job_batch_size = batch_size
     t1 = time.time()
+    if save_advx and save_this_job:
+      # If we want to save the adversarial examples to the filesystem, we need
+      # to fetch all of them. Otherwise they're just computed one batch at a
+      # time and discarded
+
+      # The path to save to
+      assert report_path.endswith('.joblib')
+      advx_path = report_path[:-len('.joblib')] + '_advx_' + name + '.npy'
+
+      # Fetch the adversarial examples
+      x_data = run_attack(sess, model, x_data, y_data, attack, attack_params,
+                          batch_size=job_batch_size, devices=devices)
+
+      # Turn off the attack so `correctness_and_confidence` won't run it a
+      # second time.
+      attack = None
+      attack_params = None
+
+      # Save the adversarial examples
+      np.save(advx_path, x_data)
+
+    # Run correctness and confidence evaluation on adversarial examples
     packed = correctness_and_confidence(sess, model, x_data, y_data,
                                         batch_size=job_batch_size, devices=devices,
                                         attack=attack,
