@@ -3,6 +3,7 @@ from cleverhans.attack_bundling import AttackConfig
 from cleverhans.attack_bundling import Misclassify
 from cleverhans.attack_bundling import unfinished_attack_configs
 
+
 def test_unfinished_attack_configs():
 
   new_work_goal = {}
@@ -42,11 +43,12 @@ def test_unfinished_attack_configs():
   assert all(e in actual_unfinished for e in expected_unfinished)
   assert all(e not in actual_unfinished for e in expected_finished)
 
+
 def test_misclassify_request_examples():
   cfg = AttackConfig(None, None)
   goal = Misclassify(new_work_goal={cfg: 1})
   correctness = np.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 1], dtype=np.bool)
-  run_counts =  np.array([1, 1, 1, 0, 0, 0, 1, 1, 1, 0], dtype=np.int64) 
+  run_counts = np.array([1, 1, 1, 0, 0, 0, 1, 1, 1, 0], dtype=np.int64)
   criteria = {'correctness': correctness}
   batch_size = 3
   idxs = goal.request_examples(cfg, criteria, {cfg: run_counts}, batch_size)
@@ -58,4 +60,3 @@ def test_misclassify_request_examples():
     assert already_misclassified not in idxs
   for needed in [3, 5, 9]:
     assert needed in idxs
-
