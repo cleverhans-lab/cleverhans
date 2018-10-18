@@ -120,7 +120,7 @@ class Attack(object):
     # process all of the rest and create placeholders for them
     new_kwargs = dict(x for x in fixed.items())
     for name, value in feedable.items():
-      given_type = self.feedable_kwargs[name]
+      given_type = value.dtype
       if isinstance(value, np.ndarray):
         new_shape = [None] + list(value.shape[1:])
         new_kwargs[name] = tf.placeholder(given_type, new_shape)
@@ -158,7 +158,8 @@ class Attack(object):
       raise ValueError("Cannot use `generate_np` when no `sess` was"
                        " provided")
 
-    fixed, feedable, hash_key = self.construct_variables(kwargs)
+    packed = self.construct_variables(kwargs)
+    fixed, feedable, feedable_types, hash_key = packed
 
     if hash_key not in self.graphs:
       self.construct_graph(fixed, feedable, x_val, hash_key)
@@ -182,9 +183,25 @@ class Attack(object):
     Construct the inputs to the attack graph to be used by generate_np.
 
     :param kwargs: Keyword arguments to generate_np.
-    :return: Structural and feedable arguments as well as a unique key
-             for the graph given these inputs.
+    :return:
+      Structural arguments
+      Feedable arguments
+      Output of `arg_type` describing feedable arguments
+      A unique key
     """
+    if isinstance(self.feedable_kwargs, dict):
+      warnings.warn("Using a dict for `feedable_kwargs is deprecated."
+                    "Switch to using a tuple."
+                    "It is not longer necessary to specify the types "
+                    "of the arguments---we build a different graph "
+                    "for each received type."
+                    "Using a dict may become an error on or after "
+                    "2019-04-18.")
+      feedable_names = tuple(sorted(self.feedable_kwargs.keys()))
+    else:
+      feedable_names = self.feedable_kwargs
+      assert isinstance(feedable_names, tuple)
+
     # the set of arguments that are structural properties of the attack
     # if these arguments are different, we must construct a new graph
     fixed = dict(
@@ -192,12 +209,13 @@ class Attack(object):
 
     # the set of arguments that are passed as placeholders to the graph
     # on each call, and can change without constructing a new graph
-    feedable = dict(
-        (k, v) for k, v in kwargs.items() if k in self.feedable_kwargs)
+    feedable = {k: v for k, v in kwargs.items() if k in feedable_names}
 
     for key in kwargs:
       if key not in fixed and key not in feedable:
         raise ValueError("Undeclared argument: " + key)
+
+    feed_arg_type = arg_type(feedable_names, feedable)
 
     if not all(isinstance(value, collections.Hashable)
                for value in fixed.values()):
@@ -207,9 +225,9 @@ class Attack(object):
       hash_key = None
     else:
       # create a unique key for this set of fixed paramaters
-      hash_key = tuple(sorted(fixed.items()))
+      hash_key = tuple(sorted(fixed.items())) + tuple([feed_arg_type])
 
-    return fixed, feedable, hash_key
+    return fixed, feedable, feed_arg_type, hash_key
 
   def get_or_guess_labels(self, x, kwargs):
     """
@@ -843,7 +861,7 @@ class SaliencyMapMethod(Attack):
 
     super(SaliencyMapMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
-    self.feedable_kwargs = {'y_target': self.tf_dtype}
+    self.feedable_kwargs = tuple(['y_target'])
     self.structural_kwargs = [
         'theta', 'gamma', 'clip_max', 'clip_min', 'symbolic_impl'
     ]
@@ -2269,3 +2287,34 @@ class MaxConfidence(Attack):
   def attack_class(self, x, target_y):
     adv = self.base_attacker.generate(x, y_target=target_y, **self.params)
     return adv
+
+def arg_type(arg_names, kwargs):
+  """
+  Returns a hashable summary of the types of arg_names within kwargs.
+  """
+  assert isinstance(arg_names, tuple)
+  passed = (name in kwargs for name in arg_names)
+  passed_and_not_none = []
+  for name in arg_names:
+    if name in kwargs:
+      passed_and_not_none.append(kwargs[name] is not None)
+    else:
+      passed_and_not_none.append(False)
+  passed_and_not_none = tuple(passed_and_not_none)
+  dtypes = []
+  for name in arg_names:
+    if name not in kwargs:
+      dtypes.append(None)
+      continue
+    value = kwargs[name]
+    if value is None:
+      dtypes.append(None)
+      continue
+    assert hasattr(value, 'dtype')
+    dtype = value.dtype
+    if not isinstance(dtype, np.dtype):
+      dtype = dtype.as_np_dtype
+    assert isinstance(dtype, np.dtype)
+    dtypes.append(dtype)
+  dtypes = tuple(dtypes)
+  return (passed, passed_and_not_none, dtypes)
