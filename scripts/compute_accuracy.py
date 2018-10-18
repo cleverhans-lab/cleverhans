@@ -44,10 +44,11 @@ TEST_START = 0
 TEST_END = 10000
 WHICH_SET = 'test'
 NB_ITER = 40
-BASE_EPS_ITER = None # Differs by dataset
+BASE_EPS_ITER = None  # Differs by dataset
 
 
 FLAGS = flags.FLAGS
+
 
 def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
                      test_start=TEST_START, test_end=TEST_END,
@@ -133,6 +134,7 @@ def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
     print("Accuracy on " + name + " examples: ", acc)
     print("Evaluation took", t2 - t1, "seconds")
 
+
 def main(argv=None):
   """
   Print accuracies
@@ -146,15 +148,16 @@ def main(argv=None):
                    nb_iter=FLAGS.nb_iter, base_eps_iter=FLAGS.base_eps_iter,
                    batch_size=FLAGS.batch_size)
 
+
 if __name__ == '__main__':
   flags.DEFINE_integer('train_start', TRAIN_START, 'Starting point (inclusive)'
                        'of range of train examples to use')
   flags.DEFINE_integer('train_end', TRAIN_END, 'Ending point (non-inclusive) '
                        'of range of train examples to use')
-  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) of range'
-                       ' of test examples to use')
-  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of range'
-                       ' of test examples to use')
+  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) '
+                       'of range of test examples to use')
+  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of '
+                       'range of test examples to use')
   flags.DEFINE_integer('nb_iter', NB_ITER, 'Number of iterations of PGD')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
   flags.DEFINE_integer('batch_size', BATCH_SIZE,

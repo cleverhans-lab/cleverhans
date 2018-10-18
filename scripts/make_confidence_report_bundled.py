@@ -39,6 +39,7 @@ from cleverhans.confidence_report import REPORT_PATH
 
 FLAGS = flags.FLAGS
 
+
 def main(argv=None):
   """
   Make a confidence report and save it to disk.
