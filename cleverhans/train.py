@@ -17,12 +17,14 @@ from __future__ import unicode_literals
 import logging
 import os
 import time
+import warnings
 
 import math
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
+from cleverhans import canary
 from cleverhans.utils import _ArgsWrapper, create_logger
 from cleverhans.utils import safe_zip
 from cleverhans.utils_tf import infer_devices
@@ -37,7 +39,7 @@ def train(sess, loss, x_train, y_train,
           init_all=False, evaluate=None, feed=None, args=None,
           rng=None, var_list=None, fprop_args=None, optimizer=None,
           devices=None, x_batch_preprocessor=None, use_ema=False,
-          ema_decay=.998, run_canary=True,
+          ema_decay=.998, run_canary=None,
           loss_threshold=1e5, dataset_train=None, dataset_size=None):
   """
   Run (optionally multi-replica, synchronous) training to minimize `loss`
@@ -74,12 +76,6 @@ def train(sess, loss, x_train, y_train,
       If a callable rather than a float, this is a callable that takes
       the epoch and batch as arguments and returns the ema_decay for
       the current batch.
-  :param run_canary: bool
-      If True and using 3 or more GPUs, runs some canary code that should
-      fail if there is a multi-GPU driver problem.
-      Turn this off if your gradients are inherently stochastic (e.g.
-      if you use dropout). The canary code checks that all GPUs give
-      approximately the same gradient.
   :param loss_threshold: float
       Raise an exception if the loss exceeds this value.
       This is intended to rapidly detect numerical problems.
@@ -90,11 +86,22 @@ def train(sess, loss, x_train, y_train,
     :param dataset_size: integer, the size of the dataset_train.
   :return: True if model trained
   """
+
+  # Check whether the hardware is working correctly
+  canary.run_canary()
+  if run_canary is not None:
+    warnings.warn("The `run_canary` argument is deprecated. The canary "
+                  "is now much cheaper and thus runs all the time. The "
+                  "canary now uses its own loss function so it is not "
+                  "necessary to turn off the canary when training with "
+                  " a stochastic loss. Simply quit passing `run_canary`."
+                  "Passing `run_canary` may become an error on or after "
+                  "2019-10-16.")
+
   args = _ArgsWrapper(args or {})
   fprop_args = fprop_args or {}
 
   # Check that necessary arguments were given (see doc above)
-
   # Be sure to support 0 epochs for debugging purposes
   if args.nb_epochs is None:
     raise ValueError("`args` must specify number of epochs")
@@ -187,48 +194,6 @@ def train(sess, loss, x_train, y_train,
     sess.run(tf.global_variables_initializer())
   else:
     initialize_uninitialized_global_variables(sess)
-
-  # Check whether the hardware is working correctly
-
-  # So far the failure has only been observed with 3 or more GPUs
-  run_canary = run_canary and num_devices > 2
-  if run_canary:
-    canary_feed_dict = {}
-    for x, y in safe_zip(preprocessed_xs, ys):
-      canary_feed_dict[x] = x_train[:device_batch_size].copy()
-      canary_feed_dict[y] = y_train[:device_batch_size].copy()
-    # To reduce the runtime and memory cost of this canary,
-    # we test the gradient of only one parameter.
-    # For now this is just set to the first parameter in the list,
-    # because it is an index that is always guaranteed to work.
-    # If we think that this is causing false negatives and we should
-    # test other parameters, we could test a random parameter from
-    # the list or we could rewrite the canary to examine more than
-    # one parameter.
-    param_to_test = 0
-    grad_vars = []
-    for i in xrange(num_devices):
-      dev_grads = grads[i]
-      grad_vars.append(dev_grads[param_to_test][0])
-    grad_values = sess.run(grad_vars, feed_dict=canary_feed_dict)
-    failed = False
-    for i in xrange(1, num_devices):
-      if grad_values[0].shape != grad_values[i].shape:
-        print("shape 0 does not match shape %d:" % i,
-              grad_values[0].shape, grad_values[i].shape)
-        failed = True
-        continue
-      if not np.allclose(grad_values[0], grad_values[i], atol=1e-6):
-        print("grad_values[0]: ",
-              grad_values[0].mean(), grad_values[0].max())
-        print("grad_values[%d]: " %
-              i, grad_values[i].mean(), grad_values[i].max())
-        print("max diff: ", np.abs(
-            grad_values[0] - grad_values[1]).max())
-        failed = True
-    if failed:
-      print("Canary failed.")
-      quit()
 
   for epoch in xrange(args.nb_epochs):
     if dataset_train is not None:

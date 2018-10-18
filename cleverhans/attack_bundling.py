@@ -9,6 +9,7 @@ import time
 
 import numpy as np
 import six
+from six.moves import range
 import tensorflow as tf
 
 from cleverhans.attacks import Noise
@@ -376,6 +377,10 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_count
   while not goal.is_satisfied(criteria, run_counts):
     run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs, run_counts,
                         goal, report, report_path)
+  # Save after finishing each goal.
+  # The incremental saves run on a timer. This save is needed so that the last
+  # few attacks after the timer don't get discarded
+  save(criteria, report, report_path, adv_x)
 
 def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
                         run_counts, goal, report, report_path):
@@ -433,13 +438,23 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   if should_save:
     report['time'] = new_time
     goal.print_progress(criteria, run_counts)
-    print_stats(criteria['correctness'], criteria['confidence'], 'bundled')
+    save(criteria, report, report_path, adv_x_val)
 
-    serial.save(report_path, report)
+def save(criteria, report, report_path, adv_x_val):
+  """
+  Saves the report and adversarial examples.
+  :param criteria: dict, of the form returned by AttackGoal.get_criteria
+  :param report: dict containing a confidence report
+  :param report_path: string, filepath
+  :param adv_x_val: numpy array containing dataset of adversarial examples
+  """
+  print_stats(criteria['correctness'], criteria['confidence'], 'bundled')
 
-    assert report_path.endswith(".joblib")
-    adv_x_path = report_path[:-len(".joblib")] + "_adv.npy"
-    np.save(adv_x_path, adv_x_val)
+  serial.save(report_path, report)
+
+  assert report_path.endswith(".joblib")
+  adv_x_path = report_path[:-len(".joblib")] + "_adv.npy"
+  np.save(adv_x_path, adv_x_val)
 
 class AttackGoal(object):
   """Specifies goals for attack bundling.
@@ -956,3 +971,67 @@ class _WrongConfidenceFactory(_ExtraCriteriaFactory):
   def __call__(self, x_batch, y_batch, predictions, correct, max_probs):
     max_wrong_probs = tf.reduce_max(predictions * (1. - y_batch), axis=1)
     return tuple([max_wrong_probs])
+
+def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
+                              report_path):
+  """
+  A post-processor version of attack bundling, that chooses the strongest
+  example from the output of multiple earlier bundling strategies.
+
+  :param sess: tf.session.Session
+  :param model: cleverhans.model.Model
+  :param adv_x_list: list of numpy arrays
+    Each entry in the list is the output of a previous bundler; it is an
+      adversarial version of the whole dataset.
+  :param y: numpy array containing true labels
+  :param goal: AttackGoal to use to choose the best version of each adversarial
+    example
+  :param report_path: str, the path the report will be saved to
+  """
+
+  # Check the input
+  num_attacks = len(adv_x_list)
+  assert num_attacks > 0
+  adv_x_0 = adv_x_list[0]
+  assert isinstance(adv_x_0, np.ndarray)
+  assert all(adv_x.shape == adv_x_0.shape for adv_x in adv_x_list)
+
+  # Allocate the output
+  out = np.zeros_like(adv_x_0)
+  m = adv_x_0.shape[0]
+  # Initialize with negative sentinel values to make sure everything is
+  # written to
+  correctness = -np.ones(m, dtype='int32')
+  confidence = -np.ones(m, dtype='float32')
+
+  # Gather criteria
+  criteria = [goal.get_criteria(sess, model, adv_x, y) for adv_x in adv_x_list]
+  assert all('correctness' in c for c in criteria)
+  assert all('confidence' in c for c in criteria)
+  _logger.info("Accuracy on each advx dataset: ")
+  for c in criteria:
+    _logger.info("\t" + str(c['correctness'].mean()))
+
+  for example_idx in range(m):
+    # Index of the best attack for this example
+    attack_idx = 0
+    # Find the winner
+    for candidate_idx in range(1, num_attacks):
+      if goal.new_wins(criteria[attack_idx], example_idx,
+                       criteria[candidate_idx], example_idx):
+        attack_idx = candidate_idx
+    # Copy the winner into the output
+    out[example_idx] = adv_x_list[attack_idx][example_idx]
+    correctness[example_idx] = criteria[attack_idx]['correctness'][example_idx]
+    confidence[example_idx] = criteria[attack_idx]['confidence'][example_idx]
+
+  assert correctness.min() >= 0
+  assert correctness.max() <= 1
+  assert confidence.min() >= 0.
+  assert confidence.max() <= 1.
+
+  report = {'bundled' : {'correctness': correctness, 'confidence': confidence}}
+  serial.save(report_path, report)
+  assert report_path.endswith('.joblib')
+  adv_x_path = report_path[:-len('.joblib')] + "_adv_x.npy"
+  np.save(adv_x_path, out)
