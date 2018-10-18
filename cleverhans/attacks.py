@@ -123,9 +123,9 @@ class Attack(object):
       given_type = value.dtype
       if isinstance(value, np.ndarray):
         new_shape = [None] + list(value.shape[1:])
-        new_kwargs[name] = tf.placeholder(given_type, new_shape)
+        new_kwargs[name] = tf.placeholder(given_type, new_shape, name=name)
       elif isinstance(value, utils.known_number_types):
-        new_kwargs[name] = tf.placeholder(given_type, shape=[])
+        new_kwargs[name] = tf.placeholder(given_type, shape=[], name=name)
       else:
         raise ValueError("Could not identify type of argument " +
                          name + ": " + str(value))
@@ -2313,7 +2313,7 @@ def arg_type(arg_names, kwargs):
     if value is None:
       dtypes.append(None)
       continue
-    assert hasattr(value, 'dtype')
+    assert hasattr(value, 'dtype'), type(value)
     dtype = value.dtype
     if not isinstance(dtype, np.dtype):
       dtype = dtype.as_np_dtype
