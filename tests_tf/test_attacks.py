@@ -409,9 +409,9 @@ class TestMomentumIterativeMethod(TestBasicIterativeMethod):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    for dacay_factor in [0.0, 0.5, 1.0]:
+    for decay_factor in [0.0, 0.5, 1.0]:
       x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
-                                      dacay_factor=dacay_factor,
+                                      decay_factor=decay_factor,
                                       clip_min=-5.0, clip_max=5.0)
 
       delta = np.max(np.abs(x_adv - x_val), axis=1)
