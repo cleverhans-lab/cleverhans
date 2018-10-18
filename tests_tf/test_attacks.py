@@ -301,6 +301,7 @@ class TestSPSA(CleverHansTest):
           np.expand_dims(x_val[i], axis=0),
           y=np.expand_dims(feed_labs[i], axis=0).astype('int32'),
           eps=np.array(.5, dtype='float32'), num_steps=100, spsa_samples=64,
+          clip_min=float32(0.), clip_max=float32(1.),
           spsa_iters=1)
       all_x_adv.append(x_adv_np[0])
 
@@ -316,8 +317,9 @@ class TestSPSA(CleverHansTest):
 
     feed_labs = np.random.randint(0, 2, n_samples, dtype='int32')
     x_adv = self.attack.generate_np(
-        x_val, y=feed_labs.astype('int32'), eps=np.array(.5, dtype='float32'), num_steps=100,
-        spsa_samples=64, spsa_iters=1)
+        x_val, y=feed_labs.astype('int32'), eps=np.array(.5, dtype='float32'),
+        num_steps=100, spsa_samples=64, spsa_iters=1, clip_min=float32(0.),
+        clip_max=float32(1.))
 
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
     self.assertLess(np.mean(feed_labs == new_labs), 0.1)
