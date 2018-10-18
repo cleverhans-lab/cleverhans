@@ -141,13 +141,20 @@ class Attack(object):
     x = tf.placeholder(self.tf_dtype, shape=x_shape)
 
     # now we generate the graph that we want
-    x_adv = self.generate(x, **new_kwargs)
+    # Need to not pass the meta-keyword arguments used to track whether
+    # args are None
+    censored_kwargs = {}
+    for key in new_kwargs:
+      if key.endswith("_passed") or key.endswith("_passed_and_not_none"):
+        continue
+      censored_kwargs[key] = new_kwargs[key]
+    x_adv = self.generate(x, **censored_kwargs)
 
     self.graphs[hash_key] = (x, new_kwargs, x_adv)
 
     if len(self.graphs) >= 10:
       warnings.warn("Calling generate_np() with multiple different "
-                    "structural paramaters is inefficient and should"
+                    "structural parameters is inefficient and should"
                     " be avoided. Calling generate() is preferred.")
 
   def generate_np(self, x_val, **kwargs):
