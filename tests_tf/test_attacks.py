@@ -291,9 +291,9 @@ class TestSPSA(CleverHansTest):
     for i in range(n_samples):
       x_adv_np = self.attack.generate_np(
           np.expand_dims(x_val[i], axis=0),
-          y=np.expand_dims(feed_labs[i], axis=0),
-          epsilon=.5, num_steps=100, batch_size=64, spsa_iters=1,
-      )
+          y=np.expand_dims(feed_labs[i], axis=0).astype('int32'),
+          epsilon=np.array(.5, dtype='float32'), num_steps=100, batch_size=64,
+          spsa_iters=1)
       all_x_adv.append(x_adv_np[0])
 
     x_adv = np.vstack(all_x_adv)
