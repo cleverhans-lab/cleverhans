@@ -308,8 +308,8 @@ class TestSPSA(CleverHansTest):
 
     feed_labs = np.random.randint(0, 2, n_samples)
     x_adv = self.attack.generate_np(
-        x_val, y=feed_labs, epsilon=.5, num_steps=100, batch_size=64,
-        spsa_iters=1)
+        x_val, y=feed_labs.astype('int32'), epsilon=np.array(.5, dtype='float32'), num_steps=100,
+        batch_size=64, spsa_iters=1)
 
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
     self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
