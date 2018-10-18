@@ -982,6 +982,49 @@ class _WrongConfidenceFactory(_ExtraCriteriaFactory):
     max_wrong_probs = tf.reduce_max(predictions * (1. - y_batch), axis=1)
     return tuple([max_wrong_probs])
 
+def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
+                               clip_min, clip_max, nb_iter,
+                               report_path):
+  """Runs the MaxConfidence attack using SPSA as the underlying optimizer.
+
+  Even though this runs only one attack, it must be implemented as a bundler
+  because SPSA supports only batch_size=1. The cleverhans.attacks.MaxConfidence
+  attack internally multiplies the batch size by nb_classes, so it can't take
+  SPSA as a base attacker. Insteader, we must bundle batch_size=1 calls using
+  cleverhans.attack_bundling.MaxConfidence.
+
+  References:
+  https://openreview.net/forum?id=H1g0piA9tQ
+
+  :param sess: tf.Session
+  :param model: cleverhans.model.Model
+  :param x: numpy array containing clean example inputs to attack
+  :param y: numpy array containing true labels
+  :param nb_classes: int, number of classes
+  :param eps: float, maximum size of perturbation (measured by max norm)
+  :param nb_iter: int, number of iterations for one version of PGD attacks
+    (will also run another version with 25X more iterations)
+  :param report_path: str, the path that the report will be saved to.
+  """
+  spsa = SPSA(model, sess)
+  threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
+  attack_configs = []
+  spsa_params = copy.copy(threat_params)
+  spsa_params["nb_iter"] = nb_iter
+  dev_batch_size = 1 # The only batch size supported by SPSA
+  batch_size = num_devices
+  ones = tf.ones(dev_batch_size, tf.int32)
+  for cls in range(nb_classes):
+    cls_params = copy.copy(spsa_params)
+    cls_params['y_target'] = tf.to_float(tf.one_hot(ones * cls, nb_classes))
+    cls_attack_config = AttackConfig(spsa, cls_params, "spsa_" + str(cls))
+    attack_configs.append(cls_attack_config)
+  new_work_goal = {config: 1 for config in attack_configs}
+  goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
+  bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
+                 attack_batch_size=batch_size)
+
+
 def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
                               report_path):
   """
