@@ -20,7 +20,8 @@ import tensorflow as tf
 
 from cleverhans import utils
 
-keras_imported = False  # Only load keras if user tries to use a dataset that requires it
+# Only load keras if user tries to use a dataset that requires it
+keras_imported = False
 
 
 class Dataset(object):
@@ -61,6 +62,7 @@ class Dataset(object):
       d = d.repeat()
     if shuffle:
       d = d.shuffle(shuffle)
+
     def lookup(p):
       return x[p], y[p]
     d = d.map(lambda i: tf.py_func(lookup, [i], [tf.float32] * 2))

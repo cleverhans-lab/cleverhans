@@ -1928,7 +1928,8 @@ def _apply_transformation(inputs):
   height = x.get_shape().as_list()[1]
   width = x.get_shape().as_list()[2]
 
-  # Pad the image to prevent two-step rotation / translation from truncating corners
+  # Pad the image to prevent two-step rotation / translation from truncating
+  # corners
   max_dist_from_center = np.sqrt(height**2+width**2) / 2
   min_edge_from_center = float(np.min([height, width])) / 2
   padding = np.ceil(max_dist_from_center -
@@ -2023,7 +2024,8 @@ def parallel_apply_transformations(x, transforms, black_border_size=0):
   num_transforms = transforms.get_shape().as_list()[0]
   im_shape = x.get_shape().as_list()[1:]
 
-  # Pass a copy of x and a transformation to each iteration of the map_fn callable
+  # Pass a copy of x and a transformation to each iteration of the map_fn
+  # callable
   tiled_x = tf.reshape(
       tf.tile(x, [num_transforms, 1, 1, 1]),
       [num_transforms, -1] + im_shape)
