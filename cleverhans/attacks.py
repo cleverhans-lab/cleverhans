@@ -1867,14 +1867,11 @@ class SPSA(Attack):
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     super(SPSA, self).__init__(model, sess, dtypestr, **kwargs)
 
-    self.feedable_kwargs = {
-        'epsilon': self.np_dtype,
-        'y': np.int32,
-        'y_target': np.int32,
-    }
+    self.feedable_kwargs = tuple(['eps', 'clip_min', 'clip_max', 'y',
+                                  'y_target'])
     self.structural_kwargs = [
-        'num_steps',
-        'batch_size',
+        'nb_iter',
+        'spsa_samples',
         'spsa_iters',
         'early_stop_loss_threshold',
         'is_debug',
@@ -1887,16 +1884,20 @@ class SPSA(Attack):
                x,
                y=None,
                y_target=None,
-               epsilon=None,
-               num_steps=None,
-               is_targeted=False,
+               eps=None,
+               clip_min=None,
+               clip_max=None,
+               nb_iter=None,
+               is_targeted=None,
                early_stop_loss_threshold=None,
                learning_rate=0.01,
                delta=0.01,
                spsa_samples=128,
                batch_size=None,
                spsa_iters=1,
-               is_debug=False):
+               is_debug=False,
+               epsilon=None,
+               num_steps=None):
     """
     Generate symbolic graph for adversarial examples.
 
@@ -1904,9 +1905,11 @@ class SPSA(Attack):
     :param y: A Tensor or None. The index of the correct label.
     :param y_target: A Tensor or None. The index of the target label in a
                      targeted attack.
-    :param epsilon: The size of the maximum perturbation, measured in the
-                    L-infinity norm.
-    :param num_steps: The number of optimization steps.
+    :param eps: The size of the maximum perturbation, measured in the
+                L-infinity norm.
+    :param clip_min: If specified, the minimum input value
+    :param clip_max: If specified, the maximum input value
+    :param nb_iter: The number of optimization steps.
     :param is_targeted: Whether to use a targeted or untargeted attack.
     :param early_stop_loss_threshold: A float or None. If specified, the
                                       attack will end as soon as the loss
@@ -1923,8 +1926,44 @@ class SPSA(Attack):
                        different inputs.
     :param is_debug: If True, print the adversarial loss after each update.
     """
+
+    if epsilon is not None:
+      if eps is not None:
+        raise ValueError("Should not specify both eps and its deprecated "
+                         "alias, epsilon")
+      warnings.warn("`epsilon` is deprecated. Switch to `eps`. `epsilon` may "
+                    "be removed on or after 2019-04-15.")
+      eps = epsilon
+    del epsilon
+
+    if num_steps is not None:
+      if nb_iter is not None:
+        raise ValueError("Should not specify both nb_iter and its deprecated "
+                         "alias, num_steps")
+      warnings.warn("`num_steps` is deprecated. Switch to `nb_iter`. "
+                    "`num_steps` may be removed on or after 2019-04-15.")
+      nb_iter = num_steps
+    del num_steps
+    assert nb_iter is not None
+
+    if (y is not None) + (y_target is not None) != 1:
+      raise ValueError("Must specify exactly one of y (untargeted attack, "
+                       "cause the input not to be classified as this true "
+                       "label) and y_target (targeted attack, cause the "
+                       "input to be classified as this target label).")
+
+    if is_targeted is not None:
+      warnings.warn("`is_targeted` is deprecated. Simply do not specify it."
+                    " It may become an error to specify it on or after "
+                    "2019-04-15.")
+      assert is_targeted == y_target is not None
+
+    is_targeted = y_target is not None
+
     if x.get_shape().as_list()[0] is None:
-      warnings.warn("For SPSA, input tensor x must have batch_size of 1.")
+      check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1)
+      with tf.control_dependencies([check_batch]):
+        x = tf.identity(x)
     elif x.get_shape().as_list()[0] != 1:
       raise ValueError("For SPSA, input tensor x must have batch_size of 1.")
 
