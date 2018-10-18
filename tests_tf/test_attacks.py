@@ -272,6 +272,7 @@ class TestSPSA(CleverHansTest):
     x_adv_op = self.attack.generate(
         x_input, y=y_label,
         epsilon=.5, num_steps=100, batch_size=64, spsa_iters=1,
+        clip_min=0., clip_max=1.
     )
 
     all_x_adv = []
@@ -292,20 +293,20 @@ class TestSPSA(CleverHansTest):
     x_val = np.random.rand(n_samples, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    feed_labs = np.random.randint(0, 2, n_samples)
+    feed_labs = np.random.randint(0, 2, n_samples, dtype='int32')
 
     all_x_adv = []
     for i in range(n_samples):
       x_adv_np = self.attack.generate_np(
           np.expand_dims(x_val[i], axis=0),
           y=np.expand_dims(feed_labs[i], axis=0).astype('int32'),
-          epsilon=np.array(.5, dtype='float32'), num_steps=100, batch_size=64,
+          eps=np.array(.5, dtype='float32'), num_steps=100, spsa_samples=64,
           spsa_iters=1)
       all_x_adv.append(x_adv_np[0])
 
     x_adv = np.vstack(all_x_adv)
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-    self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
+    self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
   def test_attack_strength_np_batched(self):
     # Same test as test_attack_strength_np, but batched
@@ -313,14 +314,13 @@ class TestSPSA(CleverHansTest):
     x_val = np.random.rand(n_samples, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    feed_labs = np.random.randint(0, 2, n_samples)
+    feed_labs = np.random.randint(0, 2, n_samples, dtype='int32')
     x_adv = self.attack.generate_np(
-        x_val, y=feed_labs.astype('int32'), epsilon=np.array(.5, dtype='float32'), num_steps=100,
-        batch_size=64, spsa_iters=1)
+        x_val, y=feed_labs.astype('int32'), eps=np.array(.5, dtype='float32'), num_steps=100,
+        spsa_samples=64, spsa_iters=1)
 
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-    self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
-
+    self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
 class TestBasicIterativeMethod(TestFastGradientMethod):
   def setUp(self):
