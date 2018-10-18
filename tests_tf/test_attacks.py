@@ -187,6 +187,7 @@ class TestFastGradientMethod(CleverHansTest):
 
   def help_generate_np_gives_adversarial_example(self, ord, eps=.5,
                                                  **kwargs):
+    eps = float32(eps)
     x_val, x_adv, delta = self.generate_adversarial_examples_np(ord, eps,
                                                                 **kwargs)
     self.assertClose(delta, eps)
@@ -212,11 +213,11 @@ class TestFastGradientMethod(CleverHansTest):
 
   def test_targeted_generate_np_gives_adversarial_example(self):
     random_labs = np.random.random_integers(0, 1, 100)
-    random_labs_one_hot = np.zeros((100, 2))
+    random_labs_one_hot = np.zeros((100, 2), dtype='int32')
     random_labs_one_hot[np.arange(100), random_labs] = 1
 
     _, x_adv, delta = self.generate_adversarial_examples_np(
-        eps=.5, ord=np.inf, y_target=random_labs_one_hot)
+        eps=float32(.5), ord=np.inf, y_target=random_labs_one_hot)
 
     self.assertClose(delta, 0.5)
 
