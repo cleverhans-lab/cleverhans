@@ -267,11 +267,9 @@ def jsma(sess,
   # by removing all features that are already at their maximum values (if
   # increasing input features---otherwise, at their minimum value).
   if increase:
-    search_domain = set(
-        [i for i in xrange(nb_features) if adv_x[0, i] < clip_max])
+    search_domain = {i for i in xrange(nb_features) if adv_x[0, i] < clip_max}
   else:
-    search_domain = set(
-        [i for i in xrange(nb_features) if adv_x[0, i] > clip_min])
+    search_domain = {i for i in xrange(nb_features) if adv_x[0, i] > clip_min}
 
   # Initialize the loop variables
   iteration = 0
