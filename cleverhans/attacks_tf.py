@@ -1838,8 +1838,15 @@ def pgd_attack(loss_fn,
       parallel_iterations=1,
       back_prop=False)
   if project_perturbation is _project_perturbation:
+    # TODO: this assert looks totally wrong.
+    # Not bothering to fix it now because it's only an assert.
+    # 1) Multiplying by 1.1 gives a huge margin of error. This should probably
+    #    take the difference and allow a tolerance of 1e-6 or something like
+    #    that.
+    # 2) I think it should probably check the *absolute value* of
+    # final_perturbation
     perturbation_max = epsilon * 1.1
-    check_diff = tf.assert_less_equal(
+    check_diff = utils_tf.assert_less_equal(
         final_perturbation, perturbation_max,
         message="final_perturbation must change no pixel by more than "
                 "%s" % perturbation_max)
