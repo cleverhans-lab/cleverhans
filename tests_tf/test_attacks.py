@@ -226,6 +226,7 @@ class TestFastGradientMethod(CleverHansTest):
     x_val = np.array(x_val, dtype=np.float32)
 
     for eps in [0.1, 0.2, 0.3, 0.4]:
+      eps = np.array(eps, dtype='float32')
       x_adv = self.attack.generate_np(x_val, eps=eps, ord=np.inf,
                                       clip_min=-5.0, clip_max=5.0)
 
@@ -236,7 +237,8 @@ class TestFastGradientMethod(CleverHansTest):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
+    x_adv = self.attack.generate_np(x_val, eps=np.array(0.5, 'float32'),
+                                    ord=np.inf,
                                     clip_min=-0.2, clip_max=0.1)
 
     self.assertClose(np.min(x_adv), -0.2)
@@ -324,15 +326,21 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
     self.attack = BasicIterativeMethod(self.model, sess=self.sess)
 
   def test_generate_np_gives_adversarial_example_linfinity(self):
-    self.help_generate_np_gives_adversarial_example(ord=np.infty, eps=.5,
+    self.help_generate_np_gives_adversarial_example(ord=np.infty,
+                                                    eps=np.array(.5,
+                                                                 'float32'),
                                                     nb_iter=20)
 
   def test_generate_np_gives_adversarial_example_l1(self):
-    self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
+    self.help_generate_np_gives_adversarial_example(ord=1,
+                                                    eps=np.array(.5,
+                                                                 'float32'),
                                                     nb_iter=20)
 
   def test_generate_np_gives_adversarial_example_l2(self):
-    self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
+    self.help_generate_np_gives_adversarial_example(ord=2,
+                                                    eps=np.array(.5,
+                                                                 'float32'),
                                                     nb_iter=20)
 
   def test_do_not_reach_lp_boundary(self):
@@ -343,7 +351,8 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
     """
     for ord in [1, 2, np.infty]:
       _, _, delta = self.generate_adversarial_examples_np(
-          ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
+          ord=ord, eps=np.array(.5, 'float32'), nb_iter=10,
+          eps_iter=np.array(.01, 'float32'))
       self.assertTrue(np.max(0.5 - delta) > 0.25)
 
   def test_attack_strength(self):
@@ -841,8 +850,10 @@ class TestMadryEtAl(CleverHansTest):
 
     # Generate multiple adversarial examples
     for i in range(10):
-      x_adv = self.attack.generate_np(x_val, eps=.5, eps_iter=0.05,
-                                      clip_min=0.5, clip_max=0.7,
+      x_adv = self.attack.generate_np(x_val, eps=np.array(.5, 'float32'),
+                                      eps_iter=np.array(0.05, 'float32'),
+                                      clip_min=np.array(0.5, 'float32'),
+                                      clip_max=np.array(0.7, 'float32'),
                                       nb_iter=2, sanity_checks=False)
       new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
 

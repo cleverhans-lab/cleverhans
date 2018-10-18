@@ -165,7 +165,7 @@ class Attack(object):
                        " provided")
 
     packed = self.construct_variables(kwargs)
-    fixed, feedable, feedable_types, hash_key = packed
+    fixed, feedable, _feedable_types, hash_key = packed
 
     if hash_key not in self.graphs:
       self.construct_graph(fixed, feedable, x_val, hash_key)
