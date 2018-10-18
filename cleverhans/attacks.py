@@ -210,6 +210,9 @@ class Attack(object):
     # the set of arguments that are passed as placeholders to the graph
     # on each call, and can change without constructing a new graph
     feedable = {k: v for k, v in kwargs.items() if k in feedable_names}
+    for k in feedable:
+      if isinstance(feedable[k], (float, int)):
+        feedable[k] = np.array(feedable[k])
 
     for key in kwargs:
       if key not in fixed and key not in feedable:
