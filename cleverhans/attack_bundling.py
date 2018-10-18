@@ -1024,7 +1024,7 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
                  attack_batch_size=batch_size)
 
-  
+
 def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
                               report_path):
   """
@@ -1088,4 +1088,3 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
   assert report_path.endswith('.joblib')
   adv_x_path = report_path[:-len('.joblib')] + "_adv_x.npy"
   np.save(adv_x_path, out)
-
