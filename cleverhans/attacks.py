@@ -1992,15 +1992,28 @@ class SPSA(Attack):
         loss_fn,
         x,
         y_attack,
-        epsilon,
-        num_steps=num_steps,
+        eps,
+        num_steps=nb_iter,
         optimizer=optimizer,
         early_stop_loss_threshold=early_stop_loss_threshold,
         is_debug=is_debug,
+        clip_min=clip_min,
+        clip_max=clip_max
     )
     return adv_x
 
   def generate_np(self, x_val, **kwargs):
+    if "epsilon" in kwargs:
+      warnings.warn("Using deprecated argument: see `generate`")
+      assert "eps" not in kwargs
+      kwargs["eps"] = kwargs["epsilon"]
+      del kwargs["epsilon"]
+    if "num_steps" in kwargs:
+      warnings.warn("Using deprecated argument: see `generate`")
+      assert "nb_iter" not in kwargs
+      kwargs["nb_iter"] = kwargs["num_steps"]
+      del kwargs["num_steps"]
+
     # Call self.generate() sequentially for each image in the batch
     x_adv = []
     batch_size = x_val.shape[0]
