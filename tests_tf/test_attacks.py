@@ -242,29 +242,6 @@ class TestFastGradientMethod(CleverHansTest):
     self.assertClose(np.min(x_adv), -0.2)
     self.assertClose(np.max(x_adv), 0.1)
 
-  def test_generate_np_caches_graph_computation_for_eps_clip_or_xi(self):
-
-    x_val = np.random.rand(1, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    self.attack.generate_np(x_val, eps=.3, num_iterations=10,
-                            clip_max=-5.0, clip_min=-5.0,
-                            xi=1e-6)
-
-    old_grads = tf.gradients
-
-    def fn(*x, **y):
-      raise RuntimeError()
-
-    tf.gradients = fn
-
-    self.attack.generate_np(x_val, eps=.2, num_iterations=10,
-                            clip_max=-4.0, clip_min=-4.0,
-                            xi=1e-5)
-
-    tf.gradients = old_grads
-
-
 class TestSPSA(CleverHansTest):
   def setUp(self):
     super(TestSPSA, self).setUp()
