@@ -463,8 +463,9 @@ def fgm(x,
     adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
 
 
-  with tf.control_dependencies(asserts):
-    adv_x = tf.identity(adv_x)
+  if sanity_checks:
+    with tf.control_dependencies(asserts):
+      adv_x = tf.identity(adv_x)
 
   return adv_x
 
