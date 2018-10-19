@@ -364,7 +364,7 @@ def clip_eta(eta, ord, eps):
   reduc_ind = list(xrange(1, len(eta.get_shape())))
   avoid_zero_div = 1e-12
   if ord == np.inf:
-    eta = tf.clip_by_value(eta, -eps, eps)
+    eta = clip_by_value(eta, -eps, eps)
   else:
     if ord == 1:
       norm = tf.maximum(avoid_zero_div,
@@ -543,3 +543,38 @@ def clip_by_value(t, clip_value_min, clip_value_max, name=None):
   clip_value_max = cast_clip(clip_value_max)
 
   return tf.clip_by_value(t, clip_value_min, clip_value_max, name)
+
+def mul(a, b):
+  """
+  Builds the graph to multiply a and b.
+  If scalar-tensor multiplication causes a TypeError,
+  downcasts the scalar.
+  """
+
+  try:
+    return a * b
+  except TypeError:
+    pass
+
+  def is_scalar(x):
+    if hasattr(x, "get_shape"):
+      shape = x.get_shape()
+      return shape.ndims == 0
+    if hasattr(x, "ndim"):
+      return x.ndim == 0
+    assert isinstance(x, (int, float))
+    return True
+
+  a_scalar = is_scalar(a)
+  b_scalar = is_scalar(b)
+
+  if a_scalar and b_scalar:
+    raise TypeError("Trying to do scalar multiplication with mixed types")
+
+  if a_scalar and not b_scalar:
+    a = tf.cast(a, b.dtype)
+
+  if b_scalar and not a_scalar:
+    b = tf.cast(b, a.dtype)
+
+  return a * b

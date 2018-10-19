@@ -462,7 +462,7 @@ def fgm(x,
                               "currently implemented.")
 
   # Multiply by constant epsilon
-  scaled_grad = eps * normalized_grad
+  scaled_grad = utils_tf.mul(eps, normalized_grad)
 
   # Add perturbation to original example to obtain adversarial example
   adv_x = x + scaled_grad
@@ -533,8 +533,10 @@ class ProjectedGradientDescent(Attack):
 
     # Initialize loop variables
     if self.rand_init:
-      eta = tf.random_uniform(tf.shape(x), -self.rand_minmax,
-                              self.rand_minmax, dtype=self.tf_dtype)
+      eta = tf.random_uniform(tf.shape(x),
+                              tf.cast(-self.rand_minmax, x.dtype),
+                              tf.cast(self.rand_minmax, x.dtype),
+                              dtype=x.dtype)
     else:
       eta = tf.zeros(tf.shape(x))
     eta = clip_eta(eta, self.ord, self.eps)
@@ -576,7 +578,7 @@ class ProjectedGradientDescent(Attack):
 
       # Clipping perturbation according to clip_min and clip_max
       if self.clip_min is not None and self.clip_max is not None:
-        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+        adv_x = utils_tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
       # Clipping perturbation eta to self.ord norm ball
       eta = adv_x - x
@@ -589,7 +591,7 @@ class ProjectedGradientDescent(Attack):
     adv_x = x + eta
     if self.clip_min is not None or self.clip_max is not None:
       assert self.clip_min is not None and self.clip_max is not None
-      adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+      adv_x = utils_tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
     asserts = []
 
