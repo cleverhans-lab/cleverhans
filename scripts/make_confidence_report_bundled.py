@@ -24,14 +24,17 @@ from __future__ import unicode_literals
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
+from cleverhans.utils_tf import silence
+# The silence() call must precede other imports in order to silence them.
+# pylint does not like it but that's how it has to be.
+# pylint: disable=C0413
+silence()
 from cleverhans.confidence_report import make_confidence_report_bundled
 from cleverhans.confidence_report import TRAIN_START, TRAIN_END
 from cleverhans.confidence_report import TEST_START, TEST_END
 from cleverhans.confidence_report import WHICH_SET
 from cleverhans.confidence_report import RECIPE
 from cleverhans.confidence_report import REPORT_PATH
-from cleverhans.utils_tf import silence
-silence()
 
 
 FLAGS = flags.FLAGS
