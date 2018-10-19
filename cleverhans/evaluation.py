@@ -568,10 +568,12 @@ class _AttackFactory(object):
     if attack_params is None:
       attack_params = {}
     if self.pass_y:
-      y_arg = y_batch
+      x_adv = self.attack.generate(x_batch, y=y_batch, **attack_params)
     else:
-      y_arg = None
-    x_adv = self.attack.generate(x_batch, y=y_arg, **attack_params)
+      # Some code checks the keys of kwargs, rather than checking if
+      # y is None, so we need to truly not pass y at all, rather than
+      # just passing a None value for it.
+      x_adv = self.attack.generate(x_batch, **attack_params)
 
     return (x_batch, y_batch), tuple([x_adv])
 
