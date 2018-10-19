@@ -543,11 +543,13 @@ class ProjectedGradientDescent(Attack):
       return tf.less(i, self.nb_iter)
 
     def body(i, e):
-      adv_x = FGM.generate(x + e, **fgm_params)
+      input_adv_x = x + e
 
       # Clipping perturbation according to clip_min and clip_max
       if self.clip_min is not None and self.clip_max is not None:
-        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+        input_adv_x = tf.clip_by_value(input_adv_x, self.clip_min, self.clip_max)
+
+      adv_x = FGM.generate(input_adv_x, **fgm_params)
 
       # Clipping perturbation eta to self.ord norm ball
       eta = adv_x - x
