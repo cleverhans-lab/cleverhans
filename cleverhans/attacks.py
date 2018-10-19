@@ -387,11 +387,14 @@ def fgm(x,
   :return: a tensor for the adversarial example
   """
 
+  asserts = []
+
   # If a data range was specified, check that the input was in that range
   if clip_min is not None:
-    utils_tf.assert_greater_equal(x, clip_min)
+    asserts.append(utils_tf.assert_greater_equal(x, clip_min))
+
   if clip_max is not None:
-    utils_tf.assert_less_equal(x, clip_max)
+    asserts.append(utils_tf.assert_less_equal(x, clip_max))
 
   # Make sure the caller has not passed probs by accident
   assert logits.op.type != 'Softmax'
@@ -451,6 +454,10 @@ def fgm(x,
     # We don't support one-sided clipping for now
     assert clip_min is not None and clip_max is not None
     adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
+
+
+  with tf.control_dependencies(asserts):
+    adv_x = tf.identity(adv_x)
 
   return adv_x
 
