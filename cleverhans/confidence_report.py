@@ -90,14 +90,20 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   if 'CIFAR' in str(factory.cls):
     base_eps = 8. / 255.
     base_eps_iter = 2. / 255.
+    base_eps_iter_small = 1. / 255.
   elif 'MNIST' in str(factory.cls):
     base_eps = .3
     base_eps_iter = .1
+    base_eps_iter_small = None
   else:
     raise NotImplementedError(str(factory.cls))
 
   eps = base_eps * value_range
   eps_iter = base_eps_iter * value_range
+  if base_eps_iter_small is None:
+    eps_iter_small = None
+  else:
+    eps_iter_small = base_eps_iter_small * value_range
   nb_iter = 40
   clip_min = min_value
   clip_max = max_value
@@ -105,6 +111,9 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   x_data, y_data = dataset.get_set(which_set)
   assert x_data.max() <= max_value
   assert x_data.min() >= min_value
+
+  assert eps_iter <= eps
+  assert eps_iter_small <= eps
 
   # Different recipes take different arguments.
   # For now I don't have an idea for a beautiful unifying framework, so
@@ -118,7 +127,7 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     run_recipe(sess=sess, model=model, x=x_data, y=y_data,
                nb_classes=dataset.NB_CLASSES, eps=eps, clip_min=clip_min,
                clip_max=clip_max, eps_iter=eps_iter, nb_iter=nb_iter,
-               report_path=report_path)
+               report_path=report_path, eps_iter_small=eps_iter_small)
 
 
 
