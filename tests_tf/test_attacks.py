@@ -244,7 +244,8 @@ class TestFastGradientMethod(CleverHansTest):
     x_val = np.array(x_val, dtype=np.float32)
 
     x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
-                                    clip_min=-0.2, clip_max=0.1)
+                                    clip_min=-0.2, clip_max=0.1,
+                                    sanity_checks=False)
 
     self.assertClose(np.min(x_adv), -0.2)
     self.assertClose(np.max(x_adv), 0.1)
@@ -362,9 +363,11 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
+    # sanity checks turned off becuase this test initializes outside
+    # the valid range.
     x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
                                     clip_min=0.5, clip_max=0.7,
-                                    nb_iter=5)
+                                    nb_iter=5, sanity_checks=False)
 
     orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
