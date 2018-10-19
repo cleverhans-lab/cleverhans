@@ -73,7 +73,7 @@ def as_pil(ndarray, min_val=None, max_val=None):
     assert actual_min >= min_val
     assert actual_max <= max_val
 
-  if 'float' in str(ndarray.dtype):
+  if np.issubdtype(ndarray.dtype, np.floating):
     if min_val is None:
       if actual_min < -1.:
         raise ValueError("Unrecognized range")
