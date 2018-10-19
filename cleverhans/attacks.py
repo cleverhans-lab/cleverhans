@@ -791,7 +791,7 @@ class MomentumIterativeMethod(Attack):
                                   "currently implemented.")
 
       # Update and clip adversarial example in current iteration
-      scaled_grad = self.eps_iter * normalized_grad
+      scaled_grad = utils_tf.mul(self.eps_iter, normalized_grad)
       ax = ax + scaled_grad
       ax = x + utils_tf.clip_eta(ax - x, self.ord, self.eps)
 

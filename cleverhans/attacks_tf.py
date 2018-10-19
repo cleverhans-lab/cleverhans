@@ -1727,7 +1727,7 @@ def _project_perturbation(perturbation, epsilon, input_image):
       tf.assert_less_equal(input_image, 1.0),
       tf.assert_greater_equal(input_image, 0.0)
   ]):
-    clipped_perturbation = tf.clip_by_value(
+    clipped_perturbation = utils_tf.clip_by_value(
         perturbation, -epsilon, epsilon)
     new_image = tf.clip_by_value(
         input_image + clipped_perturbation, 0., 1.)
@@ -1779,7 +1779,10 @@ def pgd_attack(loss_fn,
           "Starting PGD attack with epsilon: %s" % epsilon)
 
   init_perturbation = tf.random_uniform(
-      tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
+      tf.shape(input_image),
+      minval=tf.cast(-epsilon, input_image.dtype),
+      maxval=tf.cast(epsilon, input_image.dtype),
+      dtype=input_image.dtype)
   init_perturbation = project_perturbation(init_perturbation, epsilon,
                                            input_image)
   init_optim_state = optimizer.init_state([init_perturbation])
@@ -1822,7 +1825,8 @@ def pgd_attack(loss_fn,
   if project_perturbation is _project_perturbation:
     perturbation_max = epsilon * 1.1
     check_diff = tf.assert_less_equal(
-        final_perturbation, perturbation_max,
+        final_perturbation,
+        tf.cast(perturbation_max, final_perturbation.dtype),
         message="final_perturbation must change no pixel by more than "
                 "%s" % perturbation_max)
   else:
