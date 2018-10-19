@@ -387,6 +387,12 @@ def fgm(x,
   :return: a tensor for the adversarial example
   """
 
+  # If a data range was specified, check that the input was in that range
+  if clip_min is not None:
+    utils_tf.assert_greater_equal(x, clip_min)
+  if clip_max is not None:
+    utils_tf.assert_less_equal(x, clip_max)
+
   # Make sure the caller has not passed probs by accident
   assert logits.op.type != 'Softmax'
 
