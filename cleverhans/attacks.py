@@ -560,9 +560,8 @@ class ProjectedGradientDescent(Attack):
     def body(i, e):
       adv_x = FGM.generate(x + e, **fgm_params)
 
-      # Clipping perturbation according to clip_min and clip_max
-      if self.clip_min is not None and self.clip_max is not None:
-        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+      # No need to apply clip_min and clip_max, this is already requested
+      # in fgm_params
 
       # Clipping perturbation eta to self.ord norm ball
       eta = adv_x - x
