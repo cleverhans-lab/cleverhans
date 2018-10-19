@@ -471,11 +471,7 @@ def fgm(x,
   if (clip_min is not None) or (clip_max is not None):
     # We don't currently support one-sided clipping
     assert clip_min is not None and clip_max is not None
-    if adv_x.dtype == tf.float32 and clip_min.dtype != tf.float32:
-      clip_min = tf.cast(clip_min, tf.float32)
-    if adv_x.dtype == tf.float32 and clip_max.dtype != tf.float32:
-      clip_max = tf.cast(clip_max, tf.float32)
-    adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
+    adv_x = utils_tf.clip_by_value(adv_x, clip_min, clip_max)
 
   return adv_x
 

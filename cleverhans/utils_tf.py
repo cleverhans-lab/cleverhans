@@ -532,8 +532,14 @@ def clip_by_value(t, clip_value_min, clip_value_max, name=None):
   """
   A wrapper for clip_by_value that downcasts the clipping range if needed.
   """
-  if t.dtype == tf.float32 and clip_value_min.dtype != tf.float32:
-    clip_value_min = tf.cast(clip_value_min, tf.float32)
-  if t.dtype == tf.float32 and clip_value_max.dtype != tf.float32:
-    clip_value_max = tf.cast(clip_value_max, tf.float32)
+  def cast_clip(clip):
+    if t.dtype == tf.float32:
+      if hasattr(clip, 'dtype'):
+        if clip.dtype != tf.float32:
+          return tf.cast(clip, tf.float32)
+    return clip
+
+  clip_value_min = cast_clip(clip_value_min)
+  clip_value_max = cast_clip(clip_value_max)
+
   return tf.clip_by_value(t, clip_value_min, clip_value_max, name)
