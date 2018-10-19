@@ -634,6 +634,11 @@ class ProjectedGradientDescent(Attack):
     self.clip_min = clip_min
     self.clip_max = clip_max
 
+    if isinstance(eps, float) and isinstance(eps_iter, float):
+      # If these are both known at compile time, we can check before anything
+      # is run. If they are tf, we can't check them yet.
+      assert eps_iter <= eps, (eps_iter, eps)
+
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")
     # Check if order of the norm is acceptable given current implementation
