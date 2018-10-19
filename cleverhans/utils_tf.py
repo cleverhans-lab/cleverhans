@@ -527,3 +527,13 @@ def silence():
   Silences tensorflaw's default printed messages
   """
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+def clip_by_value(t, clip_value_min, clip_value_max, name=None):
+  """
+  A wrapper for clip_by_value that downcasts the clipping range if needed.
+  """
+  if t.dtype == tf.float32 and clip_value_min.dtype != tf.float32:
+    clip_value_min = tf.cast(clip_value_min, tf.float32)
+  if t.dtype == tf.float32 and clip_value_max.dtype != tf.float32:
+    clip_value_max = tf.cast(clip_value_max, tf.float32)
+  return tf.clip_by_value(t, clip_value_min, clip_value_max, name)

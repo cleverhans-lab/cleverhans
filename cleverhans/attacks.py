@@ -798,7 +798,7 @@ class MomentumIterativeMethod(Attack):
       ax = x + utils_tf.clip_eta(ax - x, self.ord, self.eps)
 
       if self.clip_min is not None and self.clip_max is not None:
-        ax = tf.clip_by_value(ax, self.clip_min, self.clip_max)
+        ax = utils_tf.clip_by_value(ax, self.clip_min, self.clip_max)
 
       ax = tf.stop_gradient(ax)
 
