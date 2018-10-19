@@ -717,29 +717,26 @@ class MomentumIterativeMethod(Attack):
         'clip_min': self.np_dtype,
         'clip_max': self.np_dtype
     }
-    self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor']
+    self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor', 'sanity_checks']
 
   def generate(self, x, **kwargs):
     """
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (optional float) maximum distortion of adversarial example
-                compared to original input
-    :param eps_iter: (optional float) step size for each attack iteration
-    :param nb_iter: (optional int) Number of attack iterations.
-    :param y: (optional) A tensor with the model labels.
-    :param y_target: (optional) A tensor with the labels to target. Leave
-                     y_target=None if y is also set. Labels should be
-                     one-hot-encoded.
-    :param ord: (optional) Order of the norm (mimics Numpy).
-                Possible values: np.inf, 1 or 2.
-    :param decay_factor: (optional) Decay factor for the momentum term.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param kwargs: Keyword arguments. See `parse_params` for documentation.
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
+
+    asserts = []
+
+    # If a data range was specified, check that the input was in that range
+    if self.clip_min is not None:
+      asserts.append(utils_tf.assert_greater_equal(x, self.clip_min))
+
+    if self.clip_max is not None:
+      asserts.append(utils_tf.assert_less_equal(x, self.clip_max))
 
     # Initialize loop variables
     momentum = tf.zeros_like(x)
@@ -800,6 +797,10 @@ class MomentumIterativeMethod(Attack):
     _, adv_x, _ = tf.while_loop(
         cond, body, [tf.zeros([]), adv_x, momentum], back_prop=True)
 
+    if self.sanity_checks:
+      with tf.control_dependencies(asserts):
+        adv_x = tf.identity(adv_x)
+
     return adv_x
 
   def parse_params(self,
@@ -812,6 +813,7 @@ class MomentumIterativeMethod(Attack):
                    clip_min=None,
                    clip_max=None,
                    y_target=None,
+                   sanity_checks=True,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -844,6 +846,7 @@ class MomentumIterativeMethod(Attack):
     self.decay_factor = decay_factor
     self.clip_min = clip_min
     self.clip_max = clip_max
+    self.sanity_checks = sanity_checks
 
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")
