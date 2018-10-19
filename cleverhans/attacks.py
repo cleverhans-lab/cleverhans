@@ -165,7 +165,7 @@ class Attack(object):
                        " provided")
 
     packed = self.construct_variables(kwargs)
-    fixed, feedable, _feedable_types, hash_key = packed
+    fixed, feedable, _, hash_key = packed
 
     if hash_key not in self.graphs:
       self.construct_graph(fixed, feedable, x_val, hash_key)
@@ -870,7 +870,7 @@ class SaliencyMapMethod(Attack):
 
     super(SaliencyMapMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
-    self.feedable_kwargs = tuple(['y_target'])
+    self.feedable_kwargs = ('y_target',)
     self.structural_kwargs = [
         'theta', 'gamma', 'clip_max', 'clip_min', 'symbolic_impl'
     ]
@@ -2300,6 +2300,20 @@ class MaxConfidence(Attack):
 def arg_type(arg_names, kwargs):
   """
   Returns a hashable summary of the types of arg_names within kwargs.
+  :param arg_names: tuple containing names of relevant arguments
+  :param kwargs: dict mapping string argument names to values.
+    These must be values for which we can create a tf placeholder.
+    Currently supported: numpy darray or something that can ducktype it
+  returns:
+    API contract is to return a hashable object describing all
+    structural consequences of argument values that can otherwise
+    be fed into a graph of fixed structure.
+    Currently this is implemented as a tuple of tuples that track:
+      - whether each argument was passed
+      - whether each argument was passed and not None
+      - the dtype of each argument
+    Callers shouldn't rely on the exact structure of this object,
+    just its hashability and one-to-one mapping between graph structures.
   """
   assert isinstance(arg_names, tuple)
   passed = (name in kwargs for name in arg_names)
