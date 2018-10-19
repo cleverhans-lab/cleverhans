@@ -531,7 +531,12 @@ class ProjectedGradientDescent(Attack):
                               self.rand_minmax, dtype=self.tf_dtype)
     else:
       eta = tf.zeros(tf.shape(x))
+
+    # Clip eta
     eta = clip_eta(eta, self.ord, self.eps)
+    adv_x = x + eta
+    if self.clip_min is not None or self.clip_max is not None:
+      adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
     # Fix labels to the first model predictions for loss computation
     model_preds = self.model.get_probs(x)
