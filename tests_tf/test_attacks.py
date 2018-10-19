@@ -174,7 +174,7 @@ class TestFastGradientMethod(CleverHansTest):
     x_val = np.array(x_val, dtype=np.float32)
 
     x_adv = self.attack.generate_np(x_val, eps=eps, ord=ord,
-                                    clip_min=float32(-5), clip_max=float32(5),
+                                    clip_min=-5, clip_max=5,
                                     **kwargs)
     if ord == np.inf:
       delta = np.max(np.abs(x_adv - x_val), axis=1)

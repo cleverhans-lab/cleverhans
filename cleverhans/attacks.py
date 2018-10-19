@@ -468,7 +468,13 @@ def fgm(x,
   adv_x = x + scaled_grad
 
   # If clipping is needed, reset all values outside of [clip_min, clip_max]
-  if (clip_min is not None) and (clip_max is not None):
+  if (clip_min is not None) or (clip_max is not None):
+    # We don't currently support one-sided clipping
+    assert clip_min is not None and clip_max is not None
+    if adv_x.dtype == tf.float32 and clip_min.dtype != tf.float32:
+      clip_min = tf.cast(clip_min, tf.float32)
+    if adv_x.dtype == tf.float32 and clip_max.dtype != tf.float32:
+      clip_max = tf.cast(clip_max, tf.float32)
     adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
 
   return adv_x
