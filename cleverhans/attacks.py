@@ -197,7 +197,7 @@ class Attack(object):
 
     for key in kwargs:
       if key not in fixed and key not in feedable:
-        raise ValueError("Undeclared argument: " + key)
+        raise ValueError(str(type(self)) + ": Undeclared argument: " + key)
 
     if not all(isinstance(value, collections.Hashable)
                for value in fixed.values()):
