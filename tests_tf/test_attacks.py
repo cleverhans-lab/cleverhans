@@ -432,8 +432,7 @@ class TestCarliniWagnerL2(CleverHansTest):
     x_adv = self.attack.generate_np(x_val, max_iterations=100,
                                     binary_search_steps=3,
                                     initial_const=1,
-                                    clip_min=-5,
-                                    clip_max=3,
+                                    clip_min=-5, clip_max=5,
                                     batch_size=10)
 
     orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
@@ -629,8 +628,7 @@ class TestElasticNetMethod(CleverHansTest):
                                     binary_search_steps=1,
                                     learning_rate=1e-3,
                                     initial_const=1,
-                                    clip_min=-0.2,
-                                    clip_max=0.3,
+                                    clip_min=-0.2, clip_max=0.3,
                                     batch_size=100)
 
     self.assertTrue(-0.201 < np.min(x_adv))
@@ -717,9 +715,9 @@ class TestSaliencyMapMethod(CleverHansTest):
 
   def test_generate_np_targeted_gives_adversarial_example(self):
     x_val = np.random.rand(10, 1000)
-    x_val = np.array(x_val)
+    x_val = np.array(x_val, dtype=np.float32)
 
-    feed_labs = np.zeros((10, 10), dtype=np.float32)
+    feed_labs = np.zeros((10, 10))
     feed_labs[np.arange(10), np.random.randint(0, 9, 10)] = 1
     x_adv = self.attack.generate_np(x_val,
                                     clip_min=-5., clip_max=5.,
@@ -744,7 +742,7 @@ class TestDeepFool(CleverHansTest):
 
     x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
                                     nb_candidate=2, clip_min=-5,
-                                    clip_max=3)
+                                    clip_max=5)
 
     orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
