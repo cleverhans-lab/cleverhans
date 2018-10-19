@@ -570,24 +570,23 @@ class ProjectedGradientDescent(Attack):
     def cond(i, _):
       return tf.less(i, self.nb_iter)
 
-    def body(i, e):
-      adv_x = FGM.generate(x + e, **fgm_params)
-
-      # No need to apply clip_min and clip_max, this is already requested
-      # in fgm_params
+    def body(i, adv_x):
+      adv_x = FGM.generate(adv_x, **fgm_params)
 
       # Clipping perturbation eta to self.ord norm ball
       eta = adv_x - x
       eta = clip_eta(eta, self.ord, self.eps)
-      return i + 1, eta
+      adv_x = x + eta
 
-    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
+      # Redo the clipping.
+      # FGM already did it, but subtracting and re-adding eta can add some
+      # small numerical error.
+      if self.clip_min is not None or self.clip_max is not None:
+        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
-    # Define adversarial example (and clip if necessary)
-    adv_x = x + eta
-    if self.clip_min is not None or self.clip_max is not None:
-      assert self.clip_min is not None and self.clip_max is not None
-      adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+      return i + 1, adv_x
+
+    _, adv_x = tf.while_loop(cond, body, [tf.zeros([]), adv_x], back_prop=True)
 
     asserts = []
 
