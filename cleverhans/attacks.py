@@ -274,7 +274,7 @@ class FastGradientMethod(Attack):
         'clip_min': self.np_dtype,
         'clip_max': self.np_dtype
     }
-    self.structural_kwargs = ['ord']
+    self.structural_kwargs = ['ord', 'sanity_checks']
 
   def generate(self, x, **kwargs):
     """
@@ -309,7 +309,8 @@ class FastGradientMethod(Attack):
         ord=self.ord,
         clip_min=self.clip_min,
         clip_max=self.clip_max,
-        targeted=(self.y_target is not None))
+        targeted=(self.y_target is not None),
+        sanity_checks=self.sanity_checks)
 
   def parse_params(self,
                    eps=0.3,
@@ -318,6 +319,7 @@ class FastGradientMethod(Attack):
                    y_target=None,
                    clip_min=None,
                    clip_max=None,
+                   sanity_checks=True,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -339,6 +341,9 @@ class FastGradientMethod(Attack):
                      one-hot-encoded.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param sanity_checks: bool, if True, include asserts
+      (Turn them off to use less speed / memory or for unit tests that
+      intentionally pass strange input)
     """
     # Save attack-specific parameters
 
@@ -348,6 +353,7 @@ class FastGradientMethod(Attack):
     self.y_target = y_target
     self.clip_min = clip_min
     self.clip_max = clip_max
+    self.sanity_checks = sanity_checks
 
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")
@@ -363,7 +369,8 @@ def fgm(x,
         ord=np.inf,
         clip_min=None,
         clip_max=None,
-        targeted=False):
+        targeted=False,
+        sanity_checks=True):
   """
   TensorFlow implementation of the Fast Gradient Method.
   :param x: the input placeholder
