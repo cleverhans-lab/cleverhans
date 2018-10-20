@@ -342,7 +342,7 @@ class FastGradientMethod(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     :param sanity_checks: bool, if True, include asserts
-      (Turn them off to use less speed / memory or for unit tests that
+      (Turn them off to use less runtime / memory or for unit tests that
       intentionally pass strange input)
     """
     # Save attack-specific parameters
