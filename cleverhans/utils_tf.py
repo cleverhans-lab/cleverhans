@@ -574,7 +574,7 @@ def op_with_scalar_cast(a, b, f):
 
   try:
     return f(a, b)
-  except TypeError:
+  except (TypeError, ValueError):
     pass
 
   def is_scalar(x):
