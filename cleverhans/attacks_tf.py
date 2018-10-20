@@ -414,6 +414,14 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
   nb_classes = int(y_target.shape[-1].value)
   nb_features = int(np.product(x.shape[1:]).value)
 
+  if x.dtype == tf.float32 and y_target.dtype == tf.int64:
+    y_target = tf.cast(y_target, tf.int32)
+
+  if x.dtype == tf.float32 and y_target.dtype == tf.float64:
+    warnings.warn("Downcasting labels---this should be harmless unless"
+                  " they are smoothed")
+    y_target = tf.cast(y_target, tf.float32)
+
   max_iters = np.floor(nb_features * gamma / 2)
   increase = bool(theta > 0)
 
