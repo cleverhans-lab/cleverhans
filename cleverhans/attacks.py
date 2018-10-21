@@ -2341,8 +2341,16 @@ def optimize_linear(grad, eps, ord=np.inf):
 
   Optimal_perturbation =
     argmax(eta, norm(eta, ord) < 1) dot(eta, grad)
+
+  :param grad: tf tensor containing a batch of gradients
+  :param eps: float scalar specifying size of constraint region
+  :param ord: int specifying order of norm
+  :returns:
+    tf tensor containing optimal perturbation
   """
 
+  red_ind = list(xrange(1, len(grad.get_shape())))
+  avoid_zero_div = 1e-12
   if ord == np.inf:
     # Take sign of gradient
     optimal_perturbation = tf.sign(grad)
@@ -2351,18 +2359,14 @@ def optimize_linear(grad, eps, ord=np.inf):
     # a `sign` op, which has zero derivative anyway.
     # It should not be applied for the other norms, where the
     # perturbation has a non-zero derivative.
-    optimal_perturbation = tf.stop_gradient(optional_perturbation)
+    optimal_perturbation = tf.stop_gradient(optimal_perturbation)
   elif ord == 1:
-    red_ind = list(xrange(1, len(x.get_shape())))
-    avoid_zero_div = 1e-12
     avoid_nan_norm = tf.maximum(avoid_zero_div,
                                 reduce_sum(tf.abs(grad),
                                            reduction_indices=red_ind,
                                            keepdims=True))
     optimal_perturbation = grad / avoid_nan_norm
   elif ord == 2:
-    red_ind = list(xrange(1, len(x.get_shape())))
-    avoid_zero_div = 1e-12
     square = tf.maximum(avoid_zero_div,
                         reduce_sum(tf.square(grad),
                                    reduction_indices=red_ind,

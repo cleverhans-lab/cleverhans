@@ -150,40 +150,10 @@ class FastGradientMethod(Attack, attacks.FastGradientMethod):
 
     # Define gradient of loss wrt input
     grad = tape.gradient(loss, x)
-    if self.ord == np.inf:
-      # Take sign of gradient
-      normalized_grad = tf.sign(grad)
-      # The following line should not change the numerical results.
-      # It applies only because `normalized_grad` is the output of
-      # a `sign` op, which has zero derivative anyway.
-      # It should not be applied for the other norms, where the
-      # perturbation has a non-zero derivative.
-      normalized_grad = tf.stop_gradient(normalized_grad)
-    elif self.ord == 1:
-      red_ind = list(xrange(1, len(x.get_shape())))
-      avoid_zero_div = 1e-12
-      avoid_nan_norm = tf.maximum(avoid_zero_div,
-                                  reduce_sum(tf.abs(grad),
-                                             reduction_indices=red_ind,
-                                             keepdims=True))
-      normalized_grad = grad / avoid_nan_norm
-    elif self.ord == 2:
-      red_ind = list(xrange(1, len(x.get_shape())))
-      avoid_zero_div = 1e-12
-      square = tf.maximum(avoid_zero_div,
-                          reduce_sum(tf.square(grad),
-                                     reduction_indices=red_ind,
-                                     keepdims=True))
-      normalized_grad = grad / tf.sqrt(square)
-    else:
-      raise NotImplementedError("Only L-inf, L1 and L2 norms are "
-                                "currently implemented.")
-
-    # Multiply by constant epsilon
-    scaled_grad = self.eps * normalized_grad
+    optimal_perturbation = attacks.optimize_linear(grad, self.eps, self.ord)
 
     # Add perturbation to original example to obtain adversarial example
-    adv_x = x + scaled_grad
+    adv_x = x + optimal_perturbation
 
     # If clipping is needed
     # reset all values outside of [clip_min, clip_max]

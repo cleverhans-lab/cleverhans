@@ -355,7 +355,7 @@ def clip_eta(eta, ord, eps):
   :param eta: A tensor with the current perturbation.
   :param ord: Order of the norm (mimics Numpy).
               Possible values: np.inf, 1 or 2.
-  :param eps: Epilson, bound of the perturbation.
+  :param eps: Epsilon, bound of the perturbation.
   """
 
   # Clipping perturbation eta to self.ord norm ball
