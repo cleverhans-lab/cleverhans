@@ -448,44 +448,10 @@ def fgm(x,
   # Define gradient of loss wrt input
   grad, = tf.gradients(loss, x)
 
-  # Solve
-  # optimal_perturbation =
-  #  argmax(eta, norm(eta, ord) < 1) dot(eta, grad)
-  if ord == np.inf:
-    # Take sign of gradient
-    optimal_perturbation = tf.sign(grad)
-    # The following line should not change the numerical results.
-    # It applies only because `normalized_grad` is the output of
-    # a `sign` op, which has zero derivative anyway.
-    # It should not be applied for the other norms, where the
-    # perturbation has a non-zero derivative.
-    optimal_perturbation = tf.stop_gradient(optional_perturbation)
-  elif ord == 1:
-    red_ind = list(xrange(1, len(x.get_shape())))
-    avoid_zero_div = 1e-12
-    avoid_nan_norm = tf.maximum(avoid_zero_div,
-                                reduce_sum(tf.abs(grad),
-                                           reduction_indices=red_ind,
-                                           keepdims=True))
-    optimal_perturbation = grad / avoid_nan_norm
-  elif ord == 2:
-    red_ind = list(xrange(1, len(x.get_shape())))
-    avoid_zero_div = 1e-12
-    square = tf.maximum(avoid_zero_div,
-                        reduce_sum(tf.square(grad),
-                                   reduction_indices=red_ind,
-                                   keepdims=True))
-    optimal_perturbation = grad / tf.sqrt(square)
-  else:
-    raise NotImplementedError("Only L-inf, L1 and L2 norms are "
-                              "currently implemented.")
-
-  # Scale perturbation to be the solution for the norm=eps rather than
-  # norm=1 problem
-  scaled_perturbation = utils_tf.mul(eps, optimal_perturbation)
+  optimal_perturbation = optimize_linear(grad, eps, ord)
 
   # Add perturbation to original example to obtain adversarial example
-  adv_x = x + scaled_perturbation
+  adv_x = x + optimal_perturbation
 
   # If clipping is needed, reset all values outside of [clip_min, clip_max]
   if (clip_min is not None) or (clip_max is not None):
@@ -801,24 +767,15 @@ class MomentumIterativeMethod(Attack):
           reduce_mean(tf.abs(grad), red_ind, keepdims=True))
       m = self.decay_factor * m + grad
 
-      if self.ord == np.inf:
-        normalized_grad = tf.sign(m)
-      elif self.ord == 1:
-        norm = tf.maximum(
-            avoid_zero_div,
-            reduce_sum(tf.abs(m), red_ind, keepdims=True))
-        normalized_grad = m / norm
-      elif self.ord == 2:
-        square = reduce_sum(tf.square(m), red_ind, keepdims=True)
-        norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
-        normalized_grad = m / norm
-      else:
-        raise NotImplementedError("Only L-inf, L1 and L2 norms are "
-                                  "currently implemented.")
+      optimal_perturbation = optimize_linear(m, self.eps_iter, self.ord)
+      if self.ord == 1:
+        raise NotImplementedError("This attack hasn't been tested for ord=1."
+                                  "It's not clear that FGM makes a good inner "
+                                  "loop step for iterative optimization since "
+                                  "it updates just one coordinate at a time.")
 
       # Update and clip adversarial example in current iteration
-      scaled_grad = utils_tf.mul(self.eps_iter, normalized_grad)
-      ax = ax + scaled_grad
+      ax = ax + optimal_perturbation
       ax = x + utils_tf.clip_eta(ax - x, self.ord, self.eps)
 
       if self.clip_min is not None and self.clip_max is not None:
@@ -2377,3 +2334,45 @@ def arg_type(arg_names, kwargs):
     dtypes.append(dtype)
   dtypes = tuple(dtypes)
   return (passed, passed_and_not_none, dtypes)
+
+def optimize_linear(grad, eps, ord=np.inf):
+  """
+  Solves for the optimal input to a linear function under a norm constraint.
+
+  Optimal_perturbation =
+    argmax(eta, norm(eta, ord) < 1) dot(eta, grad)
+  """
+
+  if ord == np.inf:
+    # Take sign of gradient
+    optimal_perturbation = tf.sign(grad)
+    # The following line should not change the numerical results.
+    # It applies only because `normalized_grad` is the output of
+    # a `sign` op, which has zero derivative anyway.
+    # It should not be applied for the other norms, where the
+    # perturbation has a non-zero derivative.
+    optimal_perturbation = tf.stop_gradient(optional_perturbation)
+  elif ord == 1:
+    red_ind = list(xrange(1, len(x.get_shape())))
+    avoid_zero_div = 1e-12
+    avoid_nan_norm = tf.maximum(avoid_zero_div,
+                                reduce_sum(tf.abs(grad),
+                                           reduction_indices=red_ind,
+                                           keepdims=True))
+    optimal_perturbation = grad / avoid_nan_norm
+  elif ord == 2:
+    red_ind = list(xrange(1, len(x.get_shape())))
+    avoid_zero_div = 1e-12
+    square = tf.maximum(avoid_zero_div,
+                        reduce_sum(tf.square(grad),
+                                   reduction_indices=red_ind,
+                                   keepdims=True))
+    optimal_perturbation = grad / tf.sqrt(square)
+  else:
+    raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                              "currently implemented.")
+
+  # Scale perturbation to be the solution for the norm=eps rather than
+  # norm=1 problem
+  scaled_perturbation = utils_tf.mul(eps, optimal_perturbation)
+  return scaled_perturbation
