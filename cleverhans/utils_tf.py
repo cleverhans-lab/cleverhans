@@ -367,6 +367,8 @@ def clip_eta(eta, ord, eps):
     eta = clip_by_value(eta, -eps, eps)
   else:
     if ord == 1:
+      raise NotImplementedError("The expression below is not the correct way"
+                                "to project onto the L1 norm ball.")
       norm = tf.maximum(avoid_zero_div,
                         reduce_sum(tf.abs(eta),
                                    reduc_ind, keepdims=True))
