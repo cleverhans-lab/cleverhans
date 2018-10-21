@@ -4,12 +4,10 @@ Attacks for TensorFlow Eager
 from distutils.version import LooseVersion
 
 import numpy as np
-from six.moves import xrange
 import tensorflow as tf
 
 from cleverhans import attacks
 from cleverhans import utils
-from cleverhans.compat import reduce_sum
 from cleverhans.model import CallableModelWrapper
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
