@@ -528,7 +528,7 @@ def silence():
   """
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-  
+
 def clip_by_value(t, clip_value_min, clip_value_max, name=None):
   """
   A wrapper for clip_by_value that casts the clipping range if needed.
@@ -627,3 +627,4 @@ def assert_equal(*args, **kwargs):
   """
   with tf.device("/CPU:0"):
     return tf.assert_equal(*args, **kwargs)
+  
