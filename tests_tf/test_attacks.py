@@ -1134,5 +1134,6 @@ class TestSpatialTransformationMethod(CleverHansTest):
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
 
 
-if __name__ == '__main__':
-  unittest.main()
+
+#if __name__ == '__main__':
+#  unittest.main()
