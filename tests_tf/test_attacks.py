@@ -8,6 +8,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import unittest
 import numpy as np
+from nose.plugins.skip import SkipTest
 
 from cleverhans.devtools.checks import CleverHansTest
 
@@ -352,8 +353,11 @@ class TestBasicIterativeMethod(TestCommonAttackProperties):
                                                     nb_iter=20)
 
   def test_generate_np_gives_adversarial_example_l1(self):
-    self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
-                                                    nb_iter=20)
+    try:
+      self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
+                                                      nb_iter=20)
+    except NotImplementedError:
+      raise SkipTest()
 
   def test_generate_np_gives_adversarial_example_l2(self):
     self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
