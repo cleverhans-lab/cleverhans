@@ -162,11 +162,26 @@ class TestVirtualAdversarialMethod(CleverHansTest):
     self.assertClose(perturbation_norm, self.attack.eps)
 
 
-class TestCommonAttackProperties(CleverHansTest):
+class CommonAttackProperties(CleverHansTest):
   """
   Abstract base class shared by the tessts for many attacks that want
   to check the same properties.
   """
+
+  def setUp(self):
+    # Inheritance doesn't really work with tests.
+    # nosetests always wants to run this class because it is a
+    # CleverHansTest subclass, but this class is meant to just
+    # be abstract.
+    # Before this class was the tests for FastGradientMethod but
+    # people kept inheriting from it for other attacks so it was
+    # impossible to write tests specifically for FastGradientMethod.
+    if type(self) is CommonAttackProperties:
+      raise SkipTest()
+
+    super(CommonAttackProperties, self).setUp()
+    self.sess = tf.Session()
+    self.model = SimpleModel()
 
   def generate_adversarial_examples_np(self, ord, eps, **kwargs):
     x_val = np.random.rand(100, 2)
@@ -340,9 +355,9 @@ class TestSPSA(CleverHansTest):
     self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
 
 
-class TestBasicIterativeMethod(TestCommonAttackProperties):
+class TestBasicIterativeMethod(CommonAttackProperties):
   def setUp(self):
-    TestCommonAttackProperties.setUp(self)
+    CommonAttackProperties.setUp(self)
 
     self.sess = tf.Session()
     self.model = SimpleModel()
