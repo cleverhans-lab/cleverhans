@@ -559,6 +559,12 @@ class ProjectedGradientDescent(Attack):
         'clip_min': self.clip_min,
         'clip_max': self.clip_max
     }
+    if self.ord == 1:
+      raise NotImplementedError("It's not clear that FGM is a good inner loop"
+                                " step for PGD when ord=1, because ord=1 FGM "
+                                " changes only one pixel at a time. We need "
+                                " to rigorously test a strong ord=1 PGD "
+                                "before enabling this feature.")
 
     # Use getattr() to avoid errors in eager execution attacks
     FGM = self.FGM_CLASS(
