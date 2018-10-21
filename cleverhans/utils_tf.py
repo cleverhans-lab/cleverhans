@@ -626,4 +626,3 @@ def assert_equal(*args, **kwargs):
   """
   with tf.device("/CPU:0"):
     return tf.assert_equal(*args, **kwargs)
-
