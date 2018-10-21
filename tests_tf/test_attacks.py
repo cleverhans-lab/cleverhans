@@ -11,6 +11,7 @@ import numpy as np
 
 from cleverhans.devtools.checks import CleverHansTest
 
+from cleverhans import attacks
 from cleverhans.attacks import Attack, SPSA
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import BasicIterativeMethod
@@ -256,6 +257,15 @@ class TestFastGradientMethod(TestCommonAttackProperties):
     self.sess = tf.Session()
     self.model = SimpleModel()
     self.attack = FastGradientMethod(self.model, sess=self.sess)
+
+  def test_optimize_linear_l1(self):
+    grad = tf.placeholder(tf.float32, [1, 2])
+    eta = attacks.optimize_linear(grad, eps=1., ord=1)
+    objective = tf.reduce_sum(grad * eta)
+    eta, objective = self.sess.run([eta, objective],
+                                   feed_dict={grad: np.array([[1., -2.]])})
+    assert objective == 2., objective
+    assert np.abs(eta).sum() == 1.
 
 class TestSPSA(CleverHansTest):
   def setUp(self):
