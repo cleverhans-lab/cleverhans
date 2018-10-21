@@ -267,11 +267,9 @@ def jsma(sess,
   # by removing all features that are already at their maximum values (if
   # increasing input features---otherwise, at their minimum value).
   if increase:
-    search_domain = set(
-        [i for i in xrange(nb_features) if adv_x[0, i] < clip_max])
+    search_domain = {i for i in xrange(nb_features) if adv_x[0, i] < clip_max}
   else:
-    search_domain = set(
-        [i for i in xrange(nb_features) if adv_x[0, i] > clip_min])
+    search_domain = {i for i in xrange(nb_features) if adv_x[0, i] > clip_min}
 
   # Initialize the loop variables
   iteration = 0
@@ -415,6 +413,14 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
   nb_classes = int(y_target.shape[-1].value)
   nb_features = int(np.product(x.shape[1:]).value)
+
+  if x.dtype == tf.float32 and y_target.dtype == tf.int64:
+    y_target = tf.cast(y_target, tf.int32)
+
+  if x.dtype == tf.float32 and y_target.dtype == tf.float64:
+    warnings.warn("Downcasting labels---this should be harmless unless"
+                  " they are smoothed")
+    y_target = tf.cast(y_target, tf.float32)
 
   max_iters = np.floor(nb_features * gamma / 2)
   increase = bool(theta > 0)
@@ -1737,7 +1743,7 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
       utils_tf.assert_less_equal(input_image, clip_max),
       utils_tf.assert_greater_equal(input_image, clip_min)
   ]):
-    clipped_perturbation = tf.clip_by_value(
+    clipped_perturbation = utils_tf.clip_by_value(
         perturbation, -epsilon, epsilon)
     new_image = tf.clip_by_value(
         input_image + clipped_perturbation, clip_min, clip_max)
@@ -1794,7 +1800,10 @@ def pgd_attack(loss_fn,
           "Starting PGD attack with epsilon: %s" % epsilon)
 
   init_perturbation = tf.random_uniform(
-      tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
+      tf.shape(input_image),
+      minval=tf.cast(-epsilon, input_image.dtype),
+      maxval=tf.cast(epsilon, input_image.dtype),
+      dtype=input_image.dtype)
   init_perturbation = project_perturbation(init_perturbation, epsilon,
                                            input_image, clip_min=clip_min,
                                            clip_max=clip_max)
@@ -1847,7 +1856,8 @@ def pgd_attack(loss_fn,
     # final_perturbation
     perturbation_max = epsilon * 1.1
     check_diff = utils_tf.assert_less_equal(
-        final_perturbation, perturbation_max,
+        final_perturbation,
+        tf.cast(perturbation_max, final_perturbation.dtype),
         message="final_perturbation must change no pixel by more than "
                 "%s" % perturbation_max)
   else:
