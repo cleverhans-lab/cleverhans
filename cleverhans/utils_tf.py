@@ -541,9 +541,9 @@ def clip_by_value(t, clip_value_min, clip_value_max, name=None):
         try:
           match = clip_dtype == t_dtype
         except TypeError:
-          raise TypError("Could not compare " + str(clip_dtype) + " of type "
-                         + str(type(clip_dtype)) + " and " + str(t_dtype) +
-                         " of type " + str(type(t_dtype)))
+          raise TypeError("Could not compare " + str(clip_dtype) + " of type "
+                          + str(type(clip_dtype)) + " and " + str(t_dtype) +
+                          " of type " + str(type(t_dtype)))
         if not match:
           return tf.cast(clip, t.dtype)
     return clip
