@@ -235,8 +235,11 @@ class CommonAttackProperties(CleverHansTest):
     random_labs_one_hot = np.zeros((100, 2))
     random_labs_one_hot[np.arange(100), random_labs] = 1
 
-    _, x_adv, delta = self.generate_adversarial_examples_np(
+    try:
+      _, x_adv, delta = self.generate_adversarial_examples_np(
         eps=.5, ord=np.inf, y_target=random_labs_one_hot)
+    except NotImplementedError:
+      raise SkipTest()
 
     self.assertClose(delta, 0.5)
 
@@ -385,8 +388,12 @@ class TestBasicIterativeMethod(CommonAttackProperties):
     epsilon.
     """
     for ord in [1, 2, np.infty]:
-      _, _, delta = self.generate_adversarial_examples_np(
+      try:
+        _, _, delta = self.generate_adversarial_examples_np(
           ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
+      except NotImplementedError:
+        # Don't raise SkipTest because it will skip the rest of the for loop
+        continue
       self.assertTrue(np.max(0.5 - delta) > 0.25)
 
   def test_attack_strength(self):
