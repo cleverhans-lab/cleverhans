@@ -2361,11 +2361,12 @@ def optimize_linear(grad, eps, ord=np.inf):
     # perturbation has a non-zero derivative.
     optimal_perturbation = tf.stop_gradient(optimal_perturbation)
   elif ord == 1:
-    avoid_nan_norm = tf.maximum(avoid_zero_div,
-                                reduce_sum(tf.abs(grad),
-                                           reduction_indices=red_ind,
-                                           keepdims=True))
-    optimal_perturbation = grad / avoid_nan_norm
+    abs_grad = tf.abs(grad)
+    sign = tf.sign(grad)
+    max_abs_grad = tf.reduce_max(abs_grad, red_ind, keepdims=True)
+    tied_for_max = tf.to_float(tf.equal(abs_grad, max_abs_grad))
+    num_ties = tf.reduce_sum(tied_for_max, red_ind, keepdims=True)
+    optimal_perturbation = sign * tied_for_max / num_ties
   elif ord == 2:
     square = tf.maximum(avoid_zero_div,
                         reduce_sum(tf.square(grad),
