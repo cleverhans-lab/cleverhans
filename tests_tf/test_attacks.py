@@ -160,13 +160,11 @@ class TestVirtualAdversarialMethod(CleverHansTest):
     self.assertClose(perturbation_norm, self.attack.eps)
 
 
-class TestFastGradientMethod(CleverHansTest):
-  def setUp(self):
-    super(TestFastGradientMethod, self).setUp()
-
-    self.sess = tf.Session()
-    self.model = SimpleModel()
-    self.attack = FastGradientMethod(self.model, sess=self.sess)
+class TestCommonAttackProperties(CleverHansTest):
+  """
+  Abstract base class shared by the tessts for many attacks that want
+  to check the same properties.
+  """
 
   def generate_adversarial_examples_np(self, ord, eps, **kwargs):
     x_val = np.random.rand(100, 2)
@@ -250,6 +248,15 @@ class TestFastGradientMethod(CleverHansTest):
     self.assertClose(np.min(x_adv), -0.2)
     self.assertClose(np.max(x_adv), 0.1)
 
+class TestFastGradientMethod(TestCommonAttackProperties):
+
+  def setUp(self):
+    super(TestCommonAttackProperties, self).setUp()
+
+    self.sess = tf.Session()
+    self.model = SimpleModel()
+    self.attack = FastGradientMethod(self.model, sess=self.sess)
+
 class TestSPSA(CleverHansTest):
   def setUp(self):
     super(TestSPSA, self).setUp()
@@ -322,9 +329,9 @@ class TestSPSA(CleverHansTest):
     self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
 
 
-class TestBasicIterativeMethod(TestFastGradientMethod):
+class TestBasicIterativeMethod(TestCommonAttackProperties):
   def setUp(self):
-    TestFastGradientMethod.setUp(self)
+    TestCommonAttackProperties.setUp(self)
 
     self.sess = tf.Session()
     self.model = SimpleModel()
