@@ -599,3 +599,31 @@ def op_with_scalar_cast(a, b, f):
     b = tf.cast(b, a.dtype)
 
   return f(a, b)
+
+def assert_less_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_less_equal
+  Overrides tf.device so that the assert always goes on CPU.
+  The unwrapped version raises an exception if used with tf.device("/GPU:x").
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_less_equal(*args, **kwargs)
+
+def assert_greater_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_greater_equal.
+  Overrides tf.device so that the assert always goes on CPU.
+  The unwrapped version raises an exception if used with tf.device("/GPU:x").
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_greater_equal(*args, **kwargs)
+
+def assert_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_equal.
+  Overrides tf.device so that the assert always goes on CPU.
+  The unwrapped version raises an exception if used with tf.device("/GPU:x").
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_equal(*args, **kwargs)
+

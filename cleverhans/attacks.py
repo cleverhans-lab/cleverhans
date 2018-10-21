@@ -222,7 +222,7 @@ class Attack(object):
 
     for key in kwargs:
       if key not in fixed and key not in feedable:
-        raise ValueError("Undeclared argument: " + key)
+        raise ValueError(str(type(self)) + ": Undeclared argument: " + key)
 
     feed_arg_type = arg_type(feedable_names, feedable)
 
@@ -301,7 +301,7 @@ class FastGradientMethod(Attack):
         'clip_min': self.np_dtype,
         'clip_max': self.np_dtype
     }
-    self.structural_kwargs = ['ord']
+    self.structural_kwargs = ['ord', 'sanity_checks']
 
   def generate(self, x, **kwargs):
     """
@@ -336,7 +336,8 @@ class FastGradientMethod(Attack):
         ord=self.ord,
         clip_min=self.clip_min,
         clip_max=self.clip_max,
-        targeted=(self.y_target is not None))
+        targeted=(self.y_target is not None),
+        sanity_checks=self.sanity_checks)
 
   def parse_params(self,
                    eps=0.3,
@@ -345,6 +346,7 @@ class FastGradientMethod(Attack):
                    y_target=None,
                    clip_min=None,
                    clip_max=None,
+                   sanity_checks=True,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -366,6 +368,9 @@ class FastGradientMethod(Attack):
                      one-hot-encoded.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param sanity_checks: bool, if True, include asserts
+      (Turn them off to use less runtime / memory or for unit tests that
+      intentionally pass strange input)
     """
     # Save attack-specific parameters
 
@@ -375,6 +380,7 @@ class FastGradientMethod(Attack):
     self.y_target = y_target
     self.clip_min = clip_min
     self.clip_max = clip_max
+    self.sanity_checks = sanity_checks
 
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")
@@ -390,7 +396,8 @@ def fgm(x,
         ord=np.inf,
         clip_min=None,
         clip_max=None,
-        targeted=False):
+        targeted=False,
+        sanity_checks=True):
   """
   TensorFlow implementation of the Fast Gradient Method.
   :param x: the input placeholder
@@ -413,6 +420,15 @@ def fgm(x,
                    like y.
   :return: a tensor for the adversarial example
   """
+
+  asserts = []
+
+  # If a data range was specified, check that the input was in that range
+  if clip_min is not None:
+    asserts.append(utils_tf.assert_greater_equal(x, clip_min))
+
+  if clip_max is not None:
+    asserts.append(utils_tf.assert_less_equal(x, clip_max))
 
   # Make sure the caller has not passed probs by accident
   assert logits.op.type != 'Softmax'
@@ -472,6 +488,11 @@ def fgm(x,
     # We don't currently support one-sided clipping
     assert clip_min is not None and clip_max is not None
     adv_x = utils_tf.clip_by_value(adv_x, clip_min, clip_max)
+
+
+  if sanity_checks:
+    with tf.control_dependencies(asserts):
+      adv_x = tf.identity(adv_x)
 
   return adv_x
 
@@ -539,7 +560,12 @@ class ProjectedGradientDescent(Attack):
                               dtype=x.dtype)
     else:
       eta = tf.zeros(tf.shape(x))
+
+    # Clip eta
     eta = clip_eta(eta, self.ord, self.eps)
+    adv_x = x + eta
+    if self.clip_min is not None or self.clip_max is not None:
+      adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
     # Fix labels to the first model predictions for loss computation
     model_preds = self.model.get_probs(x)
@@ -573,25 +599,24 @@ class ProjectedGradientDescent(Attack):
     def cond(i, _):
       return tf.less(i, self.nb_iter)
 
-    def body(i, e):
-      adv_x = FGM.generate(x + e, **fgm_params)
 
-      # Clipping perturbation according to clip_min and clip_max
-      if self.clip_min is not None and self.clip_max is not None:
-        adv_x = utils_tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+    def body(i, adv_x):
+      adv_x = FGM.generate(adv_x, **fgm_params)
 
       # Clipping perturbation eta to self.ord norm ball
       eta = adv_x - x
       eta = clip_eta(eta, self.ord, self.eps)
-      return i + 1, eta
+      adv_x = x + eta
 
-    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
+      # Redo the clipping.
+      # FGM already did it, but subtracting and re-adding eta can add some
+      # small numerical error.
+      if self.clip_min is not None or self.clip_max is not None:
+        adv_x = utils_tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
-    # Define adversarial example (and clip if necessary)
-    adv_x = x + eta
-    if self.clip_min is not None or self.clip_max is not None:
-      assert self.clip_min is not None and self.clip_max is not None
-      adv_x = utils_tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+      return i + 1, adv_x
+
+    _, adv_x = tf.while_loop(cond, body, [tf.zeros([]), adv_x], back_prop=True)
 
     asserts = []
 
@@ -722,29 +747,26 @@ class MomentumIterativeMethod(Attack):
         'clip_min': self.np_dtype,
         'clip_max': self.np_dtype
     }
-    self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor']
+    self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor', 'sanity_checks']
 
   def generate(self, x, **kwargs):
     """
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (optional float) maximum distortion of adversarial example
-                compared to original input
-    :param eps_iter: (optional float) step size for each attack iteration
-    :param nb_iter: (optional int) Number of attack iterations.
-    :param y: (optional) A tensor with the model labels.
-    :param y_target: (optional) A tensor with the labels to target. Leave
-                     y_target=None if y is also set. Labels should be
-                     one-hot-encoded.
-    :param ord: (optional) Order of the norm (mimics Numpy).
-                Possible values: np.inf, 1 or 2.
-    :param decay_factor: (optional) Decay factor for the momentum term.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param kwargs: Keyword arguments. See `parse_params` for documentation.
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
+
+    asserts = []
+
+    # If a data range was specified, check that the input was in that range
+    if self.clip_min is not None:
+      asserts.append(utils_tf.assert_greater_equal(x, self.clip_min))
+
+    if self.clip_max is not None:
+      asserts.append(utils_tf.assert_less_equal(x, self.clip_max))
 
     # Initialize loop variables
     momentum = tf.zeros_like(x)
@@ -805,6 +827,10 @@ class MomentumIterativeMethod(Attack):
     _, adv_x, _ = tf.while_loop(
         cond, body, [tf.zeros([]), adv_x, momentum], back_prop=True)
 
+    if self.sanity_checks:
+      with tf.control_dependencies(asserts):
+        adv_x = tf.identity(adv_x)
+
     return adv_x
 
   def parse_params(self,
@@ -817,6 +843,7 @@ class MomentumIterativeMethod(Attack):
                    clip_min=None,
                    clip_max=None,
                    y_target=None,
+                   sanity_checks=True,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -849,6 +876,7 @@ class MomentumIterativeMethod(Attack):
     self.decay_factor = decay_factor
     self.clip_min = clip_min
     self.clip_max = clip_max
+    self.sanity_checks = sanity_checks
 
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")
