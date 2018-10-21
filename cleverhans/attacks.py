@@ -763,10 +763,10 @@ class MomentumIterativeMethod(Attack):
 
     # If a data range was specified, check that the input was in that range
     if self.clip_min is not None:
-      asserts.append(utils_tf.assert_greater_equal(x, self.clip_min))
+      asserts.append(utils_tf.assert_greater_equal(x, tf.cast(self.clip_min, x.dtype)))
 
     if self.clip_max is not None:
-      asserts.append(utils_tf.assert_less_equal(x, self.clip_max))
+      asserts.append(utils_tf.assert_less_equal(x, tf.cast(self.clip_max, x.dtype)))
 
     # Initialize loop variables
     momentum = tf.zeros_like(x)
