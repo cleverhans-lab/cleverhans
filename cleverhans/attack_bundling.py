@@ -225,7 +225,7 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   new_work_goal = {config: 5 for config in attack_configs}
   pgd_work_goal = {config: 5 for config in pgd_attack_configs}
   # TODO: lower priority: make sure bundler won't waste time running targeted
-  # attacks on examples where the target class is the true class
+  # attacks on examples where the target class is the true class.
   goals = [Misclassify(new_work_goal={noise_attack_config: 50}),
            Misclassify(new_work_goal=pgd_work_goal),
            MaxConfidence(t=0.5, new_work_goal=new_work_goal),
