@@ -1740,12 +1740,6 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
     raise NotImplementedError("_project_perturbation currently has clipping "
                               "hard-coded in.")
 
-  assert 'int' not in str(input_image.dtype)
-  if not isinstance(clip_min, float):
-    assert 'int' not in str(clip_min.dtype)
-  if not isinstance(clip_max, float):
-    assert 'int' not in str(clip_max.dtype)
-
   # Ensure inputs are in the correct range
   with tf.control_dependencies([
       utils_tf.assert_less_equal(input_image, clip_max),
