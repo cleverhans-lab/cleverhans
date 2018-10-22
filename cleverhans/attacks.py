@@ -1949,7 +1949,6 @@ class SPSA(Attack):
     :param clip_min: If specified, the minimum input value
     :param clip_max: If specified, the maximum input value
     :param nb_iter: The number of optimization steps.
-    :param is_targeted: Whether to use a targeted or untargeted attack.
     :param early_stop_loss_threshold: A float or None. If specified, the
                                       attack will end as soon as the loss
                                       is below `early_stop_loss_threshold`.
@@ -1964,6 +1963,9 @@ class SPSA(Attack):
                        update, where each evaluation is on `spsa_samples`
                        different inputs.
     :param is_debug: If True, print the adversarial loss after each update.
+    :param epsilon: Deprecated alias for `eps`
+    :param num_steps: Deprecated alias for `nb_iter`.
+    :param is_targeted: Deprecated argument. Ignored.
     """
 
     if epsilon is not None:
