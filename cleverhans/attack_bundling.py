@@ -1085,12 +1085,10 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   :param report_path: str, the path that the report will be saved to.
   """
   spsa = SPSA(model, sess)
-  threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
+  spsa_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max,
+                 "nb_iter": nb_iter, "spsa_samples": spsa_samples,
+                 "spsa_iters": spsa_iters}
   attack_configs = []
-  spsa_params = copy.copy(threat_params)
-  spsa_params["nb_iter"] = nb_iter
-  spsa_params["spsa_samples"] = spsa_samples
-  spsa_params["spsa_iters"] = spsa_iters
   dev_batch_size = 1 # The only batch size supported by SPSA
   batch_size = num_devices
   ones = tf.ones(dev_batch_size, tf.int32)
