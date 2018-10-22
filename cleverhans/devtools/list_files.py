@@ -47,6 +47,8 @@ def list_files(suffix=""):
     scripts_files = _list_files(scripts_path, suffix)
     scripts_files = [os.path.join(os.pardir, path) for path in
                      scripts_files]
+  else:
+    scripts_files = []
 
   file_list = file_list + tutorials_files + examples_files + scripts_files
 
