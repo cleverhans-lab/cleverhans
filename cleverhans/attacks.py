@@ -2048,10 +2048,7 @@ class SPSA(Attack):
       kwargs["eps"] = kwargs["epsilon"]
       del kwargs["epsilon"]
     assert "eps" in kwargs
-    # This class has never supported eps=None correctly.
-    # eps has been treated as a purely feedable kwarg but setting eps=None
-    # versus eps=<some float> has structural consequences.
-    assert kwargs["eps"] is not None
+    
     if "num_steps" in kwargs:
       warnings.warn("Using deprecated argument: see `generate`")
       assert "nb_iter" not in kwargs
