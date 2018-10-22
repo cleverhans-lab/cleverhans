@@ -269,12 +269,8 @@ class AversarialBatches(ImageBatchesBase):
         entity_kind_batches=KIND_ADVERSARIAL_BATCH,
         entity_kind_images=KIND_ADVERSARIAL_IMAGE)
 
-  # Not possible to respect both line length and hanging indentation
-  # requirements for this function definition.
-  # pylint: disable=C0330
-  def init_from_dataset_and_submissions_write_to_datastore(self,
-      dataset_batches,
-      attack_submission_ids):
+  def init_from_dataset_and_submissions_write_to_datastore(
+      self, dataset_batches, attack_submission_ids):
     """Init list of adversarial batches from dataset batches and submissions.
 
     Args:
