@@ -1737,7 +1737,8 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
 
 
   if clip_min is None or clip_max is None:
-    raise NotImplementedError("SPSA currently has clipping hard-coded in.")
+    raise NotImplementedError("_project_perturbation currently has clipping "
+                              "hard-coded in.")
 
   assert 'int' not in str(input_image.dtype)
   if not isinstance(clip_min, float):
