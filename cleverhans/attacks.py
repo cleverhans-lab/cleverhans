@@ -2048,7 +2048,7 @@ class SPSA(Attack):
       kwargs["eps"] = kwargs["epsilon"]
       del kwargs["epsilon"]
     assert "eps" in kwargs
-    
+
     if "num_steps" in kwargs:
       warnings.warn("Using deprecated argument: see `generate`")
       assert "nb_iter" not in kwargs
