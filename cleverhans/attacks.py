@@ -2428,8 +2428,7 @@ def optimize_linear(grad, eps, ord=np.inf):
   """
   Solves for the optimal input to a linear function under a norm constraint.
 
-  Optimal_perturbation =
-    argmax(eta, norm(eta, ord) < 1) dot(eta, grad)
+  Optimal_perturbation = argmax_{eta, ||eta||_{ord} < eps} dot(eta, grad)
 
   :param grad: tf tensor containing a batch of gradients
   :param eps: float scalar specifying size of constraint region

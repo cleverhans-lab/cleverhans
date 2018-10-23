@@ -275,6 +275,55 @@ class TestFastGradientMethod(CommonAttackProperties):
 
     self.attack = FastGradientMethod(self.model, sess=self.sess)
 
+
+class TestOptimizeLinear(CleverHansTest):
+  """
+  Tests for the `optimize_linear` function
+  """
+
+  def setUp(self):
+    super(TestOptimizeLinear, self).setUp()
+    self.sess = tf.Session()
+    self.model = SimpleModel()
+
+  def test_optimize_linear_linf(self):
+
+    grad = tf.placeholder(tf.float32, shape=[1, 2])
+
+    # Build the graph for the attack
+    eta = attacks.optimize_linear(grad, eps=1., ord=np.inf)
+    objective = tf.reduce_sum(grad * eta)
+
+    grad_val = np.array([[1., -2.]])
+    eta, objective = self.sess.run([eta, objective],
+                                   feed_dict={grad: grad_val})
+
+    # Make sure the objective is optimal.
+    # This is the solution obtained by doing the algebra by hand.
+    self.assertClose(objective, np.abs(grad_val).sum())
+    # Make sure the constraint is respected.
+    # Also, for a linear function, the constraint will always be tight.
+    self.assertClose(np.abs(eta), 1.)
+
+  def test_optimize_linear_l2(self):
+
+    grad = tf.placeholder(tf.float32, shape=[1, 2])
+
+    # Build the graph for the attack
+    eta = attacks.optimize_linear(grad, eps=1., ord=2)
+    objective = tf.reduce_sum(grad * eta)
+
+    grad_val = np.array([[np.sqrt(.5), -np.sqrt(.5)]])
+    eta, objective = self.sess.run([eta, objective],
+                                   feed_dict={grad: grad_val})
+
+    # Make sure the objective is optimal.
+    # This is the solution obtained by doing the algebra by hand.
+    self.assertClose(objective, 1.)
+    # Make sure the constraint is respected.
+    # Also, for a linear function, the constraint will always be tight.
+    self.assertClose(np.sqrt(np.square(eta).sum()), 1.)
+
   def test_optimize_linear_l1(self):
 
     # This test makes sure that `optimize_linear` actually finds the optimal
@@ -286,7 +335,7 @@ class TestFastGradientMethod(CommonAttackProperties):
 
     # We need just one example in the batch and two features to show the
     # common misconception is suboptimal.
-    grad = tf.placeholder(tf.float32, [1, 2])
+    grad = tf.placeholder(tf.float32, shape=[1, 2])
 
     # Build the graph for the attack
     eta = attacks.optimize_linear(grad, eps=1., ord=1)
@@ -300,10 +349,10 @@ class TestFastGradientMethod(CommonAttackProperties):
 
     # Make sure the objective is optimal.
     # This is the solution obtained by doing the algebra by hand.
-    assert objective == 2., objective
+    self.assertClose(objective, 2.)
     # Make sure the constraint is respected.
     # Also, for a linear function, the constraint will always be tight.
-    assert np.abs(eta).sum() == 1.
+    self.assertClose(np.abs(eta).sum(), 1.)
 
   def test_optimize_linear_l1_ties(self):
 
@@ -312,7 +361,7 @@ class TestFastGradientMethod(CommonAttackProperties):
 
     # We need just one example in the batch and two features to construct
     # a tie.
-    grad = tf.placeholder(tf.float32, [1, 2])
+    grad = tf.placeholder(tf.float32, shape=[1, 2])
 
     # Build the graph for the attack
     eta = attacks.optimize_linear(grad, eps=1., ord=1)
@@ -326,10 +375,10 @@ class TestFastGradientMethod(CommonAttackProperties):
 
     # Make sure the objective is optimal.
     # This is the solution obtained by doing the algebra by hand.
-    assert objective == 2., objective
+    self.assertClose(objective, 2.)
     # Make sure the constraint is respected.
     # Also, for a linear function, the constraint will always be tight.
-    assert np.abs(eta).sum() == 1.
+    self.assertClose(np.abs(eta).sum(), 1.)
 
 class TestSPSA(CleverHansTest):
   def setUp(self):
