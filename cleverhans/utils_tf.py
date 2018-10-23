@@ -364,7 +364,7 @@ def clip_eta(eta, ord, eps):
   reduc_ind = list(xrange(1, len(eta.get_shape())))
   avoid_zero_div = 1e-12
   if ord == np.inf:
-    eta = tf.clip_by_value(eta, -eps, eps)
+    eta = clip_by_value(eta, -eps, eps)
   else:
     if ord == 1:
       norm = tf.maximum(avoid_zero_div,
@@ -379,7 +379,7 @@ def clip_eta(eta, ord, eps):
                                            keepdims=True)))
     # We must *clip* to within the norm ball, not *normalize* onto the
     # surface of the ball
-    factor = tf.minimum(1., eps / norm)
+    factor = tf.minimum(1., div(eps, norm))
     eta = eta * factor
   return eta
 
@@ -527,3 +527,102 @@ def silence():
   Silences tensorflaw's default printed messages
   """
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+def clip_by_value(t, clip_value_min, clip_value_max, name=None):
+  """
+  A wrapper for clip_by_value that casts the clipping range if needed.
+  """
+  def cast_clip(clip):
+    if t.dtype in (tf.float32, tf.float64):
+      if hasattr(clip, 'dtype'):
+        if clip.dtype != t.dtype:
+          return tf.cast(clip, t.dtype)
+    return clip
+
+  clip_value_min = cast_clip(clip_value_min)
+  clip_value_max = cast_clip(clip_value_max)
+
+  return tf.clip_by_value(t, clip_value_min, clip_value_max, name)
+
+def mul(a, b):
+  """
+  A wrapper around tf multiplication that does more automatic casting of
+  the input.
+  """
+  def multiply(a, b):
+    return a * b
+  return op_with_scalar_cast(a, b, multiply)
+
+def div(a, b):
+  """
+  A wrapper around tf division that does more automatic casting of
+  the input.
+  """
+  def divide(a, b):
+    return a / b
+  return op_with_scalar_cast(a, b, divide)
+
+def op_with_scalar_cast(a, b, f):
+  """
+  Builds the graph to compute f(a, b).
+  If only one of the two arguments is a scalar and the operation would
+  cause a type error without casting, casts the scalar to match the
+  tensor.
+  :param a: a tf-compatible array or scalar
+  :param b: a tf-compatible array or scalar
+  """
+
+  try:
+    return f(a, b)
+  except (TypeError, ValueError):
+    pass
+
+  def is_scalar(x):
+    if hasattr(x, "get_shape"):
+      shape = x.get_shape()
+      return shape.ndims == 0
+    if hasattr(x, "ndim"):
+      return x.ndim == 0
+    assert isinstance(x, (int, float))
+    return True
+
+  a_scalar = is_scalar(a)
+  b_scalar = is_scalar(b)
+
+  if a_scalar and b_scalar:
+    raise TypeError("Trying to apply " + str(f) + " with mixed types")
+
+  if a_scalar and not b_scalar:
+    a = tf.cast(a, b.dtype)
+
+  if b_scalar and not a_scalar:
+    b = tf.cast(b, a.dtype)
+
+  return f(a, b)
+
+def assert_less_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_less_equal
+  Overrides tf.device so that the assert always goes on CPU.
+  The unwrapped version raises an exception if used with tf.device("/GPU:x").
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_less_equal(*args, **kwargs)
+
+def assert_greater_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_greater_equal.
+  Overrides tf.device so that the assert always goes on CPU.
+  The unwrapped version raises an exception if used with tf.device("/GPU:x").
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_greater_equal(*args, **kwargs)
+
+def assert_equal(*args, **kwargs):
+  """
+  Wrapper for tf.assert_equal.
+  Overrides tf.device so that the assert always goes on CPU.
+  The unwrapped version raises an exception if used with tf.device("/GPU:x").
+  """
+  with tf.device("/CPU:0"):
+    return tf.assert_equal(*args, **kwargs)
