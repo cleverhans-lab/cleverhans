@@ -143,7 +143,8 @@ def main(argv=None):
   except ValueError:
     raise ValueError(argv)
   make_confidence_report_spsa(filepath=filepath, test_start=FLAGS.test_start,
-                              test_end=FLAGS.test_end, which_set=FLAGS.which_set,
+                              test_end=FLAGS.test_end,
+                              which_set=FLAGS.which_set,
                               report_path=FLAGS.report_path,
                               nb_iter=FLAGS.nb_iter,
                               batch_size=FLAGS.batch_size,
@@ -152,14 +153,17 @@ def main(argv=None):
 
 if __name__ == '__main__':
   flags.DEFINE_integer('spsa_samples', SPSA_SAMPLES, 'Number samples for SPSA')
-  flags.DEFINE_integer('spsa_iters', SPSA.DEFAULT_SPSA_ITERS, 'Passed to SPSA.generate')
+  flags.DEFINE_integer('spsa_iters', SPSA.DEFAULT_SPSA_ITERS,
+                       'Passed to SPSA.generate')
   flags.DEFINE_integer('train_start', TRAIN_START, 'Starting point (inclusive)'
                        'of range of train examples to use')
   flags.DEFINE_integer('train_end', TRAIN_END, 'Ending point (non-inclusive) '
                        'of range of train examples to use')
-  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) of range'
+  flags.DEFINE_integer('test_start', TEST_START,
+                       'Starting point (inclusive) of range'
                        ' of test examples to use')
-  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of range'
+  flags.DEFINE_integer('test_end', TEST_END,
+                       'End point (non-inclusive) of range'
                        ' of test examples to use')
   flags.DEFINE_integer('nb_iter', NB_ITER_SPSA, 'Number of iterations of SPSA')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')

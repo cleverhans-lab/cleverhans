@@ -5,6 +5,8 @@
 # TensorFlow 2 space style
 indent-string='  '
 
+
+max-line-length=80
 # pylint should print out the file path, line number, and ID code for the
 # messages it prints. This is partly so we can turn off the ID codes that
 # we do not actually want to enforce.

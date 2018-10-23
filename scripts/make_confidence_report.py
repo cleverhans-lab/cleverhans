@@ -54,6 +54,7 @@ from cleverhans.confidence_report import SAVE_ADVX
 
 FLAGS = flags.FLAGS
 
+
 def main(argv=None):
   """
   Make a confidence report and save it to disk.
@@ -71,15 +72,16 @@ def main(argv=None):
                          batch_size=FLAGS.batch_size,
                          save_advx=FLAGS.save_advx)
 
+
 if __name__ == '__main__':
   flags.DEFINE_integer('train_start', TRAIN_START, 'Starting point (inclusive)'
                        'of range of train examples to use')
   flags.DEFINE_integer('train_end', TRAIN_END, 'Ending point (non-inclusive) '
                        'of range of train examples to use')
-  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) of range'
-                       ' of test examples to use')
-  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of range'
-                       ' of test examples to use')
+  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) '
+                       'of range of test examples to use')
+  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of '
+                       'range of test examples to use')
   flags.DEFINE_integer('nb_iter', NB_ITER, 'Number of iterations of PGD')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
   flags.DEFINE_string('report_path', REPORT_PATH, 'Path to save to')

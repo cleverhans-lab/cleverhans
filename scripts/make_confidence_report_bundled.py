@@ -39,6 +39,7 @@ from cleverhans.confidence_report import REPORT_PATH
 
 FLAGS = flags.FLAGS
 
+
 def main(argv=None):
   """
   Make a confidence report and save it to disk.
@@ -61,10 +62,10 @@ if __name__ == '__main__':
                        'of range of train examples to use')
   flags.DEFINE_integer('train_end', TRAIN_END, 'Ending point (non-inclusive) '
                        'of range of train examples to use')
-  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) of range'
-                       ' of test examples to use')
-  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of range'
-                       ' of test examples to use')
+  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) '
+                       'of range of test examples to use')
+  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of '
+                       'range of test examples to use')
   flags.DEFINE_string('recipe', RECIPE, 'Name of function from attack_bundling'
                       ' to run')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
