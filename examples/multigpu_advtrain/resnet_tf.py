@@ -33,7 +33,7 @@ from model import LinearnGPU
 from model import LayerNorm
 
 HParams = namedtuple('HParams',
-                     'batch_size, num_classes, min_lrn_rate, lrn_rate, '
+                     'batch_size, nb_classes, min_lrn_rate, lrn_rate, '
                      'num_residual_units, use_bottleneck, weight_decay_rate, '
                      'relu_leakiness, momentum')
 
@@ -42,12 +42,12 @@ class ResNetTF(MLPnGPU):
   """ResNet model."""
 
   def __init__(self, batch_size=None, name=None, **kwargs):
-    NUM_CLASSES = 10
-    super(ResNetTF, self).__init__(nb_classes=NUM_CLASSES, layers=[],
+    NB_CLASSES = 10
+    super(ResNetTF, self).__init__(nb_classes=NB_CLASSES, layers=[],
                                    input_shape=None)
     self.global_step = tf.contrib.framework.get_or_create_global_step()
     self.hps = HParams(batch_size=batch_size,
-                       num_classes=NUM_CLASSES,
+                       nb_classes=NB_CLASSES,
                        min_lrn_rate=0.0001,
                        lrn_rate=0.1,
                        num_residual_units=5,
@@ -134,7 +134,7 @@ class ResNetTF(MLPnGPU):
       x = self._global_avg_pool(x)
 
     with tf.variable_scope('logit'):
-      logits = self._fully_connected(x, self.hps.num_classes)
+      logits = self._fully_connected(x, self.hps.nb_classes)
       predictions = tf.nn.softmax(logits)
 
     return logits, predictions
