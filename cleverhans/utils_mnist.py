@@ -22,7 +22,8 @@ def maybe_download_mnist_file(file_name, datadir=None, force=False):
 
 def download_and_parse_mnist_file(file_name, datadir=None, force=False):
   warnings.warn(utils_mnist_warning)
-  return dataset.download_and_parse_mnist_file(file_name, datadir=None, force=False)
+  return dataset.download_and_parse_mnist_file(file_name, datadir=None,
+                                               force=False)
 
 
 def data_mnist(datadir=tempfile.gettempdir(), train_start=0,

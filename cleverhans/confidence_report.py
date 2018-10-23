@@ -42,8 +42,9 @@ num_devices = len(devices)
 BATCH_SIZE = 128 * num_devices
 MC_BATCH_SIZE = 16 * num_devices
 NB_ITER = 40
-BASE_EPS_ITER = None # Differs by dataset
+BASE_EPS_ITER = None  # Differs by dataset
 SAVE_ADVX = 1
+
 
 def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                                    train_end=TRAIN_END, test_start=TEST_START,
@@ -130,7 +131,6 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                report_path=report_path, eps_iter_small=eps_iter_small)
 
 
-
 def print_stats(correctness, confidence, name):
   """
   Prints out accuracy, coverage, etc. statistics
@@ -165,7 +165,9 @@ def print_stats(correctness, confidence, name):
   print("Failure rate at .5: %0.4f" % failure_rate)
   print()
 
-def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
+
+def make_confidence_report(filepath, train_start=TRAIN_START,
+                           train_end=TRAIN_END,
                            test_start=TEST_START, test_end=TEST_END,
                            batch_size=BATCH_SIZE, which_set=WHICH_SET,
                            mc_batch_size=MC_BATCH_SIZE,
@@ -243,7 +245,6 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
                'clip_min': min_value,
                'clip_max': max_val}
 
-
   x_data, y_data = dataset.get_set(which_set)
 
   report = {}
@@ -254,7 +255,6 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
   jobs = [('clean', None, None, None, False),
           ('Semantic', semantic, None, None, False),
           ('mc', mc, mc_params, mc_batch_size, True)]
-
 
   for job in jobs:
     name, attack, attack_params, job_batch_size, save_this_job = job
@@ -284,7 +284,8 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
 
     # Run correctness and confidence evaluation on adversarial examples
     packed = correctness_and_confidence(sess, model, x_data, y_data,
-                                        batch_size=job_batch_size, devices=devices,
+                                        batch_size=job_batch_size,
+                                        devices=devices,
                                         attack=attack,
                                         attack_params=attack_params)
     t2 = time.time()
@@ -292,11 +293,10 @@ def make_confidence_report(filepath, train_start=TRAIN_START, train_end=TRAIN_EN
     correctness, confidence = packed
 
     report[name] = {
-        'correctness' : correctness,
-        'confidence'  : confidence
-        }
+        'correctness': correctness,
+        'confidence': confidence
+    }
 
     print_stats(correctness, confidence, name)
-
 
   save(report_path, report)

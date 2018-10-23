@@ -1928,10 +1928,12 @@ def _apply_transformation(inputs):
   height = x.get_shape().as_list()[1]
   width = x.get_shape().as_list()[2]
 
-  # Pad the image to prevent two-step rotation / translation from truncating corners
+  # Pad the image to prevent two-step rotation / translation from truncating
+  # corners
   max_dist_from_center = np.sqrt(height**2+width**2) / 2
   min_edge_from_center = float(np.min([height, width])) / 2
-  padding = np.ceil(max_dist_from_center - min_edge_from_center).astype(np.int32)
+  padding = np.ceil(max_dist_from_center -
+                    min_edge_from_center).astype(np.int32)
   x = tf.pad(x, [[0, 0],
                  [padding, padding],
                  [padding, padding],
@@ -1984,7 +1986,8 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     sampled_dys = np.random.choice(dys, n_samples)
     sampled_angles = np.random.choice(angles, n_samples)
     transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
-  transformed_ims = parallel_apply_transformations(x, transforms, black_border_size)
+  transformed_ims = parallel_apply_transformations(
+      x, transforms, black_border_size)
 
   def _compute_xent(x):
     preds = model.get_logits(x)
@@ -1994,12 +1997,12 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
   all_xents = tf.map_fn(
       _compute_xent,
       transformed_ims,
-      parallel_iterations=1) # Must be 1 to avoid keras race conditions
+      parallel_iterations=1)  # Must be 1 to avoid keras race conditions
 
   # Return the adv_x with worst accuracy
 
   # all_xents is n_total_samples x batch_size (SB)
-  all_xents = tf.stack(all_xents) # SB
+  all_xents = tf.stack(all_xents)  # SB
 
   # We want the worst case sample, with the largest xent_loss
   worst_sample_idx = tf.argmax(all_xents, axis=0)  # B
@@ -2021,7 +2024,8 @@ def parallel_apply_transformations(x, transforms, black_border_size=0):
   num_transforms = transforms.get_shape().as_list()[0]
   im_shape = x.get_shape().as_list()[1:]
 
-  # Pass a copy of x and a transformation to each iteration of the map_fn callable
+  # Pass a copy of x and a transformation to each iteration of the map_fn
+  # callable
   tiled_x = tf.reshape(
       tf.tile(x, [num_transforms, 1, 1, 1]),
       [num_transforms, -1] + im_shape)

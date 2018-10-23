@@ -390,6 +390,7 @@ class FastGradientMethod(Attack):
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
     return True
 
+
 def fgm(x,
         logits,
         y=None,
@@ -496,6 +497,7 @@ def fgm(x,
       adv_x = tf.identity(adv_x)
 
   return adv_x
+
 
 class ProjectedGradientDescent(Attack):
   """
@@ -628,9 +630,11 @@ class ProjectedGradientDescent(Attack):
       asserts.append(tf.assert_less_equal(self.eps_iter, self.eps))
       if self.ord == np.inf and self.clip_min is not None:
         # The 1e-6 is needed to compensate for numerical error.
-        # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5, clip_max=.7
+        # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5,
+        # clip_max=.7
         asserts.append(tf.assert_less_equal(self.eps,
-                                            1e-6 + self.clip_max - self.clip_min))
+                                            1e-6 + self.clip_max
+                                            - self.clip_min))
 
     if self.sanity_checks:
       with tf.control_dependencies(asserts):
@@ -764,10 +768,14 @@ class MomentumIterativeMethod(Attack):
 
     # If a data range was specified, check that the input was in that range
     if self.clip_min is not None:
-      asserts.append(utils_tf.assert_greater_equal(x, tf.cast(self.clip_min, x.dtype)))
+      asserts.append(utils_tf.assert_greater_equal(x,
+                                                   tf.cast(self.clip_min,
+                                                           x.dtype)))
 
     if self.clip_max is not None:
-      asserts.append(utils_tf.assert_less_equal(x, tf.cast(self.clip_max, x.dtype)))
+      asserts.append(utils_tf.assert_less_equal(x,
+                                                tf.cast(self.clip_max,
+                                                        x.dtype)))
 
     # Initialize loop variables
     momentum = tf.zeros_like(x)
@@ -1527,6 +1535,7 @@ class LBFGS(Attack):
     self.clip_min = clip_min
     self.clip_max = clip_max
 
+
 class LBFGS_impl(object):
   def __init__(self, sess, x, logits, targeted_label,
                binary_search_steps, max_iterations, initial_const, clip_min,
@@ -2209,6 +2218,7 @@ class Semantic(Attack):
       return -x
     return self.max_val - x
 
+
 class Noise(Attack):
   """
   A weak attack that just picks a random point in the attacker's action space.
@@ -2251,7 +2261,8 @@ class Noise(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    kwargs['clip'] = kwargs['clip_min'] is not None or kwargs['clip_max'] is not None
+    kwargs['clip'] = (kwargs['clip_min'] is not None
+                      or kwargs['clip_max'] is not None)
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
@@ -2303,6 +2314,7 @@ class Noise(Attack):
       raise ValueError("Norm order must be np.inf")
 
     return True
+
 
 class MaxConfidence(Attack):
   """
@@ -2360,7 +2372,8 @@ class MaxConfidence(Attack):
     true_y_idx = tf.argmax(true_y, axis=1)
 
     expanded_x = tf.concat([x] * self.nb_classes, axis=0)
-    target_ys = [tf.to_float(tf.one_hot(tf.ones(m, dtype=tf.int32) * cls, self.nb_classes))
+    target_ys = [tf.to_float(tf.one_hot(tf.ones(m, dtype=tf.int32) * cls,
+                                        self.nb_classes))
                  for cls in range(self.nb_classes)]
     target_y = tf.concat(target_ys, axis=0)
     adv_x_cls = self.attack_class(expanded_x, target_y)

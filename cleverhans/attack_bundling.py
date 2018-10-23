@@ -72,7 +72,7 @@ def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   """
   noise_attack = Noise(model, sess)
   pgd_attack = ProjectedGradientDescent(model, sess)
-  threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
+  threat_params = {"eps": eps, "clip_min": clip_min, "clip_max": clip_max}
   noise_attack_config = AttackConfig(noise_attack, threat_params, "noise")
   attack_configs = [noise_attack_config]
   pgd_attack_configs = []
@@ -93,12 +93,14 @@ def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     expensive_params = copy.copy(cls_params)
     expensive_params["eps_iter"] = eps_iter_small
     expensive_params["nb_iter"] *= 25.
-    expensive_config = AttackConfig(pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
+    expensive_config = AttackConfig(
+        pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
     expensive_pgd.append(expensive_config)
   attack_configs = [noise_attack_config] + pgd_attack_configs + expensive_pgd
   new_work_goal = {config: 1 for config in attack_configs}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
+
 
 def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
                                 clip_min, clip_max, eps_iter, nb_iter,
@@ -132,7 +134,7 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   """
   noise_attack = Noise(model, sess)
   pgd_attack = ProjectedGradientDescent(model, sess)
-  threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
+  threat_params = {"eps": eps, "clip_min": clip_min, "clip_max": clip_max}
   noise_attack_config = AttackConfig(noise_attack, threat_params)
   attack_configs = [noise_attack_config]
   pgd_attack_configs = []
@@ -153,7 +155,8 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     expensive_params = copy.copy(cls_params)
     expensive_params["eps_iter"] = eps_iter_small
     expensive_params["nb_iter"] *= 25.
-    expensive_config = AttackConfig(pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
+    expensive_config = AttackConfig(
+        pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
     expensive_pgd.append(expensive_config)
   attack_configs = [noise_attack_config] + pgd_attack_configs + expensive_pgd
   new_work_goal = {config: 5 for config in attack_configs}
@@ -169,6 +172,7 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
            MaxConfidence(t=1.)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
   # This runs forever
+
 
 def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
                                 clip_min, clip_max, eps_iter, nb_iter,
@@ -200,7 +204,7 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   """
   noise_attack = Noise(model, sess)
   pgd_attack = ProjectedGradientDescent(model, sess)
-  threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
+  threat_params = {"eps": eps, "clip_min": clip_min, "clip_max": clip_max}
   noise_attack_config = AttackConfig(noise_attack, threat_params)
   attack_configs = [noise_attack_config]
   pgd_attack_configs = []
@@ -219,7 +223,8 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     expensive_params = copy.copy(cls_params)
     expensive_params["eps_iter"] /= 25.
     expensive_params["nb_iter"] *= 25.
-    expensive_config = AttackConfig(pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
+    expensive_config = AttackConfig(
+        pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
     expensive_pgd.append(expensive_config)
   attack_configs = [noise_attack_config] + pgd_attack_configs + expensive_pgd
   new_work_goal = {config: 5 for config in attack_configs}
@@ -236,6 +241,7 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
            MaxConfidence(t=0.984375, new_work_goal=new_work_goal),
            MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
+
 
 def random_search_max_confidence_recipe(sess, model, x, y, eps,
                                         clip_min, clip_max,
@@ -264,13 +270,14 @@ def random_search_max_confidence_recipe(sess, model, x, y, eps,
   :batch_size: int, the total number of examples to run simultaneously
   """
   noise_attack = Noise(model, sess)
-  threat_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max}
+  threat_params = {"eps": eps, "clip_min": clip_min, "clip_max": clip_max}
   noise_attack_config = AttackConfig(noise_attack, threat_params)
   attack_configs = [noise_attack_config]
   assert batch_size % num_devices == 0
   new_work_goal = {noise_attack_config: num_noise_points}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
+
 
 class AttackConfig(object):
   """
@@ -279,6 +286,7 @@ class AttackConfig(object):
   :param params: dict of keyword arguments to pass to attack.generate
   :param name: str, name to be returned by __str__ / __repr__
   """
+
   def __init__(self, attack, params=None, name=None):
     self.attack = attack
     self.params = params
@@ -295,6 +303,7 @@ class AttackConfig(object):
 
   def __repr__(self):
     return self.__str__()
+
 
 def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
                    attack_batch_size=BATCH_SIZE):
@@ -335,7 +344,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
   for attack_config in attack_configs:
     run_counts[attack_config] = np.zeros(x.shape[0], dtype=np.int64)
 
-  # TODO: make an interface to pass this in if it has already been computed elsewhere
+  # TODO: make an interface to pass this in if it has already been computed
+  # elsewhere
   _logger.info("Running on clean data to initialize the report...")
   packed = correctness_and_confidence(sess, model, x, y, batch_size=BATCH_SIZE,
                                       devices=devices)
@@ -343,12 +353,13 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
   correctness, confidence = packed
   _logger.info("Accuracy: " + str(correctness.mean()))
   report = {}
-  report['clean'] = {'correctness' : correctness, 'confidence' : confidence}
+  report['clean'] = {'correctness': correctness, 'confidence': confidence}
 
   adv_x = x.copy()
 
   for goal in goals:
-    bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_counts,
+    bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
+                             run_counts,
                              goal, report, report_path,
                              attack_batch_size=attack_batch_size)
 
@@ -356,7 +367,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
   # statement is not the primary way to get information out.
   return adv_x, run_counts
 
-def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_counts,
+def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
+                             run_counts,
                              goal, report, report_path,
                              attack_batch_size=BATCH_SIZE):
   """
@@ -391,13 +403,15 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_count
   _logger.info("Accuracy: " + str(criteria['correctness'].mean()))
   assert 'confidence' in criteria
   while not goal.is_satisfied(criteria, run_counts):
-    run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs, run_counts,
+    run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs,
+                        run_counts,
                         goal, report, report_path,
                         attack_batch_size=attack_batch_size)
   # Save after finishing each goal.
   # The incremental saves run on a timer. This save is needed so that the last
   # few attacks after the timer don't get discarded
   save(criteria, report, report_path, adv_x)
+
 
 def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
                         run_counts, goal, report, report_path,
@@ -447,7 +461,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
         criteria[key][orig_idx] = criteria_batch[key][batch_idx]
       assert np.allclose(y[orig_idx], y_batch[batch_idx])
   report['bundled'] = {'correctness': criteria['correctness'],
-                       'confidence' : criteria['confidence']}
+                       'confidence': criteria['confidence']}
 
   should_save = False
   new_time = time.time()
@@ -460,6 +474,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
     report['time'] = new_time
     goal.print_progress(criteria, run_counts)
     save(criteria, report, report_path, adv_x_val)
+
 
 def save(criteria, report, report_path, adv_x_val):
   """
@@ -476,6 +491,7 @@ def save(criteria, report, report_path, adv_x_val):
   assert report_path.endswith(".joblib")
   adv_x_path = report_path[:-len(".joblib")] + "_adv.npy"
   np.save(adv_x_path, adv_x_val)
+
 
 class AttackGoal(object):
   """Specifies goals for attack bundling.
@@ -556,7 +572,6 @@ class AttackGoal(object):
     """
     print("Working on a " + self.__class__.__name__ + " goal.")
 
-
   def get_attack_config(self, attack_configs, run_counts, criteria):
     """
     Returns an AttackConfig to run on the next batch.
@@ -579,6 +594,7 @@ class AttackGoal(object):
     """
     raise NotImplementedError(str(type(self))
                               + " needs to implement new_wins.")
+
 
 class Misclassify(AttackGoal):
   """An AttackGoal that prioritizes misclassifying all examples.
@@ -700,6 +716,7 @@ class Misclassify(AttackGoal):
     # In PY3, pairs is now an iterator.
     # To support sorting, we need to make it a list.
     pairs = list(pairs)
+
     def key(pair):
       return pair[1]
     pairs.sort(key=key)
@@ -727,6 +744,7 @@ class Misclassify(AttackGoal):
     else:
       raise NotImplementedError(self.break_ties)
 
+
 class MaxConfidence(AttackGoal):
   """
   The AttackGoal corresponding the MaxConfidence procedure.
@@ -752,6 +770,7 @@ class MaxConfidence(AttackGoal):
     If not specified, this goal runs all available attacks and never gives
     up.
   """
+
   def __init__(self, t=1., new_work_goal=None):
     super(MaxConfidence, self).__init__()
     self.t = t
@@ -789,7 +808,8 @@ class MaxConfidence(AttackGoal):
                                            log=False)
     finished = len(unfinished) == 0
     if finished:
-      _logger.info("MaxConfidence timed out after running all requested attacks")
+      _logger.info(
+          "MaxConfidence timed out after running all requested attacks")
     else:
       pass
     return finished
@@ -817,8 +837,6 @@ class MaxConfidence(AttackGoal):
           print("\t" + str(ac) + ": goal of " + str(goal) + " runs, but "
                 + str(num_min) + " examples have been run only " + str(min_new)
                 + " times")
-
-
 
   def get_attack_config(self, attack_configs, run_counts, criteria):
     # TODO: refactor to avoid this duplicated method
@@ -858,6 +876,7 @@ class MaxConfidence(AttackGoal):
       pairs = safe_zip(correct_idxs, run_counts)
     else:
       pairs = safe_zip(all_idxs, run_counts)
+
     def key(pair):
       return pair[1]
     pairs.sort(key=key)
@@ -875,10 +894,12 @@ class MaxConfidence(AttackGoal):
     orig_wrong_confidence = orig_criteria['wrong_confidence'][orig_idx]
     return new_wrong_confidence > orig_wrong_confidence
 
-def unfinished_attack_configs(new_work_goal, work_before, run_counts, log=False):
+
+def unfinished_attack_configs(new_work_goal, work_before, run_counts,
+                              log=False):
   """
-  Returns a list of attack configs that have not yet been run the desired number of
-  times.
+  Returns a list of attack configs that have not yet been run the desired
+  number of times.
   :param new_work_goal: dict mapping attacks to desired number of times to run
   :param work_before: dict mapping attacks to number of times they were run
     before starting this new goal. Should be prefiltered to include only
@@ -900,11 +921,14 @@ def unfinished_attack_configs(new_work_goal, work_before, run_counts, log=False)
   for attack_config in new_work_goal:
     done_now = run_counts[attack_config]
     if log:
-      _logger.info(str(attack_config) + " ave run count: " + str(done_now.mean()))
-      _logger.info(str(attack_config) + " min run count: " + str(done_now.min()))
+      _logger.info(str(attack_config) +
+                   " ave run count: " + str(done_now.mean()))
+      _logger.info(str(attack_config) +
+                   " min run count: " + str(done_now.min()))
     done_before = work_before[attack_config]
     if log:
-      _logger.info(str(attack_config) + " mean work before: " + str(done_before.mean()))
+      _logger.info(str(attack_config) + " mean work before: " +
+                   str(done_before.mean()))
     # This is the vector for all examples
     new = done_now - done_before
     # The work is only done when it has been done for every example
@@ -914,7 +938,8 @@ def unfinished_attack_configs(new_work_goal, work_before, run_counts, log=False)
     assert isinstance(new_goal, int), type(new_goal)
     if new < new_goal:
       if log:
-        _logger.info(str(attack_config) + " has run " + str(new) + " of " + str(new_goal))
+        _logger.info(str(attack_config) + " has run " +
+                     str(new) + " of " + str(new_goal))
       attack_configs.append(attack_config)
   return attack_configs
 
@@ -944,7 +969,8 @@ class _CriteriaFactory(object):
     # same model will be used to build redundant tf graphs
     if not isinstance(other, _CriteriaFactory):
       return False
-    if type(self.extra_criteria_factory) is not type(other.extra_criteria_factory):
+    if (type(self.extra_criteria_factory) is not
+        type(other.extra_criteria_factory)):
       return False
     return self.properties_to_hash == other.properties_to_hash
 
@@ -965,6 +991,7 @@ class _CriteriaFactory(object):
       extra_criteria = tuple([])
 
     return (x_batch, y_batch), (correct, max_probs) + extra_criteria
+
 
 class _ExtraCriteriaFactory(object):
   """
@@ -989,10 +1016,12 @@ class _ExtraCriteriaFactory(object):
   def __call__(self, x_batch, y_batch, predictions, correct, max_probs):
     raise NotImplementedError()
 
+
 class _WrongConfidenceFactory(_ExtraCriteriaFactory):
   def __call__(self, x_batch, y_batch, predictions, correct, max_probs):
     max_wrong_probs = tf.reduce_max(predictions * (1. - y_batch), axis=1)
     return tuple([max_wrong_probs])
+
 
 def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
                               report_path):
@@ -1052,7 +1081,7 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
   assert confidence.min() >= 0.
   assert confidence.max() <= 1.
 
-  report = {'bundled' : {'correctness': correctness, 'confidence': confidence}}
+  report = {'bundled': {'correctness': correctness, 'confidence': confidence}}
   serial.save(report_path, report)
   assert report_path.endswith('.joblib')
   adv_x_path = report_path[:-len('.joblib')] + "_adv_x.npy"
