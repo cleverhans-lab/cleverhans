@@ -147,7 +147,7 @@ class Attack(object):
 
     if len(self.graphs) >= 10:
       warnings.warn("Calling generate_np() with multiple different "
-                    "structural paramaters is inefficient and should"
+                    "structural parameters is inefficient and should"
                     " be avoided. Calling generate() is preferred.")
 
   def generate_np(self, x_val, **kwargs):
@@ -160,6 +160,7 @@ class Attack(object):
     :param **kwargs: optional parameters used by child classes.
     :return: A NumPy array holding the adversarial examples.
     """
+
     if self.sess is None:
       raise ValueError("Cannot use `generate_np` when no `sess` was"
                        " provided")
@@ -1894,17 +1895,22 @@ class SPSA(Attack):
   gradients do not point in useful directions.
   """
 
+  DEFAULT_SPSA_SAMPLES = 128
+  DEFAULT_SPSA_ITERS = 1
+
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     super(SPSA, self).__init__(model, sess, dtypestr, **kwargs)
 
     self.feedable_kwargs = {
-        'epsilon': self.np_dtype,
-        'y': np.int32,
-        'y_target': np.int32,
+        'eps': self.np_dtype,
+        'clip_min': self.np_dtype,
+        'clip_max': self.np_dtype,
+        'y' : np.int32,
+        'y_target' : np.int32,
     }
     self.structural_kwargs = [
-        'num_steps',
-        'batch_size',
+        'nb_iter',
+        'spsa_samples',
         'spsa_iters',
         'early_stop_loss_threshold',
         'is_debug',
@@ -1917,16 +1923,20 @@ class SPSA(Attack):
                x,
                y=None,
                y_target=None,
-               epsilon=None,
-               num_steps=None,
-               is_targeted=False,
+               eps=None,
+               clip_min=None,
+               clip_max=None,
+               nb_iter=None,
+               is_targeted=None,
                early_stop_loss_threshold=None,
                learning_rate=0.01,
                delta=0.01,
-               spsa_samples=128,
+               spsa_samples=DEFAULT_SPSA_SAMPLES,
                batch_size=None,
-               spsa_iters=1,
-               is_debug=False):
+               spsa_iters=DEFAULT_SPSA_ITERS,
+               is_debug=False,
+               epsilon=None,
+               num_steps=None):
     """
     Generate symbolic graph for adversarial examples.
 
@@ -1934,10 +1944,11 @@ class SPSA(Attack):
     :param y: A Tensor or None. The index of the correct label.
     :param y_target: A Tensor or None. The index of the target label in a
                      targeted attack.
-    :param epsilon: The size of the maximum perturbation, measured in the
-                    L-infinity norm.
-    :param num_steps: The number of optimization steps.
-    :param is_targeted: Whether to use a targeted or untargeted attack.
+    :param eps: The size of the maximum perturbation, measured in the
+                L-infinity norm.
+    :param clip_min: If specified, the minimum input value
+    :param clip_max: If specified, the maximum input value
+    :param nb_iter: The number of optimization steps.
     :param early_stop_loss_threshold: A float or None. If specified, the
                                       attack will end as soon as the loss
                                       is below `early_stop_loss_threshold`.
@@ -1952,9 +1963,48 @@ class SPSA(Attack):
                        update, where each evaluation is on `spsa_samples`
                        different inputs.
     :param is_debug: If True, print the adversarial loss after each update.
+    :param epsilon: Deprecated alias for `eps`
+    :param num_steps: Deprecated alias for `nb_iter`.
+    :param is_targeted: Deprecated argument. Ignored.
     """
+
+    if epsilon is not None:
+      if eps is not None:
+        raise ValueError("Should not specify both eps and its deprecated "
+                         "alias, epsilon")
+      warnings.warn("`epsilon` is deprecated. Switch to `eps`. `epsilon` may "
+                    "be removed on or after 2019-04-15.")
+      eps = epsilon
+    del epsilon
+
+    if num_steps is not None:
+      if nb_iter is not None:
+        raise ValueError("Should not specify both nb_iter and its deprecated "
+                         "alias, num_steps")
+      warnings.warn("`num_steps` is deprecated. Switch to `nb_iter`. "
+                    "`num_steps` may be removed on or after 2019-04-15.")
+      nb_iter = num_steps
+    del num_steps
+    assert nb_iter is not None
+
+    if (y is not None) + (y_target is not None) != 1:
+      raise ValueError("Must specify exactly one of y (untargeted attack, "
+                       "cause the input not to be classified as this true "
+                       "label) and y_target (targeted attack, cause the "
+                       "input to be classified as this target label).")
+
+    if is_targeted is not None:
+      warnings.warn("`is_targeted` is deprecated. Simply do not specify it."
+                    " It may become an error to specify it on or after "
+                    "2019-04-15.")
+      assert is_targeted == y_target is not None
+
+    is_targeted = y_target is not None
+
     if x.get_shape().as_list()[0] is None:
-      warnings.warn("For SPSA, input tensor x must have batch_size of 1.")
+      check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1)
+      with tf.control_dependencies([check_batch]):
+        x = tf.identity(x)
     elif x.get_shape().as_list()[0] != 1:
       raise ValueError("For SPSA, input tensor x must have batch_size of 1.")
 
@@ -1983,15 +2033,35 @@ class SPSA(Attack):
         loss_fn,
         x,
         y_attack,
-        epsilon,
-        num_steps=num_steps,
+        eps,
+        num_steps=nb_iter,
         optimizer=optimizer,
         early_stop_loss_threshold=early_stop_loss_threshold,
         is_debug=is_debug,
+        clip_min=clip_min,
+        clip_max=clip_max
     )
     return adv_x
 
   def generate_np(self, x_val, **kwargs):
+    if "epsilon" in kwargs:
+      warnings.warn("Using deprecated argument: see `generate`")
+      assert "eps" not in kwargs
+      kwargs["eps"] = kwargs["epsilon"]
+      del kwargs["epsilon"]
+    assert "eps" in kwargs
+
+    if "num_steps" in kwargs:
+      warnings.warn("Using deprecated argument: see `generate`")
+      assert "nb_iter" not in kwargs
+      kwargs["nb_iter"] = kwargs["num_steps"]
+      del kwargs["num_steps"]
+
+    if 'y' in kwargs and kwargs['y'] is not None:
+      assert kwargs['y'].dtype == np.int32
+    if 'y_target' in kwargs and kwargs['y_target'] is not None:
+      assert kwargs['y_target'].dtype == np.int32
+
     # Call self.generate() sequentially for each image in the batch
     x_adv = []
     batch_size = x_val.shape[0]
