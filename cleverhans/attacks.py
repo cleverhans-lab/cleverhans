@@ -120,12 +120,18 @@ class Attack(object):
     # process all of the rest and create placeholders for them
     new_kwargs = dict(x for x in fixed.items())
     for name, value in feedable.items():
-      given_type = self.feedable_kwargs[name]
+      given_type = value.dtype
       if isinstance(value, np.ndarray):
-        new_shape = [None] + list(value.shape[1:])
-        new_kwargs[name] = tf.placeholder(given_type, new_shape)
+        if value.ndim == 0:
+          # This is pretty clearly not a batch of data
+          new_kwargs[name] = tf.placeholder(given_type, shape=[], name=name)
+        else:
+          # Assume that this is a batch of data, make the first axis variable
+          # in size
+          new_shape = [None] + list(value.shape[1:])
+          new_kwargs[name] = tf.placeholder(given_type, new_shape, name=name)
       elif isinstance(value, utils.known_number_types):
-        new_kwargs[name] = tf.placeholder(given_type, shape=[])
+        new_kwargs[name] = tf.placeholder(given_type, shape=[], name=name)
       else:
         raise ValueError("Could not identify type of argument " +
                          name + ": " + str(value))
@@ -141,7 +147,7 @@ class Attack(object):
 
     if len(self.graphs) >= 10:
       warnings.warn("Calling generate_np() with multiple different "
-                    "structural paramaters is inefficient and should"
+                    "structural parameters is inefficient and should"
                     " be avoided. Calling generate() is preferred.")
 
   def generate_np(self, x_val, **kwargs):
@@ -154,11 +160,13 @@ class Attack(object):
     :param **kwargs: optional parameters used by child classes.
     :return: A NumPy array holding the adversarial examples.
     """
+
     if self.sess is None:
       raise ValueError("Cannot use `generate_np` when no `sess` was"
                        " provided")
 
-    fixed, feedable, hash_key = self.construct_variables(kwargs)
+    packed = self.construct_variables(kwargs)
+    fixed, feedable, _, hash_key = packed
 
     if hash_key not in self.graphs:
       self.construct_graph(fixed, feedable, x_val, hash_key)
@@ -182,9 +190,25 @@ class Attack(object):
     Construct the inputs to the attack graph to be used by generate_np.
 
     :param kwargs: Keyword arguments to generate_np.
-    :return: Structural and feedable arguments as well as a unique key
-             for the graph given these inputs.
+    :return:
+      Structural arguments
+      Feedable arguments
+      Output of `arg_type` describing feedable arguments
+      A unique key
     """
+    if isinstance(self.feedable_kwargs, dict):
+      warnings.warn("Using a dict for `feedable_kwargs is deprecated."
+                    "Switch to using a tuple."
+                    "It is not longer necessary to specify the types "
+                    "of the arguments---we build a different graph "
+                    "for each received type."
+                    "Using a dict may become an error on or after "
+                    "2019-04-18.")
+      feedable_names = tuple(sorted(self.feedable_kwargs.keys()))
+    else:
+      feedable_names = self.feedable_kwargs
+      assert isinstance(feedable_names, tuple)
+
     # the set of arguments that are structural properties of the attack
     # if these arguments are different, we must construct a new graph
     fixed = dict(
@@ -192,12 +216,16 @@ class Attack(object):
 
     # the set of arguments that are passed as placeholders to the graph
     # on each call, and can change without constructing a new graph
-    feedable = dict(
-        (k, v) for k, v in kwargs.items() if k in self.feedable_kwargs)
+    feedable = {k: v for k, v in kwargs.items() if k in feedable_names}
+    for k in feedable:
+      if isinstance(feedable[k], (float, int)):
+        feedable[k] = np.array(feedable[k])
 
     for key in kwargs:
       if key not in fixed and key not in feedable:
-        raise ValueError("Undeclared argument: " + key)
+        raise ValueError(str(type(self)) + ": Undeclared argument: " + key)
+
+    feed_arg_type = arg_type(feedable_names, feedable)
 
     if not all(isinstance(value, collections.Hashable)
                for value in fixed.values()):
@@ -207,9 +235,9 @@ class Attack(object):
       hash_key = None
     else:
       # create a unique key for this set of fixed paramaters
-      hash_key = tuple(sorted(fixed.items()))
+      hash_key = tuple(sorted(fixed.items())) + tuple([feed_arg_type])
 
-    return fixed, feedable, hash_key
+    return fixed, feedable, feed_arg_type, hash_key
 
   def get_or_guess_labels(self, x, kwargs):
     """
@@ -274,7 +302,7 @@ class FastGradientMethod(Attack):
         'clip_min': self.np_dtype,
         'clip_max': self.np_dtype
     }
-    self.structural_kwargs = ['ord']
+    self.structural_kwargs = ['ord', 'sanity_checks']
 
   def generate(self, x, **kwargs):
     """
@@ -309,7 +337,8 @@ class FastGradientMethod(Attack):
         ord=self.ord,
         clip_min=self.clip_min,
         clip_max=self.clip_max,
-        targeted=(self.y_target is not None))
+        targeted=(self.y_target is not None),
+        sanity_checks=self.sanity_checks)
 
   def parse_params(self,
                    eps=0.3,
@@ -318,6 +347,7 @@ class FastGradientMethod(Attack):
                    y_target=None,
                    clip_min=None,
                    clip_max=None,
+                   sanity_checks=True,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -339,6 +369,9 @@ class FastGradientMethod(Attack):
                      one-hot-encoded.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param sanity_checks: bool, if True, include asserts
+      (Turn them off to use less runtime / memory or for unit tests that
+      intentionally pass strange input)
     """
     # Save attack-specific parameters
 
@@ -348,6 +381,7 @@ class FastGradientMethod(Attack):
     self.y_target = y_target
     self.clip_min = clip_min
     self.clip_max = clip_max
+    self.sanity_checks = sanity_checks
 
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")
@@ -356,6 +390,7 @@ class FastGradientMethod(Attack):
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
     return True
 
+
 def fgm(x,
         logits,
         y=None,
@@ -363,7 +398,8 @@ def fgm(x,
         ord=np.inf,
         clip_min=None,
         clip_max=None,
-        targeted=False):
+        targeted=False,
+        sanity_checks=True):
   """
   TensorFlow implementation of the Fast Gradient Method.
   :param x: the input placeholder
@@ -386,6 +422,15 @@ def fgm(x,
                    like y.
   :return: a tensor for the adversarial example
   """
+
+  asserts = []
+
+  # If a data range was specified, check that the input was in that range
+  if clip_min is not None:
+    asserts.append(utils_tf.assert_greater_equal(x, tf.cast(clip_min, x.dtype)))
+
+  if clip_max is not None:
+    asserts.append(utils_tf.assert_less_equal(x, tf.cast(clip_max, x.dtype)))
 
   # Make sure the caller has not passed probs by accident
   assert logits.op.type != 'Softmax'
@@ -435,16 +480,24 @@ def fgm(x,
                               "currently implemented.")
 
   # Multiply by constant epsilon
-  scaled_grad = eps * normalized_grad
+  scaled_grad = utils_tf.mul(eps, normalized_grad)
 
   # Add perturbation to original example to obtain adversarial example
   adv_x = x + scaled_grad
 
   # If clipping is needed, reset all values outside of [clip_min, clip_max]
-  if (clip_min is not None) and (clip_max is not None):
-    adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
+  if (clip_min is not None) or (clip_max is not None):
+    # We don't currently support one-sided clipping
+    assert clip_min is not None and clip_max is not None
+    adv_x = utils_tf.clip_by_value(adv_x, clip_min, clip_max)
+
+
+  if sanity_checks:
+    with tf.control_dependencies(asserts):
+      adv_x = tf.identity(adv_x)
 
   return adv_x
+
 
 class ProjectedGradientDescent(Attack):
   """
@@ -504,11 +557,18 @@ class ProjectedGradientDescent(Attack):
 
     # Initialize loop variables
     if self.rand_init:
-      eta = tf.random_uniform(tf.shape(x), -self.rand_minmax,
-                              self.rand_minmax, dtype=self.tf_dtype)
+      eta = tf.random_uniform(tf.shape(x),
+                              tf.cast(-self.rand_minmax, x.dtype),
+                              tf.cast(self.rand_minmax, x.dtype),
+                              dtype=x.dtype)
     else:
       eta = tf.zeros(tf.shape(x))
+
+    # Clip eta
     eta = clip_eta(eta, self.ord, self.eps)
+    adv_x = x + eta
+    if self.clip_min is not None or self.clip_max is not None:
+      adv_x = utils_tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
     # Fix labels to the first model predictions for loss computation
     model_preds = self.model.get_probs(x)
@@ -542,25 +602,24 @@ class ProjectedGradientDescent(Attack):
     def cond(i, _):
       return tf.less(i, self.nb_iter)
 
-    def body(i, e):
-      adv_x = FGM.generate(x + e, **fgm_params)
 
-      # Clipping perturbation according to clip_min and clip_max
-      if self.clip_min is not None and self.clip_max is not None:
-        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+    def body(i, adv_x):
+      adv_x = FGM.generate(adv_x, **fgm_params)
 
       # Clipping perturbation eta to self.ord norm ball
       eta = adv_x - x
       eta = clip_eta(eta, self.ord, self.eps)
-      return i + 1, eta
+      adv_x = x + eta
 
-    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
+      # Redo the clipping.
+      # FGM already did it, but subtracting and re-adding eta can add some
+      # small numerical error.
+      if self.clip_min is not None or self.clip_max is not None:
+        adv_x = utils_tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
-    # Define adversarial example (and clip if necessary)
-    adv_x = x + eta
-    if self.clip_min is not None or self.clip_max is not None:
-      assert self.clip_min is not None and self.clip_max is not None
-      adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+      return i + 1, adv_x
+
+    _, adv_x = tf.while_loop(cond, body, [tf.zeros([]), adv_x], back_prop=True)
 
     asserts = []
 
@@ -571,9 +630,11 @@ class ProjectedGradientDescent(Attack):
       asserts.append(tf.assert_less_equal(self.eps_iter, self.eps))
       if self.ord == np.inf and self.clip_min is not None:
         # The 1e-6 is needed to compensate for numerical error.
-        # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5, clip_max=.7
+        # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5,
+        # clip_max=.7
         asserts.append(tf.assert_less_equal(self.eps,
-                                            1e-6 + self.clip_max - self.clip_min))
+                                            1e-6 + self.clip_max
+                                            - self.clip_min))
 
     if self.sanity_checks:
       with tf.control_dependencies(asserts):
@@ -634,6 +695,11 @@ class ProjectedGradientDescent(Attack):
     self.clip_min = clip_min
     self.clip_max = clip_max
 
+    if isinstance(eps, float) and isinstance(eps_iter, float):
+      # If these are both known at compile time, we can check before anything
+      # is run. If they are tf, we can't check them yet.
+      assert eps_iter <= eps, (eps_iter, eps)
+
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")
     # Check if order of the norm is acceptable given current implementation
@@ -686,29 +752,30 @@ class MomentumIterativeMethod(Attack):
         'clip_min': self.np_dtype,
         'clip_max': self.np_dtype
     }
-    self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor']
+    self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor', 'sanity_checks']
 
   def generate(self, x, **kwargs):
     """
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (optional float) maximum distortion of adversarial example
-                compared to original input
-    :param eps_iter: (optional float) step size for each attack iteration
-    :param nb_iter: (optional int) Number of attack iterations.
-    :param y: (optional) A tensor with the model labels.
-    :param y_target: (optional) A tensor with the labels to target. Leave
-                     y_target=None if y is also set. Labels should be
-                     one-hot-encoded.
-    :param ord: (optional) Order of the norm (mimics Numpy).
-                Possible values: np.inf, 1 or 2.
-    :param decay_factor: (optional) Decay factor for the momentum term.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param kwargs: Keyword arguments. See `parse_params` for documentation.
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
+
+    asserts = []
+
+    # If a data range was specified, check that the input was in that range
+    if self.clip_min is not None:
+      asserts.append(utils_tf.assert_greater_equal(x,
+                                                   tf.cast(self.clip_min,
+                                                           x.dtype)))
+
+    if self.clip_max is not None:
+      asserts.append(utils_tf.assert_less_equal(x,
+                                                tf.cast(self.clip_max,
+                                                        x.dtype)))
 
     # Initialize loop variables
     momentum = tf.zeros_like(x)
@@ -755,12 +822,12 @@ class MomentumIterativeMethod(Attack):
                                   "currently implemented.")
 
       # Update and clip adversarial example in current iteration
-      scaled_grad = self.eps_iter * normalized_grad
+      scaled_grad = utils_tf.mul(self.eps_iter, normalized_grad)
       ax = ax + scaled_grad
       ax = x + utils_tf.clip_eta(ax - x, self.ord, self.eps)
 
       if self.clip_min is not None and self.clip_max is not None:
-        ax = tf.clip_by_value(ax, self.clip_min, self.clip_max)
+        ax = utils_tf.clip_by_value(ax, self.clip_min, self.clip_max)
 
       ax = tf.stop_gradient(ax)
 
@@ -768,6 +835,10 @@ class MomentumIterativeMethod(Attack):
 
     _, adv_x, _ = tf.while_loop(
         cond, body, [tf.zeros([]), adv_x, momentum], back_prop=True)
+
+    if self.sanity_checks:
+      with tf.control_dependencies(asserts):
+        adv_x = tf.identity(adv_x)
 
     return adv_x
 
@@ -781,6 +852,7 @@ class MomentumIterativeMethod(Attack):
                    clip_min=None,
                    clip_max=None,
                    y_target=None,
+                   sanity_checks=True,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -813,6 +885,7 @@ class MomentumIterativeMethod(Attack):
     self.decay_factor = decay_factor
     self.clip_min = clip_min
     self.clip_max = clip_max
+    self.sanity_checks = sanity_checks
 
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")
@@ -838,7 +911,7 @@ class SaliencyMapMethod(Attack):
 
     super(SaliencyMapMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
-    self.feedable_kwargs = {'y_target': self.tf_dtype}
+    self.feedable_kwargs = ('y_target',)
     self.structural_kwargs = [
         'theta', 'gamma', 'clip_max', 'clip_min', 'symbolic_impl'
     ]
@@ -1462,6 +1535,7 @@ class LBFGS(Attack):
     self.clip_min = clip_min
     self.clip_max = clip_max
 
+
 class LBFGS_impl(object):
   def __init__(self, sess, x, logits, targeted_label,
                binary_search_steps, max_iterations, initial_const, clip_min,
@@ -1830,17 +1904,22 @@ class SPSA(Attack):
   gradients do not point in useful directions.
   """
 
+  DEFAULT_SPSA_SAMPLES = 128
+  DEFAULT_SPSA_ITERS = 1
+
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     super(SPSA, self).__init__(model, sess, dtypestr, **kwargs)
 
     self.feedable_kwargs = {
-        'epsilon': self.np_dtype,
-        'y': np.int32,
-        'y_target': np.int32,
+        'eps': self.np_dtype,
+        'clip_min': self.np_dtype,
+        'clip_max': self.np_dtype,
+        'y' : np.int32,
+        'y_target' : np.int32,
     }
     self.structural_kwargs = [
-        'num_steps',
-        'batch_size',
+        'nb_iter',
+        'spsa_samples',
         'spsa_iters',
         'early_stop_loss_threshold',
         'is_debug',
@@ -1853,16 +1932,20 @@ class SPSA(Attack):
                x,
                y=None,
                y_target=None,
-               epsilon=None,
-               num_steps=None,
-               is_targeted=False,
+               eps=None,
+               clip_min=None,
+               clip_max=None,
+               nb_iter=None,
+               is_targeted=None,
                early_stop_loss_threshold=None,
                learning_rate=0.01,
                delta=0.01,
-               spsa_samples=128,
+               spsa_samples=DEFAULT_SPSA_SAMPLES,
                batch_size=None,
-               spsa_iters=1,
-               is_debug=False):
+               spsa_iters=DEFAULT_SPSA_ITERS,
+               is_debug=False,
+               epsilon=None,
+               num_steps=None):
     """
     Generate symbolic graph for adversarial examples.
 
@@ -1870,10 +1953,11 @@ class SPSA(Attack):
     :param y: A Tensor or None. The index of the correct label.
     :param y_target: A Tensor or None. The index of the target label in a
                      targeted attack.
-    :param epsilon: The size of the maximum perturbation, measured in the
-                    L-infinity norm.
-    :param num_steps: The number of optimization steps.
-    :param is_targeted: Whether to use a targeted or untargeted attack.
+    :param eps: The size of the maximum perturbation, measured in the
+                L-infinity norm.
+    :param clip_min: If specified, the minimum input value
+    :param clip_max: If specified, the maximum input value
+    :param nb_iter: The number of optimization steps.
     :param early_stop_loss_threshold: A float or None. If specified, the
                                       attack will end as soon as the loss
                                       is below `early_stop_loss_threshold`.
@@ -1888,9 +1972,48 @@ class SPSA(Attack):
                        update, where each evaluation is on `spsa_samples`
                        different inputs.
     :param is_debug: If True, print the adversarial loss after each update.
+    :param epsilon: Deprecated alias for `eps`
+    :param num_steps: Deprecated alias for `nb_iter`.
+    :param is_targeted: Deprecated argument. Ignored.
     """
+
+    if epsilon is not None:
+      if eps is not None:
+        raise ValueError("Should not specify both eps and its deprecated "
+                         "alias, epsilon")
+      warnings.warn("`epsilon` is deprecated. Switch to `eps`. `epsilon` may "
+                    "be removed on or after 2019-04-15.")
+      eps = epsilon
+    del epsilon
+
+    if num_steps is not None:
+      if nb_iter is not None:
+        raise ValueError("Should not specify both nb_iter and its deprecated "
+                         "alias, num_steps")
+      warnings.warn("`num_steps` is deprecated. Switch to `nb_iter`. "
+                    "`num_steps` may be removed on or after 2019-04-15.")
+      nb_iter = num_steps
+    del num_steps
+    assert nb_iter is not None
+
+    if (y is not None) + (y_target is not None) != 1:
+      raise ValueError("Must specify exactly one of y (untargeted attack, "
+                       "cause the input not to be classified as this true "
+                       "label) and y_target (targeted attack, cause the "
+                       "input to be classified as this target label).")
+
+    if is_targeted is not None:
+      warnings.warn("`is_targeted` is deprecated. Simply do not specify it."
+                    " It may become an error to specify it on or after "
+                    "2019-04-15.")
+      assert is_targeted == y_target is not None
+
+    is_targeted = y_target is not None
+
     if x.get_shape().as_list()[0] is None:
-      warnings.warn("For SPSA, input tensor x must have batch_size of 1.")
+      check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1)
+      with tf.control_dependencies([check_batch]):
+        x = tf.identity(x)
     elif x.get_shape().as_list()[0] != 1:
       raise ValueError("For SPSA, input tensor x must have batch_size of 1.")
 
@@ -1919,15 +2042,35 @@ class SPSA(Attack):
         loss_fn,
         x,
         y_attack,
-        epsilon,
-        num_steps=num_steps,
+        eps,
+        num_steps=nb_iter,
         optimizer=optimizer,
         early_stop_loss_threshold=early_stop_loss_threshold,
         is_debug=is_debug,
+        clip_min=clip_min,
+        clip_max=clip_max
     )
     return adv_x
 
   def generate_np(self, x_val, **kwargs):
+    if "epsilon" in kwargs:
+      warnings.warn("Using deprecated argument: see `generate`")
+      assert "eps" not in kwargs
+      kwargs["eps"] = kwargs["epsilon"]
+      del kwargs["epsilon"]
+    assert "eps" in kwargs
+
+    if "num_steps" in kwargs:
+      warnings.warn("Using deprecated argument: see `generate`")
+      assert "nb_iter" not in kwargs
+      kwargs["nb_iter"] = kwargs["num_steps"]
+      del kwargs["num_steps"]
+
+    if 'y' in kwargs and kwargs['y'] is not None:
+      assert kwargs['y'].dtype == np.int32
+    if 'y_target' in kwargs and kwargs['y_target'] is not None:
+      assert kwargs['y_target'].dtype == np.int32
+
     # Call self.generate() sequentially for each image in the batch
     x_adv = []
     batch_size = x_val.shape[0]
@@ -2075,6 +2218,7 @@ class Semantic(Attack):
       return -x
     return self.max_val - x
 
+
 class Noise(Attack):
   """
   A weak attack that just picks a random point in the attacker's action space.
@@ -2117,7 +2261,8 @@ class Noise(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    kwargs['clip'] = kwargs['clip_min'] is not None or kwargs['clip_max'] is not None
+    kwargs['clip'] = (kwargs['clip_min'] is not None
+                      or kwargs['clip_max'] is not None)
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
@@ -2169,6 +2314,7 @@ class Noise(Attack):
       raise ValueError("Norm order must be np.inf")
 
     return True
+
 
 class MaxConfidence(Attack):
   """
@@ -2226,7 +2372,8 @@ class MaxConfidence(Attack):
     true_y_idx = tf.argmax(true_y, axis=1)
 
     expanded_x = tf.concat([x] * self.nb_classes, axis=0)
-    target_ys = [tf.to_float(tf.one_hot(tf.ones(m, dtype=tf.int32) * cls, self.nb_classes))
+    target_ys = [tf.to_float(tf.one_hot(tf.ones(m, dtype=tf.int32) * cls,
+                                        self.nb_classes))
                  for cls in range(self.nb_classes)]
     target_y = tf.concat(target_ys, axis=0)
     adv_x_cls = self.attack_class(expanded_x, target_y)
@@ -2264,3 +2411,48 @@ class MaxConfidence(Attack):
   def attack_class(self, x, target_y):
     adv = self.base_attacker.generate(x, y_target=target_y, **self.params)
     return adv
+
+def arg_type(arg_names, kwargs):
+  """
+  Returns a hashable summary of the types of arg_names within kwargs.
+  :param arg_names: tuple containing names of relevant arguments
+  :param kwargs: dict mapping string argument names to values.
+    These must be values for which we can create a tf placeholder.
+    Currently supported: numpy darray or something that can ducktype it
+  returns:
+    API contract is to return a hashable object describing all
+    structural consequences of argument values that can otherwise
+    be fed into a graph of fixed structure.
+    Currently this is implemented as a tuple of tuples that track:
+      - whether each argument was passed
+      - whether each argument was passed and not None
+      - the dtype of each argument
+    Callers shouldn't rely on the exact structure of this object,
+    just its hashability and one-to-one mapping between graph structures.
+  """
+  assert isinstance(arg_names, tuple)
+  passed = (name in kwargs for name in arg_names)
+  passed_and_not_none = []
+  for name in arg_names:
+    if name in kwargs:
+      passed_and_not_none.append(kwargs[name] is not None)
+    else:
+      passed_and_not_none.append(False)
+  passed_and_not_none = tuple(passed_and_not_none)
+  dtypes = []
+  for name in arg_names:
+    if name not in kwargs:
+      dtypes.append(None)
+      continue
+    value = kwargs[name]
+    if value is None:
+      dtypes.append(None)
+      continue
+    assert hasattr(value, 'dtype'), type(value)
+    dtype = value.dtype
+    if not isinstance(dtype, np.dtype):
+      dtype = dtype.as_np_dtype
+    assert isinstance(dtype, np.dtype)
+    dtypes.append(dtype)
+  dtypes = tuple(dtypes)
+  return (passed, passed_and_not_none, dtypes)

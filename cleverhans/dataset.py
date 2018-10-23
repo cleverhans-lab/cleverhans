@@ -20,7 +20,8 @@ import tensorflow as tf
 
 from cleverhans import utils
 
-keras_imported = False  # Only load keras if user tries to use a dataset that requires it
+# Only load keras if user tries to use a dataset that requires it
+keras_imported = False
 
 
 class Dataset(object):
@@ -61,6 +62,7 @@ class Dataset(object):
       d = d.repeat()
     if shuffle:
       d = d.shuffle(shuffle)
+
     def lookup(p):
       return x[p], y[p]
     d = d.map(lambda i: tf.py_func(lookup, [i], [tf.float32] * 2))
@@ -100,6 +102,9 @@ class CIFAR10(Dataset):
   """The CIFAR-10 dataset"""
 
   NB_CLASSES = 10
+
+  LABEL_NAMES = ["airplane", "automobile", "bird", "cat", "deer", "dog",
+                 "frog", "horse", "ship", "truck"]
 
   def __init__(self, train_start=0, train_end=60000, test_start=0,
                test_end=10000, center=False, max_val=1.):

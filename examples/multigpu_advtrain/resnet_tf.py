@@ -166,7 +166,7 @@ class ResNetTF(MLPnGPU):
 
     trainable_variables = tf.trainable_variables()
     grads = tf.gradients(cost, trainable_variables)
-    devs = set([v.device for v in trainable_variables])
+    devs = {v.device for v in trainable_variables}
     assert len(devs) == 1, ('There should be no trainable variables'
                             ' on any device other than the last GPU.')
 
@@ -174,7 +174,7 @@ class ResNetTF(MLPnGPU):
 
     gv_pairs = zip(grads, trainable_variables)
     gv_pairs = [gv for gv in gv_pairs if gv[0] is not None]
-    devs = set([gv[1].device for gv in gv_pairs])
+    devs = {gv[1].device for gv in gv_pairs}
     assert len(devs) == 1, ('There should be no gradients wrt'
                             ' vars on other GPUs.')
 

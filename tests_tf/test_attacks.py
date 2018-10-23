@@ -192,6 +192,13 @@ class TestFastGradientMethod(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
 
+  def test_invalid_input(self):
+    x_val = -np.ones((2, 2), dtype='float32')
+    with self.assertRaises(tf.errors.InvalidArgumentError) as context:
+      self.attack.generate_np(x_val, eps=1., clip_min=0., clip_max=1.)
+    self.assertTrue(context.exception)
+
+
   def test_generate_np_gives_adversarial_example_linfinity(self):
     self.help_generate_np_gives_adversarial_example(np.infty)
 
@@ -237,7 +244,8 @@ class TestFastGradientMethod(CleverHansTest):
     x_val = np.array(x_val, dtype=np.float32)
 
     x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
-                                    clip_min=-0.2, clip_max=0.1)
+                                    clip_min=-0.2, clip_max=0.1,
+                                    sanity_checks=False)
 
     self.assertClose(np.min(x_adv), -0.2)
     self.assertClose(np.max(x_adv), 0.1)
@@ -265,6 +273,7 @@ class TestSPSA(CleverHansTest):
     x_adv_op = self.attack.generate(
         x_input, y=y_label,
         epsilon=.5, num_steps=100, batch_size=64, spsa_iters=1,
+        clip_min=0., clip_max=1.
     )
 
     all_x_adv = []
@@ -285,20 +294,21 @@ class TestSPSA(CleverHansTest):
     x_val = np.random.rand(n_samples, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    feed_labs = np.random.randint(0, 2, n_samples)
+    feed_labs = np.random.randint(0, 2, n_samples, dtype='int32')
 
     all_x_adv = []
     for i in range(n_samples):
       x_adv_np = self.attack.generate_np(
           np.expand_dims(x_val[i], axis=0),
           y=np.expand_dims(feed_labs[i], axis=0),
-          epsilon=.5, num_steps=100, batch_size=64, spsa_iters=1,
+          eps=.5, nb_iter=100, spsa_samples=64, spsa_iters=1,
+          clip_min=0., clip_max=1.
       )
       all_x_adv.append(x_adv_np[0])
 
     x_adv = np.vstack(all_x_adv)
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-    self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
+    self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
   def test_attack_strength_np_batched(self):
     # Same test as test_attack_strength_np, but batched
@@ -306,13 +316,13 @@ class TestSPSA(CleverHansTest):
     x_val = np.random.rand(n_samples, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    feed_labs = np.random.randint(0, 2, n_samples)
+    feed_labs = np.random.randint(0, 2, n_samples, dtype='int32')
     x_adv = self.attack.generate_np(
-        x_val, y=feed_labs, epsilon=.5, num_steps=100, batch_size=64,
-        spsa_iters=1)
+        x_val, y=feed_labs, eps=.5, nb_iter=100, spsa_samples=64,
+        spsa_iters=1, clip_min=0., clip_max=1.)
 
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
-    self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
+    self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
 
 class TestBasicIterativeMethod(TestFastGradientMethod):
@@ -355,9 +365,11 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
+    # sanity checks turned off becuase this test initializes outside
+    # the valid range.
     x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
                                     clip_min=0.5, clip_max=0.7,
-                                    nb_iter=5)
+                                    nb_iter=5, sanity_checks=False)
 
     orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)

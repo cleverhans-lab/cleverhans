@@ -24,17 +24,21 @@ from __future__ import unicode_literals
 import tensorflow as tf
 from tensorflow.python.platform import flags
 
+from cleverhans.utils_tf import silence
+# The silence() call must precede other imports in order to silence them.
+# pylint does not like it but that's how it has to be.
+# pylint: disable=C0413
+silence()
 from cleverhans.confidence_report import make_confidence_report_bundled
 from cleverhans.confidence_report import TRAIN_START, TRAIN_END
 from cleverhans.confidence_report import TEST_START, TEST_END
 from cleverhans.confidence_report import WHICH_SET
 from cleverhans.confidence_report import RECIPE
 from cleverhans.confidence_report import REPORT_PATH
-from cleverhans.utils_tf import silence
-silence()
 
 
 FLAGS = flags.FLAGS
+
 
 def main(argv=None):
   """
@@ -58,10 +62,10 @@ if __name__ == '__main__':
                        'of range of train examples to use')
   flags.DEFINE_integer('train_end', TRAIN_END, 'Ending point (non-inclusive) '
                        'of range of train examples to use')
-  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) of range'
-                       ' of test examples to use')
-  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of range'
-                       ' of test examples to use')
+  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) '
+                       'of range of test examples to use')
+  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of '
+                       'range of test examples to use')
   flags.DEFINE_string('recipe', RECIPE, 'Name of function from attack_bundling'
                       ' to run')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')

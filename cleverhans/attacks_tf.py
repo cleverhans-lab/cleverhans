@@ -267,11 +267,9 @@ def jsma(sess,
   # by removing all features that are already at their maximum values (if
   # increasing input features---otherwise, at their minimum value).
   if increase:
-    search_domain = set(
-        [i for i in xrange(nb_features) if adv_x[0, i] < clip_max])
+    search_domain = {i for i in xrange(nb_features) if adv_x[0, i] < clip_max}
   else:
-    search_domain = set(
-        [i for i in xrange(nb_features) if adv_x[0, i] > clip_min])
+    search_domain = {i for i in xrange(nb_features) if adv_x[0, i] > clip_min}
 
   # Initialize the loop variables
   iteration = 0
@@ -415,6 +413,14 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
   nb_classes = int(y_target.shape[-1].value)
   nb_features = int(np.product(x.shape[1:]).value)
+
+  if x.dtype == tf.float32 and y_target.dtype == tf.int64:
+    y_target = tf.cast(y_target, tf.int32)
+
+  if x.dtype == tf.float32 and y_target.dtype == tf.float64:
+    warnings.warn("Downcasting labels---this should be harmless unless"
+                  " they are smoothed")
+    y_target = tf.cast(y_target, tf.float32)
 
   max_iters = np.floor(nb_features * gamma / 2)
   increase = bool(theta > 0)
@@ -1722,17 +1728,29 @@ class SPSAAdam(UnrolledAdam):
     return [avg_grad]
 
 
-def _project_perturbation(perturbation, epsilon, input_image):
-  """Project `perturbation` onto L-infinity ball of radius `epsilon`."""
+def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
+                          clip_max=None):
+  """Project `perturbation` onto L-infinity ball of radius `epsilon`.
+  Also project into hypercube such that the resulting adversarial example
+  is between clip_min and clip_max, if applicable.
+  """
+
+
+  if clip_min is None or clip_max is None:
+    raise NotImplementedError("_project_perturbation currently has clipping "
+                              "hard-coded in.")
+
   # Ensure inputs are in the correct range
   with tf.control_dependencies([
-      tf.assert_less_equal(input_image, 1.0),
-      tf.assert_greater_equal(input_image, 0.0)
+      utils_tf.assert_less_equal(input_image,
+                                 tf.cast(clip_max, input_image.dtype)),
+      utils_tf.assert_greater_equal(input_image,
+                                    tf.cast(clip_min, input_image.dtype))
   ]):
-    clipped_perturbation = tf.clip_by_value(
+    clipped_perturbation = utils_tf.clip_by_value(
         perturbation, -epsilon, epsilon)
-    new_image = tf.clip_by_value(
-        input_image + clipped_perturbation, 0., 1.)
+    new_image = utils_tf.clip_by_value(
+        input_image + clipped_perturbation, clip_min, clip_max)
     return new_image - input_image
 
 
@@ -1741,6 +1759,8 @@ def pgd_attack(loss_fn,
                label,
                epsilon,
                num_steps,
+               clip_min=None,
+               clip_max=None,
                optimizer=UnrolledAdam(),
                project_perturbation=_project_perturbation,
                early_stop_loss_threshold=None,
@@ -1748,32 +1768,35 @@ def pgd_attack(loss_fn,
   """Projected gradient descent for generating adversarial images.
 
   Args:
-      :param loss_fn: A callable which takes `input_image` and `label` as
-                      arguments, and returns a batch of loss values. Same
-                      interface as UnrolledOptimizer.
-      :param input_image: Tensor, a batch of images
-      :param label: Tensor, a batch of labels
-      :param epsilon: float, the L-infinity norm of the maximum allowable
-                                      perturbation
-      :param num_steps: int, the number of steps of gradient descent
-      :param optimizer: An `UnrolledOptimizer` object
-      :param project_perturbation: A function, which will be used to enforce
-                                   some constraint. It should have the same
-                                   signature as `_project_perturbation`.
-      :param early_stop_loss_threshold: A float or None. If specified, the
-                                        attack will end if the loss is below
-                                        `early_stop_loss_threshold`.
-      :param is_debug: A bool. If True, print debug info for attack progress.
+    :param loss_fn: A callable which takes `input_image` and `label` as
+                    arguments, and returns a batch of loss values. Same
+                    interface as UnrolledOptimizer.
+    :param input_image: Tensor, a batch of images
+    :param label: Tensor, a batch of labels
+    :param epsilon: float, the L-infinity norm of the maximum allowable
+                    perturbation
+    :param num_steps: int, the number of steps of gradient descent
+    :param clip_min: float, minimum pixel value
+    :param clip_max: float, maximum pixel value
+    :param optimizer: An `UnrolledOptimizer` object
+    :param project_perturbation: A function, which will be used to enforce
+                                 some constraint. It should have the same
+                                 signature as `_project_perturbation`.
+    :param early_stop_loss_threshold: A float or None. If specified, the
+                                      attack will end if the loss is below
+                                      `early_stop_loss_threshold`.
+    :param is_debug: A bool. If True, print debug info for attack progress.
 
   Returns:
-      adversarial version of `input_image`, with L-infinity difference less
-          than epsilon, which tries to minimize loss_fn.
+    adversarial version of `input_image`, with L-infinity difference less than
+      epsilon, which tries to minimize loss_fn.
 
   Note that this function is not intended as an Attack by itself. Rather, it
   is designed as a helper function which you can use to write your own attack
   methods. The method uses a tf.while_loop to optimize a loss function in
   a single sess.run() call.
   """
+  assert num_steps is not None
   if is_debug:
     with tf.device("/cpu:0"):
       input_image = tf.Print(
@@ -1781,9 +1804,13 @@ def pgd_attack(loss_fn,
           "Starting PGD attack with epsilon: %s" % epsilon)
 
   init_perturbation = tf.random_uniform(
-      tf.shape(input_image), minval=-epsilon, maxval=epsilon, dtype=tf_dtype)
+      tf.shape(input_image),
+      minval=tf.cast(-epsilon, input_image.dtype),
+      maxval=tf.cast(epsilon, input_image.dtype),
+      dtype=input_image.dtype)
   init_perturbation = project_perturbation(init_perturbation, epsilon,
-                                           input_image)
+                                           input_image, clip_min=clip_min,
+                                           clip_max=clip_max)
   init_optim_state = optimizer.init_state([init_perturbation])
   nest = tf.contrib.framework.nest
 
@@ -1802,7 +1829,9 @@ def pgd_attack(loss_fn,
       with tf.device("/cpu:0"):
         loss = tf.Print(loss, [loss], "Total batch loss")
     projected_perturbation = project_perturbation(new_perturbation_list[0],
-                                                  epsilon, input_image)
+                                                  epsilon, input_image,
+                                                  clip_min=clip_min,
+                                                  clip_max=clip_max)
     with tf.control_dependencies([loss]):
       i = tf.identity(i)
       if early_stop_loss_threshold:
@@ -1822,9 +1851,17 @@ def pgd_attack(loss_fn,
       parallel_iterations=1,
       back_prop=False)
   if project_perturbation is _project_perturbation:
+    # TODO: this assert looks totally wrong.
+    # Not bothering to fix it now because it's only an assert.
+    # 1) Multiplying by 1.1 gives a huge margin of error. This should probably
+    #    take the difference and allow a tolerance of 1e-6 or something like
+    #    that.
+    # 2) I think it should probably check the *absolute value* of
+    # final_perturbation
     perturbation_max = epsilon * 1.1
-    check_diff = tf.assert_less_equal(
-        final_perturbation, perturbation_max,
+    check_diff = utils_tf.assert_less_equal(
+        final_perturbation,
+        tf.cast(perturbation_max, final_perturbation.dtype),
         message="final_perturbation must change no pixel by more than "
                 "%s" % perturbation_max)
   else:
@@ -1832,7 +1869,16 @@ def pgd_attack(loss_fn,
     # project_perturbation
     check_diff = tf.no_op()
 
-  with tf.control_dependencies([check_diff]):
+  if clip_min is None or clip_max is None:
+    raise NotImplementedError("This function only supports clipping for now")
+  check_range = [utils_tf.assert_less_equal(input_image,
+                                            tf.cast(clip_max,
+                                                    input_image.dtype)),
+                 utils_tf.assert_greater_equal(input_image,
+                                               tf.cast(clip_min,
+                                                       input_image.dtype))]
+
+  with tf.control_dependencies([check_diff] + check_range):
     adversarial_image = input_image + final_perturbation
   return tf.stop_gradient(adversarial_image)
 
@@ -1844,8 +1890,19 @@ def margin_logit_loss(model_logits, label, num_classes=10):
   This follows the same interface as `loss_fn` for UnrolledOptimizer and
   pgd_attack, i.e. it returns a batch of loss values.
   """
-  logit_mask = tf.one_hot(label, depth=num_classes, axis=-1)
-  label_logits = reduce_sum(logit_mask * model_logits, axis=-1)
+  if 'int' in str(label.dtype):
+    logit_mask = tf.one_hot(label, depth=num_classes, axis=-1)
+  else:
+    logit_mask = label
+  if 'int' in str(logit_mask.dtype):
+    logit_mask = tf.to_float(logit_mask)
+  try:
+    label_logits = reduce_sum(logit_mask * model_logits, axis=-1)
+  except TypeError:
+    raise TypeError("Could not take row-wise dot product between "
+                    "logit mask, of dtype " + str(logit_mask.dtype)
+                    + " and model_logits, of dtype "
+                    + str(model_logits.dtype))
   logits_with_target_label_neg_inf = model_logits - logit_mask * 99999
   highest_nonlabel_logits = reduce_max(
       logits_with_target_label_neg_inf, axis=-1)
@@ -1871,10 +1928,12 @@ def _apply_transformation(inputs):
   height = x.get_shape().as_list()[1]
   width = x.get_shape().as_list()[2]
 
-  # Pad the image to prevent two-step rotation / translation from truncating corners
+  # Pad the image to prevent two-step rotation / translation from truncating
+  # corners
   max_dist_from_center = np.sqrt(height**2+width**2) / 2
   min_edge_from_center = float(np.min([height, width])) / 2
-  padding = np.ceil(max_dist_from_center - min_edge_from_center).astype(np.int32)
+  padding = np.ceil(max_dist_from_center -
+                    min_edge_from_center).astype(np.int32)
   x = tf.pad(x, [[0, 0],
                  [padding, padding],
                  [padding, padding],
@@ -1927,7 +1986,8 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     sampled_dys = np.random.choice(dys, n_samples)
     sampled_angles = np.random.choice(angles, n_samples)
     transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
-  transformed_ims = parallel_apply_transformations(x, transforms, black_border_size)
+  transformed_ims = parallel_apply_transformations(
+      x, transforms, black_border_size)
 
   def _compute_xent(x):
     preds = model.get_logits(x)
@@ -1937,12 +1997,12 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
   all_xents = tf.map_fn(
       _compute_xent,
       transformed_ims,
-      parallel_iterations=1) # Must be 1 to avoid keras race conditions
+      parallel_iterations=1)  # Must be 1 to avoid keras race conditions
 
   # Return the adv_x with worst accuracy
 
   # all_xents is n_total_samples x batch_size (SB)
-  all_xents = tf.stack(all_xents) # SB
+  all_xents = tf.stack(all_xents)  # SB
 
   # We want the worst case sample, with the largest xent_loss
   worst_sample_idx = tf.argmax(all_xents, axis=0)  # B
@@ -1964,7 +2024,8 @@ def parallel_apply_transformations(x, transforms, black_border_size=0):
   num_transforms = transforms.get_shape().as_list()[0]
   im_shape = x.get_shape().as_list()[1:]
 
-  # Pass a copy of x and a transformation to each iteration of the map_fn callable
+  # Pass a copy of x and a transformation to each iteration of the map_fn
+  # callable
   tiled_x = tf.reshape(
       tf.tile(x, [num_transforms, 1, 1, 1]),
       [num_transforms, -1] + im_shape)
