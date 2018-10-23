@@ -2431,7 +2431,7 @@ def arg_type(arg_names, kwargs):
     just its hashability and one-to-one mapping between graph structures.
   """
   assert isinstance(arg_names, tuple)
-  passed = (name in kwargs for name in arg_names)
+  passed = tuple(name in kwargs for name in arg_names)
   passed_and_not_none = []
   for name in arg_names:
     if name in kwargs:
