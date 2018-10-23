@@ -305,7 +305,8 @@ class AttackConfig(object):
     return self.__str__()
 
 
-def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path):
+def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
+                   attack_batch_size=BATCH_SIZE):
   """
   Runs attack bundling.
   Users of cleverhans may call this function but are more likely to call
