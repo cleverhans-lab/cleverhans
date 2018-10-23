@@ -358,7 +358,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
   adv_x = x.copy()
 
   for goal in goals:
-    bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_counts,
+    bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
+                             run_counts,
                              goal, report, report_path,
                              attack_batch_size=attack_batch_size)
 
@@ -366,7 +367,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
   # statement is not the primary way to get information out.
   return adv_x, run_counts
 
-def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_counts,
+def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
+                             run_counts,
                              goal, report, report_path,
                              attack_batch_size=BATCH_SIZE):
   """
@@ -401,7 +403,8 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs, run_count
   _logger.info("Accuracy: " + str(criteria['correctness'].mean()))
   assert 'confidence' in criteria
   while not goal.is_satisfied(criteria, run_counts):
-    run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs, run_counts,
+    run_batch_with_goal(sess, model, x, y, adv_x, criteria, attack_configs,
+                        run_counts,
                         goal, report, report_path,
                         attack_batch_size=attack_batch_size)
   # Save after finishing each goal.
