@@ -35,6 +35,9 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 
 from cleverhans.utils_tf import silence
+silence()
+# silence call must precede this imports. pylint doesn't like that
+# pylint: disable=C0413
 from cleverhans.confidence_report import make_confidence_report
 from cleverhans.confidence_report import BATCH_SIZE
 from cleverhans.confidence_report import MC_BATCH_SIZE
@@ -48,7 +51,6 @@ from cleverhans.confidence_report import BASE_EPS_ITER
 from cleverhans.confidence_report import REPORT_PATH
 from cleverhans.confidence_report import SAVE_ADVX
 
-silence()
 
 FLAGS = flags.FLAGS
 
