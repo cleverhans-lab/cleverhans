@@ -1891,8 +1891,8 @@ def margin_logit_loss(model_logits, label, nb_classes=10, num_classes=None):
   pgd_attack, i.e. it returns a batch of loss values.
   """
   if num_classes is not None:
-    warnings.warn("`num_classes` is depreciated. Switch to `nb_classes`. `num_classes` may "
-                  "be removed on or after 2019-04-23.")
+    warnings.warn("`num_classes` is depreciated. Switch to `nb_classes`."
+                  " `num_classes` may be removed on or after 2019-04-23.")
     nb_classes = num_classes
     del num_classes
   if 'int' in str(label.dtype):
