@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from cleverhans import attacks
 from cleverhans import utils
-from cleverhans.model import CallableModelWrapper
+from cleverhans.model import CallableModelWrapper, wrapper_warning
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
 
@@ -98,6 +98,7 @@ class FastGradientMethod(Attack, attacks.FastGradientMethod):
     """
     del kwargs
     if not isinstance(model, Model):
+      wrapper_warning()
       model = CallableModelWrapper(model, 'probs')
 
     super(FastGradientMethod, self).__init__(model, dtypestr)
@@ -180,6 +181,7 @@ class BasicIterativeMethod(Attack, attacks.BasicIterativeMethod):
     :dtypestr: datatype in the string format.
     """
     if not isinstance(model, Model):
+      wrapper_warning()
       model = CallableModelWrapper(model, 'probs')
 
     super(BasicIterativeMethod, self).__init__(model, dtypestr)
