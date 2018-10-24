@@ -106,7 +106,7 @@ def main(_):
   # Renormalizing epsilon from [0, 255] to [0, 2].
   eps = 2.0 * FLAGS.max_epsilon / 255.0
   batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
-  num_classes = 1001
+  nb_classes = 1001
 
   tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -118,10 +118,10 @@ def main(_):
 
     with slim.arg_scope(inception.inception_v3_arg_scope()):
       logits, end_points = inception.inception_v3(
-          x_input, num_classes=num_classes, is_training=False)
+          x_input, num_classes=nb_classes, is_training=False)
 
     target_class_input = tf.placeholder(tf.int32, shape=[FLAGS.batch_size])
-    one_hot_target_class = tf.one_hot(target_class_input, num_classes)
+    one_hot_target_class = tf.one_hot(target_class_input, nb_classes)
     cross_entropy = tf.losses.softmax_cross_entropy(one_hot_target_class,
                                                     logits,
                                                     label_smoothing=0.1,

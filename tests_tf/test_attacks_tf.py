@@ -41,11 +41,11 @@ class TestAttackTF(CleverHansTest):
 
   def test_fgm_gradient_max(self):
     input_dim = 2
-    num_classes = 3
+    nb_classes = 3
     batch_size = 4
     rng = np.random.RandomState([2017, 8, 23])
     x = tf.placeholder(tf.float32, [batch_size, input_dim])
-    weights = tf.placeholder(tf.float32, [input_dim, num_classes])
+    weights = tf.placeholder(tf.float32, [input_dim, nb_classes])
     logits = tf.matmul(x, weights)
     probs = tf.nn.softmax(logits)
     adv_x = fgm(x, probs)

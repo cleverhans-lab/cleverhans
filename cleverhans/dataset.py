@@ -243,8 +243,8 @@ def data_mnist(datadir=tempfile.gettempdir(), train_start=0,
   X_test = X_test[test_start:test_end]
   Y_test = Y_test[test_start:test_end]
 
-  Y_train = utils.to_categorical(Y_train, num_classes=10)
-  Y_test = utils.to_categorical(Y_test, num_classes=10)
+  Y_train = utils.to_categorical(Y_train, nb_classes=10)
+  Y_test = utils.to_categorical(Y_test, nb_classes=10)
   return X_train, Y_train, X_test, Y_test
 
 

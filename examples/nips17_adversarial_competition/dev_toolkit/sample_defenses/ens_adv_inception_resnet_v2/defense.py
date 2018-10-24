@@ -80,7 +80,7 @@ def load_images(input_dir, batch_shape):
 def main(_):
   """Classify all images using the sample defense."""
   batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
-  num_classes = 1001
+  nb_classes = 1001
 
   tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -90,7 +90,7 @@ def main(_):
 
     with slim.arg_scope(inception_resnet_v2.inception_resnet_v2_arg_scope()):
       _, end_points = inception_resnet_v2.inception_resnet_v2(
-          x_input, num_classes=num_classes, is_training=False)
+          x_input, num_classes=nb_classes, is_training=False)
 
     predicted_labels = tf.argmax(end_points['Predictions'], 1)
 
