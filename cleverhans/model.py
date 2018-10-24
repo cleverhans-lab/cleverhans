@@ -6,6 +6,8 @@ import warnings
 
 import tensorflow as tf
 
+from cleverhans import utils_tf
+
 
 class Model(object):
   """
