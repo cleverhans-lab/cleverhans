@@ -39,6 +39,19 @@ class Model(object):
     an input tensor and returning the tensor giving the output
     of the model on that input).
     """
+
+    warnings.warn("Model.__call__ is deprecated. "
+                  "The call is ambiguous as to whether the output should "
+                  "be logits or probabilities, and getting the wrong one "
+                  "can cause serious problems. "
+                  "The output actually is probabilities, which are a very "
+                  "dangerous thing to use as part of any interface for "
+                  "cleverhans, because softmax probabilities are prone "
+                  "to gradient masking."
+                  "On or after 2019-04-24, this method will change to raise "
+                  "an exception explaining why Model.__call__ should not be "
+                  "used.")
+
     return self.get_probs(*args, **kwargs)
 
   def get_logits(self, x, **kwargs):
