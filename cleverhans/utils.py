@@ -96,7 +96,7 @@ def other_classes(nb_classes, class_ind):
   return other_classes_list
 
 
-def to_categorical(y, nb_classes=None, num_classes=None):
+def to_categorical(y, nb_classes, num_classes=None):
   """
   Converts a class vector (integers) to binary class matrix.
   This is adapted from the Keras function with the same name.
@@ -115,12 +115,6 @@ def to_categorical(y, nb_classes=None, num_classes=None):
     nb_classes = num_classes
     del num_classes
   y = np.array(y, dtype='int').ravel()
-  if not nb_classes:
-    nb_classes = np.max(y) + 1
-    warnings.warn("FutureWarning: the default value of the second"
-                  "argument in function \"to_categorical\" is deprecated."
-                  "On 2018-9-19, the second argument"
-                  "will become mandatory.")
   n = y.shape[0]
   categorical = np.zeros((n, nb_classes))
   categorical[np.arange(n), y] = 1
