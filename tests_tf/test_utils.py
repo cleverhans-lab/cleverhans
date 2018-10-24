@@ -12,13 +12,6 @@ from cleverhans.utils_keras import KerasModelWrapper
 
 
 class TestUtils(unittest.TestCase):
-  def test_to_categorical_no_nb_classes_arg(self):
-    vec = np.asarray([0, 1, 2])
-    cat = np.asarray([[1, 0, 0],
-                      [0, 1, 0],
-                      [0, 0, 1]])
-    self.assertTrue(np.all(utils.to_categorical(vec) == cat))
-
   def test_to_categorical_with_nb_classes_arg(self):
     vec = np.asarray([0])
     cat = np.asarray([[1, 0, 0]])
