@@ -130,14 +130,14 @@ class TestInception(CleverHansTest):
     batch_shape = (num_images, 299, 299, 3)
     images, labels = load_images(
         input_dir, metadata_file_path, batch_shape)
-    num_classes = 1001
+    nb_classes = 1001
 
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default():
       # Prepare graph
       x_input = tf.placeholder(tf.float32, shape=batch_shape)
       y_label = tf.placeholder(tf.int32, shape=(num_images,))
-      model = InceptionModel(num_classes)
+      model = InceptionModel(nb_classes)
       logits = model.get_logits(x_input)
       acc = _top_1_accuracy(logits, y_label)
 
@@ -165,14 +165,14 @@ class TestSPSA(CleverHansTest):
     batch_shape = (num_images, 299, 299, 3)
     images, labels = load_images(
         input_dir, metadata_file_path, batch_shape)
-    num_classes = 1001
+    nb_classes = 1001
 
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default():
       # Prepare graph
       x_input = tf.placeholder(tf.float32, shape=(1,) + batch_shape[1:])
       y_label = tf.placeholder(tf.int32, shape=(1,))
-      model = InceptionModel(num_classes)
+      model = InceptionModel(nb_classes)
 
       attack = SPSA(model)
       x_adv = attack.generate(
@@ -208,14 +208,14 @@ class TestSPSA(CleverHansTest):
     batch_shape = (num_images, 299, 299, 3)
     images, labels = load_images(
         input_dir, metadata_file_path, batch_shape)
-    num_classes = 1001
+    nb_classes = 1001
 
     tf.logging.set_verbosity(tf.logging.INFO)
     with tf.Graph().as_default():
       # Prepare graph
       x_input = tf.placeholder(tf.float32, shape=(1,) + batch_shape[1:])
       y_label = tf.placeholder(tf.int32, shape=(1,))
-      model = InceptionModel(num_classes)
+      model = InceptionModel(nb_classes)
 
       attack = SPSA(model)
       x_adv = attack.generate(

@@ -1883,15 +1883,20 @@ def pgd_attack(loss_fn,
   return tf.stop_gradient(adversarial_image)
 
 
-def margin_logit_loss(model_logits, label, num_classes=10):
+def margin_logit_loss(model_logits, label, nb_classes=10, num_classes=None):
   """Computes difference between logit for `label` and next highest logit.
 
   The loss is high when `label` is unlikely (targeted by default).
   This follows the same interface as `loss_fn` for UnrolledOptimizer and
   pgd_attack, i.e. it returns a batch of loss values.
   """
+  if num_classes is not None:
+    warnings.warn("`num_classes` is depreciated. Switch to `nb_classes`."
+                  " `num_classes` may be removed on or after 2019-04-23.")
+    nb_classes = num_classes
+    del num_classes
   if 'int' in str(label.dtype):
-    logit_mask = tf.one_hot(label, depth=num_classes, axis=-1)
+    logit_mask = tf.one_hot(label, depth=nb_classes, axis=-1)
   else:
     logit_mask = label
   if 'int' in str(logit_mask.dtype):

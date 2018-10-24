@@ -96,24 +96,33 @@ def other_classes(nb_classes, class_ind):
   return other_classes_list
 
 
-def to_categorical(y, num_classes=None):
+def to_categorical(y, nb_classes=None, num_classes=None):
   """
   Converts a class vector (integers) to binary class matrix.
   This is adapted from the Keras function with the same name.
   :param y: class vector to be converted into a matrix
-            (integers from 0 to num_classes).
-  :param num_classes: num_classes: total number of classes.
+            (integers from 0 to nb_classes).
+  :param nb_classes: nb_classes: total number of classes.
+  :param num_classses: depricated version of nb_classes
   :return: A binary matrix representation of the input.
   """
+  if num_classes is not None:
+    if nb_classes is not None:
+      raise ValueError("Should not specify both nb_classes and its deprecated "
+                       "alias, num_classes")
+    warnings.warn("`num_classes` is deprecated. Switch to `nb_classes`."
+                  " `num_classes` may be removed on or after 2019-04-23.")
+    nb_classes = num_classes
+    del num_classes
   y = np.array(y, dtype='int').ravel()
-  if not num_classes:
-    num_classes = np.max(y) + 1
+  if not nb_classes:
+    nb_classes = np.max(y) + 1
     warnings.warn("FutureWarning: the default value of the second"
                   "argument in function \"to_categorical\" is deprecated."
                   "On 2018-9-19, the second argument"
                   "will become mandatory.")
   n = y.shape[0]
-  categorical = np.zeros((n, num_classes))
+  categorical = np.zeros((n, nb_classes))
   categorical[np.arange(n), y] = 1
   return categorical
 
