@@ -4,6 +4,7 @@ See also cleverhans.plot.image for loading/saving image files, showing
 images in 3rd party viewers, etc.
 """
 import numpy as np
+from six import range
 
 def pair_visual(original, adversarial, figure=None):
   """
@@ -65,8 +66,8 @@ def grid_visual(data):
   num_cols = data.shape[0]
   num_rows = data.shape[1]
   num_channels = data.shape[4]
-  for y in xrange(num_rows):
-    for x in xrange(num_cols):
+  for y in range(num_rows):
+    for x in range(num_cols):
       figure.add_subplot(num_rows, num_cols, (x + 1) + (y * num_cols))
       plt.axis('off')
 
@@ -161,7 +162,7 @@ def linear_extrapolation_plot(log_prob_adv_array, y, file_name,
   plt.ylabel('Logits')
   x_axis = np.linspace(min_epsilon, max_epsilon, num_points)
   plt.xlim(min_epsilon - 1, max_epsilon + 1)
-  for i in xrange(y.shape[0]):
+  for i in range(y.shape[0]):
     if i == correct_idx:
       ls = '-'
       linewidth = 5
