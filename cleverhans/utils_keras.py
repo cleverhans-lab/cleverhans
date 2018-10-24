@@ -1,7 +1,6 @@
 """
 Model construction utilities based on keras
 """
-import warnings
 from distutils.version import LooseVersion
 import keras
 from keras.models import Sequential
@@ -143,14 +142,10 @@ class KerasModelWrapper(Model):
       # In this case, the activation is part of another layer
       return softmax_name
 
-    if hasattr(softmax_layer, 'inbound_nodes'):
-      warnings.warn(
-          "Please update your version to keras >= 2.1.3; "
-          "support for earlier keras versions will be dropped on "
-          "2018-07-22")
-      node = softmax_layer.inbound_nodes[0]
-    else:
-      node = softmax_layer._inbound_nodes[0]
+    if not hasattr(softmax_layer, '_inbound_nodes'):
+      raise RuntimeError("Please update keras to version >= 2.1.3")
+
+    node = softmax_layer._inbound_nodes[0]
 
     logits_name = node.inbound_layers[0].name
 
