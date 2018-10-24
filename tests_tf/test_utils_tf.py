@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from nose.plugins.skip import SkipTest
 import numpy as np
 import tensorflow as tf
 
@@ -54,7 +55,11 @@ class TestUtilsTF(CleverHansTest):
     self.assertTrue(eta.dtype == tf.float32, eta.dtype)
     eps = .25
     for ord_arg in [np.inf, 1, 2]:
-      clipped = utils_tf.clip_eta(eta, ord_arg, eps)
+      try:
+        clipped = utils_tf.clip_eta(eta, ord_arg, eps)
+      except NotImplementedError:
+        # Don't raise SkipTest, it skips the rest of the for loop
+        continue
       clipped = self.sess.run(clipped)
       self.assertTrue(not np.any(np.isinf(clipped)))
       self.assertTrue(not np.any(np.isnan(clipped)), (ord_arg, clipped))
@@ -67,7 +72,11 @@ class TestUtilsTF(CleverHansTest):
     eps = 3.
     for ord_arg in [np.inf, 1, 2]:
       for sign in [-1., 1.]:
-        clipped = utils_tf.clip_eta(eta * sign, ord_arg, eps)
+        try:
+          clipped = utils_tf.clip_eta(eta * sign, ord_arg, eps)
+        except NotImplementedError:
+          # Don't raise SkipTest, it skips the rest of the for loop
+          continue
         clipped_value = self.sess.run(clipped)
         gold = sign * np.array([[2.], [3.], [3.]])
         self.assertClose(clipped_value, gold)
