@@ -2,7 +2,8 @@
 """
 make_confidence_report_bundle_examples.py
 Usage:
-  python make_confidence_report_bundle_examples.py model.joblib examples_0.npy ... examples_n.npy
+  make_confidence_report_bundle_examples.py model.joblib a.npy
+  make_confidence_report_bundle_examples.py model.joblib a.npy b.npy c.npy
 
   where model.joblib is a file created by cleverhans.serial.save containing
   a picklable cleverhans.model.Model instance and each examples_i.npy is
@@ -41,6 +42,7 @@ from cleverhans.confidence_report import WHICH_SET
 
 
 FLAGS = flags.FLAGS
+
 
 def main(argv=None):
   """
@@ -98,9 +100,9 @@ if __name__ == '__main__':
                        'of range of train examples to use')
   flags.DEFINE_integer('train_end', TRAIN_END, 'Ending point (non-inclusive) '
                        'of range of train examples to use')
-  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) of range'
-                       ' of test examples to use')
-  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of range'
-                       ' of test examples to use')
+  flags.DEFINE_integer('test_start', TEST_START, 'Starting point '
+                       '(inclusive) of range of test examples to use')
+  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of '
+                       'range of test examples to use')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
   tf.app.run()

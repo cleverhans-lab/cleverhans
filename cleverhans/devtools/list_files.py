@@ -15,7 +15,7 @@ def list_files(suffix=""):
   -------
 
   file_list : list
-      A list of all files in CleverHans whose filepath ends with `suffix`
+      A list of all files in CleverHans whose filepath ends with `suffix`.
   """
 
   cleverhans_path = os.path.abspath(cleverhans.__path__[0])
@@ -47,6 +47,8 @@ def list_files(suffix=""):
     scripts_files = _list_files(scripts_path, suffix)
     scripts_files = [os.path.join(os.pardir, path) for path in
                      scripts_files]
+  else:
+    scripts_files = []
 
   file_list = file_list + tutorials_files + examples_files + scripts_files
 
