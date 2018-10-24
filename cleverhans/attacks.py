@@ -7,6 +7,7 @@ import tensorflow as tf
 
 from cleverhans import utils
 from cleverhans.model import Model, CallableModelWrapper
+from cleverhans.model import wrapper_warning, wrapper_warning_logits
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max
 from cleverhans.compat import softmax_cross_entropy_with_logits
@@ -1010,6 +1011,7 @@ class VirtualAdversarialMethod(Attack):
     cleverhans.model.Model abstraction provided by CleverHans.
     """
     if not isinstance(model, Model):
+      wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
     super(VirtualAdversarialMethod, self).__init__(model, sess, dtypestr,
@@ -1089,6 +1091,7 @@ class CarliniWagnerL2(Attack):
     cleverhans.model.Model abstraction provided by CleverHans.
     """
     if not isinstance(model, Model):
+      wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
     super(CarliniWagnerL2, self).__init__(model, sess, dtypestr, **kwargs)
@@ -1202,6 +1205,7 @@ class ElasticNetMethod(Attack):
     cleverhans.model.Model abstraction provided by CleverHans.
     """
     if not isinstance(model, Model):
+      wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
     super(ElasticNetMethod, self).__init__(model, sess, dtypestr, **kwargs)
@@ -1328,6 +1332,7 @@ class DeepFool(Attack):
     Create a DeepFool instance.
     """
     if not isinstance(model, Model):
+      wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
     super(DeepFool, self).__init__(model, sess, dtypestr, **kwargs)
@@ -1420,6 +1425,7 @@ class LBFGS(Attack):
     cleverhans.model.Model abstraction provided by CleverHans.
     """
     if not isinstance(model, Model):
+      wrapper_warning()
       model = CallableModelWrapper(model, 'probs')
 
     super(LBFGS, self).__init__(model, sess, dtypestr, **kwargs)
