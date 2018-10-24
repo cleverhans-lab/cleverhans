@@ -4,7 +4,7 @@ See also cleverhans.plot.image for loading/saving image files, showing
 images in 3rd party viewers, etc.
 """
 import numpy as np
-from six import range
+from six.moves import range
 
 def pair_visual(original, adversarial, figure=None):
   """
