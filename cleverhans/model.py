@@ -80,8 +80,10 @@ class Model(object):
       output = d[self.O_PROBS]
       min_prob = tf.reduce_min(output)
       max_prob = tf.reduce_max(output)
-      asserts = [utils_tf.assert_greater_equal(min_prob, 0.),
-                 utils_tf.assert_less_equal(max_prob, 1.)]
+      asserts = [utils_tf.assert_greater_equal(min_prob,
+                                               tf.cast(0., min_prob.dtype)),
+                 utils_tf.assert_less_equal(max_prob,
+                                            tf.cast(1., min_prob.dtype))]
       with tf.control_dependencies(asserts):
         output = tf.identity(output)
       return output
@@ -222,8 +224,10 @@ class CallableModelWrapper(Model):
       assert output.op.type == "Softmax"
       min_prob = tf.reduce_min(output)
       max_prob = tf.reduce_max(output)
-      asserts = [utils_tf.assert_greater_equal(min_prob, 0.),
-                 utils_tf.assert_less_equal(max_prob, 1.)]
+      asserts = [utils_tf.assert_greater_equal(min_prob,
+                                               tf.cast(0., min_prob.dtype)),
+                 utils_tf.assert_less_equal(max_prob,
+                                            tf.cast(1., max_prob.dtype))]
       with tf.control_dependencies(asserts):
         output = tf.identity(output)
     elif self.output_layer == 'logits':
