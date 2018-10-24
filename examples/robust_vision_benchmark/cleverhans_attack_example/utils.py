@@ -44,7 +44,7 @@ class RVBCleverhansModel(cleverhans.model.Model):
   def __init__(self, adversarial, **kwargs):
     del kwargs
     cleverhans.model.Model.__init__(
-        self, "model", self.adversarial.num_classes(), locals())
+        self, "model", self.adversarial.nb_classes(), locals())
     self.adversarial = adversarial
 
   def fprop(self, x):
@@ -53,7 +53,7 @@ class RVBCleverhansModel(cleverhans.model.Model):
   def _logits_op(self, x, name=None):
     with tf.name_scope(name, "logits", [x]) as name:
 
-      num_classes = self.adversarial.num_classes()
+      nb_classes = self.adversarial.nb_classes()
 
       def _backward_py(gradient_y, x):
         x = np.squeeze(x, axis=0)
@@ -83,6 +83,6 @@ class RVBCleverhansModel(cleverhans.model.Model):
           grad=_backward_tf)
 
       logits = op[0]
-      logits.set_shape((x.shape[0], num_classes))
+      logits.set_shape((x.shape[0], nb_classes))
 
     return logits

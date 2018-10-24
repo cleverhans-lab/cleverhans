@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import warnings
 
 import numpy as np
 import tensorflow as tf
@@ -97,8 +98,16 @@ def save_images(images, filenames, output_dir):
 class InceptionModel(object):
   """Model class for CleverHans library."""
 
-  def __init__(self, num_classes):
-    self.num_classes = num_classes
+  def __init__(self, nb_classes=None, num_classes=None):
+    if num_classes is not None:
+      if nb_classes is not None:
+        raise ValueError("Should not specify both nb_classes and its deprecated"
+                         " alias, num_classes")
+      warnings.warn("`num_classes` is deprecated. Switch to `nb_classes`."
+                    " `num_classes` may be removed on or after 2019-04-23.")
+      nb_classes = num_classes
+    del num_classes
+    self.nb_classes = nb_classes
     self.built = False
 
   def __call__(self, x_input):
@@ -106,7 +115,7 @@ class InceptionModel(object):
     reuse = True if self.built else None
     with slim.arg_scope(inception.inception_v3_arg_scope()):
       _, end_points = inception.inception_v3(
-          x_input, num_classes=self.num_classes, is_training=False,
+          x_input, num_classes=self.nb_classes, is_training=False,
           reuse=reuse)
     self.built = True
     output = end_points['Predictions']
@@ -122,7 +131,7 @@ def main(_):
   # Renormalizing epsilon from [0, 255] to [0, 2].
   eps = 2.0 * FLAGS.max_epsilon / 255.0
   batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
-  num_classes = 1001
+  nb_classes = 1001
 
   tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -130,7 +139,7 @@ def main(_):
     # Prepare graph
     x_input = tf.placeholder(tf.float32, shape=batch_shape)
 
-    model = InceptionModel(num_classes)
+    model = InceptionModel(nb_classes)
 
     fgsm = FastGradientMethod(model)
     x_adv = fgsm.generate(x_input, eps=eps, clip_min=-1., clip_max=1.)

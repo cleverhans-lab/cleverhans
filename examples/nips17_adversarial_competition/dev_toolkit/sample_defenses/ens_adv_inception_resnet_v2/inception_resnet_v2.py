@@ -25,6 +25,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import warnings
 
 import tensorflow as tf
 
@@ -284,30 +285,37 @@ def inception_resnet_v2_base(inputs,
     raise ValueError('final_endpoint (%s) not recognized' % final_endpoint)
 
 
-def inception_resnet_v2(inputs, num_classes=1001, is_training=True,
+def inception_resnet_v2(inputs, nb_classes=1001, is_training=True,
                         dropout_keep_prob=0.8,
                         reuse=None,
                         scope='InceptionResnetV2',
-                        create_aux_logits=True):
+                        create_aux_logits=True,
+                        num_classes=None):
   """Creates the Inception Resnet V2 model.
 
   Args:
     inputs: a 4-D tensor of size [batch_size, height, width, 3].
-    num_classes: number of predicted classes.
+    nb_classes: number of predicted classes.
     is_training: whether is training or not.
     dropout_keep_prob: float, the fraction to keep before final layer.
     reuse: whether or not the network and its variables should be reused. To be
       able to reuse 'scope' must be given.
     scope: Optional variable_scope.
     create_aux_logits: Whether to include the auxilliary logits.
+    num_classes: depricated alias for nb_classes
 
   Returns:
     logits: the logits outputs of the model.
     end_points: the set of end_points from the inception model.
   """
+  if num_classes is not None:
+    warnings.warn("`num_classes` is deprecated. Switch to `nb_classes`."
+                  " `num_classes` may be removed on or after 2019-04-23.")
+    nb_classes = num_classes
+    del num_classes
   end_points = {}
 
-  with tf.variable_scope(scope, 'InceptionResnetV2', [inputs, num_classes],
+  with tf.variable_scope(scope, 'InceptionResnetV2', [inputs, nb_classes],
                          reuse=reuse) as var_scope:
     with slim.arg_scope([slim.batch_norm, slim.dropout],
                         is_training=is_training):
@@ -323,7 +331,7 @@ def inception_resnet_v2(inputs, num_classes=1001, is_training=True,
           aux = slim.conv2d(aux, 768, aux.get_shape()[1:3],
                             padding='VALID', scope='Conv2d_2a_5x5')
           aux = slim.flatten(aux)
-          aux = slim.fully_connected(aux, num_classes, activation_fn=None,
+          aux = slim.fully_connected(aux, nb_classes, activation_fn=None,
                                      scope='Logits')
           end_points['AuxLogits'] = aux
 
@@ -336,7 +344,7 @@ def inception_resnet_v2(inputs, num_classes=1001, is_training=True,
                            scope='Dropout')
 
         end_points['PreLogitsFlatten'] = net
-        logits = slim.fully_connected(net, num_classes, activation_fn=None,
+        logits = slim.fully_connected(net, nb_classes, activation_fn=None,
                                       scope='Logits')
         end_points['Logits'] = logits
         end_points['Predictions'] = tf.nn.softmax(logits, name='Predictions')
