@@ -8,7 +8,6 @@ import tensorflow as tf
 
 from cleverhans import attacks
 from cleverhans import utils
-from cleverhans.compat import reduce_sum
 from cleverhans.model import CallableModelWrapper, wrapper_warning
 from cleverhans.model import Model
 from cleverhans.loss import LossCrossEntropy
