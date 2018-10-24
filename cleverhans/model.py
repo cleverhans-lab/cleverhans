@@ -2,6 +2,8 @@
 The Model class and related functionality.
 """
 from abc import ABCMeta
+import warnings
+
 import tensorflow as tf
 
 
@@ -200,6 +202,47 @@ class CallableModelWrapper(Model):
       assert output.op.type != 'Softmax'
 
     return {self.output_layer: output}
+
+def wrapper_warning():
+  """
+  Issue a deprecation warning. Used in multiple places that implemented
+  attacks by automatically wrapping a user-supplied callable with a
+  CallableModelWrapper with output_layer="probs".
+  Using "probs" as any part of the attack interface is dangerous.
+  We can't just change output_layer to logits because:
+  - that would be a silent interface change. We'd have no way of detecting
+    code that still means to use probs. Note that we can't just check whether
+    the final output op is a softmax---for example, Inception puts a reshape
+    after the softmax.
+  - automatically wrapping user-supplied callables with output_layer='logits'
+    is even worse, see `wrapper_warning_logits`
+  Note: this function will be removed at the same time as the code that
+  calls it.
+  """
+  warnings.warn("Passing a callable is deprecated, because using"
+                " probabilities is dangerous. It has a high risk "
+                " of causing gradient masking due to loss of precision "
+                " in the softmax op. Passing a callable rather than a "
+                " Model subclass will become an error on or after "
+                " 2019-04-24.")
+
+def wrapper_warning_logits():
+  """
+  Issue a deprecation warning. Used in multiple places that implemented
+  attacks by automatically wrapping a user-supplied callable with a
+  CallableModelWrapper with output_layer="logits".
+  This is dangerous because it is under-the-hood automagic that the user
+  may not realize has been invoked for them. If they pass a callable
+  that actually outputs probs, the probs will be treated as logits,
+  resulting in an incorrect cross-entropy loss and severe gradient
+  masking.
+  """
+  warnings.warn("Passing a callable is deprecated, because it runs the "
+                "risk of accidentally using probabilities in the place "
+                "of logits. Please switch to passing a Model subclass "
+                "so that you clearly specify which values are the logits. "
+                "Passing a callable rather than a Model subclass will become "
+                "an error on or after 2019-04-24.")
 
 
 class NoSuchLayerError(ValueError):
