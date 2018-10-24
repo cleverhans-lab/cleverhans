@@ -355,7 +355,7 @@ def clip_eta(eta, ord, eps):
   :param eta: A tensor with the current perturbation.
   :param ord: Order of the norm (mimics Numpy).
               Possible values: np.inf, 1 or 2.
-  :param eps: Epilson, bound of the perturbation.
+  :param eps: Epsilon, bound of the perturbation.
   """
 
   # Clipping perturbation eta to self.ord norm ball
@@ -367,6 +367,8 @@ def clip_eta(eta, ord, eps):
     eta = clip_by_value(eta, -eps, eps)
   else:
     if ord == 1:
+      raise NotImplementedError("The expression below is not the correct way"
+                                " to project onto the L1 norm ball.")
       norm = tf.maximum(avoid_zero_div,
                         reduce_sum(tf.abs(eta),
                                    reduc_ind, keepdims=True))
