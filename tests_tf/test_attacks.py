@@ -8,9 +8,11 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import unittest
 import numpy as np
+from nose.plugins.skip import SkipTest
 
 from cleverhans.devtools.checks import CleverHansTest
 
+from cleverhans import attacks
 from cleverhans.attacks import Attack, SPSA
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import BasicIterativeMethod
@@ -160,13 +162,26 @@ class TestVirtualAdversarialMethod(CleverHansTest):
     self.assertClose(perturbation_norm, self.attack.eps)
 
 
-class TestFastGradientMethod(CleverHansTest):
-  def setUp(self):
-    super(TestFastGradientMethod, self).setUp()
+class CommonAttackProperties(CleverHansTest):
+  """
+  Abstract base class shared by the tessts for many attacks that want
+  to check the same properties.
+  """
 
+  def setUp(self):
+    # Inheritance doesn't really work with tests.
+    # nosetests always wants to run this class because it is a
+    # CleverHansTest subclass, but this class is meant to just
+    # be abstract.
+    # Before this class was the tests for FastGradientMethod but
+    # people kept inheriting from it for other attacks so it was
+    # impossible to write tests specifically for FastGradientMethod.
+    if type(self) is CommonAttackProperties:
+      raise SkipTest()
+
+    super(CommonAttackProperties, self).setUp()
     self.sess = tf.Session()
     self.model = SimpleModel()
-    self.attack = FastGradientMethod(self.model, sess=self.sess)
 
   def generate_adversarial_examples_np(self, ord, eps, **kwargs):
     x_val = np.random.rand(100, 2)
@@ -220,8 +235,11 @@ class TestFastGradientMethod(CleverHansTest):
     random_labs_one_hot = np.zeros((100, 2))
     random_labs_one_hot[np.arange(100), random_labs] = 1
 
-    _, x_adv, delta = self.generate_adversarial_examples_np(
+    try:
+      _, x_adv, delta = self.generate_adversarial_examples_np(
         eps=.5, ord=np.inf, y_target=random_labs_one_hot)
+    except NotImplementedError:
+      raise SkipTest()
 
     self.assertClose(delta, 0.5)
 
@@ -249,6 +267,118 @@ class TestFastGradientMethod(CleverHansTest):
 
     self.assertClose(np.min(x_adv), -0.2)
     self.assertClose(np.max(x_adv), 0.1)
+
+class TestFastGradientMethod(CommonAttackProperties):
+
+  def setUp(self):
+    super(TestFastGradientMethod, self).setUp()
+
+    self.attack = FastGradientMethod(self.model, sess=self.sess)
+
+
+class TestOptimizeLinear(CleverHansTest):
+  """
+  Tests for the `optimize_linear` function
+  """
+
+  def setUp(self):
+    super(TestOptimizeLinear, self).setUp()
+    self.sess = tf.Session()
+    self.model = SimpleModel()
+
+  def test_optimize_linear_linf(self):
+
+    grad = tf.placeholder(tf.float32, shape=[1, 2])
+
+    # Build the graph for the attack
+    eta = attacks.optimize_linear(grad, eps=1., ord=np.inf)
+    objective = tf.reduce_sum(grad * eta)
+
+    grad_val = np.array([[1., -2.]])
+    eta, objective = self.sess.run([eta, objective],
+                                   feed_dict={grad: grad_val})
+
+    # Make sure the objective is optimal.
+    # This is the solution obtained by doing the algebra by hand.
+    self.assertClose(objective, np.abs(grad_val).sum())
+    # Make sure the constraint is respected.
+    # Also, for a linear function, the constraint will always be tight.
+    self.assertClose(np.abs(eta), 1.)
+
+  def test_optimize_linear_l2(self):
+
+    grad = tf.placeholder(tf.float32, shape=[1, 2])
+
+    # Build the graph for the attack
+    eta = attacks.optimize_linear(grad, eps=1., ord=2)
+    objective = tf.reduce_sum(grad * eta)
+
+    grad_val = np.array([[np.sqrt(.5), -np.sqrt(.5)]])
+    eta, objective = self.sess.run([eta, objective],
+                                   feed_dict={grad: grad_val})
+
+    # Make sure the objective is optimal.
+    # This is the solution obtained by doing the algebra by hand.
+    self.assertClose(objective, 1.)
+    # Make sure the constraint is respected.
+    # Also, for a linear function, the constraint will always be tight.
+    self.assertClose(np.sqrt(np.square(eta).sum()), 1.)
+
+  def test_optimize_linear_l1(self):
+
+    # This test makes sure that `optimize_linear` actually finds the optimal
+    # perturbation for ord=1.
+    # A common misconcpetion is that FGM for ord=1 consists of dividing
+    # the gradient by its L1 norm.
+    # If you do that for the problem in this unit test, you'll get an
+    # objective function value of ~1.667. The optimal result is 2.
+
+    # We need just one example in the batch and two features to show the
+    # common misconception is suboptimal.
+    grad = tf.placeholder(tf.float32, shape=[1, 2])
+
+    # Build the graph for the attack
+    eta = attacks.optimize_linear(grad, eps=1., ord=1)
+    objective = tf.reduce_sum(grad * eta)
+
+    # Make sure the largest entry of the gradient for the test case is
+    # negative, to catch
+    # the potential bug where we forget to handle the sign of the gradient
+    eta, objective = self.sess.run([eta, objective],
+                                   feed_dict={grad: np.array([[1., -2.]])})
+
+    # Make sure the objective is optimal.
+    # This is the solution obtained by doing the algebra by hand.
+    self.assertClose(objective, 2.)
+    # Make sure the constraint is respected.
+    # Also, for a linear function, the constraint will always be tight.
+    self.assertClose(np.abs(eta).sum(), 1.)
+
+  def test_optimize_linear_l1_ties(self):
+
+    # This test makes sure that `optimize_linear` handles ties in gradient
+    # magnitude correctly when ord=1.
+
+    # We need just one example in the batch and two features to construct
+    # a tie.
+    grad = tf.placeholder(tf.float32, shape=[1, 2])
+
+    # Build the graph for the attack
+    eta = attacks.optimize_linear(grad, eps=1., ord=1)
+    objective = tf.reduce_sum(grad * eta)
+
+    # Run a test case with a tie for largest absolute value.
+    # Make one feature negative to make sure we're checking for ties in
+    # absolute value, not raw value.
+    eta, objective = self.sess.run([eta, objective],
+                                   feed_dict={grad: np.array([[2., -2.]])})
+
+    # Make sure the objective is optimal.
+    # This is the solution obtained by doing the algebra by hand.
+    self.assertClose(objective, 2.)
+    # Make sure the constraint is respected.
+    # Also, for a linear function, the constraint will always be tight.
+    self.assertClose(np.abs(eta).sum(), 1.)
 
 class TestSPSA(CleverHansTest):
   def setUp(self):
@@ -325,9 +455,9 @@ class TestSPSA(CleverHansTest):
     self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
 
-class TestBasicIterativeMethod(TestFastGradientMethod):
+class TestBasicIterativeMethod(CommonAttackProperties):
   def setUp(self):
-    TestFastGradientMethod.setUp(self)
+    CommonAttackProperties.setUp(self)
 
     self.sess = tf.Session()
     self.model = SimpleModel()
@@ -338,8 +468,11 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
                                                     nb_iter=20)
 
   def test_generate_np_gives_adversarial_example_l1(self):
-    self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
-                                                    nb_iter=20)
+    try:
+      self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
+                                                      nb_iter=20)
+    except NotImplementedError:
+      raise SkipTest()
 
   def test_generate_np_gives_adversarial_example_l2(self):
     self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
@@ -352,8 +485,12 @@ class TestBasicIterativeMethod(TestFastGradientMethod):
     epsilon.
     """
     for ord in [1, 2, np.infty]:
-      _, _, delta = self.generate_adversarial_examples_np(
+      try:
+        _, _, delta = self.generate_adversarial_examples_np(
           ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
+      except NotImplementedError:
+        # Don't raise SkipTest because it will skip the rest of the for loop
+        continue
       self.assertTrue(np.max(0.5 - delta) > 0.25)
 
   def test_attack_strength(self):
@@ -1118,7 +1255,3 @@ class TestSpatialTransformationMethod(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
-
-
-if __name__ == '__main__':
-  unittest.main()
