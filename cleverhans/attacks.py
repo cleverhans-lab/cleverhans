@@ -7,6 +7,7 @@ import tensorflow as tf
 
 from cleverhans import utils
 from cleverhans.model import Model, CallableModelWrapper
+from cleverhans.model import wrapper_warning, wrapper_warning_logits
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max
 from cleverhans.compat import softmax_cross_entropy_with_logits
@@ -71,7 +72,7 @@ class Attack(object):
     # This dict should map names of arguments to the types they should
     # have.
     # (Usually, the target class will be a feedable keyword argument.)
-    self.feedable_kwargs = {}
+    self.feedable_kwargs = tuple()
 
     # When calling generate_np, arguments in the following set should NOT
     # be fed into the graph, as they ARE structural items that require
@@ -207,7 +208,11 @@ class Attack(object):
       feedable_names = tuple(sorted(self.feedable_kwargs.keys()))
     else:
       feedable_names = self.feedable_kwargs
-      assert isinstance(feedable_names, tuple)
+      if not isinstance(feedable_names, tuple):
+        raise TypeError("Attack.feedable_kwargs should be a tuple, but "
+                        "for subclass " + str(type(self)) + " it is "
+                        + str(self.feedable_kwargs) + " of type "
+                        + str(type(self.feedable_kwargs)))
 
     # the set of arguments that are structural properties of the attack
     # if these arguments are different, we must construct a new graph
@@ -295,13 +300,7 @@ class FastGradientMethod(Attack):
     """
 
     super(FastGradientMethod, self).__init__(model, sess, dtypestr, **kwargs)
-    self.feedable_kwargs = {
-        'eps': self.np_dtype,
-        'y': self.np_dtype,
-        'y_target': self.np_dtype,
-        'clip_min': self.np_dtype,
-        'clip_max': self.np_dtype
-    }
+    self.feedable_kwargs = ('eps', 'y', 'y_target', 'clip_min', 'clip_max')
     self.structural_kwargs = ['ord', 'sanity_checks']
 
   def generate(self, x, **kwargs):
@@ -490,14 +489,8 @@ class ProjectedGradientDescent(Attack):
 
     super(ProjectedGradientDescent, self).__init__(model, sess=sess,
                                                    dtypestr=dtypestr, **kwargs)
-    self.feedable_kwargs = {
-        'eps': self.np_dtype,
-        'eps_iter': self.np_dtype,
-        'y': self.np_dtype,
-        'y_target': self.np_dtype,
-        'clip_min': self.np_dtype,
-        'clip_max': self.np_dtype
-    }
+    self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
+                            'clip_max')
     self.structural_kwargs = ['ord', 'nb_iter', 'rand_init', 'sanity_checks']
     self.default_rand_init = default_rand_init
 
@@ -720,14 +713,8 @@ class MomentumIterativeMethod(Attack):
 
     super(MomentumIterativeMethod, self).__init__(model, sess, dtypestr,
                                                   **kwargs)
-    self.feedable_kwargs = {
-        'eps': self.np_dtype,
-        'eps_iter': self.np_dtype,
-        'y': self.np_dtype,
-        'y_target': self.np_dtype,
-        'clip_min': self.np_dtype,
-        'clip_max': self.np_dtype
-    }
+    self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
+                            'clip_max')
     self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor', 'sanity_checks']
 
   def generate(self, x, **kwargs):
@@ -1024,17 +1011,13 @@ class VirtualAdversarialMethod(Attack):
     cleverhans.model.Model abstraction provided by CleverHans.
     """
     if not isinstance(model, Model):
+      wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
     super(VirtualAdversarialMethod, self).__init__(model, sess, dtypestr,
                                                    **kwargs)
 
-    self.feedable_kwargs = {
-        'eps': self.tf_dtype,
-        'xi': self.tf_dtype,
-        'clip_min': self.tf_dtype,
-        'clip_max': self.tf_dtype
-    }
+    self.feedable_kwargs = ('eps', 'xi', 'clip_min', 'clip_max')
     self.structural_kwargs = ['num_iterations']
 
   def generate(self, x, **kwargs):
@@ -1108,11 +1091,12 @@ class CarliniWagnerL2(Attack):
     cleverhans.model.Model abstraction provided by CleverHans.
     """
     if not isinstance(model, Model):
+      wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
     super(CarliniWagnerL2, self).__init__(model, sess, dtypestr, **kwargs)
 
-    self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
+    self.feedable_kwargs = ('y', 'y_target')
 
     self.structural_kwargs = [
         'batch_size', 'confidence', 'targeted', 'learning_rate',
@@ -1221,11 +1205,12 @@ class ElasticNetMethod(Attack):
     cleverhans.model.Model abstraction provided by CleverHans.
     """
     if not isinstance(model, Model):
+      wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
     super(ElasticNetMethod, self).__init__(model, sess, dtypestr, **kwargs)
 
-    self.feedable_kwargs = {'y': self.tf_dtype, 'y_target': self.tf_dtype}
+    self.feedable_kwargs = ('y', 'y_target')
 
     self.structural_kwargs = [
         'beta', 'decision_rule', 'batch_size', 'confidence',
@@ -1347,6 +1332,7 @@ class DeepFool(Attack):
     Create a DeepFool instance.
     """
     if not isinstance(model, Model):
+      wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
     super(DeepFool, self).__init__(model, sess, dtypestr, **kwargs)
@@ -1439,11 +1425,12 @@ class LBFGS(Attack):
     cleverhans.model.Model abstraction provided by CleverHans.
     """
     if not isinstance(model, Model):
+      wrapper_warning()
       model = CallableModelWrapper(model, 'probs')
 
     super(LBFGS, self).__init__(model, sess, dtypestr, **kwargs)
 
-    self.feedable_kwargs = {'y_target': self.tf_dtype}
+    self.feedable_kwargs = ('y_target',)
     self.structural_kwargs = [
         'batch_size', 'binary_search_steps', 'max_iterations',
         'initial_const', 'clip_min', 'clip_max'
@@ -1725,13 +1712,8 @@ class FastFeatureAdversaries(Attack):
     """
     super(FastFeatureAdversaries, self).__init__(model, sess, dtypestr,
                                                  **kwargs)
-    self.feedable_kwargs = {
-        'eps': self.np_dtype,
-        'eps_iter': self.np_dtype,
-        'clip_min': self.np_dtype,
-        'clip_max': self.np_dtype,
-        'layer': str
-    }
+    self.feedable_kwargs = ('eps', 'eps_iter', 'clip_min', 'clip_max',
+                            'layer')
     self.structural_kwargs = ['ord', 'nb_iter']
 
     assert isinstance(self.model, Model)
@@ -1877,13 +1859,7 @@ class SPSA(Attack):
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     super(SPSA, self).__init__(model, sess, dtypestr, **kwargs)
 
-    self.feedable_kwargs = {
-        'eps': self.np_dtype,
-        'clip_min': self.np_dtype,
-        'clip_max': self.np_dtype,
-        'y' : np.int32,
-        'y_target' : np.int32,
-    }
+    self.feedable_kwargs = ('eps', 'clip_min', 'clip_max', 'y', 'y_target')
     self.structural_kwargs = [
         'nb_iter',
         'spsa_samples',
@@ -2064,19 +2040,9 @@ class SpatialTransformationMethod(Attack):
 
     super(SpatialTransformationMethod, self).__init__(
         model, sess, dtypestr, **kwargs)
-    self.feedable_kwargs = {
-        'n_samples': self.np_dtype,
-        'dx_min': self.np_dtype,
-        'dx_max': self.np_dtype,
-        'n_dxs': self.np_dtype,
-        'dy_min': self.np_dtype,
-        'dy_max': self.np_dtype,
-        'n_dys': self.np_dtype,
-        'angle_min': self.np_dtype,
-        'angle_max': self.np_dtype,
-        'n_angles': self.np_dtype,
-        'black_border_size': self.np_dtype,
-    }
+    self.feedable_kwargs = ('n_samples', 'dx_min', 'dx_max', 'n_dxs', 'dy_min',
+                            'dy_max', 'n_dys', 'angle_min', 'angle_max',
+                            'n_angles', 'black_border_size')
 
   def generate(self, x, **kwargs):
     """
@@ -2209,11 +2175,7 @@ class Noise(Attack):
                **kwargs):
 
     super(Noise, self).__init__(model, sess=sess, dtypestr=dtypestr, **kwargs)
-    self.feedable_kwargs = {
-        'eps': self.np_dtype,
-        'clip_min': self.np_dtype,
-        'clip_max': self.np_dtype
-    }
+    self.feedable_kwargs = ('eps', 'clip_min', 'clip_max')
     self.structural_kwargs = ['ord', 'clip']
 
   def generate(self, x, **kwargs):
