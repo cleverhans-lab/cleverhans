@@ -1883,7 +1883,7 @@ def pgd_attack(loss_fn,
   return tf.stop_gradient(adversarial_image)
 
 
-def margin_logit_loss(model_logits, label, nb_classes=10,num_classes=None):
+def margin_logit_loss(model_logits, label, nb_classes=10, num_classes=None):
   """Computes difference between logit for `label` and next highest logit.
 
   The loss is high when `label` is unlikely (targeted by default).

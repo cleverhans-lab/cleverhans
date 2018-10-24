@@ -109,7 +109,7 @@ def to_categorical(y, nb_classes=None, num_classes=None):
   if num_classes is not None:
     if nb_classes is not None:
       raise ValueError("Should not specify both nb_classes and its deprecated "
-                         "alias, num_classes")
+                       "alias, num_classes")
     warnings.warn("`num_classes` is deprecated. Switch to `nb_classes`. `num_classes` may "
                   "be removed on or after 2019-04-23.")
     nb_classes = num_classes

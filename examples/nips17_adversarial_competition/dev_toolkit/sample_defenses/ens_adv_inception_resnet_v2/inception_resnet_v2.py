@@ -310,7 +310,7 @@ def inception_resnet_v2(inputs, nb_classes=1001, is_training=True,
   """
   if num_classes is not None:
     warnings.warn("`num_classes` is deprecated. Switch to `nb_classes`. `num_classes` may "
-                    "be removed on or after 2019-04-23.")
+                  "be removed on or after 2019-04-23.")
     nb_classes = num_classes
     del num_classes
   end_points = {}
