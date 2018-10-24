@@ -142,7 +142,7 @@ class TestVirtualAdversarialMethod(CleverHansTest):
 
     # initialize model
     with tf.name_scope('virtual_adv_dummy_model'):
-      self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
+      self.model.get_probs(tf.placeholder(tf.float32, shape=(None, 1000)))
     self.sess.run(tf.global_variables_initializer())
 
   def test_parse_params(self):
@@ -203,8 +203,8 @@ class CommonAttackProperties(CleverHansTest):
     x_val, x_adv, delta = self.generate_adversarial_examples_np(ord, eps,
                                                                 **kwargs)
     self.assertClose(delta, eps)
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
 
   def test_invalid_input(self):
@@ -243,7 +243,7 @@ class CommonAttackProperties(CleverHansTest):
 
     self.assertClose(delta, 0.5)
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(random_labs == new_labs) > 0.7)
 
   def test_generate_np_can_be_called_with_different_eps(self):
@@ -415,7 +415,7 @@ class TestSPSA(CleverHansTest):
       all_x_adv.append(x_adv_np[0])
 
     x_adv = np.vstack(all_x_adv)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(feed_labs == new_labs) < 0.1)
 
   def test_attack_strength_np(self):
@@ -437,7 +437,7 @@ class TestSPSA(CleverHansTest):
       all_x_adv.append(x_adv_np[0])
 
     x_adv = np.vstack(all_x_adv)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
   def test_attack_strength_np_batched(self):
@@ -451,7 +451,7 @@ class TestSPSA(CleverHansTest):
         x_val, y=feed_labs, eps=.5, nb_iter=100, spsa_samples=64,
         spsa_iters=1, clip_min=0., clip_max=1.)
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
 
@@ -508,8 +508,8 @@ class TestBasicIterativeMethod(CommonAttackProperties):
                                     clip_min=0.5, clip_max=0.7,
                                     nb_iter=5, sanity_checks=False)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
   def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
@@ -520,8 +520,8 @@ class TestBasicIterativeMethod(CommonAttackProperties):
                                     clip_min=-5.0, clip_max=5.0,
                                     nb_iter=10)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     ok = [False]
@@ -537,8 +537,8 @@ class TestBasicIterativeMethod(CommonAttackProperties):
                                     clip_min=-5.0, clip_max=5.0,
                                     nb_iter=11)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
     tf.gradients = old_grads
@@ -585,8 +585,8 @@ class TestCarliniWagnerL2(CleverHansTest):
                                     clip_min=-5, clip_max=5,
                                     batch_size=10)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
@@ -602,7 +602,7 @@ class TestCarliniWagnerL2(CleverHansTest):
                                     clip_min=-5, clip_max=5,
                                     batch_size=100, y_target=feed_labs)
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs)
                     > 0.9)
@@ -612,7 +612,7 @@ class TestCarliniWagnerL2(CleverHansTest):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     feed_labs = np.zeros((100, 2))
     feed_labs[np.arange(100), orig_labs] = 1
     x = tf.placeholder(tf.float32, x_val.shape)
@@ -626,7 +626,7 @@ class TestCarliniWagnerL2(CleverHansTest):
     self.assertEqual(x_val.shape, x_adv_p.shape)
     x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
@@ -725,8 +725,8 @@ class TestElasticNetMethod(CleverHansTest):
                                     clip_min=-5, clip_max=5,
                                     batch_size=10)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
@@ -742,7 +742,7 @@ class TestElasticNetMethod(CleverHansTest):
                                     clip_min=-5, clip_max=5,
                                     batch_size=100, y_target=feed_labs)
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs) >
                     0.9)
@@ -752,7 +752,7 @@ class TestElasticNetMethod(CleverHansTest):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     feed_labs = np.zeros((100, 2))
     feed_labs[np.arange(100), orig_labs] = 1
     x = tf.placeholder(tf.float32, x_val.shape)
@@ -766,7 +766,7 @@ class TestElasticNetMethod(CleverHansTest):
     self.assertEqual(x_val.shape, x_adv_p.shape)
     x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
@@ -858,7 +858,7 @@ class TestSaliencyMapMethod(CleverHansTest):
 
     # initialize model
     with tf.name_scope('dummy_model'):
-      self.model(tf.placeholder(tf.float32, shape=(None, 1000)))
+      self.model.get_logits(tf.placeholder(tf.float32, shape=(None, 1000)))
     self.sess.run(tf.global_variables_initializer())
 
     self.attack = SaliencyMapMethod(self.model, sess=self.sess)
@@ -872,7 +872,7 @@ class TestSaliencyMapMethod(CleverHansTest):
     x_adv = self.attack.generate_np(x_val,
                                     clip_min=-5., clip_max=5.,
                                     y_target=feed_labs)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     worked = np.mean(np.argmax(feed_labs, axis=1) == new_labs)
     self.assertTrue(worked > .9)
@@ -894,8 +894,8 @@ class TestDeepFool(CleverHansTest):
                                     nb_candidate=2, clip_min=-5,
                                     clip_max=5)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
@@ -903,7 +903,7 @@ class TestDeepFool(CleverHansTest):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     x = tf.placeholder(tf.float32, x_val.shape)
 
     x_adv_p = self.attack.generate(x, over_shoot=0.02, max_iter=50,
@@ -911,7 +911,7 @@ class TestDeepFool(CleverHansTest):
     self.assertEqual(x_val.shape, x_adv_p.shape)
     x_adv = self.sess.run(x_adv_p, {x: x_val})
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
@@ -948,8 +948,8 @@ class TestMadryEtAl(CleverHansTest):
                                     clip_min=0.5, clip_max=0.7,
                                     nb_iter=5, sanity_checks=False)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertLess(np.mean(orig_labs == new_labs), 0.1)
 
   def test_clip_eta(self):
@@ -985,7 +985,7 @@ class TestMadryEtAl(CleverHansTest):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    orig_labs = np.argmax(self.sess.run(self.model(x_val)), axis=1)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     new_labs_multi = orig_labs.copy()
 
     # Generate multiple adversarial examples
@@ -993,7 +993,7 @@ class TestMadryEtAl(CleverHansTest):
       x_adv = self.attack.generate_np(x_val, eps=.5, eps_iter=0.05,
                                       clip_min=0.5, clip_max=0.7,
                                       nb_iter=2, sanity_checks=False)
-      new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+      new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
       # Examples for which we have not found adversarial examples
       I = (orig_labs == new_labs_multi)
@@ -1119,7 +1119,7 @@ class TestLBFGS(CleverHansTest):
                                     clip_min=-5, clip_max=5,
                                     batch_size=100, y_target=feed_labs)
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs)
                     > 0.9)
@@ -1141,7 +1141,7 @@ class TestLBFGS(CleverHansTest):
     self.assertEqual(x_val.shape, x_adv_p.shape)
     x_adv = self.sess.run(x_adv_p, {x: x_val, y: feed_labs})
 
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(np.argmax(feed_labs, axis=1) == new_labs)
                     > 0.9)
@@ -1197,7 +1197,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
 
     # initialize model
     with tf.name_scope('dummy_model_spatial'):
-      self.model(tf.placeholder(tf.float32, shape=(None, 2, 2, 1)))
+      self.model.get_logits(tf.placeholder(tf.float32, shape=(None, 2, 2, 1)))
     self.sess.run(tf.global_variables_initializer())
 
   def test_no_transformation(self):
@@ -1230,7 +1230,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
     x_adv = self.sess.run(x_adv_p, {x: x_val})
 
     old_labs = np.argmax(y, axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
 
@@ -1252,6 +1252,6 @@ class TestSpatialTransformationMethod(CleverHansTest):
     x_adv = self.sess.run(x_adv_p, {x: x_val})
 
     old_labs = np.argmax(y, axis=1)
-    new_labs = np.argmax(self.sess.run(self.model(x_adv)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
