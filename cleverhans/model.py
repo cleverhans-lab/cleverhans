@@ -75,7 +75,14 @@ class Model(object):
     """
     d = self.fprop(x, **kwargs)
     if self.O_PROBS in d:
-      return d[self.O_PROBS]
+      output = d[self.O_PROBS]
+      min_prob = tf.reduce_min(output)
+      max_prob = tf.reduce_max(output)
+      asserts = [utils_tf.assert_greater_equal(min_prob, 0.),
+                 utils_tf.assert_less_equal(max_prob, 1.)]
+      with tf.control_dependencies(asserts):
+        output = tf.identity(output)
+      return output
     elif self.O_LOGITS in d:
       return tf.nn.softmax(logits=d[self.O_LOGITS])
     else:
@@ -211,6 +218,12 @@ class CallableModelWrapper(Model):
     # as logits accidentally or vice versa
     if self.output_layer == 'probs':
       assert output.op.type == "Softmax"
+      min_prob = tf.reduce_min(output)
+      max_prob = tf.reduce_max(output)
+      asserts = [utils_tf.assert_greater_equal(min_prob, 0.),
+                 utils_tf.assert_less_equal(max_prob, 1.)]
+      with tf.control_dependencies(asserts):
+        output = tf.identity(output)
     elif self.output_layer == 'logits':
       assert output.op.type != 'Softmax'
 

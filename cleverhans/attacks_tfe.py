@@ -91,9 +91,7 @@ class FastGradientMethod(Attack, attacks.FastGradientMethod):
   def __init__(self, model, dtypestr='float32', **kwargs):
     """
     Creates a FastGradientMethod instance in eager execution.
-    :model: CNN network, should be an instance of
-            cleverhans.model.Model, if not wrap
-            the output to probs.
+    :model: cleverhans.model.Model
     :dtypestr: datatype in the string format.
     """
     del kwargs
@@ -175,10 +173,8 @@ class BasicIterativeMethod(Attack, attacks.BasicIterativeMethod):
   def __init__(self, model, dtypestr='float32'):
     """
     Creates a BasicIterativeMethod instance in eager execution.
-    :model: CNN network, should be an instance of
-            cleverhans.model.Model, if not wrap
-            the output to probs.
-    :dtypestr: datatype in the string format.
+    :param model: cleverhans.model.Model
+    :param dtypestr: datatype in the string format.
     """
     if not isinstance(model, Model):
       wrapper_warning()

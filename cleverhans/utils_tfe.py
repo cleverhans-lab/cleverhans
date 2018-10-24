@@ -1,3 +1,6 @@
+"""
+Utility functions for writing tf eager code
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -14,6 +17,7 @@ import tensorflow as tf
 from six.moves import xrange
 
 from cleverhans.loss import LossCrossEntropy
+from cleverhans.model import Model
 from .utils import batch_indices, _ArgsWrapper, create_logger
 
 _logger = create_logger("cleverhans.utils.tfe")
@@ -25,8 +29,7 @@ def train(model, X_train=None, Y_train=None, save=False,
           attack=None, attack_args=None):
   """
   Train a TF Eager model
-  :param model: instance of cleverhans model, takes in input batch,
-                  gives out probs(softmax layer).
+  :param model: cleverhans.model.Model
   :param X_train: numpy array with training inputs
   :param Y_train: numpy array with training outputs
   :param save: boolean controlling the save operation
@@ -45,6 +48,7 @@ def train(model, X_train=None, Y_train=None, save=False,
   :param attack_args: Parameters required for the attack.
   :return: True if model trained
   """
+  assert isinstance(model, Model)
   args = _ArgsWrapper(args or {})
   if ((attack is None) != (attack_args is None)):
     raise ValueError("attack and attack_args must be "
@@ -188,9 +192,9 @@ def model_eval(model, X_test=None, Y_test=None, args=None,
     tf.assign(batch_y, Y_cur)
     if attack is not None:
       batch_adv_x = attack.generate(batch_x, **attack_args)
-      predictions = model(batch_adv_x)
+      predictions = model.get_probs(batch_adv_x)
     else:
-      predictions = model(batch_x)
+      predictions = model.get_probs(batch_x)
     cur_corr_preds = tf.equal(tf.argmax(batch_y, axis=-1),
                               tf.argmax(predictions, axis=-1))
 
@@ -212,7 +216,7 @@ def model_argmax(model, samples):
   """
   tfe = tf.contrib.eager
   tf_samples = tfe.Variable(samples)
-  probabilities = model(tf_samples)
+  probabilities = model.get_probs(tf_samples)
 
   if samples.shape[0] == 1:
     return tf.argmax(probabilities)
