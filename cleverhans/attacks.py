@@ -6,6 +6,7 @@ from six.moves import xrange
 import tensorflow as tf
 
 from cleverhans import utils
+from cleverhans.attacks_tf import SPSAAdam, margin_logit_loss, UnrolledAdam
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.model import wrapper_warning, wrapper_warning_logits
 from cleverhans.compat import reduce_sum, reduce_mean
@@ -1960,11 +1961,10 @@ class SPSA(Attack):
     elif x.get_shape().as_list()[0] != 1:
       raise ValueError("For SPSA, input tensor x must have batch_size of 1.")
 
-    from .attacks_tf import SPSAAdam, pgd_attack, margin_logit_loss
     if batch_size is not None:
       warnings.warn(
           'The "batch_size" argument to SPSA is deprecated, and will '
-          'be removed on March 17th 2019. '
+          'be removed on 2019-03-17. '
           'Please use spsa_samples instead.')
       spsa_samples = batch_size
 
@@ -1981,7 +1981,7 @@ class SPSA(Attack):
           logits, label, nb_classes=self.model.nb_classes)
 
     y_attack = y_target if is_targeted else y
-    adv_x = pgd_attack(
+    adv_x = projected_optimization(
         loss_fn,
         x,
         y_attack,
@@ -2431,3 +2431,157 @@ def optimize_linear(grad, eps, ord=np.inf):
   # norm=1 problem
   scaled_perturbation = utils_tf.mul(eps, optimal_perturbation)
   return scaled_perturbation
+
+def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
+                          clip_max=None):
+  """Project `perturbation` onto L-infinity ball of radius `epsilon`.
+  Also project into hypercube such that the resulting adversarial example
+  is between clip_min and clip_max, if applicable.
+  """
+
+
+  if clip_min is None or clip_max is None:
+    raise NotImplementedError("_project_perturbation currently has clipping "
+                              "hard-coded in.")
+
+  # Ensure inputs are in the correct range
+  with tf.control_dependencies([
+      utils_tf.assert_less_equal(input_image,
+                                 tf.cast(clip_max, input_image.dtype)),
+      utils_tf.assert_greater_equal(input_image,
+                                    tf.cast(clip_min, input_image.dtype))
+  ]):
+    clipped_perturbation = utils_tf.clip_by_value(
+        perturbation, -epsilon, epsilon)
+    new_image = utils_tf.clip_by_value(
+        input_image + clipped_perturbation, clip_min, clip_max)
+    return new_image - input_image
+
+def projected_optimization(loss_fn,
+                           input_image,
+                           label,
+                           epsilon,
+                           num_steps,
+                           clip_min=None,
+                           clip_max=None,
+                           optimizer=UnrolledAdam(),
+                           project_perturbation=_project_perturbation,
+                           early_stop_loss_threshold=None,
+                           is_debug=False):
+  """Generic projected optimization, generalized to work with approximate
+  gradients. Used for e.g. the SPSA attack.
+
+  Args:
+    :param loss_fn: A callable which takes `input_image` and `label` as
+                    arguments, and returns a batch of loss values. Same
+                    interface as UnrolledOptimizer.
+    :param input_image: Tensor, a batch of images
+    :param label: Tensor, a batch of labels
+    :param epsilon: float, the L-infinity norm of the maximum allowable
+                    perturbation
+    :param num_steps: int, the number of steps of gradient descent
+    :param clip_min: float, minimum pixel value
+    :param clip_max: float, maximum pixel value
+    :param optimizer: An `UnrolledOptimizer` object
+    :param project_perturbation: A function, which will be used to enforce
+                                 some constraint. It should have the same
+                                 signature as `_project_perturbation`.
+    :param early_stop_loss_threshold: A float or None. If specified, the
+                                      attack will end if the loss is below
+                                      `early_stop_loss_threshold`.
+    :param is_debug: A bool. If True, print debug info for attack progress.
+
+  Returns:
+    adversarial version of `input_image`, with L-infinity difference less than
+      epsilon, which tries to minimize loss_fn.
+
+  Note that this function is not intended as an Attack by itself. Rather, it
+  is designed as a helper function which you can use to write your own attack
+  methods. The method uses a tf.while_loop to optimize a loss function in
+  a single sess.run() call.
+  """
+  assert num_steps is not None
+  if is_debug:
+    with tf.device("/cpu:0"):
+      input_image = tf.Print(
+          input_image, [],
+          "Starting PGD attack with epsilon: %s" % epsilon)
+
+  init_perturbation = tf.random_uniform(
+      tf.shape(input_image),
+      minval=tf.cast(-epsilon, input_image.dtype),
+      maxval=tf.cast(epsilon, input_image.dtype),
+      dtype=input_image.dtype)
+  init_perturbation = project_perturbation(init_perturbation, epsilon,
+                                           input_image, clip_min=clip_min,
+                                           clip_max=clip_max)
+  init_optim_state = optimizer.init_state([init_perturbation])
+  nest = tf.contrib.framework.nest
+
+  def loop_body(i, perturbation, flat_optim_state):
+    """Update perturbation to input image."""
+    optim_state = nest.pack_sequence_as(
+        structure=init_optim_state, flat_sequence=flat_optim_state)
+
+    def wrapped_loss_fn(x):
+      return loss_fn(input_image + x, label)
+
+    new_perturbation_list, new_optim_state = optimizer.minimize(
+        wrapped_loss_fn, [perturbation], optim_state)
+    loss = reduce_mean(wrapped_loss_fn(perturbation), axis=0)
+    if is_debug:
+      with tf.device("/cpu:0"):
+        loss = tf.Print(loss, [loss], "Total batch loss")
+    projected_perturbation = project_perturbation(new_perturbation_list[0],
+                                                  epsilon, input_image,
+                                                  clip_min=clip_min,
+                                                  clip_max=clip_max)
+    with tf.control_dependencies([loss]):
+      i = tf.identity(i)
+      if early_stop_loss_threshold:
+        i = tf.cond(
+            tf.less(loss, early_stop_loss_threshold),
+            lambda: float(num_steps), lambda: i)
+    return i + 1, projected_perturbation, nest.flatten(new_optim_state)
+
+  def cond(i, *_):
+    return tf.less(i, num_steps)
+
+  flat_init_optim_state = nest.flatten(init_optim_state)
+  _, final_perturbation, _ = tf.while_loop(
+      cond,
+      loop_body,
+      loop_vars=[tf.constant(0.), init_perturbation, flat_init_optim_state],
+      parallel_iterations=1,
+      back_prop=False)
+  if project_perturbation is _project_perturbation:
+    # TODO: this assert looks totally wrong.
+    # Not bothering to fix it now because it's only an assert.
+    # 1) Multiplying by 1.1 gives a huge margin of error. This should probably
+    #    take the difference and allow a tolerance of 1e-6 or something like
+    #    that.
+    # 2) I think it should probably check the *absolute value* of
+    # final_perturbation
+    perturbation_max = epsilon * 1.1
+    check_diff = utils_tf.assert_less_equal(
+        final_perturbation,
+        tf.cast(perturbation_max, final_perturbation.dtype),
+        message="final_perturbation must change no pixel by more than "
+                "%s" % perturbation_max)
+  else:
+    # TODO: let caller pass in a check_diff function as well as
+    # project_perturbation
+    check_diff = tf.no_op()
+
+  if clip_min is None or clip_max is None:
+    raise NotImplementedError("This function only supports clipping for now")
+  check_range = [utils_tf.assert_less_equal(input_image,
+                                            tf.cast(clip_max,
+                                                    input_image.dtype)),
+                 utils_tf.assert_greater_equal(input_image,
+                                               tf.cast(clip_min,
+                                                       input_image.dtype))]
+
+  with tf.control_dependencies([check_diff] + check_range):
+    adversarial_image = input_image + final_perturbation
+  return tf.stop_gradient(adversarial_image)

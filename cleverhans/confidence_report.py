@@ -13,10 +13,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from collections import OrderedDict
 import logging
 import time
+import warnings
 
 import numpy as np
+import six
 import tensorflow as tf
 
 from cleverhans.attacks import MaxConfidence
@@ -44,6 +47,62 @@ MC_BATCH_SIZE = 16 * num_devices
 NB_ITER = 40
 BASE_EPS_ITER = None  # Differs by dataset
 SAVE_ADVX = 1
+
+
+class ConfidenceReport(OrderedDict):
+  """
+  A data structure reporting how much confidence a model assigned to its
+  predictions on each example and whether those predictions were correct.
+  This class is just a dictionary with some type checks.
+  It maps string data type names (like "clean" for clean data or "Semantic"
+  for semantic adversarial examples) to ConfidenceReportEntry instances.
+  """
+
+  def __setitem__(self, key, value):
+    assert isinstance(key, six.string_types)
+    assert isinstance(value, ConfidenceReportEntry)
+    super(ConfidenceReport, self).__setitem__(key, value)
+
+class ConfidenceReportEntry(object):
+  """
+  A data structure reporting how much confidence a model assigned to its
+  predictions on each example and whether those predictions were correct.
+
+  :param correctness: ndarray, one bool per example indicating whether it was
+    correct
+  :param confidence: ndarray, one floating point value per example reporting
+    the probability assigned to the prediction for that example
+  """
+  def __init__(self, correctness, confidence):
+    assert isinstance(correctness, np.ndarray)
+    assert isinstance(correctness, np.ndarray)
+    assert correctness.ndim == 1
+    assert confidence.ndim == 1
+    assert correctness.dtype == np.bool
+    assert np.issubdtype(confidence.dtype, np.floating)
+    assert correctness.shape == confidence.shape
+    assert confidence.min() >= 0.
+    assert confidence.max() <= 1.
+    self.correctness = correctness
+    self.confidence = confidence
+
+  def __getitem__(self, key):
+    warnings.warn("Dictionary confidence report entries are deprecated."
+                  "Switch to accessing the appropriate field of "
+                  "ConfidenceReportEntry. "
+                  "Dictionary-style access will be removed on or after "
+                  "2019-04-24.")
+    assert key in ['correctness', 'confidence']
+    return self.__dict__[key]
+
+  def __setitem__(self, key, value):
+    warnings.warn("Dictionary confidence report entries are deprecated."
+                  "Switch to accessing the appropriate field of "
+                  "ConfidenceReportEntry. "
+                  "Dictionary-style access will be removed on or after "
+                  "2019-04-24.")
+    assert key in ['correctness', 'confidence']
+    self.__dict__[key] = value
 
 
 def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
@@ -247,7 +306,7 @@ def make_confidence_report(filepath, train_start=TRAIN_START,
 
   x_data, y_data = dataset.get_set(which_set)
 
-  report = {}
+  report = ConfidenceReport()
 
   semantic = Semantic(model, center, max_val, sess)
   mc = MaxConfidence(model, sess=sess)
@@ -292,10 +351,8 @@ def make_confidence_report(filepath, train_start=TRAIN_START,
     print("Evaluation took", t2 - t1, "seconds")
     correctness, confidence = packed
 
-    report[name] = {
-        'correctness': correctness,
-        'confidence': confidence
-    }
+    report[name] = ConfidenceReportEntry(correctness=correctness,
+                                         confidence=confidence)
 
     print_stats(correctness, confidence, name)
 
