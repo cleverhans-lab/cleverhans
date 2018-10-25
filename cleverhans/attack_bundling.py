@@ -21,6 +21,8 @@ from cleverhans.model import Model
 from cleverhans import serial
 from cleverhans.utils import create_logger, deep_copy, safe_zip
 from cleverhans.utils_tf import infer_devices
+from cleverhans.confidence_report import ConfidenceReport
+from cleverhans.confidence_report import ConfidenceReportEntry
 from cleverhans.confidence_report import print_stats
 
 _logger = create_logger("train")
@@ -352,8 +354,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
   _logger.info("...done")
   correctness, confidence = packed
   _logger.info("Accuracy: " + str(correctness.mean()))
-  report = {}
-  report['clean'] = {'correctness': correctness, 'confidence': confidence}
+  report = ConfidenceReport()
+  report['clean'] = ConfidenceReportEntry(correctness, confidence)
 
   adv_x = x.copy()
 
@@ -1081,7 +1083,8 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
   assert confidence.min() >= 0.
   assert confidence.max() <= 1.
 
-  report = {'bundled': {'correctness': correctness, 'confidence': confidence}}
+  report = ConfidenceReport()
+  report['bundled'] = ConfidenceReportEntry(correctness, confidence)
   serial.save(report_path, report)
   assert report_path.endswith('.joblib')
   adv_x_path = report_path[:-len('.joblib')] + "_adv_x.npy"

@@ -14,7 +14,7 @@ Usage:
 This script uses max-confidence attack bundling
 ( https://openreview.net/forum?id=H1g0piA9tQ )
 to combine adversarial example datasets that were created earlier.
-It will save a report to to model_bundled_examples_report.joblib.
+It will save a ConfidenceReport to to model_bundled_examples_report.joblib.
 The report can be later loaded by another
 script using cleverhans.serial.load.
 """

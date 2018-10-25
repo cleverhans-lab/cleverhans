@@ -10,11 +10,9 @@ Usage:
 This script will run the model on clean data and bundled adversarial examples
 ( https://openreview.net/forum?id=H1g0piA9tQ ) for a max norm threat model
 on the dataset the model was trained on.
-It will save a report to to model_bundled_report.joblib.
+It will save a ConfidenceReport to to model_bundled_report.joblib.
 The report can be later loaded by another
 script using cleverhans.serial.load.
-
-See cleverhans.confidence_report for more description of the report format.
 """
 from __future__ import absolute_import
 from __future__ import division
