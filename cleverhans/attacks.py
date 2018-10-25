@@ -6,7 +6,7 @@ from six.moves import xrange
 import tensorflow as tf
 
 from cleverhans import utils
-from cleverhans.attacks_tf import SPSAAdam, margin_logit_loss, UnrolledAdam
+from cleverhans.attacks_tf import SPSAAdam, margin_logit_loss, TensorAdam
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.model import wrapper_warning, wrapper_warning_logits
 from cleverhans.compat import reduce_sum, reduce_mean
@@ -2465,7 +2465,7 @@ def projected_optimization(loss_fn,
                            num_steps,
                            clip_min=None,
                            clip_max=None,
-                           optimizer=UnrolledAdam(),
+                           optimizer=TensorAdam(),
                            project_perturbation=_project_perturbation,
                            early_stop_loss_threshold=None,
                            is_debug=False):
@@ -2475,7 +2475,7 @@ def projected_optimization(loss_fn,
   Args:
     :param loss_fn: A callable which takes `input_image` and `label` as
                     arguments, and returns a batch of loss values. Same
-                    interface as UnrolledOptimizer.
+                    interface as TensorOptimizer.
     :param input_image: Tensor, a batch of images
     :param label: Tensor, a batch of labels
     :param epsilon: float, the L-infinity norm of the maximum allowable
@@ -2483,7 +2483,7 @@ def projected_optimization(loss_fn,
     :param num_steps: int, the number of steps of gradient descent
     :param clip_min: float, minimum pixel value
     :param clip_max: float, maximum pixel value
-    :param optimizer: An `UnrolledOptimizer` object
+    :param optimizer: A `TensorOptimizer` object
     :param project_perturbation: A function, which will be used to enforce
                                  some constraint. It should have the same
                                  signature as `_project_perturbation`.
