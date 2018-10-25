@@ -1770,6 +1770,7 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     preds_max = reduce_max(preds, 1, keepdims=True)
     y = tf.to_float(tf.equal(preds, preds_max))
     y = tf.stop_gradient(y)
+    del preds
   y = y / reduce_sum(y, 1, keepdims=True)
 
   # Define the range of transformations

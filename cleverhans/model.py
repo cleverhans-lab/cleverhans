@@ -6,6 +6,8 @@ import warnings
 
 import tensorflow as tf
 
+from cleverhans import utils_tf
+
 
 class Model(object):
   """
@@ -75,7 +77,16 @@ class Model(object):
     """
     d = self.fprop(x, **kwargs)
     if self.O_PROBS in d:
-      return d[self.O_PROBS]
+      output = d[self.O_PROBS]
+      min_prob = tf.reduce_min(output)
+      max_prob = tf.reduce_max(output)
+      asserts = [utils_tf.assert_greater_equal(min_prob,
+                                               tf.cast(0., min_prob.dtype)),
+                 utils_tf.assert_less_equal(max_prob,
+                                            tf.cast(1., min_prob.dtype))]
+      with tf.control_dependencies(asserts):
+        output = tf.identity(output)
+      return output
     elif self.O_LOGITS in d:
       return tf.nn.softmax(logits=d[self.O_LOGITS])
     else:
@@ -211,6 +222,14 @@ class CallableModelWrapper(Model):
     # as logits accidentally or vice versa
     if self.output_layer == 'probs':
       assert output.op.type == "Softmax"
+      min_prob = tf.reduce_min(output)
+      max_prob = tf.reduce_max(output)
+      asserts = [utils_tf.assert_greater_equal(min_prob,
+                                               tf.cast(0., min_prob.dtype)),
+                 utils_tf.assert_less_equal(max_prob,
+                                            tf.cast(1., max_prob.dtype))]
+      with tf.control_dependencies(asserts):
+        output = tf.identity(output)
     elif self.output_layer == 'logits':
       assert output.op.type != 'Softmax'
 

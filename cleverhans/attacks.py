@@ -267,6 +267,7 @@ class Attack(object):
       preds_max = reduce_max(preds, 1, keepdims=True)
       original_predictions = tf.to_float(tf.equal(preds, preds_max))
       labels = tf.stop_gradient(original_predictions)
+      del preds
     if isinstance(labels, np.ndarray):
       nb_classes = labels.shape[1]
     else:
@@ -534,9 +535,6 @@ class ProjectedGradientDescent(Attack):
     if self.clip_min is not None or self.clip_max is not None:
       adv_x = utils_tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
 
-    # Fix labels to the first model predictions for loss computation
-    model_preds = self.model.get_probs(x)
-    preds_max = reduce_max(model_preds, 1, keepdims=True)
     if self.y_target is not None:
       y = self.y_target
       targeted = True
@@ -544,9 +542,12 @@ class ProjectedGradientDescent(Attack):
       y = self.y
       targeted = False
     else:
+      model_preds = self.model.get_probs(x)
+      preds_max = reduce_max(model_preds, 1, keepdims=True)
       y = tf.to_float(tf.equal(model_preds, preds_max))
       y = tf.stop_gradient(y)
       targeted = False
+      del model_preds
 
     y_kwarg = 'y_target' if targeted else 'y'
     fgm_params = {
