@@ -7,16 +7,14 @@ Usage:
   where model.joblib is a file created by cleverhans.serial.save containing
   a picklable cleverhans.model.Model instance.
 
-This script will run the model on a variety of types of data and save a
-report to model_report.joblib. The report can be later loaded by another
-script using cleverhans.serial.load. The format of the report is a dictionary.
-Each dictionary key is the name of a type of data:
+This script will run the model on a variety of types of data and save an
+instance of cleverhans.confidence_report.ConfidenceReport to
+model_report.joblib.
+The report can be later loaded by another script using cleverhans.serial.load.
+This script puts the following entries in the report:
   clean : Clean data
   semantic : Semantic adversarial examples
   mc: MaxConfidence adversarial examples
-Each value in the dictionary contains an array of bools indicating whether
-the model got each example correct and an array containing the confidence
-that the model assigned to each prediction.
 
 This script works by running a single MaxConfidence attack on each example.
 ( https://openreview.net/forum?id=H1g0piA9tQ )
