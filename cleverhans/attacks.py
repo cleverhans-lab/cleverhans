@@ -2405,7 +2405,7 @@ def optimize_linear(grad, eps, ord=np.inf):
     # Take sign of gradient
     optimal_perturbation = tf.sign(grad)
     # The following line should not change the numerical results.
-    # It applies only because `normalized_grad` is the output of
+    # It applies only because `optimal_perturbation` is the output of
     # a `sign` op, which has zero derivative anyway.
     # It should not be applied for the other norms, where the
     # perturbation has a non-zero derivative.
