@@ -90,6 +90,23 @@ class Attack(object):
 
     :param x: The model's symbolic inputs.
     :param **kwargs: optional parameters used by child classes.
+      Each child class defines additional parameters as needed.
+      Child classes that use the following concepts should use the following
+      names:
+        clip_min: minimum feature value
+        clip_max: maximum feature value
+        eps: size of norm constraint on adversarial perturbation
+        ord: order of norm constraint
+        nb_iter: number of iterations
+        eps_iter: size of norm constraint on iteration
+        y_target: if specified, the attack is targeted.
+        y: Do not specify if y_target is specified.
+           If specified, the attack is untargeted, aims to make the output
+           class not be y.
+           If neither y_target nor y is specified, y is inferred by having
+           the model classify the input.
+      For other concepts, it's genrally a good idea to read other classes
+      and check for name consistency.
     :return: A symbolic representation of the adversarial examples.
     """
 
