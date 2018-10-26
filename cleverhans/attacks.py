@@ -105,7 +105,7 @@ class Attack(object):
            class not be y.
            If neither y_target nor y is specified, y is inferred by having
            the model classify the input.
-      For other concepts, it's genrally a good idea to read other classes
+      For other concepts, it's generally a good idea to read other classes
       and check for name consistency.
     :return: A symbolic representation of the adversarial examples.
     """
