@@ -56,8 +56,8 @@ pip install -e git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
 
 #### Manual installation
 
-If you are installing CleverHans manually, install TensorFlow first.
-Then, run the following command to clone the CleverHans repository
+If you are installing CleverHans manually,
+run the following command to clone the CleverHans repository
 into a folder of your choice:
 
 ```
@@ -65,7 +65,7 @@ git clone https://github.com/tensorflow/cleverhans
 ```
 
 You can then install the local package in "editable" mode in order to add it to
-your `PYTHONPATH`
+your `PYTHONPATH`:
 
 ```
 pip install -e ./cleverhans
@@ -79,6 +79,31 @@ currently [test it](https://travis-ci.org/tensorflow/cleverhans) it with Python
 Support for TensorFlow 1.3 and earlier is deprecated. After 2018-11-1 we will
 not fix bugs reported for these versions and we will eliminate wrapper code
 needed for backwards compatibility with these versions.
+
+## Getting support
+
+If you have a request for support, please ask a question
+on [StackOverflow](https://stackoverflow.com/questions/tagged/cleverhans)
+rather than opening an issue in the GitHub tracker. The GitHub
+issue tracker should *only* be used to report bugs or make feature requests.
+
+## Contributing
+
+Contributions are welcomed! To speed the code review process, we ask that:
+* New efforts and features be coordinated
+on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
+* When making code contributions to CleverHans, you follow the
+`PEP8 with two spaces` coding style (the same as the one used
+by TensorFlow) in your pull requests.
+In most cases this can be done by running `autopep8 -i --indent-size 2 <file>`
+on the files you have edited.
+You can check your code by running `nosestests cleverhans/devtools/tests/test_format.py` or check an individual file by running `pylint <file>` from inside the cleverhans repository root directory.
+* When making your first pull request, you [sign the Google CLA](https://cla.developers.google.com/clas)
+* We do not accept pull requests that add git submodules because of [the
+  problems that arise when maintaining git
+  submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407)
+
+Bug fixes can be initiated through Github pull requests.
 
 ## Scripts: `scripts` directory
 
@@ -138,7 +163,6 @@ not to add new tutorials. Each tutorial should showcase an extremely different
 way of using the library. Just calling a different attack, model, or dataset
 is not enough to justify maintaining a parallel tutorial.
 
-
 ## Examples : `examples` directory
 
 The `examples/` folder contains additional scripts to showcase different uses
@@ -162,24 +186,6 @@ When reporting benchmarks, please:
 For example, you might report "We benchmarked the robustness of our method to
 adversarial attack using v2.1.0 of CleverHans. On a test set modified by the
 `FastGradientMethod` with a max-norm `eps` of 0.3, we obtained a test set accuracy of 71.3%."
-
-## Contributing
-
-Contributions are welcomed! To speed the code review process, we ask that:
-* New efforts and features be coordinated
-on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
-* When making code contributions to CleverHans, you follow the
-`PEP8 with two spaces` coding style (the same as the one used
-by TensorFlow) in your pull requests.
-In most cases this can be done by running `autopep8 -i --indent-size 2 <file>`
-on the files you have edited.
-You can check your code by running `nosestests cleverhans/devtools/tests/test_format.py` or check an individual file by running `pylint <file>` from inside the cleverhans repository root directory.
-* When making your first pull request, you [sign the Google CLA](https://cla.developers.google.com/clas)
-* We do not accept pull requests that add git submodules because of [the
-  problems that arise when maintaining git
-  submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407)
-
-Bug fixes can be initiated through Github pull requests.
 
 ## Citing this work
 
