@@ -546,25 +546,6 @@ class TestBasicIterativeMethod(CommonAttackProperties):
     self.assertTrue(ok[0])
 
 
-class TestMomentumIterativeMethod(TestBasicIterativeMethod):
-  def setUp(self):
-    super(TestMomentumIterativeMethod, self).setUp()
-
-    self.sess = tf.Session()
-    self.model = SimpleModel()
-    self.attack = MomentumIterativeMethod(self.model, sess=self.sess)
-
-  def test_generate_np_can_be_called_with_different_decay_factor(self):
-    x_val = np.random.rand(100, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    for decay_factor in [0.0, 0.5, 1.0]:
-      x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
-                                      decay_factor=decay_factor,
-                                      clip_min=-5.0, clip_max=5.0)
-
-      delta = np.max(np.abs(x_adv - x_val), axis=1)
-      self.assertClose(delta, 0.5)
 
 
 class TestCarliniWagnerL2(CleverHansTest):
@@ -1018,6 +999,26 @@ class TestBasicIterativeMethod(TestMadryEtAl):
     pass
 
 
+class TestMomentumIterativeMethod(TestBasicIterativeMethod):
+  def setUp(self):
+    super(TestMomentumIterativeMethod, self).setUp()
+
+    self.sess = tf.Session()
+    self.model = SimpleModel()
+    self.attack = MomentumIterativeMethod(self.model, sess=self.sess)
+
+  def test_generate_np_can_be_called_with_different_decay_factor(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    for decay_factor in [0.0, 0.5, 1.0]:
+      x_adv = self.attack.generate_np(x_val, eps=0.5, ord=np.inf,
+                                      decay_factor=decay_factor,
+                                      clip_min=-5.0, clip_max=5.0)
+
+      delta = np.max(np.abs(x_adv - x_val), axis=1)
+      self.assertClose(delta, 0.5)
+  
 class TestFastFeatureAdversaries(CleverHansTest):
   def setUp(self):
     super(TestFastFeatureAdversaries, self).setUp()
