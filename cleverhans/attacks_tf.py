@@ -1480,10 +1480,10 @@ class LBFGS_attack(object):
     return o_bestattack
 
 
-class UnrolledOptimizer(object):
+class TensorOptimizer(object):
   """Optimizer for Tensors rather than tf.Variables.
 
-  UnrolledOptimizers implement optimizers where the values being optimized
+  TensorOptimizers implement optimizers where the values being optimized
   are ordinary Tensors, rather than Variables. TF Variables can have strange
   behaviors when being assigned multiple times within a single sess.run()
   call, particularly in Distributed TF, so this avoids thinking about those
@@ -1538,9 +1538,15 @@ class UnrolledOptimizer(object):
     raise NotImplementedError(
         "init_optim_state should be defined in each subclass")
 
+class UnrolledOptimizer(TensorOptimizer):
+  def __init__(self, *args, **kwargs):
+    warnings.warn("UnrolledOptimizer has been renamed to TensorOptimizer."
+                  " The old name may be removed on or after 2019-04-25.")
+    super(UnrolledOptimizer, self).__init__(*args, **kwargs)
 
-class UnrolledGradientDescent(UnrolledOptimizer):
-  """Vanilla Gradient Descent UnrolledOptimizer."""
+
+class TensorGradientDescent(TensorOptimizer):
+  """Vanilla Gradient Descent TensorOptimizer."""
 
   def __init__(self, lr):
     self._lr = lr
@@ -1554,8 +1560,15 @@ class UnrolledGradientDescent(UnrolledOptimizer):
       new_x[i] = x[i] - self._lr * grads[i]
     return new_x, optim_state
 
+class UnrolledGradientDescent(TensorGradientDescent):
+  def __init__(self, *args, **kwargs):
+    warnings.warn("UnrolledGradientDescent has been renamed to "
+                  "TensorGradientDescent."
+                  " The old name may be removed on or after 2019-04-25.")
+    super(UnrolledGradientDescent, self).__init__(*args, **kwargs)
 
-class UnrolledAdam(UnrolledOptimizer):
+
+class TensorAdam(TensorOptimizer):
   """The Adam optimizer defined in https://arxiv.org/abs/1412.6980."""
 
   def __init__(self, lr=0.001, beta1=0.9, beta2=0.999, epsilon=1e-9):
@@ -1595,7 +1608,14 @@ class UnrolledAdam(UnrolledOptimizer):
     return new_x, new_optim_state
 
 
-class SPSAAdam(UnrolledAdam):
+class UnrolledAdam(TensorAdam):
+  def __init__(self, *args, **kwargs):
+    warnings.warn("UnrolledAdam has been renamed to TensorAdam."
+                  " The old name may be removed on or after 2019-04-25.")
+    super(UnrolledAdam, self).__init__(*args, **kwargs)
+
+
+class SPSAAdam(TensorAdam):
   """Optimizer for gradient-free attacks in https://arxiv.org/abs/1802.05666.
 
   Gradients estimates are computed using Simultaneous Perturbation Stochastic
@@ -1681,7 +1701,7 @@ def margin_logit_loss(model_logits, label, nb_classes=10, num_classes=None):
   """Computes difference between logit for `label` and next highest logit.
 
   The loss is high when `label` is unlikely (targeted by default).
-  This follows the same interface as `loss_fn` for UnrolledOptimizer and
+  This follows the same interface as `loss_fn` for TensorOptimizer and
   projected_optimization, i.e. it returns a batch of loss values.
   """
   if num_classes is not None:
