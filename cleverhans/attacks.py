@@ -617,14 +617,18 @@ class ProjectedGradientDescent(Attack):
     # When multi-GPU eval code tries to force all PGD ops onto GPU, this
     # can cause an error.
     with tf.device("/CPU:0"):
-      asserts.append(tf.assert_less_equal(tf.cast(self.eps_iter, dtype=self.eps.dtype), self.eps))
+      asserts.append(tf.assert_less_equal(tf.cast(self.eps_iter,
+                                                  dtype=self.eps.dtype),
+                                          self.eps))
       if self.ord == np.inf and self.clip_min is not None:
         # The 1e-6 is needed to compensate for numerical error.
         # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5,
         # clip_max=.7
         asserts.append(tf.assert_less_equal(tf.cast(self.eps, x.dtype),
-                                            1e-6 + tf.cast(self.clip_max, x.dtype)
-                                            - tf.cast(self.clip_min, x.dtype)))
+                                            1e-6 + tf.cast(self.clip_max,
+                                                           x.dtype)
+                                            - tf.cast(self.clip_min,
+                                                      x.dtype)))
 
     if self.sanity_checks:
       with tf.control_dependencies(asserts):
