@@ -255,7 +255,7 @@ class CommonAttackProperties(CleverHansTest):
                                       clip_min=-5.0, clip_max=5.0)
 
       delta = np.max(np.abs(x_adv - x_val), axis=1)
-      self.assertClose(delta, eps)
+      self.assertLess(delta, eps)
 
   def test_generate_np_clip_works_as_expected(self):
     x_val = np.random.rand(100, 2)
