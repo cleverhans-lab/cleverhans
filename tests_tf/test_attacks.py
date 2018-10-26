@@ -454,100 +454,6 @@ class TestSPSA(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
-
-class TestBasicIterativeMethod(CommonAttackProperties):
-  def setUp(self):
-    CommonAttackProperties.setUp(self)
-
-    self.sess = tf.Session()
-    self.model = SimpleModel()
-    self.attack = BasicIterativeMethod(self.model, sess=self.sess)
-
-  def test_generate_np_gives_adversarial_example_linfinity(self):
-    self.help_generate_np_gives_adversarial_example(ord=np.infty, eps=.5,
-                                                    nb_iter=20)
-
-  def test_generate_np_gives_adversarial_example_l1(self):
-    try:
-      self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
-                                                      nb_iter=20)
-    except NotImplementedError:
-      raise SkipTest()
-
-  def test_generate_np_gives_adversarial_example_l2(self):
-    self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
-                                                    nb_iter=20)
-
-  def test_do_not_reach_lp_boundary(self):
-    """
-    Make sure that iterative attack don't reach boundary of Lp
-    neighbourhood if nb_iter * eps_iter is relatively small compared to
-    epsilon.
-    """
-    for ord in [1, 2, np.infty]:
-      try:
-        _, _, delta = self.generate_adversarial_examples_np(
-          ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
-      except NotImplementedError:
-        # Don't raise SkipTest because it will skip the rest of the for loop
-        continue
-      self.assertTrue(np.max(0.5 - delta) > 0.25)
-
-  def test_attack_strength(self):
-    """
-    If clipping is not done at each iteration (not passing clip_min and
-    clip_max to fgm), this attack fails by
-    np.mean(orig_labels == new_labels) == .39.
-    """
-    x_val = np.random.rand(100, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    # sanity checks turned off becuase this test initializes outside
-    # the valid range.
-    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
-                                    clip_min=0.5, clip_max=0.7,
-                                    nb_iter=5, sanity_checks=False)
-
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-    self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
-
-  def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
-    x_val = np.random.rand(100, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
-                                    clip_min=-5.0, clip_max=5.0,
-                                    nb_iter=10)
-
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-    self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
-
-    ok = [False]
-    old_grads = tf.gradients
-
-    def fn(*x, **y):
-      ok[0] = True
-      return old_grads(*x, **y)
-
-    tf.gradients = fn
-
-    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
-                                    clip_min=-5.0, clip_max=5.0,
-                                    nb_iter=11)
-
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-    self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
-
-    tf.gradients = old_grads
-
-    self.assertTrue(ok[0])
-
-
-
-
 class TestCarliniWagnerL2(CleverHansTest):
   def setUp(self):
     super(TestCarliniWagnerL2, self).setUp()
@@ -916,6 +822,36 @@ class TestMadryEtAl(CleverHansTest):
     self.model = SimpleModel()
     self.attack = MadryEtAl(self.model, sess=self.sess)
 
+  def test_generate_np_gives_adversarial_example_linfinity(self):
+    self.help_generate_np_gives_adversarial_example(ord=np.infty, eps=.5,
+                                                    nb_iter=20)
+
+  def test_generate_np_gives_adversarial_example_l1(self):
+    try:
+      self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
+                                                      nb_iter=20)
+    except NotImplementedError:
+      raise SkipTest()
+
+  def test_generate_np_gives_adversarial_example_l2(self):
+    self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
+                                                    nb_iter=20)
+
+  def test_do_not_reach_lp_boundary(self):
+    """
+    Make sure that iterative attack don't reach boundary of Lp
+    neighbourhood if nb_iter * eps_iter is relatively small compared to
+    epsilon.
+    """
+    for ord in [1, 2, np.infty]:
+      try:
+        _, _, delta = self.generate_adversarial_examples_np(
+          ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
+      except NotImplementedError:
+        # Don't raise SkipTest because it will skip the rest of the for loop
+        continue
+      self.assertTrue(np.max(0.5 - delta) > 0.25)
+    
   def test_attack_strength(self):
     """
     If clipping is not done at each iteration (not using clip_min and
@@ -954,6 +890,40 @@ class TestMadryEtAl(CleverHansTest):
 
     self.assertLess(-0.201, np.min(x_adv))
     self.assertLess(np.max(x_adv), .301)
+
+
+  def test_generate_np_does_cache_graph_computation_for_nb_iter(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
+                                    clip_min=-5.0, clip_max=5.0,
+                                    nb_iter=10)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
+
+    ok = [False]
+    old_grads = tf.gradients
+
+    def fn(*x, **y):
+      ok[0] = True
+      return old_grads(*x, **y)
+
+    tf.gradients = fn
+
+    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
+                                    clip_min=-5.0, clip_max=5.0,
+                                    nb_iter=11)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
+
+    tf.gradients = old_grads
+
+    self.assertFalse(ok[0])
 
   def test_multiple_initial_random_step(self):
     """
