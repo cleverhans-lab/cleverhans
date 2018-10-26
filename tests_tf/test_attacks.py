@@ -814,7 +814,7 @@ class TestDeepFool(CleverHansTest):
     self.assertTrue(np.max(x_adv) < .301)
 
 
-class TestMadryEtAl(CleverHansTest):
+class TestMadryEtAl(CommonAttackProperties):
   def setUp(self):
     super(TestMadryEtAl, self).setUp()
 
@@ -1226,3 +1226,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
+
+if __name__ == "__main__":
+  unittest.main()
+
