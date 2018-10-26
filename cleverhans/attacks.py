@@ -540,7 +540,7 @@ class ProjectedGradientDescent(Attack):
       asserts.append(utils_tf.assert_less_equal(x,
                                                 tf.cast(self.clip_max,
                                                         x.dtype)))
-    
+
     # Initialize loop variables
     if self.rand_init:
       eta = tf.random_uniform(tf.shape(x),
