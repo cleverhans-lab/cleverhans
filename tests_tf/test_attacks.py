@@ -890,8 +890,9 @@ class TestDeepFool(CleverHansTest):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
+    x_adv = self.attack.generate_np(x_val, overshoot=0.02, max_iter=50,
                                     nb_candidate=2, clip_min=-5,
+                                    overshoot=0.02,
                                     clip_max=5)
 
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
@@ -906,7 +907,7 @@ class TestDeepFool(CleverHansTest):
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     x = tf.placeholder(tf.float32, x_val.shape)
 
-    x_adv_p = self.attack.generate(x, over_shoot=0.02, max_iter=50,
+    x_adv_p = self.attack.generate(x, overshoot=0.02, max_iter=50,
                                    nb_candidate=2, clip_min=-5, clip_max=5)
     self.assertEqual(x_val.shape, x_adv_p.shape)
     x_adv = self.sess.run(x_adv_p, {x: x_val})
@@ -919,7 +920,7 @@ class TestDeepFool(CleverHansTest):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    x_adv = self.attack.generate_np(x_val, over_shoot=0.02, max_iter=50,
+    x_adv = self.attack.generate_np(x_val, overshoot=0.02, max_iter=50,
                                     nb_candidate=2, clip_min=-0.2,
                                     clip_max=0.3)
 
