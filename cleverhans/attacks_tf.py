@@ -277,7 +277,7 @@ def jsma(sess,
   current = utils_tf.model_argmax(
       sess, x, predictions, adv_x_original_shape, feed=feed)
 
-  _logger.debug("Starting JSMA attack up to {} iterations".format(max_iters))
+  _logger.debug("Starting JSMA attack up to %s iterations", max_iters)
   # Repeat this main loop until we have achieved misclassification
   while (current != target and iteration < max_iters
          and len(search_domain) > 1):
@@ -296,8 +296,7 @@ def jsma(sess,
         feed=feed)
 
     if iteration % ((max_iters + 1) // 5) == 0 and iteration > 0:
-      _logger.debug("Iteration {} of {}".format(iteration,
-                                                int(max_iters)))
+      _logger.debug("Iteration %s of %s", iteration, int(max_iters))
     # Compute the saliency map for each of our target classes
     # and return the two best candidate features for perturbation
     i, j, search_domain = saliency_map(grads_target, grads_others,
@@ -315,10 +314,10 @@ def jsma(sess,
     iteration = iteration + 1
 
   if current == target:
-    _logger.info("Attack succeeded using {} iterations".format(iteration))
+    _logger.info("Attack succeeded using %s iterations", iteration)
   else:
-    _logger.info(("Failed to find adversarial example " +
-                  "after {} iterations").format(iteration))
+    _logger.info("Failed to find adversarial example after %s iterations",
+                 iteration)
 
   # Compute the ratio of pixels perturbed by the algorithm
   percent_perturbed = float(iteration * 2) / nb_features
@@ -677,8 +676,7 @@ class CarliniWagnerL2(object):
     r = []
     for i in range(0, len(imgs), self.batch_size):
       _logger.debug(
-          ("Running CWL2 attack on instance " + "{} of {}").format(
-              i, len(imgs)))
+          ("Running CWL2 attack on instance %s of %s", i, len(imgs)))
       r.extend(
           self.attack_batch(imgs[i:i + self.batch_size],
                             targets[i:i + self.batch_size]))
@@ -732,8 +730,8 @@ class CarliniWagnerL2(object):
 
       bestl2 = [1e10] * batch_size
       bestscore = [-1] * batch_size
-      _logger.debug("  Binary search step {} of {}".format(
-          outer_step, self.BINARY_SEARCH_STEPS))
+      _logger.debug("  Binary search step %s of %s",
+                    outer_step, self.BINARY_SEARCH_STEPS)
 
       # The last iteration (if we run many steps) repeat the search once.
       if self.repeat and outer_step == self.BINARY_SEARCH_STEPS - 1:
@@ -1030,8 +1028,8 @@ class ElasticNetMethod(object):
     r = []
     for i in range(0, len(imgs) // batch_size):
       _logger.debug(
-          ("Running EAD attack on instance " + "{} of {}").format(
-              i * batch_size, len(imgs)))
+          ("Running EAD attack on instance %s of %s",
+           i * batch_size, len(imgs)))
       r.extend(
           self.attack_batch(
               imgs[i * batch_size:(i + 1) * batch_size],
@@ -1039,8 +1037,8 @@ class ElasticNetMethod(object):
     if len(imgs) % batch_size != 0:
       last_elements = len(imgs) - (len(imgs) % batch_size)
       _logger.debug(
-          ("Running EAD attack on instance " + "{} of {}").format(
-              last_elements, len(imgs)))
+          ("Running EAD attack on instance %s of %s",
+           last_elements, len(imgs)))
       temp_imgs = np.zeros((batch_size, ) + imgs.shape[2:])
       temp_targets = np.zeros((batch_size, ) + targets.shape[2:])
       temp_imgs[:(len(imgs) % batch_size)] = imgs[last_elements:]
@@ -1090,8 +1088,8 @@ class ElasticNetMethod(object):
 
       bestdst = [1e10] * batch_size
       bestscore = [-1] * batch_size
-      _logger.debug("  Binary search step {} of {}".format(
-          outer_step, self.BINARY_SEARCH_STEPS))
+      _logger.debug("  Binary search step %s of %s",
+                    outer_step, self.BINARY_SEARCH_STEPS)
 
       # The last iteration (if we run many steps) repeat the search once.
       if self.repeat and outer_step == self.BINARY_SEARCH_STEPS - 1:
@@ -1272,13 +1270,12 @@ def deepfool_attack(sess,
   original = current  # use original label as the reference
 
   _logger.debug(
-      "Starting DeepFool attack up to {} iterations".format(max_iter))
+      "Starting DeepFool attack up to %s iterations", max_iter)
   # Repeat this main loop until we have achieved misclassification
   while (np.any(current == original) and iteration < max_iter):
 
     if iteration % 5 == 0 and iteration > 0:
-      _logger.info("Attack result at iteration {} is {}".format(
-          iteration, current))
+      _logger.info("Attack result at iteration %s is %s", iteration, current)
     gradients = sess.run(grads, feed_dict={x: adv_x})
     predictions_val = sess.run(predictions, feed_dict={x: adv_x})
     for idx in range(sample.shape[0]):
@@ -1304,11 +1301,11 @@ def deepfool_attack(sess,
     iteration = iteration + 1
 
   # need more revision, including info like how many succeed
-  _logger.info("Attack result at iteration {} is {}".format(
-      iteration, current))
-  _logger.info(
-      "{} out of {}".format(sum(current != original), sample.shape[0]) +
-      " becomes adversarial examples at iteration {}".format(iteration))
+  _logger.info("Attack result at iteration %s is %s", iteration, current)
+  _logger.info("%s out of %s become adversarial examples at iteration %s",
+               sum(current != original),
+               sample.shape[0],
+               iteration)
   # need to clip this image into the given range
   adv_x = np.clip((1 + overshoot) * r_tot + sample, clip_min, clip_max)
   return adv_x
@@ -1415,8 +1412,8 @@ class LBFGS_attack(object):
     o_bestattack = np.copy(oimgs)
 
     for outer_step in range(self.binary_search_steps):
-      _logger.debug(("  Binary search step {} of {}").format(
-          outer_step, self.binary_search_steps))
+      _logger.debug("  Binary search step %s of %s",
+                    outer_step, self.binary_search_steps)
 
       # The last iteration (if we run many steps) repeat the search once.
       if self.repeat and outer_step == self.binary_search_steps - 1:
@@ -1441,7 +1438,7 @@ class LBFGS_attack(object):
       preds = np.atleast_1d(
           utils_tf.model_argmax(self.sess, self.x, self.model_preds,
                                 adv_x))
-      _logger.debug("predicted labels are {}".format(preds))
+      _logger.debug("predicted labels are %s", preds)
 
       l2s = np.zeros(self.batch_size)
       for i in range(self.batch_size):
