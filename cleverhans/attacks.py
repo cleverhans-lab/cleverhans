@@ -428,7 +428,8 @@ def fgm(x,
 
   # If a data range was specified, check that the input was in that range
   if clip_min is not None:
-    asserts.append(utils_tf.assert_greater_equal(x, tf.cast(clip_min, x.dtype)))
+    asserts.append(utils_tf.assert_greater_equal(
+        x, tf.cast(clip_min, x.dtype)))
 
   if clip_max is not None:
     asserts.append(utils_tf.assert_less_equal(x, tf.cast(clip_max, x.dtype)))
@@ -461,7 +462,6 @@ def fgm(x,
     # We don't currently support one-sided clipping
     assert clip_min is not None and clip_max is not None
     adv_x = utils_tf.clip_by_value(adv_x, clip_min, clip_max)
-
 
   if sanity_checks:
     with tf.control_dependencies(asserts):
@@ -572,7 +572,6 @@ class ProjectedGradientDescent(Attack):
 
     def cond(i, _):
       return tf.less(i, self.nb_iter)
-
 
     def body(i, adv_x):
       adv_x = FGM.generate(adv_x, **fgm_params)
@@ -717,7 +716,8 @@ class MomentumIterativeMethod(Attack):
                                                   **kwargs)
     self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
                             'clip_max')
-    self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor', 'sanity_checks']
+    self.structural_kwargs = [
+        'ord', 'nb_iter', 'decay_factor', 'sanity_checks']
 
   def generate(self, x, **kwargs):
     """
@@ -2342,6 +2342,7 @@ class MaxConfidence(Attack):
     adv = self.base_attacker.generate(x, y_target=target_y, **self.params)
     return adv
 
+
 def arg_type(arg_names, kwargs):
   """
   Returns a hashable summary of the types of arg_names within kwargs.
@@ -2386,6 +2387,7 @@ def arg_type(arg_names, kwargs):
     dtypes.append(dtype)
   dtypes = tuple(dtypes)
   return (passed, passed_and_not_none, dtypes)
+
 
 def optimize_linear(grad, eps, ord=np.inf):
   """
@@ -2433,13 +2435,13 @@ def optimize_linear(grad, eps, ord=np.inf):
   scaled_perturbation = utils_tf.mul(eps, optimal_perturbation)
   return scaled_perturbation
 
+
 def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
                           clip_max=None):
   """Project `perturbation` onto L-infinity ball of radius `epsilon`.
   Also project into hypercube such that the resulting adversarial example
   is between clip_min and clip_max, if applicable.
   """
-
 
   if clip_min is None or clip_max is None:
     raise NotImplementedError("_project_perturbation currently has clipping "
@@ -2457,6 +2459,7 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
     new_image = utils_tf.clip_by_value(
         input_image + clipped_perturbation, clip_min, clip_max)
     return new_image - input_image
+
 
 def projected_optimization(loss_fn,
                            input_image,
