@@ -1610,8 +1610,8 @@ class LBFGS_impl(object):
     o_bestattack = np.copy(oimgs)
 
     for outer_step in range(self.binary_search_steps):
-      _logger.debug(("  Binary search step {} of {}").format(
-          outer_step, self.binary_search_steps))
+      _logger.debug("  Binary search step %s of %s",
+                    outer_step, self.binary_search_steps)
 
       # The last iteration (if we run many steps) repeat the search once.
       if self.repeat and outer_step == self.binary_search_steps - 1:
@@ -1636,7 +1636,7 @@ class LBFGS_impl(object):
       preds = np.atleast_1d(
           utils_tf.model_argmax(self.sess, self.x, self.logits,
                                 adv_x))
-      _logger.debug("predicted labels are {}".format(preds))
+      _logger.debug("predicted labels are %s", preds)
 
       l2s = np.zeros(self.batch_size)
       for i in range(self.batch_size):
@@ -1663,9 +1663,9 @@ class LBFGS_impl(object):
           else:
             CONST[e] *= 10
 
-      _logger.debug("  Successfully generated adversarial examples " +
-                    "on {} of {} instances.".format(
-                        sum(upper_bound < 1e9), self.batch_size))
+      _logger.debug("  Successfully generated adversarial examples "
+                    "on %s of %s instances.",
+                    sum(upper_bound < 1e9), self.batch_size)
       o_bestl2 = np.array(o_bestl2)
       mean = np.mean(np.sqrt(o_bestl2[o_bestl2 < 1e9]))
       _logger.debug("   Mean successful distortion: {:.4g}".format(mean))
