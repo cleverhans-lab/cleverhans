@@ -313,7 +313,7 @@ class FastGradientMethod(Attack):
     :param eps: (optional float) attack step size (input variation)
     :param ord: (optional) Order of the norm (mimics NumPy).
                 Possible values: np.inf, 1 or 2.
-    :param y: (optional) A tensor with the model labels. Only provide
+    :param y: (optional) A tensor with the true labels. Only provide
               this parameter if you'd like to use true labels when crafting
               adversarial samples. Otherwise, model predictions are used as
               labels to avoid the "label leaking" effect (explained in this
@@ -359,7 +359,7 @@ class FastGradientMethod(Attack):
     :param eps: (optional float) attack step size (input variation)
     :param ord: (optional) Order of the norm (mimics NumPy).
                 Possible values: np.inf, 1 or 2.
-    :param y: (optional) A tensor with the model labels. Only provide
+    :param y: (optional) A tensor with the true labels. Only provide
               this parameter if you'd like to use true labels when crafting
               adversarial samples. Otherwise, model predictions are used as
               labels to avoid the "label leaking" effect (explained in this
@@ -405,7 +405,7 @@ def fgm(x,
   TensorFlow implementation of the Fast Gradient Method.
   :param x: the input placeholder
   :param logits: output of model.get_logits
-  :param y: (optional) A placeholder for the model labels. If targeted
+  :param y: (optional) A placeholder for the true labels. If targeted
             is true, then provide the target label. Otherwise, only provide
             this parameter if you'd like to use true labels when crafting
             adversarial samples. Otherwise, model predictions are used as
@@ -635,7 +635,7 @@ class ProjectedGradientDescent(Attack):
                 compared to original input
     :param eps_iter: (optional float) step size for each attack iteration
     :param nb_iter: (optional int) Number of attack iterations.
-    :param y: (optional) A tensor with the model labels.
+    :param y: (optional) A tensor with the true labels.
     :param y_target: (optional) A tensor with the labels to target. Leave
                      y_target=None if y is also set. Labels should be
                      one-hot-encoded.
@@ -820,7 +820,7 @@ class MomentumIterativeMethod(Attack):
                 compared to original input
     :param eps_iter: (optional float) step size for each attack iteration
     :param nb_iter: (optional int) Number of attack iterations.
-    :param y: (optional) A tensor with the model labels.
+    :param y: (optional) A tensor with the true labels.
     :param y_target: (optional) A tensor with the labels to target. Leave
                      y_target=None if y is also set. Labels should be
                      one-hot-encoded.
