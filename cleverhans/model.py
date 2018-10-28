@@ -69,6 +69,13 @@ class Model(object):
                               " or must define a " + self.O_LOGITS +
                               " output in `fprop`")
 
+  def get_predicted_class(self, x, **kwargs):
+    """
+    :param x: A symbolic representation (Tensor) of the network input
+    :return: A symbolic representation (Tensor) of the predicted label
+    """
+    return tf.argmax(self.get_logits(x, **kwargs), axis=1)
+
   def get_probs(self, x, **kwargs):
     """
     :param x: A symbolic representation (Tensor) of the network input

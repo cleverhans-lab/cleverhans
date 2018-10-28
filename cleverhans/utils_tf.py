@@ -35,7 +35,8 @@ def model_loss(y, model, mean=True):
   :return: return mean of loss if True, otherwise return vector with per
            sample loss
   """
-  warnings.warn('This function is deprecated.')
+  warnings.warn("This function is deprecated and will be removed on or after"
+                " 2019-04-05. Switch to cleverhans.train.train.")
   op = model.op
   if op.type == "Softmax":
     logits, = op.inputs
@@ -77,8 +78,7 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
           rng=None, var_list=None, fprop_args=None, optimizer=None):
   """
   Train a TF graph.
-  This function is not yet deprecated, but is likely to become deprecated
-  soon. Prefer cleverhans.train.train when possible.
+  This function is deprecated. Prefer cleverhans.train.train when possible.
   cleverhans.train.train supports multiple GPUs but this function is still
   needed to support legacy models that do not support calling fprop more
   than once.
@@ -417,7 +417,8 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
   :param var_list: Optional list of parameters to train.
   :return: True if model trained
   """
-  warnings.warn('This function is deprecated.')
+  warnings.warn("This function is deprecated and will be removed on or after"
+                " 2019-04-05. Switch to cleverhans.train.train.")
   args = _ArgsWrapper(args or {})
 
   # Check that necessary arguments were given (see doc above)

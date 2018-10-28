@@ -90,6 +90,23 @@ class Attack(object):
 
     :param x: The model's symbolic inputs.
     :param **kwargs: optional parameters used by child classes.
+      Each child class defines additional parameters as needed.
+      Child classes that use the following concepts should use the following
+      names:
+        clip_min: minimum feature value
+        clip_max: maximum feature value
+        eps: size of norm constraint on adversarial perturbation
+        ord: order of norm constraint
+        nb_iter: number of iterations
+        eps_iter: size of norm constraint on iteration
+        y_target: if specified, the attack is targeted.
+        y: Do not specify if y_target is specified.
+           If specified, the attack is untargeted, aims to make the output
+           class not be y.
+           If neither y_target nor y is specified, y is inferred by having
+           the model classify the input.
+      For other concepts, it's generally a good idea to read other classes
+      and check for name consistency.
     :return: A symbolic representation of the adversarial examples.
     """
 
@@ -282,6 +299,10 @@ class Attack(object):
     :param params: a dictionary of attack-specific parameters
     :return: True when parsing was successful
     """
+
+    if params is not None:
+      warnings.warn("`params` is unused and will be removed "
+                    " on or after 2019-04-26.")
     return True
 
 
@@ -307,23 +328,10 @@ class FastGradientMethod(Attack):
 
   def generate(self, x, **kwargs):
     """
-    Generate symbolic graph for adversarial examples and return.
+    Returns the graph for Fast Gradient Method adversarial examples.
 
     :param x: The model's symbolic inputs.
-    :param eps: (optional float) attack step size (input variation)
-    :param ord: (optional) Order of the norm (mimics NumPy).
-                Possible values: np.inf, 1 or 2.
-    :param y: (optional) A tensor with the model labels. Only provide
-              this parameter if you'd like to use true labels when crafting
-              adversarial samples. Otherwise, model predictions are used as
-              labels to avoid the "label leaking" effect (explained in this
-              paper: https://arxiv.org/abs/1611.01236). Default is None.
-              Labels should be one-hot-encoded.
-    :param y_target: (optional) A tensor with the labels to target. Leave
-                     y_target=None if y is also set. Labels should be
-                     one-hot-encoded.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param kwargs: See `parse_params`
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
@@ -359,7 +367,7 @@ class FastGradientMethod(Attack):
     :param eps: (optional float) attack step size (input variation)
     :param ord: (optional) Order of the norm (mimics NumPy).
                 Possible values: np.inf, 1 or 2.
-    :param y: (optional) A tensor with the model labels. Only provide
+    :param y: (optional) A tensor with the true labels. Only provide
               this parameter if you'd like to use true labels when crafting
               adversarial samples. Otherwise, model predictions are used as
               labels to avoid the "label leaking" effect (explained in this
@@ -389,6 +397,11 @@ class FastGradientMethod(Attack):
     # Check if order of the norm is acceptable given current implementation
     if self.ord not in [np.inf, int(1), int(2)]:
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
+
     return True
 
 
@@ -405,7 +418,7 @@ def fgm(x,
   TensorFlow implementation of the Fast Gradient Method.
   :param x: the input placeholder
   :param logits: output of model.get_logits
-  :param y: (optional) A placeholder for the model labels. If targeted
+  :param y: (optional) A placeholder for the true labels. If targeted
             is true, then provide the target label. Otherwise, only provide
             this parameter if you'd like to use true labels when crafting
             adversarial samples. Otherwise, model predictions are used as
@@ -428,7 +441,8 @@ def fgm(x,
 
   # If a data range was specified, check that the input was in that range
   if clip_min is not None:
-    asserts.append(utils_tf.assert_greater_equal(x, tf.cast(clip_min, x.dtype)))
+    asserts.append(utils_tf.assert_greater_equal(
+        x, tf.cast(clip_min, x.dtype)))
 
   if clip_max is not None:
     asserts.append(utils_tf.assert_less_equal(x, tf.cast(clip_max, x.dtype)))
@@ -461,7 +475,6 @@ def fgm(x,
     # We don't currently support one-sided clipping
     assert clip_min is not None and clip_max is not None
     adv_x = utils_tf.clip_by_value(adv_x, clip_min, clip_max)
-
 
   if sanity_checks:
     with tf.control_dependencies(asserts):
@@ -501,21 +514,7 @@ class ProjectedGradientDescent(Attack):
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (optional float) maximum distortion of adversarial example
-                compared to original input
-    :param eps_iter: (optional float) step size for each attack iteration
-    :param nb_iter: (optional int) Number of attack iterations.
-    :param rand_init: (optional) Whether to use random initialization
-    :param y: (optional) A tensor with the true class labels
-      NOTE: do not use smoothed labels here
-    :param y_target: (optional) A tensor with the labels to target. Leave
-                     y_target=None if y is also set. Labels should be
-                     one-hot-encoded.
-      NOTE: do not use smoothed labels here
-    :param ord: (optional) Order of the norm (mimics Numpy).
-                Possible values: np.inf, 1 or 2.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param kwargs: See `parse_params`
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
@@ -572,7 +571,6 @@ class ProjectedGradientDescent(Attack):
 
     def cond(i, _):
       return tf.less(i, self.nb_iter)
-
 
     def body(i, adv_x):
       adv_x = FGM.generate(adv_x, **fgm_params)
@@ -636,7 +634,7 @@ class ProjectedGradientDescent(Attack):
                 compared to original input
     :param eps_iter: (optional float) step size for each attack iteration
     :param nb_iter: (optional int) Number of attack iterations.
-    :param y: (optional) A tensor with the model labels.
+    :param y: (optional) A tensor with the true labels.
     :param y_target: (optional) A tensor with the labels to target. Leave
                      y_target=None if y is also set. Labels should be
                      one-hot-encoded.
@@ -678,6 +676,10 @@ class ProjectedGradientDescent(Attack):
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
     self.sanity_checks = sanity_checks
 
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
+
     return True
 
 
@@ -717,7 +719,8 @@ class MomentumIterativeMethod(Attack):
                                                   **kwargs)
     self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
                             'clip_max')
-    self.structural_kwargs = ['ord', 'nb_iter', 'decay_factor', 'sanity_checks']
+    self.structural_kwargs = [
+        'ord', 'nb_iter', 'decay_factor', 'sanity_checks']
 
   def generate(self, x, **kwargs):
     """
@@ -820,7 +823,7 @@ class MomentumIterativeMethod(Attack):
                 compared to original input
     :param eps_iter: (optional float) step size for each attack iteration
     :param nb_iter: (optional int) Number of attack iterations.
-    :param y: (optional) A tensor with the model labels.
+    :param y: (optional) A tensor with the true labels.
     :param y_target: (optional) A tensor with the labels to target. Leave
                      y_target=None if y is also set. Labels should be
                      one-hot-encoded.
@@ -848,6 +851,10 @@ class MomentumIterativeMethod(Attack):
     # Check if order of the norm is acceptable given current implementation
     if self.ord not in [np.inf, 1, 2]:
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
 
     return True
 
@@ -877,12 +884,7 @@ class SaliencyMapMethod(Attack):
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param theta: (optional float) Perturbation introduced to modified
-                  components (can be positive or negative)
-    :param gamma: (optional float) Maximum percentage of perturbed features
-    :param clip_min: (optional float) Minimum component value for clipping
-    :param clip_max: (optional float) Maximum component value for clipping
-    :param y_target: (optional) Target tensor if the attack is targeted
+    :param kwargs: See `parse_params`
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
@@ -996,6 +998,10 @@ class SaliencyMapMethod(Attack):
     self.y_target = y_target
     self.symbolic_impl = symbolic_impl
 
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
+
     return True
 
 
@@ -1027,11 +1033,7 @@ class VirtualAdversarialMethod(Attack):
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (optional float ) the epsilon (input variation parameter)
-    :param num_iterations: (optional) the number of iterations
-    :param xi: (optional float) the finite difference parameter
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param kwargs: See `parse_params`
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
@@ -1048,10 +1050,11 @@ class VirtualAdversarialMethod(Attack):
 
   def parse_params(self,
                    eps=2.0,
-                   num_iterations=1,
+                   nb_iter=None,
                    xi=1e-6,
                    clip_min=None,
                    clip_max=None,
+                   num_iterations=None,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -1060,17 +1063,32 @@ class VirtualAdversarialMethod(Attack):
     Attack-specific parameters:
 
     :param eps: (optional float )the epsilon (input variation parameter)
-    :param num_iterations: (optional) the number of iterations
+    :param nb_iter: (optional) the number of iterations
+      Defaults to 1 if not specified
     :param xi: (optional float) the finite difference parameter
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param num_iterations: Deprecated alias for `nb_iter`
     """
     # Save attack-specific parameters
     self.eps = eps
-    self.num_iterations = num_iterations
+    if num_iterations is not None:
+      warnings.warn("`num_iterations` is deprecated. Switch to `nb_iter`."
+                    " The old name will be removed on or after 2019-04-26.")
+      # Note: when we remove the deprecated alias, we can put the default
+      # value of 1 for nb_iter back in the method signature
+      assert nb_iter is None
+      nb_iter = num_iterations
+    del num_iterations
+    if nb_iter is None:
+      nb_iter = 1
+    self.num_iterations = nb_iter
     self.xi = xi
     self.clip_min = clip_min
     self.clip_max = clip_max
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
     return True
 
 
@@ -1111,39 +1129,8 @@ class CarliniWagnerL2(Attack):
     Return a tensor that constructs adversarial examples for the given
     input. Generate uses tf.py_func in order to operate over tensors.
 
-    :param x: (required) A tensor with the inputs.
-    :param y: (optional) A tensor with the true labels for an untargeted
-              attack. If None (and y_target is None) then use the
-              original labels the classifier assigns.
-    :param y_target: (optional) A tensor with the target labels for a
-              targeted attack.
-    :param confidence: Confidence of adversarial examples: higher produces
-                       examples with larger l2 distortion, but more
-                       strongly classified as adversarial.
-    :param batch_size: Number of attacks to run simultaneously.
-    :param learning_rate: The learning rate for the attack algorithm.
-                          Smaller values produce better results but are
-                          slower to converge.
-    :param binary_search_steps: The number of times we perform binary
-                                search to find the optimal tradeoff-
-                                constant between norm of the purturbation
-                                and confidence of the classification.
-    :param max_iterations: The maximum number of iterations. Setting this
-                           to a larger value will produce lower distortion
-                           results. Using only a few iterations requires
-                           a larger learning rate, and will produce larger
-                           distortion results.
-    :param abort_early: If true, allows early aborts if gradient descent
-                        is unable to make progress (i.e., gets stuck in
-                        a local minimum).
-    :param initial_const: The initial tradeoff-constant to use to tune the
-                          relative importance of size of the pururbation
-                          and confidence of classification.
-                          If binary_search_steps is large, the initial
-                          constant is not important. A smaller value of
-                          this constant gives lower distortion results.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param x: A tensor with the inputs.
+    :param kwargs: See `parse_params`
     """
     from .attacks_tf import CarliniWagnerL2 as CWL2
     self.parse_params(**kwargs)
@@ -1177,6 +1164,40 @@ class CarliniWagnerL2(Attack):
                    initial_const=1e-2,
                    clip_min=0,
                    clip_max=1):
+    """
+    :param y: (optional) A tensor with the true labels for an untargeted
+              attack. If None (and y_target is None) then use the
+              original labels the classifier assigns.
+    :param y_target: (optional) A tensor with the target labels for a
+              targeted attack.
+    :param confidence: Confidence of adversarial examples: higher produces
+                       examples with larger l2 distortion, but more
+                       strongly classified as adversarial.
+    :param batch_size: Number of attacks to run simultaneously.
+    :param learning_rate: The learning rate for the attack algorithm.
+                          Smaller values produce better results but are
+                          slower to converge.
+    :param binary_search_steps: The number of times we perform binary
+                                search to find the optimal tradeoff-
+                                constant between norm of the purturbation
+                                and confidence of the classification.
+    :param max_iterations: The maximum number of iterations. Setting this
+                           to a larger value will produce lower distortion
+                           results. Using only a few iterations requires
+                           a larger learning rate, and will produce larger
+                           distortion results.
+    :param abort_early: If true, allows early aborts if gradient descent
+                        is unable to make progress (i.e., gets stuck in
+                        a local minimum).
+    :param initial_const: The initial tradeoff-constant to use to tune the
+                          relative importance of size of the perturbation
+                          and confidence of classification.
+                          If binary_search_steps is large, the initial
+                          constant is not important. A smaller value of
+                          this constant gives lower distortion results.
+    :param clip_min: (optional float) Minimum input component value
+    :param clip_max: (optional float) Maximum input component value
+    """
 
     # ignore the y and y_target argument
     self.batch_size = batch_size
@@ -1227,6 +1248,44 @@ class ElasticNetMethod(Attack):
     input. Generate uses tf.py_func in order to operate over tensors.
 
     :param x: (required) A tensor with the inputs.
+    :param kwargs: See `parse_params`
+    """
+    self.parse_params(**kwargs)
+
+    from .attacks_tf import ElasticNetMethod as EAD
+    labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+
+    attack = EAD(self.sess, self.model, self.beta,
+                 self.decision_rule, self.batch_size, self.confidence,
+                 'y_target' in kwargs, self.learning_rate,
+                 self.binary_search_steps, self.max_iterations,
+                 self.abort_early, self.initial_const, self.clip_min,
+                 self.clip_max, nb_classes,
+                 x.get_shape().as_list()[1:])
+
+    def ead_wrap(x_val, y_val):
+      return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
+
+    wrap = tf.py_func(ead_wrap, [x, labels], self.tf_dtype)
+    wrap.set_shape(x.get_shape())
+
+    return wrap
+
+  def parse_params(self,
+                   y=None,
+                   y_target=None,
+                   beta=1e-2,
+                   decision_rule='EN',
+                   batch_size=1,
+                   confidence=0,
+                   learning_rate=1e-2,
+                   binary_search_steps=9,
+                   max_iterations=1000,
+                   abort_early=False,
+                   initial_const=1e-3,
+                   clip_min=0,
+                   clip_max=1):
+    """
     :param y: (optional) A tensor with the true labels for an untargeted
               attack. If None (and y_target is None) then use the
               original labels the classifier assigns.
@@ -1271,41 +1330,6 @@ class ElasticNetMethod(Attack):
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
-    self.parse_params(**kwargs)
-
-    from .attacks_tf import ElasticNetMethod as EAD
-    labels, nb_classes = self.get_or_guess_labels(x, kwargs)
-
-    attack = EAD(self.sess, self.model, self.beta,
-                 self.decision_rule, self.batch_size, self.confidence,
-                 'y_target' in kwargs, self.learning_rate,
-                 self.binary_search_steps, self.max_iterations,
-                 self.abort_early, self.initial_const, self.clip_min,
-                 self.clip_max, nb_classes,
-                 x.get_shape().as_list()[1:])
-
-    def ead_wrap(x_val, y_val):
-      return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
-
-    wrap = tf.py_func(ead_wrap, [x, labels], self.tf_dtype)
-    wrap.set_shape(x.get_shape())
-
-    return wrap
-
-  def parse_params(self,
-                   y=None,
-                   y_target=None,
-                   beta=1e-2,
-                   decision_rule='EN',
-                   batch_size=1,
-                   confidence=0,
-                   learning_rate=1e-2,
-                   binary_search_steps=9,
-                   max_iterations=1000,
-                   abort_early=False,
-                   initial_const=1e-3,
-                   clip_min=0,
-                   clip_max=1):
 
     # ignore the y and y_target argument
     self.beta = beta
@@ -1348,16 +1372,7 @@ class DeepFool(Attack):
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param nb_candidate: The number of classes to test against, i.e.,
-                         deepfool only consider nb_candidate classes when
-                         attacking(thus accelerate speed). The nb_candidate
-                         classes are chosen according to the prediction
-                         confidence during implementation.
-    :param overshoot: A termination criterion to prevent vanishing updates
-    :param max_iter: Maximum number of iteration for deepfool
-    :param nb_classes: The number of model output classes
-    :param clip_min: Minimum component value for clipping
-    :param clip_max: Maximum component value for clipping
+    :param kwargs: See `parse_params`
     """
 
     from .attacks_tf import jacobian_graph, deepfool_batch
@@ -1410,6 +1425,9 @@ class DeepFool(Attack):
     self.max_iter = max_iter
     self.clip_min = clip_min
     self.clip_max = clip_max
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
 
     return True
 
@@ -1444,19 +1462,7 @@ class LBFGS(Attack):
     input. Generate uses tf.py_func in order to operate over tensors.
 
     :param x: (required) A tensor with the inputs.
-    :param y_target: (optional) A tensor with the one-hot target labels.
-    :param batch_size: The number of inputs to include in a batch and
-                       process simultaneously.
-    :param binary_search_steps: The number of times we perform binary
-                                search to find the optimal tradeoff-
-                                constant between norm of the purturbation
-                                and cross-entropy loss of classification.
-    :param max_iterations: The maximum number of iterations.
-    :param initial_const: The initial tradeoff-constant to use to tune the
-                          relative importance of size of the perturbation
-                          and cross-entropy loss of the classification.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param kwargs: See `parse_params`
     """
     self.parse_params(**kwargs)
 
@@ -1483,6 +1489,21 @@ class LBFGS(Attack):
                    initial_const=1e-2,
                    clip_min=0,
                    clip_max=1):
+    """
+    :param y_target: (optional) A tensor with the one-hot target labels.
+    :param batch_size: The number of inputs to include in a batch and
+                       process simultaneously.
+    :param binary_search_steps: The number of times we perform binary
+                                search to find the optimal tradeoff-
+                                constant between norm of the purturbation
+                                and cross-entropy loss of classification.
+    :param max_iterations: The maximum number of iterations.
+    :param initial_const: The initial tradeoff-constant to use to tune the
+                          relative importance of size of the perturbation
+                          and cross-entropy loss of the classification.
+    :param clip_min: (optional float) Minimum input component value
+    :param clip_max: (optional float) Maximum input component value
+    """
     self.y_target = y_target
     self.batch_size = batch_size
     self.binary_search_steps = binary_search_steps
@@ -1589,8 +1610,8 @@ class LBFGS_impl(object):
     o_bestattack = np.copy(oimgs)
 
     for outer_step in range(self.binary_search_steps):
-      _logger.debug(("  Binary search step {} of {}").format(
-          outer_step, self.binary_search_steps))
+      _logger.debug("  Binary search step %s of %s",
+                    outer_step, self.binary_search_steps)
 
       # The last iteration (if we run many steps) repeat the search once.
       if self.repeat and outer_step == self.binary_search_steps - 1:
@@ -1615,7 +1636,7 @@ class LBFGS_impl(object):
       preds = np.atleast_1d(
           utils_tf.model_argmax(self.sess, self.x, self.logits,
                                 adv_x))
-      _logger.debug("predicted labels are {}".format(preds))
+      _logger.debug("predicted labels are %s", preds)
 
       l2s = np.zeros(self.batch_size)
       for i in range(self.batch_size):
@@ -1642,9 +1663,9 @@ class LBFGS_impl(object):
           else:
             CONST[e] *= 10
 
-      _logger.debug("  Successfully generated adversarial examples " +
-                    "on {} of {} instances.".format(
-                        sum(upper_bound < 1e9), self.batch_size))
+      _logger.debug("  Successfully generated adversarial examples "
+                    "on %s of %s instances.",
+                    sum(upper_bound < 1e9), self.batch_size)
       o_bestl2 = np.array(o_bestl2)
       mean = np.mean(np.sqrt(o_bestl2[o_bestl2 < 1e9]))
       _logger.debug("   Mean successful distortion: {:.4g}".format(mean))
@@ -1758,6 +1779,9 @@ class FastFeatureAdversaries(Attack):
     # Check if order of the norm is acceptable given current implementation
     if self.ord not in [np.inf, 1, 2]:
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
 
     return True
 
@@ -1809,15 +1833,8 @@ class FastFeatureAdversaries(Attack):
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param g: The target's symbolic representation.
-    :param eps: (optional float) maximum distortion of adversarial example
-                compared to original input
-    :param eps_iter: (optional float) step size for each attack iteration
-    :param nb_iter: (optional int) Number of attack iterations.
-    :param ord: (optional) Order of the norm (mimics Numpy).
-                Possible values: np.inf, 1 or 2.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param g: The target value of the symbolic representation
+    :param kwargs: See `parse_params`
     """
 
     # Parse and save attack-specific parameters
@@ -2049,22 +2066,7 @@ class SpatialTransformationMethod(Attack):
     """
     Generate symbolic graph for adversarial examples and return.
     :param x: The model's symbolic inputs.
-    :param n_samples: (optional) The number of transformations sampled to
-                      construct the attack. Set it to None to run
-                      full grid attack.
-    :param dx_min: (optional float) Minimum translation ratio along x-axis.
-    :param dx_max: (optional float) Maximum translation ratio along x-axis.
-    :param n_dxs: (optional int) Number of discretized translation ratios
-                  along x-axis.
-    :param dy_min: (optional float) Minimum translation ratio along y-axis.
-    :param dy_max: (optional float) Maximum translation ratio along y-axis.
-    :param n_dys: (optional int) Number of discretized translation ratios
-                  along y-axis.
-    :param angle_min: (optional float) Largest counter-clockwise rotation
-                      angle.
-    :param angle_max: (optional float) Largest clockwise rotation angle.
-    :param n_angles: (optional int) Number of discretized angles.
-    :param black_border_size: (optional int) size of the black border in pixels.
+    :param kwargs: See `parse_params`
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
@@ -2099,6 +2101,22 @@ class SpatialTransformationMethod(Attack):
     """
     Take in a dictionary of parameters and applies attack-specific checks
     before saving them as attributes.
+    :param n_samples: (optional) The number of transformations sampled to
+                      construct the attack. Set it to None to run
+                      full grid attack.
+    :param dx_min: (optional float) Minimum translation ratio along x-axis.
+    :param dx_max: (optional float) Maximum translation ratio along x-axis.
+    :param n_dxs: (optional int) Number of discretized translation ratios
+                  along x-axis.
+    :param dy_min: (optional float) Minimum translation ratio along y-axis.
+    :param dy_max: (optional float) Maximum translation ratio along y-axis.
+    :param n_dys: (optional int) Number of discretized translation ratios
+                  along y-axis.
+    :param angle_min: (optional float) Largest counter-clockwise rotation
+                      angle.
+    :param angle_max: (optional float) Largest clockwise rotation angle.
+    :param n_angles: (optional int) Number of discretized angles.
+    :param black_border_size: (optional int) size of the black border in pixels.
     """
     self.n_samples = n_samples
     self.dx_min = dx_min
@@ -2116,6 +2134,9 @@ class SpatialTransformationMethod(Attack):
        self.dx_max > 1 or self.dy_max > 1:
       raise ValueError("The value of translation must be bounded "
                        "within [-1, 1]")
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
     return True
 
 
@@ -2177,22 +2198,15 @@ class Noise(Attack):
 
     super(Noise, self).__init__(model, sess=sess, dtypestr=dtypestr, **kwargs)
     self.feedable_kwargs = ('eps', 'clip_min', 'clip_max')
-    self.structural_kwargs = ['ord', 'clip']
+    self.structural_kwargs = ['ord']
 
   def generate(self, x, **kwargs):
     """
     Generate symbolic graph for adversarial examples and return.
 
     :param x: The model's symbolic inputs.
-    :param eps: (optional float) maximum distortion of adversarial example
-                compared to original input
-    :param ord: (optional) Order of the norm (mimics Numpy).
-                Possible values: np.inf
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
+    :param kwargs: See `parse_params`
     """
-    kwargs['clip'] = (kwargs['clip_min'] is not None
-                      or kwargs['clip_max'] is not None)
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
@@ -2212,7 +2226,6 @@ class Noise(Attack):
                    ord=np.inf,
                    clip_min=None,
                    clip_max=None,
-                   clip=None,
                    **kwargs):
     """
     Take in a dictionary of parameters and applies attack-specific checks
@@ -2226,7 +2239,6 @@ class Noise(Attack):
                 Possible values: np.inf
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
-    :param clip: bool specifying whether clip_min /clip_max are used
     """
 
     # Save attack-specific parameters
@@ -2234,14 +2246,13 @@ class Noise(Attack):
     self.ord = ord
     self.clip_min = clip_min
     self.clip_max = clip_max
-    self.clip = clip
-    # Make sure clip was specified, rather than using the default None
-    assert clip in [False, True]
-    assert clip == (clip_min is not None or clip_max is not None)
 
     # Check if order of the norm is acceptable given current implementation
     if self.ord not in [np.inf]:
       raise ValueError("Norm order must be np.inf")
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
 
     return True
 
@@ -2293,6 +2304,9 @@ class MaxConfidence(Attack):
     self.y = y
     self.nb_classes = nb_classes
     self.params = kwargs
+    if len(kwargs.keys()) > 0:
+      warnings.warn("kwargs is unused and will be removed on or after "
+                    "2019-04-26.")
     return True
 
   def attack(self, x, true_y):
@@ -2342,6 +2356,7 @@ class MaxConfidence(Attack):
     adv = self.base_attacker.generate(x, y_target=target_y, **self.params)
     return adv
 
+
 def arg_type(arg_names, kwargs):
   """
   Returns a hashable summary of the types of arg_names within kwargs.
@@ -2386,6 +2401,7 @@ def arg_type(arg_names, kwargs):
     dtypes.append(dtype)
   dtypes = tuple(dtypes)
   return (passed, passed_and_not_none, dtypes)
+
 
 def optimize_linear(grad, eps, ord=np.inf):
   """
@@ -2433,13 +2449,13 @@ def optimize_linear(grad, eps, ord=np.inf):
   scaled_perturbation = utils_tf.mul(eps, optimal_perturbation)
   return scaled_perturbation
 
+
 def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
                           clip_max=None):
   """Project `perturbation` onto L-infinity ball of radius `epsilon`.
   Also project into hypercube such that the resulting adversarial example
   is between clip_min and clip_max, if applicable.
   """
-
 
   if clip_min is None or clip_max is None:
     raise NotImplementedError("_project_perturbation currently has clipping "
@@ -2457,6 +2473,7 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
     new_image = utils_tf.clip_by_value(
         input_image + clipped_perturbation, clip_min, clip_max)
     return new_image - input_image
+
 
 def projected_optimization(loss_fn,
                            input_image,
