@@ -1364,7 +1364,7 @@ class DeepFool(Attack):
     super(DeepFool, self).__init__(model, sess, dtypestr, **kwargs)
 
     self.structural_kwargs = [
-        'over_shoot', 'max_iter', 'clip_max', 'clip_min', 'nb_candidate'
+        'overshoot', 'max_iter', 'clip_max', 'clip_min', 'nb_candidate'
     ]
 
   def generate(self, x, **kwargs):
