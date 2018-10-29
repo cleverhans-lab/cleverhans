@@ -892,7 +892,6 @@ class TestDeepFool(CleverHansTest):
 
     x_adv = self.attack.generate_np(x_val, overshoot=0.02, max_iter=50,
                                     nb_candidate=2, clip_min=-5,
-                                    overshoot=0.02,
                                     clip_max=5)
 
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
