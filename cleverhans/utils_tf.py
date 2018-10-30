@@ -210,6 +210,7 @@ def model_eval(sess, x, y, predictions, X_test=None, Y_test=None,
                Should contain `batch_size`
   :return: a float with the accuracy value
   """
+  global _model_eval_cache
   args = _ArgsWrapper(args or {})
 
   assert args.batch_size, "Batch size was not given in args dict"
@@ -218,13 +219,18 @@ def model_eval(sess, x, y, predictions, X_test=None, Y_test=None,
                      "must be supplied.")
 
   # Define accuracy symbolically
-  if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
-    correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                             tf.argmax(predictions, axis=-1))
+  key = (y, predictions)
+  if key in _model_eval_cache:
+    correct_preds = _model_eval_cache[key]
   else:
-    correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
-                             tf.argmax(predictions,
-                                       axis=tf.rank(predictions) - 1))
+    if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
+      correct_preds = tf.equal(tf.argmax(y, axis=-1),
+                               tf.argmax(predictions, axis=-1))
+    else:
+      correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
+                               tf.argmax(predictions,
+                                         axis=tf.rank(predictions) - 1))
+    _model_eval_cache[key] = correct_preds
 
   # Init result var
   accuracy = 0.0
@@ -266,6 +272,8 @@ def model_eval(sess, x, y, predictions, X_test=None, Y_test=None,
     accuracy /= len(X_test)
 
   return accuracy
+
+_model_eval_cache = {}
 
 
 def tf_model_load(sess, file_path=None):
