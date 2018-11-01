@@ -8,7 +8,7 @@ python:
 env:
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=False
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.12.0 PYTORCH=False
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.9.0 PYTORCH=True
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=True
 
 install:
   # code below is taken from http://conda.pydata.org/docs/travis.html
@@ -34,11 +34,11 @@ install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.8.0" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.8.0-cp27-none-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "2.7" && "$TENSORFLOW_V" == "1.12.0" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.12.0-cp27-none-linux_x86_64.whl;
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.12.0rc1-cp27-none-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.8.0" ]]; then
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.8.0-cp35-cp35m-linux_x86_64.whl;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.12.0" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.12.0-cp35-cp35m-linux_x86_64.whl;
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.12.0rc1-cp35-cp35m-linux_x86_64.whl;
     fi
 
   - time pip install -q -e ".[test]"
