@@ -129,7 +129,7 @@ class CrossEntropy(Loss):
     logits = [self.model.get_logits(x, **kwargs) for x in x]
     loss = sum(
         coeff * tf.reduce_mean(softmax_cross_entropy_with_logits(labels=y,
-                                                         logits=logit))
+                                                                 logits=logit))
         for coeff, logit in safe_zip(coeffs, logits))
     return loss
 
@@ -295,4 +295,3 @@ class LossMixUp(Loss):
                   "MixUp. LossFeaturePairing may be removed "
                   "on or after 2019-03-06.")
     return loss
-
