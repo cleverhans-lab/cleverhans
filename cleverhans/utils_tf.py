@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from distutils.version import LooseVersion
 import logging
 import math
 import os
@@ -223,13 +222,8 @@ def model_eval(sess, x, y, predictions, X_test=None, Y_test=None,
   if key in _model_eval_cache:
     correct_preds = _model_eval_cache[key]
   else:
-    if LooseVersion(tf.__version__) >= LooseVersion('1.0.0'):
-      correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                               tf.argmax(predictions, axis=-1))
-    else:
-      correct_preds = tf.equal(tf.argmax(y, axis=tf.rank(y) - 1),
-                               tf.argmax(predictions,
-                                         axis=tf.rank(predictions) - 1))
+    correct_preds = tf.equal(tf.argmax(y, axis=-1),
+                             tf.argmax(predictions, axis=-1))
     _model_eval_cache[key] = correct_preds
 
   # Init result var
