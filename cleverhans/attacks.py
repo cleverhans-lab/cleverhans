@@ -28,7 +28,7 @@ class Attack(object):
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     """
     :param model: An instance of the cleverhans.model.Model class.
-    :param sess: The tf session to run graphs in.
+    :param sess: The (possibly optional) tf.Session to run graphs in.
     :param dtypestr: Floating point precision to use (change to float64
                      to avoid numerical instabilities).
     :param back: (deprecated and will be removed on or after 2019-03-26).
@@ -46,9 +46,7 @@ class Attack(object):
     self.tf_dtype = tf.as_dtype(dtypestr)
     self.np_dtype = np.dtype(dtypestr)
 
-    if sess is None:
-      sess = tf.get_default_session()
-    if not isinstance(sess, tf.Session):
+    if sess is not None and not isinstance(sess, tf.Session):
       raise TypeError("sess is not an instance of tf.Session")
 
     from cleverhans import attacks_tf
@@ -313,6 +311,11 @@ class FastGradientMethod(Attack):
   implementation extends the attack to other norms, and is therefore called
   the Fast Gradient Method.
   Paper link: https://arxiv.org/abs/1412.6572
+
+  :param model: cleverhans.model.Model
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
@@ -490,6 +493,12 @@ class ProjectedGradientDescent(Attack):
   Madry et al. (2017) method when rand_minmax is larger than 0.
   Paper link (Kurakin et al. 2016): https://arxiv.org/pdf/1607.02533.pdf
   Paper link (Madry et al. 2017): https://arxiv.org/pdf/1706.06083.pdf
+
+  :param model: cleverhans.model.Model
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of the data
+  :param default_rand_init: whether to use random initialization by default
+  :param kwargs: passed through to super constructor
   """
 
   FGM_CLASS = FastGradientMethod
@@ -706,6 +715,11 @@ class MomentumIterativeMethod(Attack):
   Targeted Adversarial Attacks. The original paper used hard labels
   for this attack; no label smoothing.
   Paper link: https://arxiv.org/pdf/1710.06081.pdf
+
+  :param model: cleverhans.model.Model
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
@@ -863,6 +877,14 @@ class SaliencyMapMethod(Attack):
   """
   The Jacobian-based Saliency Map Method (Papernot et al. 2016).
   Paper link: https://arxiv.org/pdf/1511.07528.pdf
+
+  :param model: cleverhans.model.Model
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
+
+  :note: When not using symbolic implementation in `generate`, `sess` should
+         be provided
   """
 
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
@@ -921,6 +943,8 @@ class SaliencyMapMethod(Attack):
           clip_min=self.clip_min,
           clip_max=self.clip_max)
     else:
+      assert self.sess is not None, \
+        'Cannot use `generate` when no `sess` was provided'
       from .attacks_tf import jacobian_graph, jsma_batch
 
       # Define Jacobian graph wrt to this input placeholder
@@ -1011,6 +1035,10 @@ class VirtualAdversarialMethod(Attack):
   for virtual adversarial training.
   Paper link: https://arxiv.org/abs/1507.00677
 
+  :param model: cleverhans.model.Model
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
@@ -1103,9 +1131,14 @@ class CarliniWagnerL2(Attack):
   a specially-chosen loss function to find adversarial examples with
   lower distortion than other attacks. This comes at the cost of speed,
   as this attack is often much slower than others.
+
+  :param model: cleverhans.model.Model
+  :param sess: tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
-  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
+  def __init__(self, model, sess, dtypestr='float32', **kwargs):
     """
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
@@ -1132,6 +1165,8 @@ class CarliniWagnerL2(Attack):
     :param x: A tensor with the inputs.
     :param kwargs: See `parse_params`
     """
+    assert self.sess is not None, \
+        'Cannot use `generate` when no `sess` was provided'
     from .attacks_tf import CarliniWagnerL2 as CWL2
     self.parse_params(**kwargs)
 
@@ -1220,9 +1255,14 @@ class ElasticNetMethod(Attack):
   and more importantly, have improved transferability properties
   and complement adversarial training.
   Paper link: https://arxiv.org/abs/1709.04114
+
+  :param model: cleverhans.model.Model
+  :param sess: tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
-  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
+  def __init__(self, model, sess, dtypestr='float32', **kwargs):
     """
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
@@ -1250,6 +1290,8 @@ class ElasticNetMethod(Attack):
     :param x: (required) A tensor with the inputs.
     :param kwargs: See `parse_params`
     """
+    assert self.sess is not None, \
+        'Cannot use `generate` when no `sess` was provided'
     self.parse_params(**kwargs)
 
     from .attacks_tf import ElasticNetMethod as EAD
@@ -1351,9 +1393,14 @@ class DeepFool(Attack):
   iterative linearization of the classifier. The implementation here
   is w.r.t. the L2 norm.
   Paper link: "https://arxiv.org/pdf/1511.04599.pdf"
+
+  :param model: cleverhans.model.Model
+  :param sess: tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
-  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
+  def __init__(self, model, sess, dtypestr='float32', **kwargs):
     """
     Create a DeepFool instance.
     """
@@ -1374,7 +1421,8 @@ class DeepFool(Attack):
     :param x: The model's symbolic inputs.
     :param kwargs: See `parse_params`
     """
-
+    assert self.sess is not None, \
+      'Cannot use `generate` when no `sess` was provided'
     from .attacks_tf import jacobian_graph, deepfool_batch
 
     # Parse and save attack-specific parameters
@@ -1437,9 +1485,14 @@ class LBFGS(Attack):
   LBFGS is the first adversarial attack for convolutional neural networks,
   and is a target & iterative attack.
   Paper link: "https://arxiv.org/pdf/1312.6199.pdf"
+
+  :param model: cleverhans.model.Model
+  :param sess: tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
-  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
+  def __init__(self, model, sess, dtypestr='float32', **kwargs):
     """
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
@@ -1464,6 +1517,8 @@ class LBFGS(Attack):
     :param x: (required) A tensor with the inputs.
     :param kwargs: See `parse_params`
     """
+    assert self.sess is not None, \
+      'Cannot use `generate` when no `sess` was provided'
     self.parse_params(**kwargs)
 
     _, nb_classes = self.get_or_guess_labels(x, kwargs)
@@ -1727,6 +1782,11 @@ class FastFeatureAdversaries(Attack):
 
   This implementation is similar to "Basic Iterative Method"
   (Kurakin et al. 2016) but applied to the internal representations.
+
+  :param model: cleverhans.model.Model
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
@@ -1870,6 +1930,11 @@ class SPSA(Attack):
   (Uesato et al. 2018). SPSA is a gradient-free optimization method, which
   is useful when the model is non-differentiable, or more generally, the
   gradients do not point in useful directions.
+
+  :param model: cleverhans.model.Model
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
   """
 
   DEFAULT_SPSA_SAMPLES = 128
@@ -2054,6 +2119,11 @@ class SpatialTransformationMethod(Attack):
     Create a SpatialTransformationMethod instance.
     Note: the model parameter should be an instance of the
     cleverhans.model.Model abstraction provided by CleverHans.
+
+  :param model: cleverhans.model.Model
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of the data
+  :param kwargs: passed through to super constructor
     """
 
     super(SpatialTransformationMethod, self).__init__(
@@ -2149,14 +2219,15 @@ class Semantic(Attack):
   Note: data must either be centered (so that the negative image can be
   made by simple negation) or must be in the interval [-1, 1]
 
-  model: cleverhans.model.Model
-  center: bool
+  :param model: cleverhans.model.Model
+  :param center: bool
     If True, assumes data has 0 mean so the negative image is just negation.
     If False, assumes data is in the interval [0, max_val]
-  max_val: float
+  :param max_val: float
     Maximum value allowed in the input data
-  sess: tf.Session
-  dtypestr: dtype of data
+  :param sess: optional tf.Session
+  :param dtypestr: dtype of data
+  :param kwargs: passed through to the super constructor
   """
 
   def __init__(self, model, center, max_val=1., sess=None, dtypestr='float32',
@@ -2188,7 +2259,7 @@ class Noise(Attack):
     a stronger optimizer.
 
   :param model: cleverhans.model.Model
-  :param sess: tf.Session
+  :param sess: optional tf.Session
   :param dtypestr: dtype of the data
   :param kwargs: passed through to super constructor
   """
@@ -2269,7 +2340,7 @@ class MaxConfidence(Attack):
   Publication: https://openreview.net/forum?id=H1g0piA9tQ
 
   :param model: cleverhans.model.Model
-  :param sess: tf.session.Session
+  :param sess: optional tf.session.Session
   :param base_attacker: cleverhans.attacks.Attack
   """
 
