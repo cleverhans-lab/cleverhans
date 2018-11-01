@@ -1,10 +1,12 @@
 """Loss functions for training models."""
+import copy
 import json
 import os
 import warnings
 
 import tensorflow as tf
 
+from cleverhans.attacks import Attack
 from cleverhans.compat import softmax_cross_entropy_with_logits
 from cleverhans.model import Model
 from cleverhans.utils import safe_zip
@@ -24,7 +26,7 @@ class Loss(object):
     :param attack: callable, the attack function for adv. training.
     """
     assert isinstance(model, Model)
-    assert attack is None or callable(attack)
+    assert attack is None or isinstance(attack, Attack)
     self.model = model
     self.hparams = hparams
     self.attack = attack
@@ -84,20 +86,38 @@ class CrossEntropy(Loss):
   :param model: Model instance, the model on which to apply the loss.
   :param smoothing: float, amount of label smoothing for cross-entropy.
   :param attack: function, given an input x, return an attacked x'.
+  :param pass_y: bool, if True pass y to the attack
   """
-  def __init__(self, model, smoothing=0., attack=None, **kwargs):
+  def __init__(self, model, smoothing=0., attack=None, pass_y=False,
+               adv_coeff=0.5, attack_params=None,
+               **kwargs):
     if smoothing < 0 or smoothing > 1:
       raise ValueError('Smoothing must be in [0, 1]', smoothing)
     self.kwargs = kwargs
     Loss.__init__(self, model, locals(), attack)
     self.smoothing = smoothing
+    self.adv_coeff = adv_coeff
+    self.pass_y = pass_y
+    self.attack_params = attack_params
 
   def fprop(self, x, y, **kwargs):
     kwargs.update(self.kwargs)
     if self.attack is not None:
-      x = x, self.attack(x)
+      attack_params = copy.copy(self.attack_params)
+      if attack_params is None:
+        attack_params = {}
+      if self.pass_y:
+        attack_params['y'] = y
+      x = x, self.attack.generate(x, **attack_params)
+      coeffs = [1. - self.adv_coeff, self.adv_coeff]
+      assert len(coeffs) == len(x)
+      if self.adv_coeff == 1.:
+        x = (x[1],)
+        coeffs = (coeffs[1],)
     else:
       x = tuple([x])
+      coeffs = [1.]
+      assert len(coeffs) == len(x)
 
     # Catching RuntimeError: Variable -= value not supported by tf.eager.
     try:
@@ -108,9 +128,9 @@ class CrossEntropy(Loss):
 
     logits = [self.model.get_logits(x, **kwargs) for x in x]
     loss = sum(
-        tf.reduce_mean(softmax_cross_entropy_with_logits(labels=y,
+        coeff * tf.reduce_mean(softmax_cross_entropy_with_logits(labels=y,
                                                          logits=logit))
-        for logit in logits)
+        for coeff, logit in safe_zip(coeffs, logits))
     return loss
 
 
@@ -275,3 +295,4 @@ class LossMixUp(Loss):
                   "MixUp. LossFeaturePairing may be removed "
                   "on or after 2019-03-06.")
     return loss
+
