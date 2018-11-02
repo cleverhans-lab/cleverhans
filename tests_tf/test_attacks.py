@@ -896,32 +896,33 @@ class TestMadryEtAl(CommonAttackProperties):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
+    # Call it once
     x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
                                     clip_min=-5.0, clip_max=5.0,
                                     nb_iter=10)
 
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-    self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
+    # Call it again
     ok = [False]
     old_grads = tf.gradients
+    try:
+      def fn(*x, **y):
+        ok[0] = True
+        return old_grads(*x, **y)
 
-    def fn(*x, **y):
-      ok[0] = True
-      return old_grads(*x, **y)
+      tf.gradients = fn
 
-    tf.gradients = fn
-
-    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
-                                    clip_min=-5.0, clip_max=5.0,
-                                    nb_iter=11)
-
+      x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
+                                      clip_min=-5.0, clip_max=5.0,
+                                      nb_iter=11)
+    finally:
+      tf.gradients = old_grads
+      
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-    self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
-    tf.gradients = old_grads
 
     self.assertTrue(ok[0])
 
