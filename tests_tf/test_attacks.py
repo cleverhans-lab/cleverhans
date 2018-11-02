@@ -255,7 +255,7 @@ class CommonAttackProperties(CleverHansTest):
                                       clip_min=-5.0, clip_max=5.0)
 
       delta = np.max(np.abs(x_adv - x_val), axis=1)
-      self.assertTrue(np.all(delta<=(eps+1e-4)))
+      self.assertLessEqual(np.max(delta), eps+1e-4)
 
   def test_generate_np_clip_works_as_expected(self):
     x_val = np.random.rand(100, 2)
@@ -814,13 +814,13 @@ class TestDeepFool(CleverHansTest):
     self.assertTrue(np.max(x_adv) < .301)
 
 
-class TestMadryEtAl(CommonAttackProperties):
+class TestProjectedGradientDescent(CommonAttackProperties):
   def setUp(self):
-    super(TestMadryEtAl, self).setUp()
+    super(TestProjectedGradientDescent, self).setUp()
 
     self.sess = tf.Session()
     self.model = SimpleModel()
-    self.attack = MadryEtAl(self.model, sess=self.sess)
+    self.attack = ProjectedGradientDescent(self.model, sess=self.sess)
 
   def test_generate_np_gives_adversarial_example_linfinity(self):
     self.help_generate_np_gives_adversarial_example(ord=np.infty, eps=.5,
@@ -877,7 +877,7 @@ class TestMadryEtAl(CommonAttackProperties):
                                     nb_iter=5)
 
     delta = np.max(np.abs(x_adv - x_val), axis=1)
-    self.assertTrue(np.all(delta <= 1.))
+    self.assertLessEqual(np.max(delta), 1.)
 
   def test_generate_np_gives_clipped_adversarial_examples(self):
     x_val = np.random.rand(100, 2)
@@ -954,13 +954,13 @@ class TestMadryEtAl(CommonAttackProperties):
     self.assertLess(np.mean(orig_labs == new_labs_multi), 0.5)
 
 
-class TestProjectedGradientDescent(TestMadryEtAl):
+class TestMadryEtAl(TestProjectedGradientDescent):
   def setUp(self):
-    super(TestProjectedGradientDescent, self).setUp()
-    self.attack = ProjectedGradientDescent(self.model, sess=self.sess)
+    super(TestMadryEtAl, self).setUp()
+    self.attack = TestMadryEtAl(self.model, sess=self.sess)
 
 
-class TestBasicIterativeMethod(TestMadryEtAl):
+class TestBasicIterativeMethod(TestProjectedGradientDescent):
   def setUp(self):
     super(TestBasicIterativeMethod, self).setUp()
     self.attack = BasicIterativeMethod(self.model, sess=self.sess)
