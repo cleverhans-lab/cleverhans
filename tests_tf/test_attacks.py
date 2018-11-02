@@ -241,7 +241,7 @@ class CommonAttackProperties(CleverHansTest):
     except NotImplementedError:
       raise SkipTest()
 
-    self.assertClose(delta, 0.5)
+    self.assertLessEqual(np.max(delta), 0.5001)
 
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(random_labs == new_labs) > 0.7)
@@ -957,7 +957,7 @@ class TestProjectedGradientDescent(CommonAttackProperties):
 class TestMadryEtAl(TestProjectedGradientDescent):
   def setUp(self):
     super(TestMadryEtAl, self).setUp()
-    self.attack = TestMadryEtAl(self.model, sess=self.sess)
+    self.attack = MadryEtAl(self.model, sess=self.sess)
 
 
 class TestBasicIterativeMethod(TestProjectedGradientDescent):
