@@ -3,6 +3,7 @@
 <img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
 [![Build Status](https://travis-ci.org/tensorflow/cleverhans.svg?branch=master)](https://travis-ci.org/tensorflow/cleverhans)
+[![Documentation Status](https://readthedocs.org/projects/cleverhans/badge/?version=latest)](https://cleverhans.readthedocs.io/en/latest/?badge=latest)
 
 This repository contains the source code for CleverHans, a Python library to
 benchmark machine learning systems' vulnerability to
