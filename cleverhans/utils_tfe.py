@@ -6,8 +6,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
-from distutils.version import LooseVersion
 import math
 import os
 import time
@@ -153,10 +151,6 @@ def model_eval(model, X_test=None, Y_test=None, args=None,
   if X_test is None or Y_test is None:
     raise ValueError("X_test argument and Y_test argument "
                      "must be supplied.")
-
-  # Define accuracy symbolically
-  if LooseVersion(tf.__version__) <= LooseVersion('1.0.0'):
-    raise Exception('Use Tensorflow Version greather than 1.0.0')
 
   # Init result var
   accuracy = 0.0
