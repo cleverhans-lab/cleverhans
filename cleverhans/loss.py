@@ -26,7 +26,30 @@ class Loss(object):
     :param attack: callable, the attack function for adv. training.
     """
     assert isinstance(model, Model)
-    assert attack is None or isinstance(attack, Attack)
+    standard = attack is None or isinstance(attack, Attack)
+    deprecated = callable(attack)
+    if not standard and not deprecated:
+      raise TypeError("`attack` must be `None` or `Attack` subclass instance")
+    if deprecated:
+      warnings.warn("callable attacks are deprecated, switch to an Attack "
+                    "subclass. callable attacks will not be supported after "
+                    "2019-05-05.")
+      class Wrapper(Attack):
+        """
+        Temporary wrapper class to be removed when deprecated callable
+        arguments are removed.
+
+        :param f: a callable object implementing the attack
+        """
+        def __init__(self, f):
+          dummy_model = Model()
+          super(Wrapper, self).__init__(model=dummy_model)
+          self.f = f
+
+        def generate(self, x):
+          return self.f(x)
+
+      attack = Wrapper(attack)
     self.model = model
     self.hparams = hparams
     self.attack = attack
@@ -172,7 +195,7 @@ class FeaturePairing(Loss):
     self.weight = weight
 
   def fprop(self, x, y, **kwargs):
-    x_adv = self.attack(x)
+    x_adv = self.attack.generate(x)
     d1 = self.model.fprop(x, **kwargs)
     d2 = self.model.fprop(x_adv, **kwargs)
     pairing_loss = [tf.reduce_mean(tf.square(a - b))
