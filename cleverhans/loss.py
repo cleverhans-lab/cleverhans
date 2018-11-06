@@ -23,7 +23,7 @@ class Loss(object):
     """
     :param model: Model instance, the model on which to apply the loss.
     :param hparams: dict, hyper-parameters for the loss.
-    :param attack: callable, the attack function for adv. training.
+    :param attack: cleverhans.attacks.Attack instance
     """
     assert isinstance(model, Model)
     standard = attack is None or isinstance(attack, Attack)
@@ -110,6 +110,11 @@ class CrossEntropy(Loss):
   :param smoothing: float, amount of label smoothing for cross-entropy.
   :param attack: function, given an input x, return an attacked x'.
   :param pass_y: bool, if True pass y to the attack
+  :param adv_coeff: Coefficient to put on the cross-entropy for
+    adversarial examples, if adversarial examples are used.
+    The coefficient on the cross-entropy for clean examples is
+    1. - adv_coeff.
+  :param attack_params: dict, keyword arguments passed to `attack.generate`
   """
   def __init__(self, model, smoothing=0., attack=None, pass_y=False,
                adv_coeff=0.5, attack_params=None,
@@ -133,14 +138,13 @@ class CrossEntropy(Loss):
         attack_params['y'] = y
       x = x, self.attack.generate(x, **attack_params)
       coeffs = [1. - self.adv_coeff, self.adv_coeff]
-      assert len(coeffs) == len(x)
       if self.adv_coeff == 1.:
         x = (x[1],)
         coeffs = (coeffs[1],)
     else:
       x = tuple([x])
       coeffs = [1.]
-      assert len(coeffs) == len(x)
+    assert np.allclose(sum(coeffs), 1.)
 
     # Catching RuntimeError: Variable -= value not supported by tf.eager.
     try:
