@@ -4,6 +4,7 @@ import json
 import os
 import warnings
 
+import numpy as np
 import tensorflow as tf
 
 from cleverhans.attacks import Attack
