@@ -1,10 +1,13 @@
 """Loss functions for training models."""
+import copy
 import json
 import os
 import warnings
 
+import numpy as np
 import tensorflow as tf
 
+from cleverhans.attacks import Attack
 from cleverhans.compat import softmax_cross_entropy_with_logits
 from cleverhans.model import Model
 from cleverhans.utils import safe_zip
@@ -21,10 +24,33 @@ class Loss(object):
     """
     :param model: Model instance, the model on which to apply the loss.
     :param hparams: dict, hyper-parameters for the loss.
-    :param attack: callable, the attack function for adv. training.
+    :param attack: cleverhans.attacks.Attack instance
     """
     assert isinstance(model, Model)
-    assert attack is None or callable(attack)
+    standard = attack is None or isinstance(attack, Attack)
+    deprecated = callable(attack)
+    if not standard and not deprecated:
+      raise TypeError("`attack` must be `None` or `Attack` subclass instance")
+    if deprecated:
+      warnings.warn("callable attacks are deprecated, switch to an Attack "
+                    "subclass. callable attacks will not be supported after "
+                    "2019-05-05.")
+      class Wrapper(Attack):
+        """
+        Temporary wrapper class to be removed when deprecated callable
+        arguments are removed.
+
+        :param f: a callable object implementing the attack
+        """
+        def __init__(self, f):
+          dummy_model = Model()
+          super(Wrapper, self).__init__(model=dummy_model)
+          self.f = f
+
+        def generate(self, x):
+          return self.f(x)
+
+      attack = Wrapper(attack)
     self.model = model
     self.hparams = hparams
     self.attack = attack
@@ -84,20 +110,42 @@ class CrossEntropy(Loss):
   :param model: Model instance, the model on which to apply the loss.
   :param smoothing: float, amount of label smoothing for cross-entropy.
   :param attack: function, given an input x, return an attacked x'.
+  :param pass_y: bool, if True pass y to the attack
+  :param adv_coeff: Coefficient to put on the cross-entropy for
+    adversarial examples, if adversarial examples are used.
+    The coefficient on the cross-entropy for clean examples is
+    1. - adv_coeff.
+  :param attack_params: dict, keyword arguments passed to `attack.generate`
   """
-  def __init__(self, model, smoothing=0., attack=None, **kwargs):
+  def __init__(self, model, smoothing=0., attack=None, pass_y=False,
+               adv_coeff=0.5, attack_params=None,
+               **kwargs):
     if smoothing < 0 or smoothing > 1:
       raise ValueError('Smoothing must be in [0, 1]', smoothing)
     self.kwargs = kwargs
     Loss.__init__(self, model, locals(), attack)
     self.smoothing = smoothing
+    self.adv_coeff = adv_coeff
+    self.pass_y = pass_y
+    self.attack_params = attack_params
 
   def fprop(self, x, y, **kwargs):
     kwargs.update(self.kwargs)
     if self.attack is not None:
-      x = x, self.attack(x)
+      attack_params = copy.copy(self.attack_params)
+      if attack_params is None:
+        attack_params = {}
+      if self.pass_y:
+        attack_params['y'] = y
+      x = x, self.attack.generate(x, **attack_params)
+      coeffs = [1. - self.adv_coeff, self.adv_coeff]
+      if self.adv_coeff == 1.:
+        x = (x[1],)
+        coeffs = (coeffs[1],)
     else:
       x = tuple([x])
+      coeffs = [1.]
+    assert np.allclose(sum(coeffs), 1.)
 
     # Catching RuntimeError: Variable -= value not supported by tf.eager.
     try:
@@ -108,9 +156,9 @@ class CrossEntropy(Loss):
 
     logits = [self.model.get_logits(x, **kwargs) for x in x]
     loss = sum(
-        tf.reduce_mean(softmax_cross_entropy_with_logits(labels=y,
-                                                         logits=logit))
-        for logit in logits)
+        coeff * tf.reduce_mean(softmax_cross_entropy_with_logits(labels=y,
+                                                                 logits=logit))
+        for coeff, logit in safe_zip(coeffs, logits))
     return loss
 
 
@@ -152,7 +200,7 @@ class FeaturePairing(Loss):
     self.weight = weight
 
   def fprop(self, x, y, **kwargs):
-    x_adv = self.attack(x)
+    x_adv = self.attack.generate(x)
     d1 = self.model.fprop(x, **kwargs)
     d2 = self.model.fprop(x_adv, **kwargs)
     pairing_loss = [tf.reduce_mean(tf.square(a - b))
