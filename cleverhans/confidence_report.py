@@ -110,7 +110,8 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                                    train_end=TRAIN_END, test_start=TEST_START,
                                    test_end=TEST_END, which_set=WHICH_SET,
                                    recipe=RECIPE, report_path=REPORT_PATH,
-                                   nb_iter=NB_ITER):
+                                   nb_iter=NB_ITER, base_eps=None,
+                                   base_eps_iter=None, base_eps_iter_small=None):
   """
   Load a saved model, gather its predictions, and save a confidence report.
   :param filepath: path to model to evaluate
@@ -123,6 +124,13 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     (note that different recipes will use this differently,
      for example many will run two attacks, one with nb_iter
      iterations and one with 25X more)
+  :param base_eps: float, epsilon parameter for threat model, on a scale of [0, 1].
+    Inferred from the dataset if not specified.
+  :param base_eps_iter: float, a step size used in different ways by different recipes.
+    Typically the step size for a PGD attack.
+    Inferred from the dataset if not specified.
+  :param base_eps_iter_small: float, a second step size for a more fine-grained attack.
+    Inferred from the dataset if not specified.
   """
   # Avoid circular import
   from cleverhans import attack_bundling
@@ -157,15 +165,22 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   value_range = max_value - min_value
 
   if 'CIFAR' in str(factory.cls):
-    base_eps = 8. / 255.
-    base_eps_iter = 2. / 255.
-    base_eps_iter_small = 1. / 255.
+    if base_eps is None:
+      base_eps = 8. / 255.
+    if base_eps_iter is None:
+      base_eps_iter = 2. / 255.
+    if base_eps_iter_small is None:
+      base_eps_iter_small = 1. / 255.
   elif 'MNIST' in str(factory.cls):
-    base_eps = .3
-    base_eps_iter = .1
+    if base_eps is None:
+      base_eps = .3
+    if base_eps_iter is None:
+      base_eps_iter = .1
     base_eps_iter_small = None
   else:
-    raise NotImplementedError(str(factory.cls))
+    # Note that it is not required to specify base_eps_iter_small
+    if base_eps is None or base_eps_iter is None:
+      raise NotImplementedError("Not able to infer threat model from " + str(factory.cls))
 
   eps = base_eps * value_range
   eps_iter = base_eps_iter * value_range
