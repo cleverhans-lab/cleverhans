@@ -109,7 +109,8 @@ class ConfidenceReportEntry(object):
 def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                                    train_end=TRAIN_END, test_start=TEST_START,
                                    test_end=TEST_END, which_set=WHICH_SET,
-                                   recipe=RECIPE, report_path=REPORT_PATH):
+                                   recipe=RECIPE, report_path=REPORT_PATH,
+                                   nb_iter=NB_ITER):
   """
   Load a saved model, gather its predictions, and save a confidence report.
   :param filepath: path to model to evaluate
@@ -118,6 +119,10 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   :param test_start: index of first test set example to use
   :param test_end: index of last test set example to use
   :param which_set: 'train' or 'test'
+  :param nb_iter: int, number of iterations of attack algorithm
+    (note that different recipes will use this differently,
+     for example many will run two attacks, one with nb_iter
+     iterations and one with 25X more)
   """
   # Avoid circular import
   from cleverhans import attack_bundling
@@ -168,7 +173,6 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     eps_iter_small = None
   else:
     eps_iter_small = base_eps_iter_small * value_range
-  nb_iter = 40
   clip_min = min_value
   clip_max = max_value
 
