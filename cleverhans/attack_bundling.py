@@ -464,8 +464,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
       for key in criteria:
         criteria[key][orig_idx] = criteria_batch[key][batch_idx]
       assert np.allclose(y[orig_idx], y_batch[batch_idx])
-  report['bundled'] = {'correctness': criteria['correctness'],
-                       'confidence': criteria['confidence']}
+  report['bundled'] = ConfidenceReportEntry(criteria['correctness'], criteria['confidence'])
 
   should_save = False
   new_time = time.time()

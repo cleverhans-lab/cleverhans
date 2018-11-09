@@ -60,7 +60,8 @@ class ConfidenceReport(OrderedDict):
 
   def __setitem__(self, key, value):
     assert isinstance(key, six.string_types)
-    assert isinstance(value, ConfidenceReportEntry)
+    if not isinstance(value, ConfidenceReportEntry):
+      raise TypeError("`value` must be a ConfidenceReportEntry, but got " + str(value) + " of type " + str(type(value)))
     super(ConfidenceReport, self).__setitem__(key, value)
 
 class ConfidenceReportEntry(object):
