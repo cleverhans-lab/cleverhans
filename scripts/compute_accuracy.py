@@ -92,6 +92,27 @@ def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
   factory.kwargs['test_end'] = test_end
   dataset = factory()
 
+
+  x_data, y_data = dataset.get_set(which_set)
+
+  impl(sess, model, dataset, factory, x_data, y_data, base_eps_iter, nb_iter)
+
+def impl(sess, model, dataset, factory, x_data, y_data,
+         base_eps_iter=BASE_EPS_ITER, nb_iter=NB_ITER,
+         batch_size=BATCH_SIZE):
+  """
+  The actual implementation of the evaluation.
+  :param sess: tf.Session
+  :param model: cleverhans.model.Model
+  :param dataset: cleverhans.dataset.Dataset
+  :param factory: the dataset factory corresponding to `dataset`
+  :param x_data: numpy array of input examples
+  :param y_data: numpy array of class labels
+  :param base_eps_iter: step size for PGD if data were in [0, 1]
+  :param nb_iter: number of PGD iterations
+  :returns: dict mapping string adversarial example names to accuracies
+  """
+
   center = dataset.kwargs['center']
   max_val = dataset.kwargs['max_val']
   value_range = max_val * (1. + center)
@@ -114,14 +135,14 @@ def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
                 'clip_min': min_value,
                 'clip_max': max_val}
 
-  x_data, y_data = dataset.get_set(which_set)
-
   semantic = Semantic(model, center, max_val, sess)
   pgd = ProjectedGradientDescent(model, sess=sess)
 
   jobs = [('clean', None, None, None),
           ('Semantic', semantic, None, None),
           ('pgd', pgd, pgd_params, None)]
+
+  out = {}
 
   for job in jobs:
     name, attack, attack_params, job_batch_size = job
@@ -131,8 +152,11 @@ def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
     acc = accuracy(sess, model, x_data, y_data, batch_size=job_batch_size,
                    devices=devices, attack=attack, attack_params=attack_params)
     t2 = time.time()
+    out[name] = acc
     print("Accuracy on " + name + " examples: ", acc)
     print("Evaluation took", t2 - t1, "seconds")
+
+  return out
 
 
 def main(argv=None):
