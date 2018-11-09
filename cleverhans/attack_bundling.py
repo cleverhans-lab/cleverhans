@@ -468,7 +468,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   else:
     should_save = True
   if should_save:
-    report['time'] = new_time
+    report.time = new_time
     goal.print_progress(criteria, run_counts)
     save(criteria, report, report_path, adv_x_val)
 
