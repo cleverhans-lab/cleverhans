@@ -120,7 +120,10 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   """
   # Avoid circular import
   from cleverhans import attack_bundling
-  run_recipe = getattr(attack_bundling, recipe)
+  if callable(recipe):
+    run_recipe = recipe
+  else:
+    run_recipe = getattr(attack_bundling, recipe)
 
   # Set logging level to see debug information
   set_log_level(logging.INFO)
