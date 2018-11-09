@@ -118,7 +118,7 @@ def correctness_and_confidence(sess, model, x, y, batch_size=None,
   return out
 
 def run_attack(sess, model, x, y, attack, attack_params, batch_size=None,
-               devices=None, feed=None):
+               devices=None, feed=None, pass_y=False):
   """
   Run attack on every example in a dataset.
   :param sess: tf.Session
@@ -141,6 +141,7 @@ def run_attack(sess, model, x, y, attack, attack_params, batch_size=None,
   :param feed: An optional dictionary that is appended to the feeding
            dictionary before the session runs. Can be used to feed
            the learning phase of a Keras model for instance.
+  :param pass_y: bool. If true pass 'y' to `attack.generate`
   :return:
     an ndarray of bools indicating whether each example is correct
     an ndarray of probabilities assigned to the prediction for each example
@@ -149,7 +150,7 @@ def run_attack(sess, model, x, y, attack, attack_params, batch_size=None,
   _check_x(x)
   _check_y(y)
 
-  factory = _AttackFactory(model, attack, attack_params)
+  factory = _AttackFactory(model, attack, attack_params, pass_y)
 
   out, = batch_eval_multi_worker(sess, factory, [x, y], batch_size=batch_size,
                                  devices=devices, feed=feed)

@@ -287,9 +287,10 @@ class AttackConfig(object):
   :param attack: cleverhans.attacks.Attack
   :param params: dict of keyword arguments to pass to attack.generate
   :param name: str, name to be returned by __str__ / __repr__
+  :param pass_y: bool, whether to pass y to `attack.generate`
   """
 
-  def __init__(self, attack, params=None, name=None):
+  def __init__(self, attack, params=None, name=None, pass_y=False):
     self.attack = attack
     self.params = params
     self.name = name
@@ -447,7 +448,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   assert y_batch.shape[0] == attack_batch_size
   adv_x_batch = run_attack(sess, model, x_batch, y_batch,
                            attack_config.attack, attack_config.params,
-                           attack_batch_size, devices)
+                           attack_batch_size, devices, pass_y=attack_config.pass_y)
   criteria_batch = goal.get_criteria(sess, model, adv_x_batch, y_batch,
                                      batch_size=min(attack_batch_size,
                                                     BATCH_SIZE))
