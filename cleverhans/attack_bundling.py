@@ -391,13 +391,7 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
   :param run_counts: dict mapping AttackConfigs to numpy arrays specifying
     how many times they have been run on each example
   :param goal: AttackGoal to run
-  :param report: dict
-    keys are string names of types of data
-    values are dicts
-      keys are "correctness" or "confidence"
-      values are numpy arrays reporting these criteria per example
-    also, one key is "time" and reports "time.time()" when the report was
-    last updated.
+  :param report: ConfidenceReport
   :param report_path: str, the path the report will be saved to
   """
   goal.start(run_counts)
