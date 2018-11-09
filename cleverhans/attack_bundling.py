@@ -341,6 +341,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
              in attack_configs)
   assert all(isinstance(goal, AttackGoal) for goal in goals)
   assert isinstance(report_path, six.string_types)
+  if x.shape[0] != y.shape[0]:
+    raise ValueError("Number of input examples does not match number of labels")
 
   # Note: no need to precompile attacks, correctness_and_confidence
   # caches them
