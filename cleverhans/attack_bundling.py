@@ -298,6 +298,7 @@ class AttackConfig(object):
       assert isinstance(params, dict)
       for key in params:
         assert isinstance(key, six.string_types), type(key)
+    self.pass_y = pass_y
 
   def __str__(self):
     if self.name is not None:
