@@ -48,6 +48,8 @@ def accuracy(sess, model, x, y, batch_size=None, devices=None, feed=None,
 
   _check_x(x)
   _check_y(y)
+  if x.shape[0] != y.shape[0]:
+    raise ValueError("Number of input examples and labels do not match.")
 
   factory = _CorrectFactory(model, attack, attack_params)
 
@@ -95,6 +97,8 @@ def correctness_and_confidence(sess, model, x, y, batch_size=None,
 
   _check_x(x)
   _check_y(y)
+  if x.shape[0] != y.shape[0]:
+    raise ValueError("Number of input examples and labels do not match.")
 
   factory = _CorrectAndProbFactory(model, attack, attack_params)
 
@@ -223,7 +227,10 @@ def batch_eval_multi_worker(sess, graph_factory, numpy_inputs, batch_size=None,
   assert n > 0
   m = numpy_inputs[0].shape[0]
   for i in range(1, n):
-    assert numpy_inputs[i].shape[0] == m
+    m_i = numpy_inputs[i].shape[0]
+    if m != m_i:
+      raise ValueError("All of numpy_inputs must have the same number of examples, but the first one has " + str(m)
+                       + " examples and input " + str(i) + " has " + str(m_i) + "examples.")
   out = []
 
   replicated_tf_inputs = []
