@@ -6,6 +6,7 @@ import numpy as np
 
 from cleverhans.confidence_report import ConfidenceReport
 from cleverhans.confidence_report import ConfidenceReportEntry
+from cleverhans.confidence_report import make_confidence_report_bundled
 
 
 def test_confidence_report():

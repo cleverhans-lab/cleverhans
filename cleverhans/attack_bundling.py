@@ -310,7 +310,7 @@ class AttackConfig(object):
 
 
 def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
-                   attack_batch_size=BATCH_SIZE):
+                   attack_batch_size=BATCH_SIZE, eval_batch_size=BATCH_SIZE):
   """
   Runs attack bundling.
   Users of cleverhans may call this function but are more likely to call
@@ -328,7 +328,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
     Some goals may never be satisfied, in which case the bundler will run
     forever, updating the report on disk as it goes.
   :param report_path: str, the path the report will be saved to
-  :param attack_batch_size: int, batch size for the attacks
+  :param attack_batch_size: int, batch size for generating adversarial examples
+  :param eval_batch_size: int, batch size for evaluating the model on clean / adversarial examples
   :returns:
     adv_x: The adversarial examples, in the same format as `x`
     run_counts: dict mapping each AttackConfig to a numpy array reporting
@@ -351,7 +352,7 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
   # TODO: make an interface to pass this in if it has already been computed
   # elsewhere
   _logger.info("Running on clean data to initialize the report...")
-  packed = correctness_and_confidence(sess, model, x, y, batch_size=BATCH_SIZE,
+  packed = correctness_and_confidence(sess, model, x, y, batch_size=eval_batch_size,
                                       devices=devices)
   _logger.info("...done")
   correctness, confidence = packed
@@ -365,7 +366,7 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
     bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
                              run_counts,
                              goal, report, report_path,
-                             attack_batch_size=attack_batch_size)
+                             attack_batch_size=attack_batch_size, eval_batch_size=eval_batch_size)
 
   # Many users will set `goals` to make this run forever, so the return
   # statement is not the primary way to get information out.
@@ -374,7 +375,7 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
 def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
                              run_counts,
                              goal, report, report_path,
-                             attack_batch_size=BATCH_SIZE):
+                             attack_batch_size=BATCH_SIZE, eval_batch_size=BATCH_SIZE):
   """
   Runs attack bundling, working on one specific AttackGoal.
   This function is mostly intended to be called by `bundle_attacks`.
@@ -393,10 +394,12 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
   :param goal: AttackGoal to run
   :param report: ConfidenceReport
   :param report_path: str, the path the report will be saved to
+  :param attack_batch_size: int, batch size for generating adversarial examples
+  :param eval_batch_size: int, batch size for evaluating the model on adversarial examples
   """
   goal.start(run_counts)
   _logger.info("Running criteria for new goal...")
-  criteria = goal.get_criteria(sess, model, adv_x, y)
+  criteria = goal.get_criteria(sess, model, adv_x, y, batch_size=eval_batch_size)
   assert 'correctness' in criteria
   _logger.info("Accuracy: " + str(criteria['correctness'].mean()))
   assert 'confidence' in criteria
