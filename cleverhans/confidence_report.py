@@ -196,7 +196,7 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   assert x_data.min() >= min_value
 
   assert eps_iter <= eps
-  assert eps_iter_small <= eps
+  assert eps_iter_small is None or eps_iter_small <= eps
 
   # Different recipes take different arguments.
   # For now I don't have an idea for a beautiful unifying framework, so
