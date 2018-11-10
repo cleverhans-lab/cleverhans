@@ -160,7 +160,7 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   dataset = factory()
 
   center = dataset.kwargs['center']
-  max_value = dataset.max_val
+  max_value = factory.kwargs['max_val']
   min_value = 0. - center * max_value
   value_range = max_value - min_value
 
