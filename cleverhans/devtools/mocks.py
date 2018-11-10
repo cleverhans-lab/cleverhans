@@ -42,6 +42,8 @@ class SimpleDataset(Dataset):
                nb_classes=5):
     kwargs = copy.copy(locals())
     del kwargs['self']
+    if "__class__" in kwargs:
+      del kwargs["__class__"]
     super(SimpleDataset, self).__init__(kwargs)
     self.__dict__.update(kwargs)
     train_x_rng = np.random.RandomState([2018, 11, 9, 1])
