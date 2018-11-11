@@ -468,8 +468,8 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
 
   should_save = False
   new_time = time.time()
-  if 'time' in report:
-    if new_time - report['time'] > REPORT_TIME_INTERVAL:
+  if hasattr(report, 'time'):
+    if new_time - report.time > REPORT_TIME_INTERVAL:
       should_save = True
   else:
     should_save = True
@@ -489,6 +489,7 @@ def save(criteria, report, report_path, adv_x_val):
   """
   print_stats(criteria['correctness'], criteria['confidence'], 'bundled')
 
+  print("Saving to " + report_path)
   serial.save(report_path, report)
 
   assert report_path.endswith(".joblib")
