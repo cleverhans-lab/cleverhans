@@ -13,7 +13,7 @@ from cleverhans.serial import load
 
 
 _, path = sys.argv
-report = load(path)
+the_report = load(path)
 
 def current(report):
   """
@@ -62,7 +62,7 @@ def deprecated(report):
     print key, 'accuracy at t=0', report[key][correctness_name].mean()
 
 
-if isinstance(report, ConfidenceReport):
-  current(report)
+if isinstance(the_report, ConfidenceReport):
+  current(the_report)
 else:
-  deprecated(report)
+  deprecated(the_report)
