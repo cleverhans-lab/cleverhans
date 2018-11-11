@@ -59,6 +59,7 @@ class ConfidenceReport(OrderedDict):
   """
 
   def __init__(self):
+    super(ConfidenceReport, self).__init__()
     # This field tracks whether the report is completed.
     # It's important e.g. for reports that are made by bundlers and repeatedly
     # written to disk during the process. This field makes it possible to tell
