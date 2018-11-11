@@ -287,9 +287,10 @@ class AttackConfig(object):
   :param attack: cleverhans.attacks.Attack
   :param params: dict of keyword arguments to pass to attack.generate
   :param name: str, name to be returned by __str__ / __repr__
+  :param pass_y: bool, whether to pass y to `attack.generate`
   """
 
-  def __init__(self, attack, params=None, name=None):
+  def __init__(self, attack, params=None, name=None, pass_y=False):
     self.attack = attack
     self.params = params
     self.name = name
@@ -297,6 +298,7 @@ class AttackConfig(object):
       assert isinstance(params, dict)
       for key in params:
         assert isinstance(key, six.string_types), type(key)
+    self.pass_y = pass_y
 
   def __str__(self):
     if self.name is not None:
@@ -308,7 +310,7 @@ class AttackConfig(object):
 
 
 def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
-                   attack_batch_size=BATCH_SIZE):
+                   attack_batch_size=BATCH_SIZE, eval_batch_size=BATCH_SIZE):
   """
   Runs attack bundling.
   Users of cleverhans may call this function but are more likely to call
@@ -326,7 +328,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
     Some goals may never be satisfied, in which case the bundler will run
     forever, updating the report on disk as it goes.
   :param report_path: str, the path the report will be saved to
-  :param attack_batch_size: int, batch size for the attacks
+  :param attack_batch_size: int, batch size for generating adversarial examples
+  :param eval_batch_size: int, batch size for evaluating the model on clean / adversarial examples
   :returns:
     adv_x: The adversarial examples, in the same format as `x`
     run_counts: dict mapping each AttackConfig to a numpy array reporting
@@ -338,6 +341,8 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
              in attack_configs)
   assert all(isinstance(goal, AttackGoal) for goal in goals)
   assert isinstance(report_path, six.string_types)
+  if x.shape[0] != y.shape[0]:
+    raise ValueError("Number of input examples does not match number of labels")
 
   # Note: no need to precompile attacks, correctness_and_confidence
   # caches them
@@ -349,7 +354,7 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
   # TODO: make an interface to pass this in if it has already been computed
   # elsewhere
   _logger.info("Running on clean data to initialize the report...")
-  packed = correctness_and_confidence(sess, model, x, y, batch_size=BATCH_SIZE,
+  packed = correctness_and_confidence(sess, model, x, y, batch_size=eval_batch_size,
                                       devices=devices)
   _logger.info("...done")
   correctness, confidence = packed
@@ -363,7 +368,7 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
     bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
                              run_counts,
                              goal, report, report_path,
-                             attack_batch_size=attack_batch_size)
+                             attack_batch_size=attack_batch_size, eval_batch_size=eval_batch_size)
 
   # Many users will set `goals` to make this run forever, so the return
   # statement is not the primary way to get information out.
@@ -372,7 +377,7 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
 def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
                              run_counts,
                              goal, report, report_path,
-                             attack_batch_size=BATCH_SIZE):
+                             attack_batch_size=BATCH_SIZE, eval_batch_size=BATCH_SIZE):
   """
   Runs attack bundling, working on one specific AttackGoal.
   This function is mostly intended to be called by `bundle_attacks`.
@@ -389,18 +394,14 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
   :param run_counts: dict mapping AttackConfigs to numpy arrays specifying
     how many times they have been run on each example
   :param goal: AttackGoal to run
-  :param report: dict
-    keys are string names of types of data
-    values are dicts
-      keys are "correctness" or "confidence"
-      values are numpy arrays reporting these criteria per example
-    also, one key is "time" and reports "time.time()" when the report was
-    last updated.
+  :param report: ConfidenceReport
   :param report_path: str, the path the report will be saved to
+  :param attack_batch_size: int, batch size for generating adversarial examples
+  :param eval_batch_size: int, batch size for evaluating the model on adversarial examples
   """
   goal.start(run_counts)
   _logger.info("Running criteria for new goal...")
-  criteria = goal.get_criteria(sess, model, adv_x, y)
+  criteria = goal.get_criteria(sess, model, adv_x, y, batch_size=eval_batch_size)
   assert 'correctness' in criteria
   _logger.info("Accuracy: " + str(criteria['correctness'].mean()))
   assert 'confidence' in criteria
@@ -447,7 +448,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   assert y_batch.shape[0] == attack_batch_size
   adv_x_batch = run_attack(sess, model, x_batch, y_batch,
                            attack_config.attack, attack_config.params,
-                           attack_batch_size, devices)
+                           attack_batch_size, devices, pass_y=attack_config.pass_y)
   criteria_batch = goal.get_criteria(sess, model, adv_x_batch, y_batch,
                                      batch_size=min(attack_batch_size,
                                                     BATCH_SIZE))
@@ -462,8 +463,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
       for key in criteria:
         criteria[key][orig_idx] = criteria_batch[key][batch_idx]
       assert np.allclose(y[orig_idx], y_batch[batch_idx])
-  report['bundled'] = {'correctness': criteria['correctness'],
-                       'confidence': criteria['confidence']}
+  report['bundled'] = ConfidenceReportEntry(criteria['correctness'], criteria['confidence'])
 
   should_save = False
   new_time = time.time()
@@ -473,7 +473,7 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
   else:
     should_save = True
   if should_save:
-    report['time'] = new_time
+    report.time = new_time
     goal.print_progress(criteria, run_counts)
     save(criteria, report, report_path, adv_x_val)
 

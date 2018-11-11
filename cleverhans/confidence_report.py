@@ -60,7 +60,8 @@ class ConfidenceReport(OrderedDict):
 
   def __setitem__(self, key, value):
     assert isinstance(key, six.string_types)
-    assert isinstance(value, ConfidenceReportEntry)
+    if not isinstance(value, ConfidenceReportEntry):
+      raise TypeError("`value` must be a ConfidenceReportEntry, but got " + str(value) + " of type " + str(type(value)))
     super(ConfidenceReport, self).__setitem__(key, value)
 
 class ConfidenceReportEntry(object):
@@ -108,7 +109,9 @@ class ConfidenceReportEntry(object):
 def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                                    train_end=TRAIN_END, test_start=TEST_START,
                                    test_end=TEST_END, which_set=WHICH_SET,
-                                   recipe=RECIPE, report_path=REPORT_PATH):
+                                   recipe=RECIPE, report_path=REPORT_PATH,
+                                   nb_iter=NB_ITER, base_eps=None,
+                                   base_eps_iter=None, base_eps_iter_small=None):
   """
   Load a saved model, gather its predictions, and save a confidence report.
   :param filepath: path to model to evaluate
@@ -117,10 +120,24 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   :param test_start: index of first test set example to use
   :param test_end: index of last test set example to use
   :param which_set: 'train' or 'test'
+  :param nb_iter: int, number of iterations of attack algorithm
+    (note that different recipes will use this differently,
+     for example many will run two attacks, one with nb_iter
+     iterations and one with 25X more)
+  :param base_eps: float, epsilon parameter for threat model, on a scale of [0, 1].
+    Inferred from the dataset if not specified.
+  :param base_eps_iter: float, a step size used in different ways by different recipes.
+    Typically the step size for a PGD attack.
+    Inferred from the dataset if not specified.
+  :param base_eps_iter_small: float, a second step size for a more fine-grained attack.
+    Inferred from the dataset if not specified.
   """
   # Avoid circular import
   from cleverhans import attack_bundling
-  run_recipe = getattr(attack_bundling, recipe)
+  if callable(recipe):
+    run_recipe = recipe
+  else:
+    run_recipe = getattr(attack_bundling, recipe)
 
   # Set logging level to see debug information
   set_log_level(logging.INFO)
@@ -143,20 +160,27 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   dataset = factory()
 
   center = dataset.kwargs['center']
-  max_value = dataset.max_val
+  max_value = factory.kwargs['max_val']
   min_value = 0. - center * max_value
   value_range = max_value - min_value
 
   if 'CIFAR' in str(factory.cls):
-    base_eps = 8. / 255.
-    base_eps_iter = 2. / 255.
-    base_eps_iter_small = 1. / 255.
+    if base_eps is None:
+      base_eps = 8. / 255.
+    if base_eps_iter is None:
+      base_eps_iter = 2. / 255.
+    if base_eps_iter_small is None:
+      base_eps_iter_small = 1. / 255.
   elif 'MNIST' in str(factory.cls):
-    base_eps = .3
-    base_eps_iter = .1
+    if base_eps is None:
+      base_eps = .3
+    if base_eps_iter is None:
+      base_eps_iter = .1
     base_eps_iter_small = None
   else:
-    raise NotImplementedError(str(factory.cls))
+    # Note that it is not required to specify base_eps_iter_small
+    if base_eps is None or base_eps_iter is None:
+      raise NotImplementedError("Not able to infer threat model from " + str(factory.cls))
 
   eps = base_eps * value_range
   eps_iter = base_eps_iter * value_range
@@ -164,7 +188,6 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     eps_iter_small = None
   else:
     eps_iter_small = base_eps_iter_small * value_range
-  nb_iter = 40
   clip_min = min_value
   clip_max = max_value
 
@@ -173,7 +196,7 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   assert x_data.min() >= min_value
 
   assert eps_iter <= eps
-  assert eps_iter_small <= eps
+  assert eps_iter_small is None or eps_iter_small <= eps
 
   # Different recipes take different arguments.
   # For now I don't have an idea for a beautiful unifying framework, so
