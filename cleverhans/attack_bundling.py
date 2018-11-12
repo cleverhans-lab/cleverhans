@@ -1,7 +1,8 @@
 """
 Runs multiple attacks against each example.
 
-Reference: https://openreview.net/forum?id=H1g0piA9tQ
+References: https://openreview.net/forum?id=H1g0piA9tQ
+            https://arxiv.org/abs/1811.03685
 """
 import copy
 import logging
