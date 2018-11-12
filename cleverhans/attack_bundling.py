@@ -672,12 +672,13 @@ class Misclassify(AttackGoal):
       for ac in self.new_work_goal:
         goal = self.new_work_goal[ac]
         new = filtered_run_counts[ac] - filtered_work_before[ac]
-        min_new = new.min()
-        if min_new < goal:
-          num_min = (new == min_new).sum()
-          print("\t" + str(ac) + ": goal of " + str(goal) + " runs, but "
-                + str(num_min) + " examples have been run only " + str(min_new)
-                + " times")
+        if new.size > 0:
+          min_new = new.min()
+          if min_new < goal:
+            num_min = (new == min_new).sum()
+            print("\t" + str(ac) + ": goal of " + str(goal) + " runs, but "
+                  + str(num_min) + " examples have been run only " + str(min_new)
+                  + " times")
 
   def filter(self, run_counts, criteria):
     correctness = criteria['correctness']

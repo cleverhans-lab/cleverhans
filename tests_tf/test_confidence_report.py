@@ -56,3 +56,20 @@ def test_make_confidence_report_bundled():
                                    base_eps=.1, base_eps_iter=.01)
   finally:
     sess.close()
+
+def test_save_load_confidence_report():
+  """
+  Test that a confidence report can be loaded and saved.
+  """
+  report = ConfidenceReport()
+  num_examples = 2
+  clean_correctness = np.zeros((num_examples,), dtype=np.bool)
+  clean_confidence = np.zeros((num_examples,), dtype=np.float32)
+  adv_correctness = clean_correctness.copy()
+  adv_confidence = clean_confidence.copy()
+  report['clean'] = ConfidenceReportEntry(clean_correctness, clean_confidence)
+  report['adv'] = ConfidenceReportEntry(adv_correctness, adv_confidence)
+  report.completed = True
+  filepath = ".test_confidence_report.joblib"
+  serial.save(filepath, report)
+  report = serial.load(filepath)
