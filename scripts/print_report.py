@@ -34,13 +34,11 @@ def current(report):
     warnings.warn("This report does not indicate whether it is completed. Support for reports without a `completed`"
                   "field may be dropped on or after 2019-05-11.")
   for key in report:
-    confidence_name = 'confidence'
-    correctness_name = 'correctness'
-    covered = report[key][confidence_name] > 0.5
-    wrong = 1. - report[key][correctness_name]
+    covered = report[key].confidence_name > 0.5
+    wrong = 1. - report[key].correctness
     failure_rate = (covered * wrong).mean()
-    print key, 'failure rate at t=.5', failure_rate
-    print key, 'accuracy at t=0', report[key][correctness_name].mean()
+    print(key, 'failure rate at t=.5', failure_rate)
+    print(key, 'accuracy at t=0', report[key].correctness.mean())
 
 def deprecated(report):
   """
@@ -63,8 +61,8 @@ def deprecated(report):
     covered = report[key][confidence_name] > 0.5
     wrong = 1. - report[key][correctness_name]
     failure_rate = (covered * wrong).mean()
-    print key, 'failure rate at t=.5', failure_rate
-    print key, 'accuracy at t=0', report[key][correctness_name].mean()
+    print(key, 'failure rate at t=.5', failure_rate)
+    print(key, 'accuracy at t=0', report[key][correctness_name].mean())
 
 
 if isinstance(the_report, ConfidenceReport):
