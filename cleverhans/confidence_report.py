@@ -56,9 +56,11 @@ class ConfidenceReport(OrderedDict):
   This class is just a dictionary with some type checks.
   It maps string data type names (like "clean" for clean data or "Semantic"
   for semantic adversarial examples) to ConfidenceReportEntry instances.
+
+  :param iterable: optional iterable containing (key, value) tuples
   """
 
-  def __init__(self):
+  def __init__(self, iterable=None):
     super(ConfidenceReport, self).__init__()
     # This field tracks whether the report is completed.
     # It's important e.g. for reports that are made by bundlers and repeatedly
@@ -66,6 +68,10 @@ class ConfidenceReport(OrderedDict):
     # whether a report on disk is complete or whether the bundling process
     # got killed (e.g. due to VM migration)
     self.completed = False
+    if iterable is not None:
+      # pickle sometimes wants to use this interface to unpickle the OrderedDict
+      for key, value in iterable:
+        self[key] = value
 
   def __setitem__(self, key, value):
     assert isinstance(key, six.string_types)
@@ -169,7 +175,12 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   dataset = factory()
 
   center = dataset.kwargs['center']
-  max_value = factory.kwargs['max_val']
+  if 'max_val' in factory.kwargs:
+    max_value = factory.kwargs['max_val']
+  elif hasattr(dataset, 'max_val'):
+    max_value = dataset.max_val
+  else:
+    raise AttributeError("Can't find max_value specification")
   min_value = 0. - center * max_value
   value_range = max_value - min_value
 
