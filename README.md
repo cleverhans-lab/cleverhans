@@ -52,14 +52,14 @@ This will install the last version uploaded to
 If you'd instead like to install the bleeding edge version, use:
 
 ```
-pip install -e git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
+pip install git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
 ```
 
-#### Manual installation
+#### Installation for development
 
-If you are installing CleverHans manually,
-run the following command to clone the CleverHans repository
-into a folder of your choice:
+If you want to make an editable installation of CleverHans so that you can
+develop the library and contribute changes back, first fork the repository
+on GitHub and then clone your fork into a directory of your choice:
 
 ```
 git clone https://github.com/tensorflow/cleverhans
@@ -69,6 +69,7 @@ You can then install the local package in "editable" mode in order to add it to
 your `PYTHONPATH`:
 
 ```
+cd cleverhans
 pip install -e ./cleverhans
 ```
 
