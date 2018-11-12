@@ -12,7 +12,12 @@ from cleverhans.confidence_report import ConfidenceReport
 from cleverhans.serial import load
 
 
-_, path = sys.argv
+if len(sys.argv) == 2:
+  # pylint doesn't realize that sys.argv will change at runtime
+  # pylint:disable=unbalanced-tuple-unpacking
+  _, path = sys.argv
+else:
+  raise ValueError("Wrong number of arguments")
 the_report = load(path)
 
 def current(report):
