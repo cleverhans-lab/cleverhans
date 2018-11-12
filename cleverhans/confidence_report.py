@@ -169,7 +169,12 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   dataset = factory()
 
   center = dataset.kwargs['center']
-  max_value = factory.kwargs['max_val']
+  if 'max_val' in factory.kwargs:
+    max_value = factory.kwargs['max_val']
+  elif hasattr(dataset, 'max_val'):
+    max_value = dataset.max_val
+  else:
+    raise AttributeError("Can't find max_value specification")
   min_value = 0. - center * max_value
   value_range = max_value - min_value
 
