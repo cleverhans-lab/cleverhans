@@ -56,7 +56,16 @@ class ConfidenceReport(OrderedDict):
   This class is just a dictionary with some type checks.
   It maps string data type names (like "clean" for clean data or "Semantic"
   for semantic adversarial examples) to ConfidenceReportEntry instances.
+
+  :param iterable: optional iterable containing (key, value) tuples
   """
+
+  def __init__(self, iterable=None):
+    super(ConfidenceReport, self).__init__()
+    if iterable is not None:
+      # pickle sometimes wants to use this interface to unpickle the OrderedDict
+      for key, value in iterable:
+        self[key] = value
 
   def __setitem__(self, key, value):
     assert isinstance(key, six.string_types)
