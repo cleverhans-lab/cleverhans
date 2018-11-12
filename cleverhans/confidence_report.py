@@ -58,6 +58,15 @@ class ConfidenceReport(OrderedDict):
   for semantic adversarial examples) to ConfidenceReportEntry instances.
   """
 
+  def __init__(self):
+    super(ConfidenceReport, self).__init__()
+    # This field tracks whether the report is completed.
+    # It's important e.g. for reports that are made by bundlers and repeatedly
+    # written to disk during the process. This field makes it possible to tell
+    # whether a report on disk is complete or whether the bundling process
+    # got killed (e.g. due to VM migration)
+    self.completed = False
+
   def __setitem__(self, key, value):
     assert isinstance(key, six.string_types)
     if not isinstance(value, ConfidenceReportEntry):
