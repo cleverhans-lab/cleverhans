@@ -410,9 +410,10 @@ def bundle_attacks_with_goal(sess, model, x, y, adv_x, attack_configs,
                         run_counts,
                         goal, report, report_path,
                         attack_batch_size=attack_batch_size)
-  # Save after finishing each goal.
+  # Save after finishing all goals.
   # The incremental saves run on a timer. This save is needed so that the last
   # few attacks after the timer don't get discarded
+  report.completed = True
   save(criteria, report, report_path, adv_x)
 
 
@@ -467,8 +468,8 @@ def run_batch_with_goal(sess, model, x, y, adv_x_val, criteria, attack_configs,
 
   should_save = False
   new_time = time.time()
-  if 'time' in report:
-    if new_time - report['time'] > REPORT_TIME_INTERVAL:
+  if hasattr(report, 'time'):
+    if new_time - report.time > REPORT_TIME_INTERVAL:
       should_save = True
   else:
     should_save = True
@@ -488,6 +489,7 @@ def save(criteria, report, report_path, adv_x_val):
   """
   print_stats(criteria['correctness'], criteria['confidence'], 'bundled')
 
+  print("Saving to " + report_path)
   serial.save(report_path, report)
 
   assert report_path.endswith(".joblib")
