@@ -62,6 +62,12 @@ class ConfidenceReport(OrderedDict):
 
   def __init__(self, iterable=None):
     super(ConfidenceReport, self).__init__()
+    # This field tracks whether the report is completed.
+    # It's important e.g. for reports that are made by bundlers and repeatedly
+    # written to disk during the process. This field makes it possible to tell
+    # whether a report on disk is complete or whether the bundling process
+    # got killed (e.g. due to VM migration)
+    self.completed = False
     if iterable is not None:
       # pickle sometimes wants to use this interface to unpickle the OrderedDict
       for key, value in iterable:
