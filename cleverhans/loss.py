@@ -13,10 +13,9 @@ from cleverhans.model import Model
 from cleverhans.utils import safe_zip
 
 try:
-  import tensorflow_probability as tfp
-  tf_distributions = tfp.distributions
+  import tensorflow_probability.distributions as tf_distributions
 except ImportError:
-  tf_distributions = tf.distributions
+  import tensorflow.distributions as tf_distributions
 
 
 class Loss(object):
