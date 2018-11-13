@@ -12,6 +12,12 @@ from cleverhans.compat import softmax_cross_entropy_with_logits
 from cleverhans.model import Model
 from cleverhans.utils import safe_zip
 
+try:
+  import tensorflow_probability as tfp
+  tf_distributions = tfp.distributions
+except ImportError:
+  tf_distributions = tf.distributions
+
 
 class Loss(object):
   """
@@ -175,7 +181,7 @@ class MixUp(Loss):
   def fprop(self, x, y, **kwargs):
     with tf.device('/CPU:0'):
       # Prevent error complaining GPU kernels unavailable for this.
-      mix = tf.distributions.Beta(self.beta, self.beta)
+      mix = tf_distributions.Beta(self.beta, self.beta)
       mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
     mix = tf.maximum(mix, 1 - mix)
     mix_label = tf.reshape(mix, [-1, 1])
@@ -313,7 +319,7 @@ class LossMixUp(Loss):
     self.beta = beta
 
   def fprop(self, x, y, **kwargs):
-    mix = tf.distributions.Beta(self.beta, self.beta)
+    mix = tf_distributions.Beta(self.beta, self.beta)
     mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
     xm = x + mix * (x[::-1] - x)
     ym = y + mix * (y[::-1] - y)

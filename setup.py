@@ -12,6 +12,7 @@ setup(name='cleverhans',
           'matplotlib',
           "mnist ~= 0.2",
           "numpy",
+          "tensorflow-probability",
       ],
       # Explicit dependence on TensorFlow is not supported.
       # See https://github.com/tensorflow/tensorflow/issues/7166
