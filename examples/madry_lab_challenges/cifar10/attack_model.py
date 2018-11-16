@@ -44,6 +44,7 @@ def main(argv):
     x = tf.placeholder(tf.float32, shape=(None, 32, 32, 3))
     y = tf.placeholder(tf.float32, shape=(None, 10))
 
+
     from cleverhans.model_zoo.madry_lab_challenges.cifar10_model import make_wresnet
     model = make_wresnet()
 
