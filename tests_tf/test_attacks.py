@@ -454,6 +454,7 @@ class TestSPSA(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
+
 class TestProjectedGradientDescent(CommonAttackProperties):
   def setUp(self):
     super(TestProjectedGradientDescent, self).setUp()
@@ -491,7 +492,7 @@ class TestProjectedGradientDescent(CommonAttackProperties):
         # Don't raise SkipTest because it will skip the rest of the for loop
         continue
       self.assertTrue(np.max(0.5 - delta) > 0.25)
-    
+
   def test_attack_strength(self):
     """
     If clipping is not done at each iteration (not passing clip_min and
@@ -989,7 +990,7 @@ class TestBasicIterativeMethod(TestProjectedGradientDescent):
     # There is no initial random step, so nothing to test here
     pass
 
-  
+
 class TestFastFeatureAdversaries(CleverHansTest):
   def setUp(self):
     super(TestFastFeatureAdversaries, self).setUp()
@@ -1227,4 +1228,3 @@ class TestSpatialTransformationMethod(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
-
