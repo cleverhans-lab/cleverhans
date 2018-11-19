@@ -202,10 +202,10 @@ class CommonAttackProperties(CleverHansTest):
                                                  **kwargs):
     x_val, x_adv, delta = self.generate_adversarial_examples_np(ord, eps,
                                                                 **kwargs)
-    self.assertClose(delta, eps)
+    self.assertLess(np.max(np.abs(delta-eps)), 1e-3)
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-    self.assertTrue(np.mean(orig_labs == new_labs) < 0.5)
+    self.assertLess(np.max(np.mean(orig_labs == new_labs)), .5)
 
   def test_invalid_input(self):
     x_val = -np.ones((2, 2), dtype='float32')
@@ -975,6 +975,10 @@ class TestMomentumIterativeMethod(TestProjectedGradientDescent):
       delta = np.max(np.abs(x_adv - x_val), axis=1)
       self.assertClose(delta, 0.5)
 
+  def test_multiple_initial_random_step(self):
+    # There is no initial random step, so nothing to test here
+    pass
+      
 class TestMadryEtAl(TestProjectedGradientDescent):
   def setUp(self):
     super(TestMadryEtAl, self).setUp()
