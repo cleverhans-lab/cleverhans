@@ -978,7 +978,8 @@ class TestMomentumIterativeMethod(TestProjectedGradientDescent):
   def test_multiple_initial_random_step(self):
     # There is no initial random step, so nothing to test here
     pass
-      
+
+
 class TestMadryEtAl(TestProjectedGradientDescent):
   def setUp(self):
     super(TestMadryEtAl, self).setUp()
