@@ -454,6 +454,147 @@ class TestSPSA(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
+class TestProjectedGradientDescent(CommonAttackProperties):
+  def setUp(self):
+    super(TestProjectedGradientDescent, self).setUp()
+
+    self.sess = tf.Session()
+    self.model = SimpleModel()
+    self.attack = ProjectedGradientDescent(self.model, sess=self.sess)
+
+  def test_generate_np_gives_adversarial_example_linfinity(self):
+    self.help_generate_np_gives_adversarial_example(ord=np.infty, eps=.5,
+                                                    nb_iter=20)
+
+  def test_generate_np_gives_adversarial_example_l1(self):
+    try:
+      self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
+                                                      nb_iter=20)
+    except NotImplementedError:
+      raise SkipTest()
+
+  def test_generate_np_gives_adversarial_example_l2(self):
+    self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
+                                                    nb_iter=20)
+
+  def test_do_not_reach_lp_boundary(self):
+    """
+    Make sure that iterative attack don't reach boundary of Lp
+    neighbourhood if nb_iter * eps_iter is relatively small compared to
+    epsilon.
+    """
+    for ord in [1, 2, np.infty]:
+      try:
+        _, _, delta = self.generate_adversarial_examples_np(
+          ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
+      except NotImplementedError:
+        # Don't raise SkipTest because it will skip the rest of the for loop
+        continue
+      self.assertTrue(np.max(0.5 - delta) > 0.25)
+    
+  def test_attack_strength(self):
+    """
+    If clipping is not done at each iteration (not passing clip_min and
+    clip_max to fgm), this attack fails by
+    np.mean(orig_labels == new_labels) == .39.
+    """
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # sanity checks turned off becuase this test initializes outside
+    # the valid range.
+    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
+                                    clip_min=0.5, clip_max=0.7,
+                                    nb_iter=5, sanity_checks=False)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertLess(np.mean(orig_labs == new_labs), 0.1)
+
+  def test_clip_eta(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
+                                    nb_iter=5)
+
+    delta = np.max(np.abs(x_adv - x_val), axis=1)
+    self.assertLessEqual(np.max(delta), 1.)
+
+  def test_generate_np_gives_clipped_adversarial_examples(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
+                                    nb_iter=5,
+                                    clip_min=-0.2, clip_max=0.3,
+                                    sanity_checks=False)
+
+    self.assertLess(-0.201, np.min(x_adv))
+    self.assertLess(np.max(x_adv), .301)
+
+
+  def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # Call it once
+    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
+                                    clip_min=-5.0, clip_max=5.0,
+                                    nb_iter=10)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+
+    # Call it again
+    ok = [False]
+    old_grads = tf.gradients
+    try:
+      def fn(*x, **y):
+        ok[0] = True
+        return old_grads(*x, **y)
+
+      tf.gradients = fn
+
+      x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
+                                      clip_min=-5.0, clip_max=5.0,
+                                      nb_iter=11)
+    finally:
+      tf.gradients = old_grads
+      
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+
+
+    self.assertTrue(ok[0])
+
+  def test_multiple_initial_random_step(self):
+    """
+    This test generates multiple adversarial examples until an adversarial
+    example is generated with a different label compared to the original
+    label. This is the procedure suggested in Madry et al. (2017).
+
+    This test will fail if an initial random step is not taken (error>0.5).
+    """
+    x_val = np.array(np.random.rand(100, 2), dtype=np.float32)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs_multi = orig_labs.copy()
+
+    # Generate multiple adversarial examples
+    for i in range(10):
+      x_adv = self.attack.generate_np(x_val, eps=.5, eps_iter=0.05,
+                                      clip_min=0.5, clip_max=0.7,
+                                      nb_iter=2, sanity_checks=False)
+      new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+
+      # Examples for which we have not found adversarial examples
+      I = (orig_labs == new_labs_multi)
+      new_labs_multi[I] = new_labs[I]
+
+    self.assertLess(np.mean(orig_labs == new_labs_multi), 0.5)
+
+
 class TestCarliniWagnerL2(CleverHansTest):
   def setUp(self):
     super(TestCarliniWagnerL2, self).setUp()
@@ -813,164 +954,7 @@ class TestDeepFool(CleverHansTest):
     self.assertTrue(-0.201 < np.min(x_adv))
     self.assertTrue(np.max(x_adv) < .301)
 
-
-class TestProjectedGradientDescent(CommonAttackProperties):
-  def setUp(self):
-    super(TestProjectedGradientDescent, self).setUp()
-
-    self.sess = tf.Session()
-    self.model = SimpleModel()
-    self.attack = ProjectedGradientDescent(self.model, sess=self.sess)
-
-  def test_generate_np_gives_adversarial_example_linfinity(self):
-    self.help_generate_np_gives_adversarial_example(ord=np.infty, eps=.5,
-                                                    nb_iter=20)
-
-  def test_generate_np_gives_adversarial_example_l1(self):
-    try:
-      self.help_generate_np_gives_adversarial_example(ord=1, eps=.5,
-                                                      nb_iter=20)
-    except NotImplementedError:
-      raise SkipTest()
-
-  def test_generate_np_gives_adversarial_example_l2(self):
-    self.help_generate_np_gives_adversarial_example(ord=2, eps=.5,
-                                                    nb_iter=20)
-
-  def test_do_not_reach_lp_boundary(self):
-    """
-    Make sure that iterative attack don't reach boundary of Lp
-    neighbourhood if nb_iter * eps_iter is relatively small compared to
-    epsilon.
-    """
-    for ord in [1, 2, np.infty]:
-      try:
-        _, _, delta = self.generate_adversarial_examples_np(
-          ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
-      except NotImplementedError:
-        # Don't raise SkipTest because it will skip the rest of the for loop
-        continue
-      self.assertTrue(np.max(0.5 - delta) > 0.25)
-    
-  def test_attack_strength(self):
-    """
-    If clipping is not done at each iteration (not using clip_min and
-    clip_max), this attack fails by
-    np.mean(orig_labels == new_labels) == .5
-    """
-    x_val = np.random.rand(100, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.05,
-                                    clip_min=0.5, clip_max=0.7,
-                                    nb_iter=5, sanity_checks=False)
-
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-    self.assertLess(np.mean(orig_labs == new_labs), 0.1)
-
-  def test_clip_eta(self):
-    x_val = np.random.rand(100, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
-                                    nb_iter=5)
-
-    delta = np.max(np.abs(x_adv - x_val), axis=1)
-    self.assertLessEqual(np.max(delta), 1.)
-
-  def test_generate_np_gives_clipped_adversarial_examples(self):
-    x_val = np.random.rand(100, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
-                                    nb_iter=5,
-                                    clip_min=-0.2, clip_max=0.3,
-                                    sanity_checks=False)
-
-    self.assertLess(-0.201, np.min(x_adv))
-    self.assertLess(np.max(x_adv), .301)
-
-
-  def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
-    x_val = np.random.rand(100, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    # Call it once
-    x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
-                                    clip_min=-5.0, clip_max=5.0,
-                                    nb_iter=10)
-
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-
-    # Call it again
-    ok = [False]
-    old_grads = tf.gradients
-    try:
-      def fn(*x, **y):
-        ok[0] = True
-        return old_grads(*x, **y)
-
-      tf.gradients = fn
-
-      x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
-                                      clip_min=-5.0, clip_max=5.0,
-                                      nb_iter=11)
-    finally:
-      tf.gradients = old_grads
-      
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-
-
-    self.assertTrue(ok[0])
-
-  def test_multiple_initial_random_step(self):
-    """
-    This test generates multiple adversarial examples until an adversarial
-    example is generated with a different label compared to the original
-    label. This is the procedure suggested in Madry et al. (2017).
-
-    This test will fail if an initial random step is not taken (error>0.5).
-    """
-    x_val = np.random.rand(100, 2)
-    x_val = np.array(x_val, dtype=np.float32)
-
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs_multi = orig_labs.copy()
-
-    # Generate multiple adversarial examples
-    for i in range(10):
-      x_adv = self.attack.generate_np(x_val, eps=.5, eps_iter=0.05,
-                                      clip_min=0.5, clip_max=0.7,
-                                      nb_iter=2, sanity_checks=False)
-      new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-
-      # Examples for which we have not found adversarial examples
-      I = (orig_labs == new_labs_multi)
-      new_labs_multi[I] = new_labs[I]
-
-    self.assertLess(np.mean(orig_labs == new_labs_multi), 0.5)
-
-
-class TestMadryEtAl(TestProjectedGradientDescent):
-  def setUp(self):
-    super(TestMadryEtAl, self).setUp()
-    self.attack = MadryEtAl(self.model, sess=self.sess)
-
-
-class TestBasicIterativeMethod(TestProjectedGradientDescent):
-  def setUp(self):
-    super(TestBasicIterativeMethod, self).setUp()
-    self.attack = BasicIterativeMethod(self.model, sess=self.sess)
-
-  def test_multiple_initial_random_step(self):
-    # There is no initial random step, so nothing to test here
-    pass
-
-
-class TestMomentumIterativeMethod(TestBasicIterativeMethod):
+class TestMomentumIterativeMethod(TestProjectedGradientDescent):
   def setUp(self):
     super(TestMomentumIterativeMethod, self).setUp()
 
@@ -989,6 +973,22 @@ class TestMomentumIterativeMethod(TestBasicIterativeMethod):
 
       delta = np.max(np.abs(x_adv - x_val), axis=1)
       self.assertClose(delta, 0.5)
+
+class TestMadryEtAl(TestProjectedGradientDescent):
+  def setUp(self):
+    super(TestMadryEtAl, self).setUp()
+    self.attack = MadryEtAl(self.model, sess=self.sess)
+
+
+class TestBasicIterativeMethod(TestProjectedGradientDescent):
+  def setUp(self):
+    super(TestBasicIterativeMethod, self).setUp()
+    self.attack = BasicIterativeMethod(self.model, sess=self.sess)
+
+  def test_multiple_initial_random_step(self):
+    # There is no initial random step, so nothing to test here
+    pass
+
   
 class TestFastFeatureAdversaries(CleverHansTest):
   def setUp(self):
@@ -1227,7 +1227,4 @@ class TestSpatialTransformationMethod(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
-
-if __name__ == "__main__":
-  unittest.main()
 
