@@ -980,20 +980,30 @@ class TestMomentumIterativeMethod(TestProjectedGradientDescent):
     pass
 
 
-class TestMadryEtAl(TestProjectedGradientDescent):
+class TestMadryEtAl(CleverHansTest):
   def setUp(self):
     super(TestMadryEtAl, self).setUp()
-    self.attack = MadryEtAl(self.model, sess=self.sess)
+
+  def test_attack_can_be_constructed(self):
+    ok = True
+    try:
+      attack = MadryEtAl(self.model, sess=self.sess)
+    except:
+      ok = False
+    self.assertTrue(ok)
 
 
-class TestBasicIterativeMethod(TestProjectedGradientDescent):
+class TestBasicIterativeMethod(CleverHansTest):
   def setUp(self):
     super(TestBasicIterativeMethod, self).setUp()
-    self.attack = BasicIterativeMethod(self.model, sess=self.sess)
 
-  def test_multiple_initial_random_step(self):
-    # There is no initial random step, so nothing to test here
-    pass
+  def test_attack_can_be_constructed(self):
+    ok = True
+    try:
+      self.attack = BasicIterativeMethod(self.model, sess=self.sess)
+    except:
+      ok = False
+    self.assertTrue(ok)
 
 
 class TestFastFeatureAdversaries(CleverHansTest):
