@@ -959,8 +959,6 @@ class TestMomentumIterativeMethod(TestProjectedGradientDescent):
   def setUp(self):
     super(TestMomentumIterativeMethod, self).setUp()
 
-    self.sess = tf.Session()
-    self.model = SimpleModel()
     self.attack = MomentumIterativeMethod(self.model, sess=self.sess)
 
   def test_generate_np_can_be_called_with_different_decay_factor(self):
@@ -983,6 +981,8 @@ class TestMomentumIterativeMethod(TestProjectedGradientDescent):
 class TestMadryEtAl(CleverHansTest):
   def setUp(self):
     super(TestMadryEtAl, self).setUp()
+    self.model = DummyModel('madryetal_dummy_model')
+    self.sess = tf.Session()
 
   def test_attack_can_be_constructed(self):
     ok = True
@@ -996,6 +996,8 @@ class TestMadryEtAl(CleverHansTest):
 class TestBasicIterativeMethod(CleverHansTest):
   def setUp(self):
     super(TestBasicIterativeMethod, self).setUp()
+    self.model = DummyModel('bim_dummy_model')
+    self.sess = tf.Session()
 
   def test_attack_can_be_constructed(self):
     ok = True
