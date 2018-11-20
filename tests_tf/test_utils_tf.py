@@ -31,10 +31,10 @@ class TestUtilsTF(CleverHansTest):
     super(TestUtilsTF, self).setUp()
     self.sess = tf.Session()
 
-  #def test_l2_batch_normalize(self):
-  #  x = tf.random_normal((100, 1000))
-  #  x_norm = self.sess.run(utils_tf.l2_batch_normalize(x))
-  #  self.assertClose(np.sum(x_norm**2, axis=1), 1, atol=1e-6)
+  def test_l2_batch_normalize(self):
+    x = tf.random_normal((100, 1000))
+    x_norm = self.sess.run(utils_tf.l2_batch_normalize(x))
+    self.assertClose(np.sum(x_norm**2, axis=1), 1, atol=1e-6)
 
   def test_kl_with_logits(self):
     p_logits = tf.placeholder(tf.float32, shape=(100, 20))
