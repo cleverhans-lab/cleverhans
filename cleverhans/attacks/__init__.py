@@ -2592,9 +2592,15 @@ def projected_optimization(loss_fn,
     :param project_perturbation: A function, which will be used to enforce
                                  some constraint. It should have the same
                                  signature as `_project_perturbation`.
-    :param early_stop_loss_threshold: A float or None. If specified, the
-                                      attack will end if the loss is below
-                                      `early_stop_loss_threshold`.
+    :param early_stop_loss_threshold: A float or None. If specified, the attack will end if the loss is below
+       `early_stop_loss_threshold`.
+        Enabling this option can have several different effects:
+          - Setting the threshold to 0. guarantees that if a successful attack is found, it is returned.
+            This increases the attack success rate, because without early stopping the optimizer can accidentally
+            bounce back to a point where the attack fails.
+          - Early stopping can make the attack run faster because it may run for fewer steps.
+          - Early stopping can make the attack run slower because the loss must be calculated at each step.
+            The loss is not calculated as part of the normal SPSA optimization procedure.
     :param is_debug: A bool. If True, print debug info for attack progress.
 
   Returns:
