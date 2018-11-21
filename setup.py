@@ -2,7 +2,7 @@ from setuptools import find_packages
 from setuptools import setup
 
 setup(name='cleverhans',
-      version='2.1.0',
+      version='3.0.0.post0',
       url='https://github.com/tensorflow/cleverhans',
       license='MIT',
       install_requires=[
