@@ -2601,6 +2601,8 @@ def projected_optimization(loss_fn,
           - Early stopping can make the attack run faster because it may run for fewer steps.
           - Early stopping can make the attack run slower because the loss must be calculated at each step.
             The loss is not calculated as part of the normal SPSA optimization procedure.
+            For most reasonable choices of hyperparameters, early stopping makes the attack much faster because
+            it decreases the number of steps dramatically.
     :param is_debug: A bool. If True, print debug info for attack progress.
 
   Returns:
