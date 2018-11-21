@@ -1,4 +1,4 @@
-# CleverHans (latest release: v2.1.0)
+# CleverHans (latest release: v3.0.0)
 
 <img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
@@ -123,7 +123,7 @@ so that these scripts will be conveniently executable from any directory.
 ## Tutorials: `cleverhans_tutorials` directory
 
 To help you get started with the functionalities provided by this library, the
-`cleverhans_tutorials/' folder comes with the following tutorials:
+`cleverhans_tutorials/` folder comes with the following tutorials:
 * **MNIST with FGSM** ([code](cleverhans_tutorials/mnist_tutorial_tf.py)): this
 tutorial covers how to train a MNIST model using TensorFlow,
 craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
@@ -189,7 +189,7 @@ When reporting benchmarks, please:
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v2.1.0 of CleverHans. On a test set modified by the
+adversarial attack using v3.0.0 of CleverHans. On a test set modified by the
 `FastGradientMethod` with a max-norm `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Citing this work
@@ -230,36 +230,51 @@ other inputs.
 
 ## Authors
 
-This library is managed and maintained by Ian Goodfellow (Google Brain),
-Nicolas Papernot (Pennsylvania State University), and
-Ryan Sheatsley (Pennsylvania State University).
+This library is managed and maintained by Ian Goodfellow (Google Brain) and
+Nicolas Papernot (Google Brain).
 
 The following authors contributed 100 lines or more (ordered according to the GitHub contributors page):
-* Nicolas Papernot (Pennsylvania State University, Google Brain intern)
-* Fartash Faghri (University of Toronto, Google Brain intern)
-* Nicholas Carlini (UC Berkeley)
 * Ian Goodfellow (Google Brain)
-* Reuben Feinman (Symantec)
+* Nicolas Papernot (Google Brain)
+* Nicholas Carlini (Google Brain)
+* Fartash Faghri (University of Toronto)
+* Tzu-Wei Sung (National Taiwan University)
 * Alexey Kurakin (Google Brain)
+* Reuben Feinman (New York University)
+* Phani Krishna (Video Analytics Lab)
+* David Berthelot (Google Brain)
+* Tom Brown (Google Brain)
 * Cihang Xie (Johns Hopkins)
 * Yash Sharma (The Cooper Union)
-* Tom Brown (Google Brain)
+* Aashish Kumar
 * Aurko Roy (Google Brain)
 * Alexander Matyasko (Nanyang Technological University)
+* Anshuman Suri (Microsoft)
+* Yen-Chen Lin (MIT)
 * Vahid Behzadan (Kansas State)
-* Karen Hambardzumyan (YerevaNN)
+* Jonathan Uesato (DeepMind)
 * Zhishuai Zhang (Johns Hopkins)
-* Yi-Lin Juang (NTUEE)
+* Karen Hambardzumyan (YerevaNN)
+* Catherine Olsson (Google Brain)
+* Aidan Gomez (University of Oxford)
 * Zhi Li (University of Toronto)
-* Ryan Sheatsley (Pennsylvania State University)
+* Yi-Lin Juang (NTUEE)
+* Pratyush Sahay
 * Abhibhav Garg (IIT Delhi)
-* Jonathan Uesato (MIT)
-* Willi Gierke (Hasso Plattner Institute)
+* Aditi Raghunathan (Stanford University)
+* Yang Song (Stanford University)
+* Riccardo Volpi (Italian Institute of Technology)
+* Angus Galloway (University of Guelph)
 * Yinpeng Dong (Tsinghua University)
-* David Berthelot (Google Brain)
-* Paul Hendricks (NVIDIA)
+* Willi Gierke (Hasso Plattner Institute)
+* Bruno López
 * Jonas Rauber (IMPRS)
+* Paul Hendricks (NVIDIA)
+* Ryan Sheatsley (Pennsylvania State University)
 * Rujun Long (0101.AI)
+* Bogdan Kulynych (EPFL)
+* Erfan Noury (UMBC)
+* Robert Wagner (Case Western Reserve University)
 
 ## Copyright
 
