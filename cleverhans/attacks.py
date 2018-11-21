@@ -528,6 +528,19 @@ class ProjectedGradientDescent(Attack):
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
+    asserts = []
+
+    # If a data range was specified, check that the input was in that range
+    if self.clip_min is not None:
+      asserts.append(utils_tf.assert_greater_equal(x,
+                                                   tf.cast(self.clip_min,
+                                                           x.dtype)))
+
+    if self.clip_max is not None:
+      asserts.append(utils_tf.assert_less_equal(x,
+                                                tf.cast(self.clip_max,
+                                                        x.dtype)))
+
     # Initialize loop variables
     if self.rand_init:
       eta = tf.random_uniform(tf.shape(x),
@@ -599,20 +612,22 @@ class ProjectedGradientDescent(Attack):
 
     _, adv_x = tf.while_loop(cond, body, [tf.zeros([]), adv_x], back_prop=True)
 
-    asserts = []
 
     # Asserts run only on CPU.
     # When multi-GPU eval code tries to force all PGD ops onto GPU, this
     # can cause an error.
-    with tf.device("/CPU:0"):
-      asserts.append(tf.assert_less_equal(self.eps_iter, self.eps))
-      if self.ord == np.inf and self.clip_min is not None:
-        # The 1e-6 is needed to compensate for numerical error.
-        # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5,
-        # clip_max=.7
-        asserts.append(tf.assert_less_equal(self.eps,
-                                            1e-6 + self.clip_max
-                                            - self.clip_min))
+    asserts.append(utils_tf.assert_less_equal(tf.cast(self.eps_iter,
+                                                      dtype=self.eps.dtype),
+                                              self.eps))
+    if self.ord == np.inf and self.clip_min is not None:
+      # The 1e-6 is needed to compensate for numerical error.
+      # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5,
+      # clip_max=.7
+      asserts.append(utils_tf.assert_less_equal(tf.cast(self.eps, x.dtype),
+                                                1e-6 + tf.cast(self.clip_max,
+                                                               x.dtype)
+                                                - tf.cast(self.clip_min,
+                                                          x.dtype)))
 
     if self.sanity_checks:
       with tf.control_dependencies(asserts):
