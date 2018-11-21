@@ -2642,20 +2642,28 @@ def projected_optimization(loss_fn,
 
     new_perturbation_list, new_optim_state = optimizer.minimize(
         wrapped_loss_fn, [perturbation], optim_state)
-    loss = reduce_mean(wrapped_loss_fn(perturbation), axis=0)
-    if is_debug:
-      with tf.device("/cpu:0"):
-        loss = tf.Print(loss, [loss], "Total batch loss")
     projected_perturbation = project_perturbation(new_perturbation_list[0],
                                                   epsilon, input_image,
                                                   clip_min=clip_min,
                                                   clip_max=clip_max)
-    with tf.control_dependencies([loss]):
-      i = tf.identity(i)
-      if early_stop_loss_threshold:
-        i = tf.cond(
-            tf.less(loss, early_stop_loss_threshold),
-            lambda: float(num_steps), lambda: i)
+
+    # Be careful with this bool. A value of 0. is a valid threshold but evaluates to False, so we must explicitly
+    # check whether the value is None.
+    early_stop = early_stop_loss_threshold is not None
+    compute_loss = is_debug or early_stop
+    # Don't waste time building the loss graph if we're not going to use it
+    if compute_loss:
+      # NOTE: this step is not actually redundant with the optimizer step.
+      # SPSA calculates the loss at randomly perturbed points but doesn't calculate the loss at the current point.
+      loss = reduce_mean(wrapped_loss_fn(projected_perturbation), axis=0)
+
+      if is_debug:
+        with tf.device("/cpu:0"):
+          loss = tf.Print(loss, [loss], "Total batch loss")
+
+      if early_stop:
+        i = tf.cond(tf.less(loss, early_stop_loss_threshold), lambda: float(num_steps), lambda: i)
+
     return i + 1, projected_perturbation, nest.flatten(new_optim_state)
 
   def cond(i, *_):
