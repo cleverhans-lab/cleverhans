@@ -258,6 +258,11 @@ class CommonAttackProperties(CleverHansTest):
       self.assertLessEqual(np.max(delta), eps+1e-4)
 
   def test_generate_can_be_called_with_different_eps(self):
+    # It is crtical that this test uses generate and not generate_np.
+    # All the other tests use generate_np. Even though generate_np calls
+    # generate, it does so in a very standardized way, e.g. with eps
+    # always converted to a tensorflow placeholder, so the other tests
+    # based on generate_np do not exercise the generate API very well.
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
     x = tf.placeholder(tf.float32, x_val.shape)
