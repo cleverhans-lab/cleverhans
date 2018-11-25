@@ -1954,6 +1954,8 @@ class SPSA(Attack):
 
   DEFAULT_SPSA_SAMPLES = 128
   DEFAULT_SPSA_ITERS = 1
+  DEFAULT_DELTA = 0.01
+  DEFAULT_LEARNING_RATE = 0.01
 
   def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
     super(SPSA, self).__init__(model, sess, dtypestr, **kwargs)
@@ -1980,8 +1982,8 @@ class SPSA(Attack):
                nb_iter=None,
                is_targeted=None,
                early_stop_loss_threshold=None,
-               learning_rate=0.01,
-               delta=0.01,
+               learning_rate=DEFAULT_LEARNING_RATE,
+               delta=DEFAULT_DELTA,
                spsa_samples=DEFAULT_SPSA_SAMPLES,
                batch_size=None,
                spsa_iters=DEFAULT_SPSA_ITERS,
