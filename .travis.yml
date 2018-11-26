@@ -57,7 +57,7 @@ install:
   - pip install google-cloud==0.33.1
   - pip install Pillow
   # Style checks
-  - pip install pylint
+  - pip install pylint==1.9.3
   # To be able to exclude subdirectories in nose tests
   - pip install nose-exclude
 
