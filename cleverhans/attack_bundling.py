@@ -521,7 +521,6 @@ class AttackGoal(object):
     :param run_counts: dict mapping AttackConfigs to numpy arrays reporting
       how many times they have been run on each example.
     """
-    pass
 
   def get_criteria(self, sess, model, advx, y, batch_size=BATCH_SIZE):
     """
