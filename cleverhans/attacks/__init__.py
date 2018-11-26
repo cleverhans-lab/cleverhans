@@ -927,7 +927,7 @@ class SaliencyMapMethod(Attack):
     assert self.parse_params(**kwargs)
 
     if self.symbolic_impl:
-      from .attacks_tf import jsma_symbolic
+      from cleverhans.attacks_tf import jsma_symbolic
 
       # Create random targets if y_target not provided
       if self.y_target is None:
@@ -960,7 +960,7 @@ class SaliencyMapMethod(Attack):
     else:
       assert self.sess is not None, \
         'Cannot use `generate` when no `sess` was provided'
-      from .attacks_tf import jacobian_graph, jsma_batch
+      from cleverhans.attacks_tf import jacobian_graph, jsma_batch
 
       # Define Jacobian graph wrt to this input placeholder
       preds = self.model.get_probs(x)
@@ -1182,7 +1182,7 @@ class CarliniWagnerL2(Attack):
     """
     assert self.sess is not None, \
         'Cannot use `generate` when no `sess` was provided'
-    from .attacks_tf import CarliniWagnerL2 as CWL2
+    from cleverhans.attacks_tf import CarliniWagnerL2 as CWL2
     self.parse_params(**kwargs)
 
     labels, nb_classes = self.get_or_guess_labels(x, kwargs)
@@ -1309,7 +1309,7 @@ class ElasticNetMethod(Attack):
         'Cannot use `generate` when no `sess` was provided'
     self.parse_params(**kwargs)
 
-    from .attacks_tf import ElasticNetMethod as EAD
+    from cleverhans.attacks_tf import ElasticNetMethod as EAD
     labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
     attack = EAD(self.sess, self.model, self.beta,
@@ -1438,7 +1438,7 @@ class DeepFool(Attack):
     """
     assert self.sess is not None, \
       'Cannot use `generate` when no `sess` was provided'
-    from .attacks_tf import jacobian_graph, deepfool_batch
+    from cleverhans.attacks_tf import jacobian_graph, deepfool_batch
 
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
@@ -1775,7 +1775,7 @@ def vatm(model,
   """
   assert back == 'tf'
   # Compute VATM using TensorFlow
-  from .attacks_tf import vatm as vatm_tf
+  from cleverhans.attacks_tf import vatm as vatm_tf
   return vatm_tf(
       model,
       x,
@@ -2158,7 +2158,7 @@ class SpatialTransformationMethod(Attack):
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
 
-    from .attacks_tf import spm
+    from cleverhans.attacks_tf import spm
 
     labels, _ = self.get_or_guess_labels(x, kwargs)
 
