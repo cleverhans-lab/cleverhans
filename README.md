@@ -246,7 +246,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Tom Brown (Google Brain)
 * Cihang Xie (Johns Hopkins)
 * Yash Sharma (The Cooper Union)
-* Aashish Kumar
+* Aashish Kumar (HARMAN X)
 * Aurko Roy (Google Brain)
 * Alexander Matyasko (Nanyang Technological University)
 * Anshuman Suri (Microsoft)
@@ -259,7 +259,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Aidan Gomez (University of Oxford)
 * Zhi Li (University of Toronto)
 * Yi-Lin Juang (NTUEE)
-* Pratyush Sahay
+* Pratyush Sahay (formerly HARMAN X)
 * Abhibhav Garg (IIT Delhi)
 * Aditi Raghunathan (Stanford University)
 * Yang Song (Stanford University)
