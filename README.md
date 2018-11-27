@@ -1,4 +1,4 @@
-# CleverHans (latest release: v3.0.0)
+# CleverHans (latest release: v3.0.1)
 
 <img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
@@ -189,7 +189,7 @@ When reporting benchmarks, please:
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v3.0.0 of CleverHans. On a test set modified by the
+adversarial attack using v3.0.1 of CleverHans. On a test set modified by the
 `FastGradientMethod` with a max-norm `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Citing this work
