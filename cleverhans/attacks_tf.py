@@ -1485,8 +1485,8 @@ class TensorOptimizer(object):
   behaviors when being assigned multiple times within a single sess.run()
   call, particularly in Distributed TF, so this avoids thinking about those
   issues. These are helper classes for the `projected_optimization`
-  method. Apart from not using Variables, they follow the same interface as
-  tf.Optimizer.
+  method. Apart from not using Variables, they follow an interface very
+  similar to tf.Optimizer.
   """
 
   def _compute_gradients(self, loss_fn, x, unused_optim_state):
