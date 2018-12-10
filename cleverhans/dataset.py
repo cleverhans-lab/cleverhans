@@ -77,7 +77,8 @@ class MNIST(Dataset):
   def __init__(self, train_start=0, train_end=60000, test_start=0,
                test_end=10000, center=False, max_val=1.):
     kwargs = locals()
-    del kwargs['__class__']
+    if '__class__' in kwargs:
+      del kwargs['__class__']
     super(MNIST, self).__init__(kwargs)
     x_train, y_train, x_test, y_test = data_mnist(train_start=train_start,
                                                   train_end=train_end,
