@@ -216,19 +216,18 @@ class DualFormulation(object):
       projected_dual: Feasible dual solution corresponding to current dual
       projected_certificate: Objective value of feasible dual
     """
-    # TODO: consider whether we can use shallow copy of the lists without
-    # using tf.identity
-    projected_lambda_pos = [tf.identity(x) for x in self.lambda_pos]
-    projected_lambda_neg = [tf.identity(x) for x in self.lambda_neg]
-    projected_lambda_quad = [tf.identity(x) for x in self.lambda_quad]
-    projected_lambda_lu = [tf.identity(x) for x in self.lambda_lu]
-    projected_nu = tf.identity(self.nu)
+    type_check(self.lambda_pos) 
+    projected_lambda_pos = list(self.lambda_pos)
+    projected_lambda_neg = list(self.lambda_neg)
+    projected_lambda_quad = list(self.lambda_quad)
+    projected_lambda_lu = list(self.lambda_lu)
+    projected_nu = self.nu
 
     # TODO: get rid of the special case for one hidden layer
     # Different projection for 1 hidden layer
     if self.nn_params.num_hidden_layers == 1:
       # Creating equivalent PSD matrix for H by Schur complements
-      diag_entries = 0.5*tf.divide(
+      diag_entries = 0.5 * tf.divide(
           tf.square(self.lambda_quad[self.nn_params.num_hidden_layers]),
           (self.lambda_quad[self.nn_params.num_hidden_layers] +
            self.lambda_lu[self.nn_params.num_hidden_layers]))
