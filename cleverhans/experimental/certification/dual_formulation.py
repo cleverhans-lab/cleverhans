@@ -10,7 +10,7 @@ from cleverhans.experimental.certification import utils
 class DualFormulation(object):
   """DualFormulation is a class that creates the dual objective function
   and access to matrix vector products for the matrix that is constrained
-  to be Positive semidefinite """
+  to be positive semidefinite """
 
   def __init__(self, dual_var, neural_net_param_object, test_input, true_class,
                adv_class, input_minval, input_maxval, epsilon):
