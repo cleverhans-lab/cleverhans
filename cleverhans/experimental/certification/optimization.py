@@ -228,8 +228,7 @@ class Optimization(object):
        not tf.gfile.IsDirectory(self.params['stats_folder'])):
       tf.gfile.MkDir(self.params['stats_folder'])
 
-  def run_one_step(self, eig_init_vec_val, eig_num_iter_val,
-                   smooth_val, penalty_val):
+  def run_one_step(self, eig_init_vec_val, eig_num_iter_val, smooth_val, penalty_val):
     """Run one step of gradient descent for optimization.
 
     Args:
