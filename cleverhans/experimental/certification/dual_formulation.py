@@ -213,7 +213,6 @@ class DualFormulation(object):
     """Function that projects the input dual variables onto the feasible set.
 
     Returns:
-      projected_dual: Feasible dual solution corresponding to current dual
       projected_certificate: Objective value of feasible dual
     """
     type_check(self.lambda_pos) 
