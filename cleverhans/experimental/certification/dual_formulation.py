@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+from tensorflow.python.ops.variables import Variable
 from cleverhans.experimental.certification import utils
 
 
@@ -66,7 +67,10 @@ class DualFormulation(object):
       self.lower.append(current_lower)
       self.upper.append(current_upper)
 
+
+
     # Computing the optimization terms
+    type_check(dual_var['lambda_pos'])
     self.lambda_pos = [x for x in dual_var['lambda_pos']]
     self.lambda_neg = [x for x in dual_var['lambda_neg']]
     self.lambda_quad = [x for x in dual_var['lambda_quad']]
@@ -326,3 +330,10 @@ class DualFormulation(object):
                                tf.concat([self.vector_g, self.matrix_h],
                                          axis=1)], axis=0)
     return self.matrix_h, self.matrix_m
+
+def type_check(l):
+  """
+  Checks the type of entries in `l` (should all be `Variable`)
+  """
+  for x in l:
+    assert isinstance(x, Variable), (x, type(x))
