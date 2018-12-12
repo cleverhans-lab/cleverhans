@@ -7,6 +7,7 @@ import json
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import autograph
+from cleverhans.experimental.certification import utils
 
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
@@ -42,87 +43,6 @@ class Optimization(object):
     self.smooth_placeholder = tf.placeholder(tf.float32, shape=[])
     self.eig_num_iter_placeholder = tf.placeholder(tf.int32, shape=[])
     self.sess = sess
-
-  def eig_one_step(self, current_vector):
-    """Function that performs one step of gd (variant) for min eigen value.
-
-    Args:
-      current_vector: current estimate of the eigen vector with minimum eigen
-        value
-
-    Returns:
-      updated vector after one step
-    """
-    grad = 2*self.dual_object.get_psd_product(current_vector)
-    # Current objective = (1/2)*v^T (2*M*v); v = current_vector
-    # grad = 2*M*v
-    current_objective = tf.reshape(tf.matmul(tf.transpose(current_vector),
-                                             grad) / 2., shape=())
-
-    # Project the gradient into the tangent space of the constraint region.
-    # This way we do not waste time taking steps that try to change the
-    # norm of current_vector
-    grad = grad - current_vector*tf.matmul(tf.transpose(current_vector), grad)
-    grad_norm = tf.norm(grad)
-    grad_norm_sq = tf.square(grad_norm)
-
-    # Computing normalized gradient of unit norm
-    norm_grad = grad / grad_norm
-
-    # Computing directional second derivative (dsd)
-    # dsd = 2*g^T M g, where g is normalized gradient
-    directional_second_derivative = (
-        tf.reshape(2*tf.matmul(tf.transpose(norm_grad),
-                               self.dual_object.get_psd_product(norm_grad)),
-                   shape=()))
-
-    # Computing grad^\top M grad [useful to compute step size later]
-    # Just a rescaling of the directional_second_derivative (which uses
-    # normalized gradient
-    grad_m_grad = directional_second_derivative*grad_norm_sq / 2
-
-    # Directional_second_derivative/2 = objective when vector is norm_grad
-    # If this is smaller than current objective, simply return that
-    if directional_second_derivative / 2. < current_objective:
-      return norm_grad
-
-    # If curvature is positive, jump to the bottom of the bowl
-    if directional_second_derivative > 0.:
-      step = -1. * grad_norm / directional_second_derivative
-    else:
-      # If the gradient is very small, do not move
-      if grad_norm_sq <= 1e-16:
-        step = 0.0
-      else:
-        # Make a heuristic guess of the step size
-        step = -2. * tf.reduce_sum(current_vector*grad) / grad_norm_sq
-        # Computing gain using the gradient and second derivative
-        gain = -(2 * tf.reduce_sum(current_vector*grad) +
-                 (step*step) * grad_m_grad)
-
-        # Fall back to pre-determined learning rate if no gain
-        if gain < 0.:
-          step = -self.params['eig_learning_rate'] * grad_norm
-    current_vector = current_vector + step * norm_grad
-    return tf.nn.l2_normalize(current_vector)
-
-  def multi_steps(self):
-    """Function that runs one step iteratively to compute min eig value.
-
-    Returns:
-      current_vector: the estimate of eigen vector with minimum eigen value
-    """
-    current_vector = self.eig_init_vec_placeholder
-    counter = 0
-    while counter < self.eig_num_iter_placeholder:
-      # TODO: figure out how to fix following
-      # Without argument self autograph throws error. At the same this
-      # function call should not require self and it's a lint error.
-      # pylint: disable=too-many-function-args
-      current_vector = self.eig_one_step(self, current_vector)
-      # pylint: enable=too-many-function-args
-      counter += 1
-    return current_vector
 
   def tf_min_eig_vec(self):
     """Function for min eigen vector using tf's full eigen decomposition."""
@@ -165,9 +85,16 @@ class Optimization(object):
                      self.tf_min_eig_vec,
                      self.tf_smooth_eig_vec)
 
-    # Using autograph to automatically handle the control flow of multi_steps()
-    multi_steps_tf = autograph.to_graph(self.multi_steps)
-    estimated_eigen_vector = multi_steps_tf(self)
+    # Using autograph to automatically handle
+    # the control flow of minimum_eigen_vector
+    min_eigen_tf = autograph.to_graph(utils.minimum_eigen_vector)
+    def _vector_prod_fn(x):
+      return self.dual_object.get_psd_product(x)
+    estimated_eigen_vector = min_eigen_tf(
+        x=self.eig_init_vec_placeholder,
+        num_steps=self.eig_num_iter_placeholder,
+        learning_rate=self.params['eig_learning_rate'],
+        vector_prod_fn=_vector_prod_fn)
     return estimated_eigen_vector
 
   def prepare_one_step(self):
