@@ -2079,7 +2079,8 @@ class SPSA(Attack):
       logits = self.model.get_logits(x)
       loss_multiplier = 1 if is_targeted else -1
       return loss_multiplier * margin_logit_loss(
-          logits, label, nb_classes=self.model.nb_classes)
+          logits, label,
+          nb_classes=self.model.nb_classes or logits.get_shape()[-1])
 
     y_attack = y_target if is_targeted else y
     adv_x = projected_optimization(
