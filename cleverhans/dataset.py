@@ -112,7 +112,8 @@ class CIFAR10(Dataset):
   def __init__(self, train_start=0, train_end=60000, test_start=0,
                test_end=10000, center=False, max_val=1.):
     kwargs = locals()
-    del kwargs['__class__']
+    if '__class__' in kwargs:
+      del kwargs['__class__']
     super(CIFAR10, self).__init__(kwargs)
     packed = data_cifar10(train_start=train_start,
                           train_end=train_end,
