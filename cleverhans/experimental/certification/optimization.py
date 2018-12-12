@@ -240,6 +240,13 @@ class Optimization(object):
     Returns:
      found_cert: True is negative certificate is found, False otherwise
     """
+      
+    if hasattr(self, 'freeze'):
+      g = tf.get_default_graph()
+      g.finalize()
+    else:
+      self.freeze = True
+
     # Project onto feasible set of dual variables
     if self.current_step % self.params['projection_steps'] == 0:
 

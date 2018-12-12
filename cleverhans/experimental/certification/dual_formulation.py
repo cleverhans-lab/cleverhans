@@ -20,8 +20,10 @@ class DualFormulation(object):
     Args:
       dual_var: dictionary of dual variables containing a) lambda_pos
         b) lambda_neg, c) lambda_quad, d) lambda_lu
-      neural_net_param_object: NeuralNetParam object created for
-        the network under consideration
+        TODO: where should one look to see the definitions of these?
+              what are their types?
+                they mostly seem to be Variables. lambda_lu can also be a non-var tensor
+      neural_net_param_object: NeuralNetParam object created for the network under consideration
       test_input: clean example to certify around
       true_class: the class label of the test input
       adv_class: the label that the adversary tried to perturb input to
@@ -36,12 +38,7 @@ class DualFormulation(object):
     self.input_minval = tf.convert_to_tensor(input_minval, dtype=tf.float32)
     self.input_maxval = tf.convert_to_tensor(input_maxval, dtype=tf.float32)
     self.epsilon = tf.convert_to_tensor(epsilon, dtype=tf.float32)
-    self.final_linear = (self.nn_params.final_weights[adv_class, :]
-                         - self.nn_params.final_weights[true_class, :])
-    self.final_linear = tf.reshape(self.final_linear,
-                                   shape=[tf.size(self.final_linear), 1])
-    self.final_constant = (self.nn_params.final_bias[adv_class]
-                           - self.nn_params.final_bias[true_class])
+    self.final_linear, self.final_constant = final_linear_and_constant(self.nn_params, adv_class, true_class)
 
     # Computing lower and upper bounds
     # Note that lower and upper are of size nn_params.num_hidden_layers + 1
@@ -71,6 +68,9 @@ class DualFormulation(object):
 
     # Computing the optimization terms
     type_check(dual_var['lambda_pos'])
+    type_check(dual_var['lambda_neg'])
+    type_check(dual_var['lambda_quad'])
+    type_check([dual_var['nu']])
     self.lambda_pos = [x for x in dual_var['lambda_pos']]
     self.lambda_neg = [x for x in dual_var['lambda_neg']]
     self.lambda_quad = [x for x in dual_var['lambda_quad']]
@@ -225,31 +225,64 @@ class DualFormulation(object):
     # TODO: get rid of the special case for one hidden layer
     # Different projection for 1 hidden layer
     if self.nn_params.num_hidden_layers == 1:
-      # Creating equivalent PSD matrix for H by Schur complements
-      diag_entries = 0.5 * tf.divide(
-          tf.square(self.lambda_quad[self.nn_params.num_hidden_layers]),
-          (self.lambda_quad[self.nn_params.num_hidden_layers] +
-           self.lambda_lu[self.nn_params.num_hidden_layers]))
-      # If lambda_quad[i], lambda_lu[i] are 0, entry is NaN currently,
-      # but we want to set that to 0
-      diag_entries = tf.where(tf.is_nan(diag_entries),
-                              tf.zeros_like(diag_entries), diag_entries)
-      matrix = (
-          tf.matmul(tf.matmul(tf.transpose(
-              self.nn_params.weights[self.nn_params.num_hidden_layers-1]),
+
+      args = {
+        'num_hidden_layers' : self.nn_params.num_hidden_layers,
+        'lambda_quad_indexed' : self.lambda_quad[self.nn_params.num_hidden_layers],
+        'lambda_lu_0' : self.lambda_lu[0],
+        'lambda_lu_indexed' : self.lambda_lu[self.nn_params.num_hidden_layers],
+        'lambda_lu_prev' : self.lambda_lu[self.nn_params.num_hidden_layers - 1],
+        'indexed_weights' : self.nn_params.weights[self.nn_params.num_hidden_layers-1]
+      }
+
+      if hasattr(self, 'cached'):
+        retrieved_args, values = self.cached
+        for key in retrieved_args:
+          assert args[key] is retrieved_args[key]
+        diag_entries = values['diag_entries']
+        matrix = values['matrix']
+        new_matrix = values['new_matrix']
+        eig_vals = values['eig_vals']
+        min_eig = values['min_eig']
+        new_projected_lambda_lu = values['new_projected_lambda_lu']
+      else:
+        # Creating equivalent PSD matrix for H by Schur complements
+        diag_entries = 0.5 * tf.divide(
+            tf.square(self.lambda_quad[self.nn_params.num_hidden_layers]),
+            (self.lambda_quad[self.nn_params.num_hidden_layers] +
+             self.lambda_lu[self.nn_params.num_hidden_layers]))
+        # If lambda_quad[i], lambda_lu[i] are 0, entry is NaN currently,
+        # but we want to set that to 0
+        diag_entries = tf.where(tf.is_nan(diag_entries),
+                                tf.zeros_like(diag_entries), diag_entries)
+
+
+        matrix = (tf.matmul(tf.matmul(tf.transpose(
+                  self.nn_params.weights[self.nn_params.num_hidden_layers-1]),
                               utils.diag(diag_entries)),
                     self.nn_params.weights[self.nn_params.num_hidden_layers-1]))
-      new_matrix = utils.diag(
-          2*self.lambda_lu[self.nn_params.num_hidden_layers - 1]) - matrix
-      # Making symmetric
-      new_matrix = 0.5*(new_matrix + tf.transpose(new_matrix))
-      eig_vals = tf.self_adjoint_eigvals(new_matrix)
-      min_eig = tf.reduce_min(eig_vals)
-      # If min_eig is positive, already feasible, so don't add
-      # Otherwise add to make PSD [1E-6 is for ensuring strictly PSD (useful
-      # while inverting)
-      projected_lambda_lu[0] = (projected_lambda_lu[0] +
-                                0.5*tf.maximum(-min_eig, 0) + 1E-6)
+
+        new_matrix = utils.diag(2*self.lambda_lu[self.nn_params.num_hidden_layers - 1]) - matrix
+        # Making symmetric
+        new_matrix = 0.5*(new_matrix + tf.transpose(new_matrix))
+        eig_vals = tf.self_adjoint_eigvals(new_matrix)
+        min_eig = tf.reduce_min(eig_vals)
+        # If min_eig is positive, already feasible, so don't add
+        # Otherwise add to make PSD [1E-6 is for ensuring strictly PSD (useful
+        # while inverting)
+        new_projected_lambda_lu = list(projected_lambda_lu)
+        new_projected_lambda_lu[0] = (projected_lambda_lu[0] + 0.5*tf.maximum(-min_eig, 0) + 1E-6)
+
+        values = {
+          'diag_entries' : diag_entries,
+          'matrix' : matrix,
+          'new_matrix' : new_matrix,
+          'eig_vals' : eig_vals,
+          'min_eig' : min_eig,
+          'new_projected_lambda_lu': new_projected_lambda_lu
+        }
+        self.cached = args, values
+
 
     else:
       # Minimum eigen value of H
@@ -259,11 +292,12 @@ class DualFormulation(object):
       # Then use the same trick to compute smallest eigenvalue.
       eig_vals = tf.self_adjoint_eigvals(self.matrix_h)
       min_eig = tf.reduce_min(eig_vals)
+      new_projected_lambda_lu = list(projected_lambda_lu)
 
       for i in range(self.nn_params.num_hidden_layers+1):
         # Since lambda_lu appears only in diagonal terms, can subtract to
         # make PSD and feasible
-        projected_lambda_lu[i] = (projected_lambda_lu[i] +
+        new_projected_lambda_lu[i] = (projected_lambda_lu[i] +
                                   0.5*tf.maximum(-min_eig, 0) + 1E-6)
         # Adjusting lambda_neg wherever possible so that lambda_neg + lambda_lu
         # remains close to unchanged
@@ -273,7 +307,7 @@ class DualFormulation(object):
 
     projected_dual_var = {'lambda_pos': projected_lambda_pos,
                           'lambda_neg': projected_lambda_neg,
-                          'lambda_lu': projected_lambda_lu,
+                          'lambda_lu': new_projected_lambda_lu,
                           'lambda_quad': projected_lambda_quad,
                           'nu': projected_nu}
     projected_dual_object = DualFormulation(projected_dual_var,
@@ -335,3 +369,16 @@ def type_check(l):
   """
   for x in l:
     assert isinstance(x, Variable), (x, type(x))
+
+final_linear_cache = {}
+def final_linear_and_constant(nn_params, adv_class, true_class):
+  key = (nn_params, adv_class, true_class)
+  if key in final_linear_cache:
+    out = final_linear_cache[key]
+  else:
+    linear = (nn_params.final_weights[adv_class, :] - nn_params.final_weights[true_class, :])
+    linear = tf.reshape(linear, shape=[tf.size(linear), 1])
+    constant = (nn_params.final_bias[adv_class]  - nn_params.final_bias[true_class])
+    out = linear, constant
+    final_linear_cache[key] = out
+  return out

@@ -45,6 +45,9 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
   lambda_quad = []
   lambda_lu = []
 
+
+  nu_initializer = tf.constant_initializer(init_nu)
+
   if init_dual_file is None:
     for i in range(0, neural_net_params_object.num_hidden_layers + 1):
       initializer = (np.random.uniform(0, random_init_variance, size=(
@@ -67,8 +70,7 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
       lambda_lu.append(tf.get_variable('lambda_lu_' + str(i),
                                        initializer=initializer,
                                        dtype=tf.float32))
-    nu = tf.get_variable('nu', initializer=init_nu)
-    nu = tf.reshape(nu, shape=(1, 1))
+    nu = tf.get_variable('nu', initializer=nu_initializer, shape=(1,1))
   else:
     # Loading from file
     dual_var_init_val = np.load(init_dual_file).item()
@@ -89,8 +91,7 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
           tf.get_variable('lambda_lu_' + str(i),
                           initializer=dual_var_init_val['lambda_lu'][i],
                           dtype=tf.float32))
-    nu = tf.get_variable('nu', initializer=1.0*dual_var_init_val['nu'])
-    nu = tf.reshape(nu, shape=(1, 1))
+    nu = tf.get_variable('nu', initializer=tf.constant_initializer(1.0*dual_var_init_val['nu']), shape=(1,1))
   dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
               'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
   return dual_var
