@@ -26,7 +26,7 @@ from cleverhans.confidence_report import ConfidenceReport
 from cleverhans.confidence_report import ConfidenceReportEntry
 from cleverhans.confidence_report import print_stats
 
-_logger = create_logger("train")
+_logger = create_logger("attack_bundling")
 _logger.setLevel(logging.INFO)
 
 devices = infer_devices()
