@@ -85,7 +85,8 @@ class Optimization(object):
                      self.tf_min_eig_vec,
                      self.tf_smooth_eig_vec)
 
-    # Using autograph to automatically handle the control flow of multi_steps()
+    # Using autograph to automatically handle
+    # the control flow of minimum_eigen_vector
     min_eigen_tf = autograph.to_graph(utils.minimum_eigen_vector)
     def _vector_prod_fn(x):
       return self.dual_object.get_psd_product(x)
