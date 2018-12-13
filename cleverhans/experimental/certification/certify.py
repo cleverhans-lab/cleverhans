@@ -69,14 +69,20 @@ flags.DEFINE_integer('projection_steps', 200,
                      'Number of steps to compute projection after')
 flags.DEFINE_integer('num_classes', 10,
                      'Total number of classes')
+flags.DEFINE_enum('verbosity', 'INFO',
+                  ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                  'Logging verbosity level.')
 
 
 def main(_):
+  tf.logging.set_verbosity(FLAGS.verbosity)
+
   net_weights, net_biases, net_layer_types = read_weights.read_weights(
       FLAGS.checkpoint, FLAGS.model_json)
   nn_params = neural_net_params.NeuralNetParams(
       net_weights, net_biases, net_layer_types)
-  print(nn_params.sizes)
+  tf.logging.info('Loaded neural network with size of layers: %s',
+                  nn_params.sizes)
   dual_var = utils.initialize_dual(nn_params, FLAGS.init_dual_file,
                                    init_nu=FLAGS.init_nu)
   # Reading test input and reshaping
@@ -91,7 +97,7 @@ def main(_):
     start_class = FLAGS.adv_class
     end_class = FLAGS.adv_class + 1
   for adv_class in range(start_class, end_class):
-    print('Adv class', adv_class)
+    tf.logging.info('Running certification for adversarial class %d', adv_class)
     if adv_class == FLAGS.true_class:
       continue
     dual = dual_formulation.DualFormulation(dual_var,
@@ -128,7 +134,7 @@ def main(_):
       optimization_object.prepare_one_step()
       is_cert_found = optimization_object.run_optimization()
       if not is_cert_found:
-        print('Current example could not be verified')
+        print('Example could not be verified')
         exit()
   print('Example successfully verified')
 
