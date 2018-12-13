@@ -173,12 +173,13 @@ class Optimization(object):
 
       projected_certificate = self.dual_object.project_dual()
       current_certificate = self.sess.run(projected_certificate)
-      print('Current certificate', current_certificate)
+      tf.logging.info('Inner step: %d, current value of certificate: %f',
+                      self.current_step, current_certificate)
 
       # Sometimes due to either overflow or instability in inverses,
       # the returned certificate is large and negative -- keeping a check
       if LOWER_CERT_BOUND < current_certificate < 0:
-        print('Found certificate of robustness')
+        tf.logging.info('Found certificate of robustness!')
         return True
      # Running step
     step_feed_dict = {self.eig_init_vec_placeholder: eig_init_vec_val,
@@ -199,8 +200,8 @@ class Optimization(object):
                'unconstrained_objective':
                    float(self.current_unconstrained_objective),
                'min_eig_val_estimate': float(self.current_eig_val_estimate)}
-      print('Current_inner_step', self.current_step)
-      print(stats)
+      tf.logging.debug('Current inner step: %d, optimization stats: %s',
+                       self.current_step, stats)
       if self.params['stats_folder'] is not None:
         stats = json.dumps(stats)
         with tf.gfile.Open((self.params['stats_folder']+ '/' +
@@ -222,8 +223,8 @@ class Optimization(object):
     smooth_val = 0
     current_outer_step = 1
     while current_outer_step <= self.params['outer_num_steps']:
-      print('Running outer step', current_outer_step)
-      print('Penalty val', penalty_val)
+      tf.logging.info('Running outer step %d with penalty %f',
+                      current_outer_step, penalty_val)
       # Running inner loop of optimization with current_smooth_val,
       # current_penalty as smoothness parameters and penalty respectively
       self.current_step = 0
