@@ -610,7 +610,8 @@ class ProjectedGradientDescent(Attack):
 
       return i + 1, adv_x
 
-    _, adv_x = tf.while_loop(cond, body, [tf.zeros([]), adv_x], back_prop=True)
+    _, adv_x = tf.while_loop(cond, body, (tf.zeros([]), adv_x), back_prop=True,
+                             maximum_iterations=self.nb_iter)
 
 
     # Asserts run only on CPU.
@@ -823,7 +824,8 @@ class MomentumIterativeMethod(Attack):
       return i + 1, ax, m
 
     _, adv_x, _ = tf.while_loop(
-        cond, body, [tf.zeros([]), adv_x, momentum], back_prop=True)
+        cond, body, (tf.zeros([]), adv_x, momentum), back_prop=True,
+        maximum_iterations=self.nb_iter)
 
     if self.sanity_checks:
       with tf.control_dependencies(asserts):
@@ -1930,7 +1932,8 @@ class FastFeatureAdversaries(Attack):
       new_eta = self.attack_single_step(x, e, g_feat)
       return i + 1, new_eta
 
-    _, eta = tf.while_loop(cond, body, [tf.zeros([]), eta], back_prop=True)
+    _, eta = tf.while_loop(cond, body, (tf.zeros([]), eta), back_prop=True,
+                           maximum_iterations=self.nb_iter)
 
     # Define adversarial example (and clip if necessary)
     adv_x = x + eta
@@ -2675,9 +2678,10 @@ def projected_optimization(loss_fn,
   _, final_perturbation, _ = tf.while_loop(
       cond,
       loop_body,
-      loop_vars=[tf.constant(0.), init_perturbation, flat_init_optim_state],
+      loop_vars=(tf.constant(0.), init_perturbation, flat_init_optim_state),
       parallel_iterations=1,
-      back_prop=False)
+      back_prop=False,
+      maximum_iterations=num_steps)
   if project_perturbation is _project_perturbation:
     # TODO: this assert looks totally wrong.
     # Not bothering to fix it now because it's only an assert.
