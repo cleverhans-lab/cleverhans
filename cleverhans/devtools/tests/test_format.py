@@ -42,6 +42,10 @@ def update_whitelist():
   whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
                          for path in all_py_files
                          if "madry_lab_challenges" in path])
+  # This code is no longer compatible with new versions of cleverhans / scipy and will be removed soon
+  whitelist_pep8.extend([os.path.relpath(path, cleverhans.__path__[0])
+                         for path in all_py_files
+                         if "nips17_adversarial_competition" in path])
 
 
 update_whitelist()
