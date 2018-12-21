@@ -7,7 +7,9 @@ import tensorflow as tf
 
 from cleverhans import utils
 from cleverhans.attacks.attack import Attack
+from cleverhans.attacks.basic_iterative_method import BasicIterativeMethod
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod, fgm, optimize_linear
+from cleverhans.attacks.madry_et_al import MadryEtAl
 from cleverhans.attacks.projected_gradient_descent import ProjectedGradientDescent
 from cleverhans.attacks_tf import SPSAAdam, margin_logit_loss, TensorAdam
 from cleverhans.model import Model, CallableModelWrapper
@@ -21,23 +23,6 @@ from cleverhans import utils_tf
 _logger = utils.create_logger("cleverhans.attacks")
 tf_dtype = tf.as_dtype('float32')
 
-
-
-
-class BasicIterativeMethod(ProjectedGradientDescent):
-  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
-    super(BasicIterativeMethod, self).__init__(model, sess=sess,
-                                               dtypestr=dtypestr,
-                                               default_rand_init=False,
-                                               **kwargs)
-
-
-class MadryEtAl(ProjectedGradientDescent):
-  def __init__(self, model, sess=None, dtypestr='float32', **kwargs):
-    super(MadryEtAl, self).__init__(model, sess=sess,
-                                    dtypestr=dtypestr,
-                                    default_rand_init=True,
-                                    **kwargs)
 
 
 class MomentumIterativeMethod(Attack):
