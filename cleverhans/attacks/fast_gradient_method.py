@@ -206,7 +206,7 @@ def optimize_linear(grad, eps, ord=np.inf):
     tf tensor containing optimal perturbation
   """
 
-  red_ind = list(xrange(1, len(grad.get_shape())))
+  red_ind = range(1, len(grad.get_shape()))
   avoid_zero_div = 1e-12
   if ord == np.inf:
     # Take sign of gradient
