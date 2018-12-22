@@ -617,7 +617,7 @@ class ProjectedGradientDescent(Attack):
     # Asserts run only on CPU.
     # When multi-GPU eval code tries to force all PGD ops onto GPU, this
     # can cause an error.
-    common_dtype = tf.float64
+    common_dtype = tf.float32
     asserts.append(utils_tf.assert_less_equal(tf.cast(self.eps_iter,
                                                       dtype=common_dtype),
                                               tf.cast(self.eps, dtype=common_dtype)))
