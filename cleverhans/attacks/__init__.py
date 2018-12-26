@@ -24,7 +24,6 @@ _logger = utils.create_logger("cleverhans.attacks")
 tf_dtype = tf.as_dtype('float32')
 
 
-
 class MomentumIterativeMethod(Attack):
   """
   The Momentum Iterative Method (Dong et al. 2017). This method won
