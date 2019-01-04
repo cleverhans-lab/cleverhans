@@ -19,9 +19,6 @@ setup(name='cleverhans',
       extras_require={
           "tf": ["tensorflow>=1.0.0"],
           "tf_gpu": ["tensorflow-gpu>=1.0.0"],
-          "test": [
-              "keras == 2.1.5",  # Keras 2.1.6 is incompatible with TF 1.4
-          ],
           "pytorch": ["torch==0.4.0", "torchvision==0.2.1"],
       },
       packages=find_packages())
