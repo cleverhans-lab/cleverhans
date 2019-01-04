@@ -1,7 +1,6 @@
 """
 Model construction utilities based on keras
 """
-from distutils.version import LooseVersion
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, Dense, Activation, Flatten
