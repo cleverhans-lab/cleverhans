@@ -150,14 +150,6 @@ carefully by the adversary. The adversary then uses the substitute
 model’s gradients to find adversarial examples that are misclassified by the
 black-box model as well.
 
-Some models used in the tutorials are defined using [Keras](https://keras.io),
-which should be installed before running these tutorials.
-Installation instructions for Keras can be found
-[here](https://keras.io/#installation).
-Note that you should configure Keras to use the TensorFlow backend. You
-can find instructions for
-setting the Keras backend [on this page](https://keras.io/backend/).
-
 NOTE: the tutorials are maintained carefully, in the sense that we use
 continuous integration to make sure they continue working. They are not
 considered part of the API and they can change at any time without warning.
