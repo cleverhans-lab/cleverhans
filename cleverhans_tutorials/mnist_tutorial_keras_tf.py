@@ -14,10 +14,10 @@ from __future__ import unicode_literals
 import os
 
 import tensorflow as tf
-from tensorflow.python.platform import flags
-import numpy as np
 from tensorflow import keras
 from tensorflow.keras import backend
+from tensorflow.python.platform import flags
+import numpy as np
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.dataset import MNIST
