@@ -8,7 +8,7 @@ from __future__ import print_function
 
 import copy
 
-from keras.utils import np_utils
+from tensorflow.python.keras.utils import np_utils
 import numpy as np
 
 from cleverhans.dataset import Dataset
