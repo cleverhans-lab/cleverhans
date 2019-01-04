@@ -15,7 +15,6 @@ import os
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import backend
 from tensorflow.python.platform import flags
 import numpy as np
 
