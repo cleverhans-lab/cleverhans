@@ -4,11 +4,9 @@ Model construction utilities based on keras
 from distutils.version import LooseVersion
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Activation, Flatten
+from tensorflow.keras.layers import Conv2D, Dense, Activation, Flatten
 
 from .model import Model, NoSuchLayerError
-
-from tensorflow.keras.layers import Conv2D
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
   """
