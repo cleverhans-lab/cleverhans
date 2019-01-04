@@ -56,9 +56,10 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
   model = Sequential()
 
   # Define the layers successively (convolution layers are version dependent)
-  if keras.backend.image_dim_ordering() == 'th':
+  if keras.backend.image_data_format() == 'channels_first':
     input_shape = (channels, img_rows, img_cols)
   else:
+    assert keras.backend.image_data_format() == 'channels_last'
     input_shape = (img_rows, img_cols, channels)
 
   layers = [conv_2d(nb_filters, (8, 8), (2, 2), "same",
@@ -179,7 +180,7 @@ class KerasModelWrapper(Model):
     :return: A dictionary mapping layer names to the symbolic
              representation of their output.
     """
-    from keras.models import Model as KerasModel
+    from tensorflow.keras.models import Model as KerasModel
 
     if self.keras_model is None:
       # Get the input layer
