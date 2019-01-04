@@ -2,17 +2,13 @@
 Model construction utilities based on keras
 """
 from distutils.version import LooseVersion
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation, Flatten
 
 from .model import Model, NoSuchLayerError
 
-if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-  from keras.layers import Conv2D
-else:
-  from keras.layers import Convolution2D
-
+from tensorflow.keras.layers import Conv2D
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
   """
@@ -31,22 +27,13 @@ def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
                       layer of the model
   :return: the Keras layer
   """
-  if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-    if input_shape is not None:
-      return Conv2D(filters=filters, kernel_size=kernel_shape,
-                    strides=strides, padding=padding,
-                    input_shape=input_shape)
-    else:
-      return Conv2D(filters=filters, kernel_size=kernel_shape,
-                    strides=strides, padding=padding)
+  if input_shape is not None:
+    return Conv2D(filters=filters, kernel_size=kernel_shape,
+                  strides=strides, padding=padding,
+                  input_shape=input_shape)
   else:
-    if input_shape is not None:
-      return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
-                           subsample=strides, border_mode=padding,
-                           input_shape=input_shape)
-    else:
-      return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
-                           subsample=strides, border_mode=padding)
+    return Conv2D(filters=filters, kernel_size=kernel_shape,
+                  strides=strides, padding=padding)
 
 
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,

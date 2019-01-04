@@ -11,8 +11,8 @@ from cleverhans.utils_keras import KerasModelWrapper
 
 class TestKerasModelWrapper(unittest.TestCase):
   def setUp(self):
-    from keras.models import Sequential
-    from keras.layers import Dense, Activation
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Activation
     import tensorflow as tf
 
     def dummy_model():
