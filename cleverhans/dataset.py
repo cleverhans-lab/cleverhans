@@ -15,6 +15,7 @@ import os
 import struct
 import tempfile
 import sys
+import warnings
 
 import keras
 from keras.datasets import cifar10
