@@ -7,11 +7,13 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
+import warnings
 
-from tensorflow.python.keras.utils import np_utils
+
+from distutils.version import LooseVersion
 import numpy as np
 
-from cleverhans.dataset import Dataset
+from cleverhans.dataset import Dataset, np_utils
 
 
 def random_feed_dict(rng, placeholders):
