@@ -55,7 +55,7 @@ script:
   # exit on first error
   - set -e
   # run keras backend init to initialize backend config
-  - python -c "import tensorflow.keras.backend"
+  - python -c "from tensorflow import keras"
   # create dataset directory to avoid concurrent directory creation at runtime
   - mkdir ~/.keras/datasets
   # set up keras backend
