@@ -17,8 +17,8 @@ import tempfile
 import sys
 import warnings
 
-import keras
-from keras.datasets import cifar10
+from tensorflow import keras
+from tensorflow.keras.datasets import cifar10
 import numpy as np
 import tensorflow as tf
 try:
