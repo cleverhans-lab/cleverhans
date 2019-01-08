@@ -77,9 +77,18 @@ pip install -e .
 
 Although CleverHans is likely to work on many other machine configurations, we
 currently [test it](https://travis-ci.org/tensorflow/cleverhans) it with Python
-{2.7, 3.5} and TensorFlow {1.8, 1.12} on Ubuntu 14.04.5 LTS (Trusty Tahr).
-Support for TensorFlow prior to 1.8 is deprecated.
-Backwards compatibility wrappers for these versions may be removed after
+3.5 and TensorFlow {1.8, 1.12} on Ubuntu 14.04.5 LTS (Trusty Tahr).
+Support for Python 2.7 is deprecated.
+CleverHans 3.0.1 supports Python 2.7 and the master branch is likely to
+continue to work in Python 2.7 for some time, but we no longer run the tests
+in Python 2.7 and we do not plan to fix bugs affecting only Python 2.7 after
+2019-07-04.
+Support for TensorFlow prior to 1.12 is deprecated.
+Backwards compatibility wrappers for these versions may be removed after 2019-07-07,
+and we will not fix bugs for those versions after that date.
+Support for TensorFlow prior to 1.8 is deprecated with an earlier deprecation
+date:
+backwards compatibility wrappers for these versions may be removed after
 2019-01-26, and we will not fix bugs for those versions after that date.
 Support for TensorFlow 1.3 and earlier is already deprecated: we do not fix
 bugs for those versions and any remaining wrapper code for those versions
@@ -144,14 +153,6 @@ model by observing the labels that the black-box model assigns to inputs chosen
 carefully by the adversary. The adversary then uses the substitute
 model’s gradients to find adversarial examples that are misclassified by the
 black-box model as well.
-
-Some models used in the tutorials are defined using [Keras](https://keras.io),
-which should be installed before running these tutorials.
-Installation instructions for Keras can be found
-[here](https://keras.io/#installation).
-Note that you should configure Keras to use the TensorFlow backend. You
-can find instructions for
-setting the Keras backend [on this page](https://keras.io/backend/).
 
 NOTE: the tutorials are maintained carefully, in the sense that we use
 continuous integration to make sure they continue working. They are not

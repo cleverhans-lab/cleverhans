@@ -15,13 +15,25 @@ import os
 import struct
 import tempfile
 import sys
-import numpy as np
-import tensorflow as tf
+import warnings
 
+import numpy as np
+from tensorflow import keras
+import tensorflow as tf
+try:
+  from tensorflow.python.keras.utils import np_utils
+  from tensorflow.keras.datasets import cifar10
+except ImportError:
+  # In tf 1.8, np_utils doesn't seem to be publicly exposed.
+  # In later tf versions, it is, and in pre-tf keras it was too.
+  from tensorflow.python.keras import _impl
+  np_utils = _impl.keras.utils.np_utils
+  # In tf 1.8, "from tensorflow.keras.datasets import cifar10" doesn't work even though the module exists
+  cifar10 = keras.datasets.cifar10
+  warnings.warn("Support for TensorFlow versions prior to 1.12 is deprecated."
+                " CleverHans using earlier versions may quit working on or after 2019-07-07.")
 from cleverhans import utils
 
-# Only load keras if user tries to use a dataset that requires it
-keras_imported = False
 
 
 class Dataset(object):
@@ -260,11 +272,6 @@ def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
   :return:
   """
 
-  global keras_imported
-  if not keras_imported:
-    import keras
-    from keras.datasets import cifar10
-    from keras.utils import np_utils
 
   # These values are specific to CIFAR10
   img_rows = 32

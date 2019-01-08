@@ -8,10 +8,9 @@ from __future__ import print_function
 
 import copy
 
-from keras.utils import np_utils
 import numpy as np
 
-from cleverhans.dataset import Dataset
+from cleverhans.dataset import Dataset, np_utils
 
 
 def random_feed_dict(rng, placeholders):
