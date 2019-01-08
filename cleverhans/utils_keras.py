@@ -1,18 +1,17 @@
 """
 Model construction utilities based on keras
 """
-from distutils.version import LooseVersion
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
+from tensorflow import keras
 
 from .model import Model, NoSuchLayerError
 
-if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-  from keras.layers import Conv2D
-else:
-  from keras.layers import Convolution2D
-
+# Assignment rather than import because direct import from within Keras doesn't work in tf 1.8
+Sequential = keras.models.Sequential
+Conv2D = keras.layers.Conv2D
+Dense = keras.layers.Dense
+Activation = keras.layers.Activation
+Flatten = keras.layers.Flatten
+KerasModel = keras.models.Model
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
   """
@@ -31,22 +30,13 @@ def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
                       layer of the model
   :return: the Keras layer
   """
-  if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-    if input_shape is not None:
-      return Conv2D(filters=filters, kernel_size=kernel_shape,
-                    strides=strides, padding=padding,
-                    input_shape=input_shape)
-    else:
-      return Conv2D(filters=filters, kernel_size=kernel_shape,
-                    strides=strides, padding=padding)
+  if input_shape is not None:
+    return Conv2D(filters=filters, kernel_size=kernel_shape,
+                  strides=strides, padding=padding,
+                  input_shape=input_shape)
   else:
-    if input_shape is not None:
-      return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
-                           subsample=strides, border_mode=padding,
-                           input_shape=input_shape)
-    else:
-      return Convolution2D(filters, kernel_shape[0], kernel_shape[1],
-                           subsample=strides, border_mode=padding)
+    return Conv2D(filters=filters, kernel_size=kernel_shape,
+                  strides=strides, padding=padding)
 
 
 def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
@@ -69,9 +59,10 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
   model = Sequential()
 
   # Define the layers successively (convolution layers are version dependent)
-  if keras.backend.image_dim_ordering() == 'th':
+  if keras.backend.image_data_format() == 'channels_first':
     input_shape = (channels, img_rows, img_cols)
   else:
+    assert keras.backend.image_data_format() == 'channels_last'
     input_shape = (img_rows, img_cols, channels)
 
   layers = [conv_2d(nb_filters, (8, 8), (2, 2), "same",
@@ -192,7 +183,6 @@ class KerasModelWrapper(Model):
     :return: A dictionary mapping layer names to the symbolic
              representation of their output.
     """
-    from keras.models import Model as KerasModel
 
     if self.keras_model is None:
       # Get the input layer

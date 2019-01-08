@@ -8,11 +8,15 @@ import numpy as np
 
 from cleverhans.utils_keras import KerasModelWrapper
 
+# Weird imports / assignment because the normal import syntax doesn't work for tf.keras in tf 1.8
+from tensorflow import keras
+Sequential = keras.models.Sequential
+Dense = keras.layers.Dense
+Activation = keras.layers.Activation
+
 
 class TestKerasModelWrapper(unittest.TestCase):
   def setUp(self):
-    from keras.models import Sequential
-    from keras.layers import Dense, Activation
     import tensorflow as tf
 
     def dummy_model():

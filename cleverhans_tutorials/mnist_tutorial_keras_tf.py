@@ -14,10 +14,9 @@ from __future__ import unicode_literals
 import os
 
 import tensorflow as tf
+from tensorflow import keras
 from tensorflow.python.platform import flags
 import numpy as np
-import keras
-from keras import backend
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.dataset import MNIST
@@ -59,7 +58,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   :param label_smoothing: float, amount of label smoothing for cross entropy
   :return: an AccuracyReport object
   """
-  keras.layers.core.K.set_learning_phase(0)
+  tf.keras.backend.set_learning_phase(0)
 
   # Object used to keep track of (and return) key accuracies
   report = AccuracyReport()
@@ -67,14 +66,8 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   # Set TF random seed to improve reproducibility
   tf.set_random_seed(1234)
 
-  if not hasattr(backend, "tf"):
-    raise RuntimeError("This tutorial requires keras to be configured"
-                       " to use the TensorFlow backend.")
-
-  if keras.backend.image_dim_ordering() != 'tf':
-    keras.backend.set_image_dim_ordering('tf')
-    print("INFO: '~/.keras/keras.json' sets 'image_dim_ordering' to "
-          "'th', temporarily setting to 'tf'")
+  if keras.backend.image_data_format() != 'channels_last':
+    raise NotImplementedError("this tutorial requires keras to be configured to channels_last format")
 
   # Create TF session and set as Keras backend session
   sess = tf.Session()
