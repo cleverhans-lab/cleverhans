@@ -11,6 +11,7 @@ Conv2D = keras.layers.Conv2D
 Dense = keras.layers.Dense
 Activation = keras.layers.Activation
 Flatten = keras.layers.Flatten
+KerasModel = keras.models.Model
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
   """
@@ -182,7 +183,6 @@ class KerasModelWrapper(Model):
     :return: A dictionary mapping layer names to the symbolic
              representation of their output.
     """
-    from tensorflow.keras.models import Model as KerasModel
 
     if self.keras_model is None:
       # Get the input layer
