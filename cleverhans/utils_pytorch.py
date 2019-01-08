@@ -38,7 +38,7 @@ def _py_func_with_gradient(func, inp, Tout, stateful=True, name=None,
 def convert_pytorch_model_to_tf(model, out_dims=None):
   """
   Convert a pytorch model into a tensorflow op that allows backprop
-  :param model: A pytorch nn.Model object
+  :param model: A pytorch nn.Module object
   :param out_dims: The number of output dimensions (classes) for the model
   :return: A model function that maps an input (tf.Tensor) to the
   output of the model (tf.Tensor)
