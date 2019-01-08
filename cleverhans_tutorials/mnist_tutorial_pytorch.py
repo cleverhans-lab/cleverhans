@@ -106,9 +106,9 @@ def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
       train_loss.append(loss.data.item())
       optimizer.step()  # update gradients
 
-      preds_np = preds.data.cpu().numpy()
-      correct += (np.argmax(preds_np, axis=1) == ys).sum()
-      total += len(xs)
+      preds_np = preds.cpu().detach().numpy()
+      correct += (np.argmax(preds_np, axis=1) == ys.cpu().detach().numpy()).sum()
+      total += train_loader.batch_size
       step += 1
       if total % 1000 == 0:
         acc = float(correct) / total
@@ -125,9 +125,9 @@ def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
       xs, ys = xs.cuda(), ys.cuda()
 
     preds = torch_model(xs)
-    preds_np = preds.data.cpu().numpy()
+    preds_np = preds.cpu().detach().numpy()
 
-    correct += (np.argmax(preds_np, axis=1) == ys).sum()
+    correct += (np.argmax(preds_np, axis=1) == ys.cpu().detach().numpy()).sum()
     total += len(xs)
 
   acc = float(correct) / total
@@ -155,8 +155,8 @@ def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
   correct = 0
   for xs, ys in test_loader:
     adv_preds = sess.run(adv_preds_op, feed_dict={x_op: xs})
-    correct += (np.argmax(adv_preds, axis=1) == ys).sum()
-    total += len(xs)
+    correct += (np.argmax(adv_preds, axis=1) == ys.cpu().detach().numpy()).sum()
+    total += test_loader.batch_size
 
   acc = float(correct) / total
   print('Adv accuracy: {:.3f}'.format(acc * 100))
