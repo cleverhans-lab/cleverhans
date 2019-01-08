@@ -70,7 +70,7 @@ your `PYTHONPATH`:
 
 ```
 cd cleverhans
-pip install -e ./cleverhans
+pip install -e .
 ```
 
 ### Currently supported setups
