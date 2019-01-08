@@ -83,8 +83,12 @@ CleverHans 3.0.1 supports Python 2.7 and the master branch is likely to
 continue to work in Python 2.7 for some time, but we no longer run the tests
 in Python 2.7 and we do not plan to fix bugs affecting only Python 2.7 after
 2019-07-04.
-Support for TensorFlow prior to 1.8 is deprecated.
-Backwards compatibility wrappers for these versions may be removed after
+Support for TensorFlow prior to 1.12 is deprecated.
+Backwards compatibility wrappers for these versions may be removed after 2019-07-07,
+and we will not fix bugs for those versions after that date.
+Support for TensorFlow prior to 1.8 is deprecated with an earlier deprecation
+date:
+backwards compatibility wrappers for these versions may be removed after
 2019-01-26, and we will not fix bugs for those versions after that date.
 Support for TensorFlow 1.3 and earlier is already deprecated: we do not fix
 bugs for those versions and any remaining wrapper code for those versions
