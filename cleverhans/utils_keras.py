@@ -2,10 +2,15 @@
 Model construction utilities based on keras
 """
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, Dense, Activation, Flatten
 
 from .model import Model, NoSuchLayerError
+
+# Assignment rather than import because direct import from within Keras doesn't work in tf 1.8
+Sequential = keras.models.Sequential
+Conv2D = keras.layers.Conv2D
+Dense = keras.layers.Dense
+Activation = keras.layers.Activation
+Flatten = keras.layers.Flatten
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
   """
