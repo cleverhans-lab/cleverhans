@@ -21,7 +21,7 @@ from cleverhans.attacks.noise import Noise
 from cleverhans.attacks.projected_gradient_descent import ProjectedGradientDescent
 from cleverhans.attacks.saliency_map_method import SaliencyMapMethod
 from cleverhans.attacks.semantic import Semantic
-from cleverhans.attacks.spsa import SPSA
+from cleverhans.attacks.spsa import SPSA, projected_optimization
 from cleverhans.attacks.spatial_transformation_method import SpatialTransformationMethod
 from cleverhans.attacks.virtual_adversarial_method import VirtualAdversarialMethod, vatm
 from cleverhans.model import Model, CallableModelWrapper
