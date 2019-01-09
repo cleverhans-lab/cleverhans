@@ -57,7 +57,7 @@ class SaliencyMapMethod(Attack):
           nb_s = gt.shape[0]
           nb_classes = gt.shape[1]
 
-          for i in xrange(nb_s):
+          for i in range(nb_s):
             result[i, :] = np.roll(result[i, :],
                                    randint(1, nb_classes - 1))
 

@@ -84,7 +84,7 @@ class MomentumIterativeMethod(Attack):
       grad, = tf.gradients(loss, ax)
 
       # Normalize current gradient and add it to the accumulated gradient
-      red_ind = list(xrange(1, len(grad.get_shape())))
+      red_ind = list(range(1, len(grad.get_shape())))
       avoid_zero_div = tf.cast(1e-12, grad.dtype)
       grad = grad / tf.maximum(
           avoid_zero_div,
