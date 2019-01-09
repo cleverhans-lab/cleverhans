@@ -5,7 +5,7 @@ import warnings
 import numpy as np
 import tensorflow as tf
 
-from cleverhans.attacks.attck import Attack
+from cleverhans.attacks.attack import Attack
 
 class SaliencyMapMethod(Attack):
   """
