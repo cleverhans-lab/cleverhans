@@ -15,6 +15,7 @@ from cleverhans.attacks.fast_feature_adversaries import FastFeatureAdversaries
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod, fgm, optimize_linear
 from cleverhans.attacks.lbfgs import LBFGS
 from cleverhans.attacks.madry_et_al import MadryEtAl
+from cleverhans.attacks.max_confidence import MaxConfidence
 from cleverhans.attacks.momentum_iterative_method import MomentumIterativeMethod
 from cleverhans.attacks.noise import Noise
 from cleverhans.attacks.projected_gradient_descent import ProjectedGradientDescent
