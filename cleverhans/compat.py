@@ -5,13 +5,12 @@ of TensorFlow.
 from distutils.version import LooseVersion
 import warnings
 import tensorflow as tf
-# Strange import to work around pylint bug affecting python 3 / tf 1.8
-from tensorflow import python # pylint: disable=no-name-in-module
-
-# Assignment rather than import to work around pylint bug affecting python 3 / tf 1.8
-app = python.platform.app
-device_lib = python.client.device_lib
-flags = python.platform.flags
+# The following 2 imports are not used in this module. They are imported so that users of cleverhans.compat can
+# get access to device_lib, app, and flags. A pylint bug makes these imports cause errors when using python3+tf1.8.
+# Doing the sanitized import here once makes it possible to do "from cleverhans.compat import flags" throughout the
+# library without needing to repeat the pylint boilerplate.
+from tensorflow.python.client import device_lib # pylint: disable=no-name-in-module,unused-import
+from tensorflow.python.platform import app, flags # pylint: disable=no-name-in-module,unused-import
 
 def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
                     name=None, reduction_indices=None):
