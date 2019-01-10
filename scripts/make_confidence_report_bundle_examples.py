@@ -27,7 +27,6 @@ import warnings
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import flags
 
 from cleverhans.utils_tf import silence
 # We need to disable pylint's complaints about import order because `silence`
@@ -36,6 +35,7 @@ from cleverhans.utils_tf import silence
 silence()
 from cleverhans.attack_bundling import bundle_examples_with_goal, MaxConfidence
 from cleverhans import serial
+from cleverhans.compat import flags
 from cleverhans.confidence_report import TRAIN_START, TRAIN_END
 from cleverhans.confidence_report import TEST_START, TEST_END
 from cleverhans.confidence_report import WHICH_SET

@@ -5,8 +5,13 @@ of TensorFlow.
 from distutils.version import LooseVersion
 import warnings
 import tensorflow as tf
+# Strange import to work around pylint bug affecting python 3 / tf 1.8
+from tensorflow import python # pylint: disable=no-name-in-module
 
-
+# Assignment rather than import to work around pylint bug affecting python 3 / tf 1.8
+app = python.platform.app
+device_lib = python.client.device_lib
+flags = python.platform.flags
 
 def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
                     name=None, reduction_indices=None):

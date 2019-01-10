@@ -13,7 +13,6 @@ from __future__ import unicode_literals
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import flags
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -22,6 +21,7 @@ from torch.autograd import Variable
 from torchvision import datasets, transforms
 
 from cleverhans.attacks import FastGradientMethod
+from cleverhans.compat import flags
 from cleverhans.model import CallableModelWrapper
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_pytorch import convert_pytorch_model_to_tf

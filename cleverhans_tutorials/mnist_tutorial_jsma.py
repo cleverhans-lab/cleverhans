@@ -13,9 +13,9 @@ import logging
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
-from tensorflow.python.platform import flags
 
 from cleverhans.attacks import SaliencyMapMethod
+from cleverhans.compat import flags
 from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
 from cleverhans.utils import other_classes, set_log_level

@@ -14,8 +14,8 @@ from __future__ import unicode_literals
 import logging
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import flags
 
+from cleverhans.compat import flags
 from cleverhans.loss import CrossEntropy
 from cleverhans.dataset import MNIST
 from cleverhans.utils_tf import model_eval

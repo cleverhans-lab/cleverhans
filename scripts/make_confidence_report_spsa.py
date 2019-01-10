@@ -29,7 +29,6 @@ import logging
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import flags
 
 from cleverhans.utils_tf import silence
 silence()
@@ -40,6 +39,7 @@ from cleverhans.attacks import SPSA
 from cleverhans.attack_bundling import spsa_max_confidence_recipe
 from cleverhans.serial import load
 from cleverhans.utils import set_log_level
+from cleverhans.compat import flags
 from cleverhans.confidence_report import BATCH_SIZE
 from cleverhans.confidence_report import TRAIN_START
 from cleverhans.confidence_report import TRAIN_END
