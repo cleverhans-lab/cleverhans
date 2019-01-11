@@ -20,7 +20,8 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 from tensorflow.contrib import slim
-from tensorflow.contrib.slim.nets import inception
+# The following line is affected by a pylint bug when using python3 and tf 1.12
+from tensorflow.contrib.slim.nets import inception # pylint: disable=no-name-in-module
 from PIL import Image
 from cleverhans.attacks import SPSA
 from cleverhans.devtools.checks import CleverHansTest
