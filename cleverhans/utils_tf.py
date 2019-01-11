@@ -13,8 +13,8 @@ import numpy as np
 import six
 from six.moves import xrange
 import tensorflow as tf
-from tensorflow.python.client import device_lib
 
+from cleverhans.compat import device_lib
 from cleverhans.compat import reduce_sum, reduce_mean
 from cleverhans.compat import reduce_max
 from cleverhans.compat import softmax_cross_entropy_with_logits

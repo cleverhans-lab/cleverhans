@@ -10,8 +10,8 @@ from __future__ import unicode_literals
 import logging
 
 import tensorflow as tf
-from tensorflow.python.platform import flags
 
+from cleverhans.compat import flags
 from cleverhans.dataset import MNIST
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import set_log_level

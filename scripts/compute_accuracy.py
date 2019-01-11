@@ -26,9 +26,9 @@ import logging
 import time
 
 import tensorflow as tf
-from tensorflow.python.platform import flags
 
 from cleverhans.attacks import ProjectedGradientDescent, Semantic
+from cleverhans.compat import flags
 from cleverhans.evaluation import accuracy
 from cleverhans.serial import load
 from cleverhans.utils import set_log_level

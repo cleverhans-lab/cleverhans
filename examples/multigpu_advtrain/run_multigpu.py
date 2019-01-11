@@ -10,9 +10,7 @@ from __future__ import unicode_literals
 import logging
 from collections import namedtuple
 
-from tensorflow.python.platform import app
-from tensorflow.python.platform import flags
-
+from cleverhans.compat import app, flags
 
 from trainer import TrainerMultiGPU
 from trainer import TrainerSingleGPU

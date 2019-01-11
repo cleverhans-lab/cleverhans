@@ -13,7 +13,6 @@ import numpy as np
 import six
 import tensorflow as tf
 
-from cleverhans.loss import attack_softmax_cross_entropy
 from cleverhans.utils_tf import batch_indices
 from cleverhans.utils_mnist import data_mnist
 import utils_cifar as cifar_input
@@ -166,7 +165,7 @@ class TrainManager(object):
     if hparams.model_type == 'resnet_tf':
       build_train_op = model.build_cost
     else:
-      build_train_op = attack_softmax_cross_entropy
+      raise NotImplementedError("this configuration of this example is no longer maintained")
 
     # Define loss
     with tf.variable_scope('train_loss'):
