@@ -20,23 +20,21 @@ def diag(diag_elements):
   return tf.diag(tf.reshape(diag_elements, [-1]))
 
 def conv2ff(input_shape, layer_weight):
-  """ Function to unroll convolutions to feedforward 
+  """Function to unroll convolutions to feedforward 
   Args:
     input_shape: The shape of the input to the conv layer 
     layer_weight: The weights of the conv layer 
    
    Returns:
     ff_weights: Matrix corresponding to unrolled convolution 
-
   """
-
   input_num_elements = input_shape[0] * input_shape[1] * input_shape[2]
   kernel = layer_weight 
 
   # TF graph to compute convolution 
   flattened_input = tf.placeholder(tf.float32, shape = [1, input_num_elements])
   input_image = tf.reshape(flattened_input, [1] + input_shape)
-  output_shape = tf.nn.conv2d(input_image, kernel, strides=[1, 2, 2, 1], padding='SAME')
+  output_image = tf.nn.conv2d(input_image, kernel, strides=[1, 2, 2, 1], padding='SAME')
   flattened_output = tf.reshape(output_image, [1, -1])
   output_num_elements = int(flattened_output.shape[1])
 
@@ -50,7 +48,7 @@ def conv2ff(input_shape, layer_weight):
         conv_matrix[:, i] = output_vector.flatten()
 
   # Verify that the result is same
-  random_input = np.randon.random((1, input_num_elements))
+  random_input = np.random.random((1, input_num_elements))
   with tf.Session() as sess:
     conv_output = sess.run(flattened_output, feed_dict={flattened_input:
         np.transpose(np.reshape(random_input, [-1, 1]))})

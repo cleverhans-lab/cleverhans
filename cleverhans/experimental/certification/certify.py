@@ -109,8 +109,6 @@ def main(_):
 
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
-  dual_var = utils.initialize_dual(nn_params, FLAGS.init_dual_file,
-                                   init_nu=FLAGS.init_nu)
   
   if FLAGS.adv_class == -1:
     start_class = 0
@@ -151,7 +149,7 @@ def main(_):
       test_logits = np.load(FLAGS.model_logits)
       true_test_output = (test_logits[FLAGS.input_index, adv_class] - 
         test_logits[FLAGS.input_index, FLAGS.true_class])
-
+      print("True test output", true_test_output)
       if(np.abs(true_test_output - current_test_output) > 1E-3):
         print('Forward passes do not match with difference ', np.abs(true_test_output - current_test_output))
         exit()

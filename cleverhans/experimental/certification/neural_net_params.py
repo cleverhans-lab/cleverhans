@@ -69,20 +69,20 @@ class NeuralNetParams(object):
       else:
         num_filters = shape[3]
         self.input_shapes.append([1, 
-          current_num_rows, current_num_cols, current_num_channels])
-        self.sizes.append(current_num_rows*current_num_cols*current_num_channels)
+          current_num_rows, current_num_columns, current_num_channels])
+        self.sizes.append(current_num_rows*current_num_columns*current_num_channels)
         current_num_channels = num_filters
         # For propagating across multiple conv layers
         if(PADDING == 'SAME'):
           current_num_rows = int(current_num_rows/STRIDE)
-          current_num_cols = int(current_num_cols/STRIDE)
+          current_num_columns = int(current_num_columns/STRIDE)
         self.output_shapes.append(
-          [1, current_num_rows, current_num_cols, current_num_channels])
+          [1, current_num_rows, current_num_columns, current_num_channels])
 
         # For conv networks, unraveling the bias terms                                                                                           
         small_bias = tf.convert_to_tensor(net_biases[i], dtype=tf.float32)
         large_bias = tf.tile(tf.reshape(small_bias, [-1, 1]), 
-          [current_num_rows*current_num_cols, 1])
+          [current_num_rows*current_num_columns, 1])
         self.biases.append(large_bias)
 
     # Last layer shape: always ff 
@@ -131,7 +131,7 @@ class NeuralNetParams(object):
     elif is_abs:
       vector = tf.reshape(vector, self.input_shapes[layer_index])
       if(layer_type in {'ff', 'ff_relu'}):
-        return_vector = tf.matmul(tf.abs(self.weights[layer_index], vector))
+        return_vector = tf.matmul(tf.abs(self.weights[layer_index]), vector)
       elif(layer_type in {'conv', 'conv_relu'}):
         return_vector = tf.nn.conv2d(vector, 
                                     tf.abs(self.weights[layer_index]), 
@@ -153,10 +153,6 @@ class NeuralNetParams(object):
       else:
         raise NotImplementedError('Unsupported layer type: {0}'.format(self.layer_type))
       return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
-
-
-    raise NotImplementedError('Unsupported layer type: {0}'.format(
-        self.layer_types[layer_index]))
 
   def nn_output(self, test_input, true_class, adv_class):
     """ Function to print the output of forward pass according the neural net class
