@@ -12,13 +12,12 @@ class DualFormulation(object):
   and access to matrix vector products for the matrix that is constrained
   to be Positive semidefinite """
 
-  def __init__(self, dual_var, neural_net_param_object, test_input, true_class,
+  def __init__(self, sess, neural_net_param_object, test_input, true_class,
                adv_class, input_minval, input_maxval, epsilon):
     """Initializes dual formulation class.
 
     Args:
-      dual_var: dictionary of dual variables containing a) lambda_pos
-        b) lambda_neg, c) lambda_quad, d) lambda_lu
+      sess: Tensorflow session
       neural_net_param_object: NeuralNetParam object created for
         the network under consideration
       test_input: clean example to certify around
@@ -28,6 +27,7 @@ class DualFormulation(object):
       input_maxval: maximum value of valid input range
       epsilon: Size of the perturbation (scaled for [0, 1] input)
     """
+    self.sess = sess
     self.nn_params = neural_net_param_object
     self.test_input = tf.convert_to_tensor(test_input, dtype=tf.float32)
     self.true_class = true_class
@@ -46,37 +46,54 @@ class DualFormulation(object):
     # Note that lower and upper are of size nn_params.num_hidden_layers + 1
     self.lower = []
     self.upper = []
-
+    # Also computing pre activation lower and upper bounds 
+    # to compute always-off and always-on units 
+    self.pre_lower = []
+    self.pre_upper = []
+    self.pre_lower.append(self.lower[0])
+    self.pre_upper.append(self.upper[0])
     # Initializing at the input layer with \ell_\infty constraints
     self.lower.append(
         tf.maximum(self.test_input - self.epsilon, self.input_minval))
     self.upper.append(
         tf.minimum(self.test_input + self.epsilon, self.input_maxval))
     for i in range(0, self.nn_params.num_hidden_layers):
-      current_lower = tf.nn.relu(0.5*(
+      current_lower = 0.5*(
           self.nn_params.forward_pass(self.lower[i] + self.upper[i], i)
           + self.nn_params.forward_pass(self.lower[i] - self.upper[i], i,
                                         is_abs=True))
-                                 + self.nn_params.biases[i])
-      current_upper = tf.nn.relu(0.5*(
+                                 + self.nn_params.biases[i]
+      current_upper = 0.5*(
           self.nn_params.forward_pass(self.lower[i] + self.upper[i], i)
           + self.nn_params.forward_pass(self.upper[i] -self.lower[i], i,
                                         is_abs=True))
-                                 + self.nn_params.biases[i])
-      self.lower.append(current_lower)
-      self.upper.append(current_upper)
+                                 + self.nn_params.biases[i]
+      self.pre_lower.append(current_lower)
+      self.pre_upper.append(current_upper)
+      self.lower.append(tf.nn.relu(current_lower))
+      self.upper.append(tf.nn.relu(current_upper))
+
+    # Using the preactivation lower and upper bounds 
+    # to compute the linear regions 
+    self.positive_indices = []
+    self.negative_indices = []
+    self.switch_indices = []
+
+    for i in range(0, self.nn_params.num_hidden_layers + 1):
+      # Positive index = 1 if the ReLU is always "on"
+      self.positive_indices.append(tf.cast(self.pre_lower[i] >= 0, dtype=tf.float32))
+      # Negative index = 1 if the ReLU is always off 
+      self.negative_indices.append(tf.cast(self.pre_upper[i] <= 0, dtype=tf.float32))
+      self.switch_indices.append(tf.cast(
+        tf.multiply(self.pre_lower[i], self.pre_upper[i])<0, dtype=tf.float32))
+
 
     # Computing the optimization terms
-    self.lambda_pos = [x for x in dual_var['lambda_pos']]
-    self.lambda_neg = [x for x in dual_var['lambda_neg']]
-    self.lambda_quad = [x for x in dual_var['lambda_quad']]
-    self.lambda_lu = [x for x in dual_var['lambda_lu']]
-    self.nu = dual_var['nu']
     self.vector_g = None
     self.scalar_f = None
     self.matrix_h = None
     self.matrix_m = None
-
+    self.matrix_m_dimension = 1 + np.sum(self.nn_params.sizes)
     # The primal vector in the SDP can be thought of as [layer_1, layer_2..]
     # In this concatenated version, dual_index[i] that marks the start
     # of layer_i
@@ -85,6 +102,87 @@ class DualFormulation(object):
     for i in range(self.nn_params.num_hidden_layers + 1):
       self.dual_index.append(self.dual_index[-1] +
                              self.nn_params.sizes[i])
+
+  def initialize_dual(self, name, init_dual_folder=None, random_init_variance=0, init_nu=200.0):
+    """Function to initialize the dual variables of the class 
+      Args: 
+        name: string for naming the dual variables created 
+        init_dual_folder: Folder with numpy files for initializing the dual variables 
+        random_init_variance: Variance for random initialization of the dual variables
+        init_nu: initial valuye of variable nu
+    """
+    self.lambda_pos = []
+    self.lambda_neg = []
+    self.lambda_quad = []
+    self.lambda_lu = []
+
+    # Random initialization 
+    if init_folder is None:
+      for i in range(self.nn_params.num_hidden_layers + 1):
+        initializer = (np.random.uniform(0, random_init_variance, 
+          size=(self.nn_params.sizes[i], 1))).astype(np.float32)
+        self.lambda_pos.append(tf.get_variable(name + 'lambda_pos_' + str(i), 
+          initializer=initializer, dtype=tf.float32))
+        initializer = (np.random.uniform(0, random_init_variance, 
+          size=(self.nn_params.sizes[i], 1))).astype(np.float32)
+        self.lambda_neg.append(tf.get_variable(name + 'lambda_neg_' + str(i), 
+          initializer=initializer, dtype=tf.float32))
+        initializer = (np.random.uniform(0, random_init_variance, 
+          size=(self.nn_params.sizes[i], 1))).astype(np.float32)
+        self.lambda_quad.append(tf.get_variable(name + 'lambda_quad_' + str(i), 
+          initializer=initializer, dtype=tf.float32))
+        initializer = (np.random.uniform(0, random_init_variance, 
+          size=(self.nn_params.sizes[i], 1))).astype(np.float32)
+        self.lambda_lu.append(tf.get_variable(name + 'lambda_lu_' + str(i), 
+          initializer=initializer, dtype=tf.float32))
+      nu = tf.get_variable(name + 'nu', initializer=init_nu)
+      self.nu = tf.reshape(nu, shape=(1, 1))
+    # Loading from folder
+    else:
+      init_lambda_pos = np.load(os.path.join(FLAGS.init_dual_folder, 'lambda_pos.npy'))
+      init_lambda_neg = np.load(os.path.join(FLAGS.init_dual_folder, 'lambda_neg.npy'))
+      init_lambda_quad = np.load(os.path.join(FLAGS.init_dual_folder, 'lambda_quad.npy'))
+      init_lambda_lu = np.load(os.path.join(FLAGS.init_dual_folder, 'lambda_lu.npy'))
+      init_nu = np.load(os.path.join(FLAGS.init_dual_folder, 'nu.npy'))
+
+      for i in range(0, self.nn_params.num_hidden_layers + 1):
+        self.lambda_pos.append(
+          tf.get_variable('lambda_pos_' + str(i),
+                          initializer=init_lambda_pos[i],
+                          dtype=tf.float32))
+        self.lambda_neg.append(
+          tf.get_variable('lambda_neg_' + str(i),
+                          initializer=init_lambda_neg[i],
+                          dtype=tf.float32))
+        self.lambda_quad.append(
+          tf.get_variable('lambda_quad_' + str(i),
+                          initializer=init_lambda_quad[i],
+                          dtype=tf.float32))
+        self.lambda_lu.append(
+          tf.get_variable('lambda_lu_' + str(i),
+                          initializer=init_lambda_lu[i],
+                          dtype=tf.float32))
+      nu = tf.get_variable('nu', initializer=1.0*init_nu)
+      self.nu = tf.reshape(nu, shape=(1, 1))
+    self.dual_var{'lambda_pos': self.lambda_pos, 'lambda_neg': self.lambda_neg, 
+    'lambda_quad': self.lambda_quad, 'lambda_lu': self.lambda_lu, 'nu': self.nu}
+
+  def initialize_placeholder(self):
+    """Function to create placeholders for dual variables 
+    to evaluate certificates """
+
+    self.lambda_pos = []
+    self.lambda_neg = []
+    self.lambda_quad = []
+    self.lambda_lu = []
+
+    for i in range(self.nn_params.num_hidden_layers + 1):
+      self.lambda_pos.append(tf.placeholder(tf.float32, shape=(self.nn_params.sizes[i], 1)))
+      self.lambda_neg.append(tf.placeholder(tf.float32, shape=(self.nn_params.sizes[i], 1)))
+      self.lambda_quad.append(tf.placeholder(tf.float32, shape=(self.nn_params.sizes[i], 1)))
+      self.lambda_lu.append(tf.placeholder(tf.float32, shape=(self.nn_params.sizes[i], 1)))
+    self.nu = tf.placeholder(tf.float32, shape=(1, 1))
+
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""
@@ -326,3 +424,22 @@ class DualFormulation(object):
                                tf.concat([self.vector_g, self.matrix_h],
                                          axis=1)], axis=0)
     return self.matrix_h, self.matrix_m
+
+  def save_dual(self, folder, sess):
+    """Function to save the dual variables 
+    Args:
+      folder: The folder to save the dual variables 
+      sess: current tensorflow session whose dual variables are to be saved 
+
+    """ 
+    if not tf.gfile.IsDirectory(folder):
+      tf.gfile.MkDir(folder)
+    [current_lambda_pos, current_lambda_neg, current_lambda_quad, 
+    current_lambda_lu, current_nu] = sess.run([self.lambda_pos, 
+      self.lambda_neg, self.lambda_quad, self.lambda_lu, self.nu])
+    np.save(os.path.join(folder, 'lambda_pos'), current_lambda_pos)
+    np.save(os.path.join(folder, 'lambda_neg'), current_lambda_neg)
+    np.save(os.path.join(folder, 'lambda_lu'), current_lambda_lu)
+    np.save(os.path.join(folder, 'lambda_quad'), current_lambda_quad)
+    np.save(os.path.join(folder, 'nu'), current_nu)
+    print('Saved the current dual variables in folder:', folder)
