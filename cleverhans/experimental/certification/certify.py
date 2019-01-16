@@ -76,7 +76,8 @@ flags.DEFINE_integer('num_classes', 10,
 flags.DEFINE_enum('verbosity', 'INFO',
                   ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                   'Logging verbosity level.')
-
+flags.DEFINE_string('eig_type', 'TF_GD', 
+                  'One of TF_EIG, TF_GD, SCIPY_FF', SCIPY_CONV')
 
 dataset = 'MNIST'
 
