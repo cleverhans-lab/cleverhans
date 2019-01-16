@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy as np 
 import tensorflow as tf
 from cleverhans.experimental.certification import utils
 
@@ -50,24 +51,25 @@ class DualFormulation(object):
     # to compute always-off and always-on units 
     self.pre_lower = []
     self.pre_upper = []
-    self.pre_lower.append(self.lower[0])
-    self.pre_upper.append(self.upper[0])
     # Initializing at the input layer with \ell_\infty constraints
     self.lower.append(
         tf.maximum(self.test_input - self.epsilon, self.input_minval))
     self.upper.append(
         tf.minimum(self.test_input + self.epsilon, self.input_maxval))
+    self.pre_lower.append(self.lower[0])
+    self.pre_upper.append(self.upper[0])
+
     for i in range(0, self.nn_params.num_hidden_layers):
-      current_lower = 0.5*(
+      current_lower = (0.5*(
           self.nn_params.forward_pass(self.lower[i] + self.upper[i], i)
           + self.nn_params.forward_pass(self.lower[i] - self.upper[i], i,
                                         is_abs=True))
-                                 + self.nn_params.biases[i]
-      current_upper = 0.5*(
+                                 + self.nn_params.biases[i])
+      current_upper = (0.5*(
           self.nn_params.forward_pass(self.lower[i] + self.upper[i], i)
           + self.nn_params.forward_pass(self.upper[i] -self.lower[i], i,
                                         is_abs=True))
-                                 + self.nn_params.biases[i]
+                                 + self.nn_params.biases[i])
       self.pre_lower.append(current_lower)
       self.pre_upper.append(current_upper)
       self.lower.append(tf.nn.relu(current_lower))
@@ -117,7 +119,7 @@ class DualFormulation(object):
     self.lambda_lu = []
 
     # Random initialization 
-    if init_folder is None:
+    if init_dual_folder is None:
       for i in range(self.nn_params.num_hidden_layers + 1):
         initializer = (np.random.uniform(0, random_init_variance, 
           size=(self.nn_params.sizes[i], 1))).astype(np.float32)
@@ -164,7 +166,7 @@ class DualFormulation(object):
                           dtype=tf.float32))
       nu = tf.get_variable('nu', initializer=1.0*init_nu)
       self.nu = tf.reshape(nu, shape=(1, 1))
-    self.dual_var{'lambda_pos': self.lambda_pos, 'lambda_neg': self.lambda_neg, 
+    self.dual_var = {'lambda_pos': self.lambda_pos, 'lambda_neg': self.lambda_neg, 
     'lambda_quad': self.lambda_quad, 'lambda_lu': self.lambda_lu, 'nu': self.nu}
 
   def initialize_placeholder(self):

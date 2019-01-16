@@ -167,7 +167,7 @@ def main(_):
 
       optimization_object = optimization.Optimization(dual,
                                                       sess,
-                                                      optimization_params. 
+                                                      optimization_params,
                                                       nn_params_ff)
       optimization_object.prepare_one_step()
       is_cert_found = optimization_object.run_optimization()
