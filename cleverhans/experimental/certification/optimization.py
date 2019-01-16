@@ -12,7 +12,6 @@ from cleverhans.experimental.certification import utils
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
 
-
 class Optimization(object):
   """Class that sets up and runs the optimization of dual_formulation"""
 
