@@ -10,6 +10,8 @@ import json
 import numpy as np
 import tensorflow as tf
 
+from cleverhans.experimental.certification.utils import conv2ff
+
 STRIDE = 2
 
 def read_weights(checkpoint, model_json, input_shape=None, CONV2FF=False):

@@ -19,6 +19,46 @@ def diag(diag_elements):
   """
   return tf.diag(tf.reshape(diag_elements, [-1]))
 
+def conv2ff(input_shape, layer_weight):
+  """ Function to unroll convolutions to feedforward 
+  Args:
+    input_shape: The shape of the input to the conv layer 
+    layer_weight: The weights of the conv layer 
+   
+   Returns:
+    ff_weights: Matrix corresponding to unrolled convolution 
+
+  """
+
+  input_num_elements = input_shape[0] * input_shape[1] * input_shape[2]
+  kernel = layer_weight 
+
+  # TF graph to compute convolution 
+  flattened_input = tf.placeholder(tf.float32, shape = [1, input_num_elements])
+  input_image = tf.reshape(flattened_input, [1] + input_shape)
+  output_shape = tf.nn.conv2d(input_image, kernel, strides=[1, 2, 2, 1], padding='SAME')
+  flattened_output = tf.reshape(output_image, [1, -1])
+  output_num_elements = int(flattened_output.shape[1])
+
+  # Construct the convolution matrix 
+  conv_matrix = np.zeros([output_num_elements, input_num_elements], dtype=np.float32)
+  with tf.Session() as sess:
+      for i in range(input_num_elements):
+        input_vector = np.zeros((1, input_num_elements), dtype=np.float32)
+        input_vector[0, i] = 1.0
+        output_vector = sess.run(flattened_output, feed_dict={flattened_input:input_vector})
+        conv_matrix[:, i] = output_vector.flatten()
+
+  # Verify that the result is same
+  random_input = np.randon.random((1, input_num_elements))
+  with tf.Session() as sess:
+    conv_output = sess.run(flattened_output, feed_dict={flattened_input:
+        np.transpose(np.reshape(random_input, [-1, 1]))})
+    matmul_output = np.reshape(np.matmul(conv_matrix, random_input.flatten()), (1, -1))
+  print('Absolute difference between outputs', np.amax(np.abs(conv_output - matmul_output)))
+  print('Relative difference between output', np.amax(np.abs(conv_output - matmul_output) /
+    np.abs(conv_output) + 1E-7))
+  return conv_matrix 
 
 def initialize_dual(neural_net_params_object, init_dual_file=None,
                     random_init_variance=0.01, init_nu=200.0):
