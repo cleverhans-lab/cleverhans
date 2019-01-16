@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+import time
 
 from cleverhans.experimental.certification import dual_formulation
 from cleverhans.experimental.certification import neural_net_params
@@ -77,6 +78,8 @@ flags.DEFINE_enum('verbosity', 'INFO',
 def main(_):
   tf.logging.set_verbosity(FLAGS.verbosity)
 
+  start_time = time.time ()
+
   net_weights, net_biases, net_layer_types = read_weights.read_weights(
       FLAGS.checkpoint, FLAGS.model_json)
   nn_params = neural_net_params.NeuralNetParams(
@@ -137,6 +140,7 @@ def main(_):
         print('Example could not be verified')
         exit()
   print('Example successfully verified')
+  print('Elapsed time: ' + str(time.time () - start_time))
 
 if __name__ == '__main__':
   tf.app.run(main)
