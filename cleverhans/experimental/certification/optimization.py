@@ -33,7 +33,7 @@ class Optimization(object):
         optimizer - one of gd, adam, momentum or adagrad
     """
     self.dual_object = dual_formulation_object
-    self.projected_dual_object = self.project_dual (self.dual_object)
+    self.projected_dual_object = self.project_dual ()
     self.params = optimization_params
     self.penalty_placeholder = tf.placeholder(tf.float32, shape=[])
 
