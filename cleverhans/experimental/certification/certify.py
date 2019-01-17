@@ -85,8 +85,14 @@ def main(_):
                   nn_params.sizes)
   dual_var = utils.initialize_dual(nn_params, FLAGS.init_dual_file,
                                    init_nu=FLAGS.init_nu)
+
+  # Initialize neural network based on config files
+  # neural_network = nn.NeuralNetwork (FLAGS.checkpoint, FLAGS.model_json)
+  # tf.logging.info('Loaded neural network with size of layers: %s',
+  #                 nn_params.sizes)
+
   # Reading test input and reshaping
-  with tf.gfile.Open(FLAGS.test_input) as f:
+  with tf.gfile.Open (FLAGS.test_input) as f:
     test_input = np.load(f)
   test_input = np.reshape(test_input, [np.size(test_input), 1])
 
@@ -131,7 +137,7 @@ def main(_):
       optimization_object = optimization.Optimization(dual,
                                                       sess,
                                                       optimization_params)
-      optimization_object.prepare_one_step()
+      # optimization_object.prepare_one_step()
       is_cert_found = optimization_object.run_optimization()
       if not is_cert_found:
         print('Example could not be verified')

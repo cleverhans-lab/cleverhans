@@ -287,7 +287,7 @@ class DualFormulation(object):
 
   def get_full_psd_matrix(self):
     """Function that retuns the tf graph corresponding to the entire matrix M.
-
+    TODO(shankarshreya): remove unnecessary calls to this function
 
     Returns:
       matrix_h: unrolled version of tf matrix corresponding to H
