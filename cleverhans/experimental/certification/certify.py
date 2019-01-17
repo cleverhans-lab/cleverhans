@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 import numpy as np
 import tensorflow as tf
 
@@ -32,7 +31,7 @@ flags.DEFINE_integer('true_class', 0,
                      'True class of the test input')
 flags.DEFINE_integer('adv_class', -1,
                      'target class of adversarial example; all classes if -1')
-flags.DEFINE_float('input_minval', -1,
+flags.DEFINE_float('input_minval', 0,
                    'Minimum value of valid input')
 flags.DEFINE_float('input_maxval', 1,
                    'Maximum value of valid input')
@@ -73,11 +72,11 @@ flags.DEFINE_integer('projection_steps', 200,
                      'Number of steps to compute projection after')
 flags.DEFINE_integer('num_classes', 10,
                      'Total number of classes')
-flags.DEFINE_enum('verbosity', 'INFO',
+flags.DEFINE_enum('verbosity', 'DEBUG',
                   ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                   'Logging verbosity level.')
 flags.DEFINE_string('eig_type', 'TF_GD', 
-                  'One of TF_EIG, TF_GD, SCIPY_FF', SCIPY_CONV')
+                  'One of TF_EIG, TF_GD, SCIPY_FF, SCIPY_CONV')
 
 dataset = 'MNIST'
 

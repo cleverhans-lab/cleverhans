@@ -3,10 +3,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os 
 import numpy as np 
 import tensorflow as tf
 from cleverhans.experimental.certification import utils
 
+flags = tf.app.flags
+FLAGS = flags.FLAGS
 
 class DualFormulation(object):
   """DualFormulation is a class that creates the dual objective function
@@ -169,7 +172,7 @@ class DualFormulation(object):
     self.dual_var = {'lambda_pos': self.lambda_pos, 'lambda_neg': self.lambda_neg, 
     'lambda_quad': self.lambda_quad, 'lambda_lu': self.lambda_lu, 'nu': self.nu}
 
-  def initialize_placeholder(self):
+  def initialize_placeholders(self):
     """Function to create placeholders for dual variables 
     to evaluate certificates """
 

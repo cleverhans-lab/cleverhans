@@ -126,7 +126,7 @@ class NeuralNetParams(object):
                                                padding=PADDING)
       else:
         raise NotImplementedError('Unsupported layer type: {0}'.format(self.layer_type))
-      return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
+      return tf.reshape(return_vector, (self.sizes[layer_index], 1))
 
     elif is_abs:
       vector = tf.reshape(vector, self.input_shapes[layer_index])

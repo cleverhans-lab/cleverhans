@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import json
+import time 
 import numpy as np
 
 from scipy.sparse.linalg import eigs, LinearOperator
@@ -52,7 +53,7 @@ class Optimization(object):
     self.sess = sess
     self.nn_params_ff = nn_params_ff
     self.dual_placeholder_ff = dual_formulation.DualFormulation(self.sess,
-        self.dual_object.nn_params_ff,
+        nn_params_ff,
         self.dual_object.test_input,
         self.dual_object.true_class,
         self.dual_object.adv_class,
@@ -60,7 +61,8 @@ class Optimization(object):
         self.dual_object.input_maxval,
         self.dual_object.epsilon
         )
-
+    self.dual_placeholder_ff.initialize_placeholders()
+    self.dual_placeholder_ff.get_full_psd_matrix()
 
   def tf_min_eig_vec(self):
     """Function for min eigen vector using tf's full eigen decomposition."""
@@ -117,7 +119,14 @@ class Optimization(object):
       return estimated_eigen_vector
 
   def get_scipy_eig_vec(self, eig_val_estimate=None):
-    if FLAGS.eig_type == 'SCIPY_CONV':
+    if FLAGS.eig_type == 'SCIPY_FF':
+      self.dual_object.get_full_psd_matrix()
+      matrix_m = self.sess.run(self.dual_object.matrix_m)
+      min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR', 
+        tol=1E-4, sigma=eig_val_estimate)
+      return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
+
+    elif FLAGS.eig_type == 'SCIPY_CONV':
       dim = self.dual_object.matrix_m_dimension
       input_vector = tf.placeholder(tf.float32, shape=(dim, 1))
       output_vector = self.dual_object.get_psd_product(input_vector)
@@ -130,32 +139,40 @@ class Optimization(object):
       # Performing shift invert scipy operation when eig val estimate is available
       if(eig_val_estimate):
         min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator, 
-          k=1, which='SR', tol=1E-4, sigma=eig_val_estimate)
+          k=1, tol=1E-4, sigma=eig_val_estimate)
       else:
         min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator, 
           k=1, which='SR', tol=1E-4)
       return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
 
-    elif FLAGS.eig_type == 'SCIPY_FF':
-      matrix_m = self.sess.run(self.dual_object.matrix_m)
-      min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR', 
-        tol=1E-4, sigma=eig_val_estimate)
-      return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
+    else:      
+      [current_lambda_pos, current_lambda_neg, current_lambda_quad, 
+       current_lambda_lu, current_nu] = self.sess.run([self.dual_object.lambda_pos, 
+                                                  self.dual_object.lambda_neg, 
+                                                  self.dual_object.lambda_quad, 
+                                                  self.dual_object.lambda_lu, 
+                                                  self.dual_object.nu])
+      lambda_feed_dict = {}
+      lambda_feed_dict.update({lambda_placeholder:value for lambda_placeholder, value in 
+                               zip(self.dual_placeholder_ff.lambda_pos, current_lambda_pos)})
+      lambda_feed_dict.update({lambda_placeholder:value for lambda_placeholder, value in 
+                               zip(self.dual_placeholder_ff.lambda_neg, current_lambda_neg)})
+      lambda_feed_dict.update({lambda_placeholder:value for lambda_placeholder, value in 
+                               zip(self.dual_placeholder_ff.lambda_quad, current_lambda_quad)})
+      lambda_feed_dict.update({lambda_placeholder:value for lambda_placeholder, value in 
+                               zip(self.dual_placeholder_ff.lambda_lu, current_lambda_lu)})
+      lambda_feed_dict.update({self.dual_placeholder_ff.nu: current_nu})
+      matrix_m = self.sess.run(self.dual_placeholder_ff.matrix_m, feed_dict=lambda_feed_dict)
+      if(eig_val_estimate):
+        start = time.time()
+        min_eig_val, estimated_eigen_vector = eigs(matrix_m, k=1, which = 'LR', 
+                                                   tol=1E-4, sigma=eig_val_estimate)
+        end = time.time()
+      else:
+        min_eig_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR',
+                                                   tol=1E-4)
+      return np.reshape(estimated_eigen_vector, [-1, 1]), np.real(min_eig_val)
 
-  # [current_lambda_pos, current_lambda_neg, current_lambda_quad, 
-  #   current_lambda_lu, current_nu] = sess.run([self.lambda_pos, 
-  #     self.lambda_neg, self.lambda_quad, self.lambda_lu, self.nu])
-  # lambda_feed_dict = {}
-  # lambda_feed_dict.update({lambda_placeholder:value for lambda_placeholder, value in 
-  #   zip(self.dual_placeholder_ff.lambda_pos, current_lambda_pos)})
-  # lambda_feed_dict.update({lambda_placeholder:value for lambda_placeholder, value in 
-  #   zip(self.dual_placeholder_ff.lambda_neg, current_lambda_neg)})
-  # lambda_feed_dict.update({lambda_placeholder:value for lambda_placeholder, value in 
-  #   zip(self.dual_placeholder_ff.lambda_quad, current_lambda_quad)})
-  # lambda_feed_dict.update({lambda_placeholder:value for lambda_placeholder, value in 
-  #   zip(self.dual_placeholder_ff.lambda_lu, current_lambda_lu)})
-  # lambda_feed_dict.update({self.dual_placeholder_ff.nu: current_nu})
-  # matrix_m = self.sess.run(self.dual_placeholder_ff.matrix_m)
 
 
 
@@ -236,6 +253,7 @@ class Optimization(object):
     if(self.params['stats_folder'] is not None and
        not tf.gfile.IsDirectory(self.params['stats_folder'])):
       tf.gfile.MkDir(self.params['stats_folder'])
+    self.current_scipy_eig_val = None
 
   def run_one_step(self, eig_init_vec_val, eig_num_iter_val,
                    smooth_val, penalty_val, learning_rate_val):
@@ -276,9 +294,10 @@ class Optimization(object):
       self.current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec(self.current_eig_val_estimate)
       step_feed_dict.update({self.eig_vec_estimate:current_eig_vector})
 
-
     self.sess.run(self.train_step, feed_dict=step_feed_dict)
-    [_, self.current_eig_val_estimate] = self.sess.run([self.proj_step, 
+    [_, self.current_eig_vec_val, 
+     self.current_eig_val_estimate] = self.sess.run([self.proj_step, 
+                                                     self.eig_vec_estimate, 
                                                    self.eig_val_estimate], 
                                                    feed_dict=step_feed_dict)
 
@@ -292,9 +311,15 @@ class Optimization(object):
           self.eig_vec_estimate,
           self.eig_val_estimate,
           self.dual_object.nu], feed_dict=step_feed_dict)
-
-
-      _, self.current_scipy_eig_val = self.get_scipy_eig_vec(self.current_eig_val_estimate)
+      start = time.time()
+      # To reset the scipy_eig value estimate in case it has diverged
+      if(not self.current_scipy_eig_val or self.current_step%1000 == 0):
+        print("Computing full scipy value")
+        self.current_eig_vec_val, self.current_scipy_eig_val = self.get_scipy_eig_vec(None)
+      else:
+        self.current_eig_vec_val, self.current_scipy_eig_val = self.get_scipy_eig_vec(self.current_scipy_eig_val - 0.1)
+      end = time.time()
+      print('Scipy time', end - start)
       stats = {'total_objective': float(self.current_total_objective),
                'unconstrained_objective': float(self.current_unconstrained_objective),
                'min_eig_val_estimate': float(self.current_eig_val_estimate),
@@ -306,10 +331,10 @@ class Optimization(object):
       if self.params['stats_folder'] is not None:
         stats = json.dumps(stats)
         with tf.gfile.Open((self.params['stats_folder']+ '/' +
-                            str(self.current_step) + '.json'))as file_f:
+                            str(self.current_step) + '.json'), mode='w')as file_f:
           file_f.write(stats)
         self.dual_object.save_dual(self.params['stats_folder'] + '/' + 
-                                  str(current_outer_step), self.sess)
+                                  str(self.current_outer_step), self.sess)
     return False
 
   def run_optimization(self):
@@ -327,7 +352,7 @@ class Optimization(object):
     learning_rate_val = self.params['init_learning_rate']
 
     self.current_outer_step = 1
-    while current_outer_step <= self.params['outer_num_steps']:
+    while self.current_outer_step <= self.params['outer_num_steps']:
       tf.logging.info('Running outer step %d with penalty %f and learning rate %f',
                       self.current_outer_step, penalty_val, learning_rate_val)
       # Running inner loop of optimization with current_smooth_val,
@@ -339,7 +364,8 @@ class Optimization(object):
               size=(1 + self.dual_object.dual_index[-1], 1)),
           self.params['large_eig_num_steps'],
           smooth_val,
-          penalty_val)
+          penalty_val, 
+          learning_rate_val)
       if found_cert:
         return True
       while self.current_step < self.params['inner_num_steps']:
