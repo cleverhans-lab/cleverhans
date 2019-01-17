@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
+from cleverhans.experimental.certification import dual_formulation
 
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
@@ -114,7 +115,7 @@ class Optimization(object):
                           'lambda_lu': projected_lambda_lu,
                           'lambda_quad': projected_lambda_quad,
                           'nu': projected_nu}
-    projected_dual_object = DualFormulation(projected_dual_var,
+    projected_dual_object = dual_formulation.DualFormulation(projected_dual_var,
                                             self.dual_object.nn_params,
                                             self.dual_object.test_input,
                                             self.dual_object.true_class,
