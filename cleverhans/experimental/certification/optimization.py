@@ -13,6 +13,10 @@ from cleverhans.experimental.certification import dual_formulation
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
 
+# FOR TESTING PURPOSES (to determine speedups)
+np.random.seed(1234)
+tf.set_random_seed(1234)
+
 
 class Optimization(object):
   """Class that sets up and runs the optimization of dual_formulation"""
@@ -178,11 +182,9 @@ class Optimization(object):
         vector_prod_fn=_vector_prod_fn)
     return estimated_eigen_vector
 
-  def prepare_one_step(self):
+  def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
-    # Create the objective
 
-    self.dual_object.set_differentiable_objective()
     self.eig_vec_estimate = self.get_min_eig_vec_proxy()
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
     # Eig value is v^\top M v, where v is eigen vector
@@ -297,7 +299,7 @@ class Optimization(object):
       True if certificate is found
       False otherwise
     """
-    self.prepare_one_step()
+    self.prepare_for_optimization()
     penalty_val = self.params['init_penalty']
     # Don't use smoothing initially - very inaccurate for large dimension
     self.smooth_on = False
