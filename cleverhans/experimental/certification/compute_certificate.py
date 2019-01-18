@@ -38,11 +38,11 @@ flags.DEFINE_float('input_maxval', 1,
                    'Maximum value of valid input')
 flags.DEFINE_float('epsilon', 0.2,
                    'Size of perturbation')
-lags.DEFINE_enum('verbosity', 'DEBUG',
+flags.DEFINE_enum('verbosity', 'DEBUG',
                   ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                   'Logging verbosity level.')
 
-                  dataset = 'MNIST'
+dataset = 'MNIST'
 
 def main(_):
   tf.logging.set_verbosity(FLAGS.verbosity)
@@ -79,31 +79,31 @@ def main(_):
       device_count={'GPU':0})
   
   with tf.Session() as sess:
-  	sess.run(tf.global_variables_initializer())
-  	# Checking that all the weights are loaded correctly 
-    nn_test_output = nn_params.nn_output(test_input, FLAGS.true_class, adv_class)
+    sess.run(tf.global_variables_initializer())
+    # Checking that all the weights are loaded correctly 
+    nn_test_output = nn_params.nn_output(test_input, FLAGS.true_class, FLAGS.adv_class)
     current_test_output = sess.run(nn_test_output)
     test_logits = np.load(FLAGS.model_logits)
-    true_test_output = (test_logits[FLAGS.input_index, adv_class] - 
+    true_test_output = (test_logits[FLAGS.input_index, FLAGS.adv_class] - 
       test_logits[FLAGS.input_index, FLAGS.true_class])
     print("True test output", true_test_output)
     if(np.abs(true_test_output - current_test_output) > 1E-3):
       print('Forward passes do not match with difference ', np.abs(true_test_output - current_test_output))
       exit()
-    dual_placeholder_ff = dual_formulation.DualFormulation(self.sess,
+    dual_placeholder_ff = dual_formulation.DualFormulation(sess,
        nn_params_ff,
-       self.dual_object.test_input,
-       self.dual_object.true_class,
-       self.dual_object.adv_class,
-       self.dual_object.input_minval,
-       self.dual_object.input_maxval,
-       self.dual_object.epsilon
+       test_input,
+       FLAGS.true_class,
+       FLAGS.adv_class,
+       FLAGS.input_minval,
+       FLAGS.input_maxval,
+       FLAGS.epsilon
        )
-    dual_placeholder_ff.intialize_placeholders()
+    dual_placeholder_ff.initialize_placeholders()
     dual_placeholder_ff.set_differentiable_objective()
     dual_placeholder_ff.get_full_psd_matrix()
-    certificate = dual_placeholder_ff.compute_certifcate(FLAGS.dual_folder)
+    certificate = dual_placeholder_ff.compute_certificate(FLAGS.dual_folder)
     print("Computed certificate", certificate)
 
-if __name__ == 'main':
+if __name__ == '__main__':
   tf.app.run(main)

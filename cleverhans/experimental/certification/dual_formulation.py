@@ -7,6 +7,11 @@ import os
 import numpy as np 
 import tensorflow as tf
 from numpy.linalg import cholesky 
+
+from scipy.sparse import csc_matrix
+from scipy.sparse.linalg import eigs
+from scipy.sparse.linalg import inv
+
 from cleverhans.experimental.certification import utils
 
 flags = tf.app.flags
@@ -361,86 +366,87 @@ class DualFormulation(object):
     np.save(os.path.join(folder, 'nu'), current_nu)
     print('Saved the current dual variables in folder:', folder)
 
-def compute_certificate(self, dual_folder):
-  """ Function to compute the certificate based either current value
-  or dual variables loaded from dual folder """
-  if not dual_folder:
-    lambda_pos_val = self.sess.run([x for x in self.lambda_pos])
-    lambda_neg_val = self.sess.run([x for x in self.lambda_neg])
-    lambda_quad_val = self.sess.run([x for x in self.lambda_quad])
-    lambda_lu_val = self.sess.run([x for x in self.lambda_lu])
-    nu_val = self.sess.run(self.nu)
-  else:
-    lambda_pos_val = np.load(os.path.join(FLAGS.init_dual_folder, 'lambda_pos.npy'))
-    lambda_neg_val = np.load(os.path.join(FLAGS.init_dual_folder, 'lambda_neg.npy'))
-    lambda_quad_val = np.load(os.path.join(FLAGS.init_dual_folder, 'lambda_quad.npy'))
-    lambda_lu_val = np.load(os.path.join(FLAGS.init_dual_folder, 'lambda_lu.npy'))
-    nu_val = np.load(os.path.join(FLAGS.init_dual_folder, 'nu.npy'))
-
-  # Creating dictionary to feed placeholders 
-  dual_feed_dict = {}
-  dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_pos, lambda_pos_val)})
-  dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_neg, lambda_neg_val)})
-  dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_quad, lambda_quad_val)})
-  dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, lambda_lu_val)})
-  dual_feed_dict.update({self.nu: nu_val})
-
-  old_scalar_f = self.sess.run(self.scalar_f)
-  old_matrix_h = self.sess.run(self.matrix_h)
-  old_matrix_m = self.sess.run(self.matrix_m)
-
-  min_eig_val_m, _ = eigs(matrix_m, k=1, which = 'LR', 
-                                              tol=1E-5, sigma=-0.1)
-
-  min_eig_val_m = min_eig_val_m - 1E-5
-
-  dim = self.matrix_m_dimension
-  try: 
-    cholesky(old_matrix_m - np.real(min_eig_val_m)*np.eye(dim))
-  except: 
-    print("Increased min eigen value of M")
-    min_eig_val_m = 2*min_eig_val_m
-  else:
-    pass
-
-min_eig_val_h, _ = eigs(matrix_h, k=1, which = 'LR', 
-                                              tol=1E-5, sigma=-0.1)
-
-  min_eig_val_h = min_eig_val_h - 1E-5
-
-  dim = self.matrix_m_dimension - 1
-  try: 
-    cholesky(old_matrix_h - np.real(min_eig_val_h)*np.eye(dim))
-  except: 
-    print("Increased min eigen value of H")
-    min_eig_val_h = 2*min_eig_val_h
-  else:
-    pass
-
-  current_certificate = UPPER_BOUND
-  values = np.linspace(min_eig_val_m, min_eig_val_m, 5)
-  for v in values:
-    new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
-    for i in range(self.nn_params.num_hidden_layers + 1):
-      new_lambda_lu_val = lambda_lu_val + 0.5*np.maximum(-values, 0) + 1E-6
-    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, new_lambda_lu_val)})
-    scalar_f = self.sess.run(self.scalar_f, dual_feed_dict)
-    vector_g = self.sess.run(self.vector_g, dual_feed_dict)
-    matrix_h = self.sess.run(self.matrix_h, dual_feed_dict)
-    second_term = np.matmul(np.matmul(np.transpose(new_vector_g), 
-      inv(csc_matrix(new_matrix_h)).toarray()), new_vector_g) + 0.05
-    dual_feed_dict.update({self.nu:second_term})
-    check_psd_matrix_m = self.sess.run(matrix_m, dual_feed_dict)
-    try: 
-      cholesky(check_psd_matrix_m)
-    except:
-      print("Problem: Matrix is not PSD")
+  def compute_certificate(self, dual_folder):
+    """ Function to compute the certificate based either current value
+    or dual variables loaded from dual folder """
+    if not dual_folder:
+      lambda_pos_val = self.sess.run([x for x in self.lambda_pos])
+      lambda_neg_val = self.sess.run([x for x in self.lambda_neg])
+      lambda_quad_val = self.sess.run([x for x in self.lambda_quad])
+      lambda_lu_val = self.sess.run([x for x in self.lambda_lu])
+      nu_val = self.sess.run(self.nu)
     else:
-      print("All good: Matrix is PSD")
-    computed_certificate = scalar_f + second_term 
-    current_certificate = np.maximum(computed_certificate, current_certificate)
+      lambda_pos_val = np.load(os.path.join(FLAGS.dual_folder, 'lambda_pos.npy'))
+      lambda_neg_val = np.load(os.path.join(FLAGS.dual_folder, 'lambda_neg.npy'))
+      lambda_quad_val = np.load(os.path.join(FLAGS.dual_folder, 'lambda_quad.npy'))
+      lambda_lu_val = np.load(os.path.join(FLAGS.dual_folder, 'lambda_lu.npy'))
+      nu_val = np.load(os.path.join(FLAGS.dual_folder, 'nu.npy'))
 
-  return current_certificate
+    # Creating dictionary to feed placeholders 
+    dual_feed_dict = {}
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_pos, lambda_pos_val)})
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_neg, lambda_neg_val)})
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_quad, lambda_quad_val)})
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, lambda_lu_val)})
+    dual_feed_dict.update({self.nu: nu_val})
+
+    old_scalar_f = self.sess.run(self.scalar_f, feed_dict=dual_feed_dict)
+    old_matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
+    old_matrix_m = self.sess.run(self.matrix_m, feed_dict=dual_feed_dict)
+    
+    min_eig_val_m, _ = eigs(old_matrix_m, k=1, which = 'LR', 
+                            tol=1E-5, sigma=-0.1)
+
+    min_eig_val_m = min_eig_val_m - 1E-5
+    
+    dim = self.matrix_m_dimension
+    try: 
+      cholesky(old_matrix_m - np.real(min_eig_val_m)*np.eye(dim))
+    except: 
+      print("Increased min eigen value of M")
+      min_eig_val_m = 2*min_eig_val_m
+    else:
+      pass
+    
+    min_eig_val_h, _ = eigs(old_matrix_h, k=1, which = 'LR', 
+                            tol=1E-5, sigma=-0.1)
+
+    min_eig_val_h = min_eig_val_h - 1E-5
+    
+    dim = self.matrix_m_dimension - 1
+    try: 
+      cholesky(old_matrix_h - np.real(min_eig_val_h)*np.eye(dim))
+    except: 
+      print("Increased min eigen value of H")
+      min_eig_val_h = 2*min_eig_val_h
+    else:
+      pass
+
+    current_certificate = UPPER_BOUND
+    values = np.linspace(min_eig_val_m, min_eig_val_m, 5)
+    for v in values:
+      new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
+      for i in range(self.nn_params.num_hidden_layers + 1):
+        new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-v, 0) + 1E-6
+
+      dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, new_lambda_lu_val)})
+      scalar_f = self.sess.run(self.scalar_f, feed_dict=dual_feed_dict)
+      vector_g = self.sess.run(self.vector_g, feed_dict=dual_feed_dict)
+      matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
+      second_term = np.matmul(np.matmul(np.transpose(vector_g), 
+                    inv(csc_matrix(matrix_h)).toarray()), vector_g) + 0.05
+      dual_feed_dict.update({self.nu:second_term})
+      check_psd_matrix_m = self.sess.run(self.matrix_m, dual_feed_dict)
+      try: 
+        cholesky(check_psd_matrix_m)
+      except:
+        print("Problem: Matrix is not PSD")
+      else:
+        print("All good: Matrix is PSD")
+      computed_certificate = scalar_f + second_term 
+      current_certificate = np.minimum(computed_certificate, current_certificate)
+      
+    return current_certificate
 
 
   
