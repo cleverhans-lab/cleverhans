@@ -6,10 +6,13 @@ from __future__ import print_function
 import os 
 import numpy as np 
 import tensorflow as tf
+from numpy.linalg import cholesky 
 from cleverhans.experimental.certification import utils
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
+
+UPPER_BOUND = 1E5
 
 class DualFormulation(object):
   """DualFormulation is a class that creates the dual objective function
@@ -385,6 +388,62 @@ def compute_certificate(self, dual_folder):
   old_scalar_f = self.sess.run(self.scalar_f)
   old_matrix_h = self.sess.run(self.matrix_h)
   old_matrix_m = self.sess.run(self.matrix_m)
-  print("Loaded all old matrices")
+
+  min_eig_val_m, _ = eigs(matrix_m, k=1, which = 'LR', 
+                                              tol=1E-5, sigma=-0.1)
+
+  min_eig_val_m = min_eig_val_m - 1E-5
+
+  dim = self.matrix_m_dimension
+  try: 
+    cholesky(old_matrix_m - np.real(min_eig_val_m)*np.eye(dim))
+  except: 
+    print("Increased min eigen value of M")
+    min_eig_val_m = 2*min_eig_val_m
+  else:
+    pass
+
+min_eig_val_h, _ = eigs(matrix_h, k=1, which = 'LR', 
+                                              tol=1E-5, sigma=-0.1)
+
+  min_eig_val_h = min_eig_val_h - 1E-5
+
+  dim = self.matrix_m_dimension - 1
+  try: 
+    cholesky(old_matrix_h - np.real(min_eig_val_h)*np.eye(dim))
+  except: 
+    print("Increased min eigen value of H")
+    min_eig_val_h = 2*min_eig_val_h
+  else:
+    pass
+
+  current_certificate = UPPER_BOUND
+  values = np.linspace(min_eig_val_m, min_eig_val_m, 5)
+  for v in values:
+    new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
+    for i in range(self.nn_params.num_hidden_layers + 1):
+      new_lambda_lu_val = lambda_lu_val + 0.5*np.maximum(-values, 0) + 1E-6
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, new_lambda_lu_val)})
+    scalar_f = self.sess.run(self.scalar_f, dual_feed_dict)
+    vector_g = self.sess.run(self.vector_g, dual_feed_dict)
+    matrix_h = self.sess.run(self.matrix_h, dual_feed_dict)
+    second_term = np.matmul(np.matmul(np.transpose(new_vector_g), 
+      inv(csc_matrix(new_matrix_h)).toarray()), new_vector_g) + 0.05
+    dual_feed_dict.update({self.nu:second_term})
+    check_psd_matrix_m = self.sess.run(matrix_m, dual_feed_dict)
+    try: 
+      cholesky(check_psd_matrix_m)
+    except:
+      print("Problem: Matrix is not PSD")
+    else:
+      print("All good: Matrix is PSD")
+    computed_certificate = scalar_f + second_term 
+    current_certificate = np.maximum(computed_certificate, current_certificate)
+
+  return current_certificate
+
+
+  
+
 
 

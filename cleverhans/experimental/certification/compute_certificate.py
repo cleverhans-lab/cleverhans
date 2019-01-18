@@ -99,4 +99,11 @@ def main(_):
        self.dual_object.input_maxval,
        self.dual_object.epsilon
        )
+    dual_placeholder_ff.intialize_placeholders()
+    dual_placeholder_ff.set_differentiable_objective()
+    dual_placeholder_ff.get_full_psd_matrix()
+    certificate = dual_placeholder_ff.compute_certifcate(FLAGS.dual_folder)
+    print("Computed certificate", certificate)
 
+if __name__ == 'main':
+  tf.app.run(main)
