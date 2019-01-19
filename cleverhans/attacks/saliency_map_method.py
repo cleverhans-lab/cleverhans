@@ -81,7 +81,8 @@ class SaliencyMapMethod(Attack):
       raise NotImplementedError("The jsma_batch function has been removed."
                                 " The symbolic_impl argument to SaliencyMapMethod will be removed"
                                 " on 2019-07-18 or after. Any code that depends on the non-symbolic"
-                                " implementation of the JSMA should be revised.")
+                                " implementation of the JSMA should be revised. Consider using"
+                                " SaliencyMapMethod.generate_np() instead.")
 
     return x_adv
 
