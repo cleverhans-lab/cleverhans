@@ -10,6 +10,7 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
+from cleverhans.attacks.virtual_adversarial_method import vatm
 from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_mean, reduce_sum
 from cleverhans.compat import reduce_any
@@ -22,9 +23,9 @@ _logger = utils.create_logger("cleverhans.attacks.tf")
 np_dtype = np.dtype('float32')
 tf_dtype = tf.as_dtype('float32')
 
+import warnings
 
-def ZERO():
-  return np.asarray(0., dtype=np_dtype)
+warnings.warn("attacks_tf is deprecated and will be removed on 2019-07-18 or after. Code should import functions from their new locations directly.")
 
 
 def fgsm(x, predictions, eps=0.3, clip_min=None, clip_max=None):
@@ -51,45 +52,7 @@ def fgm(x, preds, *args, **kwargs):
   return logits_fgm(x, logits, *args, **kwargs)
 
 
-def vatm(model,
-         x,
-         logits,
-         eps,
-         num_iterations=1,
-         xi=1e-6,
-         clip_min=None,
-         clip_max=None,
-         scope=None):
-  """
-  Tensorflow implementation of the perturbation method used for virtual
-  adversarial training: https://arxiv.org/abs/1507.00677
-  :param model: the model which returns the network unnormalized logits
-  :param x: the input placeholder
-  :param logits: the model's unnormalized output tensor (the input to
-                 the softmax layer)
-  :param eps: the epsilon (input variation parameter)
-  :param num_iterations: the number of iterations
-  :param xi: the finite difference parameter
-  :param clip_min: optional parameter that can be used to set a minimum
-                  value for components of the example returned
-  :param clip_max: optional parameter that can be used to set a maximum
-                  value for components of the example returned
-  :param seed: the seed for random generator
-  :return: a tensor for the adversarial example
-  """
-  with tf.name_scope(scope, "virtual_adversarial_perturbation"):
-    d = tf.random_normal(tf.shape(x), dtype=tf_dtype)
-    for _ in range(num_iterations):
-      d = xi * utils_tf.l2_batch_normalize(d)
-      logits_d = model.get_logits(x + d)
-      kl = utils_tf.kl_with_logits(logits, logits_d)
-      Hd = tf.gradients(kl, d)[0]
-      d = tf.stop_gradient(Hd)
-    d = eps * utils_tf.l2_batch_normalize(d)
-    adv_x = x + d
-    if (clip_min is not None) and (clip_max is not None):
-      adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
-    return adv_x
+
 
 
 def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
@@ -537,6 +500,10 @@ def jacobian_augmentation(sess,
 
   # Return augmented training data (needs to be labeled afterwards)
   return X_sub
+
+
+def ZERO():
+  return np.asarray(0., dtype=np_dtype)
 
 
 class CarliniWagnerL2(object):
