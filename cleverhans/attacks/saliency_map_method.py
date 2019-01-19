@@ -7,6 +7,7 @@ import tensorflow as tf
 
 from cleverhans.attacks.attack import Attack
 
+
 class SaliencyMapMethod(Attack):
   """
   The Jacobian-based Saliency Map Method (Papernot et al. 2016).
@@ -77,55 +78,11 @@ class SaliencyMapMethod(Attack):
           clip_min=self.clip_min,
           clip_max=self.clip_max)
     else:
-      assert self.sess is not None, \
-        'Cannot use `generate` when no `sess` was provided'
-      from cleverhans.attacks_tf import jacobian_graph
-
-
-      # Define Jacobian graph wrt to this input placeholder
-      preds = self.model.get_probs(x)
-      nb_classes = preds.get_shape().as_list()[-1]
-      grads = jacobian_graph(preds, x, nb_classes)
-
-      # Define appropriate graph (targeted / random target labels)
-      if self.y_target is not None:
-
-        def jsma_wrap(x_val, y_target):
-          return jsma_batch(
-              self.sess,
-              x,
-              preds,
-              grads,
-              x_val,
-              self.theta,
-              self.gamma,
-              self.clip_min,
-              self.clip_max,
-              nb_classes,
-              y_target=y_target)
-
-        # Attack is targeted, target placeholder will need to be fed
-        x_adv = tf.py_func(jsma_wrap, [x, self.y_target],
-                           self.tf_dtype)
-      else:
-
-        def jsma_wrap(x_val):
-          return jsma_batch(
-              self.sess,
-              x,
-              preds,
-              grads,
-              x_val,
-              self.theta,
-              self.gamma,
-              self.clip_min,
-              self.clip_max,
-              nb_classes,
-              y_target=None)
-
-        # Attack is untargeted, target values will be chosen at random
-        x_adv = tf.py_func(jsma_wrap, [x], self.tf_dtype)
-        x_adv.set_shape(x.get_shape())
+      raise NotImplementedError("The jsma_batch function has been removed."
+                                " The symbolic_impl argument to SaliencyMapMethod will be removed"
+                                " on 2019-07-18 or after. Any code that depends on the non-symbolic"
+                                " implementation of the JSMA should be revised. Consider using"
+                                " SaliencyMapMethod.generate_np() instead.")
 
     return x_adv
 
@@ -163,5 +120,7 @@ class SaliencyMapMethod(Attack):
 
     return True
 
+
 def jsma_batch(*args, **kwargs):
-  raise NotImplementedError("The jsma_batch function has been removed. Any code that depends on it should be revised.")
+  raise NotImplementedError(
+      "The jsma_batch function has been removed. Any code that depends on it should be revised.")
