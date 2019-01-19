@@ -45,7 +45,8 @@ class DeepFool(Attack):
     """
     assert self.sess is not None, \
       'Cannot use `generate` when no `sess` was provided'
-    from cleverhans.attacks_tf import jacobian_graph, deepfool_batch
+    from cleverhans.utils_tf import jacobian_graph
+    from cleverhans.attacks_tf import deepfool_batch
 
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)

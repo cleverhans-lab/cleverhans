@@ -16,7 +16,7 @@ from six.moves import xrange
 import tensorflow as tf
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.attacks_tf import jacobian_graph, jacobian_augmentation
+from cleverhans.utils_tf import jacobian_graph, jacobian_augmentation
 from cleverhans.compat import flags
 from cleverhans.dataset import MNIST
 from cleverhans.initializers import HeReLuNormalInitializer

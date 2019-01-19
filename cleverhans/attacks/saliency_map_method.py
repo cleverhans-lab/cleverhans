@@ -79,7 +79,7 @@ class SaliencyMapMethod(Attack):
     else:
       assert self.sess is not None, \
         'Cannot use `generate` when no `sess` was provided'
-      from cleverhans.attacks_tf import jacobian_graph
+      from cleverhans.utils_tf import jacobian_graph
 
 
       # Define Jacobian graph wrt to this input placeholder
@@ -165,3 +165,4 @@ class SaliencyMapMethod(Attack):
 
 def jsma_batch(*args, **kwargs):
   raise NotImplementedError("The jsma_batch function has been removed. Any code that depends on it should be revised.")
+
