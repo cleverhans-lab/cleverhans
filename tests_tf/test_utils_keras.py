@@ -6,13 +6,14 @@ from __future__ import unicode_literals
 import unittest
 import numpy as np
 
-from cleverhans.utils_keras import KerasModelWrapper
-
 # Weird imports / assignment because the normal import syntax doesn't work for tf.keras in tf 1.8
 from tensorflow import keras
+# pylint:disable=wrong-import-position
 Sequential = keras.models.Sequential
 Dense = keras.layers.Dense
 Activation = keras.layers.Activation
+
+from cleverhans.utils_keras import KerasModelWrapper
 
 
 class TestKerasModelWrapper(unittest.TestCase):
