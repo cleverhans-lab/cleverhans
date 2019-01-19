@@ -382,6 +382,12 @@ class DualFormulation(object):
       lambda_lu_val = np.load(os.path.join(FLAGS.dual_folder, 'lambda_lu.npy'))
       nu_val = np.load(os.path.join(FLAGS.dual_folder, 'nu.npy'))
 
+    lower = self.sess.run([x for x in self.lower])
+    upper = self.sess.run([x for x in self.upper])
+    positive_indices = self.sess.run([x for x in self.positive_indices])
+    negative_indices = self.sess.run([x for x in self.negative_indices])
+    switch_indices = self.sess.run([x for x in self.switch_indices])
+
     # Creating dictionary to feed placeholders 
     dual_feed_dict = {}
     dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_pos, lambda_pos_val)})
@@ -391,13 +397,14 @@ class DualFormulation(object):
     dual_feed_dict.update({self.nu: nu_val})
 
     old_scalar_f = self.sess.run(self.scalar_f, feed_dict=dual_feed_dict)
+    old_vector_g = self.sess.run(self.vector_g, feed_dict=dual_feed_dict)
     old_matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
     old_matrix_m = self.sess.run(self.matrix_m, feed_dict=dual_feed_dict)
     
     min_eig_val_m, _ = eigs(old_matrix_m, k=1, which = 'LR', 
                             tol=1E-5, sigma=-0.1)
 
-    min_eig_val_m = min_eig_val_m - 1E-5
+    min_eig_val_m = np.real(min_eig_val_m) - 1E-5
     
     dim = self.matrix_m_dimension
     try: 
@@ -411,7 +418,7 @@ class DualFormulation(object):
     min_eig_val_h, _ = eigs(old_matrix_h, k=1, which = 'LR', 
                             tol=1E-5, sigma=-0.1)
 
-    min_eig_val_h = min_eig_val_h - 1E-5
+    min_eig_val_h = np.real(min_eig_val_h - 1E-5)
     
     dim = self.matrix_m_dimension - 1
     try: 
@@ -421,20 +428,35 @@ class DualFormulation(object):
       min_eig_val_h = 2*min_eig_val_h
     else:
       pass
+    print("Min eig of h", min_eig_val_h)
 
     current_certificate = UPPER_BOUND
-    values = np.linspace(min_eig_val_m, min_eig_val_m, 5)
+
+    values = np.linspace(min_eig_val_m, min_eig_val_h, 5)
     for v in values:
       new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
-      for i in range(self.nn_params.num_hidden_layers + 1):
-        new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-v, 0) + 1E-6
+      new_lambda_neg_val = [np.copy(x) for x in lambda_neg_val]
 
+      for i in range(self.nn_params.num_hidden_layers + 1):
+        # Making H PSD
+        new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-v, 0) + 1E-6
+        # Adjusting the value of \lambda_neg to make change in g small
+        new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((lower[i] + upper[i]), 
+                                                                (lambda_lu_val[i] - 
+                                                                 new_lambda_lu_val[i]))
+        new_lambda_neg_val[i] = (np.multiply(negative_indices[i], 
+                                             new_lambda_neg_val[i])+ 
+                                 np.multiply(switch_indices[i], 
+                                             np.maximum(new_lambda_neg_val[i], 0)))
+        
       dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, new_lambda_lu_val)})
+      dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_neg, new_lambda_neg_val)})
       scalar_f = self.sess.run(self.scalar_f, feed_dict=dual_feed_dict)
       vector_g = self.sess.run(self.vector_g, feed_dict=dual_feed_dict)
       matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
       second_term = np.matmul(np.matmul(np.transpose(vector_g), 
                     inv(csc_matrix(matrix_h)).toarray()), vector_g) + 0.05
+
       dual_feed_dict.update({self.nu:second_term})
       check_psd_matrix_m = self.sess.run(self.matrix_m, dual_feed_dict)
       try: 
@@ -443,7 +465,8 @@ class DualFormulation(object):
         print("Problem: Matrix is not PSD")
       else:
         print("All good: Matrix is PSD")
-      computed_certificate = scalar_f + second_term 
+      computed_certificate = scalar_f + 0.5*second_term 
+      print("Computed certificate", computed_certificate)
       current_certificate = np.minimum(computed_certificate, current_certificate)
       
     return current_certificate

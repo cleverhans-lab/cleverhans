@@ -390,5 +390,5 @@ class Optimization(object):
       # useful only when performing full eigen decomposition
       if np.abs(self.current_eig_val_estimate) < 0.01:
         smooth_val = self.params['smoothness_parameter']
-      current_outer_step = current_outer_step + 1
+      self.current_outer_step = self.current_outer_step + 1
     return False
