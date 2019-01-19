@@ -285,5 +285,4 @@ def wrapper_warning_logits():
 
 
 class NoSuchLayerError(ValueError):
-
   """Raised when a layer that does not exist is requested."""
