@@ -1,13 +1,22 @@
 """The DeepFool attack
 
 """
+import copy
+import logging
 import warnings
 
+import numpy as np
 import tensorflow as tf
 
 from cleverhans.attacks.attack import Attack
 from cleverhans.model import Model, wrapper_warning_logits, CallableModelWrapper
+from cleverhans import utils
+from cleverhans import utils_tf
 
+np_dtype = np.dtype('float32')
+
+_logger = utils.create_logger("cleverhans.attacks.deep_fool")
+_logger.setLevel(logging.INFO)
 
 class DeepFool(Attack):
   """

@@ -6,6 +6,9 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.attacks.attack import Attack
+from cleverhans.compat import reduce_sum, reduce_max, reduce_any
+
+tf_dtype = tf.as_dtype('float32')
 
 
 class SaliencyMapMethod(Attack):

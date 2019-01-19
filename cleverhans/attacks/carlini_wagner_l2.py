@@ -1,12 +1,20 @@
 """The CarliniWagnerL2 attack
 """
+import logging
+
 import numpy as np
 import tensorflow as tf
 
 from cleverhans.attacks.attack import Attack
+from cleverhans.compat import reduce_sum, reduce_max
 from cleverhans.model import CallableModelWrapper, Model, wrapper_warning_logits
+from cleverhans import utils
 
 np_dtype = np.dtype('float32')
+tf_dtype = tf.as_dtype('float32')
+
+_logger = utils.create_logger("cleverhans.attacks.carlini_wagner_l2")
+_logger.setLevel(logging.INFO)
 
 
 class CarliniWagnerL2(Attack):

@@ -3,26 +3,20 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
-from six.moves import xrange
-import tensorflow as tf
 import warnings
 
-from cleverhans.attacks.carlini_wagner_l2 import CWL2 as CarliniWagnerL2
-from cleverhans.attacks.deep_fool import deepfool_batch, deepfool_attack
-from cleverhans.attacks.elastic_net_method import EAD as ElasticNetMethod
-from cleverhans.attacks.lbfgs import LBFGS_impl as LBFGS_attack
-from cleverhans.attacks.saliency_map_method import jsma_symbolic
-from cleverhans.attacks.spsa import TensorOptimizer, TensorGradientDescent, TensorAdam
-from cleverhans.attacks.spsa import SPSAAdam, margin_logit_loss, _apply_black_border,
-from cleverhans.attacks.spsa import _apply_transformation, spm, parallel_apply_transformations
-from cleverhans.attacks.virtual_adversarial_method import vatm
-from cleverhans.utils_tf import jacobian_graph, jacobian_augmentation
-from cleverhans.compat import reduce_max
-from cleverhans.compat import reduce_mean, reduce_sum
-from cleverhans.compat import reduce_any
-from cleverhans.compat import softmax_cross_entropy_with_logits
-from cleverhans import utils_tf
+import numpy as np
+
+from cleverhans.attacks.carlini_wagner_l2 import CWL2 as CarliniWagnerL2 # pylint: disable=unused-import
+from cleverhans.attacks.deep_fool import deepfool_batch, deepfool_attack # pylint: disable=unused-import
+from cleverhans.attacks.elastic_net_method import EAD as ElasticNetMethod # pylint: disable=unused-import
+from cleverhans.attacks.lbfgs import LBFGS_impl as LBFGS_attack # pylint: disable=unused-import
+from cleverhans.attacks.saliency_map_method import jsma_symbolic # pylint: disable=unused-import
+from cleverhans.attacks.spsa import TensorOptimizer, TensorGradientDescent, TensorAdam # pylint: disable=unused-import
+from cleverhans.attacks.spsa import SPSAAdam, margin_logit_loss, _apply_black_border # pylint: disable=unused-import
+from cleverhans.attacks.spsa import _apply_transformation, spm, parallel_apply_transformations # pylint: disable=unused-import
+from cleverhans.attacks.virtual_adversarial_method import vatm # pylint: disable=unused-import
+from cleverhans.utils_tf import jacobian_graph, jacobian_augmentation # pylint: disable=unused-import
 from cleverhans import utils
 
 _logger = utils.create_logger("cleverhans.attacks.tf")

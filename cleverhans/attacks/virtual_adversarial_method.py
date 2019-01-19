@@ -4,10 +4,14 @@
 
 import warnings
 
+import tensorflow as tf
+
 from cleverhans.attacks.attack import Attack
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.model import wrapper_warning_logits
+from cleverhans import utils_tf
 
+tf_dtype = tf.as_dtype('float32')
 
 class VirtualAdversarialMethod(Attack):
   """
