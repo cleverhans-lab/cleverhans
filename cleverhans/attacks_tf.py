@@ -52,9 +52,6 @@ def fgm(x, preds, *args, **kwargs):
   return logits_fgm(x, logits, *args, **kwargs)
 
 
-
-
-
 def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
   """
   TensorFlow implementation for apply perturbations to input features based
@@ -68,6 +65,7 @@ def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
   :param clip_max: maximum value for a feature in our sample
   : return: a perturbed input feature matrix for a target class
   """
+  warnings.warn("This function is dead code and will be removed on or after 2019-07-18")
 
   # perturb our input sample
   if increase:
@@ -92,6 +90,8 @@ def saliency_map(grads_target, grads_other, search_domain, increase):
   :return: (i, j, search_domain) the two input indices selected and the
            updated search domain
   """
+  warnings.warn("This function is dead code and will be removed on or after 2019-07-18")
+
   # Compute the size of the input (the number of features)
   nf = len(grads_target)
 
@@ -138,6 +138,8 @@ def jacobian(sess, x, grads, target, X, nb_features, nb_classes, feed=None):
   :param nb_features: the number of features in the input
   :return: matrix of forward derivatives flattened into vectors
   """
+  warnings.warn("This function is dead code and will be removed on or after 2019-07-18")
+
   # Prepare feeding dictionary for all gradient computations
   feed_dict = {x: X}
   if feed is not None:
@@ -168,6 +170,7 @@ def jacobian_graph(predictions, x, nb_classes):
   :param nb_classes: the number of classes the model has
   :return:
   """
+
   # This function will return a list of TF gradients
   list_derivatives = []
 
@@ -177,120 +180,6 @@ def jacobian_graph(predictions, x, nb_classes):
     list_derivatives.append(derivatives)
 
   return list_derivatives
-
-
-def jsma(sess,
-         x,
-         predictions,
-         grads,
-         sample,
-         target,
-         theta,
-         gamma,
-         clip_min,
-         clip_max,
-         feed=None):
-  """
-  TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528
-  for details about the algorithm design choices).
-  :param sess: TF session
-  :param x: the input placeholder
-  :param predictions: the model's symbolic output (the attack expects the
-                probabilities, i.e., the output of the softmax, but will
-                also work with logits typically)
-  :param grads: symbolic gradients
-  :param sample: numpy array with sample input
-  :param target: target class for sample input
-  :param theta: delta for each feature adjustment
-  :param gamma: a float between 0 - 1 indicating the maximum distortion
-      percentage
-  :param clip_min: minimum value for components of the example returned
-  :param clip_max: maximum value for components of the example returned
-  :return: an adversarial sample
-  """
-
-  # Copy the source sample and define the maximum number of features
-  # (i.e. the maximum number of iterations) that we may perturb
-  adv_x = copy.copy(sample)
-  # count the number of features. For MNIST, 1x28x28 = 784; for
-  # CIFAR, 3x32x32 = 3072; etc.
-  nb_features = np.product(adv_x.shape[1:])
-  # reshape sample for sake of standardization
-  original_shape = adv_x.shape
-  adv_x = np.reshape(adv_x, (1, nb_features))
-  # compute maximum number of iterations
-  max_iters = np.floor(nb_features * gamma / 2)
-
-  # Find number of classes based on grads
-  nb_classes = len(grads)
-
-  increase = bool(theta > 0)
-
-  # Compute our initial search domain. We optimize the initial search domain
-  # by removing all features that are already at their maximum values (if
-  # increasing input features---otherwise, at their minimum value).
-  if increase:
-    search_domain = {i for i in xrange(nb_features) if adv_x[0, i] < clip_max}
-  else:
-    search_domain = {i for i in xrange(nb_features) if adv_x[0, i] > clip_min}
-
-  # Initialize the loop variables
-  iteration = 0
-  adv_x_original_shape = np.reshape(adv_x, original_shape)
-  current = utils_tf.model_argmax(
-      sess, x, predictions, adv_x_original_shape, feed=feed)
-
-  _logger.debug("Starting JSMA attack up to %s iterations", max_iters)
-  # Repeat this main loop until we have achieved misclassification
-  while (current != target and iteration < max_iters
-         and len(search_domain) > 1):
-    # Reshape the adversarial example
-    adv_x_original_shape = np.reshape(adv_x, original_shape)
-
-    # Compute the Jacobian components
-    grads_target, grads_others = jacobian(
-        sess,
-        x,
-        grads,
-        target,
-        adv_x_original_shape,
-        nb_features,
-        nb_classes,
-        feed=feed)
-
-    if iteration % ((max_iters + 1) // 5) == 0 and iteration > 0:
-      _logger.debug("Iteration %s of %s", iteration, int(max_iters))
-    # Compute the saliency map for each of our target classes
-    # and return the two best candidate features for perturbation
-    i, j, search_domain = saliency_map(grads_target, grads_others,
-                                       search_domain, increase)
-
-    # Apply the perturbation to the two input features selected previously
-    adv_x = apply_perturbations(i, j, adv_x, increase, theta, clip_min,
-                                clip_max)
-
-    # Update our current prediction by querying the model
-    current = utils_tf.model_argmax(
-        sess, x, predictions, adv_x_original_shape, feed=feed)
-
-    # Update loop variables
-    iteration = iteration + 1
-
-  if current == target:
-    _logger.info("Attack succeeded using %s iterations", iteration)
-  else:
-    _logger.info("Failed to find adversarial example after %s iterations",
-                 iteration)
-
-  # Compute the ratio of pixels perturbed by the algorithm
-  percent_perturbed = float(iteration * 2) / nb_features
-
-  # Report success when the adversarial example is misclassified in the
-  # target class
-  if current == target:
-    return np.reshape(adv_x, original_shape), 1, percent_perturbed
-  else:
-    return np.reshape(adv_x, original_shape), 0, percent_perturbed
 
 
 def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
