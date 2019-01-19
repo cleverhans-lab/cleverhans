@@ -3,12 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
-import warnings
-
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
+import warnings
 
 from cleverhans.attacks.carlini_wagner_l2 import CWL2 as CarliniWagnerL2
 from cleverhans.attacks.deep_fool import deepfool_batch, deepfool_attack
@@ -28,11 +26,6 @@ from cleverhans import utils_tf
 from cleverhans import utils
 
 _logger = utils.create_logger("cleverhans.attacks.tf")
-
-np_dtype = np.dtype('float32')
-tf_dtype = tf.as_dtype('float32')
-
-import warnings
 
 warnings.warn("attacks_tf is deprecated and will be removed on 2019-07-18"
               " or after. Code should import functions from their new locations directly.")
