@@ -4,14 +4,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import functools
-import tensorflow as tf
-import tensorflow.contrib.slim as slim
 import unittest
+
 import numpy as np
 from nose.plugins.skip import SkipTest
+import tensorflow as tf
+import tensorflow.contrib.slim as slim
 
 from cleverhans.devtools.checks import CleverHansTest
-
 from cleverhans import attacks
 from cleverhans.attacks import Attack, SPSA
 from cleverhans.attacks import FastGradientMethod
@@ -104,7 +104,8 @@ class TestAttackClassInitArguments(CleverHansTest):
   def test_sess(self):
     # Test that it is permitted to provide no session.
     # The session still needs to be created prior to running the attack.
-    with tf.Session() as sess:
+    # TODO: does anyone know why we need to make an unused session and put it in a with statement?
+    with tf.Session():
       Attack(Model('model', 10, {}), sess=None)
 
   def test_sess_generate_np(self):
@@ -116,7 +117,8 @@ class TestAttackClassInitArguments(CleverHansTest):
 
     # Test that generate_np is NOT permitted without a session.
     # The session still needs to be created prior to running the attack.
-    with tf.Session() as sess:
+    # TODO: does anyone know why we need to make an unused session and put it in a with statement?
+    with tf.Session():
       attack = DummyAttack(model, sess=None)
       with self.assertRaises(Exception) as context:
         attack.generate_np(0.)
@@ -176,6 +178,7 @@ class CommonAttackProperties(CleverHansTest):
     # Before this class was the tests for FastGradientMethod but
     # people kept inheriting from it for other attacks so it was
     # impossible to write tests specifically for FastGradientMethod.
+    # pylint: disable=unidiomatic-typecheck
     if type(self) is CommonAttackProperties:
       raise SkipTest()
 
@@ -213,7 +216,6 @@ class CommonAttackProperties(CleverHansTest):
       self.attack.generate_np(x_val, eps=1., clip_min=0., clip_max=1.)
     self.assertTrue(context.exception)
 
-
   def test_generate_np_gives_adversarial_example_linfinity(self):
     self.help_generate_np_gives_adversarial_example(np.infty)
 
@@ -237,7 +239,7 @@ class CommonAttackProperties(CleverHansTest):
 
     try:
       _, x_adv, delta = self.generate_adversarial_examples_np(
-        eps=.5, ord=np.inf, y_target=random_labs_one_hot)
+          eps=.5, ord=np.inf, y_target=random_labs_one_hot)
     except NotImplementedError:
       raise SkipTest()
 
@@ -285,6 +287,7 @@ class CommonAttackProperties(CleverHansTest):
 
     self.assertClose(np.min(x_adv), -0.2)
     self.assertClose(np.max(x_adv), 0.1)
+
 
 class TestFastGradientMethod(CommonAttackProperties):
 
@@ -398,6 +401,7 @@ class TestOptimizeLinear(CleverHansTest):
     # Also, for a linear function, the constraint will always be tight.
     self.assertClose(np.abs(eta).sum(), 1.)
 
+
 class TestSPSA(CleverHansTest):
   def setUp(self):
     super(TestSPSA, self).setUp()
@@ -505,7 +509,7 @@ class TestProjectedGradientDescent(CommonAttackProperties):
     for ord in [1, 2, np.infty]:
       try:
         _, _, delta = self.generate_adversarial_examples_np(
-          ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
+            ord=ord, eps=.5, nb_iter=10, eps_iter=.01)
       except NotImplementedError:
         # Don't raise SkipTest because it will skip the rest of the for loop
         continue
@@ -552,7 +556,6 @@ class TestProjectedGradientDescent(CommonAttackProperties):
     self.assertLess(-0.201, np.min(x_adv))
     self.assertLess(np.max(x_adv), .301)
 
-
   def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
@@ -562,8 +565,10 @@ class TestProjectedGradientDescent(CommonAttackProperties):
                                     clip_min=-5.0, clip_max=5.0,
                                     nb_iter=10)
 
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    # original labels
+    np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    # new labels
+    np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     # Call it again
     ok = [False]
@@ -580,10 +585,11 @@ class TestProjectedGradientDescent(CommonAttackProperties):
                                       nb_iter=11)
     finally:
       tf.gradients = old_grads
-      
-    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
+    # original labels
+    np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    # new labels
+    np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(ok[0])
 
@@ -601,7 +607,7 @@ class TestProjectedGradientDescent(CommonAttackProperties):
     new_labs_multi = orig_labs.copy()
 
     # Generate multiple adversarial examples
-    for i in range(10):
+    for _ in range(10):
       x_adv = self.attack.generate_np(x_val, eps=.5, eps_iter=0.05,
                                       clip_min=0.5, clip_max=0.7,
                                       nb_iter=2, sanity_checks=False)
@@ -973,6 +979,7 @@ class TestDeepFool(CleverHansTest):
     self.assertTrue(-0.201 < np.min(x_adv))
     self.assertTrue(np.max(x_adv) < .301)
 
+
 class TestMomentumIterativeMethod(TestProjectedGradientDescent):
   def setUp(self):
     super(TestMomentumIterativeMethod, self).setUp()
@@ -1003,12 +1010,8 @@ class TestMadryEtAl(CleverHansTest):
     self.sess = tf.Session()
 
   def test_attack_can_be_constructed(self):
-    ok = True
-    try:
-      attack = MadryEtAl(self.model, sess=self.sess)
-    except:
-      ok = False
-    self.assertTrue(ok)
+    # The test passes if this does not raise an exception
+    self.attack = MadryEtAl(self.model, sess=self.sess)
 
 
 class TestBasicIterativeMethod(CleverHansTest):
@@ -1018,12 +1021,8 @@ class TestBasicIterativeMethod(CleverHansTest):
     self.sess = tf.Session()
 
   def test_attack_can_be_constructed(self):
-    ok = True
-    try:
-      self.attack = BasicIterativeMethod(self.model, sess=self.sess)
-    except:
-      ok = False
-    self.assertTrue(ok)
+    # The test passes if this raises no exceptions
+    self.attack = BasicIterativeMethod(self.model, sess=self.sess)
 
 
 class TestFastFeatureAdversaries(CleverHansTest):
@@ -1092,7 +1091,7 @@ class TestFastFeatureAdversaries(CleverHansTest):
     init = tf.global_variables_initializer()
     self.sess.run(init)
 
-    ha, hs, hg, xa, xs, xg = self.sess.run(
+    ha, hs, hg, _xa, _xs, _xg = self.sess.run(
         [h_adv, h_src, h_guide, x_adv, x_src, x_guide])
     d_as = np.sqrt(((hs - ha) * (hs - ha)).sum())
     d_ag = np.sqrt(((hg - ha) * (hg - ha)).sum())
