@@ -9,7 +9,8 @@ import unittest
 import numpy as np
 from nose.plugins.skip import SkipTest
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
+# pylint bug on next line
+import tensorflow.contrib.slim as slim # pylint: disable=no-name-in-module
 
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans import attacks
