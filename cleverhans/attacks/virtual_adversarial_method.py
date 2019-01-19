@@ -8,6 +8,7 @@ from cleverhans.attacks.attack import Attack
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.model import wrapper_warning_logits
 
+
 class VirtualAdversarialMethod(Attack):
   """
   This attack was originally proposed by Miyato et al. (2016) and was used

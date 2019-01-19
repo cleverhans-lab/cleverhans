@@ -8,6 +8,7 @@ from cleverhans.model import CallableModelWrapper, Model, wrapper_warning_logits
 
 np_dtype = np.dtype('float32')
 
+
 class CarliniWagnerL2(Attack):
   """
   This attack was originally proposed by Carlini and Wagner. It is an

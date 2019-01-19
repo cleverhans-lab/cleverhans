@@ -11,6 +11,7 @@ from cleverhans.compat import reduce_sum
 from cleverhans.model import Model
 from cleverhans.utils_tf import clip_eta
 
+
 class FastFeatureAdversaries(Attack):
   """
   This is a fast implementation of "Feature Adversaries", an attack

@@ -7,6 +7,7 @@ import tensorflow as tf
 from cleverhans.attacks.attack import Attack
 from cleverhans.model import Model, CallableModelWrapper, wrapper_warning_logits
 
+
 class ElasticNetMethod(Attack):
   """
   This attack features L1-oriented adversarial examples and includes
@@ -145,6 +146,7 @@ class ElasticNetMethod(Attack):
     self.initial_const = initial_const
     self.clip_min = clip_min
     self.clip_max = clip_max
+
 
 class EAD(object):
   def __init__(self, sess, model, beta, decision_rule, batch_size,

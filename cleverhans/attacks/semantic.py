@@ -3,6 +3,7 @@
 
 from cleverhans.attacks.attack import Attack
 
+
 class Semantic(Attack):
   """
   Semantic adversarial examples

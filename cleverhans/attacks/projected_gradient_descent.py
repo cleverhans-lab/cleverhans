@@ -13,6 +13,7 @@ from cleverhans.compat import reduce_max
 from cleverhans import utils_tf
 from cleverhans.utils_tf import clip_eta
 
+
 class ProjectedGradientDescent(Attack):
   """
   This class implements either the Basic Iterative Method
@@ -139,7 +140,6 @@ class ProjectedGradientDescent(Attack):
 
     _, adv_x = tf.while_loop(cond, body, (tf.zeros([]), adv_x), back_prop=True,
                              maximum_iterations=self.nb_iter)
-
 
     # Asserts run only on CPU.
     # When multi-GPU eval code tries to force all PGD ops onto GPU, this

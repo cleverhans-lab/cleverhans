@@ -11,6 +11,7 @@ from cleverhans.compat import reduce_mean
 from cleverhans.model import Model
 from cleverhans import utils_tf
 
+
 class SPSA(Attack):
   """
   This implements the SPSA adversary, as in https://arxiv.org/abs/1802.05666
@@ -198,6 +199,7 @@ class SPSA(Attack):
       x_adv.append(adv_img)
     return np.concatenate(x_adv, axis=0)
 
+
 def _project_perturbation(perturbation, epsilon, input_image, clip_min=None,
                           clip_max=None):
   """Project `perturbation` onto L-infinity ball of radius `epsilon`.
@@ -322,7 +324,8 @@ def projected_optimization(loss_fn,
           loss = tf.Print(loss, [loss], "Total batch loss")
 
       if early_stop:
-        i = tf.cond(tf.less(loss, early_stop_loss_threshold), lambda: float(num_steps), lambda: i)
+        i = tf.cond(tf.less(loss, early_stop_loss_threshold),
+                    lambda: float(num_steps), lambda: i)
 
     return i + 1, projected_perturbation, nest.flatten(new_optim_state)
 

@@ -44,7 +44,7 @@ class DeepFool(Attack):
     :param kwargs: See `parse_params`
     """
     assert self.sess is not None, \
-      'Cannot use `generate` when no `sess` was provided'
+        'Cannot use `generate` when no `sess` was provided'
     from cleverhans.utils_tf import jacobian_graph
 
     # Parse and save attack-specific parameters
@@ -100,6 +100,7 @@ class DeepFool(Attack):
                     "2019-04-26.")
 
     return True
+
 
 def deepfool_batch(sess,
                    x,
