@@ -3,8 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
 import unittest
+import numpy as np
 
 from cleverhans import utils
 from cleverhans.utils_keras import cnn_model

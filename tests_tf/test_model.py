@@ -47,8 +47,8 @@ class TestCallableModelWrapperInitArguments(unittest.TestCase):
       return True
 
     # The following two calls should not raise Exceptions
-    wrap = CallableModelWrapper(model, 'probs')
-    wrap = CallableModelWrapper(model, 'logits')
+    CallableModelWrapper(model, 'probs')
+    CallableModelWrapper(model, 'logits')
 
 
 if __name__ == '__main__':
