@@ -25,7 +25,7 @@ install:
   - pip install numpy
   - pip install scipy
   - pip install matplotlib
-  - pip install pyqt=4.11
+  - pip install pyqt==4.11
 
   # install TensorFlow
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.8.0" ]]; then
