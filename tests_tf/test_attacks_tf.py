@@ -1,14 +1,16 @@
 """Tests of cleverhans.attacks_tf
 
 """
-import numpy as np
 from functools import partial
+import unittest
+
+import numpy as np
 import tensorflow as tf
+
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.attacks_tf import fgm, pgd_attack, \
     UnrolledAdam, UnrolledGradientDescent, parallel_apply_transformations
 from cleverhans.devtools.mocks import random_feed_dict
-import unittest
 from cleverhans.model import Model
 
 
