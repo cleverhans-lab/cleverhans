@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plots a success-fail curve ( https://openreview.net/forum?id=H1g0piA9tQ )
 Usage:
