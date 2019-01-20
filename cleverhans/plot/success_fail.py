@@ -147,7 +147,13 @@ def make_curve(report, success_name, fail_names):
   # that actually failed and examples that were drawn from the distribution
   # where we measured failure rate.
 
-  if 'all_probs' in success_results:
+  old_all_probs_version = False
+  if isinstance(success_results, dict):
+    # This dictionary key lookup will trigger a deprecation warning if `success_results` is not the old dictionary
+    # style of report, so we don't want to do a dictionary lookup unless we really are using the old version.
+    old_all_probs_version = 'all_probs' in success_results
+
+  if old_all_probs_version:
     warnings.warn("The 'all_probs' key is included only to support "
                   " old files from a private development codebase. "
                   "Support for this key can be dropped at any time "
@@ -157,10 +163,21 @@ def make_curve(report, success_name, fail_names):
     bad_corrects = fail_results['correctness_mask']
     good_corrects = success_results['correctness_mask']
   else:
-    good_probs = success_results['confidence']
-    bad_probs = fail_results['confidence']
-    good_corrects = success_results['correctness']
-    bad_corrects = fail_results['correctness']
+    if isinstance(success_results, dict):
+      # Still using dict, but using newer key names
+      warnings.warn("Support for dictionary confidence reports is deprecated. Switch to using the classes in "
+                    "cleverhans.confidence_report. Support for old dictionary-style reports may be removed "
+                    "on or after 2019-07-19.")
+      good_probs = success_results['confidence']
+      bad_probs = fail_results['confidence']
+      good_corrects = success_results['correctness']
+      bad_corrects = fail_results['correctness']
+    else:
+      # current version
+      good_probs = success_results.confidence
+      bad_probs = fail_results.confidence
+      good_corrects = success_results.correctness
+      bad_corrects = fail_results.correctness
   good_triplets = [(prob, correct, True) for prob, correct
                    in safe_zip(good_probs, good_corrects)]
   bad_triplets = [(prob, correct, False) for prob, correct
