@@ -3,6 +3,7 @@
 import warnings
 
 import numpy as np
+from six.moves import xrange
 import tensorflow as tf
 
 from cleverhans.attacks.attack import Attack

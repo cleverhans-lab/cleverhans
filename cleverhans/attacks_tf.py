@@ -19,6 +19,8 @@ from cleverhans.attacks.virtual_adversarial_method import vatm # pylint: disable
 from cleverhans.utils_tf import jacobian_graph, jacobian_augmentation # pylint: disable=unused-import
 from cleverhans import utils
 
+np_dtype = np.dtype('float32')
+
 _logger = utils.create_logger("cleverhans.attacks.tf")
 
 warnings.warn("attacks_tf is deprecated and will be removed on 2019-07-18"
