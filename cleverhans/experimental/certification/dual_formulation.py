@@ -287,9 +287,9 @@ class DualFormulation(object):
     return projected_certificate
 
   def get_full_psd_matrix(self):
-    """Function that sets the tf graph corresponding to the entire matrix M.
+    """Function that returns the tf graph corresponding to the entire matrix M.
 
-    Sets:
+    Returns:
       matrix_h: unrolled version of tf matrix corresponding to H
       matrix_m: unrolled tf matrix corresponding to M
     """
