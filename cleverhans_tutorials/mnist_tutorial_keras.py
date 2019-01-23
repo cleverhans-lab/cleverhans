@@ -167,23 +167,23 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
 
 def get_adversarial_acc_metric(model, fgsm, fgsm_params):
-  def adv_acc(y_true, _):
+  def adv_acc(y, _):
     # Generate adversarial examples
     x_adv = fgsm.generate(model.input, **fgsm_params)
     # Consider the attack to be constant
     x_adv = tf.stop_gradient(x_adv)
 
     # Accuracy on the adversarial examples
-    y_adv = model(x_adv)
-    return keras.metrics.categorical_accuracy(y_true, y_adv)
+    preds_adv = model(x_adv)
+    return keras.metrics.categorical_accuracy(y, preds_adv)
 
   return adv_acc
 
 
 def get_adversarial_loss(model, fgsm, fgsm_params):
-  def adv_loss(y_true, y_pred):
+  def adv_loss(y, preds):
     # Cross-entropy on the legitimate examples
-    cross_ent = keras.losses.categorical_crossentropy(y_true, y_pred)
+    cross_ent = keras.losses.categorical_crossentropy(y, preds)
 
     # Generate adversarial examples
     x_adv = fgsm.generate(model.input, **fgsm_params)
@@ -191,8 +191,8 @@ def get_adversarial_loss(model, fgsm, fgsm_params):
     x_adv = tf.stop_gradient(x_adv)
 
     # Cross-entropy on the adversarial examples
-    y_adv = model(x_adv)
-    cross_ent_adv = keras.losses.categorical_crossentropy(y_true, y_adv)
+    preds_adv = model(x_adv)
+    cross_ent_adv = keras.losses.categorical_crossentropy(y, preds_adv)
 
     return 0.5 * cross_ent + 0.5 * cross_ent_adv
 
