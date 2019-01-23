@@ -5,12 +5,13 @@ from __future__ import unicode_literals
 
 import unittest
 
+import numpy as np
+import tensorflow as tf
+
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy, MixUp, FeaturePairing
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.model import Model
-import numpy as np
-import tensorflow as tf
 
 
 class SimpleModel(Model):
@@ -67,7 +68,7 @@ class TestDefenses(CleverHansTest):
     def eval_loss(l, count=1000):
       with tf.Session() as sess:
         vl = np.zeros(2, 'f')
-        for it in range(count):
+        for _ in range(count):
           vl += sess.run(l, feed_dict={self.x: self.vx,
                                        self.y: self.vy})
       return vl / count
@@ -84,7 +85,8 @@ class TestDefenses(CleverHansTest):
     sess = tf.Session()
     fgsm = FastGradientMethod(self.model, sess=sess)
 
-    def attack(x): return fgsm.generate(x)
+    def attack(x):
+      return fgsm.generate(x)
     loss = FeaturePairing(self.model, weight=0.1, attack=attack)
     l = loss.fprop(self.x, self.y)
     vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})

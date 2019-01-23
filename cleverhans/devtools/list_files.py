@@ -26,31 +26,14 @@ def list_files(suffix=""):
   repo_path = os.path.abspath(os.path.join(cleverhans_path, os.pardir))
   file_list = _list_files(cleverhans_path, suffix)
 
-  tutorials_path = os.path.join(repo_path, "cleverhans_tutorials")
-  if os.path.isdir(tutorials_path):
-    tutorials_files = _list_files(tutorials_path, suffix)
-    tutorials_files = [os.path.join(os.pardir, path) for path in
-                       tutorials_files]
-  else:
-    tutorials_files = []
+  extra_dirs = ['cleverhans_tutorials', 'examples', 'scripts', 'tests_tf', 'tests_pytorch']
 
-  examples_path = os.path.join(repo_path, "examples")
-  if os.path.isdir(examples_path):
-    examples_files = _list_files(examples_path, suffix)
-    examples_files = [os.path.join(os.pardir, path) for path in
-                      examples_files]
-  else:
-    examples_files = []
-
-  scripts_path = os.path.join(repo_path, "scripts")
-  if os.path.isdir(scripts_path):
-    scripts_files = _list_files(scripts_path, suffix)
-    scripts_files = [os.path.join(os.pardir, path) for path in
-                     scripts_files]
-  else:
-    scripts_files = []
-
-  file_list = file_list + tutorials_files + examples_files + scripts_files
+  for extra_dir in extra_dirs:
+    extra_path = os.path.join(repo_path, extra_dir)
+    if os.path.isdir(extra_path):
+      extra_files = _list_files(extra_path, suffix)
+      extra_files = [os.path.join(os.pardir, path) for path in extra_files]
+      file_list = file_list + extra_files
 
   return file_list
 

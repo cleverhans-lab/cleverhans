@@ -13,6 +13,7 @@ from cleverhans import utils_tf
 _logger = utils.create_logger("cleverhans.attacks.lbfgs")
 tf_dtype = tf.as_dtype('float32')
 
+
 class LBFGS(Attack):
   """
   LBFGS is the first adversarial attack for convolutional neural networks,
@@ -51,7 +52,7 @@ class LBFGS(Attack):
     :param kwargs: See `parse_params`
     """
     assert self.sess is not None, \
-      'Cannot use `generate` when no `sess` was provided'
+        'Cannot use `generate` when no `sess` was provided'
     self.parse_params(**kwargs)
 
     _, nb_classes = self.get_or_guess_labels(x, kwargs)

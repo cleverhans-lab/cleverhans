@@ -4,6 +4,7 @@ import warnings
 
 from cleverhans.attacks.attack import Attack
 
+
 class SpatialTransformationMethod(Attack):
   """
   Spatial transformation attack

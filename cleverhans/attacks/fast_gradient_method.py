@@ -193,6 +193,7 @@ def fgm(x,
 
   return adv_x
 
+
 def optimize_linear(grad, eps, ord=np.inf):
   """
   Solves for the optimal input to a linear function under a norm constraint.

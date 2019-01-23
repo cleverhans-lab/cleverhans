@@ -57,6 +57,6 @@ def test_misclassify_request_examples():
   for already_misclassified in [0, 2, 4, 6, 8]:
     assert already_misclassified not in idxs
   for already_run in [1, 7]:
-    assert already_misclassified not in idxs
+    assert already_run not in idxs
   for needed in [3, 5, 9]:
     assert needed in idxs
