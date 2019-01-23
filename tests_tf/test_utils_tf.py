@@ -36,7 +36,7 @@ class TestUtilsTF(CleverHansTest):
     clip_max = tf.ones((1,))
     x = tf.ones((1,))
     # The point of this test is just to make sure the casting logic doesn't raise an exception
-    out = utils_tf.clip_by_value(x, clip_min, clip_max)
+    utils_tf.clip_by_value(x, clip_min, clip_max)
 
 
   def test_l2_batch_normalize(self):
