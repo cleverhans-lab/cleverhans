@@ -11,7 +11,6 @@ import time
 from cleverhans.experimental.certification import dual_formulation
 from cleverhans.experimental.certification import nn
 from cleverhans.experimental.certification import optimization
-from cleverhans.experimental.certification import read_weights
 from cleverhans.experimental.certification import utils
 
 
@@ -79,13 +78,6 @@ def main(_):
   tf.logging.set_verbosity(FLAGS.verbosity)
 
   start_time = time.time()
-
-  # net_weights, net_biases, net_layer_types = read_weights.read_weights(
-  #     FLAGS.checkpoint, FLAGS.model_json)
-  # nn_params = neural_net_params.NeuralNetParams(
-  #     net_weights, net_biases, net_layer_types)
-  # tf.logging.info('Loaded neural network with size of layers: %s',
-  #                 nn_params.sizes)
 
   # Initialize neural network based on config files
   nn_params = nn.NeuralNetwork (FLAGS.checkpoint, FLAGS.model_json)

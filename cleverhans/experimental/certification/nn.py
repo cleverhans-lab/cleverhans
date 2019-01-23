@@ -11,11 +11,15 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+import json
 
-class NeuralNetwork (object):
 
-	def __init__ (self, checkpoint, model_json):
-		"""Function to initialize NeuralNetParams class.
+class NeuralNetwork(object):
+  """NeuralNetParams is a class that interfaces the verification code with
+  the neural net parameters (weights)"""
+
+  def __init__(self, checkpoint, model_json):
+    """Function to initialize NeuralNetParams class.
 
     Args:
        net_weights: list of numpy matrices of weights of each layer
@@ -31,7 +35,7 @@ class NeuralNetwork (object):
     Raises:
       ValueError: the input lists of net params are not of the same length
     """
-		net_weights, net_biases, net_layer_types = self.read_weights (checkpoint, model_json)
+    net_weights, net_biases, net_layer_types = self.read_weights (checkpoint, model_json)
     if ((len(net_weights) != len(net_biases))
         or len(net_biases) != len(net_layer_types)):
       raise ValueError('Inputs of net params are not of same length ....')
@@ -58,8 +62,8 @@ class NeuralNetwork (object):
         net_weights[self.num_hidden_layers], dtype=tf.float32)
     self.final_bias = tf.convert_to_tensor(
         net_biases[self.num_hidden_layers], dtype=tf.float32)
-
-	def read_weights (self, checkpoint, model_json):
+  
+  def read_weights (self, checkpoint, model_json):
 		"""Function to read the weights from checkpoint based on json description.
 
 		Args:
@@ -115,8 +119,8 @@ class NeuralNetwork (object):
 			net_weights.append (layer_weight)
 			net_biases.append (np.reshape (layer_bias, (np.size (layer_bias), 1)))
 		return net_weights, net_biases, net_layer_types
-	
-	def forward_pass(self, vector, layer_index, is_transpose=False, is_abs=False):
+
+  def forward_pass(self, vector, layer_index, is_transpose=False, is_abs=False):
     """Performs forward pass through the layer weights at layer_index.
 
     Args:
