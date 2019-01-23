@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.experimental.certification import dual_formulation
-from cleverhans.experimental.certification import neural_net_params
+from cleverhans.experimental.certification import nn
 from cleverhans.experimental.certification import optimization
 
 
@@ -16,12 +16,12 @@ class OptimizationTest(tf.test.TestCase):
 
   def prepare_dual_object(self):
     # Function to prepare dual object to be used for testing optimization.
-    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
+    test_args = {}
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
                   np.transpose(np.matrix([0, 0]))]
-    net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    test_args['net_layer_types'] = ['ff_relu', 'ff']
+    nn_params1 = nn.NeuralNetwork(init_args=test_args)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0

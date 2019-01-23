@@ -80,7 +80,7 @@ def main(_):
   start_time = time.time()
 
   # Initialize neural network based on config files
-  nn_params = nn.NeuralNetwork (FLAGS.checkpoint, FLAGS.model_json)
+  nn_params = nn.NeuralNetwork(checkpoint=FLAGS.checkpoint, model_json=FLAGS.model_json)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
   dual_var = utils.initialize_dual(nn_params, FLAGS.init_dual_file,

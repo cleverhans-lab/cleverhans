@@ -9,19 +9,19 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.experimental.certification import dual_formulation
-from cleverhans.experimental.certification import neural_net_params
+from cleverhans.experimental.certification import nn
 
 
 class DualFormulationTest(unittest.TestCase):
 
   def test_init(self):
     # Function to test initialization of dual formulation class.
-    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
+    test_args = {}
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
                   np.transpose(np.matrix([0, 0]))]
-    net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    test_args['net_layer_types'] = ['ff_relu', 'ff']
+    nn_params1 = nn.NeuralNetwork(init_args=test_args)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -51,12 +51,12 @@ class DualFormulationTest(unittest.TestCase):
 
   def test_set_differentiable_objective(self):
     # Function to test the function that sets the differentiable objective.
-    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
+    test_args = {}
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
                   np.transpose(np.matrix([0, 0]))]
-    net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    test_args['net_layer_types'] = ['ff_relu', 'ff']
+    nn_params1 = nn.NeuralNetwork(test_args)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -90,12 +90,12 @@ class DualFormulationTest(unittest.TestCase):
 
   def test_get_full_psd_matrix(self):
     # Function to test product with PSD matrix.
-    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
+    test_args = {}
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
                   np.transpose(np.matrix([0, 0]))]
-    net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    test_args['net_layer_types'] = ['ff_relu', 'ff']
+    nn_params1 = nn.NeuralNetwork(init_args=test_args)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -127,12 +127,12 @@ class DualFormulationTest(unittest.TestCase):
 
   def test_get_psd_product(self):
     # Function to test implicit product with PSD matrix.
-    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
+    test_args = {}
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
                   np.transpose(np.matrix([0, 0]))]
-    net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    test_args['net_layer_types'] = ['ff_relu', 'ff']
+    nn_params1 = nn.NeuralNetwork(init_args=test_args)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0

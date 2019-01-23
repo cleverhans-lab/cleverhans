@@ -15,10 +15,10 @@ import json
 
 
 class NeuralNetwork(object):
-  """NeuralNetParams is a class that interfaces the verification code with
+  """NeuralNetwork is a class that interfaces the verification code with
   the neural net parameters (weights)"""
 
-  def __init__(self, checkpoint, model_json):
+  def __init__(self, checkpoint="", model_json="", init_args=None):
     """Function to initialize NeuralNetParams class.
 
     Args:
@@ -35,7 +35,13 @@ class NeuralNetwork(object):
     Raises:
       ValueError: the input lists of net params are not of the same length
     """
-    net_weights, net_biases, net_layer_types = self.read_weights (checkpoint, model_json)
+    if init_args:
+      net_weights = init_args['net_weights'] 
+      net_weights = init_args['net_biases'] 
+      net_weights = init_args['net_layer_types'] 
+    else:
+      net_weights, net_biases, net_layer_types = self.read_weights (checkpoint, model_json)
+    
     if ((len(net_weights) != len(net_biases))
         or len(net_biases) != len(net_layer_types)):
       raise ValueError('Inputs of net params are not of same length ....')
@@ -79,10 +85,15 @@ class NeuralNetwork(object):
 				layer below the final softmax for more numerical stability)
 
 		Returns:
-			net_weights:
-			net_biases:
-			net_layer_types: all are lists containing numpy
-			version of weights
+			net_weights: list of numpy matrices of weights of each layer
+      [convention: x[i+1] = W[i] x[i]
+      net_biases: list of numpy arrays of biases of each layer
+      net_layer_types: type of each layer ['ff' or 'ff_relu' or 'ff_conv'
+        or 'ff_conv_relu']
+        'ff': Simple feedforward layer with no activations
+        'ff_relu': Simple feedforward layer with ReLU activations
+        'ff_conv': Convolution layer with no activation
+        'ff_conv_relu': Convolution layer with ReLU activation
 
 		Raises:
 			ValueError: If layer_types are invalid or variable names not found in
