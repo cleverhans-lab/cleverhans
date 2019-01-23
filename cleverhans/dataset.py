@@ -281,7 +281,7 @@ def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
   # the data, shuffled and split between train and test sets
   (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 
-  if keras.backend.image_dim_ordering() == 'th':
+  if keras.backend.image_data_format() == 'channels_first':
     x_train = x_train.reshape(x_train.shape[0], 3, img_rows, img_cols)
     x_test = x_test.reshape(x_test.shape[0], 3, img_rows, img_cols)
   else:

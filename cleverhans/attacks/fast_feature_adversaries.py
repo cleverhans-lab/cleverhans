@@ -11,6 +11,7 @@ from cleverhans.compat import reduce_sum
 from cleverhans.model import Model
 from cleverhans.utils_tf import clip_eta
 
+
 class FastFeatureAdversaries(Attack):
   """
   This is a fast implementation of "Feature Adversaries", an attack
@@ -34,9 +35,8 @@ class FastFeatureAdversaries(Attack):
     """
     super(FastFeatureAdversaries, self).__init__(model, sess, dtypestr,
                                                  **kwargs)
-    self.feedable_kwargs = ('eps', 'eps_iter', 'clip_min', 'clip_max',
-                            'layer')
-    self.structural_kwargs = ['ord', 'nb_iter']
+    self.feedable_kwargs = ('eps', 'eps_iter', 'clip_min', 'clip_max')
+    self.structural_kwargs = ['ord', 'nb_iter', 'layer']
 
     assert isinstance(self.model, Model)
 

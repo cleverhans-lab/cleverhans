@@ -1,10 +1,10 @@
 import unittest
 import numpy as np
-from tensorflow.python.client import device_lib
+# pylint bug on next line
+from tensorflow.python.client import device_lib # pylint: disable=no-name-in-module
 from cleverhans.devtools.checks import CleverHansTest
 
-HAS_GPU = 'GPU' in set(
-    [x.device_type for x in device_lib.list_local_devices()])
+HAS_GPU = 'GPU' in {x.device_type for x in device_lib.list_local_devices()}
 
 
 class TestMNISTBlackboxF(CleverHansTest):

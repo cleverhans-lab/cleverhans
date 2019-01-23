@@ -86,6 +86,10 @@ class DualFormulation(object):
       self.dual_index.append(self.dual_index[-1] +
                              self.nn_params.sizes[i])
 
+    # Construct objectives and matrices
+    self.set_differentiable_objective()
+    self.get_full_psd_matrix()
+
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""
     # Checking if graphs are already created
@@ -187,7 +191,6 @@ class DualFormulation(object):
     h_beta = tf.concat(h_beta_rows, axis=0)
 
     # Constructing final result using vector_g
-    self.set_differentiable_objective()
     result = tf.concat([alpha*self.nu+tf.reduce_sum(
         tf.multiply(beta, self.vector_g))
                         , tf.multiply(alpha, self.vector_g) + h_beta], axis=0)
@@ -195,8 +198,6 @@ class DualFormulation(object):
 
   def compute_certificate(self):
     """Function to compute the certificate associated with feasible solution."""
-    self.set_differentiable_objective()
-    self.get_full_psd_matrix()
     # TODO: replace matrix_inverse with functin which uses matrix-vector product
     projected_certificate = (
         self.scalar_f +
@@ -286,13 +287,15 @@ class DualFormulation(object):
     return projected_certificate
 
   def get_full_psd_matrix(self):
-    """Function that retuns the tf graph corresponding to the entire matrix M.
-    TODO(shankarshreya): remove unnecessary calls to this function
+    """Function that returns the tf graph corresponding to the entire matrix M.
 
     Returns:
       matrix_h: unrolled version of tf matrix corresponding to H
       matrix_m: unrolled tf matrix corresponding to M
     """
+    if self.matrix_m is not None:
+      return self.matrix_h, self.matrix_m
+
     # Computing the matrix term
     h_columns = []
     for i in range(self.nn_params.num_hidden_layers + 1):
@@ -318,7 +321,7 @@ class DualFormulation(object):
       h_columns.append(current_column)
 
     self.matrix_h = tf.concat(h_columns, 1)
-    self.set_differentiable_objective()
+
     self.matrix_h = (self.matrix_h + tf.transpose(self.matrix_h))
 
     self.matrix_m = tf.concat([tf.concat([self.nu, tf.transpose(self.vector_g)],

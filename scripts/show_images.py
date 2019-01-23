@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Loads an ndarray containing a batch of images and displays it.
 Usage:

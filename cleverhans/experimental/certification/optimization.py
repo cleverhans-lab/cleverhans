@@ -8,9 +8,14 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
+from cleverhans.experimental.certification import dual_formulation
 
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
+
+# FOR TESTING PURPOSES (to determine speedups)
+np.random.seed(1234)
+tf.set_random_seed(1234)
 
 
 class Optimization(object):
@@ -114,7 +119,7 @@ class Optimization(object):
                           'lambda_lu': projected_lambda_lu,
                           'lambda_quad': projected_lambda_quad,
                           'nu': projected_nu}
-    projected_dual_object = DualFormulation(projected_dual_var,
+    projected_dual_object = dual_formulation.DualFormulation(projected_dual_var,
                                             self.dual_object.nn_params,
                                             self.dual_object.test_input,
                                             self.dual_object.true_class,
@@ -177,11 +182,9 @@ class Optimization(object):
         vector_prod_fn=_vector_prod_fn)
     return estimated_eigen_vector
 
-  def prepare_one_step(self):
+  def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
-    # Create the objective
 
-    self.dual_object.set_differentiable_objective()
     self.eig_vec_estimate = self.get_min_eig_vec_proxy()
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
     # Eig value is v^\top M v, where v is eigen vector
@@ -251,7 +254,7 @@ class Optimization(object):
     # Project onto feasible set of dual variables
     if self.current_step % self.params['projection_steps'] == 0:
 
-      projected_certificate = self.projected_dual_object.compute_certificate ()
+      projected_certificate = self.projected_dual_object.compute_certificate()
       current_certificate = self.sess.run(projected_certificate)
       tf.logging.info('Inner step: %d, current value of certificate: %f',
                       self.current_step, current_certificate)
@@ -296,7 +299,7 @@ class Optimization(object):
       True if certificate is found
       False otherwise
     """
-    self.prepare_one_step()
+    self.prepare_for_optimization()
     penalty_val = self.params['init_penalty']
     # Don't use smoothing initially - very inaccurate for large dimension
     self.smooth_on = False
