@@ -26,11 +26,6 @@ BATCH_SIZE = 128
 LEARNING_RATE = .001
 
 
-# TODO: pylintrc
-# TODO: Add tests
-# TODO: Diff between new and original tutorial
-# TODO: Why is the first model trained and reloaded but the second one not?
-
 def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
                    test_end=10000, nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
                    learning_rate=LEARNING_RATE, testing=False,
@@ -54,12 +49,15 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
   # Set TF random seed to improve reproducibility
   tf.set_random_seed(1234)
+  # Force TensorFlow to use single thread to improve reproducibility
+  config = tf.ConfigProto(intra_op_parallelism_threads=1,
+                          inter_op_parallelism_threads=1)
 
   if keras.backend.image_data_format() != 'channels_last':
     raise NotImplementedError("this tutorial requires keras to be configured to channels_last format")
 
   # Create TF session and set as Keras backend session
-  sess = tf.Session()
+  sess = tf.Session(config=config)
   keras.backend.set_session(sess)
 
   # Get MNIST test data
@@ -94,9 +92,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
   adv_acc_metric = get_adversarial_acc_metric(model, fgsm, fgsm_params)
   model.compile(
-    optimizer=keras.optimizers.Adam(learning_rate),
-    loss='categorical_crossentropy',
-    metrics=['accuracy', adv_acc_metric]
+      optimizer=keras.optimizers.Adam(learning_rate),
+      loss='categorical_crossentropy',
+      metrics=['accuracy', adv_acc_metric]
   )
 
   # Train an MNIST model
@@ -136,9 +134,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   adv_loss_2 = get_adversarial_loss(model_2, fgsm_2, fgsm_params)
   adv_acc_metric_2 = get_adversarial_acc_metric(model_2, fgsm_2, fgsm_params)
   model_2.compile(
-    optimizer=keras.optimizers.Adam(learning_rate),
-    loss=adv_loss_2,
-    metrics=['accuracy', adv_acc_metric_2]
+      optimizer=keras.optimizers.Adam(learning_rate),
+      loss=adv_loss_2,
+      metrics=['accuracy', adv_acc_metric_2]
   )
 
   # Train an MNIST model
@@ -159,9 +157,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
   # Calculate training error
   if testing:
-    _, train_acc, train_adv_acc = model.evaluate(x_train, y_train,
-                                                 batch_size=batch_size,
-                                                 verbose=0)
+    _, train_acc, train_adv_acc = model_2.evaluate(x_train, y_train,
+                                                   batch_size=batch_size,
+                                                   verbose=0)
     report.train_adv_train_clean_eval = train_acc
     report.train_adv_train_adv_eval = train_adv_acc
 
