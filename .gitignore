@@ -90,3 +90,6 @@ ENV/
 
 # PyCharm related
 .idea/
+
+# Mac related
+.DS_Store
