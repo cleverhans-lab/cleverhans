@@ -6,11 +6,11 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+import time
 
 from cleverhans.experimental.certification import dual_formulation
-from cleverhans.experimental.certification import neural_net_params
+from cleverhans.experimental.certification import nn
 from cleverhans.experimental.certification import optimization
-from cleverhans.experimental.certification import read_weights
 from cleverhans.experimental.certification import utils
 
 
@@ -77,16 +77,17 @@ flags.DEFINE_enum('verbosity', 'INFO',
 def main(_):
   tf.logging.set_verbosity(FLAGS.verbosity)
 
-  net_weights, net_biases, net_layer_types = read_weights.read_weights(
-      FLAGS.checkpoint, FLAGS.model_json)
-  nn_params = neural_net_params.NeuralNetParams(
-      net_weights, net_biases, net_layer_types)
+  start_time = time.time()
+
+  # Initialize neural network based on config files
+  nn_params = nn.NeuralNetwork (FLAGS.checkpoint, FLAGS.model_json)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
   dual_var = utils.initialize_dual(nn_params, FLAGS.init_dual_file,
                                    init_nu=FLAGS.init_nu)
+
   # Reading test input and reshaping
-  with tf.gfile.Open(FLAGS.test_input) as f:
+  with tf.gfile.Open (FLAGS.test_input) as f:
     test_input = np.load(f)
   test_input = np.reshape(test_input, [np.size(test_input), 1])
 
@@ -108,8 +109,7 @@ def main(_):
                                             FLAGS.input_minval,
                                             FLAGS.input_maxval,
                                             FLAGS.epsilon)
-    dual.set_differentiable_objective()
-    dual.get_full_psd_matrix()
+
     optimization_params = {
         'init_penalty': FLAGS.init_penalty,
         'large_eig_num_steps': FLAGS.large_eig_num_steps,
@@ -127,16 +127,15 @@ def main(_):
         'stats_folder': FLAGS.stats_folder,
         'projection_steps': FLAGS.projection_steps}
     with tf.Session() as sess:
-      sess.run(tf.global_variables_initializer())
       optimization_object = optimization.Optimization(dual,
                                                       sess,
                                                       optimization_params)
-      optimization_object.prepare_one_step()
       is_cert_found = optimization_object.run_optimization()
       if not is_cert_found:
         print('Example could not be verified')
         exit()
   print('Example successfully verified')
+  print('Elapsed time: ' + str(time.time () - start_time))
 
 if __name__ == '__main__':
   tf.app.run(main)
