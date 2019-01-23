@@ -31,7 +31,7 @@ class TestMNISTTutorialKerasTF(CleverHansTest):
     self.assertTrue(report.train_adv_train_clean_eval > 0.90)
     self.assertTrue(report.train_adv_train_adv_eval > 0.30)
 
-    atol_fac = 2e-2 if HAS_GPU else 1e-6
+    atol_fac = 5e-2 if HAS_GPU else 1e-6
     g = tf.Graph()
     with g.as_default():
       np.random.seed(42)
