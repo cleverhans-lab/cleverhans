@@ -103,7 +103,7 @@ class ConfidenceReportEntry(object):
     self.confidence = confidence
 
   def __getitem__(self, key):
-    warnings.warn("Dictionary confidence report entries are deprecated."
+    warnings.warn("Dictionary confidence report entries are deprecated. "
                   "Switch to accessing the appropriate field of "
                   "ConfidenceReportEntry. "
                   "Dictionary-style access will be removed on or after "

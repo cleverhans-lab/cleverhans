@@ -11,6 +11,7 @@ from cleverhans.attacks.fast_gradient_method import optimize_linear
 from cleverhans.compat import reduce_sum, reduce_mean, softmax_cross_entropy_with_logits
 from cleverhans import utils_tf
 
+
 class MomentumIterativeMethod(Attack):
   """
   The Momentum Iterative Method (Dong et al. 2017). This method won
