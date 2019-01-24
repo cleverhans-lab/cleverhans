@@ -1,4 +1,4 @@
-"""Tests for cleverhans.experimental.certification.neural_net_params."""
+"""Tests for cleverhans.experimental.certification.nn."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -18,11 +18,13 @@ class NeuralNetworkTest(unittest.TestCase):
     # Valid params
     test_args = {}
     test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [1, 1, 1]]
-    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    test_args['net_biases'] = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     test_args['net_layer_types'] = ['ff_relu', 'ff']
     nn_params1 = nn.NeuralNetwork(init_args=test_args)
-    
+
     self.assertIsNotNone(nn_params1)
     # Invalid params : list length
     test_args['net_biases'] = [0]
@@ -38,8 +40,10 @@ class NeuralNetworkTest(unittest.TestCase):
     # Function to test forward pass of nn_params.
     test_args = {}
     test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [1, 1, 1]]
-    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    test_args['net_biases'] = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     test_args['net_layer_types'] = ['ff_relu', 'ff']
     nn_params = nn.NeuralNetwork(init_args=test_args)
 
@@ -49,8 +53,8 @@ class NeuralNetworkTest(unittest.TestCase):
     output_vector_2 = nn_params.forward_pass(input_vector, 0, is_abs=True)
     self.assertEqual(output_vector_2.shape.as_list(), [3, 1])
     input_vector_trans = tf.random_uniform(shape=(3, 1), dtype=tf.float32)
-    output_vector_3 = nn_params.forward_pass(input_vector_trans, 0,
-                                             is_transpose=True)
+    output_vector_3 = nn_params.forward_pass(
+        input_vector_trans, 0, is_transpose=True)
     self.assertEqual(output_vector_3.shape.as_list(), [2, 1])
 
 

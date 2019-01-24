@@ -17,9 +17,12 @@ class DualFormulationTest(unittest.TestCase):
   def test_init(self):
     # Function to test initialization of dual formulation class.
     test_args = {}
-    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]],
+                                [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     test_args['net_layer_types'] = ['ff_relu', 'ff']
     nn_params1 = nn.NeuralNetwork(init_args=test_args)
 
@@ -37,24 +40,27 @@ class DualFormulationTest(unittest.TestCase):
     lambda_quad = lambda_pos
     lambda_lu = lambda_pos
     nu = scalar
-    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
-                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                               nn_params1,
-                                                               test_input,
-                                                               true_class,
-                                                               adv_class,
-                                                               input_minval,
-                                                               input_maxval,
-                                                               epsilon)
+    dual_var = {
+        'lambda_pos': lambda_pos,
+        'lambda_neg': lambda_neg,
+        'lambda_quad': lambda_quad,
+        'lambda_lu': lambda_lu,
+        'nu': nu
+    }
+    dual_formulation_object = dual_formulation.DualFormulation(
+        dual_var, nn_params1, test_input, true_class, adv_class, input_minval,
+        input_maxval, epsilon)
     self.assertIsNotNone(dual_formulation_object)
 
   def test_set_differentiable_objective(self):
     # Function to test the function that sets the differentiable objective.
     test_args = {}
-    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]],
+                                [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     test_args['net_layer_types'] = ['ff_relu', 'ff']
     nn_params1 = nn.NeuralNetwork(test_args)
 
@@ -72,16 +78,16 @@ class DualFormulationTest(unittest.TestCase):
     lambda_quad = lambda_pos
     lambda_lu = lambda_pos
     nu = scalar
-    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
-                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                               nn_params1,
-                                                               test_input,
-                                                               true_class,
-                                                               adv_class,
-                                                               input_minval,
-                                                               input_maxval,
-                                                               epsilon)
+    dual_var = {
+        'lambda_pos': lambda_pos,
+        'lambda_neg': lambda_neg,
+        'lambda_quad': lambda_quad,
+        'lambda_lu': lambda_lu,
+        'nu': nu
+    }
+    dual_formulation_object = dual_formulation.DualFormulation(
+        dual_var, nn_params1, test_input, true_class, adv_class, input_minval,
+        input_maxval, epsilon)
     dual_formulation_object.set_differentiable_objective()
     self.assertEqual(dual_formulation_object.scalar_f.shape.as_list(), [1])
     self.assertEqual(
@@ -91,9 +97,12 @@ class DualFormulationTest(unittest.TestCase):
   def test_get_full_psd_matrix(self):
     # Function to test product with PSD matrix.
     test_args = {}
-    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]],
+                                [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     test_args['net_layer_types'] = ['ff_relu', 'ff']
     nn_params1 = nn.NeuralNetwork(init_args=test_args)
 
@@ -111,16 +120,16 @@ class DualFormulationTest(unittest.TestCase):
     lambda_quad = lambda_pos
     lambda_lu = lambda_pos
     nu = scalar
-    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
-                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                               nn_params1,
-                                                               test_input,
-                                                               true_class,
-                                                               adv_class,
-                                                               input_minval,
-                                                               input_maxval,
-                                                               epsilon)
+    dual_var = {
+        'lambda_pos': lambda_pos,
+        'lambda_neg': lambda_neg,
+        'lambda_quad': lambda_quad,
+        'lambda_lu': lambda_lu,
+        'nu': nu
+    }
+    dual_formulation_object = dual_formulation.DualFormulation(
+        dual_var, nn_params1, test_input, true_class, adv_class, input_minval,
+        input_maxval, epsilon)
     matrix_h, matrix_m = dual_formulation_object.get_full_psd_matrix()
     self.assertEqual(matrix_h.shape.as_list(), [5, 5])
     self.assertEqual(matrix_m.shape.as_list(), [6, 6])
@@ -128,9 +137,12 @@ class DualFormulationTest(unittest.TestCase):
   def test_get_psd_product(self):
     # Function to test implicit product with PSD matrix.
     test_args = {}
-    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    test_args['net_biases'] = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]],
+                                [[1, 1, 1], [-1, -1, -1]]]
+    test_args['net_biases'] = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     test_args['net_layer_types'] = ['ff_relu', 'ff']
     nn_params1 = nn.NeuralNetwork(init_args=test_args)
 
@@ -148,30 +160,29 @@ class DualFormulationTest(unittest.TestCase):
     lambda_quad = lambda_pos
     lambda_lu = lambda_pos
     nu = scalar
-    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
-                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                               nn_params1,
-                                                               test_input,
-                                                               true_class,
-                                                               adv_class,
-                                                               input_minval,
-                                                               input_maxval,
-                                                               epsilon)
+    dual_var = {
+        'lambda_pos': lambda_pos,
+        'lambda_neg': lambda_neg,
+        'lambda_quad': lambda_quad,
+        'lambda_lu': lambda_lu,
+        'nu': nu
+    }
+    dual_formulation_object = dual_formulation.DualFormulation(
+        dual_var, nn_params1, test_input, true_class, adv_class, input_minval,
+        input_maxval, epsilon)
     _, matrix_m = dual_formulation_object.get_full_psd_matrix()
 
     # Testing if the values match
     six_dim_tensor = tf.random_uniform(shape=(6, 1), dtype=tf.float32)
-    implicit_product = dual_formulation_object.get_psd_product(
-        six_dim_tensor)
+    implicit_product = dual_formulation_object.get_psd_product(six_dim_tensor)
     explicit_product = tf.matmul(matrix_m, six_dim_tensor)
     with tf.Session() as sess:
-      [implicit_product_value, explicit_product_value] = sess.run(
-          [implicit_product, explicit_product])
-      self.assertEqual(np.shape(implicit_product_value),
-                       np.shape(explicit_product_value))
-      self.assertLess(np.max(np.abs(
-          implicit_product_value - explicit_product_value)), 1E-5)
+      [implicit_product_value,
+       explicit_product_value] = sess.run([implicit_product, explicit_product])
+      self.assertEqual(
+          np.shape(implicit_product_value), np.shape(explicit_product_value))
+      self.assertLess(
+          np.max(np.abs(implicit_product_value - explicit_product_value)), 1E-5)
 
 
 if __name__ == '__main__':
