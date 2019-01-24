@@ -540,7 +540,9 @@ def clip_by_value(t, clip_value_min, clip_value_max, name=None):
   def cast_clip(clip):
     if t.dtype in (tf.float32, tf.float64):
       if hasattr(clip, 'dtype'):
-        if clip.dtype != t.dtype:
+        # Convert to tf dtype in case this is a numpy dtype
+        clip_dtype = tf.as_dtype(clip.dtype)
+        if clip_dtype != t.dtype:
           return tf.cast(clip, t.dtype)
     return clip
 
