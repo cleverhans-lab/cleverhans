@@ -7,8 +7,8 @@ from cleverhans.devtools.checks import CleverHansTest
 HAS_GPU = 'GPU' in {x.device_type for x in device_lib.list_local_devices()}
 
 
-class TestMNISTTutorialKerasTF(CleverHansTest):
-  def test_mnist_tutorial_keras_tf(self):
+class TestMNISTTutorialKeras(CleverHansTest):
+  def test_mnist_tutorial_keras(self):
 
     import tensorflow as tf
     from cleverhans_tutorials import mnist_tutorial_keras
