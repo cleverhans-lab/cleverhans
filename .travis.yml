@@ -75,10 +75,11 @@ script:
   - if [[ "$PYTORCH" == True ]]; then
       nosetests --nologcapture -v --stop tests_pytorch;
     elif [[ "$PYTORCH" == False ]]; then
+      nosetests --nocapture -v --stop tests_tf/test_mnist_tutorial_keras.py;
       if [[ "$TENSORFLOW_V" == "1.8.0" ]]; then
         nosetests -v --nologcapture --stop --exclude-dir=cleverhans/experimental/certification cleverhans;
       else
         nosetests -v --nologcapture --stop cleverhans;
       fi;
-      nosetests --nologcapture -v --stop tests_tf;
+      nosetests --nocapture -v --stop tests_tf;
     fi
