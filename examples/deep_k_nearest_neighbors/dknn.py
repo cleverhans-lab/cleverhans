@@ -8,20 +8,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import os
-import matplotlib
-if 'DISPLAY' not in os.environ:
-  matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-
-from bisect import bisect_left
 import copy
+import os
+from bisect import bisect_left
 import falconn
-import logging
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import flags
-
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.dataset import MNIST
@@ -30,7 +24,11 @@ from cleverhans.picklable_model import MLP, Conv2D, ReLU, Flatten, Linear, Softm
 from cleverhans.train import train
 from cleverhans.utils_tf import batch_eval, model_eval
 
-FLAGS = flags.FLAGS
+if 'DISPLAY' not in os.environ:
+  matplotlib.use('Agg')
+
+
+FLAGS = tf.flags.FLAGS
 
 
 def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
@@ -51,7 +49,8 @@ def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
 
 
 class DkNNModel(Model):
-  def __init__(self, neighbors, layers, get_activations, train_data, train_labels, nb_classes, scope=None, nb_tables=200):
+  def __init__(self, neighbors, layers, get_activations, train_data, train_labels,
+               nb_classes, scope=None, nb_tables=200):
     """
     Implements the DkNN algorithm. See https://arxiv.org/abs/1803.04765 for more details.
 
@@ -153,7 +152,7 @@ class DkNNModel(Model):
             data_activations_layer[i], self.neighbors)
         try:
           knns_ind[layer][i, :] = query_res
-        except:
+        except:  # pylint: disable-msg=W0702
           knns_ind[layer][i, :len(query_res)] = query_res
           knn_errors += knns_ind[layer].shape[1] - len(query_res)
 
@@ -216,12 +215,12 @@ class DkNNModel(Model):
     Performs a forward pass through the DkNN on an numpy array of data.
     """
     if not self.calibrated:
-      raise Error(
+      raise ValueError(
           "DkNN needs to be calibrated by calling DkNNModel.calibrate method once before inferring.")
     data_activations = self.get_activations(data_np)
     _, knns_labels = self.find_train_knns(data_activations)
     knns_not_in_class = self.nonconformity(knns_labels)
-    preds_knn, confs, creds = self.preds_conf_cred(knns_not_in_class)
+    _, _, creds = self.preds_conf_cred(knns_not_in_class)
     return creds
 
   def fprop(self, x):
@@ -257,7 +256,7 @@ class DkNNModel(Model):
     cali_knns_not_in_l_sorted = np.sort(cali_knns_not_in_l)
     try:
       last_zero = int(np.argwhere(cali_knns_not_in_l_sorted == 0)[-1])
-    except:
+    except:  # pylint: disable-msg=W0702
       last_zero = 0
     self.cali_nonconformity = cali_knns_not_in_l_sorted[last_zero:]
     self.nb_cali = self.cali_nonconformity.shape[0]
@@ -313,7 +312,7 @@ def plot_reliability_diagram(confidence, labels, filepath):
   print(bins_center)
   print(num_points)
   fig, ax1 = plt.subplots()
-  barlist = ax1.bar(bins_center, reliability_diag, width=.1, alpha=0.8)
+  _ = ax1.bar(bins_center, reliability_diag, width=.1, alpha=0.8)
   plt.xlim([0, 1.])
   ax1.set_ylim([0, 1.])
 
@@ -353,9 +352,7 @@ def dknn_tutorial():
       y = tf.placeholder(tf.float32, shape=(None, nb_classes))
 
       # Define a model.
-      nb_filters = 64
-      model = make_basic_picklable_cnn(
-          nb_filters=64, nb_classes=10, input_shape=(None, 28, 28, 1))
+      model = make_basic_picklable_cnn()
       preds = model.get_logits(x)
       loss = CrossEntropy(model, smoothing=0.)
 
@@ -376,8 +373,8 @@ def dknn_tutorial():
         data_activations = {}
         for layer in layers:
           layer_sym = tf.layers.flatten(model.get_layer(x, layer))
-          data_activations[layer] = batch_eval(sess, [x], [layer_sym], [data], args={
-                                               'batch_size': FLAGS.batch_size})[0]
+          data_activations[layer] = batch_eval(sess, [x], [layer_sym], [data],
+                                               args={'batch_size': FLAGS.batch_size})[0]
         return data_activations
 
       # Use a holdout of the test set to simulate calibration data for the DkNN.
@@ -391,8 +388,6 @@ def dknn_tutorial():
 
       # Extract representations for the training and calibration data at each layer of interest to the DkNN.
       layers = ['ReLU1', 'ReLU3', 'ReLU5', 'logits']
-      train_activations = get_activations(train_data)
-      cali_activations = get_activations(cali_data)
 
       # Wrap the model into a DkNNModel
       dknn = DkNNModel(FLAGS.neighbors, layers, get_activations,
@@ -421,13 +416,13 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-  flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
-  flags.DEFINE_integer('batch_size', 500, 'Size of training batches')
-  flags.DEFINE_float('lr', 0.001, 'Learning rate for training')
+  tf.flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
+  tf.flags.DEFINE_integer('batch_size', 500, 'Size of training batches')
+  tf.flags.DEFINE_float('lr', 0.001, 'Learning rate for training')
 
-  flags.DEFINE_integer(
+  tf.flags.DEFINE_integer(
       'nb_cali', 750, 'Number of calibration points for the DkNN')
-  flags.DEFINE_integer(
+  tf.flags.DEFINE_integer(
       'neighbors', 75, 'Number of neighbors per layer for the DkNN')
 
   tf.app.run()
