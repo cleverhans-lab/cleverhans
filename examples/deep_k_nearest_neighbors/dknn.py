@@ -11,11 +11,12 @@ from __future__ import unicode_literals
 import copy
 import os
 from bisect import bisect_left
-import falconn
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from six.moves import xrange
 import tensorflow as tf
+import falconn
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.dataset import MNIST
