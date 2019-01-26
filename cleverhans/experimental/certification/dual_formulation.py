@@ -87,9 +87,10 @@ class DualFormulation(object):
     for i in range(self.nn_params.num_hidden_layers + 1):
       self.dual_index.append(self.dual_index[-1] + self.nn_params.sizes[i])
 
-    # Construct objectives and matrices
+    # Construct objectives, matrices, and certificate
     self.set_differentiable_objective()
     self.get_full_psd_matrix()
+    self.construct_certificate()
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""
@@ -198,15 +199,14 @@ class DualFormulation(object):
                        axis=0)
     return result
 
-  def compute_certificate(self):
+  def construct_certificate(self):
     """Function to compute the certificate associated with feasible solution."""
     # TODO: replace matrix_inverse with functin which uses matrix-vector product
-    projected_certificate = (
+    self.certificate = (
         self.scalar_f + 0.5 * tf.matmul(
             tf.matmul(
                 tf.transpose(self.vector_g), tf.matrix_inverse(self.matrix_h)),
             self.vector_g))
-    return projected_certificate
 
   def get_full_psd_matrix(self):
     """Function that returns the tf graph corresponding to the entire matrix M.

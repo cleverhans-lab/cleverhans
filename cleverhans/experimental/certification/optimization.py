@@ -255,9 +255,7 @@ class Optimization(object):
     """
     # Project onto feasible set of dual variables
     if self.current_step % self.params['projection_steps'] == 0:
-
-      projected_certificate = self.projected_dual_object.compute_certificate()
-      current_certificate = self.sess.run(projected_certificate)
+      current_certificate = self.sess.run(self.projected_dual_object.certificate)
       tf.logging.info('Inner step: %d, current value of certificate: %f',
                       self.current_step, current_certificate)
 
