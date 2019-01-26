@@ -5,14 +5,13 @@ from __future__ import division
 from __future__ import print_function
 
 import time
+import numpy as np
+import tensorflow as tf
 
 from cleverhans.experimental.certification import dual_formulation
 from cleverhans.experimental.certification import nn
 from cleverhans.experimental.certification import optimization
 from cleverhans.experimental.certification import utils
-
-import numpy as np
-import tensorflow as tf
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -70,8 +69,7 @@ def main(_):
   start_time = time.time()
 
   # Initialize neural network based on config files
-  nn_params = nn.NeuralNetwork(
-      checkpoint=FLAGS.checkpoint, model_json=FLAGS.model_json)
+  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
   dual_var = utils.initialize_dual(
@@ -92,9 +90,14 @@ def main(_):
     tf.logging.info('Running certification for adversarial class %d', adv_class)
     if adv_class == FLAGS.true_class:
       continue
-    dual = dual_formulation.DualFormulation(
-        dual_var, nn_params, test_input, FLAGS.true_class, adv_class,
-        FLAGS.input_minval, FLAGS.input_maxval, FLAGS.epsilon)
+    dual = dual_formulation.DualFormulation(dual_var,
+                                            nn_params,
+                                            test_input,
+                                            FLAGS.true_class,
+                                            adv_class,
+                                            FLAGS.input_minval,
+                                            FLAGS.input_maxval,
+                                            FLAGS.epsilon)
 
     optimization_params = {
         'init_penalty': FLAGS.init_penalty,

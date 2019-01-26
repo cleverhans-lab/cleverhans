@@ -13,10 +13,6 @@ from cleverhans.experimental.certification import dual_formulation
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
 
-# FOR TESTING PURPOSES (to determine speedups)
-np.random.seed(1234)
-tf.set_random_seed(1234)
-
 
 class Optimization(object):
   """Class that sets up and runs the optimization of dual_formulation"""
@@ -49,8 +45,8 @@ class Optimization(object):
     self.sess = sess
 
   def project_dual(self):
-    """Function to create variables for the projected dual object."""
-    """Function that projects the input dual variables onto the feasible set.
+    """Function to create variables for the projected dual object.
+    Function that projects the input dual variables onto the feasible set.
 
     Returns:
       projected_dual: Feasible dual solution corresponding to current dual

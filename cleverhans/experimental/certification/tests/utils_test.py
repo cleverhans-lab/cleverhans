@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
-from google3.third_party.tensorflow.contrib import autograph
+from tensorflow.contrib import autograph
 
 from cleverhans.experimental.certification import utils
 
