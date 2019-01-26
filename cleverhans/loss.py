@@ -231,6 +231,44 @@ class WeightDecay(Loss):
     return out
 
 
+class Houdini(Loss):
+  """
+  Applies the Houdini Loss (see https://arxiv.org/abs/1707.05373)
+  """
+
+  def __init__(self, model, loss_object):
+    self.loss_object = loss_object
+
+    Loss.__init__(self, model, locals())
+
+  def fprop(self, x, y, **kwargs):
+    x = tuple([x])
+
+    task_losses = [self.loss_object.fprop(x, y, **kwargs) for x in x]
+
+    for task_loss in task_losses:
+      if len(task_loss.get_shape()) > 0:
+        raise ValueError("%s.fprop returned a non-scalar value" %
+                         str(self.loss_object))
+
+    logits = [self.model.get_logits(x, **kwargs) for x in x]
+    labels = tf.argmax(y, axis=-1)
+    labels = tf.reshape(labels, [-1])
+    labels = tuple([labels])
+
+    target_scores = [tf.gather(logit, label)
+                     for logit, label in zip(logits, labels)]
+    pred_scores = [tf.reduce_max(logit) for logit in logits]
+    diffs = [tar - pred for tar, pred in zip(target_scores, pred_scores)]
+
+    dist = tf_distributions.Normal(loc=0., scale=1.)
+
+    losses = [dist.survival_function(diff) * task_loss
+              for diff, task_loss in zip(diffs, task_losses)]
+
+    return tf.reduce_mean(losses)
+
+
 class LossCrossEntropy(Loss):
   """
   Deprecated version of `CrossEntropy` that returns per-example loss rather
