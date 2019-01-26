@@ -237,6 +237,10 @@ class Houdini(Loss):
   """
 
   def __init__(self, model, loss_object):
+    """Constructor.
+    :param model: Model instance, the model on which to apply the loss.
+    :param loss_object: The "task loss", an object of class Loss.
+    """
     self.loss_object = loss_object
 
     Loss.__init__(self, model, locals())
