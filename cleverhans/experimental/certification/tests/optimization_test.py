@@ -183,8 +183,6 @@ class OptimizationTest(tf.test.TestCase):
       sess.run(tf.global_variables_initializer())
       optimization_object = optimization.Optimization(dual_formulation_object,
                                                       sess, optimization_params)
-      optimization_object.prepare_one_step()
-      self.assertIsNotNone(optimization_object.opt_one_step)
       is_cert_found = optimization_object.run_optimization()
       self.assertFalse(is_cert_found)
 
