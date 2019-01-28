@@ -87,12 +87,3 @@ class EigenDecomposition(object):
     self.eig_val_estimate = tf.matmul(
         tf.transpose(self.stopped_eig_vec_estimate),
         self.dual_object.get_psd_product(self.stopped_eig_vec_estimate))
-  
-  def create_feed_dict (self, eig_init_vec_val, eig_num_iter_val, smooth_val, penalty_val):
-    step_feed_dict = {
-        self.eig_init_vec_placeholder: eig_init_vec_val,
-        self.eig_num_iter_placeholder: eig_num_iter_val,
-        self.smooth_placeholder: smooth_val,
-        self.penalty_placeholder: penalty_val
-    }
-    return step_feed_dict

@@ -267,8 +267,14 @@ class Optimization(object):
       if LOWER_CERT_BOUND < current_certificate < 0:
         tf.logging.info('Found certificate of robustness!')
         return True
+    
     # Running step
-    step_feed_dict = self.eigen.create_feed_dict(eig_init_vec_val, eig_num_iter_val, smooth_val, penalty_val)
+    step_feed_dict = {
+        self.eigen.eig_init_vec_placeholder: eig_init_vec_val,
+        self.eigen.eig_num_iter_placeholder: eig_num_iter_val,
+        self.eigen.smooth_placeholder: smooth_val,
+        self.eigen.penalty_placeholder: penalty_val
+    }
 
     [
         _, self.current_total_objective, current_unconstrained_objective,

@@ -10,6 +10,7 @@ import tensorflow as tf
 from cleverhans.experimental.certification import dual_formulation
 from cleverhans.experimental.certification import nn
 from cleverhans.experimental.certification import optimization
+from cleverhans.experimental.certification import eigen
 
 
 class OptimizationTest(tf.test.TestCase):
@@ -104,8 +105,8 @@ class OptimizationTest(tf.test.TestCase):
       sess.run(tf.global_variables_initializer())
       optimization_object = optimization.Optimization(dual_formulation_object,
                                                       sess, optimization_params)
-      eig_vec = optimization_object.get_min_eig_vec_proxy()
-      tf_eig_vec = optimization_object.get_min_eig_vec_proxy(use_tf_eig=True)
+      eig_vec = optimization_object.eigen.get_min_eig_vec_proxy()
+      tf_eig_vec = optimization_object.eigen.get_min_eig_vec_proxy(use_tf_eig=True)
       self.assertIsNotNone(eig_vec)
 
       # Running the graphs and checking that minimum eigen value is correct
@@ -113,11 +114,11 @@ class OptimizationTest(tf.test.TestCase):
       tf_eig_vec_val, eig_vec_val, matrix_m_val = sess.run(
           [tf_eig_vec, eig_vec, matrix_m],
           feed_dict={
-              optimization_object.eig_init_vec_placeholder:
+              optimization_object.eigen.eig_init_vec_placeholder:
                   np.random.rand(6, 1),
-              optimization_object.eig_num_iter_placeholder:
+              optimization_object.eigen.eig_num_iter_placeholder:
                   2000,
-              optimization_object.smooth_placeholder:
+              optimization_object.eigen.smooth_placeholder:
                   0.0
           })
 
@@ -135,17 +136,17 @@ class OptimizationTest(tf.test.TestCase):
       optimization_params['init_smooth'] = 0.0001
       optimization_object = optimization.Optimization(dual_formulation_object,
                                                       sess, optimization_params)
-      eig_vec = optimization_object.get_min_eig_vec_proxy()
-      tf_eig_vec = optimization_object.get_min_eig_vec_proxy(use_tf_eig=True)
+      eig_vec = optimization_object.eigen.get_min_eig_vec_proxy()
+      tf_eig_vec = optimization_object.eigen.get_min_eig_vec_proxy(use_tf_eig=True)
 
       tf_eig_vec_val, eig_vec_val, matrix_m_val = sess.run(
           [tf_eig_vec, eig_vec, matrix_m],
           feed_dict={
-              optimization_object.eig_init_vec_placeholder:
+              optimization_object.eigen.eig_init_vec_placeholder:
                   np.random.rand(6, 1),
-              optimization_object.smooth_placeholder:
+              optimization_object.eigen.smooth_placeholder:
                   0.1,
-              optimization_object.eig_num_iter_placeholder:
+              optimization_object.eigen.eig_num_iter_placeholder:
                   2000
           })
 
