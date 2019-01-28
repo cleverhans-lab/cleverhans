@@ -80,7 +80,10 @@ class EigenDecomposition(object):
         vector_prod_fn=_vector_prod_fn)
     return estimated_eigen_vector
   
-  def create_estimates (self):
+  def create_estimates(self):
+    """
+    Creates nodes in the graph to represent
+    """
     self.eig_vec_estimate = self.get_min_eig_vec_proxy()
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
     # Eig value is v^\top M v, where v is eigen vector

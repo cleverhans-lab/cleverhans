@@ -43,7 +43,7 @@ class Optimization(object):
     # self.smooth_placeholder = tf.placeholder(tf.float32, shape=[])
     # self.eig_num_iter_placeholder = tf.placeholder(tf.int32, shape=[])
     
-    self.eigen = eigen.EigenDecomposition (self.dual_object, self.params['eig_learning_rate'])
+    self.eigen = eigen.EigenDecomposition(self.dual_object, self.params['eig_learning_rate'])
     self.sess = sess
 
   def project_dual(self):
@@ -143,13 +143,13 @@ class Optimization(object):
 #     """Function that returns smoothed version of min eigen vector."""
 #     _, matrix_m = self.dual_object.get_full_psd_matrix()
 #     # Easier to think in terms of max so negating the matrix
-#     [eig_vals, eig_vectors] = tf.self_adjoint_eig(-matrix_m)
-#     exp_eig_vals = tf.exp(tf.divide(eig_vals, self.smooth_placeholder))
-#     scaling_factor = tf.reduce_sum(exp_eig_vals)
-#     # Multiplying each eig vector by exponential of corresponding eig value
-#     # Scaling factor normalizes the vector to be unit norm
-#     eig_vec_smooth = tf.divide(
-#         tf.matmul(eig_vectors, tf.diag(tf.sqrt(exp_eig_vals))),
+#     [eig_vals, eig_vectors] = tf.screate_eelf_adjoint_eig(-matrix_m)
+#     exp_eig_vals = tf.exp(tf.dividcreate_ee(eig_vals, self.smooth_placeholder))
+#     scaling_factor = tf.reduce_sumcreate_e(exp_eig_vals)
+#     # Multiplying each eig vector create_eby exponential of corresponding eig value
+#     # Scaling factor normalizes thcreate_ee vector to be unit norm
+#     eig_vec_smooth = tf.divide(create_e
+#         tf.matmul(eig_vectors, tf.create_ediag(tf.sqrt(exp_eig_vals))),
 #         tf.sqrt(scaling_factor))
 #     return tf.reshape(
 #         tf.reduce_sum(eig_vec_smooth, axis=1),
@@ -188,7 +188,7 @@ class Optimization(object):
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
 
-    self.eigen.create_estimates ()
+    self.eigen.create_estimates()
     # self.eig_vec_estimate = self.get_min_eig_vec_proxy()
     # self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
     # # Eig value is v^\top M v, where v is eigen vector
