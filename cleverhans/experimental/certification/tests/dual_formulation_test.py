@@ -44,13 +44,13 @@ class DualFormulationTest(unittest.TestCase):
         'nu': nu
     }
     dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                            nn_params1,
-                                                            test_input,
-                                                            true_class,
-                                                            adv_class,
-                                                            input_minval,
-                                                            input_maxval,
-                                                            epsilon)
+                                                               nn_params1,
+                                                               test_input,
+                                                               true_class,
+                                                               adv_class,
+                                                               input_minval,
+                                                               input_maxval,
+                                                               epsilon)
     self.assertIsNotNone(dual_formulation_object)
 
   def test_set_differentiable_objective(self):
@@ -86,13 +86,13 @@ class DualFormulationTest(unittest.TestCase):
         'nu': nu
     }
     dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                            nn_params1,
-                                                            test_input,
-                                                            true_class,
-                                                            adv_class,
-                                                            input_minval,
-                                                            input_maxval,
-                                                            epsilon)
+                                                               nn_params1,
+                                                               test_input,
+                                                               true_class,
+                                                               adv_class,
+                                                               input_minval,
+                                                               input_maxval,
+                                                               epsilon)
     dual_formulation_object.set_differentiable_objective()
     self.assertEqual(dual_formulation_object.scalar_f.shape.as_list(), [1])
     self.assertEqual(
@@ -132,21 +132,20 @@ class DualFormulationTest(unittest.TestCase):
         'nu': nu
     }
     dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                            nn_params1,
-                                                            test_input,
-                                                            true_class,
-                                                            adv_class,
-                                                            input_minval,
-                                                            input_maxval,
-                                                            epsilon)
+                                                               nn_params1,
+                                                               test_input,
+                                                               true_class,
+                                                               adv_class,
+                                                               input_minval,
+                                                               input_maxval,
+                                                               epsilon)
     matrix_h, matrix_m = dual_formulation_object.get_full_psd_matrix()
     self.assertEqual(matrix_h.shape.as_list(), [5, 5])
     self.assertEqual(matrix_m.shape.as_list(), [6, 6])
 
   def test_get_psd_product(self):
     # Function to test implicit product with PSD matrix.
-    net_weights = [[[2, 2], [3, 3], [4, 4]],
-                                [[1, 1, 1], [-1, -1, -1]]]
+    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
     net_biases = [
         np.transpose(np.matrix([0, 0, 0])),
         np.transpose(np.matrix([0, 0]))
@@ -176,13 +175,13 @@ class DualFormulationTest(unittest.TestCase):
         'nu': nu
     }
     dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                            nn_params1,
-                                                            test_input,
-                                                            true_class,
-                                                            adv_class,
-                                                            input_minval,
-                                                            input_maxval,
-                                                            epsilon)
+                                                               nn_params1,
+                                                               test_input,
+                                                               true_class,
+                                                               adv_class,
+                                                               input_minval,
+                                                               input_maxval,
+                                                               epsilon)
     _, matrix_m = dual_formulation_object.get_full_psd_matrix()
 
     # Testing if the values match

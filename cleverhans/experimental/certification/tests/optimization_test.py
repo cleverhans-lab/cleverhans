@@ -16,8 +16,7 @@ class OptimizationTest(tf.test.TestCase):
 
   def prepare_dual_object(self):
     # Function to prepare dual object to be used for testing optimization.
-    net_weights = [[[2, 2], [3, 3], [4, 4]],
-                                [[1, 1, 1], [-1, -1, -1]]]
+    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
     net_biases = [
         np.transpose(np.matrix([0, 0, 0])),
         np.transpose(np.matrix([0, 0]))
