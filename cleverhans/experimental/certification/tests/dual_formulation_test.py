@@ -55,8 +55,7 @@ class DualFormulationTest(unittest.TestCase):
 
   def test_set_differentiable_objective(self):
     # Function to test the function that sets the differentiable objective.
-    net_weights = [[[2, 2], [3, 3], [4, 4]],
-                                [[1, 1, 1], [-1, -1, -1]]]
+    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
     net_biases = [
         np.transpose(np.matrix([0, 0, 0])),
         np.transpose(np.matrix([0, 0]))
@@ -101,8 +100,7 @@ class DualFormulationTest(unittest.TestCase):
 
   def test_get_full_psd_matrix(self):
     # Function to test product with PSD matrix.
-    net_weights = [[[2, 2], [3, 3], [4, 4]],
-                                [[1, 1, 1], [-1, -1, -1]]]
+    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
     net_biases = [
         np.transpose(np.matrix([0, 0, 0])),
         np.transpose(np.matrix([0, 0]))
