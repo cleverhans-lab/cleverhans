@@ -18,6 +18,7 @@ class EigenDecomposition(object):
 
     # The dimensionality of matrix M is the sum of sizes of all layers + 1
     # The + 1 comes due to a row and column of M representing the linear terms
+    self.penalty_placeholder = tf.placeholder(tf.float32, shape=[])
     self.eig_init_vec_placeholder = tf.placeholder(
         tf.float32, shape=[1 + self.dual_object.dual_index[-1], 1])
     self.smooth_placeholder = tf.placeholder(tf.float32, shape=[])

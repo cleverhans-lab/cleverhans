@@ -35,7 +35,6 @@ class Optimization(object):
     self.dual_object = dual_formulation_object
     self.projected_dual_object = self.project_dual()
     self.params = optimization_params
-    self.penalty_placeholder = tf.placeholder(tf.float32, shape=[])
 
     # The dimensionality of matrix M is the sum of sizes of all layers + 1
     # The + 1 comes due to a row and column of M representing the linear terms
@@ -200,7 +199,7 @@ class Optimization(object):
     # to be positive
     self.total_objective = (
         self.dual_object.unconstrained_objective + 0.5 * (tf.square(
-            tf.maximum(-1 * self.penalty_placeholder * self.eigen.eig_val_estimate,
+            tf.maximum(-1 * self.eigen.penalty_placeholder * self.eigen.eig_val_estimate,
                        0))))
     global_step = tf.Variable(0, trainable=False)
     # Set up learning rate
