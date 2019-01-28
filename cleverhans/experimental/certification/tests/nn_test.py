@@ -16,36 +16,34 @@ class NeuralNetworkTest(unittest.TestCase):
   def test_init(self):
     # Function to test initialization of NeuralNetParams object.
     # Valid params
-    test_args = {}
-    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [1, 1, 1]]
-    test_args['net_biases'] = [
+    net_weights = [[[2, 2], [3, 3], [4, 4]], [1, 1, 1]]
+    net_biases = [
         np.transpose(np.matrix([0, 0, 0])),
         np.transpose(np.matrix([0, 0]))
     ]
-    test_args['net_layer_types'] = ['ff_relu', 'ff']
-    nn_params1 = nn.NeuralNetwork(init_args=test_args)
+    net_layer_types = ['ff_relu', 'ff']
+    nn_params1 = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     self.assertIsNotNone(nn_params1)
     # Invalid params : list length
-    test_args['net_biases'] = [0]
+    net_biases = [0]
     with self.assertRaises(ValueError):
-      nn.NeuralNetwork(init_args=test_args)
+      nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     # Invalid params: layer types
     with self.assertRaises(ValueError):
-      test_args['net_layer_types'] = ['ff_relu', 'ff_relu']
-      nn.NeuralNetwork(init_args=test_args)
+      net_layer_types = ['ff_relu', 'ff_relu']
+      nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
   def test_forward_pass(self):
     # Function to test forward pass of nn_params.
-    test_args = {}
-    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]], [1, 1, 1]]
-    test_args['net_biases'] = [
+    net_weights = [[[2, 2], [3, 3], [4, 4]], [1, 1, 1]]
+    net_biases = [
         np.transpose(np.matrix([0, 0, 0])),
         np.transpose(np.matrix([0, 0]))
     ]
-    test_args['net_layer_types'] = ['ff_relu', 'ff']
-    nn_params = nn.NeuralNetwork(init_args=test_args)
+    net_layer_types = ['ff_relu', 'ff']
+    nn_params = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     input_vector = tf.random_uniform(shape=(2, 1), dtype=tf.float32)
     output_vector = nn_params.forward_pass(input_vector, 0)

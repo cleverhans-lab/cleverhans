@@ -16,15 +16,13 @@ class OptimizationTest(tf.test.TestCase):
 
   def prepare_dual_object(self):
     # Function to prepare dual object to be used for testing optimization.
-    test_args = {}
-    test_args['net_weights'] = [[[2, 2], [3, 3], [4, 4]],
-                                [[1, 1, 1], [-1, -1, -1]]]
-    test_args['net_biases'] = [
+    net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
+    net_biases = [
         np.transpose(np.matrix([0, 0, 0])),
         np.transpose(np.matrix([0, 0]))
     ]
-    test_args['net_layer_types'] = ['ff_relu', 'ff']
-    nn_params1 = nn.NeuralNetwork(init_args=test_args)
+    net_layer_types = ['ff_relu', 'ff']
+    nn_params1 = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -34,59 +32,42 @@ class OptimizationTest(tf.test.TestCase):
     epsilon = 0.1
 
     # Creating dual variables to use for optimization
-    lambda_pos = [
-        tf.get_variable(
-            'lambda_pos0',
-            initializer=np.random.uniform(0, 0.1, size=(2,
-                                                        1)).astype(np.float32)),
-        tf.get_variable(
-            'lambda_pos1',
-            initializer=np.random.uniform(0, 0.1, size=(3,
-                                                        1)).astype(np.float32))
-    ]
-    lambda_neg = [
-        tf.get_variable(
-            'lambda_neg0',
-            initializer=np.random.uniform(0, 0.1, size=(2,
-                                                        1)).astype(np.float32)),
-        tf.get_variable(
-            'lambda_neg1',
-            initializer=np.random.uniform(0, 0.1, size=(3,
-                                                        1)).astype(np.float32))
-    ]
-    lambda_quad = [
-        tf.get_variable(
-            'lambda_quad0',
-            initializer=np.random.uniform(0, 0.1, size=(2,
-                                                        1)).astype(np.float32)),
-        tf.get_variable(
-            'lambda_quad1',
-            initializer=np.random.uniform(0, 0.1, size=(3,
-                                                        1)).astype(np.float32))
-    ]
-    lambda_lu = [
-        tf.get_variable(
-            'lambda_lu0',
-            initializer=np.random.uniform(0, 0.1, size=(2,
-                                                        1)).astype(np.float32)),
-        tf.get_variable(
-            'lambda_lu1',
-            initializer=np.random.uniform(0, 0.1, size=(3,
-                                                        1)).astype(np.float32))
-    ]
-    nu = tf.reshape(
-        tf.get_variable('nu', initializer=200.0, dtype=tf.float32),
-        shape=(1, 1))
-    dual_var = {
-        'lambda_pos': lambda_pos,
-        'lambda_neg': lambda_neg,
-        'lambda_quad': lambda_quad,
-        'lambda_lu': lambda_lu,
-        'nu': nu
-    }
-    dual_formulation_object = dual_formulation.DualFormulation(
-        dual_var, nn_params1, test_input, true_class, adv_class, input_minval,
-        input_maxval, epsilon)
+    lambda_pos = [tf.get_variable('lambda_pos0',
+                                  initializer=np.random.uniform(
+                                      0, 0.1, size=(2, 1)).astype(np.float32)),
+                  tf.get_variable('lambda_pos1',
+                                  initializer=np.random.uniform(
+                                      0, 0.1, size=(3, 1)).astype(np.float32))]
+    lambda_neg = [tf.get_variable('lambda_neg0',
+                                  initializer=np.random.uniform(
+                                      0, 0.1, size=(2, 1)).astype(np.float32)),
+                  tf.get_variable('lambda_neg1',
+                                  initializer=np.random.uniform(
+                                      0, 0.1, size=(3, 1)).astype(np.float32))]
+    lambda_quad = [tf.get_variable('lambda_quad0',
+                                   initializer=np.random.uniform(
+                                       0, 0.1, size=(2, 1)).astype(np.float32)),
+                   tf.get_variable('lambda_quad1',
+                                   initializer=np.random.uniform(
+                                       0, 0.1, size=(3, 1)).astype(np.float32))]
+    lambda_lu = [tf.get_variable('lambda_lu0',
+                                 initializer=np.random.uniform(
+                                     0, 0.1, size=(2, 1)).astype(np.float32)),
+                 tf.get_variable('lambda_lu1',
+                                 initializer=np.random.uniform(
+                                     0, 0.1, size=(3, 1)).astype(np.float32))]
+    nu = tf.reshape(tf.get_variable('nu', initializer=200.0,
+                                    dtype=tf.float32), shape=(1, 1))
+    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
+                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
+    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
+                                                               nn_params1,
+                                                               test_input,
+                                                               true_class,
+                                                               adv_class,
+                                                               input_minval,
+                                                               input_maxval,
+                                                               epsilon)
     return dual_formulation_object
 
   def test_init(self):
@@ -202,8 +183,6 @@ class OptimizationTest(tf.test.TestCase):
       sess.run(tf.global_variables_initializer())
       optimization_object = optimization.Optimization(dual_formulation_object,
                                                       sess, optimization_params)
-      optimization_object.prepare_one_step()
-      self.assertIsNotNone(optimization_object.opt_one_step)
       is_cert_found = optimization_object.run_optimization()
       self.assertFalse(is_cert_found)
 

@@ -14,10 +14,6 @@ from cleverhans.experimental.certification import eigen
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
 
-# FOR TESTING PURPOSES (to determine speedups)
-np.random.seed(1234)
-tf.set_random_seed(1234)
-
 
 class Optimization(object):
   """Class that sets up and runs the optimization of dual_formulation"""
@@ -52,8 +48,8 @@ class Optimization(object):
     self.sess = sess
 
   def project_dual(self):
-    """Function to create variables for the projected dual object."""
-    """Function that projects the input dual variables onto the feasible set.
+    """Function to create variables for the projected dual object.
+    Function that projects the input dual variables onto the feasible set.
 
     Returns:
       projected_dual: Feasible dual solution corresponding to current dual
@@ -263,9 +259,7 @@ class Optimization(object):
     """
     # Project onto feasible set of dual variables
     if self.current_step % self.params['projection_steps'] == 0:
-
-      projected_certificate = self.projected_dual_object.compute_certificate()
-      current_certificate = self.sess.run(projected_certificate)
+      current_certificate = self.sess.run(self.projected_dual_object.certificate)
       tf.logging.info('Inner step: %d, current value of certificate: %f',
                       self.current_step, current_certificate)
 
