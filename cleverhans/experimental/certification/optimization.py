@@ -6,7 +6,6 @@ from __future__ import print_function
 import json
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
 from cleverhans.experimental.certification import dual_formulation
 from cleverhans.experimental.certification import eigen
@@ -38,11 +37,6 @@ class Optimization(object):
 
     # The dimensionality of matrix M is the sum of sizes of all layers + 1
     # The + 1 comes due to a row and column of M representing the linear terms
-    # self.eig_init_vec_placeholder = tf.placeholder(
-    #     tf.float32, shape=[1 + self.dual_object.dual_index[-1], 1])
-    # self.smooth_placeholder = tf.placeholder(tf.float32, shape=[])
-    # self.eig_num_iter_placeholder = tf.placeholder(tf.int32, shape=[])
-    
     self.eigen = eigen.EigenDecomposition(self.dual_object, self.params['eig_learning_rate'])
     self.sess = sess
 
@@ -130,61 +124,6 @@ class Optimization(object):
         self.dual_object.input_maxval, self.dual_object.epsilon)
     return projected_dual_object
 
-#   def tf_min_eig_vec(self):
-#     """Function for min eigen vector using tf's full eigen decomposition."""
-#     # Full eigen decomposition requires the explicit psd matrix M
-#     _, matrix_m = self.dual_object.get_full_psd_matrix()
-#     [eig_vals, eig_vectors] = tf.self_adjoint_eig(matrix_m)
-#     index = tf.argmin(eig_vals)
-#     return tf.reshape(
-#         eig_vectors[:, index], shape=[eig_vectors.shape[0].value, 1])
-
-#   def tf_smooth_eig_vec(self):
-#     """Function that returns smoothed version of min eigen vector."""
-#     _, matrix_m = self.dual_object.get_full_psd_matrix()
-#     # Easier to think in terms of max so negating the matrix
-#     [eig_vals, eig_vectors] = tf.screate_eelf_adjoint_eig(-matrix_m)
-#     exp_eig_vals = tf.exp(tf.dividcreate_ee(eig_vals, self.smooth_placeholder))
-#     scaling_factor = tf.reduce_sumcreate_e(exp_eig_vals)
-#     # Multiplying each eig vector create_eby exponential of corresponding eig value
-#     # Scaling factor normalizes thcreate_ee vector to be unit norm
-#     eig_vec_smooth = tf.divide(create_e
-#         tf.matmul(eig_vectors, tf.create_ediag(tf.sqrt(exp_eig_vals))),
-#         tf.sqrt(scaling_factor))
-#     return tf.reshape(
-#         tf.reduce_sum(eig_vec_smooth, axis=1),
-#         shape=[eig_vec_smooth.shape[0].value, 1])
-
-#   def get_min_eig_vec_proxy(self, use_tf_eig=False):
-#     """Computes the min eigen value and corresponding vector of matrix M.
-
-#     Args:
-#       use_tf_eig: Whether to use tf's default full eigen decomposition
-
-#     Returns:
-#       eig_vec: Minimum absolute eigen value
-#       eig_val: Corresponding eigen vector
-#     """
-#     if use_tf_eig:
-#       # If smoothness parameter is too small, essentially no smoothing
-#       # Just output the eigen vector corresponding to min
-#       return tf.cond(self.smooth_placeholder < 1E-8, self.tf_min_eig_vec,
-#                      self.tf_smooth_eig_vec)
-
-#     # Using autograph to automatically handle
-#     # the control flow of minimum_eigen_vector
-#     min_eigen_tf = autograph.to_graph(utils.minimum_eigen_vector)
-
-#     def _vector_prod_fn(x):
-#       return self.dual_object.get_psd_product(x)
-
-#     estimated_eigen_vector = min_eigen_tf(
-#         x=self.eig_init_vec_placeholder,
-#         num_steps=self.eig_num_iter_placeholder,
-#         learning_rate=self.params['eig_learning_rate'],
-#         vector_prod_fn=_vector_prod_fn)
-#     return estimated_eigen_vector
-
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
 
@@ -267,7 +206,7 @@ class Optimization(object):
       if LOWER_CERT_BOUND < current_certificate < 0:
         tf.logging.info('Found certificate of robustness!')
         return True
-    
+
     # Running step
     step_feed_dict = {
         self.eigen.eig_init_vec_placeholder: eig_init_vec_val,

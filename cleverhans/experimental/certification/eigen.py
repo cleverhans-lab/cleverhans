@@ -9,7 +9,6 @@ from __future__ import print_function
 import tensorflow as tf
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
-from cleverhans.experimental.certification import dual_formulation
 
 class EigenDecomposition(object):
 
@@ -79,7 +78,7 @@ class EigenDecomposition(object):
         learning_rate=self.learning_rate,
         vector_prod_fn=_vector_prod_fn)
     return estimated_eigen_vector
-  
+
   def create_estimates(self):
     """
     Creates nodes in the graph to represent
