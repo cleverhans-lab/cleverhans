@@ -256,11 +256,7 @@ class DkNNModel(Model):
     for i in range(self.nb_cali):
       cali_knns_not_in_l[i] = cali_knns_not_in_class[i, cali_labels[i]]
     cali_knns_not_in_l_sorted = np.sort(cali_knns_not_in_l)
-    try:
-      last_zero = int(np.argwhere(cali_knns_not_in_l_sorted == 0)[-1])
-    except:  # pylint: disable-msg=W0702
-      last_zero = 0
-    self.cali_nonconformity = cali_knns_not_in_l_sorted[last_zero:]
+    self.cali_nonconformity = np.trim_zeros(cali_knns_not_in_l_sorted, trim='f')
     self.nb_cali = self.cali_nonconformity.shape[0]
     self.calibrated = True
     print("DkNN calibration complete.")
