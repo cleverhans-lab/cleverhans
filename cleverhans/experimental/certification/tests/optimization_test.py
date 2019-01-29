@@ -10,7 +10,6 @@ import tensorflow as tf
 from cleverhans.experimental.certification import dual_formulation
 from cleverhans.experimental.certification import nn
 from cleverhans.experimental.certification import optimization
-from cleverhans.experimental.certification import eigen
 
 
 class OptimizationTest(tf.test.TestCase):
