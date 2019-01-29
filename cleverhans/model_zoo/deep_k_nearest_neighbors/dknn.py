@@ -160,8 +160,7 @@ class DkNNModel(Model):
       # Find labels of neighbors found in the training data.
       knns_labels[layer] = np.zeros((nb_data, self.neighbors), dtype=np.int32)
       for data_id in range(nb_data):
-        knns_labels[layer][data_id,
-                           :] = self.train_labels[knns_ind[layer][data_id]]
+        knns_labels[layer][data_id, :] = self.train_labels[knns_ind[layer][data_id]]
 
     return knns_ind, knns_labels
 
