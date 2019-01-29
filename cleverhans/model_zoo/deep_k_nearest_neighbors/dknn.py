@@ -51,7 +51,7 @@ def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
 
 class DkNNModel(Model):
   def __init__(self, neighbors, layers, get_activations, train_data, train_labels,
-               nb_classes, scope=None, nb_tables=200):
+               nb_classes, scope=None, nb_tables=200, number_bits=17):
     """
     Implements the DkNN algorithm. See https://arxiv.org/abs/1803.04765 for more details.
 
@@ -63,6 +63,7 @@ class DkNNModel(Model):
     :param nb_classes: the number of classes in the task.
     :param scope: a TF scope that was used to create the underlying model.
     :param nb_tables: number of tables used by FALCONN to perform locality-sensitive hashing.
+    :param number_bits: number of hash bits used by FALCONN.
     """
     super(DkNNModel, self).__init__(nb_classes=nb_classes, scope=scope)
     self.neighbors = neighbors
@@ -71,6 +72,7 @@ class DkNNModel(Model):
     self.get_activations = get_activations
     self.nb_cali = -1
     self.calibrated = False
+    self.number_bits = number_bits
 
     # Compute training data activations
     self.nb_train = train_labels.shape[0]
@@ -117,7 +119,7 @@ class DkNNModel(Model):
       # we build 18-bit hashes so that each table has
       # 2^18 bins; this is a good choice since 2^18 is of the same
       # order of magnitude as the number of data points
-      falconn.compute_number_of_hash_functions(17, params_cp)
+      falconn.compute_number_of_hash_functions(self.number_bits, params_cp)
 
       print('Constructing the LSH table')
       table = falconn.LSHIndex(params_cp)
