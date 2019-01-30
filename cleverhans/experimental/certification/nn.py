@@ -118,7 +118,7 @@ def load_network_from_checkpoint(checkpoint, model_json):
       'ff_relu': Simple feedforward layer with ReLU activations
       'ff_conv': Convolution layer with no activation
       'ff_conv_relu': Convolution layer with ReLU activation
-    
+
     Raises:
       ValueError: If layer_types are invalid or variable names
       not found in

@@ -4,9 +4,9 @@ from __future__ import division
 from __future__ import print_function
 
 import json
+import os
 import numpy as np
 import tensorflow as tf
-import os
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
 from cleverhans.experimental.certification import dual_formulation
@@ -80,7 +80,7 @@ class Optimization(object):
       diag_entries = tf.where(
           tf.is_nan(diag_entries), tf.zeros_like(diag_entries), diag_entries)
       last_layer_weights = self.dual_object.nn_params.weights[
-        self.dual_object.nn_params.num_hidden_layers - 1]
+          self.dual_object.nn_params.num_hidden_layers - 1]
       matrix = tf.matmul(
           tf.matmul(tf.transpose(last_layer_weights),
                     utils.diag(diag_entries)),
