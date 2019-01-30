@@ -13,8 +13,7 @@ import tensorflow as tf
 
 class NeuralNetwork(object):
   """NeuralNetwork is a class that interfaces the verification code with
-
-  the neural net parameters (weights)
+  the neural net parameters (weights).
   """
 
   def __init__(self, net_weights, net_biases, net_layer_types):
@@ -119,11 +118,12 @@ def load_network_from_checkpoint(checkpoint, model_json):
       'ff_relu': Simple feedforward layer with ReLU activations
       'ff_conv': Convolution layer with no activation
       'ff_conv_relu': Convolution layer with ReLU activation
-              Raises:
-                      ValueError: If layer_types are invalid or variable names
-                      not found in
-                      checkpoint
-              """
+    
+    Raises:
+      ValueError: If layer_types are invalid or variable names
+      not found in
+      checkpoint
+  """
   # Load checkpoint
   reader = tf.train.load_checkpoint(checkpoint)
   variable_map = reader.get_variable_to_shape_map()

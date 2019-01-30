@@ -6,6 +6,7 @@ from __future__ import print_function
 import json
 import numpy as np
 import tensorflow as tf
+import os
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
 from cleverhans.experimental.certification import dual_formulation
@@ -24,10 +25,12 @@ class Optimization(object):
       dual_formulation_object: Instance of DualFormulation that contains the
         dual variables and objective
       sess: tf session to be used to run
-      optimization_params: Dictionary with the following eig_num_iter - Number
-        of iterations to run for computing minimum eigen value eig_learning_rate
-        - Learning rate for minimum eigen value iterations init_smooth -
-        Starting value of the smoothness parameter (typically around 0.001)
+      optimization_params: Dictionary with the following
+        eig_num_iter - Number of iterations to run for computing minimum eigen
+          value
+        eig_learning_rate - Learning rate for minimum eigen value iterations
+        init_smooth - Starting value of the smoothness parameter (typically
+        around 0.001)
         smooth_decay - The factor by which to decay after every outer loop epoch
         optimizer - one of gd, adam, momentum or adagrad
     """
@@ -43,6 +46,9 @@ class Optimization(object):
     self.smooth_placeholder = tf.placeholder(tf.float32, shape=[])
     self.eig_num_iter_placeholder = tf.placeholder(tf.int32, shape=[])
     self.sess = sess
+
+    # Create graph for optimization
+    self.prepare_for_optimization()
 
   def project_dual(self):
     """Function to create variables for the projected dual object.
@@ -65,23 +71,20 @@ class Optimization(object):
     # Different projection for 1 hidden layer
     if self.dual_object.nn_params.num_hidden_layers == 1:
       # Creating equivalent PSD matrix for H by Schur complements
-      diag_entries = 0.5 * tf.divide(
-          tf.square(self.dual_object.lambda_quad[
-              self.dual_object.nn_params.num_hidden_layers]),
-          (self.dual_object.lambda_quad[
-              self.dual_object.nn_params.num_hidden_layers] + self.dual_object
-           .lambda_lu[self.dual_object.nn_params.num_hidden_layers]))
+      diag_entries = 0.5*tf.divide(
+          tf.square(self.dual_object.lambda_quad[self.dual_object.nn_params.num_hidden_layers]),
+          (self.dual_object.lambda_quad[self.dual_object.nn_params.num_hidden_layers] +
+           self.dual_object.lambda_lu[self.dual_object.nn_params.num_hidden_layers]))
       # If lambda_quad[i], lambda_lu[i] are 0, entry is NaN currently,
       # but we want to set that to 0
       diag_entries = tf.where(
           tf.is_nan(diag_entries), tf.zeros_like(diag_entries), diag_entries)
-      matrix = (
-          tf.matmul(
-              tf.matmul(
-                  tf.transpose(self.dual_object.nn_params.weights[
-                      self.dual_object.nn_params.num_hidden_layers - 1]),
-                  utils.diag(diag_entries)), self.dual_object.nn_params.weights[
-                      self.dual_object.nn_params.num_hidden_layers - 1]))
+      last_layer_weights = self.dual_object.nn_params.weights[
+        self.dual_object.nn_params.num_hidden_layers - 1]
+      matrix = tf.matmul(
+          tf.matmul(tf.transpose(last_layer_weights),
+                    utils.diag(diag_entries)),
+          last_layer_weights)
       new_matrix = utils.diag(2 * self.dual_object.lambda_lu[
           self.dual_object.nn_params.num_hidden_layers - 1]) - matrix
       # Making symmetric
@@ -166,7 +169,8 @@ class Optimization(object):
     if use_tf_eig:
       # If smoothness parameter is too small, essentially no smoothing
       # Just output the eigen vector corresponding to min
-      return tf.cond(self.smooth_placeholder < 1E-8, self.tf_min_eig_vec,
+      return tf.cond(self.smooth_placeholder < 1E-8,
+                     self.tf_min_eig_vec,
                      self.tf_smooth_eig_vec)
 
     # Using autograph to automatically handle
@@ -265,12 +269,10 @@ class Optimization(object):
         tf.logging.info('Found certificate of robustness!')
         return True
     # Running step
-    step_feed_dict = {
-        self.eig_init_vec_placeholder: eig_init_vec_val,
-        self.eig_num_iter_placeholder: eig_num_iter_val,
-        self.smooth_placeholder: smooth_val,
-        self.penalty_placeholder: penalty_val
-    }
+    step_feed_dict = {self.eig_init_vec_placeholder: eig_init_vec_val,
+                      self.eig_num_iter_placeholder: eig_num_iter_val,
+                      self.smooth_placeholder: smooth_val,
+                      self.penalty_placeholder: penalty_val}
 
     [
         _, self.current_total_objective, self.current_unconstrained_objective,
@@ -295,8 +297,9 @@ class Optimization(object):
                        self.current_step, stats)
       if self.params['stats_folder'] is not None:
         stats = json.dumps(stats)
-        with tf.gfile.Open((self.params['stats_folder'] + '/' + str(
-            self.current_step) + '.json')) as file_f:
+        filename = os.path.join(self.params['stats_folder'], str(
+            self.current_step) + '.json')
+        with tf.gfile.Open(filename) as file_f:
           file_f.write(stats)
     return False
 
@@ -307,7 +310,6 @@ class Optimization(object):
       True if certificate is found
       False otherwise
     """
-    self.prepare_for_optimization()
     penalty_val = self.params['init_penalty']
     # Don't use smoothing initially - very inaccurate for large dimension
     self.smooth_on = False

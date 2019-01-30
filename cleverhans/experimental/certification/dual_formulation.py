@@ -9,7 +9,6 @@ from cleverhans.experimental.certification import utils
 
 class DualFormulation(object):
   """DualFormulation is a class that creates the dual objective function
-
   and access to matrix vector products for the matrix that is constrained
   to be Positive semidefinite
   """
@@ -37,14 +36,12 @@ class DualFormulation(object):
     self.input_minval = tf.convert_to_tensor(input_minval, dtype=tf.float32)
     self.input_maxval = tf.convert_to_tensor(input_maxval, dtype=tf.float32)
     self.epsilon = tf.convert_to_tensor(epsilon, dtype=tf.float32)
-    self.final_linear = (
-        self.nn_params.final_weights[adv_class, :] -
-        self.nn_params.final_weights[true_class, :])
+    self.final_linear = (self.nn_params.final_weights[adv_class, :] 
+                        - self.nn_params.final_weights[true_class, :])
     self.final_linear = tf.reshape(
         self.final_linear, shape=[tf.size(self.final_linear), 1])
-    self.final_constant = (
-        self.nn_params.final_bias[adv_class] -
-        self.nn_params.final_bias[true_class])
+    self.final_constant = (self.nn_params.final_bias[adv_class]
+                           - self.nn_params.final_bias[true_class])
 
     # Computing lower and upper bounds
     # Note that lower and upper are of size nn_params.num_hidden_layers + 1
@@ -57,14 +54,11 @@ class DualFormulation(object):
     self.upper.append(
         tf.minimum(self.test_input + self.epsilon, self.input_maxval))
     for i in range(0, self.nn_params.num_hidden_layers):
-      current_lower = tf.nn.relu(0.5 * (self.nn_params.forward_pass(
-          self.lower[i] + self.upper[i], i) + self.nn_params.forward_pass(
-              self.lower[i] - self.upper[i], i, is_abs=True)) +
-                                 self.nn_params.biases[i])
-      current_upper = tf.nn.relu(0.5 * (self.nn_params.forward_pass(
-          self.lower[i] + self.upper[i], i) + self.nn_params.forward_pass(
-              self.upper[i] - self.lower[i], i, is_abs=True)) +
-                                 self.nn_params.biases[i])
+      lo_plus_up = self.nn_params.forward_pass(self.lower[i] + self.upper[i], i)
+      lo_minus_up = self.nn_params.forward_pass(self.lower[i] - self.upper[i], i, is_abs=True)
+      up_minus_lo = self.nn_params.forward_pass(self.upper[i] - self.lower[i], i, is_abs=True)
+      current_lower = tf.nn.relu(0.5 * (lo_plus_up + lo_minus_up + self.nn_params.biases[i]))
+      current_upper = tf.nn.relu(0.5 * (lo_plus_up + up_minus_lo + self.nn_params.biases[i]))
       self.lower.append(current_lower)
       self.upper.append(current_upper)
 
@@ -118,25 +112,26 @@ class DualFormulation(object):
         current_row = (
             self.lambda_neg[i] + self.lambda_pos[i] -
             self.nn_params.forward_pass(
-                self.lambda_pos[i + 1], i, is_transpose=True) + tf.multiply(
-                    self.lower[i] + self.upper[i], self.lambda_lu[i]) +
+                self.lambda_pos[i + 1], i, is_transpose=True) + 
+            tf.multiply(self.lower[i] + self.upper[i], self.lambda_lu[i]) +
             tf.multiply(self.lambda_quad[i], self.nn_params.biases[i - 1]))
       else:
         current_row = (-self.nn_params.forward_pass(
-            self.lambda_pos[i + 1], i, is_transpose=True) + tf.multiply(
-                self.lower[i] + self.upper[i], self.lambda_lu[i]))
+            self.lambda_pos[i + 1], i, is_transpose=True) + 
+            tf.multiply(self.lower[i] + self.upper[i], self.lambda_lu[i]))
       g_rows.append(current_row)
 
     # Term for final linear term
-    g_rows.append(
-        (self.lambda_pos[self.nn_params.num_hidden_layers] +
-         self.lambda_neg[self.nn_params.num_hidden_layers] + self.final_linear +
-         tf.multiply(
-             (self.lower[self.nn_params.num_hidden_layers] +
-              self.upper[self.nn_params.num_hidden_layers]),
-             self.lambda_lu[self.nn_params.num_hidden_layers]) + tf.multiply(
-                 self.lambda_quad[self.nn_params.num_hidden_layers],
-                 self.nn_params.biases[self.nn_params.num_hidden_layers - 1])))
+    g_rows.append((self.lambda_pos[self.nn_params.num_hidden_layers] +
+                   self.lambda_neg[self.nn_params.num_hidden_layers] +
+                   self.final_linear +
+                   tf.multiply((self.lower[self.nn_params.num_hidden_layers]+
+                                self.upper[self.nn_params.num_hidden_layers]),
+                               self.lambda_lu[self.nn_params.num_hidden_layers])
+                   + tf.multiply(
+                       self.lambda_quad[self.nn_params.num_hidden_layers],
+                       self.nn_params.biases[
+                           self.nn_params.num_hidden_layers-1])))
     self.vector_g = tf.concat(g_rows, axis=0)
     self.unconstrained_objective = self.scalar_f + 0.5 * self.nu
 
@@ -169,13 +164,12 @@ class DualFormulation(object):
                 i,
                 is_transpose=True))
       else:
-        h_beta_rows[i] = (
-            h_beta_rows[i] + tf.multiply(
-                self.lambda_quad[i] + self.lambda_lu[i], gamma) -
-            self.nn_params.forward_pass(
-                tf.multiply(self.lambda_quad[i + 1], delta),
-                i,
-                is_transpose=True))
+        h_beta_rows[i] = (h_beta_rows[i] +
+                          tf.multiply(self.lambda_quad[i] +
+                                      self.lambda_lu[i], gamma) -
+                          self.nn_params.forward_pass(
+                              tf.multiply(self.lambda_quad[i+1], delta),
+                              i, is_transpose=True))
 
       new_row = (
           tf.multiply(self.lambda_quad[i + 1] + self.lambda_lu[i + 1], delta) -
@@ -185,28 +179,30 @@ class DualFormulation(object):
 
     # Last boundary case
     h_beta_rows[self.nn_params.num_hidden_layers] = (
-        h_beta_rows[self.nn_params.num_hidden_layers] + tf.multiply(
-            (self.lambda_quad[self.nn_params.num_hidden_layers] +
-             self.lambda_lu[self.nn_params.num_hidden_layers]), delta))
+        h_beta_rows[self.nn_params.num_hidden_layers] +
+        tf.multiply((self.lambda_quad[self.nn_params.num_hidden_layers] +
+                     self.lambda_lu[self.nn_params.num_hidden_layers]),
+                    delta))
 
     h_beta = tf.concat(h_beta_rows, axis=0)
 
     # Constructing final result using vector_g
-    result = tf.concat([
+    result = tf.concat(
+    [
         alpha * self.nu + tf.reduce_sum(tf.multiply(beta, self.vector_g)),
         tf.multiply(alpha, self.vector_g) + h_beta
     ],
-                       axis=0)
+    axis=0)
     return result
 
   def construct_certificate(self):
     """Function to compute the certificate associated with feasible solution."""
     # TODO: replace matrix_inverse with functin which uses matrix-vector product
     self.certificate = (
-        self.scalar_f + 0.5 * tf.matmul(
-            tf.matmul(
-                tf.transpose(self.vector_g), tf.matrix_inverse(self.matrix_h)),
-            self.vector_g))
+        self.scalar_f +
+        0.5*tf.matmul(tf.matmul(tf.transpose(self.vector_g),
+                                tf.matrix_inverse(self.matrix_h)),
+                      self.vector_g))
 
   def get_full_psd_matrix(self):
     """Function that returns the tf graph corresponding to the entire matrix M.
@@ -243,12 +239,12 @@ class DualFormulation(object):
       h_columns.append(current_column)
 
     self.matrix_h = tf.concat(h_columns, 1)
-
     self.matrix_h = (self.matrix_h + tf.transpose(self.matrix_h))
 
-    self.matrix_m = tf.concat([
-        tf.concat([self.nu, tf.transpose(self.vector_g)], axis=1),
-        tf.concat([self.vector_g, self.matrix_h], axis=1)
+    self.matrix_m = tf.concat(
+    [
+      tf.concat([self.nu, tf.transpose(self.vector_g)], axis=1),
+      tf.concat([self.vector_g, self.matrix_h], axis=1)
     ],
-                              axis=0)
+    axis=0)
     return self.matrix_h, self.matrix_m
