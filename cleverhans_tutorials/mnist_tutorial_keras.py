@@ -163,16 +163,6 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     report.train_adv_train_clean_eval = train_acc
     report.train_adv_train_adv_eval = train_adv_acc
 
-    # Print the exact report values
-    print('train_clean_train_clean_eval: %.10f' %
-          report.train_clean_train_clean_eval)
-    print('train_clean_train_adv_eval: %.10f' %
-          report.train_clean_train_adv_eval)
-    print('train_adv_train_clean_eval: %.10f' %
-          report.train_adv_train_clean_eval)
-    print('train_adv_train_adv_eval: %.10f' %
-          report.train_adv_train_adv_eval)
-
   return report
 
 
