@@ -39,6 +39,7 @@ class Optimization(object):
     self.dual_object = dual_formulation_object
     self.projected_dual_object = self.project_dual()
     self.params = optimization_params
+    # print(optimization_params)
     self.penalty_placeholder = tf.placeholder(tf.float32, shape=[])
 
     # The dimensionality of matrix M is the sum of sizes of all layers + 1
@@ -250,7 +251,7 @@ class Optimization(object):
     # TODO: do we need to do it here or can do outside of this class?
     self.sess.run(tf.global_variables_initializer())
     # Create folder for saving stats if the folder is not None
-    if (self.params['stats_folder'] is not None and
+    if (self.params.get('stats_folder') and
         not tf.gfile.IsDirectory(self.params['stats_folder'])):
       tf.gfile.MkDir(self.params['stats_folder'])
 

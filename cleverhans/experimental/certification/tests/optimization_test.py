@@ -82,7 +82,10 @@ class OptimizationTest(tf.test.TestCase):
           'eig_num_iter': 10,
           'eig_learning_rate': 0.01,
           'init_smooth': 0.5,
-          'smooth_decay': 0.9
+          'smooth_decay': 0.9,
+          'inner_num_steps': 10,
+          'optimizer': 'adam',
+          'momentum_parameter': 0.9
       }
       optimization_object = optimization.Optimization(dual_formulation_object,
                                                       sess, optimization_params)
@@ -98,7 +101,10 @@ class OptimizationTest(tf.test.TestCase):
         'eig_num_iter': 2000,
         'eig_learning_rate': 0.01,
         'init_smooth': 0.0,
-        'smooth_decay': 0.9
+        'smooth_decay': 0.9,
+        'inner_num_steps': 10,
+        'optimizer': 'adam',
+        'momentum_parameter': 0.9
     }
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
