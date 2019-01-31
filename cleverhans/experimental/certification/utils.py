@@ -10,8 +10,10 @@ import tensorflow as tf
 
 def diag(diag_elements):
   """Function to create tensorflow diagonal matrix with input diagonal entries.
+
   Args:
     diag_elements: tensor with diagonal elements
+
   Returns:
     tf matrix with diagonal entries as diag_elements
   """
@@ -21,6 +23,7 @@ def diag(diag_elements):
 def initialize_dual(neural_net_params_object, init_dual_file=None,
                     random_init_variance=0.01, init_nu=200.0):
   """Function to initialize the dual variables of the class.
+
   Args:
     neural_net_params_object: Object with the neural net weights, biases
       and types
@@ -33,6 +36,7 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
       lambda_lu_0, lambda_lu_1, ..
       random_init_variance: variance for random initialization
     init_nu: Value to initialize nu variable with
+
   Returns:
     dual_var: dual variables initialized appropriately.
   """
@@ -94,12 +98,14 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
 
 def eig_one_step(current_vector, learning_rate, vector_prod_fn):
   """Function that performs one step of gd (variant) for min eigen value.
+
   Args:
     current_vector: current estimate of the eigen vector with minimum eigen
       value.
     learning_rate: learning rate.
     vector_prod_fn: function which returns product H*x, where H is a matrix for
       which we computing eigenvector.
+
   Returns:
     updated vector after one step
   """
@@ -159,13 +165,16 @@ def eig_one_step(current_vector, learning_rate, vector_prod_fn):
 
 def minimum_eigen_vector(x, num_steps, learning_rate, vector_prod_fn):
   """Computes eigenvector which corresponds to minimum eigenvalue.
+
   Args:
     x: initial value of eigenvector.
     num_steps: number of optimization steps.
     learning_rate: learning rate.
     vector_prod_fn: function which takes x and returns product H*x.
+
   Returns:
     approximate value of eigenvector.
+
   This function finds approximate value of eigenvector of matrix H which
   corresponds to smallest (by absolute value) eigenvalue of H.
   It works by solving optimization problem x^{T}*H*x -> min.
