@@ -6,6 +6,8 @@ from __future__ import print_function
 import json
 import os
 import numpy as np
+
+from scipy.sparse.linalg import eigs, LinearOperator
 import tensorflow as tf
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
@@ -187,10 +189,18 @@ class Optimization(object):
         vector_prod_fn=_vector_prod_fn)
     return estimated_eigen_vector
 
+  def get_scipy_eig_vec(self, eig_val_estimate=None):
+    matrix_m = self.sess.run(self.dual_object.matrix_m)
+    min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR', 
+      tol=1E-4, sigma=eig_val_estimate)
+    return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
+
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
-
-    self.eig_vec_estimate = self.get_min_eig_vec_proxy()
+    
+    # TODO(shankarshreya): do if else here
+    # self.eig_vec_estimate = self.get_min_eig_vec_proxy()
+    self.eig_vec_estimate = tf.placeholder(tf.float32, shape=(self.dual_object.matrix_m_dimension, 1))
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
     # Eig value is v^\top M v, where v is eigen vector
     self.eig_val_estimate = tf.matmul(
@@ -274,6 +284,10 @@ class Optimization(object):
                       self.smooth_placeholder: smooth_val,
                       self.penalty_placeholder: penalty_val}
 
+    # TODO(shankarshreya): document scipy code
+    current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec(self.current_eig_val_estimate)
+    step_feed_dict.update({self.eig_vec_estimate:current_eig_vector})
+
     [
         _, self.current_total_objective, self.current_unconstrained_objective,
         self.current_eig_vec_val, self.current_eig_val_estimate
@@ -282,6 +296,11 @@ class Optimization(object):
         self.dual_object.unconstrained_objective, self.eig_vec_estimate,
         self.eig_val_estimate
     ], feed_dict=step_feed_dict)
+    # [_, self.current_eig_vec_val, 
+    #  self.current_eig_val_estimate] = self.sess.run([self.opt_one_step, 
+    #                                                  self.eig_vec_estimate, 
+    #                                                self.eig_val_estimate], 
+    #                                                feed_dict=step_feed_dict)
 
     if self.current_step % self.params['print_stats_steps'] == 0:
       stats = {

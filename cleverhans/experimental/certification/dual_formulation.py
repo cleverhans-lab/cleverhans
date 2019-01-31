@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+import numpy as np 
 from cleverhans.experimental.certification import utils
 
 
@@ -72,6 +73,7 @@ class DualFormulation(object):
     self.scalar_f = None
     self.matrix_h = None
     self.matrix_m = None
+    self.matrix_m_dimension = 1 + np.sum(self.nn_params.sizes)
 
     # The primal vector in the SDP can be thought of as [layer_1, layer_2..]
     # In this concatenated version, dual_index[i] that marks the start
