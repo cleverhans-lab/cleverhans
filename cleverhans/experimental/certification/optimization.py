@@ -37,7 +37,6 @@ class Optimization(object):
     self.dual_object = dual_formulation_object
     self.projected_dual_object = self.project_dual()
     self.params = optimization_params
-    # print(optimization_params)
     self.penalty_placeholder = tf.placeholder(tf.float32, shape=[])
 
     # The dimensionality of matrix M is the sum of sizes of all layers + 1
