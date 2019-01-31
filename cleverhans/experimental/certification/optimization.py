@@ -281,8 +281,7 @@ class Optimization(object):
         self.opt_one_step, self.total_objective,
         self.dual_object.unconstrained_objective, self.eig_vec_estimate,
         self.eig_val_estimate
-    ],
-                      feed_dict=step_feed_dict)
+    ], feed_dict=step_feed_dict)
 
     if self.current_step % self.params['print_stats_steps'] == 0:
       stats = {
