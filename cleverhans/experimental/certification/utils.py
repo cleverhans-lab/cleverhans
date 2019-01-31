@@ -10,6 +10,7 @@ import tensorflow as tf
 
 def diag(diag_elements):
   """Function to create tensorflow diagonal matrix with input diagonal entries.
+
   Args:
     diag_elements: tensor with diagonal elements
   Returns:
@@ -21,6 +22,7 @@ def diag(diag_elements):
 def initialize_dual(neural_net_params_object, init_dual_file=None,
                     random_init_variance=0.01, init_nu=200.0):
   """Function to initialize the dual variables of the class.
+
   Args:
     neural_net_params_object: Object with the neural net weights, biases
       and types
@@ -94,6 +96,7 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
 
 def eig_one_step(current_vector, learning_rate, vector_prod_fn):
   """Function that performs one step of gd (variant) for min eigen value.
+
   Args:
     current_vector: current estimate of the eigen vector with minimum eigen
       value.
@@ -159,6 +162,7 @@ def eig_one_step(current_vector, learning_rate, vector_prod_fn):
 
 def minimum_eigen_vector(x, num_steps, learning_rate, vector_prod_fn):
   """Computes eigenvector which corresponds to minimum eigenvalue.
+
   Args:
     x: initial value of eigenvector.
     num_steps: number of optimization steps.

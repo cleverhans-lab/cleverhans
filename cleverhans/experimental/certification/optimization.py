@@ -199,9 +199,9 @@ class Optimization(object):
     # Penalizing negative of min eigen value because we want min eig value
     # to be positive
     self.total_objective = (
-        self.dual_object.unconstrained_objective + 0.5 * (tf.square(
-            tf.maximum(-1 * self.penalty_placeholder * self.eig_val_estimate,
-                       0))))
+        self.dual_object.unconstrained_objective
+        + 0.5 * tf.square(
+            tf.maximum(-self.penalty_placeholder * self.eig_val_estimate, 0)))
     global_step = tf.Variable(0, trainable=False)
     # Set up learning rate
     # Learning rate decays after every outer loop
@@ -297,8 +297,8 @@ class Optimization(object):
                        self.current_step, stats)
       if self.params['stats_folder'] is not None:
         stats = json.dumps(stats)
-        filename = os.path.join(self.params['stats_folder'], str(
-            self.current_step) + '.json')
+        filename = os.path.join(self.params['stats_folder'],
+                                str(self.current_step) + '.json')
         with tf.gfile.Open(filename) as file_f:
           file_f.write(stats)
     return False

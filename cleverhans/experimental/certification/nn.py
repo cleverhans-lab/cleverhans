@@ -108,21 +108,19 @@ def load_network_from_checkpoint(checkpoint, model_json):
         softmax for more numerical stability)
 
     Returns:
-      net_weights: list of numpy matrices of weights of each
-      layer
-    [convention: x[i+1] = W[i] x[i]
-    net_biases: list of numpy arrays of biases of each layer
-    net_layer_types: type of each layer ['ff' or 'ff_relu' or 'ff_conv'
-      or 'ff_conv_relu']
-      'ff': Simple feedforward layer with no activations
-      'ff_relu': Simple feedforward layer with ReLU activations
-      'ff_conv': Convolution layer with no activation
-      'ff_conv_relu': Convolution layer with ReLU activation
+      net_weights: list of numpy matrices of weights of each layer
+        convention: x[i+1] = W[i] x[i]
+      net_biases: list of numpy arrays of biases of each layer
+      net_layer_types: type of each layer ['ff' or 'ff_relu' or 'ff_conv'
+        or 'ff_conv_relu']
+        'ff': Simple feedforward layer with no activations
+        'ff_relu': Simple feedforward layer with ReLU activations
+        'ff_conv': Convolution layer with no activation
+        'ff_conv_relu': Convolution layer with ReLU activation
 
     Raises:
       ValueError: If layer_types are invalid or variable names
-      not found in
-      checkpoint
+        not found in checkpoint
   """
   # Load checkpoint
   reader = tf.train.load_checkpoint(checkpoint)

@@ -231,9 +231,9 @@ class DualFormulation(object):
         current_col_elems.append(
             utils.diag(self.lambda_lu[i] + self.lambda_quad[i]))
       if i < self.nn_params.num_hidden_layers:
-        current_col_elems.append(((tf.matmul(
+        current_col_elems.append(tf.matmul(
             utils.diag(-1 * self.lambda_quad[i + 1]),
-            self.nn_params.weights[i]))))
+            self.nn_params.weights[i]))
       for j in range(i + 2, self.nn_params.num_hidden_layers + 1):
         current_col_elems.append(
             tf.zeros([self.nn_params.sizes[j], self.nn_params.sizes[i]]))
