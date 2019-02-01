@@ -192,7 +192,7 @@ class Optimization(object):
 
   def get_scipy_eig_vec(self, eig_val_estimate=None):
     matrix_m = self.sess.run(self.dual_object.matrix_m)
-    # print(eig_val_estimate)
+    print(eig_val_estimate)
     min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR', 
       tol=1E-4, sigma=eig_val_estimate)
     print(min_eig_vec_val)
