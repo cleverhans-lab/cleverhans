@@ -47,6 +47,7 @@ class Optimization(object):
         tf.float32, shape=[1 + self.dual_object.dual_index[-1], 1])
     self.smooth_placeholder = tf.placeholder(tf.float32, shape=[])
     self.eig_num_iter_placeholder = tf.placeholder(tf.int32, shape=[])
+    self.current_eig_val_estimate = None
     self.sess = sess
 
     # Create graph for optimization
@@ -191,9 +192,11 @@ class Optimization(object):
 
   def get_scipy_eig_vec(self, eig_val_estimate=None):
     matrix_m = self.sess.run(self.dual_object.matrix_m)
+    print(eig_val_estimate)
     min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR', 
       tol=1E-4, sigma=eig_val_estimate)
-    return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
+    print(min_eig_vec_val)
+    return np.reshape(estimated_eigen_vector, [-1, 1]), np.reshape(min_eig_vec_val, [1,1])
 
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
@@ -285,16 +288,19 @@ class Optimization(object):
                       self.penalty_placeholder: penalty_val}
 
     # TODO(shankarshreya): document scipy code
-    current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec(self.current_eig_val_estimate)
-    step_feed_dict.update({self.eig_vec_estimate:current_eig_vector})
+    # print(self.current_eig_val_estimate)
+    self.current_eig_vec_val, self.current_eig_val_estimate = self.get_scipy_eig_vec(
+        self.current_eig_val_estimate)
+    step_feed_dict.update({
+        self.eig_vec_estimate: self.current_eig_vec_val,
+        self.eig_val_estimate: self.current_eig_val_estimate
+    })
 
     [
-        _, self.current_total_objective, self.current_unconstrained_objective,
-        self.current_eig_vec_val, self.current_eig_val_estimate
+        _, self.current_total_objective, self.current_unconstrained_objective
     ] = self.sess.run([
         self.opt_one_step, self.total_objective,
-        self.dual_object.unconstrained_objective, self.eig_vec_estimate,
-        self.eig_val_estimate
+        self.dual_object.unconstrained_objective
     ], feed_dict=step_feed_dict)
     # [_, self.current_eig_vec_val, 
     #  self.current_eig_val_estimate] = self.sess.run([self.opt_one_step, 
