@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.experimental.certification import dual_formulation
-from cleverhans.experimental.certification import neural_net_params
+from cleverhans.experimental.certification import nn
 from cleverhans.experimental.certification import optimization
 
 
@@ -17,11 +17,12 @@ class OptimizationTest(tf.test.TestCase):
   def prepare_dual_object(self):
     # Function to prepare dual object to be used for testing optimization.
     net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    net_biases = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    nn_params1 = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -75,12 +76,17 @@ class OptimizationTest(tf.test.TestCase):
     dual_formulation_object.set_differentiable_objective()
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
-      optimization_params = {'init_learning_rate': 0.1,
-                             'learning_rate_decay': 0.9,
-                             'eig_num_iter': 10,
-                             'eig_learning_rate': 0.01,
-                             'init_smooth': 0.5,
-                             'smooth_decay': 0.9}
+      optimization_params = {
+          'init_learning_rate': 0.1,
+          'learning_rate_decay': 0.9,
+          'eig_num_iter': 10,
+          'eig_learning_rate': 0.01,
+          'init_smooth': 0.5,
+          'smooth_decay': 0.9,
+          'inner_num_steps': 10,
+          'optimizer': 'adam',
+          'momentum_parameter': 0.9
+      }
       optimization_object = optimization.Optimization(dual_formulation_object,
                                                       sess, optimization_params)
       self.assertIsNotNone(optimization_object)
@@ -89,12 +95,17 @@ class OptimizationTest(tf.test.TestCase):
     # Function test computing min eigen value using matrix vector products.
     dual_formulation_object = self.prepare_dual_object()
     _, matrix_m = dual_formulation_object.get_full_psd_matrix()
-    optimization_params = {'init_learning_rate': 0.1,
-                           'learning_rate_decay': 0.9,
-                           'eig_num_iter': 2000,
-                           'eig_learning_rate': 0.01,
-                           'init_smooth': 0.0,
-                           'smooth_decay': 0.9}
+    optimization_params = {
+        'init_learning_rate': 0.1,
+        'learning_rate_decay': 0.9,
+        'eig_num_iter': 2000,
+        'eig_learning_rate': 0.01,
+        'init_smooth': 0.0,
+        'smooth_decay': 0.9,
+        'inner_num_steps': 10,
+        'optimizer': 'adam',
+        'momentum_parameter': 0.9
+    }
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
       optimization_object = optimization.Optimization(dual_formulation_object,
@@ -107,16 +118,20 @@ class OptimizationTest(tf.test.TestCase):
       # ** No smoothing
       tf_eig_vec_val, eig_vec_val, matrix_m_val = sess.run(
           [tf_eig_vec, eig_vec, matrix_m],
-          feed_dict={optimization_object.eig_init_vec_placeholder:
-                         np.random.rand(6, 1),
-                     optimization_object.eig_num_iter_placeholder: 2000,
-                     optimization_object.smooth_placeholder: 0.0})
+          feed_dict={
+              optimization_object.eig_init_vec_placeholder:
+                  np.random.rand(6, 1),
+              optimization_object.eig_num_iter_placeholder:
+                  2000,
+              optimization_object.smooth_placeholder:
+                  0.0
+          })
 
       # Eigen value corresponding to v is v^\top M v
-      eig_val = np.matmul(np.transpose(eig_vec_val),
-                          np.matmul(matrix_m_val, eig_vec_val))
-      tf_eig_val = np.matmul(np.transpose(tf_eig_vec_val),
-                             np.matmul(matrix_m_val, tf_eig_vec_val))
+      eig_val = np.matmul(
+          np.transpose(eig_vec_val), np.matmul(matrix_m_val, eig_vec_val))
+      tf_eig_val = np.matmul(
+          np.transpose(tf_eig_vec_val), np.matmul(matrix_m_val, tf_eig_vec_val))
       [np_eig_values, _] = np.linalg.eig(matrix_m_val)
       self.assertLess(np.abs(np.min(np_eig_values) - eig_val), 1E-5)
       self.assertLess(np.abs(np.min(np_eig_values) - tf_eig_val), 1E-5)
@@ -131,16 +146,20 @@ class OptimizationTest(tf.test.TestCase):
 
       tf_eig_vec_val, eig_vec_val, matrix_m_val = sess.run(
           [tf_eig_vec, eig_vec, matrix_m],
-          feed_dict={optimization_object.eig_init_vec_placeholder:
-                         np.random.rand(6, 1),
-                     optimization_object.smooth_placeholder: 0.1,
-                     optimization_object.eig_num_iter_placeholder: 2000})
+          feed_dict={
+              optimization_object.eig_init_vec_placeholder:
+                  np.random.rand(6, 1),
+              optimization_object.smooth_placeholder:
+                  0.1,
+              optimization_object.eig_num_iter_placeholder:
+                  2000
+          })
 
       # Eigen value corresponding to v is v^\top M v
-      eig_val = np.matmul(np.transpose(eig_vec_val),
-                          np.matmul(matrix_m_val, eig_vec_val))
-      tf_eig_val = np.matmul(np.transpose(tf_eig_vec_val),
-                             np.matmul(matrix_m_val, tf_eig_vec_val))
+      eig_val = np.matmul(
+          np.transpose(eig_vec_val), np.matmul(matrix_m_val, eig_vec_val))
+      tf_eig_val = np.matmul(
+          np.transpose(tf_eig_vec_val), np.matmul(matrix_m_val, tf_eig_vec_val))
       [np_eig_values, _] = np.linalg.eig(matrix_m_val)
       self.assertLess(np.abs(np.min(np_eig_values) - eig_val), 1E-5)
       # In general, smoothed version can be far off
@@ -164,13 +183,12 @@ class OptimizationTest(tf.test.TestCase):
         'momentum_parameter': 0.9,
         'print_stats_steps': 1,
         'stats_folder': None,
-        'projection_steps': 200}
+        'projection_steps': 200
+    }
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
       optimization_object = optimization.Optimization(dual_formulation_object,
                                                       sess, optimization_params)
-      optimization_object.prepare_one_step()
-      self.assertIsNotNone(optimization_object.opt_one_step)
       is_cert_found = optimization_object.run_optimization()
       self.assertFalse(is_cert_found)
 

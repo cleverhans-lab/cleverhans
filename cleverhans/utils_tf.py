@@ -540,7 +540,9 @@ def clip_by_value(t, clip_value_min, clip_value_max, name=None):
   def cast_clip(clip):
     if t.dtype in (tf.float32, tf.float64):
       if hasattr(clip, 'dtype'):
-        if clip.dtype != t.dtype:
+        # Convert to tf dtype in case this is a numpy dtype
+        clip_dtype = tf.as_dtype(clip.dtype)
+        if clip_dtype != t.dtype:
           return tf.cast(clip, t.dtype)
     return clip
 
@@ -631,3 +633,80 @@ def assert_equal(*args, **kwargs):
   """
   with tf.device("/CPU:0"):
     return tf.assert_equal(*args, **kwargs)
+
+def jacobian_graph(predictions, x, nb_classes):
+  """
+  Create the Jacobian graph to be ran later in a TF session
+  :param predictions: the model's symbolic output (linear output,
+      pre-softmax)
+  :param x: the input placeholder
+  :param nb_classes: the number of classes the model has
+  :return:
+  """
+
+  # This function will return a list of TF gradients
+  list_derivatives = []
+
+  # Define the TF graph elements to compute our derivatives for each class
+  for class_ind in xrange(nb_classes):
+    derivatives, = tf.gradients(predictions[:, class_ind], x)
+    list_derivatives.append(derivatives)
+
+  return list_derivatives
+
+def jacobian_augmentation(sess,
+                          x,
+                          X_sub_prev,
+                          Y_sub,
+                          grads,
+                          lmbda,
+                          aug_batch_size=512,
+                          feed=None):
+  """
+  Augment an adversary's substitute training set using the Jacobian
+  of a substitute model to generate new synthetic inputs.
+  See https://arxiv.org/abs/1602.02697 for more details.
+  See cleverhans_tutorials/mnist_blackbox.py for example use case
+  :param sess: TF session in which the substitute model is defined
+  :param x: input TF placeholder for the substitute model
+  :param X_sub_prev: substitute training data available to the adversary
+                     at the previous iteration
+  :param Y_sub: substitute training labels available to the adversary
+                at the previous iteration
+  :param grads: Jacobian symbolic graph for the substitute
+                (should be generated using utils_tf.jacobian_graph)
+  :return: augmented substitute data (will need to be labeled by oracle)
+  """
+  assert len(x.get_shape()) == len(np.shape(X_sub_prev))
+  assert len(grads) >= np.max(Y_sub) + 1
+  assert len(X_sub_prev) == len(Y_sub)
+
+  aug_batch_size = min(aug_batch_size, X_sub_prev.shape[0])
+
+  # Prepare input_shape (outside loop) for feeding dictionary below
+  input_shape = list(x.get_shape())
+  input_shape[0] = 1
+
+  # Create new numpy array for adversary training data
+  # with twice as many components on the first dimension.
+  X_sub = np.vstack([X_sub_prev, X_sub_prev])
+  num_samples = X_sub_prev.shape[0]
+
+  # Creating and processing as batch
+  for p_idxs in range(0, num_samples, aug_batch_size):
+    X_batch = X_sub_prev[p_idxs:p_idxs + aug_batch_size, ...]
+    feed_dict = {x: X_batch}
+    if feed is not None:
+      feed_dict.update(feed)
+
+    # Compute sign matrix
+    grad_val = sess.run([tf.sign(grads)], feed_dict=feed_dict)[0]
+
+    # Create new synthetic point in adversary substitute training set
+    for (indx, ind) in zip(range(p_idxs, p_idxs + X_batch.shape[0]),
+                           range(X_batch.shape[0])):
+      X_sub[num_samples + indx] = (
+          X_batch[ind] + lmbda * grad_val[Y_sub[indx], ind, ...])
+
+  # Return augmented training data (needs to be labeled afterwards)
+  return X_sub

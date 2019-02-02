@@ -15,6 +15,7 @@ from cleverhans import utils
 
 _logger = utils.create_logger("cleverhans.attacks.attack")
 
+
 class Attack(object):
   """
   Abstract base class for all attack classes.
@@ -298,6 +299,7 @@ class Attack(object):
       warnings.warn("`params` is unused and will be removed "
                     " on or after 2019-04-26.")
     return True
+
 
 def arg_type(arg_names, kwargs):
   """

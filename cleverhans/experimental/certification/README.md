@@ -1,7 +1,7 @@
 # Certification of adversarial robustness
 
-This code performs certification of adversarial robustness of given network
-on given example.
+This code performs certification of adversarial robustness of given network on
+given example.
 
 Original author: [Aditi Raghunathan](https://github.com/RAditi)
 
