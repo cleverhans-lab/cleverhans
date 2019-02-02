@@ -41,6 +41,7 @@ class Loss(object):
       warnings.warn("callable attacks are deprecated, switch to an Attack "
                     "subclass. callable attacks will not be supported after "
                     "2019-05-05.")
+
       class Wrapper(Attack):
         """
         Temporary wrapper class to be removed when deprecated callable
@@ -48,6 +49,7 @@ class Loss(object):
 
         :param f: a callable object implementing the attack
         """
+
         def __init__(self, f):
           dummy_model = Model()
           super(Wrapper, self).__init__(model=dummy_model)
@@ -123,6 +125,7 @@ class CrossEntropy(Loss):
     1. - adv_coeff.
   :param attack_params: dict, keyword arguments passed to `attack.generate`
   """
+
   def __init__(self, model, smoothing=0., attack=None, pass_y=False,
                adv_coeff=0.5, attack_params=None,
                **kwargs):
@@ -173,6 +176,7 @@ class MixUp(Loss):
   :param model: Model instance, the model on which to apply the loss.
   :param beta: float, beta distribution parameter for MixUp.
   """
+
   def __init__(self, model, beta, **kwargs):
     del kwargs
     Loss.__init__(self, model, locals())
@@ -222,6 +226,7 @@ class FeaturePairing(Loss):
 
 class WeightDecay(Loss):
   """Weight decay"""
+
   def fprop(self, x, y, **kwargs):
     terms = [tf.nn.l2_loss(param)
              for param in self.model.get_params()
@@ -246,29 +251,25 @@ class Houdini(Loss):
     Loss.__init__(self, model, locals())
 
   def fprop(self, x, y, **kwargs):
-    x = tuple([x])
+    # Get task loss for each sample in batch individually
+    def prop_fn(s):
+      return self.loss_object.fprop(tf.expand_dims(s[0], 0), s[1], **kwargs)
 
-    task_losses = [self.loss_object.fprop(x, y, **kwargs) for x in x]
+    task_losses = tf.map_fn(prop_fn, (x, y), dtype=tf.float32)
 
-    for task_loss in task_losses:
-      if len(task_loss.get_shape()) > 0:
-        raise ValueError("%s.fprop returned a non-scalar value" %
-                         str(self.loss_object))
+    logits = self.model.get_logits(x, **kwargs)
+    labels = tf.argmax(y, axis=-1, output_type=tf.int32)
+    label_inds = tf.stack([tf.range(tf.shape(logits)[0]), labels], axis=1)
 
-    logits = [self.model.get_logits(x, **kwargs) for x in x]
-    labels = tf.argmax(y, axis=-1)
-    labels = tf.reshape(labels, [-1])
-    labels = tuple([labels])
+    # Difference between scores of the target and predicted classes
+    target_scores = tf.gather_nd(logits, label_inds)
+    pred_scores = tf.reduce_max(logits, axis=1)
+    diffs = target_scores - pred_scores
 
-    target_scores = [tf.gather(logit, label)
-                     for logit, label in zip(logits, labels)]
-    pred_scores = [tf.reduce_max(logit) for logit in logits]
-    diffs = [tar - pred for tar, pred in zip(target_scores, pred_scores)]
-
+    # Product of the "stochastic margin" and task loss
     dist = tf_distributions.Normal(loc=0., scale=1.)
-
-    losses = [dist.survival_function(diff) * task_loss
-              for diff, task_loss in zip(diffs, task_losses)]
+    margins = tf.map_fn(dist.survival_function, diffs)
+    losses = tf.multiply(margins, task_losses)
 
     return tf.reduce_mean(losses)
 
