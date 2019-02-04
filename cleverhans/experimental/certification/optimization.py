@@ -192,11 +192,12 @@ class Optimization(object):
 
   def get_scipy_eig_vec(self, eig_val_estimate=None):
     matrix_m = self.sess.run(self.dual_object.matrix_m)
-    print(eig_val_estimate)
+    if eig_val_estimate != None:
+      eig_val_estimate = eig_val_estimate[0][0]
     min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR', 
       tol=1E-4, sigma=eig_val_estimate)
-    print(min_eig_vec_val)
-    return np.reshape(estimated_eigen_vector, [-1, 1]), np.reshape(min_eig_vec_val, [1,1])
+    min_eig_vec_val = np.reshape(min_eig_vec_val, [1,1])
+    return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
 
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
@@ -242,20 +243,46 @@ class Optimization(object):
     # Write out the projection step
     self.train_step = self.optimizer.minimize(
         self.total_objective, global_step=global_step)
+
+    self.sess.run(tf.global_variables_initializer())
     # All dual variables are positive
-    with tf.control_dependencies([self.train_step]):
-      self.proj_step = tf.group(
-          [v.assign(tf.maximum(v, 0)) for v in tf.trainable_variables()])
+    # with tf.control_dependencies([self.train_step]):
+    #   self.proj_step = tf.group(
+    #       [v.assign(tf.maximum(v, 0)) for v in tf.trainable_variables()])
+    # Projecting the dual variables
+    proj_ops = []
+    for i in range(self.dual_object.nn_params.num_hidden_layers + 1):
+      # Lambda_pos ia non negative for switch indices, 
+      # Unconstrained for positive indices 
+      # Zero for negative indices 
+      proj_ops.append(self.dual_object.lambda_pos[i].assign(
+        tf.multiply(self.dual_object.positive_indices[i],
+                    self.dual_object.lambda_pos[i])+
+        tf.multiply(self.dual_object.switch_indices[i],
+                    tf.nn.relu(self.dual_object.lambda_pos[i]))))
+      proj_ops.append(self.dual_object.lambda_neg[i].assign(
+        tf.multiply(self.dual_object.negative_indices[i],
+                    self.dual_object.lambda_neg[i])+
+        tf.multiply(self.dual_object.switch_indices[i],
+                    tf.nn.relu(self.dual_object.lambda_neg[i]))))
+      # Lambda_quad is only non zero and positive for switch 
+      proj_ops.append(self.dual_object.lambda_quad[i].assign(
+        tf.multiply(self.dual_object.switch_indices[i],
+                    tf.nn.relu(self.dual_object.lambda_quad[i]))))
+      # Lambda_lu is always non negative 
+      proj_ops.append(self.dual_object.lambda_lu[i].assign(
+        tf.nn.relu(self.dual_object.lambda_lu[i])))
+
+    self.proj_step = tf.group(proj_ops)
 
     # Control dependencies ensures that train_step is executed first
     self.opt_one_step = self.proj_step
-    # Run the initialization of all variables
-    # TODO: do we need to do it here or can do outside of this class?
-    self.sess.run(tf.global_variables_initializer())
+    
     # Create folder for saving stats if the folder is not None
     if (self.params.get('stats_folder') and
         not tf.gfile.IsDirectory(self.params['stats_folder'])):
       tf.gfile.MkDir(self.params['stats_folder'])
+    self.current_scipy_eig_val = None
 
   def run_one_step(self, eig_init_vec_val, eig_num_iter_val, smooth_val,
                    penalty_val):
@@ -289,18 +316,22 @@ class Optimization(object):
 
     # TODO(shankarshreya): document scipy code
     # print(self.current_eig_val_estimate)
-    self.current_eig_vec_val, self.current_eig_val_estimate = self.get_scipy_eig_vec(
+    current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec(
         self.current_eig_val_estimate)
     step_feed_dict.update({
-        self.eig_vec_estimate: self.current_eig_vec_val,
-        self.eig_val_estimate: self.current_eig_val_estimate
+        self.eig_vec_estimate: current_eig_vector
     })
 
+    self.sess.run(self.train_step, feed_dict=step_feed_dict)
+
     [
-        _, self.current_total_objective, self.current_unconstrained_objective
+        _, self.current_total_objective, self.current_unconstrained_objective,
+        self.current_eig_vec_val, self.current_eig_val_estimate
     ] = self.sess.run([
         self.opt_one_step, self.total_objective,
-        self.dual_object.unconstrained_objective
+        self.dual_object.unconstrained_objective,
+        self.eig_vec_estimate,
+        self.eig_val_estimate
     ], feed_dict=step_feed_dict)
     # [_, self.current_eig_vec_val, 
     #  self.current_eig_val_estimate] = self.sess.run([self.opt_one_step, 
@@ -309,6 +340,12 @@ class Optimization(object):
     #                                                feed_dict=step_feed_dict)
 
     if self.current_step % self.params['print_stats_steps'] == 0:
+      if(not self.current_scipy_eig_val or self.current_step % 1000 == 0):
+        print("Computing full scipy value")
+        self.current_eig_vec_val, self.current_scipy_eig_val = self.get_scipy_eig_vec(None)
+      else:
+        self.current_eig_vec_val, self.current_scipy_eig_val = self.get_scipy_eig_vec(self.current_scipy_eig_val - 0.1)
+      
       stats = {
           'total_objective':
               float(self.current_total_objective),
