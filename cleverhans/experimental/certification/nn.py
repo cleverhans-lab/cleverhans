@@ -1,5 +1,4 @@
 """This file defines the neural network class, where a network is reinitialized from configuration files.
-
 The class also has a forward propagation method.
 """
 
@@ -18,7 +17,6 @@ class NeuralNetwork(object):
 
   def __init__(self, net_weights, net_biases, net_layer_types):
     """Function to initialize NeuralNetParams class.
-
     Args:
       net_weights: list of numpy matrices of weights of each layer
        [convention: x[i+1] = W[i] x[i]
@@ -29,7 +27,6 @@ class NeuralNetwork(object):
         'ff_relu': Simple feedforward layer with ReLU activations
         'ff_conv': Convolution layer with no activation
         'ff_conv_relu': Convolution layer with ReLU activation
-
     Raises:
       ValueError: the input lists of net params are not of the same length
     """
@@ -62,13 +59,11 @@ class NeuralNetwork(object):
 
   def forward_pass(self, vector, layer_index, is_transpose=False, is_abs=False):
     """Performs forward pass through the layer weights at layer_index.
-
     Args:
       vector: vector that has to be passed through in forward pass
       layer_index: index of the layer
       is_transpose: whether the weights of the layer have to be transposed
       is_abs: whether to take the absolute value of the weights
-
     Returns:
       tensor that corresponds to the forward pass through the layer
     Raises:
@@ -91,7 +86,6 @@ class NeuralNetwork(object):
 
 def load_network_from_checkpoint(checkpoint, model_json):
   """Function to read the weights from checkpoint based on json description.
-
     Args:
       checkpoint: tensorflow checkpoint with trained model to
         verify
@@ -106,7 +100,6 @@ def load_network_from_checkpoint(checkpoint, model_json):
         convention Note that last layer is always feedforward
         (verification operates at the layer below the final
         softmax for more numerical stability)
-
     Returns:
       net_weights: list of numpy matrices of weights of each layer
         convention: x[i+1] = W[i] x[i]
@@ -117,7 +110,6 @@ def load_network_from_checkpoint(checkpoint, model_json):
         'ff_relu': Simple feedforward layer with ReLU activations
         'ff_conv': Convolution layer with no activation
         'ff_conv_relu': Convolution layer with ReLU activation
-
     Raises:
       ValueError: If layer_types are invalid or variable names
         not found in checkpoint

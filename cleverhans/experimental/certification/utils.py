@@ -7,6 +7,10 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
+# FOR TESTING PURPOSES (to determine speedups)
+np.random.seed(1234)
+tf.set_random_seed(1234)
+
 
 def diag(diag_elements):
   """Function to create tensorflow diagonal matrix with input diagonal entries.
@@ -167,13 +171,13 @@ def minimum_eigen_vector(x, num_steps, learning_rate, vector_prod_fn):
   """Computes eigenvector which corresponds to minimum eigenvalue.
 
   Args:
-    x: initial value of eigenvector.
-    num_steps: number of optimization steps.
-    learning_rate: learning rate.
-    vector_prod_fn: function which takes x and returns product H*x.
-
-  Returns:
-    approximate value of eigenvector.
+    x: initialminimum_eigen_vector value of eigenvector.
+    num_steps:minimum_eigen_vector number of optimization steps.
+    learning_rminimum_eigen_vectorate: learning rate.
+    vector_prominimum_eigen_vectord_fn: function which takes x and returns product H*x.
+minimum_eigen_vector
+  Returns:minimum_eigen_vector
+    approximatminimum_eigen_vectore value of eigenvector.
 
   This function finds approximate value of eigenvector of matrix H which
   corresponds to smallest (by absolute value) eigenvalue of H.
