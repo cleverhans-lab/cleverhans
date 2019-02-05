@@ -25,7 +25,6 @@ class Optimization(object):
 
   def __init__(self, dual_formulation_object, sess, optimization_params):
     """Initialize the class variables.
-
     Args:
       dual_formulation_object: Instance of DualFormulation that contains the
         dual variables and objective
@@ -59,7 +58,6 @@ class Optimization(object):
   def project_dual(self):
     """Function to create variables for the projected dual object.
     Function that projects the input dual variables onto the feasible set.
-
     Returns:
       projected_dual: Feasible dual solution corresponding to current dual
     """
@@ -164,10 +162,8 @@ class Optimization(object):
 
   def get_min_eig_vec_proxy(self, use_tf_eig=False):
     """Computes the min eigen value and corresponding vector of matrix M.
-
     Args:
       use_tf_eig: Whether to use tf's default full eigen decomposition
-
     Returns:
       eig_vec: Minimum absolute eigen value
       eig_val: Corresponding eigen vector
@@ -279,14 +275,12 @@ class Optimization(object):
   def run_one_step(self, eig_init_vec_val, eig_num_iter_val, smooth_val,
                    penalty_val, learning_rate_val):
     """Run one step of gradient descent for optimization.
-
     Args:
       eig_init_vec_val: Start value for eigen value computations
       eig_num_iter_val: Number of iterations to run for eigen computations
       smooth_val: Value of smoothness parameter
       penalty_val: Value of penalty for the current step
       learning_rate_val: Value of learning rate
-
     Returns:
      found_cert: True is negative certificate is found, False otherwise
     """
@@ -362,7 +356,6 @@ class Optimization(object):
 
   def run_optimization(self):
     """Run the optimization, call run_one_step with suitable placeholders.
-
     Returns:
       True if certificate is found
       False otherwise
