@@ -4,8 +4,19 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-import numpy as np 
+import numpy as np
+from numpy.linalg import cholesky
+
+from scipy.sparse import csc_matrix
+from scipy.sparse.linalg import eigs
+from scipy.sparse.linalg import inv
+
 from cleverhans.experimental.certification import utils
+
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+
+UPPER_BOUND = 1E5
 
 
 class DualFormulation(object):
@@ -14,11 +25,12 @@ class DualFormulation(object):
   to be Positive semidefinite
   """
 
-  def __init__(self, dual_var, neural_net_param_object, test_input, true_class,
+  def __init__(self, sess, dual_var, neural_net_param_object, test_input, true_class,
                adv_class, input_minval, input_maxval, epsilon):
     """Initializes dual formulation class.
 
     Args:
+      sess: Tensorflow session
       dual_var: dictionary of dual variables containing a) lambda_pos
         b) lambda_neg, c) lambda_quad, d) lambda_lu
       neural_net_param_object: NeuralNetParam object created for the network
@@ -30,6 +42,7 @@ class DualFormulation(object):
       input_maxval: maximum value of valid input range
       epsilon: Size of the perturbation (scaled for [0, 1] input)
     """
+    self.sess = sess
     self.nn_params = neural_net_param_object
     self.test_input = tf.convert_to_tensor(test_input, dtype=tf.float32)
     self.true_class = true_class
@@ -49,19 +62,47 @@ class DualFormulation(object):
     self.lower = []
     self.upper = []
 
+    # Also computing pre activation lower and upper bounds
+    # to compute always-off and always-on units
+    self.pre_lower = []
+    self.pre_upper = []
+
     # Initializing at the input layer with \ell_\infty constraints
     self.lower.append(
         tf.maximum(self.test_input - self.epsilon, self.input_minval))
     self.upper.append(
         tf.minimum(self.test_input + self.epsilon, self.input_maxval))
+    self.pre_lower.append(self.lower[0])
+    self.pre_upper.append(self.upper[0])
+
     for i in range(0, self.nn_params.num_hidden_layers):
       lo_plus_up = self.nn_params.forward_pass(self.lower[i] + self.upper[i], i)
       lo_minus_up = self.nn_params.forward_pass(self.lower[i] - self.upper[i], i, is_abs=True)
       up_minus_lo = self.nn_params.forward_pass(self.upper[i] - self.lower[i], i, is_abs=True)
-      current_lower = tf.nn.relu(0.5 * (lo_plus_up + lo_minus_up + self.nn_params.biases[i]))
-      current_upper = tf.nn.relu(0.5 * (lo_plus_up + up_minus_lo + self.nn_params.biases[i]))
-      self.lower.append(current_lower)
-      self.upper.append(current_upper)
+      current_lower = 0.5 * (lo_plus_up + lo_minus_up + self.nn_params.biases[i])
+      current_upper = 0.5 * (lo_plus_up + up_minus_lo + self.nn_params.biases[i])
+      self.pre_lower.append(current_lower)
+      self.pre_upper.append(current_upper)
+      self.lower.append(tf.nn.relu(current_lower))
+      self.upper.append(tf.nn.relu(current_upper))
+
+    # Using the preactivation lower and upper bounds
+    # to compute the linear regions
+    self.positive_indices = []
+    self.negative_indices = []
+    self.switch_indices = []
+
+    for i in range(0, self.nn_params.num_hidden_layers + 1):
+      # Positive index = 1 if the ReLU is always "on"
+      self.positive_indices.append(tf.cast(self.pre_lower[i] >= 0, dtype=tf.float32))
+      # Negative index = 1 if the ReLU is always off
+      self.negative_indices.append(tf.cast(self.pre_upper[i] <= 0, dtype=tf.float32))
+      self.switch_indices.append(tf.cast(
+          tf.multiply(self.pre_lower[i], self.pre_upper[i]) < 0, dtype=tf.float32))
+
+    self.positive_indices = self.sess.run(self.positive_indices)
+    self.negative_indices = self.sess.run(self.negative_indices)
+    self.switch_indices = self.sess.run(self.switch_indices)
 
     # Computing the optimization terms
     self.lambda_pos = [x for x in dual_var['lambda_pos']]
@@ -252,3 +293,96 @@ class DualFormulation(object):
         ],
         axis=0)
     return self.matrix_h, self.matrix_m
+
+  def compute_certificate(self):
+    """ Function to compute the certificate based either current value
+    or dual variables loaded from dual folder """
+    lambda_pos_val = self.sess.run([x for x in self.lambda_pos])
+    lambda_neg_val = self.sess.run([x for x in self.lambda_neg])
+    lambda_quad_val = self.sess.run([x for x in self.lambda_quad])
+    lambda_lu_val = self.sess.run([x for x in self.lambda_lu])
+    nu_val = self.sess.run(self.nu)
+
+    lower = self.sess.run([x for x in self.lower])
+    upper = self.sess.run([x for x in self.upper])
+
+    # Creating dictionary to feed placeholders
+    dual_feed_dict = {}
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_pos, lambda_pos_val)})
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_neg, lambda_neg_val)})
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_quad, lambda_quad_val)})
+    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, lambda_lu_val)})
+    dual_feed_dict.update({self.nu: nu_val})
+
+    old_matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
+    old_matrix_m = self.sess.run(self.matrix_m, feed_dict=dual_feed_dict)
+
+    min_eig_val_m, _ = eigs(old_matrix_m, k=1, which='LR',
+                            tol=1E-5, sigma=-0.1)
+
+    min_eig_val_m = np.real(min_eig_val_m) - 1E-5
+
+    dim = self.matrix_m_dimension
+    try:
+      cholesky(old_matrix_m - np.real(min_eig_val_m)*np.eye(dim))
+    except np.linalg.LinAlgError:
+      print("Increased min eigen value of M")
+      min_eig_val_m = 2*min_eig_val_m
+    else:
+      pass
+
+    min_eig_val_h, _ = eigs(old_matrix_h, k=1, which='LR',
+                            tol=1E-5, sigma=-0.1)
+
+    min_eig_val_h = np.real(min_eig_val_h - 1E-5)
+
+    dim = self.matrix_m_dimension - 1
+    try:
+      cholesky(old_matrix_h - np.real(min_eig_val_h)*np.eye(dim))
+    except np.linalg.LinAlgError:
+      print("Increased min eigen value of H")
+      min_eig_val_h = 2*min_eig_val_h
+    else:
+      pass
+    print("Min eig of h", min_eig_val_h)
+
+    current_certificate = UPPER_BOUND
+
+    values = np.linspace(min_eig_val_m, min_eig_val_h, 5)
+    for v in values:
+      new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
+      new_lambda_neg_val = [np.copy(x) for x in lambda_neg_val]
+
+      for i in range(self.nn_params.num_hidden_layers + 1):
+        # Making H PSD
+        new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-v, 0) + 1E-6
+        # Adjusting the value of \lambda_neg to make change in g small
+        new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((lower[i] + upper[i]),
+                                                                (lambda_lu_val[i] -
+                                                                 new_lambda_lu_val[i]))
+        new_lambda_neg_val[i] = (np.multiply(self.negative_indices[i],
+                                             new_lambda_neg_val[i]) +
+                                 np.multiply(self.switch_indices[i],
+                                             np.maximum(new_lambda_neg_val[i], 0)))
+
+      dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, new_lambda_lu_val)})
+      dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_neg, new_lambda_neg_val)})
+      scalar_f = self.sess.run(self.scalar_f, feed_dict=dual_feed_dict)
+      vector_g = self.sess.run(self.vector_g, feed_dict=dual_feed_dict)
+      matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
+      second_term = np.matmul(np.matmul(np.transpose(vector_g),
+                                        inv(csc_matrix(matrix_h)).toarray()), vector_g) + 0.05
+
+      dual_feed_dict.update({self.nu:second_term})
+      check_psd_matrix_m = self.sess.run(self.matrix_m, dual_feed_dict)
+      try:
+        cholesky(check_psd_matrix_m)
+      except np.linalg.LinAlgError:
+        print("Problem: Matrix is not PSD")
+      else:
+        print("All good: Matrix is PSD")
+      computed_certificate = scalar_f + 0.5*second_term
+      print("Computed certificate", computed_certificate)
+      current_certificate = np.minimum(computed_certificate, current_certificate)
+
+    return current_certificate

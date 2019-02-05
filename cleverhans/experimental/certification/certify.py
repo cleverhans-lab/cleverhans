@@ -61,6 +61,8 @@ flags.DEFINE_integer('num_classes', 10, 'Total number of classes')
 flags.DEFINE_enum('verbosity', 'INFO',
                   ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                   'Logging verbosity level.')
+flags.DEFINE_string('eig_type', 'SCIPY',
+                    'One of TF, SCIPY')
 
 
 def main(_):
@@ -90,14 +92,6 @@ def main(_):
     tf.logging.info('Running certification for adversarial class %d', adv_class)
     if adv_class == FLAGS.true_class:
       continue
-    dual = dual_formulation.DualFormulation(dual_var,
-                                            nn_params,
-                                            test_input,
-                                            FLAGS.true_class,
-                                            adv_class,
-                                            FLAGS.input_minval,
-                                            FLAGS.input_maxval,
-                                            FLAGS.epsilon)
 
     optimization_params = {
         'init_penalty': FLAGS.init_penalty,
@@ -117,6 +111,15 @@ def main(_):
         'projection_steps': FLAGS.projection_steps
     }
     with tf.Session() as sess:
+      dual = dual_formulation.DualFormulation(sess,
+                                              dual_var,
+                                              nn_params,
+                                              test_input,
+                                              FLAGS.true_class,
+                                              adv_class,
+                                              FLAGS.input_minval,
+                                              FLAGS.input_maxval,
+                                              FLAGS.epsilon)
       optimization_object = optimization.Optimization(dual, sess,
                                                       optimization_params)
       is_cert_found = optimization_object.run_optimization()
