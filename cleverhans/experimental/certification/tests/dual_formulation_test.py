@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.experimental.certification import dual_formulation
-from cleverhans.experimental.certification import neural_net_params
+from cleverhans.experimental.certification import nn
 
 
 class DualFormulationTest(unittest.TestCase):
@@ -20,8 +20,7 @@ class DualFormulationTest(unittest.TestCase):
     net_biases = [np.transpose(np.matrix([0, 0, 0])),
                   np.transpose(np.matrix([0, 0]))]
     net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    nn_params1 = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -37,8 +36,13 @@ class DualFormulationTest(unittest.TestCase):
     lambda_quad = lambda_pos
     lambda_lu = lambda_pos
     nu = scalar
-    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
-                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
+    dual_var = {
+        'lambda_pos': lambda_pos,
+        'lambda_neg': lambda_neg,
+        'lambda_quad': lambda_quad,
+        'lambda_lu': lambda_lu,
+        'nu': nu
+    }
     dual_formulation_object = dual_formulation.DualFormulation(dual_var,
                                                                nn_params1,
                                                                test_input,
@@ -52,11 +56,12 @@ class DualFormulationTest(unittest.TestCase):
   def test_set_differentiable_objective(self):
     # Function to test the function that sets the differentiable objective.
     net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    net_biases = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    nn_params1 = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -72,8 +77,13 @@ class DualFormulationTest(unittest.TestCase):
     lambda_quad = lambda_pos
     lambda_lu = lambda_pos
     nu = scalar
-    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
-                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
+    dual_var = {
+        'lambda_pos': lambda_pos,
+        'lambda_neg': lambda_neg,
+        'lambda_quad': lambda_quad,
+        'lambda_lu': lambda_lu,
+        'nu': nu
+    }
     dual_formulation_object = dual_formulation.DualFormulation(dual_var,
                                                                nn_params1,
                                                                test_input,
@@ -91,11 +101,12 @@ class DualFormulationTest(unittest.TestCase):
   def test_get_full_psd_matrix(self):
     # Function to test product with PSD matrix.
     net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    net_biases = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    nn_params1 = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -111,8 +122,13 @@ class DualFormulationTest(unittest.TestCase):
     lambda_quad = lambda_pos
     lambda_lu = lambda_pos
     nu = scalar
-    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
-                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
+    dual_var = {
+        'lambda_pos': lambda_pos,
+        'lambda_neg': lambda_neg,
+        'lambda_quad': lambda_quad,
+        'lambda_lu': lambda_lu,
+        'nu': nu
+    }
     dual_formulation_object = dual_formulation.DualFormulation(dual_var,
                                                                nn_params1,
                                                                test_input,
@@ -128,11 +144,12 @@ class DualFormulationTest(unittest.TestCase):
   def test_get_psd_product(self):
     # Function to test implicit product with PSD matrix.
     net_weights = [[[2, 2], [3, 3], [4, 4]], [[1, 1, 1], [-1, -1, -1]]]
-    net_biases = [np.transpose(np.matrix([0, 0, 0])),
-                  np.transpose(np.matrix([0, 0]))]
+    net_biases = [
+        np.transpose(np.matrix([0, 0, 0])),
+        np.transpose(np.matrix([0, 0]))
+    ]
     net_layer_types = ['ff_relu', 'ff']
-    nn_params1 = neural_net_params.NeuralNetParams(net_weights, net_biases,
-                                                   net_layer_types)
+    nn_params1 = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
     test_input = np.transpose(np.matrix([0, 0]))
     true_class = 0
@@ -148,8 +165,13 @@ class DualFormulationTest(unittest.TestCase):
     lambda_quad = lambda_pos
     lambda_lu = lambda_pos
     nu = scalar
-    dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
-                'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
+    dual_var = {
+        'lambda_pos': lambda_pos,
+        'lambda_neg': lambda_neg,
+        'lambda_quad': lambda_quad,
+        'lambda_lu': lambda_lu,
+        'nu': nu
+    }
     dual_formulation_object = dual_formulation.DualFormulation(dual_var,
                                                                nn_params1,
                                                                test_input,
@@ -162,16 +184,15 @@ class DualFormulationTest(unittest.TestCase):
 
     # Testing if the values match
     six_dim_tensor = tf.random_uniform(shape=(6, 1), dtype=tf.float32)
-    implicit_product = dual_formulation_object.get_psd_product(
-        six_dim_tensor)
+    implicit_product = dual_formulation_object.get_psd_product(six_dim_tensor)
     explicit_product = tf.matmul(matrix_m, six_dim_tensor)
     with tf.Session() as sess:
-      [implicit_product_value, explicit_product_value] = sess.run(
-          [implicit_product, explicit_product])
-      self.assertEqual(np.shape(implicit_product_value),
-                       np.shape(explicit_product_value))
-      self.assertLess(np.max(np.abs(
-          implicit_product_value - explicit_product_value)), 1E-5)
+      [implicit_product_value,
+       explicit_product_value] = sess.run([implicit_product, explicit_product])
+      self.assertEqual(
+          np.shape(implicit_product_value), np.shape(explicit_product_value))
+      self.assertLess(
+          np.max(np.abs(implicit_product_value - explicit_product_value)), 1E-5)
 
 
 if __name__ == '__main__':

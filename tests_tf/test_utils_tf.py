@@ -30,6 +30,15 @@ class TestUtilsTF(CleverHansTest):
     super(TestUtilsTF, self).setUp()
     self.sess = tf.Session()
 
+  def test_clip_by_value_numpy_dtype(self):
+    # Test that it's possible to use clip_by_value while mixing numpy and tf
+    clip_min = np.zeros((1,))
+    clip_max = tf.ones((1,))
+    x = tf.ones((1,))
+    # The point of this test is just to make sure the casting logic doesn't raise an exception
+    utils_tf.clip_by_value(x, clip_min, clip_max)
+
+
   def test_l2_batch_normalize(self):
     x = tf.random_normal((100, 1000))
     x_norm = self.sess.run(utils_tf.l2_batch_normalize(x))
