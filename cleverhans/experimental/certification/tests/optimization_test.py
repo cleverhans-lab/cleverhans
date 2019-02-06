@@ -60,7 +60,9 @@ class OptimizationTest(tf.test.TestCase):
                                     dtype=tf.float32), shape=(1, 1))
     dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
                 'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
+    sess = tf.Session()
+    dual_formulation_object = dual_formulation.DualFormulation(sess,
+                                                               dual_var,
                                                                nn_params1,
                                                                test_input,
                                                                true_class,

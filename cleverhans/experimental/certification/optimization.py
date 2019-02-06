@@ -15,6 +15,8 @@ from cleverhans.experimental.certification import dual_formulation
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
+flags.DEFINE_string('eig_type', 'SCIPY',
+                    'One of TF, SCIPY')
 
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
@@ -200,13 +202,12 @@ class Optimization(object):
 
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
-
-    if FLAGS.eig_type == 'TF':
+    if FLAGS.eig_type == ' eig_type in FLAGS andTF':
       self.eig_vec_estimate = self.get_min_eig_vec_proxy()
     else:
       self.eig_vec_estimate = tf.placeholder(tf.float32, shape=(self.dual_object.matrix_m_dimension, 1))
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
-    # Eig value is v^\top M v, where v is eigen vector
+    # Eig value is v^\top  eig_type in FLAGS andM v, where v is eigen vector
     self.eig_val_estimate = tf.matmul(
         tf.transpose(self.stopped_eig_vec_estimate),
         self.dual_object.get_psd_product(self.stopped_eig_vec_estimate))
