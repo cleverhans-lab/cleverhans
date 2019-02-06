@@ -86,6 +86,12 @@ class DualFormulation(object):
       self.lower.append(tf.nn.relu(current_lower))
       self.upper.append(tf.nn.relu(current_upper))
 
+    # Run lower and upper because they don't change
+    self.pre_lower = self.sess.run(self.pre_lower)
+    self.pre_upper = self.sess.run(self.pre_upper)
+    self.lower = self.sess.run(self.lower)
+    self.upper = self.sess.run(self.upper)
+
     # Using the preactivation lower and upper bounds
     # to compute the linear regions
     self.positive_indices = []
@@ -94,15 +100,12 @@ class DualFormulation(object):
 
     for i in range(0, self.nn_params.num_hidden_layers + 1):
       # Positive index = 1 if the ReLU is always "on"
-      self.positive_indices.append(tf.cast(self.pre_lower[i] >= 0, dtype=tf.float32))
+      self.positive_indices.append(np.asarray(self.pre_lower[i] >= 0, dtype=np.float32))
       # Negative index = 1 if the ReLU is always off
-      self.negative_indices.append(tf.cast(self.pre_upper[i] <= 0, dtype=tf.float32))
-      self.switch_indices.append(tf.cast(
-          tf.multiply(self.pre_lower[i], self.pre_upper[i]) < 0, dtype=tf.float32))
-
-    self.positive_indices = self.sess.run(self.positive_indices)
-    self.negative_indices = self.sess.run(self.negative_indices)
-    self.switch_indices = self.sess.run(self.switch_indices)
+      self.negative_indices.append(np.asarray(self.pre_upper[i] <= 0, dtype=np.float32))
+      # Switch index = 1 if the ReLU could be either on or off
+      self.switch_indices.append(np.asarray(
+          np.multiply(self.pre_lower[i], self.pre_upper[i]) < 0, dtype=np.float32))
 
     # Computing the optimization terms
     self.lambda_pos = [x for x in dual_var['lambda_pos']]
@@ -303,15 +306,12 @@ class DualFormulation(object):
     lambda_lu_val = self.sess.run([x for x in self.lambda_lu])
     nu_val = self.sess.run(self.nu)
 
-    lower = self.sess.run([x for x in self.lower])
-    upper = self.sess.run([x for x in self.upper])
-
     # Creating dictionary to feed placeholders
     dual_feed_dict = {}
-    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_pos, lambda_pos_val)})
-    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_neg, lambda_neg_val)})
-    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_quad, lambda_quad_val)})
-    dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, lambda_lu_val)})
+    dual_feed_dict.update(zip(self.lambda_pos, lambda_pos_val))
+    dual_feed_dict.update(zip(self.lambda_neg, lambda_neg_val))
+    dual_feed_dict.update(zip(self.lambda_quad, lambda_quad_val))
+    dual_feed_dict.update(zip(self.lambda_lu, lambda_lu_val))
     dual_feed_dict.update({self.nu: nu_val})
 
     old_matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
@@ -357,7 +357,7 @@ class DualFormulation(object):
         # Making H PSD
         new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-v, 0) + 1E-6
         # Adjusting the value of \lambda_neg to make change in g small
-        new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((lower[i] + upper[i]),
+        new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((self.lower[i] + self.upper[i]),
                                                                 (lambda_lu_val[i] -
                                                                  new_lambda_lu_val[i]))
         new_lambda_neg_val[i] = (np.multiply(self.negative_indices[i],

@@ -62,7 +62,7 @@ flags.DEFINE_enum('verbosity', 'INFO',
                   ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                   'Logging verbosity level.')
 flags.DEFINE_string('eig_type', 'SCIPY',
-                    'One of TF, SCIPY')
+                    'Method to compute eigenvalues (TF or SCIPY), SCIPY')
 
 
 def main(_):
@@ -108,7 +108,8 @@ def main(_):
         'momentum_parameter': FLAGS.momentum_parameter,
         'print_stats_steps': FLAGS.print_stats_steps,
         'stats_folder': FLAGS.stats_folder,
-        'projection_steps': FLAGS.projection_steps
+        'projection_steps': FLAGS.projection_steps,
+        'eig_type': FLAGS.eig_type
     }
     with tf.Session() as sess:
       dual = dual_formulation.DualFormulation(sess,

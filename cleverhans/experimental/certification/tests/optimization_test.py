@@ -87,7 +87,8 @@ class OptimizationTest(tf.test.TestCase):
           'smooth_decay': 0.9,
           'inner_num_steps': 10,
           'optimizer': 'adam',
-          'momentum_parameter': 0.9
+          'momentum_parameter': 0.9,
+          'eig_type': 'TF'
       }
       optimization_object = optimization.Optimization(dual_formulation_object,
                                                       sess, optimization_params)
@@ -106,7 +107,8 @@ class OptimizationTest(tf.test.TestCase):
         'smooth_decay': 0.9,
         'inner_num_steps': 10,
         'optimizer': 'adam',
-        'momentum_parameter': 0.9
+        'momentum_parameter': 0.9,
+        'eig_type': 'TF'
     }
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
@@ -185,7 +187,8 @@ class OptimizationTest(tf.test.TestCase):
         'momentum_parameter': 0.9,
         'print_stats_steps': 1,
         'stats_folder': None,
-        'projection_steps': 200
+        'projection_steps': 200,
+        'eig_type': 'TF'
     }
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())

@@ -13,11 +13,6 @@ from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
 from cleverhans.experimental.certification import dual_formulation
 
-flags = tf.app.flags
-FLAGS = flags.FLAGS
-flags.DEFINE_string('eig_type', 'SCIPY',
-                    'One of TF, SCIPY')
-
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -10.0
 
@@ -39,6 +34,7 @@ class Optimization(object):
         around 0.001)
         smooth_decay - The factor by which to decay after every outer loop epoch
         optimizer - one of gd, adam, momentum or adagrad
+        eig_type - The method to compute eigenvalues (TF or SCIPY)
     """
     self.sess = sess
     self.dual_object = dual_formulation_object
@@ -202,7 +198,7 @@ class Optimization(object):
 
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
-    if FLAGS.eig_type == ' eig_type in FLAGS andTF':
+    if self.params['eig_type'] == 'TF':
       self.eig_vec_estimate = self.get_min_eig_vec_proxy()
     else:
       self.eig_vec_estimate = tf.placeholder(tf.float32, shape=(self.dual_object.matrix_m_dimension, 1))
@@ -303,7 +299,7 @@ class Optimization(object):
                       self.penalty_placeholder: penalty_val,
                       self.learning_rate: learning_rate_val}
 
-    if FLAGS.eig_type == 'SCIPY':
+    if self.params['eig_type'] == 'SCIPY':
       current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec(
           self.current_eig_val_estimate)
       step_feed_dict.update({
@@ -330,12 +326,6 @@ class Optimization(object):
             self.eig_vec_estimate,
             self.eig_val_estimate,
             self.dual_object.nu], feed_dict=step_feed_dict)
-      # To reset the scipy_eig value estimate in case it has diverged
-      if(not self.current_scipy_eig_val or self.current_step % 1000 == 0):
-        print("Computing full scipy value")
-        self.current_eig_vec_val, self.current_scipy_eig_val = self.get_scipy_eig_vec(None)
-      else:
-        self.current_eig_vec_val, self.current_scipy_eig_val = self.get_scipy_eig_vec(self.current_scipy_eig_val - 0.1)
 
       stats = {
           'total_objective':
