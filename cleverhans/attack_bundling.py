@@ -1097,7 +1097,8 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
                                clip_min, clip_max, nb_iter,
                                report_path,
                                spsa_samples=SPSA.DEFAULT_SPSA_SAMPLES,
-                               spsa_iters=SPSA.DEFAULT_SPSA_ITERS):
+                               spsa_iters=SPSA.DEFAULT_SPSA_ITERS,
+                               eval_batch_size=BATCH_SIZE):
   """Runs the MaxConfidence attack using SPSA as the underlying optimizer.
 
   Even though this runs only one attack, it must be implemented as a bundler
@@ -1118,6 +1119,7 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   :param nb_iter: int, number of iterations for one version of PGD attacks
     (will also run another version with 25X more iterations)
   :param report_path: str, the path that the report will be saved to.
+  :param eval_batch_size: int, batch size for evaluation (as opposed to making attacks)
   """
   spsa = SPSA(model, sess)
   spsa_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max,
@@ -1135,4 +1137,4 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   new_work_goal = {config: 1 for config in attack_configs}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
-                 attack_batch_size=batch_size)
+                 attack_batch_size=batch_size, eval_batch_size=eval_batch_size)
