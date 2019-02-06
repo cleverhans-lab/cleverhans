@@ -129,7 +129,8 @@ def make_confidence_report_spsa(filepath, train_start=TRAIN_START,
   spsa_max_confidence_recipe(sess, model, x_data, y_data, nb_classes, eps,
                              clip_min, clip_max, nb_iter, report_path,
                              spsa_samples=spsa_samples,
-                             spsa_iters=spsa_iters)
+                             spsa_iters=spsa_iters,
+                             eval_batch_size=batch_size)
 
 def main(argv=None):
   """
