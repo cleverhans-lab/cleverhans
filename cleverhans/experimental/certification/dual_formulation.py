@@ -16,8 +16,6 @@ from cleverhans.experimental.certification import utils
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
-UPPER_BOUND = 1E5
-
 
 class DualFormulation(object):
   """DualFormulation is a class that creates the dual objective function
@@ -300,26 +298,16 @@ class DualFormulation(object):
   def compute_certificate(self):
     """ Function to compute the certificate based either current value
     or dual variables loaded from dual folder """
-    lambda_pos_val = self.sess.run([x for x in self.lambda_pos])
-    lambda_neg_val = self.sess.run([x for x in self.lambda_neg])
-    lambda_quad_val = self.sess.run([x for x in self.lambda_quad])
-    lambda_lu_val = self.sess.run([x for x in self.lambda_lu])
-    nu_val = self.sess.run(self.nu)
+    lambda_neg_val = self.sess.run(self.lambda_neg)
+    lambda_lu_val = self.sess.run(self.lambda_lu)
 
-    # Creating dictionary to feed placeholders
-    dual_feed_dict = {}
-    dual_feed_dict.update(zip(self.lambda_pos, lambda_pos_val))
-    dual_feed_dict.update(zip(self.lambda_neg, lambda_neg_val))
-    dual_feed_dict.update(zip(self.lambda_quad, lambda_quad_val))
-    dual_feed_dict.update(zip(self.lambda_lu, lambda_lu_val))
-    dual_feed_dict.update({self.nu: nu_val})
+    old_matrix_h, old_matrix_m = self.sess.run([self.matrix_h, self.matrix_m])
 
-    old_matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
-    old_matrix_m = self.sess.run(self.matrix_m, feed_dict=dual_feed_dict)
+    min_eig_val_m, _ = eigs(old_matrix_m, k=1, which='SR',
+                            tol=1E-5)
 
-    min_eig_val_m, _ = eigs(old_matrix_m, k=1, which='LR',
-                            tol=1E-5, sigma=-0.1)
-
+    # It's likely that the approximation is off by the tolerance value,
+    # so we shift it back
     min_eig_val_m = np.real(min_eig_val_m) - 1E-5
 
     dim = self.matrix_m_dimension
@@ -340,13 +328,12 @@ class DualFormulation(object):
     try:
       cholesky(old_matrix_h - np.real(min_eig_val_h)*np.eye(dim))
     except np.linalg.LinAlgError:
-      print("Increased min eigen value of H")
       min_eig_val_h = 2*min_eig_val_h
-    else:
-      pass
-    print("Min eig of h", min_eig_val_h)
 
-    current_certificate = UPPER_BOUND
+    # We want to find the minimum certificate, so initially we can set
+    # the value to infinity.
+    current_certificate = np.inf
+    dual_feed_dict = {}
 
     values = np.linspace(min_eig_val_m, min_eig_val_h, 5)
     for v in values:
@@ -365,8 +352,8 @@ class DualFormulation(object):
                                  np.multiply(self.switch_indices[i],
                                              np.maximum(new_lambda_neg_val[i], 0)))
 
-      dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_lu, new_lambda_lu_val)})
-      dual_feed_dict.update({placeholder:value for placeholder, value in zip(self.lambda_neg, new_lambda_neg_val)})
+      dual_feed_dict.update(zip(self.lambda_lu, new_lambda_lu_val))
+      dual_feed_dict.update(zip(self.lambda_neg, new_lambda_neg_val))
       scalar_f = self.sess.run(self.scalar_f, feed_dict=dual_feed_dict)
       vector_g = self.sess.run(self.vector_g, feed_dict=dual_feed_dict)
       matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
@@ -379,10 +366,8 @@ class DualFormulation(object):
         cholesky(check_psd_matrix_m)
       except np.linalg.LinAlgError:
         print("Problem: Matrix is not PSD")
-      else:
-        print("All good: Matrix is PSD")
+
       computed_certificate = scalar_f + 0.5*second_term
-      print("Computed certificate", computed_certificate)
       current_certificate = np.minimum(computed_certificate, current_certificate)
 
     return current_certificate
