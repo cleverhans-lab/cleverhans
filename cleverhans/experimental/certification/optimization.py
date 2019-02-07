@@ -7,7 +7,7 @@ import json
 import os
 import numpy as np
 
-from scipy.sparse.linalg import eigs
+from scipy.sparse.linalg import eigs, LinearOperator
 import tensorflow as tf
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
@@ -35,7 +35,7 @@ class Optimization(object):
         around 0.001)
         smooth_decay - The factor by which to decay after every outer loop epoch
         optimizer - one of gd, adam, momentum or adagrad
-        eig_type - The method to compute eigenvalues (TF or SCIPY)
+        eig_type - The method to compute eigenvalues (TF or SCIPY_FF or SCIPY_CONV)
     """
     self.sess = sess
     self.dual_object = dual_formulation_object
@@ -115,11 +115,30 @@ class Optimization(object):
       eig_vec: Minimum absolute eigen value
       eig_val: Corresponding eigen vector
     """
-    matrix_m = self.sess.run(self.dual_object.matrix_m)
-    min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR',
-                                                   tol=1E-4)
-    min_eig_vec_val = np.reshape(np.real(min_eig_vec_val), [1, 1])
-    return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
+    if self.params['eig_type'] == 'SCIPY_FF':
+      matrix_m = self.sess.run(self.dual_object.matrix_m)
+      min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR',
+                                                    tol=1E-4)
+      min_eig_vec_val = np.reshape(np.real(min_eig_vec_val), [1, 1])
+      return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
+    else:
+      dim = self.dual_object.matrix_m_dimension
+      input_vector = tf.placeholder(tf.float32, shape=(dim, 1))
+      output_vector = self.dual_object.get_psd_product(input_vector)
+
+      def np_vector_prod_fn(np_vector):
+        np_vector = np.reshape(np_vector, [-1, 1])
+        output_np_vector = self.sess.run(output_vector, feed_dict={input_vector:np_vector})
+        return output_np_vector
+      linear_operator = LinearOperator((dim, dim), matvec=np_vector_prod_fn)
+      # Performing shift invert scipy operation when eig val estimate is available
+      if(eig_val_estimate):
+        min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator, 
+          k=1, tol=1E-4, sigma=eig_val_estimate)
+      else:
+        min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator, 
+          k=1, which='SR', tol=1E-4)
+      return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
 
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
@@ -225,7 +244,7 @@ class Optimization(object):
                       self.penalty_placeholder: penalty_val,
                       self.learning_rate: learning_rate_val}
 
-    if self.params['eig_type'] == 'SCIPY':
+    if self.params['eig_type'] == 'SCIPY_FF' or self.params['eig_type'] == 'SCIPY_CONV':
       current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec()
       step_feed_dict.update({
           self.eig_vec_estimate: current_eig_vector

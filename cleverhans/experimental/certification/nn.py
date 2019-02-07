@@ -11,12 +11,15 @@ import json
 import numpy as np
 import tensorflow as tf
 
+STRIDE = 2
+PADDING = 'SAME'
+
 class NeuralNetwork(object):
   """NeuralNetwork is a class that interfaces the verification code with
   the neural net parameters (weights).
   """
 
-  def __init__(self, net_weights, net_biases, net_layer_types):
+  def __init__(self, net_weights, net_biases, net_layer_types, input_shape=None):
     """Function to initialize NeuralNetParams class.
 
     Args:
@@ -29,6 +32,7 @@ class NeuralNetwork(object):
         'ff_relu': Simple feedforward layer with ReLU activations
         'ff_conv': Convolution layer with no activation
         'ff_conv_relu': Convolution layer with ReLU activation
+      input_shape = [num_rows, num_columns, num_channels] at the input layer
 
     Raises:
       ValueError: the input lists of net params are not of the same length
@@ -43,15 +47,52 @@ class NeuralNetwork(object):
     self.biases = []
     self.layer_types = []
     self.sizes = []
+    self.input_shapes = []
+    self.output_shapes = []
+    if(input_shape is not None):
+      current_num_rows = input_shape[0]
+      current_num_columns = input_shape[1]
+      current_num_channels = input_shape[2]
+
     # Setting the sizes of the layers of the network
     # sizes[i] contains the size of x_i
     for i in range(self.num_hidden_layers):
       shape = np.shape(net_weights[i])
-      self.sizes.append(int(shape[1]))
+      # self.sizes.append(int(shape[1]))
       self.weights.append(
           tf.convert_to_tensor(net_weights[i], dtype=tf.float32))
-      self.biases.append(tf.convert_to_tensor(net_biases[i], dtype=tf.float32))
+      # self.biases.append(tf.convert_to_tensor(net_biases[i], dtype=tf.float32))
       self.layer_types.append(net_layer_types[i])
+
+      if(self.layer_types[i] in {'ff', 'ff_relu'}):
+        self.sizes.append(int(shape[1]))
+        # For feedforward networks, no unraveling the bias terms
+
+        small_bias = tf.convert_to_tensor(net_biases[i], dtype=tf.float32)
+        self.biases.append(tf.reshape(small_bias, [-1, 1]))
+        # Assumes that x^{i+1} = W_i x^i
+        self.input_shapes.append([int(shape[1]), 1])
+        self.output_shapes.append([int(shape[0]), 1])
+
+      # Convolution type
+      else:
+        num_filters = shape[3]
+        self.input_shapes.append([1, 
+          current_num_rows, current_num_columns, current_num_channels])
+        self.sizes.append(current_num_rows*current_num_columns*current_num_channels)
+        current_num_channels = num_filters
+        # For propagating across multiple conv layers
+        if(PADDING == 'SAME'):
+          current_num_rows = int(current_num_rows/STRIDE)
+          current_num_columns = int(current_num_columns/STRIDE)
+        self.output_shapes.append(
+          [1, current_num_rows, current_num_columns, current_num_channels])
+
+        # For conv networks, unraveling the bias terms                                                                                           
+        small_bias = tf.convert_to_tensor(net_biases[i], dtype=tf.float32)
+        large_bias = tf.tile(tf.reshape(small_bias, [-1, 1]), 
+          [current_num_rows*current_num_columns, 1])
+        self.biases.append(large_bias)
 
     # Last layer shape
     self.sizes.append(int(np.shape(net_weights[self.num_hidden_layers - 1])[0]))
@@ -74,22 +115,51 @@ class NeuralNetwork(object):
     Raises:
       ValueError: if the layer_index is negative or more than num hidden layers
     """
-    if (layer_index < 0 or layer_index > self.num_hidden_layers):
+    if(layer_index < 0 or layer_index > self.num_hidden_layers):
       raise ValueError('Invalid layer index')
 
-    if (self.layer_types[layer_index] == 'ff' or
-        self.layer_types[layer_index] == 'ff_relu'):
-      if is_transpose:
-        return tf.matmul(tf.transpose(self.weights[layer_index]), vector)
-      elif is_abs:
-        return tf.matmul(tf.abs(self.weights[layer_index]), vector)
+    layer_type = self.layer_types[layer_index]
+    # Reshaping the input for convolution appropriately
+    if is_transpose:
+      vector = tf.reshape(vector, self.output_shapes[layer_index])
+      if (layer_type in {'ff', 'ff_relu'}):
+        return_vector = tf.matmul(tf.transpose(self.weights[layer_index]), vector)
+      elif(layer_type in {'conv', 'conv_relu'}):
+        return_vector = tf.nn.conv2d_transpose(vector, self.weights[layer_index],
+                                               output_shape=self.input_shapes[layer_index],
+                                               strides=[1, STRIDE, STRIDE, 1],
+                                               padding=PADDING)
       else:
-        return tf.matmul(self.weights[layer_index], vector)
+        raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
+      return tf.reshape(return_vector, (self.sizes[layer_index], 1))
 
-    raise NotImplementedError('Unsupported layer type: {0}'.format(
-        self.layer_types[layer_index]))
+    elif is_abs:
+      vector = tf.reshape(vector, self.input_shapes[layer_index])
+      if(layer_type in {'ff', 'ff_relu'}):
+        return_vector = tf.matmul(tf.abs(self.weights[layer_index]), vector)
+      elif(layer_type in {'conv', 'conv_relu'}):
+        return_vector = tf.nn.conv2d(vector, 
+                                    tf.abs(self.weights[layer_index]), 
+                                    strides=[1, STRIDE, STRIDE, 1],
+                                    padding=PADDING)
+      else:
+        raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
+      return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
+    
+    # Simple forward pass 
+    else:
+      vector = tf.reshape(vector, self.input_shapes[layer_index])
+      if(layer_type in {'ff', 'ff_relu'}):
+        return_vector = tf.matmul(self.weights[layer_index], vector)
+      elif (layer_type in {'conv', 'conv_relu'}):
+        return_vector = tf.nn.conv2d(vector, self.weights[layer_index], 
+                                    strides=[1, STRIDE, STRIDE, 1],
+                                    padding=PADDING)
+      else:
+        raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
+      return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
 
-def load_network_from_checkpoint(checkpoint, model_json):
+def load_network_from_checkpoint(checkpoint, model_json, input_shape=None):
   """Function to read the weights from checkpoint based on json description.
 
     Args:
@@ -106,6 +176,7 @@ def load_network_from_checkpoint(checkpoint, model_json):
         convention Note that last layer is always feedforward
         (verification operates at the layer below the final
         softmax for more numerical stability)
+      input_shape: [num_rows, num_columns, num_channels] of the input image
 
     Returns:
       net_weights: list of numpy matrices of weights of each layer
@@ -148,8 +219,11 @@ def load_network_from_checkpoint(checkpoint, model_json):
     # We want weights W such that x^{i+1} = W^i x^i + b^i
     # Can think of a hack involving matching shapes but if shapes are equal
     # it can be ambiguous
-    if layer_model_var['is_transpose']:
+    # TODO(shankarshreya): delete this
+    # if layer_model_var['is_transpose']:
+    #   layer_weight = np.transpose(layer_weight)
+    if layer_model_var['type'] in {'ff', 'ff_relu'}:
       layer_weight = np.transpose(layer_weight)
     net_weights.append(layer_weight)
     net_biases.append(np.reshape(layer_bias, (np.size(layer_bias), 1)))
-  return NeuralNetwork(net_weights, net_biases, net_layer_types)
+  return NeuralNetwork(net_weights, net_biases, net_layer_types, input_shape)

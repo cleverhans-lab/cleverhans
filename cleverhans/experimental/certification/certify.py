@@ -64,14 +64,21 @@ flags.DEFINE_enum('verbosity', 'INFO',
 flags.DEFINE_string('eig_type', 'SCIPY',
                     'Method to compute eigenvalues (TF or SCIPY), SCIPY')
 
+dataset = 'MNIST'
 
 def main(_):
   tf.logging.set_verbosity(FLAGS.verbosity)
 
   start_time = time.time()
 
+  if dataset == 'MNIST':
+    num_rows = 28
+    num_columns = 28
+    num_channels = 1
+
   # Initialize neural network based on config files
-  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json)
+  input_shape = [num_rows, num_columns, num_channels]
+  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
   dual_var = utils.initialize_dual(
