@@ -94,7 +94,7 @@ class ConfidenceReportEntry(object):
     assert isinstance(correctness, np.ndarray)
     assert correctness.ndim == 1
     assert confidence.ndim == 1
-    assert correctness.dtype == np.bool
+    assert correctness.dtype == np.bool, correctness.dtype
     assert np.issubdtype(confidence.dtype, np.floating)
     assert correctness.shape == confidence.shape
     assert confidence.min() >= 0.
