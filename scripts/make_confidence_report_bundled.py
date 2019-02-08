@@ -28,6 +28,7 @@ from cleverhans.utils_tf import silence
 silence()
 from cleverhans.compat import flags
 from cleverhans.confidence_report import make_confidence_report_bundled
+from cleverhans.confidence_report import BATCH_SIZE
 from cleverhans.confidence_report import TRAIN_START, TRAIN_END
 from cleverhans.confidence_report import TEST_START, TEST_END
 from cleverhans.confidence_report import WHICH_SET
@@ -52,7 +53,7 @@ def main(argv=None):
                                  test_end=FLAGS.test_end,
                                  which_set=FLAGS.which_set,
                                  recipe=FLAGS.recipe,
-                                 report_path=FLAGS.report_path)
+                                 report_path=FLAGS.report_path, batch_size=FLAGS.batch_size)
 
 
 if __name__ == '__main__':
@@ -68,4 +69,5 @@ if __name__ == '__main__':
                       ' to run')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
   flags.DEFINE_string('report_path', REPORT_PATH, 'Report path')
+  flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Batch size')
   tf.app.run()
