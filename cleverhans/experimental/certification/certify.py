@@ -81,6 +81,10 @@ def main(_):
   nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
+  tf.logging.info('Loaded neural network with input shapes: %s',
+                  nn_params.input_shapes)
+  tf.logging.info('Loaded neural network with output shapes: %s',
+                  nn_params.output_shapes)
   dual_var = utils.initialize_dual(
       nn_params, FLAGS.init_dual_file, init_nu=FLAGS.init_nu)
 

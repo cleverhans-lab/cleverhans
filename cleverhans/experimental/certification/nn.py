@@ -49,6 +49,7 @@ class NeuralNetwork(object):
     self.sizes = []
     self.input_shapes = []
     self.output_shapes = []
+    self.has_conv = False
     if(input_shape is not None):
       current_num_rows = input_shape[0]
       current_num_columns = input_shape[1]
@@ -76,6 +77,7 @@ class NeuralNetwork(object):
 
       # Convolution type
       else:
+        self.has_conv = True
         num_filters = shape[3]
         self.input_shapes.append([1, 
           current_num_rows, current_num_columns, current_num_channels])
@@ -94,8 +96,10 @@ class NeuralNetwork(object):
           [current_num_rows*current_num_columns, 1])
         self.biases.append(large_bias)
 
-    # Last layer shape
-    self.sizes.append(int(np.shape(net_weights[self.num_hidden_layers - 1])[0]))
+    # Last layer shape: always ff 
+    final_dim = int(np.shape(net_weights[self.num_hidden_layers])[1])
+    self.sizes.append(final_dim)
+    self.input_shapes.append([final_dim, 1])
     self.final_weights = tf.convert_to_tensor(
         net_weights[self.num_hidden_layers], dtype=tf.float32)
     self.final_bias = tf.convert_to_tensor(
@@ -155,6 +159,7 @@ class NeuralNetwork(object):
         return_vector = tf.nn.conv2d(vector, self.weights[layer_index], 
                                     strides=[1, STRIDE, STRIDE, 1],
                                     padding=PADDING)
+        print(return_vector.shape)
       else:
         raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
       return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))

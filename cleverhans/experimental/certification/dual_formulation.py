@@ -127,8 +127,9 @@ class DualFormulation(object):
 
     # Construct objectives, matrices, and certificate
     self.set_differentiable_objective()
-    self.get_full_psd_matrix()
-    self.construct_certificate()
+    if not self.nn_params.has_conv:
+      self.get_full_psd_matrix()
+      self.construct_certificate()
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""

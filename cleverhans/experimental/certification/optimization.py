@@ -132,11 +132,7 @@ class Optimization(object):
         return output_np_vector
       linear_operator = LinearOperator((dim, dim), matvec=np_vector_prod_fn)
       # Performing shift invert scipy operation when eig val estimate is available
-      if(eig_val_estimate):
-        min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator, 
-          k=1, tol=1E-4, sigma=eig_val_estimate)
-      else:
-        min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator, 
+      min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator, 
           k=1, which='SR', tol=1E-4)
       return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
 
