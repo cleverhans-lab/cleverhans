@@ -79,8 +79,7 @@ class NeuralNetwork(object):
       else:
         self.has_conv = True
         num_filters = shape[3]
-        self.input_shapes.append([1, 
-          current_num_rows, current_num_columns, current_num_channels])
+        self.input_shapes.append([1, current_num_rows, current_num_columns, current_num_channels])
         self.sizes.append(current_num_rows*current_num_columns*current_num_channels)
         current_num_channels = num_filters
         # For propagating across multiple conv layers
@@ -88,15 +87,15 @@ class NeuralNetwork(object):
           current_num_rows = int(current_num_rows/STRIDE)
           current_num_columns = int(current_num_columns/STRIDE)
         self.output_shapes.append(
-          [1, current_num_rows, current_num_columns, current_num_channels])
+            [1, current_num_rows, current_num_columns, current_num_channels])
 
-        # For conv networks, unraveling the bias terms                                                                                           
+        # For conv networks, unraveling the bias terms
         small_bias = tf.convert_to_tensor(net_biases[i], dtype=tf.float32)
-        large_bias = tf.tile(tf.reshape(small_bias, [-1, 1]), 
-          [current_num_rows*current_num_columns, 1])
+        large_bias = tf.tile(tf.reshape(small_bias, [-1, 1]),
+                             [current_num_rows*current_num_columns, 1])
         self.biases.append(large_bias)
 
-    # Last layer shape: always ff 
+    # Last layer shape: always ff
     final_dim = int(np.shape(net_weights[self.num_hidden_layers])[1])
     self.sizes.append(final_dim)
     self.input_shapes.append([final_dim, 1])
@@ -142,24 +141,23 @@ class NeuralNetwork(object):
       if(layer_type in {'ff', 'ff_relu'}):
         return_vector = tf.matmul(tf.abs(self.weights[layer_index]), vector)
       elif(layer_type in {'conv', 'conv_relu'}):
-        return_vector = tf.nn.conv2d(vector, 
-                                    tf.abs(self.weights[layer_index]), 
-                                    strides=[1, STRIDE, STRIDE, 1],
-                                    padding=PADDING)
+        return_vector = tf.nn.conv2d(vector,
+                                     tf.abs(self.weights[layer_index]),
+                                     strides=[1, STRIDE, STRIDE, 1],
+                                     padding=PADDING)
       else:
         raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
       return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
-    
-    # Simple forward pass 
+
+    # Simple forward pass
     else:
       vector = tf.reshape(vector, self.input_shapes[layer_index])
       if(layer_type in {'ff', 'ff_relu'}):
         return_vector = tf.matmul(self.weights[layer_index], vector)
       elif (layer_type in {'conv', 'conv_relu'}):
-        return_vector = tf.nn.conv2d(vector, self.weights[layer_index], 
-                                    strides=[1, STRIDE, STRIDE, 1],
-                                    padding=PADDING)
-        print(return_vector.shape)
+        return_vector = tf.nn.conv2d(vector, self.weights[layer_index],
+                                     strides=[1, STRIDE, STRIDE, 1],
+                                     padding=PADDING)
       else:
         raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
       return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))

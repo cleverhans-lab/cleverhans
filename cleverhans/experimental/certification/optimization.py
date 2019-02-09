@@ -118,7 +118,7 @@ class Optimization(object):
     if self.params['eig_type'] == 'SCIPY_FF':
       matrix_m = self.sess.run(self.dual_object.matrix_m)
       min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR',
-                                                    tol=1E-4)
+                                                     tol=1E-4)
       min_eig_vec_val = np.reshape(np.real(min_eig_vec_val), [1, 1])
       return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
     else:
@@ -132,8 +132,9 @@ class Optimization(object):
         return output_np_vector
       linear_operator = LinearOperator((dim, dim), matvec=np_vector_prod_fn)
       # Performing shift invert scipy operation when eig val estimate is available
-      min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator, 
-          k=1, which='SR', tol=1E-4)
+      min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator,
+                                                     k=1, which='SR', tol=1E-4)
+      min_eig_vec_val = np.reshape(np.real(min_eig_vec_val), [1, 1])
       return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
 
   def prepare_for_optimization(self):
@@ -223,7 +224,7 @@ class Optimization(object):
      found_cert: True is negative certificate is found, False otherwise
     """
     # Project onto feasible set of dual variables
-    if self.current_step % self.params['projection_steps'] == 0:
+    if self.current_step != 0 and self.current_step % self.params['projection_steps'] == 0:
       current_certificate = self.dual_object.compute_certificate()
       tf.logging.info('Inner step: %d, current value of certificate: %f',
                       self.current_step, current_certificate)
@@ -242,6 +243,7 @@ class Optimization(object):
 
     if self.params['eig_type'] == 'SCIPY_FF' or self.params['eig_type'] == 'SCIPY_CONV':
       current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec()
+      print(self.current_eig_val_estimate)
       step_feed_dict.update({
           self.eig_vec_estimate: current_eig_vector
       })
