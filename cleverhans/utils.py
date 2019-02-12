@@ -282,14 +282,16 @@ def ordered_union(l1, l2):
 
 
 def safe_zip(*args):
-  """zip, with a guarantee that all arguments are the same length.
+  """like zip but with these properties:
+  - returns a list, rather than an iterator. This is the old Python2 zip behavior.
+  - a guarantee that all arguments are the same length.
   (normal zip silently drops entries to make them the same length)
   """
   length = len(args[0])
   if not all(len(arg) == length for arg in args):
     raise ValueError("Lengths of arguments do not match: "
                      + str([len(arg) for arg in args]))
-  return zip(*args)
+  return list(zip(*args))
 
 
 def shell_call(command, **kwargs):
