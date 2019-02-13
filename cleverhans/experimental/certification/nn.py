@@ -222,9 +222,6 @@ def load_network_from_checkpoint(checkpoint, model_json, input_shape=None):
     # We want weights W such that x^{i+1} = W^i x^i + b^i
     # Can think of a hack involving matching shapes but if shapes are equal
     # it can be ambiguous
-    # TODO(shankarshreya): delete this
-    # if layer_model_var['is_transpose']:
-    #   layer_weight = np.transpose(layer_weight)
     if layer_model_var['type'] in {'ff', 'ff_relu'}:
       layer_weight = np.transpose(layer_weight)
     net_weights.append(layer_weight)

@@ -14,6 +14,9 @@ from cleverhans.experimental.certification import utils
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
+# Tolerance value for eigenvalue computation
+TOL = 
+
 
 class DualFormulation(object):
   """DualFormulation is a class that creates the dual objective function
@@ -127,7 +130,6 @@ class DualFormulation(object):
     self.set_differentiable_objective()
     if not self.nn_params.has_conv:
       self.get_full_psd_matrix()
-      self.construct_certificate()
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""
@@ -255,15 +257,6 @@ class DualFormulation(object):
         axis=0)
     return result
 
-  def construct_certificate(self):
-    """Function to compute the certificate associated with feasible solution."""
-    # TODO: replace matrix_inverse with functin which uses matrix-vector product
-    self.certificate = (
-        self.scalar_f +
-        0.5*tf.matmul(tf.matmul(tf.transpose(self.vector_g),
-                                tf.matrix_inverse(self.matrix_h)),
-                      self.vector_g))
-
   def get_full_psd_matrix(self):
     """Function that returns the tf graph corresponding to the entire matrix M.
 
@@ -315,8 +308,6 @@ class DualFormulation(object):
     lambda_neg_val = self.sess.run(self.lambda_neg)
     lambda_lu_val = self.sess.run(self.lambda_lu)
 
-    # old_matrix_h, old_matrix_m = self.sess.run([self.matrix_h, self.matrix_m])
-
     input_vector_m = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension, 1))
     output_vector_m = self.get_psd_product(input_vector_m)
 
@@ -327,9 +318,11 @@ class DualFormulation(object):
     linear_operator_m = LinearOperator((self.matrix_m_dimension, self.matrix_m_dimension), matvec=np_vector_prod_fn_m)
     # Performing shift invert scipy operation when eig val estimate is available
     min_eig_val_m, _ = eigs(linear_operator_m,
-                            k=1, which='SR', tol=1E-5)
+                            k=1, which='SR', tol=TOL)
 
-    min_eig_val_m = np.real(min_eig_val_m) - 1E-5
+    # It's likely that the approximation is off by the tolerance value,
+    # so we shift it back
+    min_eig_val_m = np.real(min_eig_val_m) - TOL
 
     input_vector_h = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension - 1, 1))
     output_vector_h = self.get_h_product(input_vector_h)
@@ -343,9 +336,11 @@ class DualFormulation(object):
                                        matvec=np_vector_prod_fn_h)
     # Performing shift invert scipy operation when eig val estimate is available
     min_eig_val_h, _ = eigs(linear_operator_h,
-                            k=1, which='SR', tol=1E-5)
+                            k=1, which='SR', tol=TOL)
 
-    min_eig_val_h = np.real(min_eig_val_h) - 1E-5
+    # It's likely that the approximation is off by the tolerance value,
+    # so we shift it back
+    min_eig_val_h = np.real(min_eig_val_h) - TOL
 
     dual_feed_dict = {}
 
@@ -354,7 +349,7 @@ class DualFormulation(object):
 
     for i in range(self.nn_params.num_hidden_layers + 1):
       # Making H PSD
-      new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-min_eig_val_h, 0) + 1E-6
+      new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-min_eig_val_h, 0) + TOL
       # Adjusting the value of \lambda_neg to make change in g small
       new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((self.lower[i] + self.upper[i]),
                                                               (lambda_lu_val[i] -
