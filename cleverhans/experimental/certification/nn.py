@@ -96,13 +96,21 @@ class NeuralNetwork(object):
         self.biases.append(large_bias)
 
     # Last layer shape: always ff
-    final_dim = int(np.shape(net_weights[self.num_hidden_layers])[1])
-    self.sizes.append(final_dim)
-    self.input_shapes.append([final_dim, 1])
-    self.final_weights = tf.convert_to_tensor(
-        net_weights[self.num_hidden_layers], dtype=tf.float32)
-    self.final_bias = tf.convert_to_tensor(
-        net_biases[self.num_hidden_layers], dtype=tf.float32)
+    if self.has_conv:
+      final_dim = int(np.shape(net_weights[self.num_hidden_layers])[1])
+      self.sizes.append(final_dim)
+      self.input_shapes.append([final_dim, 1])
+      self.final_weights = tf.convert_to_tensor(
+          net_weights[self.num_hidden_layers], dtype=tf.float32)
+      self.final_bias = tf.convert_to_tensor(
+          net_biases[self.num_hidden_layers], dtype=tf.float32)
+
+    else:
+      self.sizes.append(int(np.shape(net_weights[self.num_hidden_layers - 1])[0]))
+      self.final_weights = tf.convert_to_tensor(
+          net_weights[self.num_hidden_layers], dtype=tf.float32)
+      self.final_bias = tf.convert_to_tensor(
+          net_biases[self.num_hidden_layers], dtype=tf.float32)
 
   def forward_pass(self, vector, layer_index, is_transpose=False, is_abs=False):
     """Performs forward pass through the layer weights at layer_index.

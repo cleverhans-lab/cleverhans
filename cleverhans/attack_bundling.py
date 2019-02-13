@@ -180,7 +180,8 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
 def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
                                 clip_min, clip_max, eps_iter, nb_iter,
                                 report_path,
-                                batch_size=BATCH_SIZE):
+                                batch_size=BATCH_SIZE,
+                                eps_iter_small=None):
   """A reasonable attack bundling recipe for a max norm threat model and
   a defender that uses confidence thresholding.
 
@@ -199,11 +200,13 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   :param nb_classes: int, number of classes
   :param eps: float, maximum size of perturbation (measured by max norm)
   :param eps_iter: float, step size for one version of PGD attacks
-    (will also run another version with 25X smaller step size)
+    (will also run another version with smaller step size)
   :param nb_iter: int, number of iterations for one version of PGD attacks
     (will also run another version with 25X more iterations)
   :param report_path: str, the path that the report will be saved to.
   :batch_size: int, the total number of examples to run simultaneously
+  :param eps_iter_small: float, the step size to use for more expensive version of the attack.
+    If not specified, usess eps_iter / 25
   """
   noise_attack = Noise(model, sess)
   pgd_attack = ProjectedGradientDescent(model, sess)
@@ -217,6 +220,8 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   assert batch_size % num_devices == 0
   dev_batch_size = batch_size // num_devices
   ones = tf.ones(dev_batch_size, tf.int32)
+  if eps_iter_small is None:
+    eps_iter_small = eps_iter / 25.
   expensive_pgd = []
   for cls in range(nb_classes):
     cls_params = copy.copy(pgd_params)
@@ -224,7 +229,7 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     cls_attack_config = AttackConfig(pgd_attack, cls_params, "pgd_" + str(cls))
     pgd_attack_configs.append(cls_attack_config)
     expensive_params = copy.copy(cls_params)
-    expensive_params["eps_iter"] /= 25.
+    expensive_params["eps_iter"] = eps_iter_small
     expensive_params["nb_iter"] *= 25.
     expensive_config = AttackConfig(
         pgd_attack, expensive_params, "expensive_pgd_" + str(cls))
@@ -1029,7 +1034,7 @@ class _WrongConfidenceFactory(_ExtraCriteriaFactory):
 
 
 def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
-                              report_path):
+                              report_path, batch_size=BATCH_SIZE):
   """
   A post-processor version of attack bundling, that chooses the strongest
   example from the output of multiple earlier bundling strategies.
@@ -1043,6 +1048,7 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
   :param goal: AttackGoal to use to choose the best version of each adversarial
     example
   :param report_path: str, the path the report will be saved to
+  :param batch_size: int, batch size
   """
 
   # Check the input
@@ -1061,7 +1067,7 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
   confidence = -np.ones(m, dtype='float32')
 
   # Gather criteria
-  criteria = [goal.get_criteria(sess, model, adv_x, y) for adv_x in adv_x_list]
+  criteria = [goal.get_criteria(sess, model, adv_x, y, batch_size=batch_size) for adv_x in adv_x_list]
   assert all('correctness' in c for c in criteria)
   assert all('confidence' in c for c in criteria)
   _logger.info("Accuracy on each advx dataset: ")
@@ -1085,6 +1091,7 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
   assert correctness.max() <= 1
   assert confidence.min() >= 0.
   assert confidence.max() <= 1.
+  correctness = correctness.astype('bool')
 
   report = ConfidenceReport()
   report['bundled'] = ConfidenceReportEntry(correctness, confidence)
@@ -1097,7 +1104,8 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
                                clip_min, clip_max, nb_iter,
                                report_path,
                                spsa_samples=SPSA.DEFAULT_SPSA_SAMPLES,
-                               spsa_iters=SPSA.DEFAULT_SPSA_ITERS):
+                               spsa_iters=SPSA.DEFAULT_SPSA_ITERS,
+                               eval_batch_size=BATCH_SIZE):
   """Runs the MaxConfidence attack using SPSA as the underlying optimizer.
 
   Even though this runs only one attack, it must be implemented as a bundler
@@ -1118,6 +1126,7 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   :param nb_iter: int, number of iterations for one version of PGD attacks
     (will also run another version with 25X more iterations)
   :param report_path: str, the path that the report will be saved to.
+  :param eval_batch_size: int, batch size for evaluation (as opposed to making attacks)
   """
   spsa = SPSA(model, sess)
   spsa_params = {"eps": eps, "clip_min" : clip_min, "clip_max" : clip_max,
@@ -1135,4 +1144,4 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   new_work_goal = {config: 1 for config in attack_configs}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
   bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
-                 attack_batch_size=batch_size)
+                 attack_batch_size=batch_size, eval_batch_size=eval_batch_size)

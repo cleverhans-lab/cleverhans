@@ -243,7 +243,6 @@ class Optimization(object):
 
     if self.params['eig_type'] == 'SCIPY_FF' or self.params['eig_type'] == 'SCIPY_CONV':
       current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec()
-      print(self.current_eig_val_estimate)
       step_feed_dict.update({
           self.eig_vec_estimate: current_eig_vector
       })
