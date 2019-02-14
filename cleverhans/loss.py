@@ -329,3 +329,79 @@ class LossMixUp(Loss):
                   "MixUp. LossFeaturePairing may be removed "
                   "on or after 2019-03-06.")
     return loss
+
+
+class SoftNearestNeighborRegularizedCrossEntropy(CrossEntropy):
+  EPSILON = 0.00001
+  def __init__(self, model, temperature=100., layer_names=[], factor=-10., optimize_temperature = True, cosine_distance = False):
+    CrossEntropy.__init__(self, model, smoothing=0.)
+    self.temperature = temperature
+    self.factor = factor
+    self.optimize_temperature = optimize_temperature
+    self.cosine_distance = cosine_distance
+    self.layer_names = layer_names
+    if self.layer_names == []:
+      self.layer_names = model.get_layer_names()[:-1] #omit the final classification layer
+
+  @staticmethod
+  def pairwise_euclid_distance(A,B):
+    batchA = tf.shape(A)[0]
+    batchB = tf.shape(B)[0]
+
+    sqr_norm_A = tf.reshape(tf.reduce_sum(tf.pow(A, 2), 1), [1, batchA])
+    sqr_norm_B = tf.reshape(tf.reduce_sum(tf.pow(B, 2), 1), [batchB, 1])
+    inner_prod = tf.matmul(B, A, transpose_b=True)
+
+    tile_1 = tf.tile(sqr_norm_A, [batchB, 1])
+    tile_2 = tf.tile(sqr_norm_B, [1, batchA])
+    return (tile_1 + tile_2 - 2 * inner_prod)
+
+  @staticmethod
+  def pairwise_cosin_distance(A,B):
+    normalized_A = tf.nn.l2_normalize(A, dim = 1)
+    normalized_B = tf.nn.l2_normalize(B, dim = 1)
+    prod = tf.matmul(normalized_A, normalized_B,adjoint_b = True)
+    return 1 - prod
+
+  @staticmethod
+  def fits(A, B, temp,cosine_distance):
+    if cosine_distance:
+      distance_matrix = SoftNearestNeighborRegularizedCrossEntropy.pairwise_cosin_distance(A, B)
+    else:
+      distance_matrix = SoftNearestNeighborRegularizedCrossEntropy.pairwise_euclid_distance(A, B)
+    return tf.exp(-(distance_matrix /temp))
+
+  @staticmethod
+  def pick_probability(x, temp, cosine_distance):
+    f = SoftNearestNeighborRegularizedCrossEntropy.fits(x, x, temp, cosine_distance) - tf.eye(tf.shape(x)[0])
+    return f / (
+        SoftNearestNeighborRegularizedCrossEntropy.EPSILON + tf.expand_dims(tf.reduce_sum(f, 1), 1))
+
+  @staticmethod
+  def same_label_mask(y, y2):
+    return tf.cast(tf.squeeze(tf.equal(y, tf.expand_dims(y2, 1))), tf.float32)
+
+  @staticmethod
+  def masked_pick_probability(x, y, temp, cosine_distance):
+    return SoftNearestNeighborRegularizedCrossEntropy.pick_probability(x, temp,  cosine_distance) * SoftNearestNeighborRegularizedCrossEntropy.same_label_mask(y, y)
+
+  @staticmethod
+  def soft_nearest_neighbor_loss(x, y, temp, cosine_distance = False):
+    return tf.reduce_mean(
+        -tf.log(SoftNearestNeighborRegularizedCrossEntropy.EPSILON + tf.reduce_sum(SoftNearestNeighborRegularizedCrossEntropy.masked_pick_probability(x, y, temp, cosine_distance), 1)))
+
+  @staticmethod
+  def optimizied_temperature_soft_nearest_neighbor_loss(x, y, initial_temp, cosine_distance = False):
+    t = tf.Variable(1,dtype=tf.float32,trainable=False,name="temp")
+    def inverse_temp(t):
+      return tf.div(initial_temp,t)
+    ent_loss =  SoftNearestNeighborRegularizedCrossEntropy.soft_nearest_neighbor_loss(x, y, inverse_temp(t), cosine_distance = cosine_distance)
+    return SoftNearestNeighborRegularizedCrossEntropy.soft_nearest_neighbor_loss(x, y, inverse_temp(tf.assign(t,tf.subtract(t,0.1*tf.gradients(ent_loss,t)[0]))), cosine_distance = cosine_distance)
+
+
+  def fprop(self, x, y, **kwargs):
+    cross_entropy = CrossEntropy.fprop(self, x, y, **kwargs)
+    layers_sym = [self.model.get_layer(x, layer_name) for layer_name in self.layer_names]
+    loss_fn =self.optimizied_temperature_soft_nearest_neighbor_loss if self.optimize_temperature else self.soft_nearest_neighbor_loss
+    layers_SNNL = [loss_fn(tf.layers.flatten(layer), tf.argmax(y, axis=1), self.temperature, cosine_distance=self.cosine_distance) for layer in layers_sym]
+    return cross_entropy + self.factor * tf.add_n(layers_SNNL)
