@@ -18,7 +18,7 @@ class TestMNISTTutorialKeras(CleverHansTest):
                             'train_end': 5000,
                             'test_start': 0,
                             'test_end': 333,
-                            'nb_epochs': 3,
+                            'nb_epochs': 2,
                             'testing': True}
     g = tf.Graph()
     with g.as_default():
