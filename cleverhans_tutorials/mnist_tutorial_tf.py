@@ -16,7 +16,7 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.compat import flags
-from cleverhans.loss import CrossEntropy
+from cleverhans.loss import CrossEntropy,SNNLCrossEntropy
 from cleverhans.dataset import MNIST
 from cleverhans.utils_tf import model_eval
 from cleverhans.train import train
@@ -122,7 +122,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   if clean_train:
     model = ModelBasicCNN('model1', nb_classes, nb_filters)
     preds = model.get_logits(x)
-    loss = CrossEntropy(model, smoothing=label_smoothing)
+    loss = SNNLCrossEntropy(model, optimize_temperature=False)
 
     def evaluate():
       do_eval(preds, x_test, y_test, 'clean_train_clean_eval', False)
