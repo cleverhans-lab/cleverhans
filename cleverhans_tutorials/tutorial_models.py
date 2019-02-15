@@ -27,7 +27,7 @@ class ModelBasicCNN(Model):
     # the start
     self.fprop(tf.placeholder(tf.float32, [128, 28, 28, 1]))
     # Put a reference to the params in self so that the params get pickled
-    self.params = self.get_params()
+    self.params = selZf.get_params()
 
   def fprop(self, x, **kwargs):
     del kwargs
