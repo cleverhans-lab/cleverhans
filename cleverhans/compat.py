@@ -2,7 +2,6 @@
 Wrapper functions for writing code that is compatible with many versions
 of TensorFlow.
 """
-from distutils.version import LooseVersion
 import warnings
 import tensorflow as tf
 # The following 2 imports are not used in this module. They are imported so that users of cleverhans.compat can
@@ -22,6 +21,7 @@ def _wrap(f):
                   " This function was originally needed as a compatibility layer for old versions of tensorflow, "
                   " but support for those versions has now been dropped.")
     return f(*args, **kwargs)
+  return wrapper
 
 reduce_sum = _wrap(reduce_sum)
 reduce_max = _wrap(reduce_max)
