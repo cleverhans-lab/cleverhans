@@ -43,14 +43,16 @@ class DualFormulationTest(unittest.TestCase):
         'lambda_lu': lambda_lu,
         'nu': nu
     }
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                               nn_params1,
-                                                               test_input,
-                                                               true_class,
-                                                               adv_class,
-                                                               input_minval,
-                                                               input_maxval,
-                                                               epsilon)
+    with tf.Session() as sess:
+      dual_formulation_object = dual_formulation.DualFormulation(sess,
+                                                                 dual_var,
+                                                                 nn_params1,
+                                                                 test_input,
+                                                                 true_class,
+                                                                 adv_class,
+                                                                 input_minval,
+                                                                 input_maxval,
+                                                                 epsilon)
     self.assertIsNotNone(dual_formulation_object)
 
   def test_set_differentiable_objective(self):
@@ -84,14 +86,16 @@ class DualFormulationTest(unittest.TestCase):
         'lambda_lu': lambda_lu,
         'nu': nu
     }
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                               nn_params1,
-                                                               test_input,
-                                                               true_class,
-                                                               adv_class,
-                                                               input_minval,
-                                                               input_maxval,
-                                                               epsilon)
+    with tf.Session() as sess:
+      dual_formulation_object = dual_formulation.DualFormulation(sess,
+                                                                 dual_var,
+                                                                 nn_params1,
+                                                                 test_input,
+                                                                 true_class,
+                                                                 adv_class,
+                                                                 input_minval,
+                                                                 input_maxval,
+                                                                 epsilon)
     dual_formulation_object.set_differentiable_objective()
     self.assertEqual(dual_formulation_object.scalar_f.shape.as_list(), [1])
     self.assertEqual(
@@ -129,14 +133,16 @@ class DualFormulationTest(unittest.TestCase):
         'lambda_lu': lambda_lu,
         'nu': nu
     }
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                               nn_params1,
-                                                               test_input,
-                                                               true_class,
-                                                               adv_class,
-                                                               input_minval,
-                                                               input_maxval,
-                                                               epsilon)
+    with tf.Session() as sess:
+      dual_formulation_object = dual_formulation.DualFormulation(sess,
+                                                                 dual_var,
+                                                                 nn_params1,
+                                                                 test_input,
+                                                                 true_class,
+                                                                 adv_class,
+                                                                 input_minval,
+                                                                 input_maxval,
+                                                                 epsilon)
     matrix_h, matrix_m = dual_formulation_object.get_full_psd_matrix()
     self.assertEqual(matrix_h.shape.as_list(), [5, 5])
     self.assertEqual(matrix_m.shape.as_list(), [6, 6])
@@ -172,21 +178,22 @@ class DualFormulationTest(unittest.TestCase):
         'lambda_lu': lambda_lu,
         'nu': nu
     }
-    dual_formulation_object = dual_formulation.DualFormulation(dual_var,
-                                                               nn_params1,
-                                                               test_input,
-                                                               true_class,
-                                                               adv_class,
-                                                               input_minval,
-                                                               input_maxval,
-                                                               epsilon)
-    _, matrix_m = dual_formulation_object.get_full_psd_matrix()
-
-    # Testing if the values match
-    six_dim_tensor = tf.random_uniform(shape=(6, 1), dtype=tf.float32)
-    implicit_product = dual_formulation_object.get_psd_product(six_dim_tensor)
-    explicit_product = tf.matmul(matrix_m, six_dim_tensor)
     with tf.Session() as sess:
+      dual_formulation_object = dual_formulation.DualFormulation(sess,
+                                                                 dual_var,
+                                                                 nn_params1,
+                                                                 test_input,
+                                                                 true_class,
+                                                                 adv_class,
+                                                                 input_minval,
+                                                                 input_maxval,
+                                                                 epsilon)
+      _, matrix_m = dual_formulation_object.get_full_psd_matrix()
+
+      # Testing if the values match
+      six_dim_tensor = tf.random_uniform(shape=(6, 1), dtype=tf.float32)
+      implicit_product = dual_formulation_object.get_psd_product(six_dim_tensor)
+      explicit_product = tf.matmul(matrix_m, six_dim_tensor)
       [implicit_product_value,
        explicit_product_value] = sess.run([implicit_product, explicit_product])
       self.assertEqual(
