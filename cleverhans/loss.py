@@ -342,7 +342,7 @@ class SNNLCrossEntropy(CrossEntropy):
   def __init__(self,
                model,
                temperature=100.,
-               layer_names=[],
+               layer_names=None,
                factor=-10.,
                optimize_temperature=True,
                cos_distance=False):
@@ -352,7 +352,7 @@ class SNNLCrossEntropy(CrossEntropy):
     self.optimize_temperature = optimize_temperature
     self.cos_distance = cos_distance
     self.layer_names = layer_names
-    if self.layer_names == []:
+    if not layer_names:
       # omit the final classification layer
       self.layer_names = model.get_layer_names()[:-1]
 
@@ -397,7 +397,7 @@ class SNNLCrossEntropy(CrossEntropy):
 
   @staticmethod
   def masked_pick_probability(x, y, temp, cos_distance):
-    return SNNLCrossEntropy.pick_probability(x, temp,  cos_distance) * \
+    return SNNLCrossEntropy.pick_probability(x, temp, cos_distance) * \
         SNNLCrossEntropy.same_label_mask(y, y)
 
   @staticmethod
