@@ -337,7 +337,12 @@ class LossMixUp(Loss):
 
 
 class SNNLCrossEntropy(CrossEntropy):
-  EPSILON = 0.00001
+  """A combination loss of Soft Nearest Neighbor Loss calculated every layer
+  in the networt, and standard cross entropy of the logits. presented in Frosst,
+  Nicholas, Nicolas Papernot, and Geoffrey Hinton. "Analyzing and Improving
+  Representations with the Soft Nearest Neighbor Loss." arXiv preprint
+  arXiv:1902.01889 (2019)."""
+  STABILITY_EPS = 0.00001  # used to make the calculation of SNNL more stable
 
   def __init__(self,
                model,
@@ -346,6 +351,17 @@ class SNNLCrossEntropy(CrossEntropy):
                factor=-10.,
                optimize_temperature=True,
                cos_distance=False):
+    """Constructor.
+    :param model: Model instance, the model on which to apply the loss.
+    :param temperature: Temperature used for SNNL.
+    :layer_names: the names of the layers at which to calculate SNNL,
+                  if not provided then SNNL is applied to each internal layer.
+    :factor: the balance factor between SNNL and Cross Entropy, if factor is
+             negative than SNNL will be maximized.
+    :optimize_temperature: Optimize Temperature at each calculation to minimize
+                           the loss, this makes the loss more stable.
+    :cos_distance: use cosine distance when calculating SNNL
+    """
     CrossEntropy.__init__(self, model, smoothing=0.)
     self.temperature = temperature
     self.factor = factor
@@ -353,11 +369,17 @@ class SNNLCrossEntropy(CrossEntropy):
     self.cos_distance = cos_distance
     self.layer_names = layer_names
     if not layer_names:
-      # omit the final classification layer
+      # omit the final layer, the classification layer
       self.layer_names = model.get_layer_names()[:-1]
 
   @staticmethod
   def pairwise_euclid_distance(A, B):
+    """pairwise euclidean distance between two matrices
+    :param A: a matrix
+    :param B: a matrix
+
+    :returns: a tensor for the pairwise euclidean between A and B
+    """
     batchA = tf.shape(A)[0]
     batchB = tf.shape(B)[0]
 
@@ -371,6 +393,12 @@ class SNNLCrossEntropy(CrossEntropy):
 
   @staticmethod
   def pairwise_cos_distance(A, B):
+    """pairwise cosine distance between two matrices
+    :param A: a matrix
+    :param B: a matrix
+
+    :returns: a tensor for the pairwise cosine between A and B
+    """
     normalized_A = tf.nn.l2_normalize(A, dim=1)
     normalized_B = tf.nn.l2_normalize(B, dim=1)
     prod = tf.matmul(normalized_A, normalized_B, adjoint_b=True)
@@ -378,6 +406,16 @@ class SNNLCrossEntropy(CrossEntropy):
 
   @staticmethod
   def fits(A, B, temp, cos_distance):
+    """exponentiated pairwise distance between each element of A and
+    all those of B
+    :param A: a matrix
+    :param B: a matrix
+    :param temp: Temperature
+    :cos_distance: boolean for using cosine or euclidean distance
+
+    :returns: a tensor for the exponentiated pairwise distance between the
+    each element and A and all those of B
+    """
     if cos_distance:
       distance_matrix = SNNLCrossEntropy.pairwise_cos_distance(A, B)
     else:
@@ -386,34 +424,80 @@ class SNNLCrossEntropy(CrossEntropy):
 
   @staticmethod
   def pick_probability(x, temp, cos_distance):
+    """row normalized exponentiated pairwise distance between all the elements
+    of x. Conceptualized as the probability of sampling a neighbor point for
+    every element of x, proportional to the distance between the points.
+    :param x: a matrix
+    :param temp: Temperature
+    :cos_distance: boolean for using cosine or euclidean distance
+
+    :returns: a tensor for the row normalized exponentiated pairwise distance
+              between all the elements of x
+    """
     f = SNNLCrossEntropy.fits(
         x, x, temp, cos_distance) - tf.eye(tf.shape(x)[0])
     return f / (
-        SNNLCrossEntropy.EPSILON + tf.expand_dims(tf.reduce_sum(f, 1), 1))
+        SNNLCrossEntropy.STABILITY_EPS + tf.expand_dims(tf.reduce_sum(f, 1), 1))
 
   @staticmethod
   def same_label_mask(y, y2):
+    """masking matrix such that element i,j is 1 iff y[i] == y2[i]
+    :param y: a list of labels
+    :param y2: a list of labels
+
+    :returns: a tensor for the masking matrix
+    """
     return tf.cast(tf.squeeze(tf.equal(y, tf.expand_dims(y2, 1))), tf.float32)
 
   @staticmethod
   def masked_pick_probability(x, y, temp, cos_distance):
+    """the pairwise sampling probabilities for the elements of x for neighbor
+    points which share labels.
+    :param x: a matrix
+    :param y: a list of labels for each element of x
+    :param temp: Temperature
+    :cos_distance: boolean for using cosine or euclidean distance
+
+    :returns: a tensor for the pairwise sampling probabilities.
+    """
     return SNNLCrossEntropy.pick_probability(x, temp, cos_distance) * \
         SNNLCrossEntropy.same_label_mask(y, y)
 
   @staticmethod
   def SNNL(x, y, temp, cos_distance):
+    """Soft Nearest Neighbor Loss
+    :param x: a matrix
+    :param y: a list of labels for each element of x
+    :param temp: Temperature
+    :cos_distance: boolean for using cosine or euclidean distance
+
+    :returns: a tensor for the self Soft Nearest Neighbor Loss of the points
+              in x with labels y.
+    """
     summed_masked_pick_prob = tf.reduce_sum(
         SNNLCrossEntropy.masked_pick_probability(x, y, temp, cos_distance), 1)
     return tf.reduce_mean(
-        -tf.log(SNNLCrossEntropy.EPSILON + summed_masked_pick_prob))
+        -tf.log(SNNLCrossEntropy.STABILITY_EPS + summed_masked_pick_prob))
 
   @staticmethod
-  def optimizied_temp_SNNL(x, y, initial_temp, cos_distance):
+  def optimized_temp_SNNL(x, y, initial_temp, cos_distance):
+    """The optimized variant of Soft Nearest Neighbor Loss. Every time this
+    tensor is evaluated, temp is optimized to minimize the loss value, this
+    results in more stable calculations of SNNL
+    :param x: a matrix
+    :param y: a list of labels for each element of x
+    :param initial_temp: Temperature
+    :cos_distance: boolean for using cosine or euclidean distance
+
+    :returns: a tensor for the self Soft Nearest Neighbor Loss of the points
+              in x with labels y, optimized for temperature.
+    """
     t = tf.Variable(1, dtype=tf.float32, trainable=False, name="temp")
-    # we use inverse_temp because it seems to be more stable when optimizing
 
     def inverse_temp(t):
+      # we use inverse_temp because it seems to be more stable when optimizing
       return tf.div(initial_temp, t)
+
     ent_loss = SNNLCrossEntropy.SNNL(x, y, inverse_temp(t), cos_distance)
     updated_t = tf.assign(t, tf.subtract(t, 0.1*tf.gradients(ent_loss, t)[0]))
     inverse_t = inverse_temp(updated_t)
@@ -424,7 +508,7 @@ class SNNLCrossEntropy(CrossEntropy):
     self.layers = [self.model.get_layer(x, name) for name in self.layer_names]
     loss_fn = self.SNNL
     if self.optimize_temperature:
-      loss_fn = self.SNNL
+      loss_fn = self.optimized_temp_SNNL
     layers_SNNL = [loss_fn(tf.layers.flatten(layer),
                            tf.argmax(y, axis=1),
                            self.temperature,
