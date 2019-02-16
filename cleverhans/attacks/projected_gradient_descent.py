@@ -120,9 +120,11 @@ class ProjectedGradientDescent(Attack):
         dtypestr=self.dtypestr)
 
     def cond(i, _):
+      """Iterate until requested number of iterations is completed"""
       return tf.less(i, self.nb_iter)
 
     def body(i, adv_x):
+      """Do a projected gradient step"""
       adv_x = FGM.generate(adv_x, **fgm_params)
 
       # Clipping perturbation eta to self.ord norm ball

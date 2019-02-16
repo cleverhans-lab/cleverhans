@@ -160,7 +160,7 @@ class LBFGS_impl(object):
     """
 
     def lbfgs_objective(adv_x, self, targets, oimgs, CONST):
-      # returns the function value and the gradient for fmin_l_bfgs_b
+      """ returns the function value and the gradient for fmin_l_bfgs_b """
       loss = self.sess.run(
           self.loss,
           feed_dict={

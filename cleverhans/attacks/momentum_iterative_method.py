@@ -73,9 +73,11 @@ class MomentumIterativeMethod(Attack):
     targeted = (self.y_target is not None)
 
     def cond(i, _, __):
+      """Iterate until number of iterations completed"""
       return tf.less(i, self.nb_iter)
 
     def body(i, ax, m):
+      """Do a momentum step"""
       logits = self.model.get_logits(ax)
       loss = softmax_cross_entropy_with_logits(labels=y, logits=logits)
       if targeted:
