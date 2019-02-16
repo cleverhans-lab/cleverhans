@@ -186,12 +186,12 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
   # Same loop variables as above
   def body(x_in, y_in, domain_in, i_in, cond_in):
-
-    preds = model.get_probs(x_in)
+    # Create graph for model logits and predictions
+    logits = model.get_logits(x_in)
+    preds = tf.nn.softmax(logits)
     preds_onehot = tf.one_hot(tf.argmax(preds, axis=1), depth=nb_classes)
 
     # create the Jacobian graph
-    logits = model.get_logits(x_in)
     list_derivatives = []
     for class_ind in xrange(nb_classes):
       derivatives = tf.gradients(logits[:, class_ind], x_in)
