@@ -35,6 +35,7 @@ def test_no_logits():
 def test_rejects_callable():
   """test_rejects_callable: Check that callables are not accepted as models"""
   def model(x):
+    """Mock model"""
     return x
   sess = tf.Session()
   assert_raises(TypeError, ProjectedGradientDescent, model, sess)

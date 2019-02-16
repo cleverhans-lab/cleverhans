@@ -58,6 +58,7 @@ class TestCallableModelWrapperInitArguments(unittest.TestCase):
     Test that the CallableModelWrapper can be constructed without causing Exceptions
     """
     def model(**kwargs):
+      """Mock model"""
       del kwargs
       return True
 
