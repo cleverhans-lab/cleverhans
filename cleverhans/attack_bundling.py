@@ -687,6 +687,9 @@ class Misclassify(AttackGoal):
                   + " times")
 
   def filter(self, run_counts, criteria):
+    """
+    Return run counts only for examples that are still correctly classified
+    """
     correctness = criteria['correctness']
     assert correctness.dtype == np.bool
     filtered_counts = deep_copy(run_counts)
@@ -793,6 +796,9 @@ class MaxConfidence(AttackGoal):
     self.rng = np.random.RandomState([2018, 10, 7, 12])
 
   def filter(self, run_counts, criteria):
+    """
+    Return the counts for only those examples that are below the threshold
+    """
     wrong_confidence = criteria['wrong_confidence']
     below_t = wrong_confidence <= self.t
     filtered_counts = deep_copy(run_counts)

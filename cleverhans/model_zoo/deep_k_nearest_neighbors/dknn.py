@@ -3,6 +3,7 @@ This code reproduces the MNIST results from the paper
 Deep k-Nearest Neighbors: Towards Confident, Interpretable and Robust Deep Learning
 https://arxiv.org/abs/1803.04765
 """
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

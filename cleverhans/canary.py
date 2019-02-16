@@ -1,3 +1,6 @@
+"""
+Canary code that dies if the underlying hardware / drivers aren't working right.
+"""
 import time
 
 import numpy as np

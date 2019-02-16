@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 from collections import OrderedDict
 
 import tensorflow as tf

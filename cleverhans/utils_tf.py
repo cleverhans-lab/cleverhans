@@ -1,3 +1,4 @@
+"""Utility functions for writing TensorFlow code"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -289,6 +290,9 @@ def tf_model_load(sess, file_path=None):
 
 
 def batch_eval(*args, **kwargs):
+  """
+  Wrapper around deprecated function.
+  """
   # Inside function to avoid circular import
   from cleverhans.evaluation import batch_eval as new_batch_eval
   warnings.warn("batch_eval has moved to cleverhans.evaluation. "

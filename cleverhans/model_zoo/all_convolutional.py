@@ -9,6 +9,10 @@ from cleverhans.serial import NoRefModel
 
 
 class ModelAllConvolutional(NoRefModel):
+  """
+  A simple model that uses only convolution and downsampling---no batch norm or other techniques that can complicate
+  adversarial training.
+  """
   def __init__(self, scope, nb_classes, nb_filters, input_shape, **kwargs):
     del kwargs
     NoRefModel.__init__(self, scope, nb_classes, locals())
