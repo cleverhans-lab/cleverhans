@@ -102,7 +102,8 @@ def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   attack_configs = [noise_attack_config] + pgd_attack_configs + expensive_pgd
   new_work_goal = {config: 1 for config in attack_configs}
   goals = [MaxConfidence(t=1., new_work_goal=new_work_goal)]
-  bundle_attacks(sess, model, x, y, attack_configs, goals, report_path)
+  bundle_attacks(sess, model, x, y, attack_configs, goals, report_path, attack_batch_size=batch_size,
+                 eval_batch_size=batch_size)
 
 
 def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
@@ -1092,6 +1093,7 @@ def bundle_examples_with_goal(sess, model, adv_x_list, y, goal,
   assert confidence.min() >= 0.
   assert confidence.max() <= 1.
   correctness = correctness.astype('bool')
+  _logger.info("Accuracy on bundled examples: " + str(correctness.mean()))
 
   report = ConfidenceReport()
   report['bundled'] = ConfidenceReportEntry(correctness, confidence)
