@@ -69,6 +69,10 @@ flags.DEFINE_integer('num_columns', 28,
                      'Number of columns in image')
 flags.DEFINE_integer('num_channels', 1,
                      'Number of channels in image')
+flags.DEFINE_integer('stride', 2,
+                     'Stride for convolution')
+flags.DEFINE_string('padding', 'SAME',
+                    'Type of padding for convolution')
 
 dataset = 'MNIST'
 
@@ -79,7 +83,8 @@ def main(_):
 
   # Initialize neural network based on config files
   input_shape = [FLAGS.num_rows, FLAGS.num_columns, FLAGS.num_channels]
-  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape)
+  conv_params = [FLAGS.stride, FLAGS.padding]
+  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape, conv_params)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
   tf.logging.info('Loaded neural network with input shapes: %s',
@@ -121,7 +126,8 @@ def main(_):
         'print_stats_steps': FLAGS.print_stats_steps,
         'stats_folder': FLAGS.stats_folder,
         'projection_steps': FLAGS.projection_steps,
-        'eig_type': FLAGS.eig_type
+        'eig_type': FLAGS.eig_type,
+        'has_conv': nn_params.has_conv
     }
     with tf.Session() as sess:
       dual = dual_formulation.DualFormulation(sess,

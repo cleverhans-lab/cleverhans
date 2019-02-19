@@ -35,7 +35,7 @@ class Optimization(object):
         around 0.001)
         smooth_decay - The factor by which to decay after every outer loop epoch
         optimizer - one of gd, adam, momentum or adagrad
-        eig_type - The method to compute eigenvalues (TF or SCIPY_FF or SCIPY_CONV)
+        eig_type - The method to compute eigenvalues (TF or SCIPY)
     """
     self.sess = sess
     self.dual_object = dual_formulation_object
@@ -115,7 +115,7 @@ class Optimization(object):
       eig_vec: Minimum absolute eigen value
       eig_val: Corresponding eigen vector
     """
-    if self.params['eig_type'] == 'SCIPY_FF':
+    if not self.params['has_conv']:
       matrix_m = self.sess.run(self.dual_object.matrix_m)
       min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR',
                                                      tol=1E-4)
@@ -241,7 +241,7 @@ class Optimization(object):
                       self.penalty_placeholder: penalty_val,
                       self.learning_rate: learning_rate_val}
 
-    if self.params['eig_type'] == 'SCIPY_FF' or self.params['eig_type'] == 'SCIPY_CONV':
+    if self.params['eig_type'] == 'SCIPY':
       current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec()
       step_feed_dict.update({
           self.eig_vec_estimate: current_eig_vector

@@ -11,15 +11,12 @@ import json
 import numpy as np
 import tensorflow as tf
 
-STRIDE = 2
-PADDING = 'SAME'
-
 class NeuralNetwork(object):
   """NeuralNetwork is a class that interfaces the verification code with
   the neural net parameters (weights).
   """
 
-  def __init__(self, net_weights, net_biases, net_layer_types, input_shape=None):
+  def __init__(self, net_weights, net_biases, net_layer_types, input_shape=None, cnn_params=None):
     """Function to initialize NeuralNetParams class.
 
     Args:
@@ -27,7 +24,8 @@ class NeuralNetwork(object):
        [convention: x[i+1] = W[i] x[i]
       net_biases: list of numpy arrays of biases of each layer
       net_layer_types: type of each layer ['ff' or 'ff_relu' or 'ff_conv' or
-        'ff_conv_relu']
+        'ff_conv_relu']      vector = tf.reshape(vector, self.input_shapes[layer_index])
+
         'ff': Simple feedforward layer with no activations
         'ff_relu': Simple feedforward layer with ReLU activations
         'ff_conv': Convolution layer with no activation
@@ -54,6 +52,9 @@ class NeuralNetwork(object):
       current_num_rows = input_shape[0]
       current_num_columns = input_shape[1]
       current_num_channels = input_shape[2]
+    if(cnn_params is not None):
+      self.stride = cnn_params[0]
+      self.padding = cnn_params[1]
 
     # Setting the sizes of the layers of the network
     # sizes[i] contains the size of x_i
@@ -81,9 +82,9 @@ class NeuralNetwork(object):
         self.sizes.append(current_num_rows*current_num_columns*current_num_channels)
         current_num_channels = num_filters
         # For propagating across multiple conv layers
-        if(PADDING == 'SAME'):
-          current_num_rows = int(current_num_rows/STRIDE)
-          current_num_columns = int(current_num_columns/STRIDE)
+        if(self.padding == 'SAME'):
+          current_num_rows = int(current_num_rows/self.stride)
+          current_num_columns = int(current_num_columns/self.stride)
         self.output_shapes.append(
             [1, current_num_rows, current_num_columns, current_num_channels])
 
@@ -103,9 +104,9 @@ class NeuralNetwork(object):
 
     self.sizes.append(final_dim)
     self.final_weights = tf.convert_to_tensor(
-          net_weights[self.num_hidden_layers], dtype=tf.float32)
+        net_weights[self.num_hidden_layers], dtype=tf.float32)
     self.final_bias = tf.convert_to_tensor(
-          net_biases[self.num_hidden_layers], dtype=tf.float32)
+        net_biases[self.num_hidden_layers], dtype=tf.float32)
 
   def forward_pass(self, vector, layer_index, is_transpose=False, is_abs=False):
     """Performs forward pass through the layer weights at layer_index.
@@ -126,33 +127,35 @@ class NeuralNetwork(object):
 
     layer_type = self.layer_types[layer_index]
     weight = self.weights[layer_index]
-    vector = tf.reshape(vector, self.input_shapes[layer_index])
     if is_abs:
       weight = tf.abs(weight)
     if is_transpose:
       vector = tf.reshape(vector, self.output_shapes[layer_index])
-      weight = tf.transpose(weight)
+    else:
+      vector = tf.reshape(vector, self.input_shapes[layer_index])
 
     if layer_type in {'ff', 'ff_relu'}:
+      if is_transpose:
+        weight = tf.transpose(weight)
       return_vector = tf.matmul(weight, vector)
     elif layer_type in {'conv', 'conv_relu'}:
       if is_transpose:
         return_vector = tf.nn.conv2d_transpose(vector, weight,
-                                                output_shape=self.input_shapes[layer_index],
-                                                strides=[1, STRIDE, STRIDE, 1],
-                                                padding=PADDING)
+                                               output_shape=self.input_shapes[layer_index],
+                                               strides=[1, self.stride, self.stride, 1],
+                                               padding=self.padding)
       else:
         return_vector = tf.nn.conv2d(vector,
                                      weight,
-                                     strides=[1, STRIDE, STRIDE, 1],
-                                     padding=PADDING)
+                                     strides=[1, self.stride, self.stride, 1],
+                                     padding=self.padding)
     else:
-        raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
+      raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
     if is_transpose:
       return tf.reshape(return_vector, (self.sizes[layer_index], 1))
     return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
 
-def load_network_from_checkpoint(checkpoint, model_json, input_shape=None):
+def load_network_from_checkpoint(checkpoint, model_json, input_shape=None, cnn_params=None):
   """Function to read the weights from checkpoint based on json description.
 
     Args:
@@ -167,11 +170,6 @@ def load_network_from_checkpoint(checkpoint, model_json, input_shape=None):
         variable for bias of layer i; 'is_transpose' is set to
         True if the weights have to be transposed as per
         convention Note that last layer is always feedforward
-        (verification operates at the layer below the final
-        softmax for more numerical stability)
-      input_shape: [num_rows, num_columns, num_channels] of the input image
-
-    Returns:
       net_weights: list of numpy matrices of weights of each layer
         convention: x[i+1] = W[i] x[i]
       net_biases: list of numpy arrays of biases of each layer
@@ -216,4 +214,4 @@ def load_network_from_checkpoint(checkpoint, model_json, input_shape=None):
       layer_weight = np.transpose(layer_weight)
     net_weights.append(layer_weight)
     net_biases.append(np.reshape(layer_bias, (np.size(layer_bias), 1)))
-  return NeuralNetwork(net_weights, net_biases, net_layer_types, input_shape)
+  return NeuralNetwork(net_weights, net_biases, net_layer_types, input_shape, cnn_params)
