@@ -338,9 +338,9 @@ class LossMixUp(Loss):
 
 class SNNLCrossEntropy(CrossEntropy):
   """A combination loss of Soft Nearest Neighbor Loss calculated at every layer
-  in the network, and standard cross entropy of the logits. Presented in 
+  in the network, and standard cross entropy of the logits. Presented in
   "Analyzing and Improving Representations with the Soft Nearest Neighbor Loss"
-  by Nicholas Frosst, Nicolas Papernot, and Geoffrey Hinton. 
+  by Nicholas Frosst, Nicolas Papernot, and Geoffrey Hinton.
   arXiv preprint arXiv:1902.01889 (2019)."""
   STABILITY_EPS = 0.00001  # used to make the calculation of SNNL more stable
 
@@ -413,7 +413,7 @@ class SNNLCrossEntropy(CrossEntropy):
     :param temp: Temperature
     :cos_distance: Boolean for using cosine or Euclidean distance.
 
-    :returns: A tensor for the exponentiated pairwise distance between 
+    :returns: A tensor for the exponentiated pairwise distance between
     each element and A and all those of B.
     """
     if cos_distance:
@@ -482,7 +482,7 @@ class SNNLCrossEntropy(CrossEntropy):
   @staticmethod
   def optimized_temp_SNNL(x, y, initial_temp, cos_distance):
     """The optimized variant of Soft Nearest Neighbor Loss. Every time this
-    tensor is evaluated, the temperature is optimized to minimize the loss 
+    tensor is evaluated, the temperature is optimized to minimize the loss
     value, this results in more numerically stable calculations of the SNNL.
     :param x: a matrix.
     :param y: a list of labels for each element of x.
