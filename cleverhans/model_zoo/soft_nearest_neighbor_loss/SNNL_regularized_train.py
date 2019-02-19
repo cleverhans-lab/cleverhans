@@ -134,13 +134,12 @@ def SNNL_example(train_start=0, train_end=60000, test_start=0,
     ax.get_yaxis().set_ticks([])
     return artists
 
-  adversarial_gradients = tf.sign(
-      tf.gradients(cross_entropy_loss.fprop(x, y), x))
-  adv_gradients_ = sess.run(adversarial_gradients, feed_dict={
-      x: x_test[:batch_size], y: y_test[:batch_size]})
-  adv_gradients_ = np.reshape(adv_gradients_, (batch_size, 28*28))
+  adv_grads = tf.sign(tf.gradients(cross_entropy_loss.fprop(x, y), x))
+  feed_dict = {x: x_test[:batch_size], y: y_test[:batch_size]}
+  adv_grads_val = sess.run(adv_grads, feed_dict=feed_dict)
+  adv_grads_val = np.reshape(adv_grads_val, (batch_size, img_rows * img_cols))
 
-  X_embedded = TSNE(n_components=2, verbose=0).fit_transform(adv_gradients_)
+  X_embedded = TSNE(n_components=2, verbose=0).fit_transform(adv_grads_val)
   plt.figure(num=None, figsize=(50, 50), dpi=40, facecolor='w', edgecolor='k')
   plt.title("TSNE of Sign of Adv Gradients, SNNLCrossEntropy Model, factor:" +
             str(FLAGS.SNNL_factor), fontsize=42)
