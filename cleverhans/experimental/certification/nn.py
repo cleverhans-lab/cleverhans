@@ -125,45 +125,32 @@ class NeuralNetwork(object):
       raise ValueError('Invalid layer index')
 
     layer_type = self.layer_types[layer_index]
-    # Reshaping the input for convolution appropriately
+    weight = self.weights[layer_index]
+    vector = tf.reshape(vector, self.input_shapes[layer_index])
+    if is_abs:
+      weight = tf.abs(weight)
     if is_transpose:
       vector = tf.reshape(vector, self.output_shapes[layer_index])
-      if (layer_type in {'ff', 'ff_relu'}):
-        return_vector = tf.matmul(tf.transpose(self.weights[layer_index]), vector)
-      elif(layer_type in {'conv', 'conv_relu'}):
-        return_vector = tf.nn.conv2d_transpose(vector, self.weights[layer_index],
-                                               output_shape=self.input_shapes[layer_index],
-                                               strides=[1, STRIDE, STRIDE, 1],
-                                               padding=PADDING)
-      else:
-        raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
-      return tf.reshape(return_vector, (self.sizes[layer_index], 1))
+      weight = tf.transpose(weight)
 
-    elif is_abs:
-      vector = tf.reshape(vector, self.input_shapes[layer_index])
-      if(layer_type in {'ff', 'ff_relu'}):
-        return_vector = tf.matmul(tf.abs(self.weights[layer_index]), vector)
-      elif(layer_type in {'conv', 'conv_relu'}):
+    if layer_type in {'ff', 'ff_relu'}:
+      return_vector = tf.matmul(weight, vector)
+    elif layer_type in {'conv', 'conv_relu'}:
+      if is_transpose:
+        return_vector = tf.nn.conv2d_transpose(vector, weight,
+                                                output_shape=self.input_shapes[layer_index],
+                                                strides=[1, STRIDE, STRIDE, 1],
+                                                padding=PADDING)
+      else:
         return_vector = tf.nn.conv2d(vector,
-                                     tf.abs(self.weights[layer_index]),
+                                     weight,
                                      strides=[1, STRIDE, STRIDE, 1],
                                      padding=PADDING)
-      else:
-        raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
-      return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
-
-    # Simple forward pass
     else:
-      vector = tf.reshape(vector, self.input_shapes[layer_index])
-      if(layer_type in {'ff', 'ff_relu'}):
-        return_vector = tf.matmul(self.weights[layer_index], vector)
-      elif (layer_type in {'conv', 'conv_relu'}):
-        return_vector = tf.nn.conv2d(vector, self.weights[layer_index],
-                                     strides=[1, STRIDE, STRIDE, 1],
-                                     padding=PADDING)
-      else:
         raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
-      return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
+    if is_transpose:
+      return tf.reshape(return_vector, (self.sizes[layer_index], 1))
+    return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
 
 def load_network_from_checkpoint(checkpoint, model_json, input_shape=None):
   """Function to read the weights from checkpoint based on json description.

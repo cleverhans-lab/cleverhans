@@ -63,6 +63,12 @@ flags.DEFINE_enum('verbosity', 'INFO',
                   'Logging verbosity level.')
 flags.DEFINE_string('eig_type', 'SCIPY',
                     'Method to compute eigenvalues (TF or SCIPY), SCIPY')
+flags.DEFINE_integer('num_rows', 28,
+                     'Number of rows in image')
+flags.DEFINE_integer('num_columns', 28,
+                     'Number of columns in image')
+flags.DEFINE_integer('num_channels', 1,
+                     'Number of channels in image')
 
 dataset = 'MNIST'
 
@@ -71,13 +77,8 @@ def main(_):
 
   start_time = time.time()
 
-  if dataset == 'MNIST':
-    num_rows = 28
-    num_columns = 28
-    num_channels = 1
-
   # Initialize neural network based on config files
-  input_shape = [num_rows, num_columns, num_channels]
+  input_shape = [FLAGS.num_rows, FLAGS.num_columns, FLAGS.num_channels]
   nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)

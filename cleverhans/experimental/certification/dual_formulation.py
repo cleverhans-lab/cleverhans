@@ -15,7 +15,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Tolerance value for eigenvalue computation
-TOL = 
+TOL = 1E-5
 
 
 class DualFormulation(object):
