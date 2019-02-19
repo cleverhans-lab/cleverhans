@@ -2,7 +2,6 @@
 Wrapper functions for writing code that is compatible with many versions
 of TensorFlow.
 """
-from distutils.version import LooseVersion
 import warnings
 import tensorflow as tf
 # The following 2 imports are not used in this module. They are imported so that users of cleverhans.compat can
@@ -11,12 +10,30 @@ import tensorflow as tf
 # library without needing to repeat the pylint boilerplate.
 from tensorflow.python.client import device_lib # pylint: disable=no-name-in-module,unused-import
 from tensorflow.python.platform import app, flags # pylint: disable=no-name-in-module,unused-import
+from tensorflow import reduce_sum, reduce_max, reduce_min, reduce_mean, reduce_prod, reduce_any
+
+def _wrap(f):
+  """
+  Wraps a callable `f` in a function that warns that the function is deprecated.
+  """
+  def wrapper(*args, **kwargs):
+    warnings.warn(str(f) + " is deprecated. Switch to calling the equivalent function in tensorflow. "
+                  " This function was originally needed as a compatibility layer for old versions of tensorflow, "
+                  " but support for those versions has now been dropped.")
+    return f(*args, **kwargs)
+  return wrapper
+
+reduce_sum = _wrap(reduce_sum)
+reduce_max = _wrap(reduce_max)
+reduce_min = _wrap(reduce_min)
+reduce_mean = _wrap(reduce_mean)
+reduce_prod = _wrap(reduce_prod)
+reduce_any = _wrap(reduce_any)
 
 def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
                     name=None, reduction_indices=None):
   """
-  Handler function for Tensorflow depreciation of keep_dims for tf 1.8
-  and above, but tf 1.4 requires keep_dims
+  This function used to be needed to support tf 1.4 and early, but support for tf 1.4 and earlier is now dropped.
   :param op_func: expects the function to handle eg: tf.reduce_sum.
   :param input_tensor: The tensor to reduce. Should have numeric type.
   :param axis: The dimensions to reduce. If None (the default),
@@ -25,85 +42,14 @@ def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
   :param keepdims: If true, retains reduced dimensions with length 1.
   :param name: A name for the operation (optional).
   :param reduction_indices: The old (deprecated) name for axis.
-  :param keep_dims: Deprecated alias for keepdims.
   :return: outputs same value as op_func.
   """
 
-  if LooseVersion(tf.__version__) < LooseVersion('1.8.0'):
-    warning = "Running on tensorflow version " + \
-        LooseVersion(tf.__version__).vstring + \
-        ". Support for this version in CleverHans is deprecated " + \
-        "and may be removed on or after 2019-01-26"
-    warnings.warn(warning)
-    out = op_func(input_tensor, axis=axis,
-                  keep_dims=keepdims, name=name,
-                  reduction_indices=reduction_indices)
-  else:
-    out = op_func(input_tensor, axis=axis,
-                  keepdims=keepdims, name=name,
-                  reduction_indices=reduction_indices)
+  warnings.warn("`reduce_function` is deprecated and may be removed on or after 2019-09-08.")
+
+  out = op_func(input_tensor, axis=axis, keepdims=keepdims, name=name, reduction_indices=reduction_indices)
+
   return out
-
-
-def reduce_sum(input_tensor, axis=None, keepdims=None,
-               name=None, reduction_indices=None):
-  """
-  Wrapper around the tf.reduce_sum to handle argument keep_dims
-  """
-  return reduce_function(tf.reduce_sum, input_tensor, axis=axis,
-                         keepdims=keepdims, name=name,
-                         reduction_indices=reduction_indices)
-
-
-def reduce_max(input_tensor, axis=None, keepdims=None,
-               name=None, reduction_indices=None):
-  """
-  Wrapper around the tf.reduce_max to handle argument keep_dims
-  """
-  return reduce_function(tf.reduce_max, input_tensor, axis=axis,
-                         keepdims=keepdims, name=name,
-                         reduction_indices=reduction_indices)
-
-
-def reduce_min(input_tensor, axis=None, keepdims=None,
-               name=None, reduction_indices=None):
-  """
-  Wrapper around the tf.reduce_min to handle argument keep_dims
-  """
-  return reduce_function(tf.reduce_min, input_tensor, axis=axis,
-                         keepdims=keepdims, name=name,
-                         reduction_indices=reduction_indices)
-
-
-def reduce_mean(input_tensor, axis=None, keepdims=None,
-                name=None, reduction_indices=None):
-  """
-  Wrapper around the tf.reduce_mean to handle argument keep_dims
-  """
-  return reduce_function(tf.reduce_mean, input_tensor, axis=axis,
-                         keepdims=keepdims, name=name,
-                         reduction_indices=reduction_indices)
-
-
-def reduce_prod(input_tensor, axis=None, keepdims=None,
-                name=None, reduction_indices=None):
-  """
-  Wrapper around the tf.reduce_prod to handle argument keep_dims
-  """
-  return reduce_function(tf.reduce_prod, input_tensor, axis=axis,
-                         keepdims=keepdims, name=name,
-                         reduction_indices=reduction_indices)
-
-
-def reduce_any(input_tensor, axis=None, keepdims=None,
-               name=None, reduction_indices=None):
-  """
-  Wrapper around the tf.reduce_any to handle argument keep_dims
-  """
-  return reduce_function(tf.reduce_any, input_tensor, axis=axis,
-                         keepdims=keepdims, name=name,
-                         reduction_indices=reduction_indices)
-
 
 def softmax_cross_entropy_with_logits(sentinel=None,
                                       labels=None,
@@ -123,16 +69,11 @@ def softmax_cross_entropy_with_logits(sentinel=None,
     raise ValueError("Both labels and logits must be provided.")
 
   try:
-    labels = tf.stop_gradient(labels)
-    loss = tf.nn.softmax_cross_entropy_with_logits_v2(
-        labels=labels, logits=logits, dim=dim)
+    f = tf.nn.softmax_cross_entropy_with_logits_v2
   except AttributeError:
-    warning = "Running on tensorflow version " + \
-        LooseVersion(tf.__version__).vstring + \
-        ". Support for this version in CleverHans is deprecated " + \
-        "and may be removed on or after 2019-01-26"
-    warnings.warn(warning)
-    loss = tf.nn.softmax_cross_entropy_with_logits(
-        labels=labels, logits=logits, dim=dim)
+    raise RuntimeError("This version of TensorFlow is no longer supported. See cleverhans/README.md")
+
+  labels = tf.stop_gradient(labels)
+  loss = f(labels=labels, logits=logits, dim=dim)
 
   return loss

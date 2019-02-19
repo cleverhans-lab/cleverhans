@@ -126,7 +126,8 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
                                    test_end=TEST_END, which_set=WHICH_SET,
                                    recipe=RECIPE, report_path=REPORT_PATH,
                                    nb_iter=NB_ITER, base_eps=None,
-                                   base_eps_iter=None, base_eps_iter_small=None):
+                                   base_eps_iter=None, base_eps_iter_small=None,
+                                   batch_size=BATCH_SIZE):
   """
   Load a saved model, gather its predictions, and save a confidence report.
   :param filepath: path to model to evaluate
@@ -146,6 +147,7 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     Inferred from the dataset if not specified.
   :param base_eps_iter_small: float, a second step size for a more fine-grained attack.
     Inferred from the dataset if not specified.
+  :param batch_size: int, batch size
   """
   # Avoid circular import
   from cleverhans import attack_bundling
@@ -230,7 +232,7 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
     run_recipe(sess=sess, model=model, x=x_data, y=y_data,
                nb_classes=dataset.NB_CLASSES, eps=eps, clip_min=clip_min,
                clip_max=clip_max, eps_iter=eps_iter, nb_iter=nb_iter,
-               report_path=report_path, eps_iter_small=eps_iter_small)
+               report_path=report_path, eps_iter_small=eps_iter_small, batch_size=batch_size)
 
 
 def print_stats(correctness, confidence, name):
