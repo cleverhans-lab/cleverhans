@@ -21,6 +21,8 @@ def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
                   space (i.e. the number output of filters in the
                   convolution)
   :param kernel_shape: (required tuple or list of 2 integers) specifies
+                       the kernel shape of the convolution
+  :param strides: (required tuple or list of 2 integers) specifies
                        the strides of the convolution along the width and
                        height.
   :param padding: (required string) can be either 'valid' (no padding around

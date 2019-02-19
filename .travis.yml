@@ -80,5 +80,7 @@ script:
       else
         nosetests -v --nologcapture --stop cleverhans;
       fi;
-      nosetests --nologcapture -v --stop tests_tf;
+      for test_path in tests_tf/*.py ; do
+        nosetests --nocapture -v --stop $test_path;
+      done
     fi

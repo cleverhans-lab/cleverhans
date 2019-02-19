@@ -86,11 +86,7 @@ in Python 2.7 and we do not plan to fix bugs affecting only Python 2.7 after
 Support for TensorFlow prior to 1.12 is deprecated.
 Backwards compatibility wrappers for these versions may be removed after 2019-07-07,
 and we will not fix bugs for those versions after that date.
-Support for TensorFlow prior to 1.8 is deprecated with an earlier deprecation
-date:
-backwards compatibility wrappers for these versions may be removed after
-2019-01-26, and we will not fix bugs for those versions after that date.
-Support for TensorFlow 1.3 and earlier is already deprecated: we do not fix
+Support for TensorFlow 1.7 and earlier is already deprecated: we do not fix
 bugs for those versions and any remaining wrapper code for those versions
 may be removed without further notice.
 
