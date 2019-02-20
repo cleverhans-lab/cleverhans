@@ -28,7 +28,7 @@ from cleverhans.utils import TemporaryLogLevel
 from cleverhans.utils import to_categorical
 from cleverhans.utils_tf import model_eval, batch_eval
 
-from cleverhans_tutorials.tutorial_models import ModelBasicCNN
+from cleverhans.model_zoo.basic_cnn import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
