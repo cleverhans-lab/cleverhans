@@ -74,7 +74,6 @@ flags.DEFINE_integer('stride', 2,
 flags.DEFINE_string('padding', 'SAME',
                     'Type of padding for convolution')
 
-dataset = 'MNIST'
 
 def main(_):
   tf.logging.set_verbosity(FLAGS.verbosity)
@@ -83,8 +82,7 @@ def main(_):
 
   # Initialize neural network based on config files
   input_shape = [FLAGS.num_rows, FLAGS.num_columns, FLAGS.num_channels]
-  conv_params = [FLAGS.stride, FLAGS.padding]
-  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape, conv_params)
+  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
   tf.logging.info('Loaded neural network with input shapes: %s',
