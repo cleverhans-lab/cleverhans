@@ -22,7 +22,7 @@ from cleverhans.utils_tf import model_eval
 from cleverhans.train import train
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import AccuracyReport, set_log_level
-from cleverhans.model_zoo.simple_cnn import ModelBasicCNN
+from cleverhans.model_zoo.basic_cnn import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 

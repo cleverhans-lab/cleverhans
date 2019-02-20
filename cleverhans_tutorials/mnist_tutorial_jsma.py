@@ -22,7 +22,7 @@ from cleverhans.utils import other_classes, set_log_level
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_tf import model_eval, model_argmax
 from cleverhans.train import train
-from cleverhans.model_zoo.simple_cnn import ModelBasicCNN
+from cleverhans.model_zoo.basic_cnn import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 
