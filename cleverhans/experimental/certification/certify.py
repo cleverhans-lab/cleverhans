@@ -69,10 +69,6 @@ flags.DEFINE_integer('num_columns', 28,
                      'Number of columns in image')
 flags.DEFINE_integer('num_channels', 1,
                      'Number of channels in image')
-flags.DEFINE_integer('stride', 2,
-                     'Stride for convolution')
-flags.DEFINE_string('padding', 'SAME',
-                    'Type of padding for convolution')
 
 
 def main(_):
