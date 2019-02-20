@@ -5,16 +5,17 @@ from __future__ import print_function
 
 import tensorflow as tf
 import numpy as np
-from numpy.linalg import cholesky
 
-from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import eigs
-from scipy.sparse.linalg import inv
+from scipy.sparse.linalg import eigs, LinearOperator
+from scipy.sparse.linalg import lgmres
 
 from cleverhans.experimental.certification import utils
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
+
+# Tolerance value for eigenvalue computation
+TOL = 1E-5
 
 
 class DualFormulation(object):
@@ -127,8 +128,8 @@ class DualFormulation(object):
 
     # Construct objectives, matrices, and certificate
     self.set_differentiable_objective()
-    self.get_full_psd_matrix()
-    self.construct_certificate()
+    if not self.nn_params.has_conv:
+      self.get_full_psd_matrix()
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""
@@ -181,20 +182,18 @@ class DualFormulation(object):
     self.vector_g = tf.concat(g_rows, axis=0)
     self.unconstrained_objective = self.scalar_f + 0.5 * self.nu
 
-  def get_psd_product(self, vector):
+  def get_h_product(self, vector):
     """Function that provides matrix product interface with PSD matrix.
 
     Args:
-      vector: the vector to be multiplied with matrix M
+      vector: the vector to be multiplied with matrix H
 
     Returns:
-      result_product: Matrix product of M and vector
+      result_product: Matrix product of H and vector
     """
-    # For convenience, think of x as [\alpha, \beta]
-    alpha = tf.reshape(vector[0], shape=[1, 1])
-    beta = vector[1:]
-    # Computing the product of matrix_h with beta part of vector
+    # Computing the product of matrix_h with beta (input vector)
     # At first layer, h is simply diagonal
+    beta = vector
     h_beta_rows = []
     for i in range(self.nn_params.num_hidden_layers):
       # Split beta of this block into [gamma, delta]
@@ -231,6 +230,23 @@ class DualFormulation(object):
                     delta))
 
     h_beta = tf.concat(h_beta_rows, axis=0)
+    return h_beta
+
+  def get_psd_product(self, vector):
+    """Function that provides matrix product interface with PSD matrix.
+
+    Args:
+      vector: the vector to be multiplied with matrix M
+
+    Returns:
+      result_product: Matrix product of M and vector
+    """
+    # For convenience, think of x as [\alpha, \beta]
+    alpha = tf.reshape(vector[0], shape=[1, 1])
+    beta = vector[1:]
+    # Computing the product of matrix_h with beta part of vector
+    # At first layer, h is simply diagonal
+    h_beta = self.get_h_product(beta)
 
     # Constructing final result using vector_g
     result = tf.concat(
@@ -240,15 +256,6 @@ class DualFormulation(object):
         ],
         axis=0)
     return result
-
-  def construct_certificate(self):
-    """Function to compute the certificate associated with feasible solution."""
-    # TODO: replace matrix_inverse with functin which uses matrix-vector product
-    self.certificate = (
-        self.scalar_f +
-        0.5*tf.matmul(tf.matmul(tf.transpose(self.vector_g),
-                                tf.matrix_inverse(self.matrix_h)),
-                      self.vector_g))
 
   def get_full_psd_matrix(self):
     """Function that returns the tf graph corresponding to the entire matrix M.
@@ -301,73 +308,65 @@ class DualFormulation(object):
     lambda_neg_val = self.sess.run(self.lambda_neg)
     lambda_lu_val = self.sess.run(self.lambda_lu)
 
-    old_matrix_h, old_matrix_m = self.sess.run([self.matrix_h, self.matrix_m])
+    input_vector_m = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension, 1))
+    output_vector_m = self.get_psd_product(input_vector_m)
 
-    min_eig_val_m, _ = eigs(old_matrix_m, k=1, which='SR',
-                            tol=1E-5)
+    def np_vector_prod_fn_m(np_vector):
+      np_vector = np.reshape(np_vector, [-1, 1])
+      output_np_vector = self.sess.run(output_vector_m, feed_dict={input_vector_m:np_vector})
+      return output_np_vector
+    linear_operator_m = LinearOperator((self.matrix_m_dimension, self.matrix_m_dimension), matvec=np_vector_prod_fn_m)
+    # Performing shift invert scipy operation when eig val estimate is available
+    min_eig_val_m, _ = eigs(linear_operator_m,
+                            k=1, which='SR', tol=TOL)
 
     # It's likely that the approximation is off by the tolerance value,
     # so we shift it back
-    min_eig_val_m = np.real(min_eig_val_m) - 1E-5
+    min_eig_val_m = np.real(min_eig_val_m) - TOL
 
-    dim = self.matrix_m_dimension
-    try:
-      cholesky(old_matrix_m - np.real(min_eig_val_m)*np.eye(dim))
-    except np.linalg.LinAlgError:
-      print("Increased min eigen value of M")
-      min_eig_val_m = 2*min_eig_val_m
-    else:
-      pass
+    input_vector_h = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension - 1, 1))
+    output_vector_h = self.get_h_product(input_vector_h)
 
-    min_eig_val_h, _ = eigs(old_matrix_h, k=1, which='LR',
-                            tol=1E-5, sigma=-0.1)
+    def np_vector_prod_fn_h(np_vector):
+      np_vector = np.reshape(np_vector, [-1, 1])
+      output_np_vector = self.sess.run(output_vector_h, feed_dict={input_vector_h:np_vector})
+      return output_np_vector
+    linear_operator_h = LinearOperator((self.matrix_m_dimension - 1,
+                                        self.matrix_m_dimension - 1),
+                                       matvec=np_vector_prod_fn_h)
+    # Performing shift invert scipy operation when eig val estimate is available
+    min_eig_val_h, _ = eigs(linear_operator_h,
+                            k=1, which='SR', tol=TOL)
 
-    min_eig_val_h = np.real(min_eig_val_h - 1E-5)
+    # It's likely that the approximation is off by the tolerance value,
+    # so we shift it back
+    min_eig_val_h = np.real(min_eig_val_h) - TOL
 
-    dim = self.matrix_m_dimension - 1
-    try:
-      cholesky(old_matrix_h - np.real(min_eig_val_h)*np.eye(dim))
-    except np.linalg.LinAlgError:
-      min_eig_val_h = 2*min_eig_val_h
-
-    # We want to find the minimum certificate, so initially we can set
-    # the value to infinity.
-    current_certificate = np.inf
     dual_feed_dict = {}
 
-    values = np.linspace(min_eig_val_m, min_eig_val_h, 5)
-    for v in values:
-      new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
-      new_lambda_neg_val = [np.copy(x) for x in lambda_neg_val]
+    new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
+    new_lambda_neg_val = [np.copy(x) for x in lambda_neg_val]
 
-      for i in range(self.nn_params.num_hidden_layers + 1):
-        # Making H PSD
-        new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-v, 0) + 1E-6
-        # Adjusting the value of \lambda_neg to make change in g small
-        new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((self.lower[i] + self.upper[i]),
-                                                                (lambda_lu_val[i] -
-                                                                 new_lambda_lu_val[i]))
-        new_lambda_neg_val[i] = (np.multiply(self.negative_indices[i],
-                                             new_lambda_neg_val[i]) +
-                                 np.multiply(self.switch_indices[i],
-                                             np.maximum(new_lambda_neg_val[i], 0)))
+    for i in range(self.nn_params.num_hidden_layers + 1):
+      # Making H PSD
+      new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-min_eig_val_h, 0) + TOL
+      # Adjusting the value of \lambda_neg to make change in g small
+      new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((self.lower[i] + self.upper[i]),
+                                                              (lambda_lu_val[i] -
+                                                               new_lambda_lu_val[i]))
+      new_lambda_neg_val[i] = (np.multiply(self.negative_indices[i],
+                                           new_lambda_neg_val[i]) +
+                               np.multiply(self.switch_indices[i],
+                                           np.maximum(new_lambda_neg_val[i], 0)))
 
-      dual_feed_dict.update(zip(self.lambda_lu, new_lambda_lu_val))
-      dual_feed_dict.update(zip(self.lambda_neg, new_lambda_neg_val))
-      scalar_f = self.sess.run(self.scalar_f, feed_dict=dual_feed_dict)
-      vector_g = self.sess.run(self.vector_g, feed_dict=dual_feed_dict)
-      matrix_h = self.sess.run(self.matrix_h, feed_dict=dual_feed_dict)
-      second_term = np.matmul(np.matmul(np.transpose(vector_g),
-                                        inv(csc_matrix(matrix_h)).toarray()), vector_g) + 0.05
+    dual_feed_dict.update(zip(self.lambda_lu, new_lambda_lu_val))
+    dual_feed_dict.update(zip(self.lambda_neg, new_lambda_neg_val))
+    scalar_f = self.sess.run(self.scalar_f, feed_dict=dual_feed_dict)
+    vector_g = self.sess.run(self.vector_g, feed_dict=dual_feed_dict)
+    x, _ = lgmres(linear_operator_h, vector_g)
+    x = x.reshape((x.shape[0], 1))
+    second_term = np.matmul(np.transpose(vector_g), x) + 0.05
 
-      dual_feed_dict.update({self.nu:second_term})
-      check_psd_matrix_m = self.sess.run(self.matrix_m, dual_feed_dict)
-      try:
-        cholesky(check_psd_matrix_m)
-      except np.linalg.LinAlgError:
-        print("Problem: Matrix is not PSD")
+    computed_certificate = scalar_f + 0.5*second_term
 
-      computed_certificate = scalar_f + 0.5*second_term
-      current_certificate = np.minimum(computed_certificate, current_certificate)
-
-    return current_certificate
+    return computed_certificate

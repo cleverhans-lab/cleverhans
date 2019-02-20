@@ -7,7 +7,7 @@ import json
 import os
 import numpy as np
 
-from scipy.sparse.linalg import eigs
+from scipy.sparse.linalg import eigs, LinearOperator
 import tensorflow as tf
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
@@ -115,11 +115,27 @@ class Optimization(object):
       eig_vec: Minimum absolute eigen value
       eig_val: Corresponding eigen vector
     """
-    matrix_m = self.sess.run(self.dual_object.matrix_m)
-    min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR',
-                                                   tol=1E-4)
-    min_eig_vec_val = np.reshape(np.real(min_eig_vec_val), [1, 1])
-    return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
+    if not self.params['has_conv']:
+      matrix_m = self.sess.run(self.dual_object.matrix_m)
+      min_eig_vec_val, estimated_eigen_vector = eigs(matrix_m, k=1, which='SR',
+                                                     tol=1E-4)
+      min_eig_vec_val = np.reshape(np.real(min_eig_vec_val), [1, 1])
+      return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
+    else:
+      dim = self.dual_object.matrix_m_dimension
+      input_vector = tf.placeholder(tf.float32, shape=(dim, 1))
+      output_vector = self.dual_object.get_psd_product(input_vector)
+
+      def np_vector_prod_fn(np_vector):
+        np_vector = np.reshape(np_vector, [-1, 1])
+        output_np_vector = self.sess.run(output_vector, feed_dict={input_vector:np_vector})
+        return output_np_vector
+      linear_operator = LinearOperator((dim, dim), matvec=np_vector_prod_fn)
+      # Performing shift invert scipy operation when eig val estimate is available
+      min_eig_vec_val, estimated_eigen_vector = eigs(linear_operator,
+                                                     k=1, which='SR', tol=1E-4)
+      min_eig_vec_val = np.reshape(np.real(min_eig_vec_val), [1, 1])
+      return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
 
   def prepare_for_optimization(self):
     """Create tensorflow op for running one step of descent."""
@@ -208,7 +224,7 @@ class Optimization(object):
      found_cert: True is negative certificate is found, False otherwise
     """
     # Project onto feasible set of dual variables
-    if self.current_step % self.params['projection_steps'] == 0:
+    if self.current_step != 0 and self.current_step % self.params['projection_steps'] == 0:
       current_certificate = self.dual_object.compute_certificate()
       tf.logging.info('Inner step: %d, current value of certificate: %f',
                       self.current_step, current_certificate)

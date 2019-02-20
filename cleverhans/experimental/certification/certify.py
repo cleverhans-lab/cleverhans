@@ -63,6 +63,12 @@ flags.DEFINE_enum('verbosity', 'INFO',
                   'Logging verbosity level.')
 flags.DEFINE_string('eig_type', 'SCIPY',
                     'Method to compute eigenvalues (TF or SCIPY), SCIPY')
+flags.DEFINE_integer('num_rows', 28,
+                     'Number of rows in image')
+flags.DEFINE_integer('num_columns', 28,
+                     'Number of columns in image')
+flags.DEFINE_integer('num_channels', 1,
+                     'Number of channels in image')
 
 
 def main(_):
@@ -71,9 +77,14 @@ def main(_):
   start_time = time.time()
 
   # Initialize neural network based on config files
-  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json)
+  input_shape = [FLAGS.num_rows, FLAGS.num_columns, FLAGS.num_channels]
+  nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape)
   tf.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
+  tf.logging.info('Loaded neural network with input shapes: %s',
+                  nn_params.input_shapes)
+  tf.logging.info('Loaded neural network with output shapes: %s',
+                  nn_params.output_shapes)
   dual_var = utils.initialize_dual(
       nn_params, FLAGS.init_dual_file, init_nu=FLAGS.init_nu)
 
@@ -109,7 +120,8 @@ def main(_):
         'print_stats_steps': FLAGS.print_stats_steps,
         'stats_folder': FLAGS.stats_folder,
         'projection_steps': FLAGS.projection_steps,
-        'eig_type': FLAGS.eig_type
+        'eig_type': FLAGS.eig_type,
+        'has_conv': nn_params.has_conv
     }
     with tf.Session() as sess:
       dual = dual_formulation.DualFormulation(sess,
