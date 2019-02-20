@@ -1,6 +1,7 @@
 """
 A Simple Neural Net to optimize with SNNL and Cross Entropy
 """
+# pylint: disable=docstring-missing
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
