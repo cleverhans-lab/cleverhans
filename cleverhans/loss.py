@@ -70,13 +70,15 @@ class Loss(object):
                    params=self.hparams),
               open(os.path.join(path, 'loss.json'), 'wb'))
 
-  def fprop(self, x, y):
+  def fprop(self, x, y, separate=False):
     """Forward propagate the loss.
-    Loss should be a scalar value, independent of batch size (i.e. use
-    reduce_mean over batch axis, don't use reduce_sum or return a tensor).
-    Scalar losses are easier to add together, e.g. through `WeightedSum`.
-    Mean losses are easier to redistribute across multiple replicas without
-    needing to change learning rates, etc.
+    If separate=False, loss should be a scalar value, independent of batch
+    size (i.e. use reduce_mean over batch axis, don't use reduce_sum or
+    return a tensor). Scalar losses are easier to add together, e.g.
+    through `WeightedSum`. Mean losses are easier to redistribute across
+    multiple replicas without needing to change learning rates, etc.
+    If separate losses are needed for each sample in the batch (e.g. for
+    Houdini-based loss), use separate=True.
     :param x: tensor, a batch of inputs.
     :param y: tensor, a batch of outputs (1-hot labels typically).
     """
@@ -138,7 +140,7 @@ class CrossEntropy(Loss):
     self.pass_y = pass_y
     self.attack_params = attack_params
 
-  def fprop(self, x, y, **kwargs):
+  def fprop(self, x, y, separate=False, **kwargs):
     kwargs.update(self.kwargs)
     if self.attack is not None:
       attack_params = copy.copy(self.attack_params)
@@ -164,9 +166,13 @@ class CrossEntropy(Loss):
                                                       y.dtype)))
 
     logits = [self.model.get_logits(x, **kwargs) for x in x]
+
+    def agg_op(x):
+      return x if separate else tf.reduce_mean(x)
+
     loss = sum(
-        coeff * tf.reduce_mean(softmax_cross_entropy_with_logits(labels=y,
-                                                                 logits=logit))
+        coeff * agg_op(softmax_cross_entropy_with_logits(labels=y,
+                                                         logits=logit))
         for coeff, logit in safe_zip(coeffs, logits))
     return loss
 
@@ -252,10 +258,11 @@ class Houdini(Loss):
 
   def fprop(self, x, y, **kwargs):
     # Get task loss for each sample in batch individually
-    def prop_fn(s):
-      return self.loss_object.fprop(tf.expand_dims(s[0], 0), s[1], **kwargs)
+    task_losses = self.loss_object.fprop(x, y, separate=True, **kwargs)
 
-    task_losses = tf.map_fn(prop_fn, (x, y), dtype=tf.float32)
+    if len(task_losses.get_shape()) != 1:
+      raise ValueError("%s.fprop should return per-example loss for Houdini" %
+                       str(self.loss_object))
 
     logits = self.model.get_logits(x, **kwargs)
     labels = tf.argmax(y, axis=-1, output_type=tf.int32)
