@@ -24,13 +24,15 @@ class NeuralNetwork(object):
        [convention: x[i+1] = W[i] x[i]
       net_biases: list of numpy arrays of biases of each layer
       net_layer_types: type of each layer ['ff' or 'ff_relu' or 'ff_conv' or
-        'ff_conv_relu']      vector = tf.reshape(vector, self.input_shapes[layer_index])
+        'ff_conv_relu']
 
         'ff': Simple feedforward layer with no activations
         'ff_relu': Simple feedforward layer with ReLU activations
         'ff_conv': Convolution layer with no activation
         'ff_conv_relu': Convolution layer with ReLU activation
-      input_shape = [num_rows, num_columns, num_channels] at the input layer
+      input_shape: [num_rows, num_columns, num_channels] at the input layer
+      cnn_params: list of dictionaries containing stride and padding for
+        each layer
 
     Raises:
       ValueError: the input lists of net params are not of the same length
@@ -52,9 +54,7 @@ class NeuralNetwork(object):
       current_num_rows = input_shape[0]
       current_num_columns = input_shape[1]
       current_num_channels = input_shape[2]
-    if(cnn_params is not None):
-      self.stride = cnn_params[0]
-      self.padding = cnn_params[1]
+    self.cnn_params = cnn_params
 
     # Setting the sizes of the layers of the network
     # sizes[i] contains the size of x_i
@@ -82,9 +82,9 @@ class NeuralNetwork(object):
         self.sizes.append(current_num_rows*current_num_columns*current_num_channels)
         current_num_channels = num_filters
         # For propagating across multiple conv layers
-        if(self.padding == 'SAME'):
-          current_num_rows = int(current_num_rows/self.stride)
-          current_num_columns = int(current_num_columns/self.stride)
+        if(self.cnn_params[i]['padding'] == 'SAME'):
+          current_num_rows = int(current_num_rows/self.cnn_params[i]['stride'])
+          current_num_columns = int(current_num_columns/self.cnn_params[i]['stride'])
         self.output_shapes.append(
             [1, current_num_rows, current_num_columns, current_num_channels])
 
@@ -140,22 +140,25 @@ class NeuralNetwork(object):
       return_vector = tf.matmul(weight, vector)
     elif layer_type in {'conv', 'conv_relu'}:
       if is_transpose:
-        return_vector = tf.nn.conv2d_transpose(vector, weight,
+        return_vector = tf.nn.conv2d_transpose(vector,
+                                               weight,
                                                output_shape=self.input_shapes[layer_index],
-                                               strides=[1, self.stride, self.stride, 1],
-                                               padding=self.padding)
+                                               strides=[1, self.cnn_params[layer_index]['stride'],
+                                                        self.cnn_params[layer_index]['stride'], 1],
+                                               padding=self.cnn_params[layer_index]['padding'])
       else:
         return_vector = tf.nn.conv2d(vector,
                                      weight,
-                                     strides=[1, self.stride, self.stride, 1],
-                                     padding=self.padding)
+                                     strides=[1, self.cnn_params[layer_index]['stride'],
+                                              self.cnn_params[layer_index]['stride'], 1],
+                                     padding=self.cnn_params[layer_index]['padding'])
     else:
       raise NotImplementedError('Unsupported layer type: {0}'.format(layer_type))
     if is_transpose:
       return tf.reshape(return_vector, (self.sizes[layer_index], 1))
     return tf.reshape(return_vector, (self.sizes[layer_index + 1], 1))
 
-def load_network_from_checkpoint(checkpoint, model_json, input_shape=None, cnn_params=None):
+def load_network_from_checkpoint(checkpoint, model_json, input_shape=None):
   """Function to read the weights from checkpoint based on json description.
 
     Args:
@@ -195,6 +198,7 @@ def load_network_from_checkpoint(checkpoint, model_json, input_shape=None, cnn_p
   net_layer_types = []
   net_weights = []
   net_biases = []
+  cnn_params = []
 
   # Checking validity of the input and adding to list
   for layer_model_var in list_model_var:
@@ -212,6 +216,11 @@ def load_network_from_checkpoint(checkpoint, model_json, input_shape=None, cnn_p
     # it can be ambiguous
     if layer_model_var['type'] in {'ff', 'ff_relu'}:
       layer_weight = np.transpose(layer_weight)
+      cnn_params.append(None)
+    if layer_model_var['type'] in {'conv'}:
+      if 'stride' not in layer_model_var or 'padding' not in layer_model_var:
+        raise ValueError('Please define stride and padding for conv layers.')
+      cnn_params.append({'stride': layer_model_var['stride'], 'padding': layer_model_var['padding']})
     net_weights.append(layer_weight)
     net_biases.append(np.reshape(layer_bias, (np.size(layer_bias), 1)))
   return NeuralNetwork(net_weights, net_biases, net_layer_types, input_shape, cnn_params)
