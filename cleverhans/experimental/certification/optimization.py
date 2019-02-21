@@ -144,19 +144,18 @@ class Optimization(object):
       eig_vec: Corresponding eigen vector
       eig_val: Minimum absolute eigen value
     """
-    alpha, beta, _ = self.sess.run([self.alpha, self.beta, self.W])
+    alpha, beta = self.sess.run([self.alpha, self.beta])
 
     # Compute max eig of tridiagonal matrix
-    max_eig_1, _, _, _ = utils.eigen_tridiagonal(alpha, beta[1:len(alpha)])
+    max_eig_1, _, _, _ = utils.eigen_tridiagonal(alpha, beta)
 
     # M_hat = M - max_eig * M. Compute max eig of resulting tridiagonal matrix
     alpha_hat, beta_hat, W_hat = self.sess.run([self.alpha_hat,
                                                 self.beta_hat,
                                                 self.W_hat],
                                                feed_dict={self.eig_max_placeholder: max_eig_1})
-    W_hat = W_hat[:, 1:-1]
 
-    max_eig, max_vec, _, _ = utils.eigen_tridiagonal(alpha_hat, beta_hat[1:len(alpha_hat)])
+    max_eig, max_vec, _, _ = utils.eigen_tridiagonal(alpha_hat, beta_hat)
     min_eig = max_eig + max_eig_1
 
     # Multiply by V_hat to get the eigenvector for M
