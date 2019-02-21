@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
-
+from scipy.linalg import eigh_tridiagonal
 
 def diag(diag_elements):
   """Function to create tensorflow diagonal matrix with input diagonal entries.
@@ -95,6 +95,69 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
               'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
   return dual_var
 
+def lanczos_decomp(vector_prod_fn, scalar, n, k):
+  """Function that performs the Lanczos algorithm on a matrix.
+
+  Args:
+    vector_prod_fn: function which returns product H*x, where H is a matrix for
+      which we computing eigenvector.
+    scalar: quantity to scale the basis vector by (either 0 or max magnitude
+      eigenvalue)
+    n: dimensionality of matrix H
+    k: number of iterations and dimensionality of the tridiagonal matrix to
+      return
+
+  Returns:
+    alpha: vector of diagonal elements of T
+    beta: vector of off-diagonal elements of T
+    Q: orthonormal basis matrix for the Krylov subspace
+  """
+  Q = tf.zeros([n, 1])
+  v = tf.random_uniform([n, 1])
+  v = v / tf.norm(v)
+  Q = tf.concat([Q, v], axis=1)
+
+  # diagonals of the tridiagonal matrix
+  beta = tf.constant(0.0, dtype=tf.float32, shape=[1])
+  alpha = tf.constant(0.0, dtype=tf.float32, shape=[1])
+
+  for i in range(k):
+    v = vector_prod_fn(tf.reshape(Q[:, i+1], [n, 1])) - tf.scalar_mul(scalar, tf.reshape(Q[:, i+1], [n, 1]))
+    v = tf.reshape(v, [n,])
+    curr_alpha = tf.reshape(tf.reduce_sum(v * Q[:, i+1]), [1,])
+    alpha = tf.concat([alpha, curr_alpha], axis=0)
+    v = v-beta[-1]*Q[:, i]-alpha[-1]*Q[:, i+1]
+    curr_beta = tf.reshape(tf.norm(v), [1,])
+    beta = tf.concat([beta, curr_beta], axis=0)
+    curr_norm = tf.reshape(v/(beta[-1]+1e-8), [n, 1])
+    Q = tf.concat([Q, curr_norm], axis=1)
+
+  alpha = tf.slice(alpha, begin=[1], size=[-1])
+  beta = tf.slice(beta, begin=[1], size=[k-1])
+  Q = tf.slice(Q, begin=[0, 1], size=[-1, k])
+  return alpha, beta, Q
+
+def eigen_tridiagonal(alpha, beta, maximum=True):
+  """Computes eigenvalues of a tridiagonal matrix.
+
+  Args:
+    alpha: vector of diagonal elements
+    beta: vector of off-diagonal elements
+    max: whether to compute the max or min magnitude eigenvalue
+  Returns:
+    eig: eigenvalue corresponding to max or min magnitude eigenvalue
+    eig_vector: eigenvalue corresponding to eig
+    eig_vectors: all eigenvectors
+    eig_values: all eigenvalues
+  """
+  eig_values, eig_vectors = eigh_tridiagonal(alpha, beta)
+  if maximum:
+    ind_eig = np.argmax(np.abs(eig_values))
+  else:
+    ind_eig = np.argmin(np.abs(eig_values))
+  eig = eig_values[ind_eig]
+  eig_vector = eig_vectors[:, ind_eig]
+  return eig, eig_vector, eig_vectors, eig_values
 
 def eig_one_step(current_vector, learning_rate, vector_prod_fn):
   """Function that performs one step of gd (variant) for min eigen value.

@@ -309,22 +309,6 @@ class DualFormulation(object):
     lambda_neg_val = self.sess.run(self.lambda_neg)
     lambda_lu_val = self.sess.run(self.lambda_lu)
 
-    input_vector_m = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension, 1))
-    output_vector_m = self.get_psd_product(input_vector_m)
-
-    def np_vector_prod_fn_m(np_vector):
-      np_vector = np.reshape(np_vector, [-1, 1])
-      output_np_vector = self.sess.run(output_vector_m, feed_dict={input_vector_m:np_vector})
-      return output_np_vector
-    linear_operator_m = LinearOperator((self.matrix_m_dimension, self.matrix_m_dimension), matvec=np_vector_prod_fn_m)
-    # Performing shift invert scipy operation when eig val estimate is available
-    min_eig_val_m, _ = eigs(linear_operator_m,
-                            k=1, which='SR', tol=TOL)
-
-    # It's likely that the approximation is off by the tolerance value,
-    # so we shift it back
-    min_eig_val_m = np.real(min_eig_val_m) - TOL
-
     input_vector_h = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension - 1, 1))
     output_vector_h = self.get_h_product(input_vector_h)
 
