@@ -1,6 +1,7 @@
 """
 The FastFeatureAdversaries attack
 """
+# pylint: disable=missing-docstring
 import warnings
 
 import numpy as np

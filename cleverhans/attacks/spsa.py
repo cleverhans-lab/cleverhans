@@ -1,5 +1,6 @@
 """The SPSA attack
 """
+# pylint: disable=missing-docstring
 import warnings
 
 import numpy as np
@@ -150,6 +151,9 @@ class SPSA(Attack):
         num_iters=spsa_iters)
 
     def loss_fn(x, label):
+      """
+      Margin logit loss, with correct sign for targeted vs untargeted loss.
+      """
       logits = self.model.get_logits(x)
       loss_multiplier = 1 if is_targeted else -1
       return loss_multiplier * margin_logit_loss(
@@ -266,14 +270,36 @@ class TensorOptimizer(object):
     return tf.gradients(loss, x)
 
   def _apply_gradients(self, grads, x, optim_state):
+    """
+    Given a gradient, make one optimization step.
+
+    :param grads: list of tensors, same length as `x`, containing the corresponding gradients
+    :param x: list of tensors to update
+    :param optim_state: dict
+
+    Returns:
+      new_x: list of tensors, updated version of `x`
+      new_optim_state: dict, updated version of `optim_state`
+    """
     raise NotImplementedError(
         "_apply_gradients should be defined in each subclass")
 
   def minimize(self, loss_fn, x, optim_state):
+    """
+    Analogous to tf.Optimizer.minimize
+
+    :param loss_fn: tf Tensor, representing the loss to minimize
+    :param x: list of Tensor, analogous to tf.Optimizer's var_list
+    :param optim_state: A possibly nested dict, containing any optimizer state.
+
+    Returns:
+      new_x: list of Tensor, updated version of `x`
+      new_optim_state: dict, updated version of `optim_state`
+    """
     grads = self._compute_gradients(loss_fn, x, optim_state)
     return self._apply_gradients(grads, x, optim_state)
 
-  def init_optim_state(self, x):
+  def init_state(self, x):
     """Returns the initial state of the optimizer.
 
     Args:
@@ -283,7 +309,7 @@ class TensorOptimizer(object):
         A dictionary, representing the initial state of the optimizer.
     """
     raise NotImplementedError(
-        "init_optim_state should be defined in each subclass")
+        "init_state should be defined in each subclass")
 
 
 class TensorGradientDescent(TensorOptimizer):
@@ -312,6 +338,9 @@ class TensorAdam(TensorOptimizer):
     self._epsilon = epsilon
 
   def init_state(self, x):
+    """
+    Initialize t, m, and u
+    """
     optim_state = {}
     optim_state["t"] = 0.
     optim_state["m"] = [tf.zeros_like(v) for v in x]
@@ -553,6 +582,13 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
 
 
 def parallel_apply_transformations(x, transforms, black_border_size=0):
+  """
+  Apply image transformations in parallel.
+  :param transforms: TODO
+  :param black_border_size: int, size of black border to apply
+  Returns:
+    Transformed images
+  """
   transforms = tf.convert_to_tensor(transforms, dtype=tf.float32)
   x = _apply_black_border(x, black_border_size)
 

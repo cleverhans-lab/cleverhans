@@ -7,6 +7,7 @@ methods, etc.). This module provides *models* not *benchmarks* and
 thus is free to change rapidly to provide better speed, accuracy,
 etc.
 """
+# pylint: disable=missing-docstring
 
 from __future__ import absolute_import
 from __future__ import division

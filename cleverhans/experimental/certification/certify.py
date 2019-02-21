@@ -71,9 +71,12 @@ flags.DEFINE_integer('num_columns', 28,
                      'Number of columns in image')
 flags.DEFINE_integer('num_channels', 1,
                      'Number of channels in image')
+flags.DEFINE_integer('lanczos_steps', 50,
+                     'Number of steps to perform in Lanczos method.')
 
 
 def main(_):
+  # pylint: disable=missing-docstring
   tf.logging.set_verbosity(FLAGS.verbosity)
 
   start_time = time.time()
@@ -123,7 +126,8 @@ def main(_):
         'stats_folder': FLAGS.stats_folder,
         'projection_steps': FLAGS.projection_steps,
         'eig_type': FLAGS.eig_type,
-        'has_conv': nn_params.has_conv
+        'has_conv': nn_params.has_conv,
+        'lanczos_steps': FLAGS.lanczos_steps
     }
     lzs_params = {
         'min_iter': 5,

@@ -2,6 +2,7 @@
 This script evaluates trained models that have been saved to the filesystem.
 See mnist_tutorial_picklable.py for instructions.
 """
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

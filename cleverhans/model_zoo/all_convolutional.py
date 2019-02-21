@@ -5,13 +5,17 @@ import math
 import tensorflow as tf
 
 from cleverhans import initializers
-from cleverhans.model import Model
+from cleverhans.serial import NoRefModel
 
 
-class ModelAllConvolutional(Model):
+class ModelAllConvolutional(NoRefModel):
+  """
+  A simple model that uses only convolution and downsampling---no batch norm or other techniques that can complicate
+  adversarial training.
+  """
   def __init__(self, scope, nb_classes, nb_filters, input_shape, **kwargs):
     del kwargs
-    Model.__init__(self, scope, nb_classes, locals())
+    NoRefModel.__init__(self, scope, nb_classes, locals())
     self.nb_filters = nb_filters
     self.input_shape = input_shape
 

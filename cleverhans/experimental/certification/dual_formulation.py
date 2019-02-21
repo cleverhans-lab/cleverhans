@@ -1,4 +1,5 @@
 """Code with dual formulation for certification problem."""
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -414,13 +415,12 @@ class DualFormulation(object):
 
     alpha, beta = self.sess.run([alpha, beta])
     # Compute max eig of tridiagonal matrix
-    max_eig_1, _, _, _ = utils.eigen_tridiagonal(alpha, beta[1:len(alpha)])
+    max_eig_1, _, _, _ = utils.eigen_tridiagonal(alpha, beta)
     feed_dict = {self.eig_max_placeholder: max_eig_1}
 
     # M_hat = M - max_eig * M. Compute max eig of resulting tridiagonal matrix
     alpha_hat, beta_hat, Q_hat = self.sess.run([alpha_hat, beta_hat, Q_hat], feed_dict=feed_dict)
-    Q_hat = Q_hat[:,1:-1]
-    max_eig, max_vec, _, _ = utils.eigen_tridiagonal(alpha_hat, beta_hat[1:len(alpha_hat)])
+    max_eig, max_vec, _, _ = utils.eigen_tridiagonal(alpha_hat, beta_hat)
     eig_val = max_eig + max_eig_1
 
     # Multiply by V_hat to get the eigenvector for M

@@ -13,6 +13,7 @@ from cleverhans.experimental.certification import optimization
 
 
 class OptimizationTest(tf.test.TestCase):
+  # pylint: disable=missing-docstring
 
   def prepare_dual_object(self):
     # Function to prepare dual object to be used for testing optimization.
@@ -73,7 +74,7 @@ class OptimizationTest(tf.test.TestCase):
     return sess, dual_formulation_object
 
   def test_init(self):
-    # Function to test initialization of OptimizationTest.
+    """ Function to test initialization of OptimizationTest. """
     sess, dual_formulation_object = self.prepare_dual_object()
     dual_formulation_object.set_differentiable_objective()
     sess.run(tf.global_variables_initializer())
@@ -94,7 +95,7 @@ class OptimizationTest(tf.test.TestCase):
     self.assertIsNotNone(optimization_object)
 
   def test_get_min_eig_vec_proxy(self):
-    # Function test computing min eigen value using matrix vector products.
+    """ Function test computing min eigen value using matrix vector products."""
     sess, dual_formulation_object = self.prepare_dual_object()
     _, matrix_m = dual_formulation_object.get_full_psd_matrix()
     optimization_params = {
@@ -168,7 +169,7 @@ class OptimizationTest(tf.test.TestCase):
     self.assertLess(np.abs(np.min(np_eig_values) - tf_eig_val), 1E-1)
 
   def test_optimization(self):
-    # Function to test optimization.
+    """Function to test optimization."""
     sess, dual_formulation_object = self.prepare_dual_object()
     optimization_params = {
         'init_penalty': 10000,

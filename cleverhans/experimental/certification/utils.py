@@ -116,13 +116,13 @@ def lanczos_decomp(vector_prod_fn, scalar, n, k):
   Q = tf.concat([Q, v], axis=1)
 
   # diagonals of the tridiagonal matrix
-  beta = tf.reshape(tf.constant(0, dtype=tf.float32), [1,])
-  alpha = tf.reshape(tf.constant(0, dtype=tf.float32), [1,])
+  beta = tf.constant(0.0, dtype=tf.float32, shape=[1])
+  alpha = tf.constant(0.0, dtype=tf.float32, shape=[1])
 
   for i in range(k):
     v = vector_prod_fn(tf.reshape(Q[:, i+1], [n, 1])) - tf.scalar_mul(scalar, tf.reshape(Q[:, i+1], [n, 1]))
     v = tf.reshape(v, [n,])
-    curr_alpha = tf.reshape(tf.reduce_sum(tf.multiply(v, Q[:, i+1])), [1,])
+    curr_alpha = tf.reshape(tf.reduce_sum(v * Q[:, i+1]), [1,])
     alpha = tf.concat([alpha, curr_alpha], axis=0)
     v = v-beta[-1]*Q[:, i]-alpha[-1]*Q[:, i+1]
     curr_beta = tf.reshape(tf.norm(v), [1,])
@@ -131,9 +131,11 @@ def lanczos_decomp(vector_prod_fn, scalar, n, k):
     Q = tf.concat([Q, curr_norm], axis=1)
 
   alpha = tf.slice(alpha, begin=[1], size=[-1])
+  beta = tf.slice(beta, begin=[1], size=[k-1])
+  Q = tf.slice(Q, begin=[0, 1], size=[-1, k])
   return alpha, beta, Q
 
-def eigen_tridiagonal(alpha, beta, max=True):
+def eigen_tridiagonal(alpha, beta, maximum=True):
   """Computes eigenvalues of a tridiagonal matrix.
 
   Args:
@@ -147,7 +149,11 @@ def eigen_tridiagonal(alpha, beta, max=True):
     eig_values: all eigenvalues
   """
   eig_values, eig_vectors = eigh_tridiagonal(alpha, beta)
+<<<<<<< HEAD
   if max:
+=======
+  if maximum:
+>>>>>>> upstream/master
     ind_eig = np.argmax(np.abs(eig_values))
   else:
     ind_eig = np.argmin(np.abs(eig_values))
