@@ -18,6 +18,7 @@ TOL = 1E-3
 
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -5.0
+DEFAULT_LZS_PARAMS = {'min_iter': 5, 'max_iter': 50}
 
 
 class DualFormulation(object):
@@ -28,7 +29,7 @@ class DualFormulation(object):
 
   def __init__(self, sess, dual_var, neural_net_param_object, test_input, true_class,
                adv_class, input_minval, input_maxval, epsilon,
-               lzs_params={'min_iter': 5, 'max_iter': 50}):
+               lzs_params=None):
     """Initializes dual formulation class.
 
     Args:
@@ -58,6 +59,8 @@ class DualFormulation(object):
     self.input_maxval = tf.convert_to_tensor(input_maxval, dtype=tf.float32)
     self.epsilon = tf.convert_to_tensor(epsilon, dtype=tf.float32)
     self.lzs_params = lzs_params
+    if not self.lzs_params:
+      self.lzs_params = DEFAULT_LZS_PARAMS
     self.final_linear = (self.nn_params.final_weights[adv_class, :]
                          - self.nn_params.final_weights[true_class, :])
     self.final_linear = tf.reshape(

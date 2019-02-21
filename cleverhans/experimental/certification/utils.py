@@ -149,11 +149,7 @@ def eigen_tridiagonal(alpha, beta, maximum=True):
     eig_values: all eigenvalues
   """
   eig_values, eig_vectors = eigh_tridiagonal(alpha, beta)
-<<<<<<< HEAD
-  if max:
-=======
   if maximum:
->>>>>>> upstream/master
     ind_eig = np.argmax(np.abs(eig_values))
   else:
     ind_eig = np.argmin(np.abs(eig_values))
