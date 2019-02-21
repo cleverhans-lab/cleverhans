@@ -1,5 +1,6 @@
 """The CarliniWagnerL2 attack
 """
+# pylint: disable=missing-docstring
 import logging
 
 import numpy as np

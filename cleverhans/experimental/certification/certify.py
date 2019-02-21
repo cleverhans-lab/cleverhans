@@ -72,6 +72,7 @@ flags.DEFINE_integer('num_channels', 1,
 
 
 def main(_):
+  # pylint: disable=missing-docstring
   tf.logging.set_verbosity(FLAGS.verbosity)
 
   start_time = time.time()

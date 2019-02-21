@@ -9,7 +9,14 @@ from cleverhans.picklable_model import PerImageStandardize
 
 
 class TestPerImageStandardize(CleverHansTest):
+  """
+  Tests for the PerImageStandardize class.
+  """
+
   def setUp(self):
+    """
+    Set up session and build model graph
+    """
     super(TestPerImageStandardize, self).setUp()
 
     self.input_shape = (128, 32, 32, 3)
@@ -24,20 +31,32 @@ class TestPerImageStandardize(CleverHansTest):
     self.y_true = tf.map_fn(tf.image.per_image_standardization, self.x)
 
   def run_and_check_output(self, x):
+    """
+    Make sure y and y_true evaluate to the same value
+    """
     y, y_true = self.sess.run([self.y, self.y_true],
                               feed_dict={self.x: x})
     self.assertClose(y, y_true)
 
   def test_random_inputs(self):
+    """
+    Test on random inputs
+    """
     x = np.random.rand(*self.input_shape)
     self.run_and_check_output(x)
 
-  def test_uniform_inputs(self):
+  def test_ones_inputs(self):
+    """
+    Test with input set to all ones.
+    """
     x = np.ones(self.input_shape)
     self.run_and_check_output(x)
 
 
 class TestDropout(CleverHansTest):
+  """
+  Tests for the Dropout class
+  """
 
   def test_no_drop(self):
     """test_no_drop: Make sure dropout does nothing by default

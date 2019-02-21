@@ -2,6 +2,7 @@
 This tutorial shows how to use cleverhans.picklable_model
 to create models that can be saved for evaluation later.
 """
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -217,6 +218,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
+  """
+  Run the tutorial using command line flags
+  """
   from cleverhans_tutorials import check_installation
   check_installation(__file__)
 

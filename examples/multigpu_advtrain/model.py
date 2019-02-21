@@ -3,7 +3,7 @@ MultiGPU model similar to the one used in model tutorials. The model keeps
 one copy of the weights on each device and handles syncing the parameters
 across devices.
 """
-
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
