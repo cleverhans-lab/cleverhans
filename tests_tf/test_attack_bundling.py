@@ -1,3 +1,6 @@
+"""
+Tests for cleverhans.attack_bundling
+"""
 import numpy as np
 from cleverhans.attack_bundling import AttackConfig
 from cleverhans.attack_bundling import Misclassify
@@ -5,6 +8,9 @@ from cleverhans.attack_bundling import unfinished_attack_configs
 
 
 def test_unfinished_attack_configs():
+  """
+  Test that tracking of which attack configs are unfinished is correct
+  """
 
   new_work_goal = {}
   work_before = {}
@@ -45,6 +51,9 @@ def test_unfinished_attack_configs():
 
 
 def test_misclassify_request_examples():
+  """
+  Test Misclassify.request_examples
+  """
   cfg = AttackConfig(None, None)
   goal = Misclassify(new_work_goal={cfg: 1})
   correctness = np.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 1], dtype=np.bool)

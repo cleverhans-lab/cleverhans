@@ -14,6 +14,7 @@ import unittest
 import numpy as np
 
 class CleverHansTest(unittest.TestCase):
+  """TestCase with some extra features"""
 
   def setUp(self):
     self.test_start = time.time()
@@ -24,6 +25,7 @@ class CleverHansTest(unittest.TestCase):
     print(self.id(), "took", time.time() - self.test_start, "seconds")
 
   def assertClose(self, x, y, *args, **kwargs):
+    """Assert that `x` and `y` have close to the same value"""
     # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
     # on failure
     assert np.allclose(x, y, *args, **kwargs), (x, y)

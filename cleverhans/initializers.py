@@ -6,6 +6,9 @@ import tensorflow as tf
 
 
 class HeReLuNormalInitializer(tf.initializers.random_normal):
+  """
+  The initializer from He et al 2015
+  """
   def __init__(self, dtype=tf.float32):
     super(HeReLuNormalInitializer, self).__init__(dtype=dtype)
 

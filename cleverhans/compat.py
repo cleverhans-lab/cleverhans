@@ -17,6 +17,9 @@ def _wrap(f):
   Wraps a callable `f` in a function that warns that the function is deprecated.
   """
   def wrapper(*args, **kwargs):
+    """
+    Issues a deprecation warning and passes through the arguments.
+    """
     warnings.warn(str(f) + " is deprecated. Switch to calling the equivalent function in tensorflow. "
                   " This function was originally needed as a compatibility layer for old versions of tensorflow, "
                   " but support for those versions has now been dropped.")

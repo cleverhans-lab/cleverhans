@@ -3,6 +3,7 @@ This module provides Trainer classes that given a set of flags, create,
 initialize and train a model. These classes use Runner objects to handle
 multigpu/singlegpu training.
 """
+# pylint: disable=missing-docstring
 from collections import OrderedDict
 import logging
 import math

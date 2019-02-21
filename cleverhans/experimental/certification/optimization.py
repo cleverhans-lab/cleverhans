@@ -1,4 +1,5 @@
 """Code for setting up the optimization problem for certification."""
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

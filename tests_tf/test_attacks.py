@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -1196,7 +1197,11 @@ class SimpleSpatialBrightPixelModel(Model):
     [int(v) for v in tf.__version__.split('.')[:2]] < [1, 6],
     "SpatialAttack requires tf 1.6 or higher")
 class TestSpatialTransformationMethod(CleverHansTest):
+  """Tests for SpatialTransformationMethod"""
   def setUp(self):
+    """
+    Allocate session, model, and attack + initialize tf Variables
+    """
     super(TestSpatialTransformationMethod, self).setUp()
 
     self.sess = tf.Session()
@@ -1209,6 +1214,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
     self.sess.run(tf.global_variables_initializer())
 
   def test_no_transformation(self):
+    """Test that setting transformation params to 0. is a no-op"""
     x_val = np.random.rand(100, 2, 2, 1)
     x_val = np.array(x_val, dtype=np.float32)
     x = tf.placeholder(tf.float32, shape=(None, 2, 2, 1))
@@ -1221,6 +1227,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
     self.assertClose(x_adv, x_val)
 
   def test_push_pixels_off_image(self):
+    """Test that the attack pushes some pixels off the image"""
     x_val = np.random.rand(100, 2, 2, 1)
     x_val = np.array(x_val, dtype=np.float32)
 
@@ -1243,6 +1250,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
 
   def test_keep_pixels_on_image(self):
+    """Test that the attack does not push some pixels off the image"""
     x_val = np.random.rand(100, 2, 2, 1)
     x_val = np.array(x_val, dtype=np.float32)
 

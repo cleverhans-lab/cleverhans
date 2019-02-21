@@ -74,6 +74,7 @@ flags.DEFINE_integer('lanczos_steps', 50,
 
 
 def main(_):
+  # pylint: disable=missing-docstring
   tf.logging.set_verbosity(FLAGS.verbosity)
 
   start_time = time.time()
