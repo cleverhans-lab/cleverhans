@@ -434,9 +434,8 @@ class DualFormulation(object):
     for i in range(n):
       input_vector = np.zeros((n, 1), dtype=np.float32)
       input_vector[i, 0] = 1.0
-      print(input_vector.shape)
-      M[:, i] = self.sess.run(output_vector_m, feed_dict={input_vector_m: input_vector})
-    np.save('matrices/iter_' + str(iter), M)
+      M[:, i] = np.reshape(self.sess.run(output_vector_m, feed_dict={input_vector_m: input_vector}), (n,))
+    np.save('cleverhans/experimental/certification/matrices/iter_' + str(iter), M)
 
   def compute_certificate(self, current_step):
     """ Function to compute the certificate based either current value
@@ -512,7 +511,7 @@ class DualFormulation(object):
       if np.abs(min_eig_val_m_scipy - min_eig_val_m) > 0.001:
         print('diverged')
         self.dump_M(str(current_step) + '_diverging')
-      elif current_step % 50 == 0:
+      elif current_step % 500 == 0:
         self.dump_M(str(current_step))
 
       # It's likely that the approximation is off by the tolerance value,

@@ -63,7 +63,7 @@ flags.DEFINE_enum('verbosity', 'INFO',
                   'Logging verbosity level.')
 flags.DEFINE_string('eig_type', 'LZS',
                     'Method to compute eigenvalues (TF, SCIPY, or LZS), LZS')
-flags.DEFINE_integer('lanczos_steps', 50,
+flags.DEFINE_integer('lanczos_steps', 80,
                      'Number of steps to perform in Lanczos method.')
 flags.DEFINE_integer('num_rows', 28,
                      'Number of rows in image')
