@@ -72,6 +72,7 @@ flags.DEFINE_integer('num_columns', 28,
 flags.DEFINE_integer('num_channels', 1,
                      'Number of channels in image')
 
+MIN_LANCZOS_ITER = 5
 
 def main(_):
   # pylint: disable=missing-docstring
@@ -128,7 +129,7 @@ def main(_):
         'lanczos_steps': FLAGS.lanczos_steps
     }
     lzs_params = {
-        'min_iter': 5,
+        'min_iter': MIN_LANCZOS_ITER,
         'max_iter': FLAGS.lanczos_steps
     }
     with tf.Session() as sess:

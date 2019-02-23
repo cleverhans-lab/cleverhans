@@ -58,9 +58,7 @@ class DualFormulation(object):
     self.input_minval = tf.convert_to_tensor(input_minval, dtype=tf.float32)
     self.input_maxval = tf.convert_to_tensor(input_maxval, dtype=tf.float32)
     self.epsilon = tf.convert_to_tensor(epsilon, dtype=tf.float32)
-    self.lzs_params = lzs_params
-    if not self.lzs_params:
-      self.lzs_params = DEFAULT_LZS_PARAMS
+    self.lzs_params = lzs_params or DEFAULT_LZS_PARAMS.copy()
     self.final_linear = (self.nn_params.final_weights[adv_class, :]
                          - self.nn_params.final_weights[true_class, :])
     self.final_linear = tf.reshape(
@@ -357,7 +355,7 @@ class DualFormulation(object):
         axis=0)
     return self.matrix_h, self.matrix_m
 
-  def make_M_psd(self):
+  def make_m_psd(self):
     """Run binary search to find a value for nu that makes M PSD
 
     Args:
@@ -401,9 +399,13 @@ class DualFormulation(object):
     # Add 0.05 to final nu to account for numerical instability
     return original_nu, final_nu + 0.05
 
-  def get_lanczos_eig(self, M=True):
+  def get_lanczos_eig(self, compute_m=True):
     """Computes the min eigen value and corresponding vector of matrix M or H
     using the Lanczos algorithm.
+
+    Args:
+      compute_m: boolean to determine whether we should compute eig val/vec
+        for M or for H. True for M; False for H.
 
     Returns:
       min_eig_vec: Corresponding eigen vector to min eig val
@@ -412,7 +414,7 @@ class DualFormulation(object):
     alpha, beta = self.alpha_m, self.beta_m
     alpha_hat, beta_hat, Q_hat = self.alpha_m_hat, self.beta_m_hat, self.Q_m_hat
 
-    if not M:
+    if not compute_m:
       alpha, beta = self.alpha_h, self.beta_h
       alpha_hat, beta_hat, Q_hat = self.alpha_h_hat, self.beta_h_hat, self.Q_h_hat
 
@@ -427,7 +429,7 @@ class DualFormulation(object):
     eig_val = max_eig + max_eig_1
 
     # Multiply by V_hat to get the eigenvector for M
-    if M:
+    if compute_m:
       return np.matmul(Q_hat, max_vec).reshape((self.matrix_m_dimension, 1)), eig_val
 
     return np.matmul(Q_hat, max_vec).reshape((self.matrix_m_dimension - 1, 1)), eig_val
@@ -438,7 +440,7 @@ class DualFormulation(object):
     lambda_neg_val = self.sess.run(self.lambda_neg)
     lambda_lu_val = self.sess.run(self.lambda_lu)
 
-    _, min_eig_val_h = self.get_lanczos_eig(M=False)
+    _, min_eig_val_h = self.get_lanczos_eig(compute_m=False)
 
     new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
     new_lambda_neg_val = [np.copy(x) for x in lambda_neg_val]
@@ -456,14 +458,15 @@ class DualFormulation(object):
                                            np.maximum(new_lambda_neg_val[i], 0)))
 
     # Assign new lambda
+    # TODO(shankarshreya): remove the assign ops and do this with new variables
     self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_lu, new_lambda_lu_val)])
     self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_neg, new_lambda_neg_val)])
 
     # Make matrix M PSD
     scalar_f = self.sess.run(self.scalar_f)
-    old_nu, second_term = self.make_M_psd()
+    old_nu, second_term = self.make_m_psd()
 
-    computed_certificate = scalar_f + 0.5*(second_term)
+    computed_certificate = scalar_f + 0.5*second_term
 
     tf.logging.info('Inner step: %d, current value of certificate: %f',
                     current_step, computed_certificate)
@@ -477,6 +480,8 @@ class DualFormulation(object):
         return True
 
     # Reset values of the variables to their original values before projection
+    # If we don't do this, the optimizer will use the projected values for variables
+    # instead of the true values
     self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_lu, lambda_lu_val)])
     self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_neg, lambda_neg_val)])
     self.sess.run(tf.assign(self.nu, old_nu))
