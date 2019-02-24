@@ -275,7 +275,7 @@ class Houdini(Loss):
 
     # Product of the "stochastic margin" and task loss
     dist = tf_distributions.Normal(loc=0., scale=1.)
-    margins = tf.map_fn(dist.survival_function, diffs)
+    margins = dist.survival_function(diffs)
     losses = tf.multiply(margins, task_losses)
 
     return tf.reduce_mean(losses)
