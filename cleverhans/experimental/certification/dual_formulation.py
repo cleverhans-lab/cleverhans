@@ -396,6 +396,9 @@ class DualFormulation(object):
       else:
         upper_nu = mid_nu
 
+    # Reset to original value of nu
+    self.sess.run(tf.assign(self.nu, original_nu))
+
     # Add 0.05 to final nu to account for numerical instability
     return original_nu, final_nu + 0.05
 
@@ -484,6 +487,5 @@ class DualFormulation(object):
     # instead of the true values
     self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_lu, lambda_lu_val)])
     self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_neg, lambda_neg_val)])
-    self.sess.run(tf.assign(self.nu, old_nu))
 
     return False
