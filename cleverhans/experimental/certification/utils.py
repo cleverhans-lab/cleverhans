@@ -68,7 +68,6 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
                                        initializer=initializer,
                                        dtype=tf.float32))
     nu = tf.get_variable('nu', initializer=init_nu)
-    nu = tf.reshape(nu, shape=(1, 1))
   else:
     # Loading from file
     dual_var_init_val = np.load(init_dual_file).item()
@@ -90,7 +89,6 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
                           initializer=dual_var_init_val['lambda_lu'][i],
                           dtype=tf.float32))
     nu = tf.get_variable('nu', initializer=1.0*dual_var_init_val['nu'])
-    nu = tf.reshape(nu, shape=(1, 1))
   dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
               'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
   return dual_var

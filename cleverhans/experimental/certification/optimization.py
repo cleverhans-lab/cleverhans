@@ -13,10 +13,7 @@ import tensorflow as tf
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
 
-# Bound on lowest value of certificate to check for numerical errors
-LOWER_CERT_BOUND = -10.0
 UPDATE_PARAM_CONSTANT = -0.1
-MIN_LANCZOS_ITER = 5
 
 
 class Optimization(object):
@@ -110,60 +107,6 @@ class Optimization(object):
         vector_prod_fn=_vector_prod_fn)
     return estimated_eigen_vector
 
-  def construct_lanczos_params(self, k):
-    """Constructs TF ops for storing Lanczos matrices.
-
-    Args:
-      k: number of iterations and dimensionality of the tridiagonal matrix
-    """
-    # Using autograph to automatically handle
-    # the control flow of minimum_eigen_vector
-    self.lanczos_eigen_vec = autograph.to_graph(utils.lanczos_decomp)
-
-    def _vector_prod_fn(x):
-      return self.dual_object.get_psd_product(x)
-
-    # First, get the eigenvalue corresponding to largest magnitude
-    self.alpha, self.beta, self.W = self.lanczos_eigen_vec(_vector_prod_fn,
-                                                           0,
-                                                           self.dual_object.matrix_m_dimension,
-                                                           MIN_LANCZOS_ITER)
-    self.eig_max_placeholder = tf.placeholder(tf.float32, shape=[])
-
-    # Shift the matrix by the largest magnitude eigenvalue to compute
-    # the smallest real eigenvalue
-    self.alpha_hat, self.beta_hat, self.W_hat = self.lanczos_eigen_vec(_vector_prod_fn,
-                                                                       self.eig_max_placeholder,
-                                                                       self.dual_object.matrix_m_dimension,
-                                                                       k)
-
-  def get_lanczos_eig_vec(self):
-    """Computes the min eigen value and corresponding vector of matrix M
-    using the Lanczos algorithm.
-
-    Returns:
-      eig_vec: Corresponding eigen vector
-      eig_val: Minimum absolute eigen value
-    """
-    alpha, beta = self.sess.run([self.alpha, self.beta])
-
-    # Compute max eig of tridiagonal matrix
-    max_eig_1, _, _, _ = utils.eigen_tridiagonal(alpha, beta)
-
-    # M_hat = M - max_eig * M. Compute max eig of resulting tridiagonal matrix
-    alpha_hat, beta_hat, W_hat = self.sess.run([self.alpha_hat,
-                                                self.beta_hat,
-                                                self.W_hat],
-                                               feed_dict={self.eig_max_placeholder: max_eig_1})
-
-    max_eig, max_vec, _, _ = utils.eigen_tridiagonal(alpha_hat, beta_hat)
-    min_eig = max_eig + max_eig_1
-
-    # Multiply by V_hat to get the eigenvector for M
-    min_eig_vec = np.matmul(W_hat, max_vec).reshape((self.dual_object.matrix_m_dimension, 1))
-
-    return min_eig_vec, min_eig
-
   def get_scipy_eig_vec(self):
     """Computes scipy estimate of min eigenvalue for matrix M.
 
@@ -198,8 +141,6 @@ class Optimization(object):
     if self.params['eig_type'] == 'TF':
       self.eig_vec_estimate = self.get_min_eig_vec_proxy()
     else:
-      if self.params['eig_type'] == 'LZS':
-        self.construct_lanczos_params(self.params['lanczos_steps'])
       self.eig_vec_estimate = tf.placeholder(tf.float32, shape=(self.dual_object.matrix_m_dimension, 1))
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
     # Eig value is v^\top M v, where v is eigen vector
@@ -282,15 +223,9 @@ class Optimization(object):
     """
     # Project onto feasible set of dual variables
     if self.current_step != 0 and self.current_step % self.params['projection_steps'] == 0:
-      current_certificate = self.dual_object.compute_certificate()
-      tf.logging.info('Inner step: %d, current value of certificate: %f',
-                      self.current_step, current_certificate)
-
-      # Sometimes due to either overflow or instability in inverses,
-      # the returned certificate is large and negative -- keeping a check
-      if LOWER_CERT_BOUND < current_certificate < 0:
-        tf.logging.info('Found certificate of robustness!')
+      if self.dual_object.compute_certificate(self.current_step):
         return True
+
     # Running step
     step_feed_dict = {self.eig_init_vec_placeholder: eig_init_vec_val,
                       self.eig_num_iter_placeholder: eig_num_iter_val,
@@ -305,7 +240,7 @@ class Optimization(object):
       })
     elif self.params['eig_type'] == 'LZS':
       # TODO(shankarshreya): check if first eigenval is negative
-      current_eig_vector, self.current_eig_val_estimate = self.get_lanczos_eig_vec()
+      current_eig_vector, self.current_eig_val_estimate = self.dual_object.get_lanczos_eig()
       step_feed_dict.update({
           self.eig_vec_estimate: current_eig_vector
       })
