@@ -467,7 +467,7 @@ class DualFormulation(object):
 
     # Make matrix M PSD
     scalar_f = self.sess.run(self.scalar_f)
-    old_nu, second_term = self.make_m_psd()
+    _, second_term = self.make_m_psd()
 
     computed_certificate = scalar_f + 0.5*second_term
 
