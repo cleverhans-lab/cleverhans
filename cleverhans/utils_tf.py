@@ -543,6 +543,7 @@ def clip_by_value(t, clip_value_min, clip_value_max, name=None):
   A wrapper for clip_by_value that casts the clipping range if needed.
   """
   def cast_clip(clip):
+    """Cast clipping range argument if needed"""
     if t.dtype in (tf.float32, tf.float64):
       if hasattr(clip, 'dtype'):
         # Convert to tf dtype in case this is a numpy dtype
