@@ -4,7 +4,6 @@ Runs multiple attacks against each example.
 References: https://openreview.net/forum?id=H1g0piA9tQ
             https://arxiv.org/abs/1811.03685
 """
-# pylint: disable=missing-docstring
 import copy
 import logging
 import time
