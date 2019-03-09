@@ -191,7 +191,7 @@ class KerasModelWrapper(Model):
       new_input = self.model.get_input_at(0)
 
       # Make a new model that returns each of the layers as output
-      out_layers = [x_layer.output for x_layer in self.model.layers]
+      out_layers = [x_layer.get_output_at(-1) for x_layer in self.model.layers]
       self.keras_model = KerasModel(new_input, out_layers)
 
     # and get the outputs for that model on the input x
