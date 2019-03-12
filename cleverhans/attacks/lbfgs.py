@@ -52,6 +52,15 @@ class LBFGS(Attack):
     self.parse_params(**kwargs)
 
     _, nb_classes = self.get_or_guess_labels(x, kwargs)
+    
+    # target label unspecified will cause error while calculating
+    # softmax_cross_entropy_with_logits()
+    # here we set second most-likely category as target
+    if self.y_target is None:
+        probs = self.model.get_probs(x)
+        values, indices = tf.nn.top_k(probs, 2, sorted=True)
+        indices_2nd = indices[:, 1]
+        self.y_target = tf.one_hot(indices_2nd, probs.shape[-1])
 
     attack = LBFGS_impl(
         self.sess, x, self.model.get_logits(x), self.y_target,
