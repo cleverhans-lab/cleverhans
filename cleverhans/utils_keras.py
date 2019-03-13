@@ -1,6 +1,7 @@
 """
 Model construction utilities based on keras
 """
+import warnings
 from tensorflow import keras
 
 from .model import Model, NoSuchLayerError
@@ -191,8 +192,13 @@ class KerasModelWrapper(Model):
       new_input = self.model.get_input_at(0)
 
       # Make a new model that returns each of the layers as output
-      out_layers = [x_layer.get_output_at(-1) for x_layer in self.model.layers]
-      self.keras_model = KerasModel(new_input, out_layers)
+      outnodes_last = [x_layer.get_output_at(-1) for x_layer in self.model.layers]
+      outnodes_first = [x_layer.get_output_at(0) for x_layer in self.model.layers]
+      if outnodes_last != outnodes_first:
+        warnings.warn("Mutiple output nodes detected, picking last ones as default."
+                      "This could happen due to using of stacked model.")
+        
+      self.keras_model = KerasModel(new_input, outnodes_last)
 
     # and get the outputs for that model on the input x
     outputs = self.keras_model(x)
