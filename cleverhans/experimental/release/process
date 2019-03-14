@@ -1,0 +1,24 @@
+This process explains how to evaluate the accuracy of a new model.
+We assume you have two different models:
+  new_model.joblib : the new model you're proposing as a defense
+  undefended_model.joblib : a model that is as similar as possible, but that you believe is not defended
+1. Run pgd.py on new_model.joblib. Do not change the nb_iter flag.
+2. Determine the hyperparameters for SPSA.
+  Start with hyperparemeters that are at least as strong (e.g., nb_iters higher = strong, spsa_iters higher = stronger)
+   as those used to evaluate the baseline model.
+  Run spsa.py on undefended_model.joblib, increasing nb_iter and spsa_iters until you drive its accuracy to 0.
+  You probably want to evaluate on a tiny dataset while doing this hyperparameter search, by setting --test_end
+  to a small value.
+  # TODO for cleverhans developers:
+  #  make a script that does this automatically
+  # TODO for cleverhans developers:
+  #  make the automated search more efficient, don't restart whole optimization process each
+  #  time we try a higher nb_iters.
+  #  actually sort of hard to do since SPSA has internal state,
+  #  can't just apply one-step SPSA in a python for loop
+  #  The early stopping feature might make this kind of a moot point, maybe using 640 iters just
+  #  works for everything.
+3. Run spsa.py on new_model.joblib, using the hyperparameters determined in step 2.
+4. Run pgd.py on new_model.joblib with --nb_iter 10. Should result in much higher accuracy than in step 1.
+
+

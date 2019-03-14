@@ -1,0 +1,9 @@
+madry:
+  Used this to generate SPSA report on undefended model (after the early stop threshold fix)
+  CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python release/spsa.py bucket/madry_naturally_trained.joblib --nb_iter 640 --learning_rate .08
+
+
+
+new model:
+  running spsa on clean
+  
