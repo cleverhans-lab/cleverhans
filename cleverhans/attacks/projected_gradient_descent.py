@@ -6,10 +6,10 @@ import warnings
 
 import numpy as np
 import tensorflow as tf
+from tensorflow import reduce_max
 
 from cleverhans.attacks.attack import Attack
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod
-from cleverhans.compat import reduce_max
 from cleverhans import utils_tf
 from cleverhans.utils_tf import clip_eta
 
