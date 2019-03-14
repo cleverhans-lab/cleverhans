@@ -1,0 +1,1081 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+\begin_inset Formula $\alpha$
+\end_inset
+
+-score
+\end_layout
+
+\begin_layout Section
+Derivation
+\end_layout
+
+\begin_layout Standard
+Let 
+\emph on
+accuracy
+\emph default
+ be fraction of clean examples that are classified correctly.
+\end_layout
+
+\begin_layout Standard
+Let 
+\emph on
+robustness 
+\emph default
+be fraction of adversarial examples that are classified correctly.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $a_{n}$
+\end_inset
+
+, 
+\begin_inset Formula $r_{n}$
+\end_inset
+
+ be accuracy and robustness for a 
+\emph on
+n
+\emph default
+ew model we want to evaluate.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $a_{o}$
+\end_inset
+
+, 
+\begin_inset Formula $r_{o}$
+\end_inset
+
+ be accuracy and robustness for an 
+\emph on
+o
+\emph default
+ld model we want to use as a baseline.
+\end_layout
+
+\begin_layout Standard
+Suppose that when we deploy a model, it encounters adversarial examples
+ proportion 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ of the time, and clean examples the remaining proportion 
+\begin_inset Formula $1-\alpha$
+\end_inset
+
+ of the time.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $t(a,r,\alpha)=\alpha r+(1-\alpha)a$
+\end_inset
+
+ be the actual 
+\emph on
+t
+\emph default
+est set accuracy experienced for a particular 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $\alpha$
+\end_inset
+
+-score is given by 
+\begin_inset Formula $\alpha^{*}\in[0,1]$
+\end_inset
+
+, where 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+ is the smallest number for which there is no 
+\begin_inset Formula $\alpha\in[0,1]$
+\end_inset
+
+ such that 
+\begin_inset Formula $\alpha>\alpha^{*}$
+\end_inset
+
+ and 
+\begin_inset Formula $t(a_{o},r_{0},\alpha)\geq t(a_{n},r_{n},\alpha)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The mathematical construction handles nasty corner cases like ties or cases
+ when the new model is less robust than the baseline, etc.
+ The intuition behind 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+is that it's the amount of adversarial examples above which you prefer the
+ new model.
+ Smaller values of 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+ indicate better performance for the new model.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+t(a_{o},r_{o},\alpha)\geq t(a_{n},r_{n},\alpha)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\leftrightarrow\alpha r_{o}+(1-\alpha)a_{o}\geq\alpha r_{n}+(1-\alpha)a_{n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\leftrightarrow\alpha\left(r_{o}-a_{o}-r_{n}+a_{n}\right)\geq a_{n}-a_{o}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $c=a_{n}-a_{o}+r_{o}-r_{n}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\hat{\alpha}=\frac{a_{n}-a_{o}}{c}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $c>0$
+\end_inset
+
+ we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\alpha>\hat{\alpha}\leftrightarrow t(a_{o},r_{o},\alpha)\geq t(a_{n},r_{n},\alpha).
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\hat{\alpha}\geq1$
+\end_inset
+
+, then 
+\begin_inset Formula $\alpha^{*}=0$
+\end_inset
+
+, because the new model doesn't lose for any 
+\begin_inset Formula $\alpha\in[0,1]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\hat{\alpha}<1$
+\end_inset
+
+, then 
+\begin_inset Formula $\alpha^{*}=1$
+\end_inset
+
+.
+ This is a tricky corner case.
+ The new model is actually better when there are 
+\emph on
+fewer
+\emph default
+ adversarial examples.
+ This is not what we were aiming for so we give it the worst possible score.
+ In terms of the mathematical definition this happens because there is no
+ 
+\begin_inset Formula $\alpha\in[0,1]$
+\end_inset
+
+ such that 
+\begin_inset Formula $\alpha>1$
+\end_inset
+
+ so 
+\begin_inset Formula $\alpha^{*}=1$
+\end_inset
+
+ satisifies the definition.
+ Any other 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+does not work because the old model wins for 
+\begin_inset Formula $alpha=1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $c=0$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ has no bearing on the problem.
+ The tradeoff lines for the two models are parallel.
+ We can thus rank them by comparing at any point along the line.
+ Arbitrarily, we may as well compare them at 
+\begin_inset Formula $\alpha=0$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $a_{o}\geq a_{n}$
+\end_inset
+
+, then 
+\begin_inset Formula $\alpha^{*}=1$
+\end_inset
+
+ because the new model is always at best tied—to bring 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+down the new model must actually be preferable somewhere (if ties were OK,
+ then the baseline itself would trivially get a perfect score).
+ If 
+\begin_inset Formula $a_{n}>a_{o}$
+\end_inset
+
+, then 
+\begin_inset Formula $\alpha^{*}=0$
+\end_inset
+
+ because the new model wins everywhere.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $c<0$
+\end_inset
+
+, we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\alpha<\hat{\alpha}\leftrightarrow t(a_{o},r_{o},\alpha)\geq t(a_{n},r_{n},\alpha).
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $\hat{\alpha}\geq1$
+\end_inset
+
+, we have 
+\begin_inset Formula $\alpha^{*}=1$
+\end_inset
+
+ because the new model is never preferable.
+\end_layout
+
+\begin_layout Standard
+Otherwise 
+\begin_inset Formula $\alpha^{*}=\max(0,\hat{\alpha})$
+\end_inset
+
+, where the max operation is needed to clip the result into the valid range.
+\end_layout
+
+\begin_layout Section
+Short definition
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\alpha^{*}=\begin{cases}
+{\rm clip}(\hat{\alpha},0,1) & c<0\\
+\begin{cases}
+1 & a_{o}\geq a_{n}\\
+0 & {\rm otherwise}
+\end{cases} & c=0\\
+\begin{cases}
+0 & \hat{\alpha}\geq1\\
+1 & {\rm otherwise}
+\end{cases} & c>0
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $c=a_{n}-a_{o}+r_{o}-r_{n}$
+\end_inset
+
+ and 
+\begin_inset Formula $\hat{\alpha}=\frac{a_{n}-a_{o}}{c}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Implementation
+\end_layout
+
+\begin_layout Standard
+alpha.py contains the implementation and tests of all 7 branches of the nested
+ case statement.
+\end_layout
+
+\begin_layout Section
+Flaws
+\end_layout
+
+\begin_layout Standard
+One mild flaw is that one model that is clearly better than another can
+ tie.
+\end_layout
+
+\begin_layout Standard
+For example 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+is 0 when 
+\begin_inset Formula $a_{n}=a_{o}=1$
+\end_inset
+
+ and 
+\begin_inset Formula $r_{0}=0$
+\end_inset
+
+ regardless of 
+\begin_inset Formula $r_{n}$
+\end_inset
+
+ so long as 
+\begin_inset Formula $r_{n}>0.$
+\end_inset
+
+ A model with 
+\begin_inset Formula $r_{n}=1$
+\end_inset
+
+ thus scores the same as a model with 
+\begin_inset Formula $r_{n}=\epsilon$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+This flaw should not be a big problem in practice because the problem goes
+ away entirely if 
+\begin_inset Formula $a_{n}<1$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+Choosing the baseline
+\end_layout
+
+\begin_layout Itemize
+Suppose that we always use the previous state of the art as the baseline.
+ I think this means that to get an 
+\begin_inset Formula $\alpha^{*}<1$
+\end_inset
+
+ we need to make a model that is more tilted toward the robustness side
+ of the tradeoff, otherwise the new model is better on the left half of
+ the curve and gets punished.
+ Also, the 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ score mostly just tells us how big of a relative improvement the new model
+ is.
+ It doesn't give a good absolute scale.
+ 
+\end_layout
+
+\begin_layout Itemize
+There is a tradeoff between robustness and accuracy.
+ If we evaluate many models against a common baseline, the choice of baseline
+ implicitly expresses preferences about this tradeoff.
+ A common baseline with higher robustness has a stronger preference for
+ doing well on the robustness side of the tradeoff.
+\end_layout
+
+\begin_layout Section
+Thoughts about the general evaluation problem
+\end_layout
+
+\begin_layout Standard
+This was a series of messages to Brain Red Team: 
+\end_layout
+
+\begin_layout Standard
+I'm wondering what people think about a problem with evaluation of robust
+ models the problem is: specifically how should we keep track of which model
+ is "best"? this can be for the purpose of hyperparameter tuning, or tracking
+ state of the art in the literature, etc.
+ the reason there's a problem here at all is that in practice there seems
+ to be a tradeoff between accuracy on clean data and accuracy on adversarial
+ examples for the first few years of the field this wasn't something we
+ really had to tackle because nothing did OK at both now we're getting to
+ the point where things work well enough that there is room for incremental
+ papers that push up one metric or the other slightly if you're working
+ on a "real application", you can target the right part of the tradeoff
+ curve for your application if you think that when you deploy your system,
+ each test time example has probability alpha of being an adversarial example
+ rather than a clean example, then you tune hyperparameters etc.
+ to maximize alpha * adv_acc + (1.
+ - alpha) * clean_acc most of our research work is on generic / fictional
+ / toy problems though one thing I've kind of softly advocated before is
+ reporting the value of alpha where the new model becomes preferable over
+ time as multiple new SOTAs are published I think this just converges to
+ optimizing adv_acc though since if a new model prioritizes clean_acc, it
+ won't win on the right half of the curve so there isn't an alpha where
+ it becomes preferable we could pick a reference baseline point, like (adv_acc=0
+, clean_acc=1) and compare models in terms of the alpha where they become
+ preferable to the reference baseline pro: as new models drop alpha^*, the
+ models are useful in more real-world contexts con: this implicitly imposes
+ preferences on the tradeoff between clean_acc and adv_acc, it doesn't actually
+ give the best model for high-alpha settings should we switch to actually
+ keeping track of a convex hull in (adv_acc, clean_acc) space and declaring
+ all points along the frontier to be SOTA?
+\end_layout
+
+\begin_layout Section
+Thoughts on evaluating using a full curve
+\end_layout
+
+\begin_layout Standard
+Let's consider two different graphs.
+\end_layout
+
+\begin_layout Standard
+An accuracy-robustness curve plots many different models.
+ The horizontal axis is robustness (accuracy on adversarial examples) and
+ the vertical axis is accuracy on clean examples.
+\end_layout
+
+\begin_layout Standard
+Let's say we have two models that are at 
+\begin_inset Formula $(r_{0},a_{0})$
+\end_inset
+
+ and 
+\begin_inset Formula $(r_{1},a_{1})$
+\end_inset
+
+ respectively in this space.
+ We can make a new model that flips a coin and with probability 
+\begin_inset Formula $\beta$
+\end_inset
+
+ uses model 1 to classify, otherwise uses model 0.
+ This makes it possible to get 
+\begin_inset Formula $(\beta r_{1}+(1-\beta)r_{0},\beta a_{1}+(1-\beta)a_{0})$
+\end_inset
+
+ in this space.
+ So given a set of models the possible frontier is the convex combination
+ of the models.
+\end_layout
+
+\begin_layout Standard
+The other graph we should consider is the 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ curve showing how a single model performs for a varying amount of adversarial
+ examples.
+\end_layout
+
+\begin_layout Standard
+Question:
+\end_layout
+
+\begin_layout Standard
+are the two following statements equivalent:
+\end_layout
+
+\begin_layout Standard
+1) for some point along the 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ curves for 
+\begin_inset Formula $n$
+\end_inset
+
+ different models, model 
+\begin_inset Formula $i$
+\end_inset
+
+ is the best.
+ In other words, 
+\begin_inset Formula $\exists\alpha s.t.\forall j\neq i,t(a_{i,}r_{i},\alpha)>t(a_{j},r_{j},\alpha)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+2) 
+\begin_inset Formula $(a_{i},r_{j})$
+\end_inset
+
+ is above the convex hull of 
+\begin_inset Formula $\left\{ (a_{j},r_{j}):j\neq i\right\} $
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thought:
+\end_layout
+
+\begin_layout Standard
+represent the convex frontier as a function 
+\begin_inset Formula $a(r)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+This then maps to a line 
+\begin_inset Formula $t(\alpha;r)=a(r)+\left(r-a(r)\right)\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Suppose that for some 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ we have
+\begin_inset Formula 
+\[
+t(\alpha;r')>t(\alpha,r)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\leftrightarrow a(r')+(r'-a(r'))\alpha>a(r)+(r-a(r))\alpha
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\leftrightarrow a(r')+(r'-a(r')+a(r)-r)\alpha>a(r)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This didn't really go anywhere
+\end_layout
+
+\begin_layout Standard
+New thought:
+\end_layout
+
+\begin_layout Standard
+suppose we have some new point 
+\begin_inset Formula $(r,a)$
+\end_inset
+
+ and it lies above the function 
+\begin_inset Formula $a_{f}(r)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Does this imply that there is an 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ for which it wins?
+\end_layout
+
+\begin_layout Subsection
+Sequence based proof
+\end_layout
+
+\begin_layout Standard
+Suppose we have a list of 
+\begin_inset Formula $n$
+\end_inset
+
+ models that has been arranged such that the models have strictly increasing
+ robustness (
+\begin_inset Formula $r_{i}>r_{i}-1$
+\end_inset
+
+ for 
+\begin_inset Formula $i>1$
+\end_inset
+
+) and strictly decreasing accuracy 
+\begin_inset Formula $(a_{i}<a_{i-1}$
+\end_inset
+
+ for 
+\begin_inset Formula $i>1$
+\end_inset
+
+).
+ Moreover the function represented by the list is concave, so if 
+\begin_inset Formula $i<j<k$
+\end_inset
+
+, and 
+\begin_inset Formula $\beta=\frac{r_{j}-r_{i}}{r_{k}-r_{i}}$
+\end_inset
+
+, then 
+\begin_inset Formula $a_{j}\geq\beta a_{k}+(1-\beta)a_{i}$
+\end_inset
+
+.
+ If this property didn't hold naturally you could construct a model that
+ gets the desired performance by randomly blending model 
+\begin_inset Formula $i$
+\end_inset
+
+ and model 
+\begin_inset Formula $k$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In fact, let's go a little bit further, and insist on strict inequality:
+ 
+\begin_inset Formula $a_{j}>\beta a_{k}+(1-\beta)a_{i}$
+\end_inset
+
+.
+ This means there are no redundant models in the list; if a model could
+ be simulated by blending other models we kick it out.
+\end_layout
+
+\begin_layout Standard
+The first model is preferable at 
+\begin_inset Formula $\alpha=0$
+\end_inset
+
+ because it has the highest accuracy.
+\end_layout
+
+\begin_layout Standard
+Now consider 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+using 
+\begin_inset Formula $(r_{i-1},a_{i-1})$
+\end_inset
+
+ as the baseline and 
+\begin_inset Formula $(r_{i},a_{i})$
+\end_inset
+
+ as the proposal.
+\end_layout
+
+\begin_layout Standard
+We have 
+\begin_inset Formula $c=a_{i}-a_{i-1}+r_{i-1}-r_{i}$
+\end_inset
+
+.
+ By construction, this is negative.
+\end_layout
+
+\begin_layout Standard
+We have 
+\begin_inset Formula $\hat{\alpha}=\frac{a_{i}-a_{i-1}}{c}=\frac{a_{i}-a_{i-1}}{a_{i}-a_{i-1}+r_{i-1}-r_{i}}$
+\end_inset
+
+.
+ By construction, this is positive.
+\end_layout
+
+\begin_layout Standard
+In fact, let's rewrite it using positive terms:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{a_{i-1}-a_{i}}{a_{i-1}-a_{i}+r_{i}-r_{i-1}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{1}{1+\frac{r_{i}-r_{i-1}}{a_{i-1}-a_{i}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{1}{1+\exp\left(\log\left(r_{increase}\right)-\log\left(a_{decrease}\right)\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sigma\left(\log a_{decrease}-\log r_{increase}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We want to show that the preference point always moves to the right:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\sigma\left(\log(a_{i}-a_{i+1})-\log\left(r_{i+1}-r_{i}\right)\right)>\sigma\left(\log(a_{i-1}-a_{i})-\log\left(r_{i}-r_{i-1}\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Since sigmoid is strictly increasing, this is equivalent to
+\end_layout
+
+\begin_layout Standard
+...
+\begin_inset Formula 
+\[
+\log(a_{i}-a_{i+1})-\log\left(r_{i+1}-r_{i}\right)>\log(a_{i-1}-a_{i})-\log\left(r_{i}-r_{i-1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and since 
+\begin_inset Formula $\exp$
+\end_inset
+
+ is strictly increasing this is further equivalent to
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{a_{i}-a_{i+1}}{r_{i+1}-r_{i}}>\frac{a_{i-1}-a_{i}}{r_{i}-r_{i-1}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(a_{i}-a_{i+1}\right)\left(r_{i}-r_{i-1}\right)>\left(r_{i+1}-r_{i}\right)\left(a_{i-1}-a_{i}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+a_{i}\left(r_{i}-r_{i-1}\right)-a_{i+1}\left(r_{i}-r_{i-1}\right)>\left(r_{i+1}-r_{i}\right)a_{i-1}-\left(r_{i+1}-r_{i}\right)a_{i}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+a_{i}\left(r_{i+1}-r_{i-1}\right)-a_{i+1}\left(r_{i}-r_{i-1}\right)>\left(r_{i+1}-r_{i}\right)a_{i-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+a_{i}\left(r_{i+1}-r_{i-1}\right)>\left(r_{i+1}-r_{i}\right)a_{i-1}+a_{i+1}\left(r_{i}-r_{i-1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+a_{i}>\frac{\left(r_{i+1}-r_{i}\right)}{\left(r_{i+1}-r_{i-1}\right)}a_{i-1}+a_{i+1}\frac{\left(r_{i}-r_{i-1}\right)}{\left(r_{i+1}-r_{i-1}\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This is guaranteed by the strict convexity of the attainable region.
+\end_layout
+
+\begin_layout Standard
+So this says that each model in the list becomes preferable over the preceding
+ model for some 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to the right of the preceding model.
+ However this is only comparing adjacent models in the list.
+ I guess we have a transitive property, that if model 
+\begin_inset Formula $k$
+\end_inset
+
+ is preferable to model 
+\begin_inset Formula $j$
+\end_inset
+
+ and model 
+\begin_inset Formula $j$
+\end_inset
+
+ is preferable to model 
+\begin_inset Formula $i$
+\end_inset
+
+, then model 
+\begin_inset Formula $k$
+\end_inset
+
+ is also preferable to model 
+\begin_inset Formula $i$
+\end_inset
+
+, since this is all about ranking 
+\begin_inset Formula $t$
+\end_inset
+
+ values.
+\end_layout
+
+\begin_layout Standard
+Thus, if a new model with accuracy 
+\begin_inset Formula $a$
+\end_inset
+
+ and robustness 
+\begin_inset Formula $r$
+\end_inset
+
+ has 
+\begin_inset Formula $r>r_{i}$
+\end_inset
+
+ for any 
+\begin_inset Formula $i$
+\end_inset
+
+ such that 
+\begin_inset Formula $a_{i}\geq a$
+\end_inset
+
+, we can make a new list including 
+\begin_inset Formula $(a,r)$
+\end_inset
+
+ that describes the frontiers in both spaces.
+\end_layout
+
+\end_body
+\end_document
