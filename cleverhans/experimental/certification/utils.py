@@ -320,7 +320,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
   eigvals, eigvecs = tf.linalg.eigh(tridiag_matrix)
 
   smallest_eigval = eigvals[0]
-  smallest_eigvec = tf.matmul(tf.reshape(eigvecs[:,0], (1, -1)),
+  smallest_eigvec = tf.matmul(tf.reshape(eigvecs[:, 0], (1, -1)),
                               q_vectors)
   # smallest_eigvec = tf.linalg.matvec(q_vectors, eigvecs[:,0], transpose_a=True)
   smallest_eigvec = smallest_eigvec / tf.norm(smallest_eigvec)
