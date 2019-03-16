@@ -56,7 +56,7 @@ class UtilsTest(tf.test.TestCase):
 
         scipy_min_eigval, scipy_min_eigvec = eigs(
             matrix, k=1, which='SR')
-        scipy_min_eigval = np.real(scipy_min_eigval),
+        scipy_min_eigval = np.real(scipy_min_eigval)
         scipy_min_eigvec = np.real(scipy_min_eigvec)
         scipy_min_eigvec = scipy_min_eigvec / np.linalg.norm(scipy_min_eigvec)
 
