@@ -18,8 +18,10 @@ from cleverhans import serial
 
 
 def test_confidence_report():
-  # Test that we can make a confidence report, put an entry in it, and get
-  # that entry back out
+  """
+  Test that we can make a confidence report, put an entry in it, and get
+  that entry back out
+  """
   report = ConfidenceReport()
   entry = ConfidenceReportEntry(correctness=np.array([True, False]),
                                 confidence=np.array([0.9, 0.1]))
@@ -28,7 +30,9 @@ def test_confidence_report():
 
 
 def test_make_confidence_report_bundled():
-  # A very simple test that just makes sure make_confidence_report_bundled can run without crashing
+  """
+  A very simple test that just makes sure make_confidence_report_bundled can run without crashing
+  """
 
   sess = tf.Session()
   try:
@@ -47,6 +51,9 @@ def test_make_confidence_report_bundled():
     def recipe(sess, model, x, y, nb_classes, eps, clip_min,
                clip_max, eps_iter, nb_iter,
                report_path, eps_iter_small, batch_size):
+      """
+      Mock recipe that just runs the Noise attack so the test runs fast
+      """
       attack_configs = [AttackConfig(Noise(model, sess), {'eps': eps})]
       new_work_goal = {config: 1 for config in attack_configs}
       goals = [Misclassify(new_work_goal=new_work_goal)]

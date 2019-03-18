@@ -9,6 +9,9 @@ from cleverhans.serial import save
 
 
 class TestSerial(CleverHansTest):
+  """
+  Tests for cleverhans.serial
+  """
 
   def test_save_and_load_var(self):
     """test_save_and_load_var: Test that we can save and load a

@@ -495,6 +495,7 @@ class SNNLCrossEntropy(CrossEntropy):
     t = tf.Variable(1, dtype=tf.float32, trainable=False, name="temp")
 
     def inverse_temp(t):
+      # pylint: disable=missing-docstring
       # we use inverse_temp because it was observed to be more stable when optimizing.
       return tf.div(initial_temp, t)
 

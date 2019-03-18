@@ -1,3 +1,4 @@
+"""Utility functions for writing TensorFlow code"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -289,6 +290,9 @@ def tf_model_load(sess, file_path=None):
 
 
 def batch_eval(*args, **kwargs):
+  """
+  Wrapper around deprecated function.
+  """
   # Inside function to avoid circular import
   from cleverhans.evaluation import batch_eval as new_batch_eval
   warnings.warn("batch_eval has moved to cleverhans.evaluation. "
@@ -538,6 +542,9 @@ def clip_by_value(t, clip_value_min, clip_value_max, name=None):
   A wrapper for clip_by_value that casts the clipping range if needed.
   """
   def cast_clip(clip):
+    """
+    Cast clipping range argument if needed.
+    """
     if t.dtype in (tf.float32, tf.float64):
       if hasattr(clip, 'dtype'):
         # Convert to tf dtype in case this is a numpy dtype
@@ -557,6 +564,7 @@ def mul(a, b):
   the input.
   """
   def multiply(a, b):
+    """Multiplication"""
     return a * b
   return op_with_scalar_cast(a, b, multiply)
 
@@ -566,6 +574,7 @@ def div(a, b):
   the input.
   """
   def divide(a, b):
+    """Division"""
     return a / b
   return op_with_scalar_cast(a, b, divide)
 
@@ -585,6 +594,7 @@ def op_with_scalar_cast(a, b, f):
     pass
 
   def is_scalar(x):
+    """Return True if `x` is a scalar"""
     if hasattr(x, "get_shape"):
       shape = x.get_shape()
       return shape.ndims == 0

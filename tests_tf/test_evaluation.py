@@ -5,6 +5,7 @@ from cleverhans.model import Model
 
 
 class TestEvaluation(CleverHansTest):
+  """Tests for cleverhans.evaluation"""
 
   def test_cache(self):
     """test_cache: Test that _CorrectFactory can be cached"""

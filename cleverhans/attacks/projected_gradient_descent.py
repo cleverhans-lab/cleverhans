@@ -6,10 +6,10 @@ import warnings
 
 import numpy as np
 import tensorflow as tf
+from tensorflow import reduce_max
 
 from cleverhans.attacks.attack import Attack
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod
-from cleverhans.compat import reduce_max
 from cleverhans import utils_tf
 from cleverhans.utils_tf import clip_eta
 
@@ -120,9 +120,11 @@ class ProjectedGradientDescent(Attack):
         dtypestr=self.dtypestr)
 
     def cond(i, _):
+      """Iterate until requested number of iterations is completed"""
       return tf.less(i, self.nb_iter)
 
     def body(i, adv_x):
+      """Do a projected gradient step"""
       adv_x = FGM.generate(adv_x, **fgm_params)
 
       # Clipping perturbation eta to self.ord norm ball

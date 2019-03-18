@@ -27,10 +27,6 @@ class LBFGS(Attack):
   """
 
   def __init__(self, model, sess, dtypestr='float32', **kwargs):
-    """
-    Note: the model parameter should be an instance of the
-    cleverhans.model.Model abstraction provided by CleverHans.
-    """
     if not isinstance(model, Model):
       wrapper_warning()
       model = CallableModelWrapper(model, 'probs')
@@ -63,6 +59,9 @@ class LBFGS(Attack):
         self.clip_min, self.clip_max, nb_classes, self.batch_size)
 
     def lbfgs_wrap(x_val, y_val):
+      """
+      Wrapper creating TensorFlow interface for use with py_func
+      """
       return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
     wrap = tf.py_func(lbfgs_wrap, [x, self.y_target], self.tf_dtype)
@@ -103,31 +102,31 @@ class LBFGS(Attack):
 
 
 class LBFGS_impl(object):
+  """
+  Return a tensor that constructs adversarial examples for the given
+  input. Generate uses tf.py_func in order to operate over tensors.
+
+  :param sess: a TF session.
+  :param x: A tensor with the inputs.
+  :param logits: A tensor with model's output logits.
+  :param targeted_label: A tensor with the target labels.
+  :param binary_search_steps: The number of times we perform binary
+                              search to find the optimal tradeoff-
+                              constant between norm of the purturbation
+                              and cross-entropy loss of classification.
+  :param max_iterations: The maximum number of iterations.
+  :param initial_const: The initial tradeoff-constant to use to tune the
+                        relative importance of size of the purturbation
+                        and cross-entropy loss of the classification.
+  :param clip_min: Minimum input component value
+  :param clip_max: Maximum input component value
+  :param num_labels: The number of classes in the model's output.
+  :param batch_size: Number of attacks to run simultaneously.
+
+  """
   def __init__(self, sess, x, logits, targeted_label,
                binary_search_steps, max_iterations, initial_const, clip_min,
                clip_max, nb_classes, batch_size):
-    """
-    Return a tensor that constructs adversarial examples for the given
-    input. Generate uses tf.py_func in order to operate over tensors.
-
-    :param sess: a TF session.
-    :param x: A tensor with the inputs.
-    :param logits: A tensor with model's output logits.
-    :param targeted_label: A tensor with the target labels.
-    :param binary_search_steps: The number of times we perform binary
-                                search to find the optimal tradeoff-
-                                constant between norm of the purturbation
-                                and cross-entropy loss of classification.
-    :param max_iterations: The maximum number of iterations.
-    :param initial_const: The initial tradeoff-constant to use to tune the
-                          relative importance of size of the purturbation
-                          and cross-entropy loss of the classification.
-    :param clip_min: Minimum input component value
-    :param clip_max: Maximum input component value
-    :param num_labels: The number of classes in the model's output.
-    :param batch_size: Number of attacks to run simultaneously.
-
-    """
     self.sess = sess
     self.x = x
     self.logits = logits
@@ -161,7 +160,7 @@ class LBFGS_impl(object):
     """
 
     def lbfgs_objective(adv_x, self, targets, oimgs, CONST):
-      # returns the function value and the gradient for fmin_l_bfgs_b
+      """ returns the function value and the gradient for fmin_l_bfgs_b """
       loss = self.sess.run(
           self.loss,
           feed_dict={

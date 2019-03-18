@@ -62,6 +62,11 @@ class MaxConfidence(Attack):
     return True
 
   def attack(self, x, true_y):
+    """
+    Runs the untargeted attack.
+    :param x: The input
+    :param true_y: The correct label for `x`. This attack aims to produce misclassification.
+    """
     adv_x_cls = []
     prob_cls = []
     m = tf.shape(x)[0]
@@ -105,5 +110,12 @@ class MaxConfidence(Attack):
     return out
 
   def attack_class(self, x, target_y):
+    """
+    Run the attack on a specific target class.
+    :param x: tf Tensor. The input example.
+    :param target_y: tf Tensor. The attacker's desired target class.
+    Returns:
+      A targeted adversarial example, intended to be classified as the target class.
+    """
     adv = self.base_attacker.generate(x, y_target=target_y, **self.params)
     return adv

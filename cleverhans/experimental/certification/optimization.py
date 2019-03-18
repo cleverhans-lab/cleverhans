@@ -1,4 +1,5 @@
 """Code for setting up the optimization problem for certification."""
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -12,8 +13,6 @@ import tensorflow as tf
 from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
 
-# Bound on lowest value of certificate to check for numerical errors
-LOWER_CERT_BOUND = -10.0
 UPDATE_PARAM_CONSTANT = -0.1
 
 
@@ -208,7 +207,6 @@ class Optimization(object):
     if (self.params.get('stats_folder') and
         not tf.gfile.IsDirectory(self.params['stats_folder'])):
       tf.gfile.MkDir(self.params['stats_folder'])
-    self.current_scipy_eig_val = None
 
   def run_one_step(self, eig_init_vec_val, eig_num_iter_val, smooth_val,
                    penalty_val, learning_rate_val):
@@ -225,15 +223,9 @@ class Optimization(object):
     """
     # Project onto feasible set of dual variables
     if self.current_step != 0 and self.current_step % self.params['projection_steps'] == 0:
-      current_certificate = self.dual_object.compute_certificate()
-      tf.logging.info('Inner step: %d, current value of certificate: %f',
-                      self.current_step, current_certificate)
-
-      # Sometimes due to either overflow or instability in inverses,
-      # the returned certificate is large and negative -- keeping a check
-      if LOWER_CERT_BOUND < current_certificate < 0:
-        tf.logging.info('Found certificate of robustness!')
+      if self.dual_object.compute_certificate(self.current_step):
         return True
+
     # Running step
     step_feed_dict = {self.eig_init_vec_placeholder: eig_init_vec_val,
                       self.eig_num_iter_placeholder: eig_num_iter_val,
@@ -243,6 +235,12 @@ class Optimization(object):
 
     if self.params['eig_type'] == 'SCIPY':
       current_eig_vector, self.current_eig_val_estimate = self.get_scipy_eig_vec()
+      step_feed_dict.update({
+          self.eig_vec_estimate: current_eig_vector
+      })
+    elif self.params['eig_type'] == 'LZS':
+      # TODO(shankarshreya): check if first eigenval is negative
+      current_eig_vector, self.current_eig_val_estimate = self.dual_object.get_lanczos_eig()
       step_feed_dict.update({
           self.eig_vec_estimate: current_eig_vector
       })

@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 from model import Conv2D, ReLU, Flatten, Linear, Softmax, MLP
 from model import MLPnGPU
 from model import Conv2DnGPU

@@ -1,4 +1,5 @@
 """Tests for cleverhans.experimental.certification.nn."""
+# pylint: disable=missing-docstring
 
 from __future__ import absolute_import
 from __future__ import division

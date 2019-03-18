@@ -3,6 +3,7 @@ This model shows how to train a model with Soft Nearest Neighbor Loss
 regularization. The paper which presents this method can be found at
 https://arxiv.org/abs/1902.01889
 """
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

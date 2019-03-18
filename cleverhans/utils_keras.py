@@ -1,17 +1,20 @@
 """
 Model construction utilities based on keras
 """
+import warnings
 from tensorflow import keras
 
 from .model import Model, NoSuchLayerError
 
-# Assignment rather than import because direct import from within Keras doesn't work in tf 1.8
+# Assignment rather than import because direct import from within Keras
+# doesn't work in tf 1.8
 Sequential = keras.models.Sequential
 Conv2D = keras.layers.Conv2D
 Dense = keras.layers.Dense
 Activation = keras.layers.Activation
 Flatten = keras.layers.Flatten
 KerasModel = keras.models.Model
+
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
   """
@@ -123,6 +126,19 @@ class KerasModelWrapper(Model):
 
     raise Exception("No softmax layers found")
 
+  def _get_abstract_layer_name(self):
+    """
+    Looks for the name of abstracted layer.
+    Usually these layers appears when model is stacked.
+    :return: List of abstracted layers
+    """
+    abstract_layers = []
+    for layer in self.model.layers:
+      if 'layers' in layer.get_config():
+        abstract_layers.append(layer.name)
+
+    return abstract_layers
+
   def _get_logits_name(self):
     """
     Looks for the name of the layer producing the logits.
@@ -191,8 +207,22 @@ class KerasModelWrapper(Model):
       new_input = self.model.get_input_at(0)
 
       # Make a new model that returns each of the layers as output
-      out_layers = [x_layer.output for x_layer in self.model.layers]
-      self.keras_model = KerasModel(new_input, out_layers)
+      abstract_layers = self._get_abstract_layer_name()
+      if abstract_layers:
+        warnings.warn(
+            "Abstract layer detected, picking last ouput node as default."
+            "This could happen due to using of stacked model.")
+
+      layer_outputs = []
+      # For those abstract model layers, return their last output node as
+      # default.
+      for x_layer in self.model.layers:
+        if x_layer.name not in abstract_layers:
+          layer_outputs.append(x_layer.output)
+        else:
+          layer_outputs.append(x_layer.get_output_at(-1))
+
+      self.keras_model = KerasModel(new_input, layer_outputs)
 
     # and get the outputs for that model on the input x
     outputs = self.keras_model(x)

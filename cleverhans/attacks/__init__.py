@@ -1,3 +1,6 @@
+"""
+The Attack class, providing a universal abstract interface describing attacks, and many implementations of it.
+"""
 from abc import ABCMeta
 import collections
 import warnings

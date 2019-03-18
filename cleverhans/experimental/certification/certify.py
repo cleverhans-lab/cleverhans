@@ -61,8 +61,10 @@ flags.DEFINE_integer('num_classes', 10, 'Total number of classes')
 flags.DEFINE_enum('verbosity', 'INFO',
                   ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                   'Logging verbosity level.')
-flags.DEFINE_string('eig_type', 'SCIPY',
-                    'Method to compute eigenvalues (TF or SCIPY), SCIPY')
+flags.DEFINE_string('eig_type', 'LZS',
+                    'Method to compute eigenvalues (TF, SCIPY, or LZS), LZS')
+flags.DEFINE_integer('lanczos_steps', 20,
+                     'Number of steps to perform in Lanczos method.')
 flags.DEFINE_integer('num_rows', 28,
                      'Number of rows in image')
 flags.DEFINE_integer('num_columns', 28,
@@ -70,8 +72,10 @@ flags.DEFINE_integer('num_columns', 28,
 flags.DEFINE_integer('num_channels', 1,
                      'Number of channels in image')
 
+MIN_LANCZOS_ITER = 5
 
 def main(_):
+  # pylint: disable=missing-docstring
   tf.logging.set_verbosity(FLAGS.verbosity)
 
   start_time = time.time()
@@ -121,7 +125,12 @@ def main(_):
         'stats_folder': FLAGS.stats_folder,
         'projection_steps': FLAGS.projection_steps,
         'eig_type': FLAGS.eig_type,
-        'has_conv': nn_params.has_conv
+        'has_conv': nn_params.has_conv,
+        'lanczos_steps': FLAGS.lanczos_steps
+    }
+    lzs_params = {
+        'min_iter': MIN_LANCZOS_ITER,
+        'max_iter': FLAGS.lanczos_steps
     }
     with tf.Session() as sess:
       dual = dual_formulation.DualFormulation(sess,
@@ -132,7 +141,8 @@ def main(_):
                                               adv_class,
                                               FLAGS.input_minval,
                                               FLAGS.input_maxval,
-                                              FLAGS.epsilon)
+                                              FLAGS.epsilon,
+                                              lzs_params)
       optimization_object = optimization.Optimization(dual, sess,
                                                       optimization_params)
       is_cert_found = optimization_object.run_optimization()

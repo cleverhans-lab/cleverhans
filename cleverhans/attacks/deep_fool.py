@@ -72,6 +72,7 @@ class DeepFool(Attack):
 
     # Define graph
     def deepfool_wrap(x_val):
+      """deepfool function for py_func"""
       return deepfool_batch(self.sess, x, preds, logits, grads, x_val,
                             self.nb_candidate, self.overshoot,
                             self.max_iter, self.clip_min, self.clip_max,

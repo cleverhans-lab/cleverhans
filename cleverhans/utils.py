@@ -1,3 +1,6 @@
+"""
+Generic utility functions useful for writing Python code in general
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -162,6 +165,7 @@ def random_targets(gt, nb_classes):
 
 
 def pair_visual(*args, **kwargs):
+  """Deprecation wrapper"""
   warnings.warn("`pair_visual` has moved to `cleverhans.plot.pyplot_image`. "
                 "cleverhans.utils.pair_visual may be removed on or after "
                 "2019-04-24.")
@@ -170,6 +174,7 @@ def pair_visual(*args, **kwargs):
 
 
 def grid_visual(*args, **kwargs):
+  """Deprecation wrapper"""
   warnings.warn("`grid_visual` has moved to `cleverhans.plot.pyplot_image`. "
                 "cleverhans.utils.grid_visual may be removed on or after "
                 "2019-04-24.")
@@ -178,6 +183,7 @@ def grid_visual(*args, **kwargs):
 
 
 def get_logits_over_interval(*args, **kwargs):
+  """Deprecation wrapper"""
   warnings.warn("`get_logits_over_interval` has moved to "
                 "`cleverhans.plot.pyplot_image`. "
                 "cleverhans.utils.get_logits_over_interval may be removed on "
@@ -188,6 +194,7 @@ def get_logits_over_interval(*args, **kwargs):
 
 
 def linear_extrapolation_plot(*args, **kwargs):
+  """Deprecation wrapper"""
   warnings.warn("`linear_extrapolation_plot` has moved to "
                 "`cleverhans.plot.pyplot_image`. "
                 "cleverhans.utils.linear_extrapolation_plot may be removed on "
