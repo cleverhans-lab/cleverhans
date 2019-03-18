@@ -254,7 +254,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
                                collapse_tol=1e-12,
                                dtype=tf.float32):
   """Computes smallest eigenvector and eigenvalue using Lanczos in pure TF.
-  
+
   This function computes smallest eigenvector and eigenvalue of the matrix
   which is implicitly specified by `vector_prod_fn`.
   `vector_prod_fn` is a function which takes `x` and returns a product of matrix
@@ -304,7 +304,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
       break
 
     # cur_beta is larger than collapse_tol,
-    # so division will return finite result. 
+    # so division will return finite result.
     w = w / cur_beta
 
     w_ = vector_prod_fn(w)
