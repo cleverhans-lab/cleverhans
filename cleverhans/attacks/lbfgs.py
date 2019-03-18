@@ -3,6 +3,7 @@
 
 import numpy as np
 import tensorflow as tf
+import warnings
 
 from cleverhans.attacks.attack import Attack
 from cleverhans.compat import reduce_sum, softmax_cross_entropy_with_logits
@@ -52,6 +53,15 @@ class LBFGS(Attack):
     self.parse_params(**kwargs)
 
     _, nb_classes = self.get_or_guess_labels(x, kwargs)
+
+    if self.y_target is None:
+      warnings.warn(
+          "Target label not specified. Using label with 2nd largest probability as default.")
+
+      probs = self.model.get_probs(x)
+      values, indices = tf.nn.top_k(probs, 2, sorted=True)
+      indices_2nd = indices[:, 1]
+      self.y_target = tf.one_hot(indices_2nd, probs.shape[-1])
 
     attack = LBFGS_impl(
         self.sess, x, self.model.get_logits(x), self.y_target,
@@ -124,6 +134,7 @@ class LBFGS_impl(object):
   :param batch_size: Number of attacks to run simultaneously.
 
   """
+
   def __init__(self, sess, x, logits, targeted_label,
                binary_search_steps, max_iterations, initial_const, clip_min,
                clip_max, nb_classes, batch_size):
