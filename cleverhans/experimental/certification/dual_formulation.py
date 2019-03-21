@@ -168,10 +168,14 @@ class DualFormulation(object):
                                                         self.matrix_m_dimension,
                                                         self.lzs_params['max_iter'],
                                                         dtype=tf.lanczos_dtype)
+    self.m_min_eig = tf.cast(self.m_min_eig, self.nn_dtype)
+    self.m_min_vec = tf.cast(self.m_min_vec, self.nn_dtype)
     self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
                                                         self.matrix_m_dimension-1,
                                                         self.lzs_params['max_iter'],
                                                         dtype=tf.lanczos_dtype)
+    self.h_min_eig = tf.cast(self.h_min_eig, self.nn_dtype)
+    self.h_min_vec = tf.cast(self.h_min_vec, self.nn_dtype)
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""

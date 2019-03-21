@@ -268,4 +268,4 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
   smallest_eigvec = smallest_eigvec / tf.norm(smallest_eigvec)
   smallest_eigvec = tf.reshape(smallest_eigvec, (matrix_dim, 1))
 
-  return tf.cast(smallest_eigval, tf.float32), tf.cast(smallest_eigvec, tf.float32)
+  return smallest_eigval, smallest_eigvec
