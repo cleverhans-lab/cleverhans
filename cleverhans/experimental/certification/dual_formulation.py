@@ -154,7 +154,7 @@ class DualFormulation(object):
     """
     # Using autograph to automatically handle
     # the control flow of minimum_eigen_vector
-    self.min_eigen_vec = autograph.to_graph(utils.lanczos_decomp)
+    self.min_eigen_vec = autograph.to_graph(utils.tf_lanczos_smallest_eigval)
 
     def _m_vector_prod_fn(x):
       return self.get_psd_product(x)
@@ -162,27 +162,14 @@ class DualFormulation(object):
       return self.get_h_product(x)
 
     # Construct nodes for computing eigenvalue of M
-    self.alpha_m, self.beta_m, self.Q_m = self.min_eigen_vec(_m_vector_prod_fn,
-                                                             0,
-                                                             self.matrix_m_dimension,
-                                                             self.lzs_params['min_iter'])
-
-    self.eig_max_placeholder = tf.placeholder(tf.float32, shape=[])
-    self.alpha_m_hat, self.beta_m_hat, self.Q_m_hat = self.min_eigen_vec(_m_vector_prod_fn,
-                                                                         self.eig_max_placeholder,
-                                                                         self.matrix_m_dimension,
-                                                                         self.lzs_params['max_iter'])
-
-    # Construct nodes for computing eigenvalue of H
-    self.alpha_h, self.beta_h, self.Q_h = self.min_eigen_vec(_h_vector_prod_fn,
-                                                             0,
-                                                             self.matrix_m_dimension-1,
-                                                             self.lzs_params['max_iter'])
-
-    self.alpha_h_hat, self.beta_h_hat, self.Q_h_hat = self.min_eigen_vec(_h_vector_prod_fn,
-                                                                         self.eig_max_placeholder,
-                                                                         self.matrix_m_dimension-1,
-                                                                         self.lzs_params['max_iter'])
+    self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
+                                                        self.matrix_m_dimension,
+                                                        self.lzs_params['max_iter'],
+                                                        dtype=tf.float64)
+    self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
+                                                        self.matrix_m_dimension-1,
+                                                        self.lzs_params['max_iter'],
+                                                        dtype=tf.float64)
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""
@@ -402,40 +389,23 @@ class DualFormulation(object):
     # Add 0.05 to final nu to account for numerical instability
     return original_nu, final_nu + 0.05
 
-  def get_lanczos_eig(self, compute_m=True):
+  def get_lanczos_eig(self, compute_m=True, feed_dict=None):
     """Computes the min eigen value and corresponding vector of matrix M or H
     using the Lanczos algorithm.
-
     Args:
       compute_m: boolean to determine whether we should compute eig val/vec
         for M or for H. True for M; False for H.
-
     Returns:
       min_eig_vec: Corresponding eigen vector to min eig val
       eig_val: Minimum eigen value
     """
-    alpha, beta = self.alpha_m, self.beta_m
-    alpha_hat, beta_hat, Q_hat = self.alpha_m_hat, self.beta_m_hat, self.Q_m_hat
-
-    if not compute_m:
-      alpha, beta = self.alpha_h, self.beta_h
-      alpha_hat, beta_hat, Q_hat = self.alpha_h_hat, self.beta_h_hat, self.Q_h_hat
-
-    alpha, beta = self.sess.run([alpha, beta])
-    # Compute max eig of tridiagonal matrix
-    max_eig_1, _, _, _ = utils.eigen_tridiagonal(alpha, beta)
-    feed_dict = {self.eig_max_placeholder: max_eig_1}
-
-    # M_hat = M - max_eig * M. Compute max eig of resulting tridiagonal matrix
-    alpha_hat, beta_hat, Q_hat = self.sess.run([alpha_hat, beta_hat, Q_hat], feed_dict=feed_dict)
-    max_eig, max_vec, _, _ = utils.eigen_tridiagonal(alpha_hat, beta_hat)
-    eig_val = max_eig + max_eig_1
-
-    # Multiply by V_hat to get the eigenvector for M
     if compute_m:
-      return np.matmul(Q_hat, max_vec).reshape((self.matrix_m_dimension, 1)), eig_val
+      min_eig, min_vec = self.sess.run([self.m_min_eig, self.m_min_vec], feed_dict=feed_dict)
 
-    return np.matmul(Q_hat, max_vec).reshape((self.matrix_m_dimension - 1, 1)), eig_val
+    else:
+      min_eig, min_vec = self.sess.run([self.h_min_eig, self.h_min_vec], feed_dict=feed_dict)
+
+    return min_vec, min_eig
 
   def compute_certificate(self, current_step):
     """ Function to compute the certificate based either current value
