@@ -294,7 +294,6 @@ class DualFormulation(object):
     # Computing the product of matrix_h with beta part of vector
     # At first layer, h is simply diagonal
     h_beta = self.get_h_product(beta)
-    h_beta = tf.cast(h_beta, self.nn_dtype)
 
     # Constructing final result using vector_g
     result = tf.concat(
