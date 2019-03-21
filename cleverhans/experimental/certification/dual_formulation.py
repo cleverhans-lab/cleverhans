@@ -167,13 +167,13 @@ class DualFormulation(object):
     self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
                                                         self.matrix_m_dimension,
                                                         self.lzs_params['max_iter'],
-                                                        dtype=tf.lanczos_dtype)
+                                                        dtype=self.lanczos_dtype)
     self.m_min_eig = tf.cast(self.m_min_eig, self.nn_dtype)
     self.m_min_vec = tf.cast(self.m_min_vec, self.nn_dtype)
     self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
                                                         self.matrix_m_dimension-1,
                                                         self.lzs_params['max_iter'],
-                                                        dtype=tf.lanczos_dtype)
+                                                        dtype=self.lanczos_dtype)
     self.h_min_eig = tf.cast(self.h_min_eig, self.nn_dtype)
     self.h_min_vec = tf.cast(self.h_min_vec, self.nn_dtype)
 
@@ -228,7 +228,7 @@ class DualFormulation(object):
     self.vector_g = tf.concat(g_rows, axis=0)
     self.unconstrained_objective = self.scalar_f + 0.5 * self.nu
 
-  def get_h_product(self, vector, dtype=self.nn_dtype):
+  def get_h_product(self, vector, dtype=None):
     """Function that provides matrix product interface with PSD matrix.
 
     Args:
@@ -239,6 +239,8 @@ class DualFormulation(object):
     """
     # Computing the product of matrix_h with beta (input vector)
     # At first layer, h is simply diagonal
+    if dtype is None:
+      dtype = self.nn_dtype
     beta = tf.cast(vector, self.nn_dtype)
     h_beta_rows = []
     for i in range(self.nn_params.num_hidden_layers):
@@ -278,7 +280,7 @@ class DualFormulation(object):
     h_beta = tf.concat(h_beta_rows, axis=0)
     return tf.cast(h_beta, dtype)
 
-  def get_psd_product(self, vector, dtype=self.nn_dtype):
+  def get_psd_product(self, vector, dtype=None):
     """Function that provides matrix product interface with PSD matrix.
 
     Args:
@@ -288,6 +290,8 @@ class DualFormulation(object):
       result_product: Matrix product of M and vector
     """
     # For convenience, think of x as [\alpha, \beta]
+    if dtype is None:
+      dtype = self.nn_dtype
     vector = tf.cast(vector, self.nn_dtype)
     alpha = tf.reshape(vector[0], shape=[1, 1])
     beta = vector[1:]
