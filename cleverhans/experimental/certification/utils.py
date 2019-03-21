@@ -222,7 +222,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
 
   # Iteration 0 of Lanczos
   q_vectors = q_vectors.write(0, w)
-  w_ = tf.cast(vector_prod_fn(tf.cast(w, tf.float32)), tf.float64)
+  w_ = vector_prod_fn(w)
   cur_alpha = tf.reduce_sum(w_ * w)
   alpha = alpha.write(0, cur_alpha)
   w_ = w_ - tf.scalar_mul(cur_alpha, w)
@@ -240,7 +240,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
     # so division will return finite result.
     w = w / cur_beta
 
-    w_ = tf.cast(vector_prod_fn(tf.cast(w, tf.float32)), tf.float64)
+    w_ = vector_prod_fn(w)
     cur_alpha = tf.reduce_sum(w_ * w)
 
     q_vectors = q_vectors.write(i, w)

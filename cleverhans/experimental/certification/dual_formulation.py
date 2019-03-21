@@ -65,6 +65,8 @@ class DualFormulation(object):
         self.final_linear, shape=[tf.size(self.final_linear), 1])
     self.final_constant = (self.nn_params.final_bias[adv_class]
                            - self.nn_params.final_bias[true_class])
+    self.lanczos_dtype = tf.float64
+    self.nn_dtype = tf.float32
 
     # Computing lower and upper bounds
     # Note that lower and upper are of size nn_params.num_hidden_layers + 1
@@ -157,19 +159,19 @@ class DualFormulation(object):
     self.min_eigen_vec = autograph.to_graph(utils.tf_lanczos_smallest_eigval)
 
     def _m_vector_prod_fn(x):
-      return self.get_psd_product(x)
+      return self.get_psd_product(x, dtype=self.lanczos_dtype)
     def _h_vector_prod_fn(x):
-      return self.get_h_product(x)
+      return self.get_h_product(x, dtype=self.lanczos_dtype)
 
     # Construct nodes for computing eigenvalue of M
     self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
                                                         self.matrix_m_dimension,
                                                         self.lzs_params['max_iter'],
-                                                        dtype=tf.float64)
+                                                        dtype=tf.lanczos_dtype)
     self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
                                                         self.matrix_m_dimension-1,
                                                         self.lzs_params['max_iter'],
-                                                        dtype=tf.float64)
+                                                        dtype=tf.lanczos_dtype)
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""
@@ -222,7 +224,7 @@ class DualFormulation(object):
     self.vector_g = tf.concat(g_rows, axis=0)
     self.unconstrained_objective = self.scalar_f + 0.5 * self.nu
 
-  def get_h_product(self, vector):
+  def get_h_product(self, vector, dtype=self.nn_dtype):
     """Function that provides matrix product interface with PSD matrix.
 
     Args:
@@ -233,7 +235,7 @@ class DualFormulation(object):
     """
     # Computing the product of matrix_h with beta (input vector)
     # At first layer, h is simply diagonal
-    beta = vector
+    beta = tf.cast(vector, self.nn_dtype)
     h_beta_rows = []
     for i in range(self.nn_params.num_hidden_layers):
       # Split beta of this block into [gamma, delta]
@@ -270,9 +272,9 @@ class DualFormulation(object):
                     delta))
 
     h_beta = tf.concat(h_beta_rows, axis=0)
-    return h_beta
+    return tf.cast(h_beta, dtype)
 
-  def get_psd_product(self, vector):
+  def get_psd_product(self, vector, dtype=self.nn_dtype):
     """Function that provides matrix product interface with PSD matrix.
 
     Args:
@@ -282,11 +284,13 @@ class DualFormulation(object):
       result_product: Matrix product of M and vector
     """
     # For convenience, think of x as [\alpha, \beta]
+    vector = tf.cast(vector, self.nn_dtype)
     alpha = tf.reshape(vector[0], shape=[1, 1])
     beta = vector[1:]
     # Computing the product of matrix_h with beta part of vector
     # At first layer, h is simply diagonal
     h_beta = self.get_h_product(beta)
+    h_beta = tf.cast(h_beta, self.nn_dtype)
 
     # Constructing final result using vector_g
     result = tf.concat(
@@ -295,7 +299,7 @@ class DualFormulation(object):
             tf.multiply(alpha, self.vector_g) + h_beta
         ],
         axis=0)
-    return result
+    return tf.cast(result, dtype)
 
   def get_full_psd_matrix(self):
     """Function that returns the tf graph corresponding to the entire matrix M.
@@ -395,6 +399,7 @@ class DualFormulation(object):
     Args:
       compute_m: boolean to determine whether we should compute eig val/vec
         for M or for H. True for M; False for H.
+      feed_dict: dictionary mapping from TF placeholders to values (optional)
     Returns:
       min_eig_vec: Corresponding eigen vector to min eig val
       eig_val: Minimum eigen value
