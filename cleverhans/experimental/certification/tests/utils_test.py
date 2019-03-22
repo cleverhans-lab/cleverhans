@@ -63,9 +63,9 @@ class UtilsTest(tf.test.TestCase):
         scipy_min_eigvec = scipy_min_eigvec / np.linalg.norm(scipy_min_eigvec)
 
         np.testing.assert_almost_equal(eigval, scipy_min_eigval, decimal=3)
-        np.testing.assert_almost_equal(np.linalg.norm(eigvec), 1.0)
+        np.testing.assert_almost_equal(np.linalg.norm(eigvec), 1.0, decimal=3)
         abs_dot_prod = abs(np.dot(eigvec.flatten(), scipy_min_eigvec.flatten()))
-        np.testing.assert_almost_equal(abs_dot_prod, 1.0)
+        np.testing.assert_almost_equal(abs_dot_prod, 1.0, decimal=3)
 
 
 if __name__ == '__main__':
