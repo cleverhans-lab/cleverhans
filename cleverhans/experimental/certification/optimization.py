@@ -140,6 +140,8 @@ class Optimization(object):
     """Create tensorflow op for running one step of descent."""
     if self.params['eig_type'] == 'TF':
       self.eig_vec_estimate = self.get_min_eig_vec_proxy()
+    elif self.params['eig_type'] == 'LZS':
+      self.eig_vec_estimate = self.dual_object.m_min_vec
     else:
       self.eig_vec_estimate = tf.placeholder(tf.float32, shape=(self.dual_object.matrix_m_dimension, 1))
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
@@ -239,16 +241,14 @@ class Optimization(object):
           self.eig_vec_estimate: current_eig_vector
       })
     elif self.params['eig_type'] == 'LZS':
-      # TODO(shankarshreya): check if first eigenval is negative
-      current_eig_vector, self.current_eig_val_estimate = self.dual_object.get_lanczos_eig()
       step_feed_dict.update({
-          self.eig_vec_estimate: current_eig_vector
+          self.dual_object.m_min_vec_ph: self.dual_object.m_min_vec_estimate
       })
 
     self.sess.run(self.train_step, feed_dict=step_feed_dict)
 
     [
-        _, self.current_eig_vec_val, self.current_eig_val_estimate
+        _, self.dual_object.m_min_vec_estimate, self.current_eig_val_estimate
     ] = self.sess.run([
         self.proj_step,
         self.eig_vec_estimate,
@@ -257,7 +257,7 @@ class Optimization(object):
 
     if self.current_step % self.params['print_stats_steps'] == 0:
       [self.current_total_objective, self.current_unconstrained_objective,
-       self.current_eig_vec_val,
+       self.dual_object.m_min_vec_estimate,
        self.current_eig_val_estimate,
        self.current_nu] = self.sess.run(
            [self.total_objective,
@@ -274,8 +274,8 @@ class Optimization(object):
           'min_eig_val_estimate':
               float(self.current_eig_val_estimate)
       }
-      tf.logging.debug('Current inner step: %d, optimization stats: %s',
-                       self.current_step, stats)
+      tf.logging.info('Current inner step: %d, optimization stats: %s',
+                      self.current_step, stats)
       if self.params['stats_folder'] is not None:
         stats = json.dumps(stats)
         filename = os.path.join(self.params['stats_folder'],
@@ -307,13 +307,13 @@ class Optimization(object):
       self.current_step = 0
       # Run first step with random eig initialization and large number of steps
       found_cert = self.run_one_step(
-          np.random.random(size=(1 + self.dual_object.dual_index[-1], 1)),
+          self.dual_object.m_min_vec_estimate,
           self.params['large_eig_num_steps'], smooth_val, penalty_val, learning_rate_val)
       if found_cert:
         return True
       while self.current_step < self.params['inner_num_steps']:
         self.current_step = self.current_step + 1
-        found_cert = self.run_one_step(self.current_eig_vec_val,
+        found_cert = self.run_one_step(self.dual_object.m_min_vec_estimate,
                                        self.params['small_eig_num_steps'],
                                        smooth_val, penalty_val,
                                        learning_rate_val)

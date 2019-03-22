@@ -14,7 +14,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Tolerance value for eigenvalue computation
-TOL = 1E-3
+TOL = 1E-5
 
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -5.0
@@ -164,12 +164,17 @@ class DualFormulation(object):
       return self.get_h_product(x, dtype=self.lanczos_dtype)
 
     # Construct nodes for computing eigenvalue of M
+    self.m_min_vec_estimate = np.zeros(shape=(self.matrix_m_dimension, 1), dtype=np.float64)
+    self.m_min_vec_ph = tf.placeholder(shape=(self.matrix_m_dimension, 1), dtype=tf.float64, name="m_min_vec_ph")
     self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
                                                         self.matrix_m_dimension,
                                                         self.lzs_params['max_iter'],
                                                         dtype=self.lanczos_dtype)
     self.m_min_eig = tf.cast(self.m_min_eig, self.nn_dtype)
     self.m_min_vec = tf.cast(self.m_min_vec, self.nn_dtype)
+
+    self.h_min_vec_estimate = np.zeros(shape=(self.matrix_m_dimension - 1, 1), dtype=np.float64)
+    self.h_min_vec_ph = tf.placeholder(shape=(self.matrix_m_dimension - 1, 1), dtype=tf.float64, name="h_min_vec_ph")
     self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
                                                         self.matrix_m_dimension-1,
                                                         self.lzs_params['max_iter'],
