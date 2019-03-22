@@ -168,6 +168,7 @@ class DualFormulation(object):
     self.m_min_vec_ph = tf.placeholder(shape=(self.matrix_m_dimension, 1), dtype=tf.float64, name="m_min_vec_ph")
     self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
                                                         self.matrix_m_dimension,
+                                                        self.m_min_vec_ph,
                                                         self.lzs_params['max_iter'],
                                                         dtype=self.lanczos_dtype)
     self.m_min_eig = tf.cast(self.m_min_eig, self.nn_dtype)
@@ -177,6 +178,7 @@ class DualFormulation(object):
     self.h_min_vec_ph = tf.placeholder(shape=(self.matrix_m_dimension - 1, 1), dtype=tf.float64, name="h_min_vec_ph")
     self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
                                                         self.matrix_m_dimension-1,
+                                                        self.h_min_vec_ph,
                                                         self.lzs_params['max_iter'],
                                                         dtype=self.lanczos_dtype)
     self.h_min_eig = tf.cast(self.h_min_eig, self.nn_dtype)
@@ -358,7 +360,7 @@ class DualFormulation(object):
         axis=0)
     return self.matrix_h, self.matrix_m
 
-  def make_m_psd(self):
+  def make_m_psd(self, feed_dict):
     """Run binary search to find a value for nu that makes M PSD
 
     Args:
@@ -367,7 +369,7 @@ class DualFormulation(object):
       new_nu: new value of nu
     """
     original_nu = self.sess.run(self.nu)
-    _, min_eig_val_m = self.get_lanczos_eig()
+    _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
 
     lower_nu = original_nu
     upper_nu = original_nu
@@ -380,7 +382,7 @@ class DualFormulation(object):
       num_iter += 1
       upper_nu *= 1.1
       self.sess.run(tf.assign(self.nu, upper_nu))
-      _, min_eig_val_m = self.get_lanczos_eig()
+      _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
 
     final_nu = upper_nu
 
@@ -393,7 +395,7 @@ class DualFormulation(object):
       num_iter += 1
       mid_nu = (lower_nu + upper_nu) / 2
       self.sess.run(tf.assign(self.nu, mid_nu))
-      _, min_eig_val_m = self.get_lanczos_eig()
+      _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
       if min_eig_val_m - TOL < 0:
         lower_nu = mid_nu
       else:
@@ -430,7 +432,13 @@ class DualFormulation(object):
     lambda_neg_val = self.sess.run(self.lambda_neg)
     lambda_lu_val = self.sess.run(self.lambda_lu)
 
-    _, min_eig_val_h = self.get_lanczos_eig(compute_m=False)
+    # Use 1000 iterations for Lanczos in compute certificate
+    m_guess_vec = np.zeros((self.matrix_m_dimension, 1))
+    feed_dict = {
+        self.h_min_vec_ph: self.h_min_vec_estimate,
+        self.m_min_vec_ph: m_guess_vec
+    }
+    _, min_eig_val_h = self.get_lanczos_eig(compute_m=False, feed_dict=feed_dict)
 
     new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
     new_lambda_neg_val = [np.copy(x) for x in lambda_neg_val]
@@ -454,7 +462,7 @@ class DualFormulation(object):
 
     # Make matrix M PSD
     scalar_f = self.sess.run(self.scalar_f)
-    _, second_term = self.make_m_psd()
+    _, second_term = self.make_m_psd(feed_dict)
 
     computed_certificate = scalar_f + 0.5*second_term
 

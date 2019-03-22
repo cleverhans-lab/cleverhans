@@ -183,6 +183,7 @@ def minimum_eigen_vector(x, num_steps, learning_rate, vector_prod_fn):
 
 def tf_lanczos_smallest_eigval(vector_prod_fn,
                                matrix_dim,
+                               b,
                                max_iter=1000,
                                collapse_tol=1e-12,
                                dtype=tf.float32):
@@ -199,6 +200,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
     vector_prod_fn: function which takes a vector as an input and returns
       matrix vector product.
     matrix_dim: dimentionality of the matrix.
+    b: guess vector to start the algorithm with
     max_iter: maximum number of iterations.
     collapse_tol: tolerance to determine collapse of the Krylov subspace
     dtype: type of data
@@ -216,8 +218,11 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
   q_vectors = tf.TensorArray(
       dtype, size=1, dynamic_size=True, element_shape=(matrix_dim, 1))
 
-  # Create random vector with Euclidean norm 1
-  b = tf.random_normal(shape=(matrix_dim, 1), dtype=dtype)
+  # If start vector is all zeros, make it a random normal vector and run for 1000 iter
+  if tf.reduce_sum(b) == 0:
+    b = tf.random_normal(shape=(matrix_dim, 1), dtype=dtype)
+    max_iter = 1000
+
   w = b / tf.norm(b)
 
   # Iteration 0 of Lanczos
