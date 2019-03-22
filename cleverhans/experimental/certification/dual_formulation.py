@@ -371,8 +371,6 @@ class DualFormulation(object):
       new_nu: new value of nu
     """
     _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
-    print("min eig scipy: " + str(self.get_scipy_eig(feed_dict)))
-    print("min eig lzs: " + str(min_eig_val_m))
 
     lower_nu = original_nu
     upper_nu = original_nu
@@ -386,7 +384,6 @@ class DualFormulation(object):
       upper_nu *= 1.3
       feed_dict.update({self.nu: upper_nu})
       _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
-      print(min_eig_val_m)
 
     final_nu = upper_nu
 
@@ -459,7 +456,7 @@ class DualFormulation(object):
       # Performing shift invert scipy operation when eig val estimate is available
       min_eig_val_m_scipy, _ = eigs(linear_operator_m, k=1, which='SR', tol=TOL)
 
-      print("min eig val m from scipy: " + str(min_eig_val_m_scipy))
+      tf.logging.info("min eig val m from scipy: " + str(min_eig_val_m_scipy))
 
       if min_eig_val_m - TOL > 0:
         tf.logging.info('Found certificate of robustness!')
