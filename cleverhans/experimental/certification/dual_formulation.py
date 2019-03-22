@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from scipy.sparse.linalg import eigs, LinearOperator
 import tensorflow as tf
 from tensorflow.contrib import autograph
 import numpy as np
@@ -124,6 +125,7 @@ class DualFormulation(object):
     self.lambda_quad = [x for x in dual_var['lambda_quad']]
     self.lambda_lu = [x for x in dual_var['lambda_lu']]
     self.nu = dual_var['nu']
+    self.min_eig_val_h = dual_var['min_eig_val_h'] if 'min_eig_val_h' in dual_var else None
     self.vector_g = None
     self.scalar_f = None
     self.matrix_h = None
@@ -360,16 +362,17 @@ class DualFormulation(object):
         axis=0)
     return self.matrix_h, self.matrix_m
 
-  def make_m_psd(self, feed_dict):
+  def make_m_psd(self, original_nu, feed_dict):
     """Run binary search to find a value for nu that makes M PSD
-
     Args:
+      original_nu: starting value of nu to do binary search on
       feed_dict: dictionary of updated lambda variables to feed into M
     Returns:
       new_nu: new value of nu
     """
-    original_nu = self.sess.run(self.nu)
-    _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
+    _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
+    print("min eig scipy: " + str(self.get_scipy_eig(feed_dict)))
+    print("min eig lzs: " + str(min_eig_val_m))
 
     lower_nu = original_nu
     upper_nu = original_nu
@@ -377,35 +380,32 @@ class DualFormulation(object):
 
     # Find an upper bound on nu
     while min_eig_val_m - TOL < 0:
-      if num_iter >= 15:
+      if num_iter >= 5:
         break
       num_iter += 1
-      upper_nu *= 1.1
-      self.sess.run(tf.assign(self.nu, upper_nu))
-      _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
+      upper_nu *= 1.3
+      feed_dict.update({self.nu: upper_nu})
+      _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
+      print(min_eig_val_m)
 
     final_nu = upper_nu
 
     # Perform binary search to find best value of nu
     while lower_nu <= upper_nu:
-      if num_iter >= 25:
-        final_nu = upper_nu
-        self.sess.run(tf.assign(self.nu, final_nu))
+      if num_iter >= 10:
         break
       num_iter += 1
       mid_nu = (lower_nu + upper_nu) / 2
-      self.sess.run(tf.assign(self.nu, mid_nu))
-      _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
+      feed_dict.update({self.nu: mid_nu})
+      _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
       if min_eig_val_m - TOL < 0:
         lower_nu = mid_nu
       else:
         upper_nu = mid_nu
 
-    # Reset to original value of nu
-    self.sess.run(tf.assign(self.nu, original_nu))
+    final_nu = upper_nu
 
-    # Add 0.05 to final nu to account for numerical instability
-    return original_nu, final_nu + 0.05
+    return original_nu, final_nu
 
   def get_lanczos_eig(self, compute_m=True, feed_dict=None):
     """Computes the min eigen value and corresponding vector of matrix M or H
@@ -426,61 +426,43 @@ class DualFormulation(object):
 
     return min_vec, min_eig
 
-  def compute_certificate(self, current_step):
+  def compute_certificate(self, current_step, feed_dict):
     """ Function to compute the certificate based either current value
     or dual variables loaded from dual folder """
-    lambda_neg_val = self.sess.run(self.lambda_neg)
-    lambda_lu_val = self.sess.run(self.lambda_lu)
+    nu = feed_dict[self.nu]
+    _, second_term = self.make_m_psd(nu, feed_dict)
+    tf.logging.info("nu after modifying: " + str(second_term))
+    feed_dict.update({self.nu: second_term})
 
-    # Use 1000 iterations for Lanczos in compute certificate
-    m_guess_vec = np.zeros((self.matrix_m_dimension, 1))
-    feed_dict = {
-        self.h_min_vec_ph: self.h_min_vec_estimate,
-        self.m_min_vec_ph: m_guess_vec
-    }
-    _, min_eig_val_h = self.get_lanczos_eig(compute_m=False, feed_dict=feed_dict)
-
-    new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
-    new_lambda_neg_val = [np.copy(x) for x in lambda_neg_val]
-
-    for i in range(self.nn_params.num_hidden_layers + 1):
-      # Making H PSD
-      new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-min_eig_val_h, 0) + TOL
-      # Adjusting the value of \lambda_neg to make change in g small
-      new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((self.lower[i] + self.upper[i]),
-                                                              (lambda_lu_val[i] -
-                                                               new_lambda_lu_val[i]))
-      new_lambda_neg_val[i] = (np.multiply(self.negative_indices[i],
-                                           new_lambda_neg_val[i]) +
-                               np.multiply(self.switch_indices[i],
-                                           np.maximum(new_lambda_neg_val[i], 0)))
-
-    # Assign new lambda
-    # TODO(shankarshreya): remove the assign ops and do this with new variables
-    self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_lu, new_lambda_lu_val)])
-    self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_neg, new_lambda_neg_val)])
-
-    # Make matrix M PSD
-    scalar_f = self.sess.run(self.scalar_f)
-    _, second_term = self.make_m_psd(feed_dict)
-
-    computed_certificate = scalar_f + 0.5*second_term
+    # Add 0.05 to final nu to account for numerical instability
+    computed_certificate = self.sess.run(self.unconstrained_objective, feed_dict=feed_dict)
 
     tf.logging.info('Inner step: %d, current value of certificate: %f',
                     current_step, computed_certificate)
 
     # Sometimes due to either overflow or instability in inverses,
     # the returned certificate is large and negative -- keeping a check
-    if LOWER_CERT_BOUND < computed_certificate < -1:
-      _, min_eig_val_m = self.get_lanczos_eig()
+    if LOWER_CERT_BOUND < computed_certificate < 0:
+      _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
+      tf.logging.info("min eig val from lanczos: " + str(min_eig_val_m))
+      input_vector_m = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension, 1))
+      output_vector_m = self.get_psd_product(input_vector_m)
+
+      def np_vector_prod_fn_m(np_vector):
+        np_vector = np.reshape(np_vector, [-1, 1])
+        feed_dict.update({input_vector_m:np_vector})
+        output_np_vector = self.sess.run(output_vector_m, feed_dict=feed_dict)
+        return output_np_vector
+      linear_operator_m = LinearOperator((self.matrix_m_dimension,
+                                          self.matrix_m_dimension),
+                                         matvec=np_vector_prod_fn_m)
+      # Performing shift invert scipy operation when eig val estimate is available
+      min_eig_val_m_scipy, _ = eigs(linear_operator_m, k=1, which='SR', tol=TOL)
+
+      print("min eig val m from scipy: " + str(min_eig_val_m_scipy))
+
       if min_eig_val_m - TOL > 0:
         tf.logging.info('Found certificate of robustness!')
         return True
-
-    # Reset values of the variables to their original values before projection
-    # If we don't do this, the optimizer will use the projected values for variables
-    # instead of the true values
-    self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_lu, lambda_lu_val)])
-    self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_neg, lambda_neg_val)])
 
     return False
