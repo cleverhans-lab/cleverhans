@@ -478,6 +478,19 @@ class TestSPSA(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertLess(np.mean(feed_labs == new_labs), 0.1)
 
+  def test_label_argument_int64(self):
+    x_val = np.random.rand(1, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # Try calling alternating with int32 and int64 and ensure it works
+    for _ in range(2):
+      self.attack.generate_np(x_val, y=np.zeros(1, dtype=np.int32), eps=.5,
+                              nb_iter=5, spsa_samples=64,
+                              spsa_iters=1, clip_min=0., clip_max=1.)
+      self.attack.generate_np(x_val, y=np.zeros(1, dtype=np.int64), eps=.5,
+                              nb_iter=5, spsa_samples=64,
+                              spsa_iters=1, clip_min=0., clip_max=1.)
+
 
 class TestProjectedGradientDescent(CommonAttackProperties):
   def setUp(self):
@@ -1271,3 +1284,6 @@ class TestSpatialTransformationMethod(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
+
+if __name__ == '__main__':
+  unittest.main()
