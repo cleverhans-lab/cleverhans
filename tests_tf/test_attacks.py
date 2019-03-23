@@ -483,11 +483,8 @@ class TestSPSA(CleverHansTest):
     x_val = np.array(x_val, dtype=np.float32)
 
     # Try calling alternating with int32 and int64 and ensure it works
-    for _ in range(2):
-      self.attack.generate_np(x_val, y=np.zeros(1, dtype=np.int32), eps=.5,
-                              nb_iter=5, spsa_samples=64,
-                              spsa_iters=1, clip_min=0., clip_max=1.)
-      self.attack.generate_np(x_val, y=np.zeros(1, dtype=np.int64), eps=.5,
+    for dtype in [np.int32, np.int64, np.int32, np.int64]:
+      self.attack.generate_np(x_val, y=np.zeros(1, dtype=dtype), eps=.5,
                               nb_iter=5, spsa_samples=64,
                               spsa_iters=1, clip_min=0., clip_max=1.)
 
@@ -1285,5 +1282,3 @@ class TestSpatialTransformationMethod(CleverHansTest):
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
 
-if __name__ == '__main__':
-  unittest.main()
