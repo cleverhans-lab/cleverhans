@@ -42,8 +42,10 @@ class UtilsTest(tf.test.TestCase):
       return tf.matmul(tf_matrix, tf.reshape(x, [-1, 1]))
 
     min_eigen_fn = autograph.to_graph(utils.tf_lanczos_smallest_eigval)
+    init_vec_ph = tf.placeholder(shape=(MATRIX_DIMENTION, 1), dtype=tf.float32)
     tf_eigval, tf_eigvec = min_eigen_fn(
-        _vector_prod_fn, MATRIX_DIMENTION, tf_num_iter, dtype=tf.float32)
+        _vector_prod_fn, MATRIX_DIMENTION, init_vec_ph, tf_num_iter, dtype=tf.float32)
+    eigvec = np.zeros((MATRIX_DIMENTION, 1), dtype=np.float32)
 
     with self.test_session() as sess:
       # run this test for a few random matrices
@@ -52,7 +54,7 @@ class UtilsTest(tf.test.TestCase):
         matrix = matrix + matrix.T  # symmetrizing matrix
         eigval, eigvec = sess.run(
             [tf_eigval, tf_eigvec],
-            feed_dict={tf_num_iter: NUM_LZS_ITERATIONS, tf_matrix: matrix})
+            feed_dict={tf_num_iter: NUM_LZS_ITERATIONS, tf_matrix: matrix, init_vec_ph: eigvec})
 
         scipy_min_eigval, scipy_min_eigvec = eigs(
             matrix, k=1, which='SR')
@@ -61,9 +63,9 @@ class UtilsTest(tf.test.TestCase):
         scipy_min_eigvec = scipy_min_eigvec / np.linalg.norm(scipy_min_eigvec)
 
         np.testing.assert_almost_equal(eigval, scipy_min_eigval, decimal=3)
-        np.testing.assert_almost_equal(np.linalg.norm(eigvec), 1.0)
+        np.testing.assert_almost_equal(np.linalg.norm(eigvec), 1.0, decimal=3)
         abs_dot_prod = abs(np.dot(eigvec.flatten(), scipy_min_eigvec.flatten()))
-        np.testing.assert_almost_equal(abs_dot_prod, 1.0)
+        np.testing.assert_almost_equal(abs_dot_prod, 1.0, decimal=3)
 
 
 if __name__ == '__main__':
