@@ -42,7 +42,8 @@ class Optimization(object):
     self.dual_object = dual_formulation_object
     self.params = optimization_params
     self.penalty_placeholder = tf.placeholder(tf.float32, shape=[])
-    self.projected_dual_object = self.project_dual()
+    if self.params['eig_type'] == 'LZS':
+      self.projected_dual_object = self.project_dual()
 
     # The dimensionality of matrix M is the sum of sizes of all layers + 1
     # The + 1 comes due to a row and column of M representing the linear terms

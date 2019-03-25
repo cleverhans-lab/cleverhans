@@ -428,7 +428,7 @@ class DualFormulation(object):
     or dual variables loaded from dual folder """
     nu = feed_dict[self.nu]
     _, second_term = self.make_m_psd(nu, feed_dict)
-    tf.logging.info("nu after modifying: " + str(second_term))
+    tf.logging.info("Nu after modifying: " + str(second_term))
     feed_dict.update({self.nu: second_term})
 
     # Add 0.05 to final nu to account for numerical instability

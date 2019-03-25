@@ -220,7 +220,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
   q_vectors = tf.TensorArray(
       dtype, size=1, dynamic_size=True, element_shape=(matrix_dim, 1))
 
-  # If start vector is all zeros, make it a random normal vector and run for 1000 iter
+  # If start vector is all zeros, make it a random normal vector and run for max_iter
   if tf.norm(initial_vector) < collapse_tol:
     initial_vector = tf.random_normal(shape=(matrix_dim, 1), dtype=dtype)
     num_iter = max_iter
