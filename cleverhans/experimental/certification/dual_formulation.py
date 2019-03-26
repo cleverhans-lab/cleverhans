@@ -90,8 +90,8 @@ class DualFormulation(object):
       lo_plus_up = self.nn_params.forward_pass(self.lower[i] + self.upper[i], i)
       lo_minus_up = self.nn_params.forward_pass(self.lower[i] - self.upper[i], i, is_abs=True)
       up_minus_lo = self.nn_params.forward_pass(self.upper[i] - self.lower[i], i, is_abs=True)
-      current_lower = 0.5 * (lo_plus_up + lo_minus_up + self.nn_params.biases[i])
-      current_upper = 0.5 * (lo_plus_up + up_minus_lo + self.nn_params.biases[i])
+      current_lower = 0.5 * (lo_plus_up + lo_minus_up) + self.nn_params.biases[i]
+      current_upper = 0.5 * (lo_plus_up + up_minus_lo) + self.nn_params.biases[i]
       self.pre_lower.append(current_lower)
       self.pre_upper.append(current_upper)
       self.lower.append(tf.nn.relu(current_lower))
