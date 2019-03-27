@@ -330,14 +330,15 @@ class Optimization(object):
     # Project onto feasible set of dual variables
     if self.current_step % self.params['projection_steps'] == 0 and self.current_unconstrained_objective < 0:
       nu = self.sess.run(self.dual_object.nu)
-      feed_dict = {
-          self.projected_dual_object.nu: nu,
-          self.dual_object.h_min_vec_ph: self.dual_object.h_min_vec_estimate,
-          self.projected_dual_object.m_min_vec_ph: self.projected_dual_object.m_min_vec_estimate
+      dual_feed_dict = {
+          self.dual_object.h_min_vec_ph: self.dual_object.h_min_vec_estimate
       }
-      _, min_eig_val_h_lz = self.dual_object.get_lanczos_eig(compute_m=False, feed_dict=feed_dict)
-      feed_dict.update({self.min_eig_val_h: min_eig_val_h_lz})
-      if self.projected_dual_object.compute_certificate(self.current_step, feed_dict):
+      _, min_eig_val_h_lz = self.dual_object.get_lanczos_eig(compute_m=False, feed_dict=dual_feed_dict)
+      projected_dual_feed_dict = {
+          self.projected_dual_object.nu: nu,
+          self.project_dual.min_eig_val_h: min_eig_val_h_lz
+      }
+      if self.projected_dual_object.compute_certificate(self.current_step, projected_dual_feed_dict):
         return True
 
     return False

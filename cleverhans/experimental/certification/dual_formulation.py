@@ -17,6 +17,10 @@ FLAGS = flags.FLAGS
 # Tolerance value for eigenvalue computation
 TOL = 1E-5
 
+# Binary search constants
+MAX_BINARY_SEARCH_ITER = 10
+NU_UPDATE_CONSTANT = 1.3
+
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -5.0
 DEFAULT_LZS_PARAMS = {'min_iter': 5, 'max_iter': 50}
@@ -167,7 +171,10 @@ class DualFormulation(object):
 
     # Construct nodes for computing eigenvalue of M
     self.m_min_vec_estimate = np.zeros(shape=(self.matrix_m_dimension, 1), dtype=np.float64)
-    self.m_min_vec_ph = tf.placeholder(shape=(self.matrix_m_dimension, 1), dtype=tf.float64, name="m_min_vec_ph")
+    zeros_m = tf.zeros(shape=(self.matrix_m_dimension, 1), dtype=tf.float64)
+    self.m_min_vec_ph = tf.placeholder_with_default(input=zeros_m,
+                                                    shape=(self.matrix_m_dimension, 1),
+                                                    name="m_min_vec_ph")
     self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
                                                         self.matrix_m_dimension,
                                                         self.m_min_vec_ph,
@@ -177,7 +184,10 @@ class DualFormulation(object):
     self.m_min_vec = tf.cast(self.m_min_vec, self.nn_dtype)
 
     self.h_min_vec_estimate = np.zeros(shape=(self.matrix_m_dimension - 1, 1), dtype=np.float64)
-    self.h_min_vec_ph = tf.placeholder(shape=(self.matrix_m_dimension - 1, 1), dtype=tf.float64, name="h_min_vec_ph")
+    zeros_h = tf.zeros(shape=(self.matrix_m_dimension - 1, 1), dtype=tf.float64)
+    self.h_min_vec_ph = tf.placeholder_with_default(input=zeros_h,
+                                                    shape=(self.matrix_m_dimension - 1, 1),
+                                                    name="h_min_vec_ph")
     self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
                                                         self.matrix_m_dimension-1,
                                                         self.h_min_vec_ph,
@@ -362,14 +372,15 @@ class DualFormulation(object):
         axis=0)
     return self.matrix_h, self.matrix_m
 
-  def make_m_psd(self, original_nu, feed_dict):
+  def make_m_psd(self, original_nu, feed_dictionary):
     """Run binary search to find a value for nu that makes M PSD
     Args:
       original_nu: starting value of nu to do binary search on
-      feed_dict: dictionary of updated lambda variables to feed into M
+      feed_dictionary: dictionary of updated lambda variables to feed into M
     Returns:
       new_nu: new value of nu
     """
+    feed_dict = feed_dictionary.copy()
     _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
 
     lower_nu = original_nu
@@ -377,20 +388,16 @@ class DualFormulation(object):
     num_iter = 0
 
     # Find an upper bound on nu
-    while min_eig_val_m - TOL < 0:
-      if num_iter >= 5:
-        break
+    while min_eig_val_m - TOL < 0 and num_iter < (MAX_BINARY_SEARCH_ITER / 2):
       num_iter += 1
-      upper_nu *= 1.3
+      upper_nu *= NU_UPDATE_CONSTANT
       feed_dict.update({self.nu: upper_nu})
       _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
 
     final_nu = upper_nu
 
     # Perform binary search to find best value of nu
-    while lower_nu <= upper_nu:
-      if num_iter >= 10:
-        break
+    while lower_nu <= upper_nu and num_iter < MAX_BINARY_SEARCH_ITER:
       num_iter += 1
       mid_nu = (lower_nu + upper_nu) / 2
       feed_dict.update({self.nu: mid_nu})
@@ -402,7 +409,7 @@ class DualFormulation(object):
 
     final_nu = upper_nu
 
-    return original_nu, final_nu
+    return final_nu
 
   def get_lanczos_eig(self, compute_m=True, feed_dict=None):
     """Computes the min eigen value and corresponding vector of matrix M or H
@@ -423,15 +430,14 @@ class DualFormulation(object):
 
     return min_vec, min_eig
 
-  def compute_certificate(self, current_step, feed_dict):
+  def compute_certificate(self, current_step, feed_dictionary):
     """ Function to compute the certificate based either current value
     or dual variables loaded from dual folder """
+    feed_dict = feed_dictionary.copy()
     nu = feed_dict[self.nu]
-    _, second_term = self.make_m_psd(nu, feed_dict)
-    tf.logging.info("Nu after modifying: " + str(second_term))
+    second_term = self.make_m_psd(nu, feed_dict)
+    tf.logging.info('Nu after modifying: ' + str(second_term))
     feed_dict.update({self.nu: second_term})
-
-    # Add 0.05 to final nu to account for numerical instability
     computed_certificate = self.sess.run(self.unconstrained_objective, feed_dict=feed_dict)
 
     tf.logging.info('Inner step: %d, current value of certificate: %f',
@@ -441,7 +447,7 @@ class DualFormulation(object):
     # the returned certificate is large and negative -- keeping a check
     if LOWER_CERT_BOUND < computed_certificate < 0:
       _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
-      tf.logging.info("min eig val from lanczos: " + str(min_eig_val_m))
+      tf.logging.info('min eig val from lanczos: ' + str(min_eig_val_m))
       input_vector_m = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension, 1))
       output_vector_m = self.get_psd_product(input_vector_m)
 
@@ -456,7 +462,7 @@ class DualFormulation(object):
       # Performing shift invert scipy operation when eig val estimate is available
       min_eig_val_m_scipy, _ = eigs(linear_operator_m, k=1, which='SR', tol=TOL)
 
-      tf.logging.info("min eig val m from scipy: " + str(min_eig_val_m_scipy))
+      tf.logging.info('min eig val m from scipy: ' + str(min_eig_val_m_scipy))
 
       if min_eig_val_m - TOL > 0:
         tf.logging.info('Found certificate of robustness!')
