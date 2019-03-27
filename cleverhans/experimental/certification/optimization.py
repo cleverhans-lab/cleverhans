@@ -11,7 +11,6 @@ import numpy as np
 from scipy.sparse.linalg import eigs, LinearOperator
 import tensorflow as tf
 from tensorflow.contrib import autograph
-from cleverhans.experimental.certification import dual_formulation
 from cleverhans.experimental.certification import utils
 
 UPDATE_PARAM_CONSTANT = -0.1
