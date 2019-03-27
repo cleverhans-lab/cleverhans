@@ -197,7 +197,8 @@ class DualFormulation(object):
         self.test_input, self.true_class,
         self.adv_class, self.input_minval,
         self.input_maxval, self.epsilon,
-        self.lzs_params, False)
+        self.lzs_params,
+        project_dual=False)
     projected_dual_object.min_eig_val_h = min_eig_h
     return projected_dual_object
 
