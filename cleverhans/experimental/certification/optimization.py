@@ -42,8 +42,6 @@ class Optimization(object):
     self.dual_object = dual_formulation_object
     self.params = optimization_params
     self.penalty_placeholder = tf.placeholder(tf.float32, shape=[])
-    if self.params['eig_type'] == 'LZS':
-      self.projected_dual_object = self.project_dual()
 
     # The dimensionality of matrix M is the sum of sizes of all layers + 1
     # The + 1 comes due to a row and column of M representing the linear terms
@@ -55,51 +53,6 @@ class Optimization(object):
 
     # Create graph for optimization
     self.prepare_for_optimization()
-
-  def project_dual(self):
-    """Function to create variables for the projected dual object.
-    Function that projects the input dual variables onto the feasible set.
-    Returns:
-      projected_dual: Feasible dual solution corresponding to current dual
-    """
-    # TODO: consider whether we can use shallow copy of the lists without
-    # using tf.identity
-    projected_nu = tf.placeholder(tf.float32, shape=[])
-    min_eig_h = tf.placeholder(tf.float32, shape=[])
-    projected_lambda_pos = [tf.identity(x) for x in self.dual_object.lambda_pos]
-    projected_lambda_neg = [tf.identity(x) for x in self.dual_object.lambda_neg]
-    projected_lambda_quad = [
-        tf.identity(x) for x in self.dual_object.lambda_quad
-    ]
-    projected_lambda_lu = [tf.identity(x) for x in self.dual_object.lambda_lu]
-
-    for i in range(self.dual_object.nn_params.num_hidden_layers + 1):
-      # Making H PSD
-      projected_lambda_lu[i] = self.dual_object.lambda_lu[i] + 0.5*tf.maximum(-min_eig_h, 0) + TOL
-      # Adjusting the value of \lambda_neg to make change in g small
-      projected_lambda_neg[i] = self.dual_object.lambda_neg[i] + tf.multiply(
-          (self.dual_object.lower[i] + self.dual_object.upper[i]),
-          (self.dual_object.lambda_lu[i] - projected_lambda_lu[i]))
-      projected_lambda_neg[i] = (tf.multiply(self.dual_object.negative_indices[i],
-                                             projected_lambda_neg[i]) +
-                                 tf.multiply(self.dual_object.switch_indices[i],
-                                             tf.maximum(projected_lambda_neg[i], 0)))
-
-    projected_dual_var = {
-        'lambda_pos': projected_lambda_pos,
-        'lambda_neg': projected_lambda_neg,
-        'lambda_lu': projected_lambda_lu,
-        'lambda_quad': projected_lambda_quad,
-        'nu': projected_nu,
-        'min_eig_val_h': min_eig_h
-    }
-    projected_dual_object = dual_formulation.DualFormulation(
-        self.sess, projected_dual_var, self.dual_object.nn_params,
-        self.dual_object.test_input, self.dual_object.true_class,
-        self.dual_object.adv_class, self.dual_object.input_minval,
-        self.dual_object.input_maxval, self.dual_object.epsilon,
-        self.dual_object.lzs_params)
-    return projected_dual_object
 
   def tf_min_eig_vec(self):
     """Function for min eigen vector using tf's full eigen decomposition."""
@@ -335,10 +288,10 @@ class Optimization(object):
       }
       _, min_eig_val_h_lz = self.dual_object.get_lanczos_eig(compute_m=False, feed_dict=dual_feed_dict)
       projected_dual_feed_dict = {
-          self.projected_dual_object.nu: nu,
-          self.project_dual.min_eig_val_h: min_eig_val_h_lz
+          self.dual_object.projected_dual.nu: nu,
+          self.dual_object.projected_dual.min_eig_val_h: min_eig_val_h_lz
       }
-      if self.projected_dual_object.compute_certificate(self.current_step, projected_dual_feed_dict):
+      if self.dual_object.projected_dual.compute_certificate(self.current_step, projected_dual_feed_dict):
         return True
 
     return False

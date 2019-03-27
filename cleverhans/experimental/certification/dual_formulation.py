@@ -34,7 +34,7 @@ class DualFormulation(object):
 
   def __init__(self, sess, dual_var, neural_net_param_object, test_input, true_class,
                adv_class, input_minval, input_maxval, epsilon,
-               lzs_params=None):
+               lzs_params=None, project_dual=True):
     """Initializes dual formulation class.
 
     Args:
@@ -54,6 +54,7 @@ class DualFormulation(object):
           'min_iter': 5
           'max_iter': 50
         }
+      project_dual: Whether we should create a projected dual object
     """
     self.sess = sess
     self.nn_params = neural_net_param_object
@@ -129,7 +130,6 @@ class DualFormulation(object):
     self.lambda_quad = [x for x in dual_var['lambda_quad']]
     self.lambda_lu = [x for x in dual_var['lambda_lu']]
     self.nu = dual_var['nu']
-    self.min_eig_val_h = dual_var['min_eig_val_h'] if 'min_eig_val_h' in dual_var else None
     self.vector_g = None
     self.scalar_f = None
     self.matrix_h = None
@@ -151,6 +151,55 @@ class DualFormulation(object):
 
     # Setup Lanczos functionality for compute certificate
     self.construct_lanczos_params()
+
+    # Create projected dual object
+    if project_dual:
+      self.projected_dual = self.create_projected_dual()
+
+  def create_projected_dual(self):
+    """Function to create variables for the projected dual object.
+    Function that projects the input dual variables onto the feasible set.
+    Returns:
+      projected_dual: Feasible dual solution corresponding to current dual
+    """
+    # TODO: consider whether we can use shallow copy of the lists without
+    # using tf.identity
+    projected_nu = tf.placeholder(tf.float32, shape=[])
+    min_eig_h = tf.placeholder(tf.float32, shape=[])
+    projected_lambda_pos = [tf.identity(x) for x in self.lambda_pos]
+    projected_lambda_neg = [tf.identity(x) for x in self.lambda_neg]
+    projected_lambda_quad = [
+        tf.identity(x) for x in self.lambda_quad
+    ]
+    projected_lambda_lu = [tf.identity(x) for x in self.lambda_lu]
+
+    for i in range(self.nn_params.num_hidden_layers + 1):
+      # Making H PSD
+      projected_lambda_lu[i] = self.lambda_lu[i] + 0.5*tf.maximum(-min_eig_h, 0) + TOL
+      # Adjusting the value of \lambda_neg to make change in g small
+      projected_lambda_neg[i] = self.lambda_neg[i] + tf.multiply(
+          (self.lower[i] + self.upper[i]),
+          (self.lambda_lu[i] - projected_lambda_lu[i]))
+      projected_lambda_neg[i] = (tf.multiply(self.negative_indices[i],
+                                             projected_lambda_neg[i]) +
+                                 tf.multiply(self.switch_indices[i],
+                                             tf.maximum(projected_lambda_neg[i], 0)))
+
+    projected_dual_var = {
+        'lambda_pos': projected_lambda_pos,
+        'lambda_neg': projected_lambda_neg,
+        'lambda_lu': projected_lambda_lu,
+        'lambda_quad': projected_lambda_quad,
+        'nu': projected_nu,
+    }
+    projected_dual_object = DualFormulation(
+        self.sess, projected_dual_var, self.nn_params,
+        self.test_input, self.true_class,
+        self.adv_class, self.input_minval,
+        self.input_maxval, self.epsilon,
+        self.lzs_params, False)
+    projected_dual_object.min_eig_val_h = min_eig_h
+    return projected_dual_object
 
   def construct_lanczos_params(self):
     """Computes matrices T and V using the Lanczos algorithm.
@@ -174,7 +223,7 @@ class DualFormulation(object):
     zeros_m = tf.zeros(shape=(self.matrix_m_dimension, 1), dtype=tf.float64)
     self.m_min_vec_ph = tf.placeholder_with_default(input=zeros_m,
                                                     shape=(self.matrix_m_dimension, 1),
-                                                    name="m_min_vec_ph")
+                                                    name='m_min_vec_ph')
     self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
                                                         self.matrix_m_dimension,
                                                         self.m_min_vec_ph,
@@ -187,7 +236,7 @@ class DualFormulation(object):
     zeros_h = tf.zeros(shape=(self.matrix_m_dimension - 1, 1), dtype=tf.float64)
     self.h_min_vec_ph = tf.placeholder_with_default(input=zeros_h,
                                                     shape=(self.matrix_m_dimension - 1, 1),
-                                                    name="h_min_vec_ph")
+                                                    name='h_min_vec_ph')
     self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
                                                         self.matrix_m_dimension-1,
                                                         self.h_min_vec_ph,
