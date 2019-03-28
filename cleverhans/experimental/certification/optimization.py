@@ -14,7 +14,8 @@ from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
 
 UPDATE_PARAM_CONSTANT = -0.1
-
+# Tolerance value for eigenvalue computation
+TOL = 1E-5
 
 class Optimization(object):
   """Class that sets up and runs the optimization of dual_formulation"""
@@ -223,11 +224,6 @@ class Optimization(object):
     Returns:
      found_cert: True is negative certificate is found, False otherwise
     """
-    # Project onto feasible set of dual variables
-    if self.current_step != 0 and self.current_step % self.params['projection_steps'] == 0:
-      if self.dual_object.compute_certificate(self.current_step):
-        return True
-
     # Running step
     step_feed_dict = {self.eig_init_vec_placeholder: eig_init_vec_val,
                       self.eig_num_iter_placeholder: eig_num_iter_val,
@@ -282,6 +278,21 @@ class Optimization(object):
                                 str(self.current_step) + '.json')
         with tf.gfile.Open(filename) as file_f:
           file_f.write(stats)
+
+    # Project onto feasible set of dual variables
+    if self.current_step % self.params['projection_steps'] == 0 and self.current_unconstrained_objective < 0:
+      nu = self.sess.run(self.dual_object.nu)
+      dual_feed_dict = {
+          self.dual_object.h_min_vec_ph: self.dual_object.h_min_vec_estimate
+      }
+      _, min_eig_val_h_lz = self.dual_object.get_lanczos_eig(compute_m=False, feed_dict=dual_feed_dict)
+      projected_dual_feed_dict = {
+          self.dual_object.projected_dual.nu: nu,
+          self.dual_object.projected_dual.min_eig_val_h: min_eig_val_h_lz
+      }
+      if self.dual_object.projected_dual.compute_certificate(self.current_step, projected_dual_feed_dict):
+        return True
+
     return False
 
   def run_optimization(self):
@@ -318,7 +329,7 @@ class Optimization(object):
                                        smooth_val, penalty_val,
                                        learning_rate_val)
         if found_cert:
-          return -1
+          return True
       # Update penalty only if it looks like current objective is optimizes
       if self.current_total_objective < UPDATE_PARAM_CONSTANT:
         penalty_val = penalty_val * self.params['beta']
