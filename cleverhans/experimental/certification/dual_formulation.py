@@ -416,7 +416,7 @@ class DualFormulation(object):
 
     self.matrix_m = tf.concat(
         [
-            tf.concat([self.nu, tf.transpose(self.vector_g)], axis=1),
+            tf.concat([tf.reshape(self.nu, (1, 1)), tf.transpose(self.vector_g)], axis=1),
             tf.concat([self.vector_g, self.matrix_h], axis=1)
         ],
         axis=0)
