@@ -1281,4 +1281,3 @@ class TestSpatialTransformationMethod(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
-
