@@ -54,6 +54,9 @@ tutorials/
     ...
 ```
 
+In the meanwhile, all of these folders can be found in the correspond `future/`
+subdirectory (e.g., `cleverhans/future/jax/attacks` or `defenses/future/jax/`).
+
 A public milestone has been created to track the changes that are to be
 implemented before the library version is incremented to v4. 
 
