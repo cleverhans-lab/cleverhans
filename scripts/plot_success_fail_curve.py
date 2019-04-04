@@ -20,7 +20,7 @@ silence()
 from cleverhans.compat import flags
 from cleverhans.plot.success_fail import DEFAULT_FAIL_NAMES
 from cleverhans.plot.success_fail import plot_report_from_path
-FLAGS=flags.FLAGS
+FLAGS = flags.FLAGS
 
 def main(argv=None):
   report_paths = argv[1:]
