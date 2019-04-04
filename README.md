@@ -16,6 +16,10 @@ of the latest attacks and defenses.
 In particular, we always welcome help towards resolving the [issues](https://github.com/tensorflow/cleverhans/issues)
 currently open.
 
+## Major updates coming to CleverHans
+
+CleverHans will soon support 3 frameworks: JAX, PyTorch, and TF2. 
+
 ## Setting up CleverHans
 
 ### Dependencies
