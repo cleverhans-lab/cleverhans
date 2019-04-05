@@ -6,7 +6,6 @@ import warnings
 
 import numpy as np
 import tensorflow as tf
-from tensorflow import reduce_max
 
 from cleverhans.attacks.attack import Attack
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod
@@ -92,7 +91,7 @@ class ProjectedGradientDescent(Attack):
       targeted = False
     else:
       model_preds = self.model.get_probs(x)
-      preds_max = reduce_max(model_preds, 1, keepdims=True)
+      preds_max = tf.reduce_max(model_preds, 1, keepdims=True)
       y = tf.to_float(tf.equal(model_preds, preds_max))
       y = tf.stop_gradient(y)
       targeted = False
