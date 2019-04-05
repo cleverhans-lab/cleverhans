@@ -14,7 +14,8 @@ from tensorflow.contrib import autograph
 from cleverhans.experimental.certification import utils
 
 UPDATE_PARAM_CONSTANT = -0.1
-
+# Tolerance value for eigenvalue computation
+TOL = 1E-5
 
 class Optimization(object):
   """Class that sets up and runs the optimization of dual_formulation"""
@@ -140,6 +141,8 @@ class Optimization(object):
     """Create tensorflow op for running one step of descent."""
     if self.params['eig_type'] == 'TF':
       self.eig_vec_estimate = self.get_min_eig_vec_proxy()
+    elif self.params['eig_type'] == 'LZS':
+      self.eig_vec_estimate = self.dual_object.m_min_vec
     else:
       self.eig_vec_estimate = tf.placeholder(tf.float32, shape=(self.dual_object.matrix_m_dimension, 1))
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
@@ -221,11 +224,6 @@ class Optimization(object):
     Returns:
      found_cert: True is negative certificate is found, False otherwise
     """
-    # Project onto feasible set of dual variables
-    if self.current_step != 0 and self.current_step % self.params['projection_steps'] == 0:
-      if self.dual_object.compute_certificate(self.current_step):
-        return True
-
     # Running step
     step_feed_dict = {self.eig_init_vec_placeholder: eig_init_vec_val,
                       self.eig_num_iter_placeholder: eig_num_iter_val,
@@ -239,16 +237,14 @@ class Optimization(object):
           self.eig_vec_estimate: current_eig_vector
       })
     elif self.params['eig_type'] == 'LZS':
-      # TODO(shankarshreya): check if first eigenval is negative
-      current_eig_vector, self.current_eig_val_estimate = self.dual_object.get_lanczos_eig()
       step_feed_dict.update({
-          self.eig_vec_estimate: current_eig_vector
+          self.dual_object.m_min_vec_ph: self.dual_object.m_min_vec_estimate
       })
 
     self.sess.run(self.train_step, feed_dict=step_feed_dict)
 
     [
-        _, self.current_eig_vec_val, self.current_eig_val_estimate
+        _, self.dual_object.m_min_vec_estimate, self.current_eig_val_estimate
     ] = self.sess.run([
         self.proj_step,
         self.eig_vec_estimate,
@@ -257,7 +253,7 @@ class Optimization(object):
 
     if self.current_step % self.params['print_stats_steps'] == 0:
       [self.current_total_objective, self.current_unconstrained_objective,
-       self.current_eig_vec_val,
+       self.dual_object.m_min_vec_estimate,
        self.current_eig_val_estimate,
        self.current_nu] = self.sess.run(
            [self.total_objective,
@@ -274,14 +270,29 @@ class Optimization(object):
           'min_eig_val_estimate':
               float(self.current_eig_val_estimate)
       }
-      tf.logging.debug('Current inner step: %d, optimization stats: %s',
-                       self.current_step, stats)
+      tf.logging.info('Current inner step: %d, optimization stats: %s',
+                      self.current_step, stats)
       if self.params['stats_folder'] is not None:
         stats = json.dumps(stats)
         filename = os.path.join(self.params['stats_folder'],
                                 str(self.current_step) + '.json')
         with tf.gfile.Open(filename) as file_f:
           file_f.write(stats)
+
+    # Project onto feasible set of dual variables
+    if self.current_step % self.params['projection_steps'] == 0 and self.current_unconstrained_objective < 0:
+      nu = self.sess.run(self.dual_object.nu)
+      dual_feed_dict = {
+          self.dual_object.h_min_vec_ph: self.dual_object.h_min_vec_estimate
+      }
+      _, min_eig_val_h_lz = self.dual_object.get_lanczos_eig(compute_m=False, feed_dict=dual_feed_dict)
+      projected_dual_feed_dict = {
+          self.dual_object.projected_dual.nu: nu,
+          self.dual_object.projected_dual.min_eig_val_h: min_eig_val_h_lz
+      }
+      if self.dual_object.projected_dual.compute_certificate(self.current_step, projected_dual_feed_dict):
+        return True
+
     return False
 
   def run_optimization(self):
@@ -307,18 +318,18 @@ class Optimization(object):
       self.current_step = 0
       # Run first step with random eig initialization and large number of steps
       found_cert = self.run_one_step(
-          np.random.random(size=(1 + self.dual_object.dual_index[-1], 1)),
+          self.dual_object.m_min_vec_estimate,
           self.params['large_eig_num_steps'], smooth_val, penalty_val, learning_rate_val)
       if found_cert:
         return True
       while self.current_step < self.params['inner_num_steps']:
         self.current_step = self.current_step + 1
-        found_cert = self.run_one_step(self.current_eig_vec_val,
+        found_cert = self.run_one_step(self.dual_object.m_min_vec_estimate,
                                        self.params['small_eig_num_steps'],
                                        smooth_val, penalty_val,
                                        learning_rate_val)
         if found_cert:
-          return -1
+          return True
       # Update penalty only if it looks like current objective is optimizes
       if self.current_total_objective < UPDATE_PARAM_CONSTANT:
         penalty_val = penalty_val * self.params['beta']

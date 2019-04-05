@@ -6,7 +6,6 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
-from scipy.linalg import eigh_tridiagonal
 
 def diag(diag_elements):
   """Function to create tensorflow diagonal matrix with input diagonal entries.
@@ -92,70 +91,6 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
   dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
               'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
   return dual_var
-
-def lanczos_decomp(vector_prod_fn, scalar, n, k):
-  """Function that performs the Lanczos algorithm on a matrix.
-
-  Args:
-    vector_prod_fn: function which returns product H*x, where H is a matrix for
-      which we computing eigenvector.
-    scalar: quantity to scale the basis vector by (either 0 or max magnitude
-      eigenvalue)
-    n: dimensionality of matrix H
-    k: number of iterations and dimensionality of the tridiagonal matrix to
-      return
-
-  Returns:
-    alpha: vector of diagonal elements of T
-    beta: vector of off-diagonal elements of T
-    Q: orthonormal basis matrix for the Krylov subspace
-  """
-  Q = tf.zeros([n, 1])
-  v = tf.random_uniform([n, 1])
-  v = v / tf.norm(v)
-  Q = tf.concat([Q, v], axis=1)
-
-  # diagonals of the tridiagonal matrix
-  beta = tf.constant(0.0, dtype=tf.float32, shape=[1])
-  alpha = tf.constant(0.0, dtype=tf.float32, shape=[1])
-
-  for i in range(k):
-    v = vector_prod_fn(tf.reshape(Q[:, i+1], [n, 1])) - tf.scalar_mul(scalar, tf.reshape(Q[:, i+1], [n, 1]))
-    v = tf.reshape(v, [n,])
-    curr_alpha = tf.reshape(tf.reduce_sum(v * Q[:, i+1]), [1,])
-    alpha = tf.concat([alpha, curr_alpha], axis=0)
-    v = v-beta[-1]*Q[:, i]-alpha[-1]*Q[:, i+1]
-    curr_beta = tf.reshape(tf.norm(v), [1,])
-    beta = tf.concat([beta, curr_beta], axis=0)
-    curr_norm = tf.reshape(v/(beta[-1]+1e-8), [n, 1])
-    Q = tf.concat([Q, curr_norm], axis=1)
-
-  alpha = tf.slice(alpha, begin=[1], size=[-1])
-  beta = tf.slice(beta, begin=[1], size=[k-1])
-  Q = tf.slice(Q, begin=[0, 1], size=[-1, k])
-  return alpha, beta, Q
-
-def eigen_tridiagonal(alpha, beta, maximum=True):
-  """Computes eigenvalues of a tridiagonal matrix.
-
-  Args:
-    alpha: vector of diagonal elements
-    beta: vector of off-diagonal elements
-    max: whether to compute the max or min magnitude eigenvalue
-  Returns:
-    eig: eigenvalue corresponding to max or min magnitude eigenvalue
-    eig_vector: eigenvalue corresponding to eig
-    eig_vectors: all eigenvectors
-    eig_values: all eigenvalues
-  """
-  eig_values, eig_vectors = eigh_tridiagonal(alpha, beta)
-  if maximum:
-    ind_eig = np.argmax(np.abs(eig_values))
-  else:
-    ind_eig = np.argmin(np.abs(eig_values))
-  eig = eig_values[ind_eig]
-  eig_vector = eig_vectors[:, ind_eig]
-  return eig, eig_vector, eig_vectors, eig_values
 
 def eig_one_step(current_vector, learning_rate, vector_prod_fn):
   """Function that performs one step of gd (variant) for min eigen value.
@@ -244,3 +179,100 @@ def minimum_eigen_vector(x, num_steps, learning_rate, vector_prod_fn):
   for _ in range(num_steps):
     x = eig_one_step(x, learning_rate, vector_prod_fn)
   return x
+
+
+def tf_lanczos_smallest_eigval(vector_prod_fn,
+                               matrix_dim,
+                               initial_vector,
+                               num_iter=1000,
+                               max_iter=1000,
+                               collapse_tol=1e-9,
+                               dtype=tf.float32):
+  """Computes smallest eigenvector and eigenvalue using Lanczos in pure TF.
+
+  This function computes smallest eigenvector and eigenvalue of the matrix
+  which is implicitly specified by `vector_prod_fn`.
+  `vector_prod_fn` is a function which takes `x` and returns a product of matrix
+  in consideration and `x`.
+  Computation is done using Lanczos algorithm, see
+  https://en.wikipedia.org/wiki/Lanczos_algorithm#The_algorithm
+
+  Args:
+    vector_prod_fn: function which takes a vector as an input and returns
+      matrix vector product.
+    matrix_dim: dimentionality of the matrix.
+    initial_vector: guess vector to start the algorithm with
+    num_iter: user-defined number of iterations for the algorithm
+    max_iter: maximum number of iterations.
+    collapse_tol: tolerance to determine collapse of the Krylov subspace
+    dtype: type of data
+
+  Returns:
+    tuple of (eigenvalue, eigenvector) of smallest eigenvalue and corresponding
+    eigenvector.
+  """
+
+  # alpha will store diagonal elements
+  alpha = tf.TensorArray(dtype, size=1, dynamic_size=True, element_shape=())
+  # beta will store off diagonal elements
+  beta = tf.TensorArray(dtype, size=0, dynamic_size=True, element_shape=())
+  # q will store Krylov space basis
+  q_vectors = tf.TensorArray(
+      dtype, size=1, dynamic_size=True, element_shape=(matrix_dim, 1))
+
+  # If start vector is all zeros, make it a random normal vector and run for max_iter
+  if tf.norm(initial_vector) < collapse_tol:
+    initial_vector = tf.random_normal(shape=(matrix_dim, 1), dtype=dtype)
+    num_iter = max_iter
+
+  w = initial_vector / tf.norm(initial_vector)
+
+  # Iteration 0 of Lanczos
+  q_vectors = q_vectors.write(0, w)
+  w_ = vector_prod_fn(w)
+  cur_alpha = tf.reduce_sum(w_ * w)
+  alpha = alpha.write(0, cur_alpha)
+  w_ = w_ - tf.scalar_mul(cur_alpha, w)
+  w_prev = w
+  w = w_
+
+  # Subsequent iterations of Lanczos
+  for i in tf.range(1, num_iter):
+    cur_beta = tf.norm(w)
+    if cur_beta < collapse_tol:
+      # return early if Krylov subspace collapsed
+      break
+
+    # cur_beta is larger than collapse_tol,
+    # so division will return finite result.
+    w = w / cur_beta
+
+    w_ = vector_prod_fn(w)
+    cur_alpha = tf.reduce_sum(w_ * w)
+
+    q_vectors = q_vectors.write(i, w)
+    alpha = alpha.write(i, cur_alpha)
+    beta = beta.write(i-1, cur_beta)
+
+    w_ = w_ - tf.scalar_mul(cur_alpha, w) - tf.scalar_mul(cur_beta, w_prev)
+    w_prev = w
+    w = w_
+
+  alpha = alpha.stack()
+  beta = beta.stack()
+  q_vectors = tf.reshape(q_vectors.stack(), (-1, matrix_dim))
+
+  offdiag_submatrix = tf.linalg.diag(beta)
+  tridiag_matrix = (tf.linalg.diag(alpha)
+                    + tf.pad(offdiag_submatrix, [[0, 1], [1, 0]])
+                    + tf.pad(offdiag_submatrix, [[1, 0], [0, 1]]))
+
+  eigvals, eigvecs = tf.linalg.eigh(tridiag_matrix)
+
+  smallest_eigval = eigvals[0]
+  smallest_eigvec = tf.matmul(tf.reshape(eigvecs[:, 0], (1, -1)),
+                              q_vectors)
+  smallest_eigvec = smallest_eigvec / tf.norm(smallest_eigvec)
+  smallest_eigvec = tf.reshape(smallest_eigvec, (matrix_dim, 1))
+
+  return smallest_eigval, smallest_eigvec
