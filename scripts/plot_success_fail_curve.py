@@ -23,6 +23,7 @@ from cleverhans.plot.success_fail import plot_report_from_path
 FLAGS = flags.FLAGS
 
 def main(argv=None):
+  """Takes the path to a directory with reports and renders success fail plots."""
   report_paths = argv[1:]
 
   fail_names = FLAGS.fail_names.split(',')
