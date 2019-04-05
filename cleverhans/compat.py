@@ -10,7 +10,6 @@ import tensorflow as tf
 # library without needing to repeat the pylint boilerplate.
 from tensorflow.python.client import device_lib # pylint: disable=no-name-in-module,unused-import
 from tensorflow.python.platform import app, flags # pylint: disable=no-name-in-module,unused-import
-from tensorflow import reduce_sum, reduce_max, reduce_min, reduce_mean, reduce_prod, reduce_any
 
 def _wrap(f):
   """
@@ -26,12 +25,12 @@ def _wrap(f):
     return f(*args, **kwargs)
   return wrapper
 
-reduce_sum = _wrap(reduce_sum)
-reduce_max = _wrap(reduce_max)
-reduce_min = _wrap(reduce_min)
-reduce_mean = _wrap(reduce_mean)
-reduce_prod = _wrap(reduce_prod)
-reduce_any = _wrap(reduce_any)
+reduce_sum = _wrap(tf.reduce_sum)
+reduce_max = _wrap(tf.reduce_max)
+reduce_min = _wrap(tf.reduce_min)
+reduce_mean = _wrap(tf.reduce_mean)
+reduce_prod = _wrap(tf.reduce_prod)
+reduce_any = _wrap(tf.reduce_any)
 
 def reduce_function(op_func, input_tensor, axis=None, keepdims=None,
                     name=None, reduction_indices=None):
