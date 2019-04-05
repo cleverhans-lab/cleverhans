@@ -190,9 +190,9 @@ class SPSA(Attack):
       del kwargs["num_steps"]
 
     if 'y' in kwargs and kwargs['y'] is not None:
-      assert kwargs['y'].dtype == np.int32
+      assert kwargs['y'].dtype in [np.int32, np.int64]
     if 'y_target' in kwargs and kwargs['y_target'] is not None:
-      assert kwargs['y_target'].dtype == np.int32
+      assert kwargs['y_target'].dtype in [np.int32, np.int64]
 
     # Call self.generate() sequentially for each image in the batch
     x_adv = []
