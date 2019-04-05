@@ -19,7 +19,6 @@ import sys
 import warnings
 
 import numpy as np
-from tensorflow import keras
 import tensorflow as tf
 try:
   from tensorflow.python.keras.utils import np_utils
@@ -30,7 +29,7 @@ except ImportError:
   from tensorflow.python.keras import _impl
   np_utils = _impl.keras.utils.np_utils
   # In tf 1.8, "from tensorflow.keras.datasets import cifar10" doesn't work even though the module exists
-  cifar10 = keras.datasets.cifar10
+  cifar10 = tf.keras.datasets.cifar10
   warnings.warn("Support for TensorFlow versions prior to 1.12 is deprecated."
                 " CleverHans using earlier versions may quit working on or after 2019-07-07.")
 from cleverhans import utils
@@ -282,7 +281,7 @@ def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
   # the data, shuffled and split between train and test sets
   (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 
-  if keras.backend.image_data_format() == 'channels_first':
+  if tf.keras.backend.image_data_format() == 'channels_first':
     x_train = x_train.reshape(x_train.shape[0], 3, img_rows, img_cols)
     x_test = x_test.reshape(x_test.shape[0], 3, img_rows, img_cols)
   else:
