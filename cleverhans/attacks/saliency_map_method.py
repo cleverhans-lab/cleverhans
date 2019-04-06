@@ -1,5 +1,6 @@
 """The SalienceMapMethod attack
 """
+# pylint: disable=missing-docstring
 import warnings
 
 import numpy as np
@@ -10,7 +11,6 @@ from cleverhans.attacks.attack import Attack
 from cleverhans.compat import reduce_sum, reduce_max, reduce_any
 
 tf_dtype = tf.as_dtype('float32')
-
 
 
 class SaliencyMapMethod(Attack):
@@ -187,14 +187,15 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
   # Same loop variables as above
   def body(x_in, y_in, domain_in, i_in, cond_in):
-
-    preds = model.get_probs(x_in)
+    # Create graph for model logits and predictions
+    logits = model.get_logits(x_in)
+    preds = tf.nn.softmax(logits)
     preds_onehot = tf.one_hot(tf.argmax(preds, axis=1), depth=nb_classes)
 
     # create the Jacobian graph
     list_derivatives = []
     for class_ind in xrange(nb_classes):
-      derivatives = tf.gradients(preds[:, class_ind], x_in)
+      derivatives = tf.gradients(logits[:, class_ind], x_in)
       list_derivatives.append(derivatives[0])
     grads = tf.reshape(
         tf.stack(list_derivatives), shape=[nb_classes, -1, nb_features])

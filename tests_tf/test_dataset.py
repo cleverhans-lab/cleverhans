@@ -11,6 +11,9 @@ class LightweightDataset(Dataset):
 
 
 class TestDataset(CleverHansTest):
+  """
+  Tests for the Dataset class
+  """
 
   def test_factory(self):
     """test_factory: Test that dataset->factory->dataset preserves type"""

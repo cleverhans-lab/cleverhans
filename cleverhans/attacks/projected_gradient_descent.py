@@ -9,7 +9,6 @@ import tensorflow as tf
 
 from cleverhans.attacks.attack import Attack
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod
-from cleverhans.compat import reduce_max
 from cleverhans import utils_tf
 from cleverhans.utils_tf import clip_eta
 
@@ -92,7 +91,7 @@ class ProjectedGradientDescent(Attack):
       targeted = False
     else:
       model_preds = self.model.get_probs(x)
-      preds_max = reduce_max(model_preds, 1, keepdims=True)
+      preds_max = tf.reduce_max(model_preds, 1, keepdims=True)
       y = tf.to_float(tf.equal(model_preds, preds_max))
       y = tf.stop_gradient(y)
       targeted = False
@@ -120,9 +119,11 @@ class ProjectedGradientDescent(Attack):
         dtypestr=self.dtypestr)
 
     def cond(i, _):
+      """Iterate until requested number of iterations is completed"""
       return tf.less(i, self.nb_iter)
 
     def body(i, adv_x):
+      """Do a projected gradient step"""
       adv_x = FGM.generate(adv_x, **fgm_params)
 
       # Clipping perturbation eta to self.ord norm ball

@@ -1,17 +1,20 @@
 """
 Model construction utilities based on keras
 """
-from tensorflow import keras
+import warnings
+import tensorflow as tf
 
 from .model import Model, NoSuchLayerError
 
-# Assignment rather than import because direct import from within Keras doesn't work in tf 1.8
-Sequential = keras.models.Sequential
-Conv2D = keras.layers.Conv2D
-Dense = keras.layers.Dense
-Activation = keras.layers.Activation
-Flatten = keras.layers.Flatten
-KerasModel = keras.models.Model
+# Assignment rather than import because direct import from within Keras
+# doesn't work in tf 1.8
+Sequential = tf.keras.models.Sequential
+Conv2D = tf.keras.layers.Conv2D
+Dense = tf.keras.layers.Dense
+Activation = tf.keras.layers.Activation
+Flatten = tf.keras.layers.Flatten
+KerasModel = tf.keras.models.Model
+
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
   """
@@ -21,6 +24,8 @@ def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
                   space (i.e. the number output of filters in the
                   convolution)
   :param kernel_shape: (required tuple or list of 2 integers) specifies
+                       the kernel shape of the convolution
+  :param strides: (required tuple or list of 2 integers) specifies
                        the strides of the convolution along the width and
                        height.
   :param padding: (required string) can be either 'valid' (no padding around
@@ -59,10 +64,10 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
   model = Sequential()
 
   # Define the layers successively (convolution layers are version dependent)
-  if keras.backend.image_data_format() == 'channels_first':
+  if tf.keras.backend.image_data_format() == 'channels_first':
     input_shape = (channels, img_rows, img_cols)
   else:
-    assert keras.backend.image_data_format() == 'channels_last'
+    assert tf.keras.backend.image_data_format() == 'channels_last'
     input_shape = (img_rows, img_cols, channels)
 
   layers = [conv_2d(nb_filters, (8, 8), (2, 2), "same",
@@ -120,6 +125,19 @@ class KerasModelWrapper(Model):
         return layer.name
 
     raise Exception("No softmax layers found")
+
+  def _get_abstract_layer_name(self):
+    """
+    Looks for the name of abstracted layer.
+    Usually these layers appears when model is stacked.
+    :return: List of abstracted layers
+    """
+    abstract_layers = []
+    for layer in self.model.layers:
+      if 'layers' in layer.get_config():
+        abstract_layers.append(layer.name)
+
+    return abstract_layers
 
   def _get_logits_name(self):
     """
@@ -189,8 +207,22 @@ class KerasModelWrapper(Model):
       new_input = self.model.get_input_at(0)
 
       # Make a new model that returns each of the layers as output
-      out_layers = [x_layer.output for x_layer in self.model.layers]
-      self.keras_model = KerasModel(new_input, out_layers)
+      abstract_layers = self._get_abstract_layer_name()
+      if abstract_layers:
+        warnings.warn(
+            "Abstract layer detected, picking last ouput node as default."
+            "This could happen due to using of stacked model.")
+
+      layer_outputs = []
+      # For those abstract model layers, return their last output node as
+      # default.
+      for x_layer in self.model.layers:
+        if x_layer.name not in abstract_layers:
+          layer_outputs.append(x_layer.output)
+        else:
+          layer_outputs.append(x_layer.get_output_at(-1))
+
+      self.keras_model = KerasModel(new_input, layer_outputs)
 
     # and get the outputs for that model on the input x
     outputs = self.keras_model(x)

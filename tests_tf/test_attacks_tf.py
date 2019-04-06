@@ -1,6 +1,7 @@
 """Tests of cleverhans.attacks_tf
 
 """
+# pylint: disable=missing-docstring
 from functools import partial
 import unittest
 

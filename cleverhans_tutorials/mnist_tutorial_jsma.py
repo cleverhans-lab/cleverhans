@@ -4,6 +4,7 @@ using JSMA in white-box setting.
 The original paper can be found at:
 https://arxiv.org/abs/1511.07528
 """
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -22,7 +23,7 @@ from cleverhans.utils import other_classes, set_log_level
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils_tf import model_eval, model_argmax
 from cleverhans.train import train
-from cleverhans_tutorials.tutorial_models import ModelBasicCNN
+from cleverhans.model_zoo.basic_cnn import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 

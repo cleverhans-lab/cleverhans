@@ -16,6 +16,50 @@ of the latest attacks and defenses.
 In particular, we always welcome help towards resolving the [issues](https://github.com/tensorflow/cleverhans/issues)
 currently open.
 
+## Major updates coming to CleverHans
+
+CleverHans will soon support 3 frameworks: JAX, PyTorch, and TF2.  The package
+itself will focus on its initial principle: reference implementation of attacks
+against machine learning models to help with benchmarking models against
+adversarial examples. This repository will also contain two folders:
+`tutorials/` for scripts demonstrating the features of CleverHans and
+`defenses/` for scripts that contain authoritative implementations of defenses
+in one of the 3 supported frameworks. The structure of the future repository
+will look like this:
+
+```
+cleverhans/
+  jax/
+    attacks/
+      ...
+  tf2/
+    attacks/
+      ...
+  torch/
+    attacks/
+      ...
+defenses/
+  jax/
+    ...
+  tf2/
+    ...
+  torch/
+    ...
+tutorials/
+  jax/
+    ...
+  tf2/
+    ...
+  torch/
+    ...
+```
+
+In the meanwhile, all of these folders can be found in the correspond `future/`
+subdirectory (e.g., `cleverhans/future/jax/attacks` or `defenses/future/jax/`).
+
+A public milestone has been created to track the changes that are to be
+implemented before the library version is incremented to v4. 
+
 ## Setting up CleverHans
 
 ### Dependencies
@@ -86,11 +130,7 @@ in Python 2.7 and we do not plan to fix bugs affecting only Python 2.7 after
 Support for TensorFlow prior to 1.12 is deprecated.
 Backwards compatibility wrappers for these versions may be removed after 2019-07-07,
 and we will not fix bugs for those versions after that date.
-Support for TensorFlow prior to 1.8 is deprecated with an earlier deprecation
-date:
-backwards compatibility wrappers for these versions may be removed after
-2019-01-26, and we will not fix bugs for those versions after that date.
-Support for TensorFlow 1.3 and earlier is already deprecated: we do not fix
+Support for TensorFlow 1.7 and earlier is already deprecated: we do not fix
 bugs for those versions and any remaining wrapper code for those versions
 may be removed without further notice.
 

@@ -21,6 +21,7 @@ whitelist_pep8 = [
 all_py_files = list_files('.py')
 
 def update_whitelist():
+  """Add files to the whitelist"""
   global whitelist_pep8
   # We don't want to test RL-attack because it has so many dependencies
   # not used elsewhere, and pylint wants to import them all

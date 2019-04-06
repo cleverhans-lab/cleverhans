@@ -4,6 +4,7 @@ using FGSM in black-box setting.
 The original paper can be found at:
 https://arxiv.org/abs/1602.02697
 """
+# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -28,7 +29,7 @@ from cleverhans.utils import TemporaryLogLevel
 from cleverhans.utils import to_categorical
 from cleverhans.utils_tf import model_eval, batch_eval
 
-from cleverhans_tutorials.tutorial_models import ModelBasicCNN
+from cleverhans.model_zoo.basic_cnn import ModelBasicCNN
 
 FLAGS = flags.FLAGS
 

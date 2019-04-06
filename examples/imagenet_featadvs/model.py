@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 import functools
 import tensorflow as tf
 
