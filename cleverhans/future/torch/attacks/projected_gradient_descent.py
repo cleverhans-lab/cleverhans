@@ -8,10 +8,11 @@ import warnings
 import numpy as np
 import torch
 
-from cleverhans.attacks.fast_gradient_method import FastGradientMethod
+from cleverhans.future.torch.attacks.attack import Attack
+from cleverhans.future.torch.attacks.fast_gradient_method import FastGradientMethod
 from cleverhans.utils_pytorch import clip_eta
 
-class ProjectedGradientDescent:
+class ProjectedGradientDescent(Attack):
   """
   This class implements either the Basic Iterative Method
   (Kurakin et al. 2016) when rand_init is set to 0. or the
@@ -34,7 +35,6 @@ class ProjectedGradientDescent:
     """
     Create a ProjectedGradientDescent instance.
     """
-
     super(ProjectedGradientDescent, self).__init__(model,
                                                    dtype=dtype, **kwargs)
     self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
