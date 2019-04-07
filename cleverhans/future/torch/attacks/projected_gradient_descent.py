@@ -9,6 +9,7 @@ import numpy as np
 import torch
 
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod
+from cleverhans.utils_pytorch import clip_eta
 
 class ProjectedGradientDescent:
   """
@@ -127,11 +128,8 @@ class ProjectedGradientDescent:
 
     asserts.append(self.eps_iter <= self.eps)
     if self.ord == np.inf and self.clip_min is not None:
-      # The 1e-6 is needed to compensate for numerical error.
-      # Without the 1e-6 this fails when e.g. eps=.2, clip_min=.5,
-      # clip_max=.7
-      # TODO case to x.dtype?
-      asserts.append(self.eps <= (1e-6 + self.clip_max - self.clip_min))
+      # TODO cast to x.dtype?
+      asserts.append(self.eps + self.clip_min <= self.clip_max)
 
     if self.sanity_checks:
       assert np.all(asserts)
@@ -207,31 +205,3 @@ class ProjectedGradientDescent:
                     "2019-04-26.")
 
     return True
-
-def clip_eta(eta, ord, eps):
-  """
-  PyTorch implementation of the clip_eta in utils_tf.
-  :param eta: Tensor
-  """
-  if ord not in [np.inf, 1, 2]:
-    raise ValueError('ord must be np.inf, 1, or 2.')
-
-  avoid_zero_div = torch.tensor(1e-12)
-  reduc_ind = list(range(1, len(eta.size())))
-  if ord == np.inf:
-    eta = torch.clamp(eta, -eps, eps)
-  else:
-    if ord == 1:
-      # raise NotImplementedError("L1 clip is not implemented.")
-      norm = torch.max(
-          avoid_zero_div,
-          torch.sum(torch.abs(eta), dim=reduc_ind, keepdim=True)
-      )
-    elif ord == 2:
-      norm = torch.sqrt(torch.max(
-          avoid_zero_div,
-          torch.sum(eta ** 2, dim=reduc_ind, keepdim=True)
-      ))
-    factor = torch.min(torch.tensor(1.), eps / norm)
-    eta *= factor
-  return eta

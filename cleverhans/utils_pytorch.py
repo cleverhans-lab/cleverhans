@@ -1,6 +1,9 @@
 """Basic utilities for pytorch code"""
+
+import warnings
 from random import getrandbits
 
+import numpy as np
 import tensorflow as tf
 import torch
 from torch.autograd import Variable
@@ -43,6 +46,9 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
   :return: A model function that maps an input (tf.Tensor) to the
   output of the model (tf.Tensor)
   """
+  warnings.warn("convert_pytorch_model_to_tf will be deprecated in CleverHans"
+                + " v4 as v4 will provide dedicated PyTorch support.")
+
   torch_state = {
       'logits': None,
       'x': None,
@@ -86,3 +92,32 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
     return out
 
   return tf_model_fn
+
+
+def clip_eta(eta, ord, eps):
+  """
+  PyTorch implementation of the clip_eta in utils_tf.
+  :param eta: Tensor
+  """
+  if ord not in [np.inf, 1, 2]:
+    raise ValueError('ord must be np.inf, 1, or 2.')
+
+  avoid_zero_div = torch.tensor(1e-12)
+  reduc_ind = list(range(1, len(eta.size())))
+  if ord == np.inf:
+    eta = torch.clamp(eta, -eps, eps)
+  else:
+    if ord == 1:
+      # raise NotImplementedError("L1 clip is not implemented.")
+      norm = torch.max(
+          avoid_zero_div,
+          torch.sum(torch.abs(eta), dim=reduc_ind, keepdim=True)
+      )
+    elif ord == 2:
+      norm = torch.sqrt(torch.max(
+          avoid_zero_div,
+          torch.sum(eta ** 2, dim=reduc_ind, keepdim=True)
+      ))
+    factor = torch.min(torch.tensor(1.), eps / norm)
+    eta *= factor
+  return eta
