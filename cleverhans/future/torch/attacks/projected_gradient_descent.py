@@ -47,7 +47,6 @@ class ProjectedGradientDescent(Attack):
     :param x: Input data. Should be a PyTorch Tensor.
     :param kwargs: See `parse_params`
     """
-    # TODO support numpy tensors. Wrap x as a pytorch tensor before excuting?
 
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
@@ -106,7 +105,6 @@ class ProjectedGradientDescent(Attack):
                                 " to rigorously test a strong ord=1 PGD "
                                 "before enabling this feature.")
 
-    # TODO pytorch implementation of FGM_CLASS
     FGM = self.FGM_CLASS(
         self.model,
         dtype=self.dtype
@@ -125,6 +123,7 @@ class ProjectedGradientDescent(Attack):
       # small numerical error.
       if self.clip_min is not None or self.clip_max is not None:
         adv_x = torch.clamp(adv_x, self.clip_min, self.clip_max)
+      i+=1
 
     asserts.append(self.eps_iter <= self.eps)
     if self.ord == np.inf and self.clip_min is not None:
