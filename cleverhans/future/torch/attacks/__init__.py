@@ -1,3 +1,3 @@
-from attack import *
-from projected_gradient_descent import *
-from fast_gradient_method import *
+from cleverhans.future.torch.attacks.attack import *
+from cleverhans.future.torch.attacks.projected_gradient_descent import *
+from cleverhans.future.torch.attacks.fast_gradient_method import *
