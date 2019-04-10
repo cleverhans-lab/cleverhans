@@ -113,19 +113,8 @@ test()
 ######
 # generate adversarial examples
 ######
-fgm = attacks.FastGradientMethod(
-    net,
-    eps=.3,
-    ord=np.inf
-    )
-
-pgd = attacks.ProjectedGradientDescent(
-    net,
-    eps=.3,
-    eps_iter=.03,
-    nb_iter=10,
-    ord=np.inf
-    )
+fgm = attacks.FastGradientMethod(net)
+pgd = attacks.ProjectedGradientDescent(net)
 
 total = 0
 total_correct_fgm = 0
@@ -134,12 +123,21 @@ total_correct_pgd = 0
 for __, (x, y) in enumerate(test_loader):
   x, y = x.to(device), y.to(device)
 
-  x_adv_fgm = fgm.generate(x)
+  x_adv_fgm = fgm.generate(
+      x,
+      eps=.3,
+      ord=1
+      )
   _, y_pred_fgm = net(x_adv_fgm).max(1)
-  total += y.size(0)
   total_correct_fgm += y_pred_fgm.eq(y).sum().item()
 
-  x_adv_pgd = pgd.generate(x)
+  x_adv_pgd = pgd.generate(
+      x,
+      eps=.3,
+      eps_iter=.03,
+      nb_iter=10,
+      ord=1
+      )
   _, y_pred_pgd = net(x_adv_pgd).max(1)
   total += y.size(0)
   total_correct_pgd += y_pred_pgd.eq(y).sum().item()

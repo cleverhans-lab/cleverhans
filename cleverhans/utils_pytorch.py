@@ -102,7 +102,7 @@ def clip_eta(eta, ord, eps):
   if ord not in [np.inf, 1, 2]:
     raise ValueError('ord must be np.inf, 1, or 2.')
 
-  avoid_zero_div = torch.tensor(1e-12)
+  avoid_zero_div = torch.tensor(1e-12, dtype=eta.dtype, device=eta.device)
   reduc_ind = list(range(1, len(eta.size())))
   if ord == np.inf:
     eta = torch.clamp(eta, -eps, eps)
@@ -118,6 +118,9 @@ def clip_eta(eta, ord, eps):
           avoid_zero_div,
           torch.sum(eta ** 2, dim=reduc_ind, keepdim=True)
       ))
-    factor = torch.min(torch.tensor(1.), eps / norm)
+    factor = torch.min(
+        torch.tensor(1., dtype=eta.dtype, device=eta.device),
+        eps / norm
+        )
     eta *= factor
   return eta

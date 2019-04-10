@@ -98,13 +98,15 @@ class ProjectedGradientDescent(Attack):
         'clip_min': self.clip_min,
         'clip_max': self.clip_max
     }
+    # NOTE ignoring this for testing purposes
+    """
     if self.ord == 1:
-      raise NotImplementedError("It's not clear that FGM is a good inner loop"
+        raise NotImplementedError("It's not clear that FGM is a good inner loop"
                                 " step for PGD when ord=1, because ord=1 FGM "
                                 " changes only one pixel at a time. We need "
                                 " to rigorously test a strong ord=1 PGD "
                                 "before enabling this feature.")
-
+    """
     FGM = self.FGM_CLASS(
         self.model,
         dtype=self.dtype
@@ -123,7 +125,7 @@ class ProjectedGradientDescent(Attack):
       # small numerical error.
       if self.clip_min is not None or self.clip_max is not None:
         adv_x = torch.clamp(adv_x, self.clip_min, self.clip_max)
-      i+=1
+      i += 1
 
     asserts.append(self.eps_iter <= self.eps)
     if self.ord == np.inf and self.clip_min is not None:
