@@ -2,18 +2,18 @@
 Model construction utilities based on keras
 """
 import warnings
-from tensorflow import keras
+import tensorflow as tf
 
 from .model import Model, NoSuchLayerError
 
 # Assignment rather than import because direct import from within Keras
 # doesn't work in tf 1.8
-Sequential = keras.models.Sequential
-Conv2D = keras.layers.Conv2D
-Dense = keras.layers.Dense
-Activation = keras.layers.Activation
-Flatten = keras.layers.Flatten
-KerasModel = keras.models.Model
+Sequential = tf.keras.models.Sequential
+Conv2D = tf.keras.layers.Conv2D
+Dense = tf.keras.layers.Dense
+Activation = tf.keras.layers.Activation
+Flatten = tf.keras.layers.Flatten
+KerasModel = tf.keras.models.Model
 
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
@@ -64,10 +64,10 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
   model = Sequential()
 
   # Define the layers successively (convolution layers are version dependent)
-  if keras.backend.image_data_format() == 'channels_first':
+  if tf.keras.backend.image_data_format() == 'channels_first':
     input_shape = (channels, img_rows, img_cols)
   else:
-    assert keras.backend.image_data_format() == 'channels_last'
+    assert tf.keras.backend.image_data_format() == 'channels_last'
     input_shape = (img_rows, img_cols, channels)
 
   layers = [conv_2d(nb_filters, (8, 8), (2, 2), "same",

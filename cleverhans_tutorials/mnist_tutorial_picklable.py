@@ -2,7 +2,6 @@
 This tutorial shows how to use cleverhans.picklable_model
 to create models that can be saved for evaluation later.
 """
-# pylint: disable=missing-docstring
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -108,6 +107,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   rng = np.random.RandomState([2017, 8, 30])
 
   def do_eval(preds, x_set, y_set, report_key, is_adv=None):
+    """
+    Run the evaluation and print the results.
+    """
     acc = model_eval(sess, x, y, preds, x_set, y_set, args=eval_params)
     setattr(report, report_key, acc)
     if is_adv is None:
@@ -129,6 +131,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     loss = CrossEntropy(model, smoothing=label_smoothing)
 
     def evaluate():
+      """
+      Run evaluation for the naively trained model on clean examples.
+      """
       do_eval(preds, x_test, y_test, 'clean_train_clean_eval', False)
 
     train(sess, loss, x_train, y_train, evaluate=evaluate,
@@ -169,6 +174,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   fgsm2 = FastGradientMethod(model2, sess=sess)
 
   def attack(x):
+    """Return an adversarial example near clean example `x`"""
     return fgsm2.generate(x, **fgsm_params)
 
   loss2 = CrossEntropy(model2, smoothing=label_smoothing, attack=attack)
@@ -185,14 +191,17 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     adv_x2 = tf.stop_gradient(adv_x2)
   preds2_adv = model2.get_logits(adv_x2)
 
-  def evaluate2():
+  def evaluate_adv():
+    """
+    Evaluate the adversarially trained model.
+    """
     # Accuracy of adversarially trained model on legitimate test inputs
     do_eval(preds2, x_test, y_test, 'adv_train_clean_eval', False)
     # Accuracy of the adversarially trained model on adversarial examples
     do_eval(preds2_adv, x_test, y_test, 'adv_train_adv_eval', True)
 
   # Perform and evaluate adversarial training
-  train(sess, loss2, x_train, y_train, evaluate=evaluate2,
+  train(sess, loss2, x_train, y_train, evaluate=evaluate_adv,
         args=train_params, rng=rng, var_list=model2.get_params())
 
 

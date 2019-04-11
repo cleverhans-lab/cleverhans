@@ -16,6 +16,50 @@ of the latest attacks and defenses.
 In particular, we always welcome help towards resolving the [issues](https://github.com/tensorflow/cleverhans/issues)
 currently open.
 
+## Major updates coming to CleverHans
+
+CleverHans will soon support 3 frameworks: JAX, PyTorch, and TF2.  The package
+itself will focus on its initial principle: reference implementation of attacks
+against machine learning models to help with benchmarking models against
+adversarial examples. This repository will also contain two folders:
+`tutorials/` for scripts demonstrating the features of CleverHans and
+`defenses/` for scripts that contain authoritative implementations of defenses
+in one of the 3 supported frameworks. The structure of the future repository
+will look like this:
+
+```
+cleverhans/
+  jax/
+    attacks/
+      ...
+  tf2/
+    attacks/
+      ...
+  torch/
+    attacks/
+      ...
+defenses/
+  jax/
+    ...
+  tf2/
+    ...
+  torch/
+    ...
+tutorials/
+  jax/
+    ...
+  tf2/
+    ...
+  torch/
+    ...
+```
+
+In the meanwhile, all of these folders can be found in the correspond `future/`
+subdirectory (e.g., `cleverhans/future/jax/attacks` or `defenses/future/jax/`).
+
+A public milestone has been created to track the changes that are to be
+implemented before the library version is incremented to v4. 
+
 ## Setting up CleverHans
 
 ### Dependencies

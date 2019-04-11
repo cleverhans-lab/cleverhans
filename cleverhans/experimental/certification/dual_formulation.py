@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from scipy.sparse.linalg import eigs, LinearOperator
 import tensorflow as tf
 from tensorflow.contrib import autograph
 import numpy as np
@@ -14,7 +15,11 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Tolerance value for eigenvalue computation
-TOL = 1E-3
+TOL = 1E-5
+
+# Binary search constants
+MAX_BINARY_SEARCH_ITER = 10
+NU_UPDATE_CONSTANT = 1.3
 
 # Bound on lowest value of certificate to check for numerical errors
 LOWER_CERT_BOUND = -5.0
@@ -29,7 +34,7 @@ class DualFormulation(object):
 
   def __init__(self, sess, dual_var, neural_net_param_object, test_input, true_class,
                adv_class, input_minval, input_maxval, epsilon,
-               lzs_params=None):
+               lzs_params=None, project_dual=True):
     """Initializes dual formulation class.
 
     Args:
@@ -49,6 +54,7 @@ class DualFormulation(object):
           'min_iter': 5
           'max_iter': 50
         }
+      project_dual: Whether we should create a projected dual object
     """
     self.sess = sess
     self.nn_params = neural_net_param_object
@@ -65,6 +71,8 @@ class DualFormulation(object):
         self.final_linear, shape=[tf.size(self.final_linear), 1])
     self.final_constant = (self.nn_params.final_bias[adv_class]
                            - self.nn_params.final_bias[true_class])
+    self.lanczos_dtype = tf.float64
+    self.nn_dtype = tf.float32
 
     # Computing lower and upper bounds
     # Note that lower and upper are of size nn_params.num_hidden_layers + 1
@@ -88,8 +96,8 @@ class DualFormulation(object):
       lo_plus_up = self.nn_params.forward_pass(self.lower[i] + self.upper[i], i)
       lo_minus_up = self.nn_params.forward_pass(self.lower[i] - self.upper[i], i, is_abs=True)
       up_minus_lo = self.nn_params.forward_pass(self.upper[i] - self.lower[i], i, is_abs=True)
-      current_lower = 0.5 * (lo_plus_up + lo_minus_up + self.nn_params.biases[i])
-      current_upper = 0.5 * (lo_plus_up + up_minus_lo + self.nn_params.biases[i])
+      current_lower = 0.5 * (lo_plus_up + lo_minus_up) + self.nn_params.biases[i]
+      current_upper = 0.5 * (lo_plus_up + up_minus_lo) + self.nn_params.biases[i]
       self.pre_lower.append(current_lower)
       self.pre_upper.append(current_upper)
       self.lower.append(tf.nn.relu(current_lower))
@@ -144,6 +152,56 @@ class DualFormulation(object):
     # Setup Lanczos functionality for compute certificate
     self.construct_lanczos_params()
 
+    # Create projected dual object
+    if project_dual:
+      self.projected_dual = self.create_projected_dual()
+
+  def create_projected_dual(self):
+    """Function to create variables for the projected dual object.
+    Function that projects the input dual variables onto the feasible set.
+    Returns:
+      projected_dual: Feasible dual solution corresponding to current dual
+    """
+    # TODO: consider whether we can use shallow copy of the lists without
+    # using tf.identity
+    projected_nu = tf.placeholder(tf.float32, shape=[])
+    min_eig_h = tf.placeholder(tf.float32, shape=[])
+    projected_lambda_pos = [tf.identity(x) for x in self.lambda_pos]
+    projected_lambda_neg = [tf.identity(x) for x in self.lambda_neg]
+    projected_lambda_quad = [
+        tf.identity(x) for x in self.lambda_quad
+    ]
+    projected_lambda_lu = [tf.identity(x) for x in self.lambda_lu]
+
+    for i in range(self.nn_params.num_hidden_layers + 1):
+      # Making H PSD
+      projected_lambda_lu[i] = self.lambda_lu[i] + 0.5*tf.maximum(-min_eig_h, 0) + TOL
+      # Adjusting the value of \lambda_neg to make change in g small
+      projected_lambda_neg[i] = self.lambda_neg[i] + tf.multiply(
+          (self.lower[i] + self.upper[i]),
+          (self.lambda_lu[i] - projected_lambda_lu[i]))
+      projected_lambda_neg[i] = (tf.multiply(self.negative_indices[i],
+                                             projected_lambda_neg[i]) +
+                                 tf.multiply(self.switch_indices[i],
+                                             tf.maximum(projected_lambda_neg[i], 0)))
+
+    projected_dual_var = {
+        'lambda_pos': projected_lambda_pos,
+        'lambda_neg': projected_lambda_neg,
+        'lambda_lu': projected_lambda_lu,
+        'lambda_quad': projected_lambda_quad,
+        'nu': projected_nu,
+    }
+    projected_dual_object = DualFormulation(
+        self.sess, projected_dual_var, self.nn_params,
+        self.test_input, self.true_class,
+        self.adv_class, self.input_minval,
+        self.input_maxval, self.epsilon,
+        self.lzs_params,
+        project_dual=False)
+    projected_dual_object.min_eig_val_h = min_eig_h
+    return projected_dual_object
+
   def construct_lanczos_params(self):
     """Computes matrices T and V using the Lanczos algorithm.
 
@@ -154,35 +212,39 @@ class DualFormulation(object):
     """
     # Using autograph to automatically handle
     # the control flow of minimum_eigen_vector
-    self.min_eigen_vec = autograph.to_graph(utils.lanczos_decomp)
+    self.min_eigen_vec = autograph.to_graph(utils.tf_lanczos_smallest_eigval)
 
     def _m_vector_prod_fn(x):
-      return self.get_psd_product(x)
+      return self.get_psd_product(x, dtype=self.lanczos_dtype)
     def _h_vector_prod_fn(x):
-      return self.get_h_product(x)
+      return self.get_h_product(x, dtype=self.lanczos_dtype)
 
     # Construct nodes for computing eigenvalue of M
-    self.alpha_m, self.beta_m, self.Q_m = self.min_eigen_vec(_m_vector_prod_fn,
-                                                             0,
-                                                             self.matrix_m_dimension,
-                                                             self.lzs_params['min_iter'])
+    self.m_min_vec_estimate = np.zeros(shape=(self.matrix_m_dimension, 1), dtype=np.float64)
+    zeros_m = tf.zeros(shape=(self.matrix_m_dimension, 1), dtype=tf.float64)
+    self.m_min_vec_ph = tf.placeholder_with_default(input=zeros_m,
+                                                    shape=(self.matrix_m_dimension, 1),
+                                                    name='m_min_vec_ph')
+    self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
+                                                        self.matrix_m_dimension,
+                                                        self.m_min_vec_ph,
+                                                        self.lzs_params['max_iter'],
+                                                        dtype=self.lanczos_dtype)
+    self.m_min_eig = tf.cast(self.m_min_eig, self.nn_dtype)
+    self.m_min_vec = tf.cast(self.m_min_vec, self.nn_dtype)
 
-    self.eig_max_placeholder = tf.placeholder(tf.float32, shape=[])
-    self.alpha_m_hat, self.beta_m_hat, self.Q_m_hat = self.min_eigen_vec(_m_vector_prod_fn,
-                                                                         self.eig_max_placeholder,
-                                                                         self.matrix_m_dimension,
-                                                                         self.lzs_params['max_iter'])
-
-    # Construct nodes for computing eigenvalue of H
-    self.alpha_h, self.beta_h, self.Q_h = self.min_eigen_vec(_h_vector_prod_fn,
-                                                             0,
-                                                             self.matrix_m_dimension-1,
-                                                             self.lzs_params['max_iter'])
-
-    self.alpha_h_hat, self.beta_h_hat, self.Q_h_hat = self.min_eigen_vec(_h_vector_prod_fn,
-                                                                         self.eig_max_placeholder,
-                                                                         self.matrix_m_dimension-1,
-                                                                         self.lzs_params['max_iter'])
+    self.h_min_vec_estimate = np.zeros(shape=(self.matrix_m_dimension - 1, 1), dtype=np.float64)
+    zeros_h = tf.zeros(shape=(self.matrix_m_dimension - 1, 1), dtype=tf.float64)
+    self.h_min_vec_ph = tf.placeholder_with_default(input=zeros_h,
+                                                    shape=(self.matrix_m_dimension - 1, 1),
+                                                    name='h_min_vec_ph')
+    self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
+                                                        self.matrix_m_dimension-1,
+                                                        self.h_min_vec_ph,
+                                                        self.lzs_params['max_iter'],
+                                                        dtype=self.lanczos_dtype)
+    self.h_min_eig = tf.cast(self.h_min_eig, self.nn_dtype)
+    self.h_min_vec = tf.cast(self.h_min_vec, self.nn_dtype)
 
   def set_differentiable_objective(self):
     """Function that constructs minimization objective from dual variables."""
@@ -235,7 +297,7 @@ class DualFormulation(object):
     self.vector_g = tf.concat(g_rows, axis=0)
     self.unconstrained_objective = self.scalar_f + 0.5 * self.nu
 
-  def get_h_product(self, vector):
+  def get_h_product(self, vector, dtype=None):
     """Function that provides matrix product interface with PSD matrix.
 
     Args:
@@ -246,7 +308,9 @@ class DualFormulation(object):
     """
     # Computing the product of matrix_h with beta (input vector)
     # At first layer, h is simply diagonal
-    beta = vector
+    if dtype is None:
+      dtype = self.nn_dtype
+    beta = tf.cast(vector, self.nn_dtype)
     h_beta_rows = []
     for i in range(self.nn_params.num_hidden_layers):
       # Split beta of this block into [gamma, delta]
@@ -283,9 +347,9 @@ class DualFormulation(object):
                     delta))
 
     h_beta = tf.concat(h_beta_rows, axis=0)
-    return h_beta
+    return tf.cast(h_beta, dtype)
 
-  def get_psd_product(self, vector):
+  def get_psd_product(self, vector, dtype=None):
     """Function that provides matrix product interface with PSD matrix.
 
     Args:
@@ -295,6 +359,9 @@ class DualFormulation(object):
       result_product: Matrix product of M and vector
     """
     # For convenience, think of x as [\alpha, \beta]
+    if dtype is None:
+      dtype = self.nn_dtype
+    vector = tf.cast(vector, self.nn_dtype)
     alpha = tf.reshape(vector[0], shape=[1, 1])
     beta = vector[1:]
     # Computing the product of matrix_h with beta part of vector
@@ -308,7 +375,7 @@ class DualFormulation(object):
             tf.multiply(alpha, self.vector_g) + h_beta
         ],
         axis=0)
-    return result
+    return tf.cast(result, dtype)
 
   def get_full_psd_matrix(self):
     """Function that returns the tf graph corresponding to the entire matrix M.
@@ -349,143 +416,106 @@ class DualFormulation(object):
 
     self.matrix_m = tf.concat(
         [
-            tf.concat([self.nu, tf.transpose(self.vector_g)], axis=1),
+            tf.concat([tf.reshape(self.nu, (1, 1)), tf.transpose(self.vector_g)], axis=1),
             tf.concat([self.vector_g, self.matrix_h], axis=1)
         ],
         axis=0)
     return self.matrix_h, self.matrix_m
 
-  def make_m_psd(self):
+  def make_m_psd(self, original_nu, feed_dictionary):
     """Run binary search to find a value for nu that makes M PSD
-
     Args:
-      feed_dict: dictionary of updated lambda variables to feed into M
+      original_nu: starting value of nu to do binary search on
+      feed_dictionary: dictionary of updated lambda variables to feed into M
     Returns:
       new_nu: new value of nu
     """
-    original_nu = self.sess.run(self.nu)
-    _, min_eig_val_m = self.get_lanczos_eig()
+    feed_dict = feed_dictionary.copy()
+    _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
 
     lower_nu = original_nu
     upper_nu = original_nu
     num_iter = 0
 
     # Find an upper bound on nu
-    while min_eig_val_m - TOL < 0:
-      if num_iter >= 15:
-        break
+    while min_eig_val_m - TOL < 0 and num_iter < (MAX_BINARY_SEARCH_ITER / 2):
       num_iter += 1
-      upper_nu *= 1.1
-      self.sess.run(tf.assign(self.nu, upper_nu))
-      _, min_eig_val_m = self.get_lanczos_eig()
+      upper_nu *= NU_UPDATE_CONSTANT
+      feed_dict.update({self.nu: upper_nu})
+      _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
 
     final_nu = upper_nu
 
     # Perform binary search to find best value of nu
-    while lower_nu <= upper_nu:
-      if num_iter >= 25:
-        final_nu = upper_nu
-        self.sess.run(tf.assign(self.nu, final_nu))
-        break
+    while lower_nu <= upper_nu and num_iter < MAX_BINARY_SEARCH_ITER:
       num_iter += 1
       mid_nu = (lower_nu + upper_nu) / 2
-      self.sess.run(tf.assign(self.nu, mid_nu))
-      _, min_eig_val_m = self.get_lanczos_eig()
+      feed_dict.update({self.nu: mid_nu})
+      _, min_eig_val_m = self.get_lanczos_eig(compute_m=True, feed_dict=feed_dict)
       if min_eig_val_m - TOL < 0:
         lower_nu = mid_nu
       else:
         upper_nu = mid_nu
 
-    # Reset to original value of nu
-    self.sess.run(tf.assign(self.nu, original_nu))
+    final_nu = upper_nu
 
-    # Add 0.05 to final nu to account for numerical instability
-    return original_nu, final_nu + 0.05
+    return final_nu
 
-  def get_lanczos_eig(self, compute_m=True):
+  def get_lanczos_eig(self, compute_m=True, feed_dict=None):
     """Computes the min eigen value and corresponding vector of matrix M or H
     using the Lanczos algorithm.
-
     Args:
       compute_m: boolean to determine whether we should compute eig val/vec
         for M or for H. True for M; False for H.
-
+      feed_dict: dictionary mapping from TF placeholders to values (optional)
     Returns:
       min_eig_vec: Corresponding eigen vector to min eig val
       eig_val: Minimum eigen value
     """
-    alpha, beta = self.alpha_m, self.beta_m
-    alpha_hat, beta_hat, Q_hat = self.alpha_m_hat, self.beta_m_hat, self.Q_m_hat
-
-    if not compute_m:
-      alpha, beta = self.alpha_h, self.beta_h
-      alpha_hat, beta_hat, Q_hat = self.alpha_h_hat, self.beta_h_hat, self.Q_h_hat
-
-    alpha, beta = self.sess.run([alpha, beta])
-    # Compute max eig of tridiagonal matrix
-    max_eig_1, _, _, _ = utils.eigen_tridiagonal(alpha, beta)
-    feed_dict = {self.eig_max_placeholder: max_eig_1}
-
-    # M_hat = M - max_eig * M. Compute max eig of resulting tridiagonal matrix
-    alpha_hat, beta_hat, Q_hat = self.sess.run([alpha_hat, beta_hat, Q_hat], feed_dict=feed_dict)
-    max_eig, max_vec, _, _ = utils.eigen_tridiagonal(alpha_hat, beta_hat)
-    eig_val = max_eig + max_eig_1
-
-    # Multiply by V_hat to get the eigenvector for M
     if compute_m:
-      return np.matmul(Q_hat, max_vec).reshape((self.matrix_m_dimension, 1)), eig_val
+      min_eig, min_vec = self.sess.run([self.m_min_eig, self.m_min_vec], feed_dict=feed_dict)
 
-    return np.matmul(Q_hat, max_vec).reshape((self.matrix_m_dimension - 1, 1)), eig_val
+    else:
+      min_eig, min_vec = self.sess.run([self.h_min_eig, self.h_min_vec], feed_dict=feed_dict)
 
-  def compute_certificate(self, current_step):
+    return min_vec, min_eig
+
+  def compute_certificate(self, current_step, feed_dictionary):
     """ Function to compute the certificate based either current value
     or dual variables loaded from dual folder """
-    lambda_neg_val = self.sess.run(self.lambda_neg)
-    lambda_lu_val = self.sess.run(self.lambda_lu)
-
-    _, min_eig_val_h = self.get_lanczos_eig(compute_m=False)
-
-    new_lambda_lu_val = [np.copy(x) for x in lambda_lu_val]
-    new_lambda_neg_val = [np.copy(x) for x in lambda_neg_val]
-
-    for i in range(self.nn_params.num_hidden_layers + 1):
-      # Making H PSD
-      new_lambda_lu_val[i] = lambda_lu_val[i] + 0.5*np.maximum(-min_eig_val_h, 0) + TOL
-      # Adjusting the value of \lambda_neg to make change in g small
-      new_lambda_neg_val[i] = lambda_neg_val[i] + np.multiply((self.lower[i] + self.upper[i]),
-                                                              (lambda_lu_val[i] -
-                                                               new_lambda_lu_val[i]))
-      new_lambda_neg_val[i] = (np.multiply(self.negative_indices[i],
-                                           new_lambda_neg_val[i]) +
-                               np.multiply(self.switch_indices[i],
-                                           np.maximum(new_lambda_neg_val[i], 0)))
-
-    # Assign new lambda
-    # TODO(shankarshreya): remove the assign ops and do this with new variables
-    self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_lu, new_lambda_lu_val)])
-    self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_neg, new_lambda_neg_val)])
-
-    # Make matrix M PSD
-    scalar_f = self.sess.run(self.scalar_f)
-    _, second_term = self.make_m_psd()
-
-    computed_certificate = scalar_f + 0.5*second_term
+    feed_dict = feed_dictionary.copy()
+    nu = feed_dict[self.nu]
+    second_term = self.make_m_psd(nu, feed_dict)
+    tf.logging.info('Nu after modifying: ' + str(second_term))
+    feed_dict.update({self.nu: second_term})
+    computed_certificate = self.sess.run(self.unconstrained_objective, feed_dict=feed_dict)
 
     tf.logging.info('Inner step: %d, current value of certificate: %f',
                     current_step, computed_certificate)
 
     # Sometimes due to either overflow or instability in inverses,
     # the returned certificate is large and negative -- keeping a check
-    if LOWER_CERT_BOUND < computed_certificate < -1:
-      _, min_eig_val_m = self.get_lanczos_eig()
+    if LOWER_CERT_BOUND < computed_certificate < 0:
+      _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
+      tf.logging.info('min eig val from lanczos: ' + str(min_eig_val_m))
+      input_vector_m = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension, 1))
+      output_vector_m = self.get_psd_product(input_vector_m)
+
+      def np_vector_prod_fn_m(np_vector):
+        np_vector = np.reshape(np_vector, [-1, 1])
+        feed_dict.update({input_vector_m:np_vector})
+        output_np_vector = self.sess.run(output_vector_m, feed_dict=feed_dict)
+        return output_np_vector
+      linear_operator_m = LinearOperator((self.matrix_m_dimension,
+                                          self.matrix_m_dimension),
+                                         matvec=np_vector_prod_fn_m)
+      # Performing shift invert scipy operation when eig val estimate is available
+      min_eig_val_m_scipy, _ = eigs(linear_operator_m, k=1, which='SR', tol=TOL)
+
+      tf.logging.info('min eig val m from scipy: ' + str(min_eig_val_m_scipy))
+
       if min_eig_val_m - TOL > 0:
         tf.logging.info('Found certificate of robustness!')
         return True
-
-    # Reset values of the variables to their original values before projection
-    # If we don't do this, the optimizer will use the projected values for variables
-    # instead of the true values
-    self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_lu, lambda_lu_val)])
-    self.sess.run([tf.assign(var, val) for var, val in zip(self.lambda_neg, lambda_neg_val)])
 
     return False
