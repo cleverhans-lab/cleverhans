@@ -4,7 +4,8 @@ The Noise Attack
 
 import numpy as np
 import torch
-from cleverhans.future.torch.attack.Attack import Attack
+import torch.nn as nn
+from cleverhans.future.torch.attacks.Attack import Attack
 
 
 class Noise(Attack):
@@ -30,8 +31,8 @@ class Noise(Attack):
     def __init__(self, model, dtype='float32', **kwargs):
 
         super(Noise, self).__init__(model, dtype=dtype, **kwargs)
-        self.feedable_kwargs = ('eps', 'clip_min', 'clip_max')
-        self.structural_kwargs = ['ord']
+        #self.feedable_kwargs = ('eps', 'clip_min', 'clip_max')
+        #self.structural_kwargs = ['ord'] 
 
     def generate(self, x, **kwargs):
         """
@@ -47,8 +48,7 @@ class Noise(Attack):
         if self.ord != np.inf: raise NotImplementedError(self.ord)
         
         # TODO Check the dtype
-        eta = torch.FloatTensor(*x.shape).uniform_(-self.eps, self.eps, \
-                                dtype=self.dtype)
+        eta = torch.FloatTensor(*x.shape).uniform_(-self.eps, self.eps)
 
         adv_x = x + eta
 
@@ -81,3 +81,5 @@ class Noise(Attack):
         # Check if order of the norm is acceptable given current implementation
         if self.ord not in [np.inf]: raise ValueError("Norm order must be in "
                                                       "np.inf")
+        
+        return True

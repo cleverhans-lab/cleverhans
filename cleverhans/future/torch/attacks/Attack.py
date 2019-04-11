@@ -2,6 +2,8 @@
 Base Class for PyTorch Attacks
 """
 
+import torch.nn as nn
+
 class Attack():
     """
     This class is the base class for all the PyTorch Attacks
