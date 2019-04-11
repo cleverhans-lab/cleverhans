@@ -1,5 +1,5 @@
 """
-The ProjectedGradientDescent attack (PyTorch implementation).
+The Projected Gradient Descent attack (PyTorch implementation).
 """
 # currently tested on pytorch v1.0, numpy v1.16, python 3.6
 
@@ -8,11 +8,10 @@ import warnings
 import numpy as np
 import torch
 
-from cleverhans.future.torch.attacks.attack import Attack
 from cleverhans.future.torch.attacks.fast_gradient_method import FastGradientMethod
 from cleverhans.utils_pytorch import clip_eta
 
-class ProjectedGradientDescent(Attack):
+class ProjectedGradientDescent:
   """
   This class implements either the Basic Iterative Method
   (Kurakin et al. 2016) when rand_init is set to 0. or the
@@ -20,31 +19,26 @@ class ProjectedGradientDescent(Attack):
   Paper link (Kurakin et al. 2016): https://arxiv.org/pdf/1607.02533.pdf
   Paper link (Madry et al. 2017): https://arxiv.org/pdf/1706.06083.pdf
 
-  :param model: PyTorch model. Needs to have model.forward implemented with
-  output being raw probability (logits)
-  :param sess: optional tf.Session
-  :param dtypestr: dtype of the data
-  :param default_rand_init: whether to use random initialization by default
-  :param kwargs: passed through to super constructor
+  :param model: PyTorch model. Do not add a softmax gate to the output
+  :param dtype: (optional) dtype of the data
+  :param default_rand_init: (optional) bool. whether to use random initialization
+        by default
   """
 
   FGM_CLASS = FastGradientMethod
 
   def __init__(self, model, dtype=torch.float32,
-               default_rand_init=True, **kwargs):
+               default_rand_init=True):
     """
     Create a ProjectedGradientDescent instance.
     """
-    super(ProjectedGradientDescent, self).__init__(model,
-                                                   dtype=dtype, **kwargs)
-    self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
-                            'clip_max')
-    self.structural_kwargs = ['ord', 'nb_iter', 'rand_init', 'sanity_checks']
+    self.model = model
+    self.dtype = dtype
     self.default_rand_init = default_rand_init
 
   def generate(self, x, **kwargs):
     """
-    :param x: Input data. Should be a PyTorch Tensor.
+    :param x: Tensor, shape (N, d_1, ...).
     :param kwargs: See `parse_params`
     """
 
@@ -75,6 +69,7 @@ class ProjectedGradientDescent(Attack):
       eta = torch.zeros_like(x)
 
     # Clip eta
+    # TODO clip_eta or optimize_linear?
     eta = clip_eta(eta, self.ord, self.eps)
     adv_x = x + eta
     if self.clip_min is not None or self.clip_max is not None:
@@ -98,7 +93,7 @@ class ProjectedGradientDescent(Attack):
         'clip_min': self.clip_min,
         'clip_max': self.clip_max
     }
-    # NOTE ignoring this for testing purposes
+    # TODO ignoring this for testing purposes
     """
     if self.ord == 1:
         raise NotImplementedError("It's not clear that FGM is a good inner loop"
@@ -129,7 +124,7 @@ class ProjectedGradientDescent(Attack):
 
     asserts.append(self.eps_iter <= self.eps)
     if self.ord == np.inf and self.clip_min is not None:
-      # TODO cast to x.dtype?
+      # TODO necessary to cast to x.dtype?
       asserts.append(self.eps + self.clip_min <= self.clip_max)
 
     if self.sanity_checks:
@@ -155,19 +150,18 @@ class ProjectedGradientDescent(Attack):
 
     Attack-specific parameters:
 
-    :param eps: (optional float) maximum distortion of adversarial example
+    :param eps: (optional) float. Maximum distortion of adversarial example
                 compared to original input
-    :param eps_iter: (optional float) step size for each attack iteration
-    :param nb_iter: (optional int) Number of attack iterations.
-    :param y: (optional) A tensor with the true labels.
-    :param y_target: (optional) A tensor with the labels to target. Leave
-                     y_target=None if y is also set. Labels should be
-                     one-hot-encoded.
+    :param eps_iter: (optional) float. Step size for each attack iteration
+    :param nb_iter: (optional) int. Number of attack iterations.
+    :param y: (optional) Tensor, shape (N). A tensor with the true labels.
+    :param y_target: (optional) Tensor, shape (N). A tensor with the labels
+                to target. Leave y_target=None if y is also set.
     :param ord: (optional) Order of the norm (mimics Numpy).
                 Possible values: np.inf, 1 or 2.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
-    :param sanity_checks: bool Insert tf asserts checking values
+    :param clip_min: (optional) float. Minimum input component value
+    :param clip_max: (optional) float. Maximum input component value
+    :param sanity_checks: bool. Insert tf asserts checking values
         (Some tests need to run with no sanity checks because the
          tests intentionally configure the attack strangely)
     """
@@ -178,9 +172,7 @@ class ProjectedGradientDescent(Attack):
       rand_init = self.default_rand_init
     self.rand_init = rand_init
     if self.rand_init:
-      self.rand_minmax = eps
-    else:
-      self.rand_minmax = 0.
+      self.rand_minmax = rand_minmax
     self.eps_iter = eps_iter
     self.nb_iter = nb_iter
     self.y = y
@@ -189,10 +181,7 @@ class ProjectedGradientDescent(Attack):
     self.clip_min = clip_min
     self.clip_max = clip_max
 
-    if isinstance(eps, float) and isinstance(eps_iter, float):
-      # If these are both known at compile time, we can check before anything
-      # is run. If they are tf, we can't check them yet.
-      assert eps_iter <= eps, (eps_iter, eps)
+    assert eps_iter <= eps, (eps_iter, eps)
 
     if self.y is not None and self.y_target is not None:
       raise ValueError("Must not set both y and y_target")

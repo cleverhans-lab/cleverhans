@@ -122,21 +122,22 @@ total_correct_pgd = 0
 
 for __, (x, y) in enumerate(test_loader):
   x, y = x.to(device), y.to(device)
-
   x_adv_fgm = fgm.generate(
       x,
+      y=y,
       eps=.3,
-      ord=1
+      ord=np.inf
       )
   _, y_pred_fgm = net(x_adv_fgm).max(1)
   total_correct_fgm += y_pred_fgm.eq(y).sum().item()
 
   x_adv_pgd = pgd.generate(
       x,
-      eps=.3,
-      eps_iter=.03,
+      y=y,
+      eps=300,
+      eps_iter=3,
       nb_iter=10,
-      ord=1
+      ord=2
       )
   _, y_pred_pgd = net(x_adv_pgd).max(1)
   total += y.size(0)

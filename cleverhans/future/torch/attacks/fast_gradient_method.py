@@ -1,5 +1,5 @@
 """
-The FastGradientMethod attack. (PyTorch implementation)
+The Fast Gradient Method attack. (PyTorch implementation)
 """
 # currently tested on pytorch v1.0, numpy v1.16, python 3.6
 
@@ -8,9 +8,9 @@ import warnings
 import numpy as np
 import torch
 
-from cleverhans.future.torch.attacks.attack import Attack
+from cleverhans.utils_pytorch import get_or_guess_labels
 
-class FastGradientMethod(Attack):
+class FastGradientMethod:
   """
   This attack was originally implemented by Goodfellow et al. (2014) with the
   infinity norm (and is known as the "Fast Gradient Sign Method"). This
@@ -18,33 +18,27 @@ class FastGradientMethod(Attack):
   the Fast Gradient Method.
   Paper link: https://arxiv.org/abs/1412.6572
 
-  :param model: PyTorch model. Needs to have model.forward implemented with
-  output being raw probability (logits)
-  :param dtypestr: dtype of the data
-  :param kwargs: passed through to super constructor
+  :param model: PyTorch model. Do not add a softmax gate to the output
+  :param dtype: (optional) dtype of the data
   """
 
-  def __init__(self, model, dtype=torch.float32, **kwargs):
+  def __init__(self, model, dtype=torch.float32):
     """
     Create a FastGradientMethod instance.
-    Note: the model parameter should be an instance of the
-    cleverhans.model.Model abstraction provided by CleverHans.
     """
-
-    super(FastGradientMethod, self).__init__(model, dtype, **kwargs)
-    self.feedable_kwargs = ('eps', 'y', 'y_target', 'clip_min', 'clip_max')
-    self.structural_kwargs = ['ord', 'sanity_checks']
+    self.model = model
+    self.dtype = dtype
 
   def generate(self, x, **kwargs):
     """
-    Returns the graph for Fast Gradient Method adversarial examples.
+    Generate adversarial examples for x using FGM.
 
-    :param x: The model's symbolic inputs.
+    :param x: Tensor
     :param kwargs: See `parse_params`
     """
     # Parse and save attack-specific parameters
     assert self.parse_params(**kwargs)
-    labels = self.get_or_guess_labels(x, kwargs)
+    labels = get_or_guess_labels(model=self.model, x=x, **kwargs)
 
     # set the model to evaluation mode to have DropOut and BatchNorm layers
     # behave properly
@@ -59,7 +53,8 @@ class FastGradientMethod(Attack):
         clip_min=self.clip_min,
         clip_max=self.clip_max,
         targeted=(self.y_target is not None),
-        sanity_checks=self.sanity_checks)
+        sanity_checks=self.sanity_checks
+        )
 
   def parse_params(self,
                    eps=0.3,
@@ -76,21 +71,21 @@ class FastGradientMethod(Attack):
 
     Attack-specific parameters:
 
-    :param eps: (optional float) attack step size (input variation)
+    :param eps: (optional) float. Attack step size (input variation)
     :param ord: (optional) Order of the norm (mimics NumPy).
                 Possible values: np.inf, 1 or 2.
-    :param y: (optional) A tensor with the true labels. Only provide
+    :param y: (optional) Tensor, shape (N), where N is the batch size.
+              A tensor with true labels. Only provide
               this parameter if you'd like to use true labels when crafting
               adversarial samples. Otherwise, model predictions are used as
               labels to avoid the "label leaking" effect (explained in this
               paper: https://arxiv.org/abs/1611.01236). Default is None.
-              Labels should be one-hot-encoded.
-    :param y_target: (optional) A tensor with the labels to target. Leave
-                     y_target=None if y is also set. Labels should be
-                     one-hot-encoded.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
-    :param sanity_checks: bool, if True, include asserts
+    :param y_target: (optional) Tensor, shape (N).
+                    A tensor with the labels to target. Leave
+                     y_target=None if y is also set.
+    :param clip_min: (optional) float. Minimum input component value
+    :param clip_max: (optional) float. Maximum input component value
+    :param sanity_checks: bool. If True, include asserts
       (Turn them off to use less runtime / memory or for unit tests that
       intentionally pass strange input)
     """
@@ -127,24 +122,26 @@ def fgm(x,
         targeted=False,
         sanity_checks=True):
   """
-  TensorFlow implementation of the Fast Gradient Method.
-  :param x: the input placeholder
-  :param logits: output of model.get_logits
-  :param y: (optional) A placeholder for the true labels. If targeted
+  PyTorch implementation of the Fast Gradient Method.
+  :param x: Tensor, shape (N, d_1, ...).
+  :param logits: Tensor, shape (N, C). Raw output of model(x), not softmax
+            probability.
+  :param y: (optional) Tensor, shape (N). True labels. If targeted
             is true, then provide the target label. Otherwise, only provide
             this parameter if you'd like to use true labels when crafting
             adversarial samples. Otherwise, model predictions are used as
             labels to avoid the "label leaking" effect (explained in this
             paper: https://arxiv.org/abs/1611.01236). Default is None.
-            Labels should be one-hot-encoded.
-  :param eps: the epsilon (input variation parameter)
+  :param eps: (optional) float. The epsilon (input variation parameter)
   :param ord: (optional) Order of the norm (mimics NumPy).
               Possible values: np.inf, 1 or 2.
-  :param clip_min: Minimum float value for adversarial example components
-  :param clip_max: Maximum float value for adversarial example components
-  :param targeted: Is the attack targeted or untargeted? Untargeted, the
-                   default, will try to make the label incorrect. Targeted
-                   will instead try to move in the direction of being more
+  :param clip_min: (optional) float. Minimum float value for adversarial
+            example components
+  :param clip_max: (optional) float. Maximum float value for adversarial
+            example components
+  :param targeted: (optional) bool. Is the attack targeted or untargeted?
+            Untargeted, the default, will try to make the label incorrect.
+            Targeted will instead try to move in the direction of being more
                    like y.
   :return: a tensor for the adversarial example
   """
@@ -162,8 +159,6 @@ def fgm(x,
         x,
         torch.tensor(clip_max, device=x.device, dtype=x.dtype)
     )))
-
-  # TODO doc: make sure the caller has not passed probs by accident
 
   # x needs to be a leaf variable, of floating point type and have requires_grad being True for
   # its grad to be computed and stored properly in a backward call
@@ -202,15 +197,12 @@ def optimize_linear(grad, eps, ord=np.inf):
 
   Optimal_perturbation = argmax_{eta, ||eta||_{ord} < eps} dot(eta, grad)
 
-  :param grad: tf tensor containing a batch of gradients
-  :param eps: float scalar specifying size of constraint region
-  :param ord: int specifying order of norm
-  :returns:
-    tf tensor containing optimal perturbation
+  :param grad: Tensor, shape (N, d_1, ...). Batch of gradients
+  :param eps: float. Scalar specifying size of constraint region
+  :param ord: np.inf, 1, or 2. Order of norm constraint.
+  :returns: Tensor, shape (N, d_1, ...). Optimal perturbation
   """
 
-  # In Python 2, the `list` call in the following line is redundant / harmless.
-  # In Python 3, the `list` call is needed to convert the iterator returned by `range` into a list.
   red_ind = list(range(1, len(grad.size())))
   avoid_zero_div = torch.tensor(1e-12, dtype=grad.dtype, device=grad.device)
   if ord == np.inf:
