@@ -3,7 +3,6 @@
 
 import numpy as np
 import tensorflow as tf
-import warnings
 
 from cleverhans.attacks.attack import Attack
 from cleverhans.compat import reduce_sum, softmax_cross_entropy_with_logits
@@ -20,7 +19,6 @@ class LBFGS(Attack):
   LBFGS is the first adversarial attack for convolutional neural networks,
   and is a target & iterative attack.
   Paper link: "https://arxiv.org/pdf/1312.6199.pdf"
-
   :param model: cleverhans.model.Model
   :param sess: tf.Session
   :param dtypestr: dtype of the data
@@ -44,7 +42,6 @@ class LBFGS(Attack):
     """
     Return a tensor that constructs adversarial examples for the given
     input. Generate uses tf.py_func in order to operate over tensors.
-
     :param x: (required) A tensor with the inputs.
     :param kwargs: See `parse_params`
     """
@@ -52,19 +49,16 @@ class LBFGS(Attack):
         'Cannot use `generate` when no `sess` was provided'
     self.parse_params(**kwargs)
 
-    _, nb_classes = self.get_or_guess_labels(x, kwargs)
-
     if self.y_target is None:
-      warnings.warn(
-          "Target label not specified. Using label with 2nd largest probability as default.")
-
-      probs = self.model.get_probs(x)
-      values, indices = tf.nn.top_k(probs, 2, sorted=True)
-      indices_2nd = indices[:, 1]
-      self.y_target = tf.one_hot(indices_2nd, probs.shape[-1])
+      self.y_target, nb_classes = self.get_or_guess_labels(x, kwargs)
+      self.targeted_attack = False
+    else:
+      _, nb_classes = self.get_or_guess_labels(x, kwargs)
+      self.targeted_attack = True
 
     attack = LBFGS_impl(
-        self.sess, x, self.model.get_logits(x), self.y_target,
+        self.sess, x, self.model.get_logits(x),
+        self.y_target, self.targeted_attack,
         self.binary_search_steps, self.max_iterations, self.initial_const,
         self.clip_min, self.clip_max, nb_classes, self.batch_size)
 
@@ -115,7 +109,6 @@ class LBFGS_impl(object):
   """
   Return a tensor that constructs adversarial examples for the given
   input. Generate uses tf.py_func in order to operate over tensors.
-
   :param sess: a TF session.
   :param x: A tensor with the inputs.
   :param logits: A tensor with model's output logits.
@@ -132,10 +125,9 @@ class LBFGS_impl(object):
   :param clip_max: Maximum input component value
   :param num_labels: The number of classes in the model's output.
   :param batch_size: Number of attacks to run simultaneously.
-
   """
 
-  def __init__(self, sess, x, logits, targeted_label,
+  def __init__(self, sess, x, logits, targeted_label, targeted_attack,
                binary_search_steps, max_iterations, initial_const, clip_min,
                clip_max, nb_classes, batch_size):
     self.sess = sess
@@ -143,6 +135,7 @@ class LBFGS_impl(object):
     self.logits = logits
     assert logits.op.type != 'Softmax'
     self.targeted_label = targeted_label
+    self.targeted_attack = targeted_attack
     self.binary_search_steps = binary_search_steps
     self.max_iterations = max_iterations
     self.initial_const = initial_const
@@ -162,7 +155,12 @@ class LBFGS_impl(object):
         labels=self.targeted_label, logits=self.logits)
     self.l2dist = reduce_sum(tf.square(self.x - self.ori_img))
     # small self.const will result small adversarial perturbation
-    self.loss = reduce_sum(self.score * self.const) + self.l2dist
+    # targeted attack aim at minimize loss against target label
+    # untargeted attack aim at maxmize loss against True label
+    if self.targeted_attack:
+      self.loss = reduce_sum(self.score * self.const) + self.l2dist
+    else:
+      self.loss = -reduce_sum(self.score * self.const) + self.l2dist
     self.grad, = tf.gradients(self.loss, self.x)
 
   def attack(self, x_val, targets):
@@ -189,6 +187,13 @@ class LBFGS_impl(object):
               self.const: CONST
           })
       return loss, grad.flatten().astype(float)
+
+    def attack_success(out, target, targeted_attack):
+      """ returns attack result flag """
+      if targeted_attack:
+        return out == target
+      else:
+        return out != target
 
     # begin the main part for the attack
     from scipy.optimize import fmin_l_bfgs_b
@@ -242,13 +247,15 @@ class LBFGS_impl(object):
         l2s[i] = np.sum(np.square(adv_x[i] - oimgs[i]))
 
       for e, (l2, pred, ii) in enumerate(zip(l2s, preds, adv_x)):
-        if l2 < o_bestl2[e] and pred == np.argmax(targets[e]):
+        if l2 < o_bestl2[e] and attack_success(pred, np.argmax(targets[e]),
+                                               self.targeted_attack):
           o_bestl2[e] = l2
           o_bestattack[e] = ii
 
       # adjust the constant as needed
       for e in range(self.batch_size):
-        if preds[e] == np.argmax(targets[e]):
+        if attack_success(preds[e], np.argmax(targets[e]),
+                          self.targeted_attack):
           # success, divide const by two
           upper_bound[e] = min(upper_bound[e], CONST[e])
           if upper_bound[e] < 1e9:
