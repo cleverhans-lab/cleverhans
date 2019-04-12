@@ -398,10 +398,10 @@ def clip_image(image, clip_min, clip_max):
 def compute_distance(x_ori, x_pert, constraint='l2'):
   """ Compute the distance between two images. """
   if constraint == 'l2':
-    return np.linalg.norm(x_ori - x_pert)
+    dist = np.linalg.norm(x_ori - x_pert)
   elif constraint == 'linf':
-    return np.max(abs(x_ori - x_pert))
-
+    dist = np.max(abs(x_ori - x_pert))
+  return dist
 
 def approximate_gradient(decision_function, sample, num_evals,
                          delta, constraint, shape, clip_min, clip_max):
@@ -444,14 +444,14 @@ def project(original_image, perturbed_images, alphas, shape, constraint):
   alphas_shape = [len(alphas)] + [1] * len(shape)
   alphas = alphas.reshape(alphas_shape)
   if constraint == 'l2':
-    return (1-alphas) * original_image + alphas * perturbed_images
+    projected = (1-alphas) * original_image + alphas * perturbed_images
   elif constraint == 'linf':
-    out_images = clip_image(
+    projected = clip_image(
         perturbed_images,
         original_image - alphas,
         original_image + alphas
     )
-    return out_images
+  return projected
 
 
 def binary_search_batch(original_image, perturbed_images, decision_function,
@@ -540,20 +540,18 @@ def initialize(decision_function, sample, shape):
 
 def geometric_progression_for_stepsize(x, update, dist, decision_function,
                                        current_iteration):
-  """
-  Geometric progression to search for stepsize.
-  Keep decreasing stepsize by half until reaching
-  the desired side of the boundary.
+  """ Geometric progression to search for stepsize.
+      Keep decreasing stepsize by half until reaching
+      the desired side of the boundary.
   """
   epsilon = dist / np.sqrt(current_iteration)
-
-  def phi(epsilon):
-    new = x + epsilon * update
-    success = decision_function(new[None])
-    return success
-
-  while not phi(epsilon):
-    epsilon /= 2.0
+  while True:
+    updated = x + epsilon * update
+    success = decision_function(updated[None])
+    if success:
+      break
+    else:
+      epsilon = epsilon / 2.0
 
   return epsilon
 
