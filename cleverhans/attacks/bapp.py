@@ -1,6 +1,5 @@
-"""The CarliniWagnerL2 attack
+""" Boundary Attack++
 """
-# pylint: disable=missing-docstring
 import logging
 import numpy as np
 import tensorflow as tf
@@ -17,8 +16,8 @@ _logger.setLevel(logging.INFO)
 
 class BoundaryAttackPlusPlus(Attack):
   """
-  Boundary Attack ++ was originally proposed by Chen and Jordan. 
-  It is a decision-based attack that requires access to output 
+  Boundary Attack ++ was originally proposed by Chen and Jordan.
+  It is a decision-based attack that requires access to output
   labels of a model alone.
   Paper link: https://arxiv.org/abs/1904.02144
   At a high level, this attack is an iterative attack composed of three
@@ -28,7 +27,7 @@ class BoundaryAttackPlusPlus(Attack):
   :param model: cleverhans.model.Model
   :param sess: tf.Session
   :param dtypestr: dtype of the data
-  :param kwargs: passed through to super constructor. 
+  :param kwargs: passed through to super constructor.
   see parse_params for details.
   """
 
@@ -41,14 +40,14 @@ class BoundaryAttackPlusPlus(Attack):
       wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
-    super(BoundaryAttackPlusPlus, self).__init__(model, sess, 
-      dtypestr, **kwargs)
+    super(BoundaryAttackPlusPlus, self).__init__(model, sess,
+                                                 dtypestr, **kwargs)
 
     self.feedable_kwargs = ('y_target', 'image_target')
 
     self.structural_kwargs = [
         'stepsize_search',
-        'clip_min', 
+        'clip_min',
         'clip_max',
         'constraint',
         'num_iterations',
@@ -75,32 +74,37 @@ class BoundaryAttackPlusPlus(Attack):
     if self.y_target is not None:
       _check_first_dimension(self.y_target, 'y_target')
       assert self.image_target is not None, \
-        'Require a target image for targeted attack.'
+          'Require a target image for targeted attack.'
       _check_first_dimension(self.image_target, 'image_target')
 
-    bapp = BAPP(self.sess, self.model, shape, self.constraint, self.initial_num_evals, self.max_num_evals, self.stepsize_search, self.num_iterations, self.gamma, self.batch_size, self.clip_min, self.clip_max, verbose = self.verbose)
+    bapp = BAPP(self.sess, self.model, shape, self.constraint,
+                self.initial_num_evals, self.max_num_evals,
+                self.stepsize_search, self.num_iterations, self.gamma,
+                self.batch_size, self.clip_min,
+                self.clip_max, verbose=self.verbose)
 
     def bapp_wrap(x, target_label, target_image):
-      return np.array(bapp.attack(x, target_label, target_image), 
-        dtype=self.np_dtype)   
+      """ Wrapper to use tensors as input and output. """
+      return np.array(bapp.attack(x, target_label, target_image),
+                      dtype=self.np_dtype)
 
     if self.y_target is not None:
       # targeted attack that requires target label and image.
-      wrap = tf.py_func(bapp_wrap, 
-        [x[0], self.y_target[0], self.image_target[0]], 
-        self.tf_dtype)
+      wrap = tf.py_func(bapp_wrap,
+                        [x[0], self.y_target[0], self.image_target[0]],
+                        self.tf_dtype)
     else:
       if self.image_target is not None:
         # untargeted attack with an initialized image.
-        wrap = tf.py_func(lambda x, target_image: bapp_wrap(x, 
-          None, target_image), 
-          [x[0], self.image_target[0]], 
-          self.tf_dtype)      
+        wrap = tf.py_func(lambda x, target_image: bapp_wrap(x,
+                                                            None, target_image),
+                          [x[0], self.image_target[0]],
+                          self.tf_dtype)
       else:
         # untargeted attack without an initialized image.
-        wrap = tf.py_func(lambda x: bapp_wrap(x, None, None), 
-          [x[0]], 
-          self.tf_dtype) 
+        wrap = tf.py_func(lambda x: bapp_wrap(x, None, None),
+                          [x[0]],
+                          self.tf_dtype)
 
     wrap.set_shape(x.get_shape())
 
@@ -109,10 +113,10 @@ class BoundaryAttackPlusPlus(Attack):
   def generate_np(self, x, **kwargs):
     """
     Generate adversarial images in a for loop.
-    :param y: An array of shape (n, nb_classes) for true labels. 
-    :param y_target:  An array of shape (n, nb_classes) for target labels. 
+    :param y: An array of shape (n, nb_classes) for true labels.
+    :param y_target:  An array of shape (n, nb_classes) for target labels.
     Required for targeted attack.
-    :param image_target: An array of shape (n, **image shape) for initial 
+    :param image_target: An array of shape (n, **image shape) for initial
     target images. Required for targeted attack.
 
     See parse_params for other kwargs.
@@ -120,17 +124,16 @@ class BoundaryAttackPlusPlus(Attack):
     """
 
     x_adv = []
-    batch_size = x.shape[0]
 
     if 'image_target' in kwargs and kwargs['image_target'] is not None:
       image_target = np.copy(kwargs['image_target'])
     else:
       image_target = None
-    if  'y_target' in kwargs and kwargs['y_target'] is not None:
+    if 'y_target' in kwargs and kwargs['y_target'] is not None:
       y_target = np.copy(kwargs['y_target'])
     else:
       y_target = None
-      
+
     for i, x_single in enumerate(x):
       img = np.expand_dims(x_single, axis=0)
       if image_target is not None:
@@ -140,45 +143,45 @@ class BoundaryAttackPlusPlus(Attack):
         single_y_target = np.expand_dims(y_target[i], axis=0)
         kwargs['y_target'] = single_y_target
 
-      adv_img = super(BoundaryAttackPlusPlus, self).generate_np(img, 
-      **kwargs)
+      adv_img = super(BoundaryAttackPlusPlus,
+                      self).generate_np(img, **kwargs)
       x_adv.append(adv_img)
 
-    return np.concatenate(x_adv, axis = 0)
-
+    return np.concatenate(x_adv, axis=0)
 
   def parse_params(self,
-                   y_target = None,
-                   image_target = None,
+                   y_target=None,
+                   image_target=None,
                    initial_num_evals=100,
-                   max_num_evals = 10000,
-                   stepsize_search = 'grid_search',
-                   num_iterations = 64,
-                   gamma = 0.01,
-                   constraint = 'l2',
-                   batch_size = 128,
-                   verbose = True,
+                   max_num_evals=10000,
+                   stepsize_search='grid_search',
+                   num_iterations=64,
+                   gamma=0.01,
+                   constraint='l2',
+                   batch_size=128,
+                   verbose=True,
                    clip_min=0,
                    clip_max=1):
     """
-    :param y: A tensor of shape (1, nb_classes) for true labels. 
-    :param y_target:  A tensor of shape (1, nb_classes) for target labels. 
+    :param y: A tensor of shape (1, nb_classes) for true labels.
+    :param y_target:  A tensor of shape (1, nb_classes) for target labels.
     Required for targeted attack.
-    :param image_target: A tensor of shape (1, **image shape) for initial 
+    :param image_target: A tensor of shape (1, **image shape) for initial
     target images. Required for targeted attack.
-
-    :param initial_num_evals: initial number of evaluations for gradient estimation.
+    :param initial_num_evals: initial number of evaluations for
+                              gradient estimation.
     :param max_num_evals: maximum number of evaluations for gradient estimation.
-    :param stepsize_search: How to search for stepsize; choices are 
-                            'geometric_progression', 'grid_search'. 'geometric progression' initializes the stepsize
-                            by ||x_t - x||_p / sqrt(iteration), and keep 
-                            decreasing by half until reaching the target 
-                            side of the boundary. 'grid_search' chooses the 
-                            optimal epsilon over a grid, in the scale of 
-                            ||x_t - x||_p.
+    :param stepsize_search: How to search for stepsize; choices are
+                            'geometric_progression', 'grid_search'.
+                            'geometric progression' initializes the stepsize
+                             by ||x_t - x||_p / sqrt(iteration), and keep
+                             decreasing by half until reaching the target
+                             side of the boundary. 'grid_search' chooses the
+                             optimal epsilon over a grid, in the scale of
+                             ||x_t - x||_p.
     :param num_iterations: The number of iterations.
-    :param gamma: The binary search threshold theta is gamma / sqrt(d) for 
-                  l2 attack and gamma / d for linf attack.
+    :param gamma: The binary search threshold theta is gamma / sqrt(d) for
+                   l2 attack and gamma / d for linf attack.
     :param constraint: The distance to optimize; choices are 'l2', 'linf'.
     :param batch_size: batch_size for model prediction.
     :param verbose: (boolean) Whether distance at each step is printed.
@@ -193,46 +196,48 @@ class BoundaryAttackPlusPlus(Attack):
     self.max_num_evals = max_num_evals
     self.stepsize_search = stepsize_search
     self.num_iterations = num_iterations
-    self.gamma =  gamma
+    self.gamma = gamma
     self.constraint = constraint
     self.batch_size = batch_size
     self.clip_min = clip_min
     self.clip_max = clip_max
     self.verbose = verbose
 
+
 def _check_first_dimension(x, tensor_name):
   message = "Require {} has batch_size of 1.".format(tensor_name)
   if x.get_shape().as_list()[0] is None:
-    check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1, message = message)
+    check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1, message=message)
     with tf.control_dependencies([check_batch]):
       x = tf.identity(x)
   elif x.get_shape().as_list()[0] != 1:
     raise ValueError(message)
 
-class BAPP(object):
-  def __init__(self, sess, model, shape, constraint = 'l2',
-    initial_num_evals = 100, max_num_evals= 10000, 
-    stepsize_search = 'geometric_progression', num_iterations = 40, 
-    gamma = 0.01, batch_size = 500, clip_min = 0, clip_max = 1, verbose = True):
-    """
-    Class for Boundary Attack ++.
 
+class BAPP(object):
+  """ Class for Boundary Attack ++. """
+  def __init__(self, sess, model, shape, constraint='l2',
+               initial_num_evals=100, max_num_evals=10000,
+               stepsize_search='geometric_progression', num_iterations=40,
+               gamma=0.01, batch_size=500, clip_min=0, clip_max=1, verbose=True):
+    """
     :param sess: a TF session.
     :param model: a cleverhans.model.Model object.
     :param shape: (tuple) shape of the input image, e.g.: (32,32,3).
     :param constraint: The distance to optimize; choices are 'l2', 'linf'.
     :param initial_num_evals: initial number of evaluations for gradient estimation.
     :param max_num_evals: maximum number of evaluations for gradient estimation.
-    :param stepsize_search: How to search for stepsize; choices are 
-                            'geometric_progression', 'grid_search'. 'geometric progression' initializes the stepsize
-                            by ||x_t - x||_p / sqrt(iteration), and keep 
-                            decreasing by half until reaching the target 
-                            side of the boundary. 'grid_search' chooses the 
-                            optimal epsilon over a grid, in the scale of 
-                            ||x_t - x||_p.
+    :param stepsize_search: How to search for stepsize; choices are
+                            'geometric_progression', 'grid_search'.
+                             'geometric progression' initializes the stepsize
+                             by ||x_t - x||_p / sqrt(iteration), and keep
+                             decreasing by half until reaching the target
+                             side of the boundary. 'grid_search' chooses the
+                             optimal epsilon over a grid, in the scale of
+                             ||x_t - x||_p.
     :param num_iterations: The number of iterations.
-    :param gamma: The binary search threshold theta is gamma / sqrt(d) for 
-                  l2 attack and gamma / d for linf attack.
+    :param gamma: The binary search threshold theta is gamma / sqrt(d) for
+                   l2 attack and gamma / d for linf attack.
     :param batch_size: batch_size for model prediction.
     :param verbose: (boolean) Whether distance at each step is printed.
     :param clip_min: (optional float) Minimum input component value
@@ -253,7 +258,6 @@ class BAPP(object):
     self.verbose = verbose
     self.batch_size = batch_size
 
-
     # Set binary search threshold.
     if self.constraint == 'l2':
       self.theta = self.gamma / np.sqrt(self.d)
@@ -262,7 +266,8 @@ class BAPP(object):
 
     # Construct input placeholder and output for decision function.
     self.sess = sess
-    self.input_ph = tf.placeholder(tf_dtype, [None] + list(self.shape), name='input_image')
+    self.input_ph = tf.placeholder(
+        tf_dtype, [None] + list(self.shape), name='input_image')
     self.logits = model.get_logits(self.input_ph)
 
   def attack(self, sample, target_label, target_image):
@@ -273,21 +278,22 @@ class BAPP(object):
     input. Generate uses tf.py_func in order to operate over tensors.
 
     :param sample: input image. Without the batchsize dimension.
-    :param target_label: integer for targeted attack, 
+    :param target_label: integer for targeted attack,
       None for nontargeted attack. Without the batchsize dimension.
-    :param target_image: an array with the same size as sample, or None. 
+    :param target_image: an array with the same size as sample, or None.
       Without the batchsize dimension.
 
 
     Output:
     perturbed image.
-    
+
     """
 
     # Original label required for untargeted attack.
     if target_label is None:
-      original_label = np.argmax(self.sess.run(self.logits, 
-        feed_dict = {self.input_ph: sample[None]}))
+      original_label = np.argmax(
+          self.sess.run(self.logits, feed_dict={self.input_ph: sample[None]})
+          )
     else:
       target_label = np.argmax(target_label)
 
@@ -300,13 +306,13 @@ class BAPP(object):
       prob = []
       for i in range(0, len(images), self.batch_size):
         batch = images[i:i+self.batch_size]
-        prob_i = self.sess.run(self.logits, feed_dict = {self.input_ph: batch})
+        prob_i = self.sess.run(self.logits, feed_dict={self.input_ph: batch})
         prob.append(prob_i)
-      prob = np.concatenate(prob, axis = 0)
+      prob = np.concatenate(prob, axis=0)
       if target_label is None:
-        return np.argmax(prob, axis = 1) != original_label 
+        return np.argmax(prob, axis=1) != original_label
       else:
-        return np.argmax(prob, axis = 1) == target_label
+        return np.argmax(prob, axis=1) == target_label
 
     # Initialize.
     if target_image is None:
@@ -317,24 +323,27 @@ class BAPP(object):
     dist_post_update = compute_distance(perturbed, sample, self.constraint)
 
     # Project the initialization to the boundary.
-    perturbed, dist = binary_search_batch(sample, 
-      np.expand_dims(perturbed, 0), decision_function, self.shape, 
-      self.constraint, self.theta)
+    perturbed, dist = binary_search_batch(sample,
+                                          np.expand_dims(perturbed, 0),
+                                          decision_function, self.shape,
+                                          self.constraint, self.theta)
 
     for j in np.arange(self.num_iterations):
       current_iteration = j + 1
 
       # Choose delta.
-      delta = select_delta(dist_post_update, current_iteration, 
-        self.clip_max, self.clip_min, self.d, self.theta, self.constraint)
+      delta = select_delta(dist_post_update, current_iteration,
+                           self.clip_max, self.clip_min, self.d,
+                           self.theta, self.constraint)
 
       # Choose number of evaluations.
-      num_evals = int(self.initial_num_evals * np.sqrt(j+1))
-      num_evals = int(min([num_evals, self.max_num_evals]))
+      num_evals = int(min([self.initial_num_evals * np.sqrt(j+1),
+                           self.max_num_evals]))
 
       # approximate gradient.
-      gradf = approximate_gradient(decision_function, perturbed, num_evals, 
-        delta, self.constraint, self.shape, self.clip_min, self.clip_max)
+      gradf = approximate_gradient(decision_function, perturbed, num_evals,
+                                   delta, self.constraint, self.shape,
+                                   self.clip_min, self.clip_max)
       if self.constraint == 'linf':
         update = np.sign(gradf)
       else:
@@ -343,64 +352,69 @@ class BAPP(object):
       # search step size.
       if self.stepsize_search == 'geometric_progression':
         # find step size.
-        epsilon = geometric_progression_for_stepsize(perturbed, 
-          update, dist, decision_function, current_iteration)
+        epsilon = geometric_progression_for_stepsize(perturbed,
+                                                     update, dist, decision_function, current_iteration)
 
-        # Update the sample. 
-        perturbed = clip_image(perturbed + epsilon * gradf, 
-          self.clip_min, self.clip_max)
+        # Update the sample.
+        perturbed = clip_image(perturbed + epsilon * gradf,
+                               self.clip_min, self.clip_max)
 
-        # Binary search to return to the boundary. 
-        perturbed, dist_post_update = binary_search_batch(sample, 
-          perturbed[None], decision_function, self.shape, self.constraint, 
-          self.theta)
+        # Binary search to return to the boundary.
+        perturbed, dist_post_update = binary_search_batch(sample,
+                                                          perturbed[None],
+                                                          decision_function,
+                                                          self.shape,
+                                                          self.constraint,
+                                                          self.theta)
 
       elif self.stepsize_search == 'grid_search':
         # Grid search for stepsize.
-        epsilons = np.logspace(-4, 0, num=20, endpoint = True) * dist
+        epsilons = np.logspace(-4, 0, num=20, endpoint=True) * dist
         epsilons_shape = [20] + len(self.shape) * [1]
         perturbeds = perturbed + epsilons.reshape(epsilons_shape) * update
         idx_perturbed = decision_function(perturbeds)
 
         if np.sum(idx_perturbed) > 0:
           # Select the perturbation that yields the minimum distance # after binary search.
-          perturbed, dist_post_update = binary_search_batch(sample, 
-            perturbeds[idx_perturbed], decision_function, self.shape, 
-            self.constraint, self.theta)
+          perturbed, dist_post_update = binary_search_batch(sample,
+                                                            perturbeds[idx_perturbed], decision_function, self.shape,
+                                                            self.constraint, self.theta)
 
       # compute new distance.
       dist = compute_distance(perturbed, sample, self.constraint)
       if self.verbose:
-        print('iteration: {:d}, {:s} distance {:.4E}'.format(j+1, self.constraint, dist))
+        print('iteration: {:d}, {:s} distance {:.4E}'.format(
+            j+1, self.constraint, dist))
 
     perturbed = np.expand_dims(perturbed, 0)
     return perturbed
 
+
 def clip_image(image, clip_min, clip_max):
-  # Clip an image, or an image batch, with upper and lower threshold.
-  return np.minimum(np.maximum(clip_min, image), clip_max) 
+  """ Clip an image, or an image batch, with upper and lower threshold. """
+  return np.minimum(np.maximum(clip_min, image), clip_max)
 
 
-def compute_distance(x_ori, x_pert, constraint = 'l2'):
-  # Compute the distance between two images.
+def compute_distance(x_ori, x_pert, constraint='l2'):
+  """ Compute the distance between two images. """
   if constraint == 'l2':
     return np.linalg.norm(x_ori - x_pert)
   elif constraint == 'linf':
     return np.max(abs(x_ori - x_pert))
 
 
-def approximate_gradient(decision_function, sample, num_evals, 
-  delta, constraint, shape, clip_min, clip_max):
-
+def approximate_gradient(decision_function, sample, num_evals,
+                         delta, constraint, shape, clip_min, clip_max):
+  """ Gradient direction estimation """
   # Generate random vectors.
   noise_shape = [num_evals] + list(shape)
   if constraint == 'l2':
     rv = np.random.randn(*noise_shape)
   elif constraint == 'linf':
-    rv = np.random.uniform(low = -1, high = 1, size = noise_shape)
+    rv = np.random.uniform(low=-1, high=1, size=noise_shape)
 
-  axis = tuple(range(1, 1 +len(shape)))
-  rv = rv / np.sqrt(np.sum(rv ** 2, axis = axis, keepdims = True))
+  axis = tuple(range(1, 1 + len(shape)))
+  rv = rv / np.sqrt(np.sum(rv ** 2, axis=axis, keepdims=True))
   perturbed = sample + delta * rv
   perturbed = clip_image(perturbed, clip_min, clip_max)
   rv = (perturbed - sample) / delta
@@ -411,13 +425,13 @@ def approximate_gradient(decision_function, sample, num_evals,
   fval = 2 * decisions.astype(np_dtype).reshape(decision_shape) - 1.0
 
   # Baseline subtraction (when fval differs)
-  if np.mean(fval) == 1.0: # label changes. 
-    gradf = np.mean(rv, axis = 0)
-  elif np.mean(fval) == -1.0: # label not change.
-    gradf = - np.mean(rv, axis = 0)
+  if np.mean(fval) == 1.0:  # label changes.
+    gradf = np.mean(rv, axis=0)
+  elif np.mean(fval) == -1.0:  # label not change.
+    gradf = - np.mean(rv, axis=0)
   else:
     fval = fval - np.mean(fval)
-    gradf = np.mean(fval * rv, axis = 0) 
+    gradf = np.mean(fval * rv, axis=0)
 
   # Get the gradient direction.
   gradf = gradf / np.linalg.norm(gradf)
@@ -426,30 +440,31 @@ def approximate_gradient(decision_function, sample, num_evals,
 
 
 def project(original_image, perturbed_images, alphas, shape, constraint):
+  """ Projection onto given l2 / linf balls in a batch. """
   alphas_shape = [len(alphas)] + [1] * len(shape)
   alphas = alphas.reshape(alphas_shape)
   if constraint == 'l2':
     return (1-alphas) * original_image + alphas * perturbed_images
   elif constraint == 'linf':
     out_images = clip_image(
-      perturbed_images, 
-      original_image - alphas, 
-      original_image + alphas
-      )
+        perturbed_images,
+        original_image - alphas,
+        original_image + alphas
+    )
     return out_images
 
 
-def binary_search_batch(original_image, perturbed_images, decision_function, 
-  shape, constraint, theta):
+def binary_search_batch(original_image, perturbed_images, decision_function,
+                        shape, constraint, theta):
   """ Binary search to approach the boundar. """
 
   # Compute distance between each of perturbed image and original image.
   dists_post_update = np.array([
       compute_distance(
-        original_image, 
-        perturbed_image, 
-        constraint
-      ) 
+          original_image,
+          perturbed_image,
+          constraint
+      )
       for perturbed_image in perturbed_images])
 
   # Choose upper thresholds in binary searchs based on constraint.
@@ -463,30 +478,30 @@ def binary_search_batch(original_image, perturbed_images, decision_function,
 
   lows = np.zeros(len(perturbed_images))
 
-  
-
-  # Call recursive function. 
+  # Call recursive function.
   while np.max((highs - lows) / thresholds) > 1:
     # projection to mids.
     mids = (highs + lows) / 2.0
-    mid_images = project(original_image, perturbed_images, mids, shape, constraint)
+    mid_images = project(original_image, perturbed_images,
+                         mids, shape, constraint)
 
     # Update highs and lows based on model decisions.
     decisions = decision_function(mid_images)
     lows = np.where(decisions == 0, mids, lows)
     highs = np.where(decisions == 1, mids, highs)
 
-  out_images = project(original_image, perturbed_images, highs, shape, constraint)
+  out_images = project(original_image, perturbed_images,
+                       highs, shape, constraint)
 
-  # Compute distance of the output image to select the best choice. 
+  # Compute distance of the output image to select the best choice.
   # (only used when stepsize_search is grid_search.)
   dists = np.array([
-    compute_distance(
-      original_image, 
-      out_image, 
-      constraint
-    ) 
-    for out_image in out_images])
+      compute_distance(
+          original_image,
+          out_image,
+          constraint
+      )
+      for out_image in out_images])
   idx = np.argmin(dists)
 
   dist = dists_post_update[idx]
@@ -495,15 +510,14 @@ def binary_search_batch(original_image, perturbed_images, decision_function,
 
 
 def initialize(decision_function, sample, shape):
-  """ 
+  """
   Efficient Implementation of BlendedUniformNoiseAttack in Foolbox.
   """
   success = 0
-  num_evals = 0
 
   # Find a misclassified random noise.
   while True:
-    random_noise = np.random.uniform(-1, 1, size = shape)
+    random_noise = np.random.uniform(-1, 1, size=shape)
     success = decision_function(random_noise[None])
     if success:
       break
@@ -513,25 +527,25 @@ def initialize(decision_function, sample, shape):
   high = 1.0
   while high - low > 0.001:
     mid = (high + low) / 2.0
-    blended = (1 - mid) * sample + mid * random_noise 
+    blended = (1 - mid) * sample + mid * random_noise
     success = decision_function(blended[None])
     if success:
       high = mid
     else:
       low = mid
 
-  initialization = (1 - high) * sample + high * random_noise 
+  initialization = (1 - high) * sample + high * random_noise
   return initialization
 
 
-def geometric_progression_for_stepsize(x, update, dist, decision_function, 
-  current_iteration):
+def geometric_progression_for_stepsize(x, update, dist, decision_function,
+                                       current_iteration):
   """
   Geometric progression to search for stepsize.
-  Keep decreasing stepsize by half until reaching 
-  the desired side of the boundary,
+  Keep decreasing stepsize by half until reaching
+  the desired side of the boundary.
   """
-  epsilon = dist / np.sqrt(current_iteration) 
+  epsilon = dist / np.sqrt(current_iteration)
 
   def phi(epsilon):
     new = x + epsilon * update
@@ -543,12 +557,12 @@ def geometric_progression_for_stepsize(x, update, dist, decision_function,
 
   return epsilon
 
-def select_delta(dist_post_update, current_iteration, 
-  clip_max, clip_min, d, theta, constraint):
-  """ 
-  Choose the delta at the scale of distance 
-  between x and perturbed sample. 
 
+def select_delta(dist_post_update, current_iteration,
+                 clip_max, clip_min, d, theta, constraint):
+  """
+  Choose the delta at the scale of distance
+   between x and perturbed sample.
   """
   if current_iteration == 1:
     delta = 0.1 * (clip_max - clip_min)
@@ -556,91 +570,6 @@ def select_delta(dist_post_update, current_iteration,
     if constraint == 'l2':
       delta = np.sqrt(d) * theta * dist_post_update
     elif constraint == 'linf':
-      delta = d * theta * dist_post_update  
+      delta = d * theta * dist_post_update
 
   return delta
-
-if __name__ == '__main__':
-  import argparse
-  from main import construct_model_and_data
-  from cleverhans.utils_keras import KerasModelWrapper
-  import os
-  import time
-  import scipy
-  parser = argparse.ArgumentParser()
-
-  parser.add_argument('--dataset_name', type = str, 
-    choices = ['cifar10'], 
-    default = 'cifar10') 
-
-  parser.add_argument('--model_name', type = str, 
-    choices = ['resnet'], 
-    default = 'resnet') 
-
-  parser.add_argument('--constraint', type = str, 
-    choices = ['l2', 'linf'], 
-    default = 'l2') 
-
-  parser.add_argument('--attack_type', type = str, 
-    choices = ['targeted', 'untargeted'], 
-    default = 'untargeted') 
-
-  parser.add_argument('--num_samples', type = int, 
-    default = 10) 
-
-  parser.add_argument('--num_iterations', type = int, 
-    default = 64) 
-  parser.add_argument('--stepsize_search', type = str, 
-    choices = ['geometric_progression', 'grid_search'], 
-    default = 'geometric_progression')
-
-  args = parser.parse_args()
-  dict_a = vars(args)
-
-  data_model = args.dataset_name + args.model_name
-  if not os.path.exists(data_model):
-    os.mkdir(data_model)
-  if not os.path.exists('{}/figs'.format(data_model)):
-    os.mkdir('{}/figs'.format(data_model))
-
-  outputs = construct_model_and_data(args)
-  data_model = outputs['data_model']
-  x_test = outputs['x_test']
-  y_test = outputs['y_test']
-  model = outputs['model']
-  clip_max = outputs['clip_max']
-  clip_min = outputs['clip_min']
-  if args.attack_type == 'targeted':
-    target_labels = outputs['target_labels']
-    target_images = outputs['target_images']
-
-  model_wrap = KerasModelWrapper(model.model)
-  bapp = BoundaryAttackPlusPlus(model_wrap, sess=model.sess)
-
-  for i, sample in enumerate(x_test[:args.num_samples]):
-    bapp_params = {
-        'stepsize_search': args.stepsize_search,
-        'constraint': args.constraint,
-        'num_iterations': args.num_iterations,
-        'batch_size': 500
-      }  
-    if args.attack_type == 'targeted':
-      bapp_params['y_target'] = np.expand_dims(np.eye(model.num_classes)[
-        target_labels[i]], 0)
-      bapp_params['image_target'] = np.expand_dims(target_images[i], 0)
-
-    st = time.time()
-    adv = bapp.generate_np(np.expand_dims(sample, 0), **bapp_params)
-    print('Time: {}s'.format(time.time() - st))
-
-    image = np.concatenate([sample, np.zeros((32,8,3)), adv[0]], axis = 1)
-    scipy.misc.imsave('{}/figs/{}-{}-{}.jpg'.format(data_model, 
-      args.attack_type, args.constraint, i), image)
-
-
-
-
-
-
-
-

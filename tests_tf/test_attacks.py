@@ -11,7 +11,7 @@ import numpy as np
 from nose.plugins.skip import SkipTest
 import tensorflow as tf
 # pylint bug on next line
-import tensorflow.contrib.slim as slim # pylint: disable=no-name-in-module
+import tensorflow.contrib.slim as slim  # pylint: disable=no-name-in-module
 
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans import attacks
@@ -1209,6 +1209,7 @@ class SimpleSpatialBrightPixelModel(Model):
     "SpatialAttack requires tf 1.6 or higher")
 class TestSpatialTransformationMethod(CleverHansTest):
   """Tests for SpatialTransformationMethod"""
+
   def setUp(self):
     """
     Allocate session, model, and attack + initialize tf Variables
@@ -1283,8 +1284,10 @@ class TestSpatialTransformationMethod(CleverHansTest):
     print(np.mean(old_labs == new_labs))
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
 
+
 class TestBoundaryAttackPlusPlus(CleverHansTest):
   """Tests for TestBoundaryAttackPlusPlus"""
+
   def setUp(self):
     super(TestBoundaryAttackPlusPlus, self).setUp()
 
@@ -1292,7 +1295,7 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
     self.model = SimpleModel()
     self.attack = BoundaryAttackPlusPlus(self.model, sess=self.sess)
 
-  def test_generate_np_untargeted_gives_l2_adversarial_example(self):
+  def test_generate_np_untargeted_l2(self):
     x_val = np.random.rand(50, 2)
     x_val = np.array(x_val, dtype=np.float32)
     bapp_params = {
@@ -1300,7 +1303,7 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
         'stepsize_search': 'geometric_progression',
         'num_iterations': 10,
         'verbose': True,
-      }  
+    }
     x_adv = self.attack.generate_np(x_val, **bapp_params)
 
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
@@ -1308,14 +1311,14 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
 
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
-  def test_generate_untargeted_gives_linf_adversarial_example(self):
+  def test_generate_untargeted_linf(self):
 
     x_val = np.random.rand(50, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
 
-    # Require input has batchsize 1. 
+    # Require input has batchsize 1.
     x = tf.placeholder(tf.float32, [1, 2])
 
     bapp_params = {
@@ -1323,22 +1326,23 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
         'stepsize_search': 'grid_search',
         'num_iterations': 10,
         'verbose': True,
-      }   
+    }
     x_adv_p = self.attack.generate(x, **bapp_params)
 
     self.assertEqual(x_adv_p.shape, [1, 2])
     x_adv = []
     for single_x_val in x_val:
-      single_x_adv = self.sess.run(x_adv_p, {x: np.expand_dims(single_x_val, 0)})
+      single_x_adv = self.sess.run(
+          x_adv_p, {x: np.expand_dims(single_x_val, 0)})
       x_adv.append(single_x_adv)
 
-    x_adv = np.concatenate(x_adv, axis = 0)
+    x_adv = np.concatenate(x_adv, axis=0)
 
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
 
     self.assertTrue(np.mean(orig_labs == new_labs) < 0.1)
 
-  def test_generate_np_targeted_gives_linf_adversarial_example(self):
+  def test_generate_np_targeted_linf(self):
     x_val = np.random.rand(200, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
@@ -1346,9 +1350,11 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
     x_val_pos = x_val[orig_labs == 1]
     x_val_neg = x_val[orig_labs == 0]
 
-    x_val_under_attack = np.concatenate((x_val_pos[:25], x_val_neg[:25]), axis = 0)
-    y_target = np.eye(2)[np.concatenate((np.zeros(25), np.ones(25))).astype(int)]
-    image_target = np.concatenate((x_val_neg[25:50], x_val_pos[25:50]), axis = 0)
+    x_val_under_attack = np.concatenate(
+        (x_val_pos[:25], x_val_neg[:25]), axis=0)
+    y_target = np.eye(2)[np.concatenate(
+        (np.zeros(25), np.ones(25))).astype(int)]
+    image_target = np.concatenate((x_val_neg[25:50], x_val_pos[25:50]), axis=0)
 
     bapp_params = {
         'constraint': 'linf',
@@ -1357,7 +1363,7 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
         'verbose': True,
         'y_target': y_target,
         'image_target': image_target,
-      }  
+    }
     x_adv = self.attack.generate_np(x_val_under_attack, **bapp_params)
 
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
@@ -1365,7 +1371,7 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
     self.assertTrue(np.mean(np.argmax(y_target, axis=1) == new_labs)
                     > 0.9)
 
-  def test_generate_targeted_gives_l2_adversarial_example(self):
+  def test_generate_targeted_l2(self):
 
     # Create data in numpy arrays.
     x_val = np.random.rand(200, 2)
@@ -1373,12 +1379,14 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     x_val_pos = x_val[orig_labs == 1]
     x_val_neg = x_val[orig_labs == 0]
-    x_val_under_attack = np.concatenate((x_val_pos[:25], x_val_neg[:25]), axis = 0)
-    y_target = np.eye(2)[np.concatenate((np.zeros(25), np.ones(25))).astype(int)]
-    image_target = np.concatenate((x_val_neg[25:50], x_val_pos[25:50]), axis = 0)
+    x_val_under_attack = np.concatenate(
+        (x_val_pos[:25], x_val_neg[:25]), axis=0)
+    y_target = np.eye(2)[np.concatenate(
+        (np.zeros(25), np.ones(25))).astype(int)]
+    image_target = np.concatenate((x_val_neg[25:50], x_val_pos[25:50]), axis=0)
 
     # Create placeholders.
-    # Require input has batchsize 1. 
+    # Require input has batchsize 1.
     x = tf.placeholder(tf.float32, [1, 2])
     y_target_ph = tf.placeholder(tf.float32, [1, 2])
     image_target_ph = tf.placeholder(tf.float32, [1, 2])
@@ -1391,7 +1399,7 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
         'verbose': True,
         'y_target': y_target_ph,
         'image_target': image_target_ph,
-      }     
+    }
     x_adv_p = self.attack.generate(x, **bapp_params)
     self.assertEqual(x_adv_p.shape, [1, 2])
 
@@ -1399,12 +1407,12 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
     x_adv = []
     for i, single_x_val in enumerate(x_val_under_attack):
       print(image_target.shape, y_target.shape)
-      single_x_adv = self.sess.run(x_adv_p, 
-        {x: np.expand_dims(single_x_val, 0),
-        y_target_ph: np.expand_dims(y_target[i], 0),
-        image_target_ph: np.expand_dims(image_target[i], 0)})
+      single_x_adv = self.sess.run(x_adv_p,
+                                   {x: np.expand_dims(single_x_val, 0),
+                                    y_target_ph: np.expand_dims(y_target[i], 0),
+                                    image_target_ph: np.expand_dims(image_target[i], 0)})
       x_adv.append(single_x_adv)
-    x_adv = np.concatenate(x_adv, axis = 0)
+    x_adv = np.concatenate(x_adv, axis=0)
 
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(np.argmax(y_target, axis=1) == new_labs)
