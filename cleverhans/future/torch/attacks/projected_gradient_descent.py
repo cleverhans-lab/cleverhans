@@ -171,8 +171,10 @@ class ProjectedGradientDescent:
     if rand_init is None:
       rand_init = self.default_rand_init
     self.rand_init = rand_init
+    # TODO: deprecate the rand_minmax param? (as the original
+    # Madry paper set it to just eps)
     if self.rand_init:
-      self.rand_minmax = rand_minmax
+      self.rand_minmax = self.eps
     self.eps_iter = eps_iter
     self.nb_iter = nb_iter
     self.y = y

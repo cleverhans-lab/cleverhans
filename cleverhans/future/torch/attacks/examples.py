@@ -74,15 +74,42 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 net = LeNet5(1, 2)
 loss_fn = torch.nn.CrossEntropyLoss(reduction='mean')
-optimizer = torch.optim.Adam(net.parameters(), lr=5e-4, weight_decay=1e-6)
+optimizer = torch.optim.Adam(net.parameters(), lr=1e-4, weight_decay=0)
 
 def train(n_epoch):
+  print('training starts')
   net.train()
   for _ in range(n_epoch):
     for __, (x, y) in enumerate(train_loader):
       x, y = x.to(device), y.to(device)
       optimizer.zero_grad()
       loss = loss_fn(net(x), y)
+      loss.backward()
+      optimizer.step()
+
+      print('epoch: {}/{}, batch: {}/{}, batch loss({}): {:.3f}'.format(
+          _+1, n_epoch, __+1, len(train_loader), loss_fn.__class__.__name__, loss.item()))
+
+def adv_train(n_epoch):
+  """
+  Adversarial training from the Madry Lab challenge.
+  """
+  print('adversarial training starts')
+  net.train()
+  pgd = attacks.ProjectedGradientDescent(net)
+  for _ in range(n_epoch):
+    for __, (x, y) in enumerate(train_loader):
+      x, y = x.to(device), y.to(device)
+      x_adv_pgd = pgd.generate(
+        x,
+        y=y,
+        eps=.3,
+        eps_iter=.01,
+        nb_iter=40,
+        ord=np.inf
+        )
+      optimizer.zero_grad()
+      loss = loss_fn(net(x_adv_pgd), y)
       loss.backward()
       optimizer.step()
 
@@ -107,7 +134,8 @@ if torch.cuda.device_count() > 1:
   net = torch.nn.DataParallel(net)
   net.to(device)
 
-train(10)
+# train(10)
+adv_train(200)
 test()
 
 ######
@@ -134,10 +162,10 @@ for __, (x, y) in enumerate(test_loader):
   x_adv_pgd = pgd.generate(
       x,
       y=y,
-      eps=300,
-      eps_iter=3,
-      nb_iter=10,
-      ord=2
+      eps=.3,
+      eps_iter=.01,
+      nb_iter=40,
+      ord=np.inf
       )
   _, y_pred_pgd = net(x_adv_pgd).max(1)
   total += y.size(0)
