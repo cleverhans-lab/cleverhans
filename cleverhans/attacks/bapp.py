@@ -205,7 +205,7 @@ class BoundaryAttackPlusPlus(Attack):
 
 
 def _check_first_dimension(x, tensor_name):
-  message = "Require {} has batch_size of 1.".format(tensor_name)
+  message = "Tensor {} should have batch_size of 1.".format(tensor_name)
   if x.get_shape().as_list()[0] is None:
     check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1, message=message)
     with tf.control_dependencies([check_batch]):
