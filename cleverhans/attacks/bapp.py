@@ -77,15 +77,24 @@ class BoundaryAttackPlusPlus(Attack):
           'Require a target image for targeted attack.'
       _check_first_dimension(self.image_target, 'image_target')
 
-    bapp = BAPP(self.sess, self.model, shape, self.constraint,
-                self.initial_num_evals, self.max_num_evals,
-                self.stepsize_search, self.num_iterations, self.gamma,
-                self.batch_size, self.clip_min,
-                self.clip_max, verbose=self.verbose)
+    # Set shape and d.
+    self.shape = shape
+    self.d = int(np.prod(shape))
+
+    # Set binary search threshold.
+    if self.constraint == 'l2':
+      self.theta = self.gamma / np.sqrt(self.d)
+    else:
+      self.theta = self.gamma / self.d
+
+    # Construct input placeholder and output for decision function.
+    self.input_ph = tf.placeholder(
+        tf_dtype, [None] + list(self.shape), name='input_image')
+    self.logits = self.model.get_logits(self.input_ph)
 
     def bapp_wrap(x, target_label, target_image):
       """ Wrapper to use tensors as input and output. """
-      return np.array(bapp.attack(x, target_label, target_image),
+      return np.array(self._bapp(x, target_label, target_image),
                       dtype=self.np_dtype)
 
     if self.y_target is not None:
@@ -203,74 +212,7 @@ class BoundaryAttackPlusPlus(Attack):
     self.clip_max = clip_max
     self.verbose = verbose
 
-
-def _check_first_dimension(x, tensor_name):
-  message = "Tensor {} should have batch_size of 1.".format(tensor_name)
-  if x.get_shape().as_list()[0] is None:
-    check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1, message=message)
-    with tf.control_dependencies([check_batch]):
-      x = tf.identity(x)
-  elif x.get_shape().as_list()[0] != 1:
-    raise ValueError(message)
-
-
-class BAPP(object):
-  """ Class for Boundary Attack ++. """
-  def __init__(self, sess, model, shape, constraint='l2',
-               initial_num_evals=100, max_num_evals=10000,
-               stepsize_search='geometric_progression', num_iterations=40,
-               gamma=0.01, batch_size=500, clip_min=0, clip_max=1, verbose=True):
-    """
-    :param sess: a TF session.
-    :param model: a cleverhans.model.Model object.
-    :param shape: (tuple) shape of the input image, e.g.: (32,32,3).
-    :param constraint: The distance to optimize; choices are 'l2', 'linf'.
-    :param initial_num_evals: initial number of evaluations for gradient estimation.
-    :param max_num_evals: maximum number of evaluations for gradient estimation.
-    :param stepsize_search: How to search for stepsize; choices are
-                            'geometric_progression', 'grid_search'.
-                             'geometric progression' initializes the stepsize
-                             by ||x_t - x||_p / sqrt(iteration), and keep
-                             decreasing by half until reaching the target
-                             side of the boundary. 'grid_search' chooses the
-                             optimal epsilon over a grid, in the scale of
-                             ||x_t - x||_p.
-    :param num_iterations: The number of iterations.
-    :param gamma: The binary search threshold theta is gamma / sqrt(d) for
-                   l2 attack and gamma / d for linf attack.
-    :param batch_size: batch_size for model prediction.
-    :param verbose: (boolean) Whether distance at each step is printed.
-    :param clip_min: (optional float) Minimum input component value
-    :param clip_max: (optional float) Maximum input component value
-    """
-
-    # Set parameters
-    self.clip_min = clip_min
-    self.clip_max = clip_max
-    self.shape = shape
-    self.constraint = constraint
-    self.num_iterations = num_iterations
-    self.gamma = gamma
-    self.d = int(np.prod(shape))
-    self.stepsize_search = stepsize_search
-    self.max_num_evals = max_num_evals
-    self.initial_num_evals = initial_num_evals
-    self.verbose = verbose
-    self.batch_size = batch_size
-
-    # Set binary search threshold.
-    if self.constraint == 'l2':
-      self.theta = self.gamma / np.sqrt(self.d)
-    else:
-      self.theta = self.gamma / self.d
-
-    # Construct input placeholder and output for decision function.
-    self.sess = sess
-    self.input_ph = tf.placeholder(
-        tf_dtype, [None] + list(self.shape), name='input_image')
-    self.logits = model.get_logits(self.input_ph)
-
-  def attack(self, sample, target_label, target_image):
+  def _bapp(self, sample, target_label, target_image):
     """
     Main algorithm for Boundary Attack ++.
 
@@ -388,6 +330,17 @@ class BAPP(object):
 
     perturbed = np.expand_dims(perturbed, 0)
     return perturbed
+
+
+
+def _check_first_dimension(x, tensor_name):
+  message = "Tensor {} should have batch_size of 1.".format(tensor_name)
+  if x.get_shape().as_list()[0] is None:
+    check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1, message=message)
+    with tf.control_dependencies([check_batch]):
+      x = tf.identity(x)
+  elif x.get_shape().as_list()[0] != 1:
+    raise ValueError(message)
 
 
 def clip_image(image, clip_min, clip_max):
