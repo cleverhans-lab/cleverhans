@@ -456,7 +456,7 @@ def project(original_image, perturbed_images, alphas, shape, constraint):
 
 def binary_search_batch(original_image, perturbed_images, decision_function,
                         shape, constraint, theta):
-  """ Binary search to approach the boundar. """
+  """ Binary search to approach the boundary. """
 
   # Compute distance between each of perturbed image and original image.
   dists_post_update = np.array([
