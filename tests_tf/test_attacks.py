@@ -1318,7 +1318,7 @@ class TestBoundaryAttackPlusPlus(CleverHansTest):
 
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
 
-    # Require input has batchsize 1.
+    # Requires input to have batchsize 1.
     x = tf.placeholder(tf.float32, [1, 2])
 
     bapp_params = {
