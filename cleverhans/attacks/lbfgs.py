@@ -155,8 +155,8 @@ class LBFGS_impl(object):
         labels=self.targeted_label, logits=self.logits)
     self.l2dist = reduce_sum(tf.square(self.x - self.ori_img))
     # small self.const will result small adversarial perturbation
-    # targeted attack aim at minimize loss against target label
-    # untargeted attack aim at maxmize loss against True label
+    # targeted attack aims at minimize loss against target label
+    # untargeted attack aims at maximize loss against True label
     if self.targeted_attack:
       self.loss = reduce_sum(self.score * self.const) + self.l2dist
     else:
@@ -189,7 +189,7 @@ class LBFGS_impl(object):
       return loss, grad.flatten().astype(float)
 
     def attack_success(out, target, targeted_attack):
-      """ returns attack result flag """
+      """ returns attack result """
       if targeted_attack:
         return out == target
       else:
