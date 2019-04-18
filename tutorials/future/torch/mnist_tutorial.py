@@ -71,6 +71,7 @@ test_loader = torch.utils.data.DataLoader(
 # build and train network
 ######
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(device)
 
 net = LeNet5(1, 2)
 loss_fn = torch.nn.CrossEntropyLoss(reduction='mean')
