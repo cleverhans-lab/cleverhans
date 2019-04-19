@@ -61,7 +61,7 @@ def main(_):
       x, y = x.to(device), y.to(device)
       if FLAGS.adv_train:
         # Replace clean example with adversarial example for adversarial training
-        x = projected_gradient_descent(net, x, FLAGS.eps, 0.01, 40)
+        x = projected_gradient_descent(net, x, FLAGS.eps, 0.01, 40, np.inf)
       optimizer.zero_grad()
       loss = loss_fn(net(x), y)
       loss.backward()
@@ -75,7 +75,7 @@ def main(_):
   for x, y in data.test:
     x, y = x.to(device), y.to(device)
     x_fgm = fast_gradient_method(net, x, FLAGS.eps, np.inf)
-    x_pgd = projected_gradient_descent(net, x, FLAGS.eps, 0.01, 40)
+    x_pgd = projected_gradient_descent(net, x, FLAGS.eps, 0.01, 40, np.inf)
     _, y_pred = net(x).max(1)  # model prediction on clean examples
     _, y_pred_fgm = net(x_fgm).max(1)  # model prediction on FGM adversarial examples
     _, y_pred_pgd = net(x_pgd).max(1)  # model prediction on PGD adversarial examples

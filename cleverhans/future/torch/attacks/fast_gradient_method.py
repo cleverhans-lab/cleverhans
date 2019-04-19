@@ -29,6 +29,9 @@ def fast_gradient_method(model_fn, x, eps, ord,
             memory or for unit tests that intentionally pass strange input)
   :return: a tensor for the adversarial example
   """
+  if ord not in [np.inf, 1, 2]:
+    raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
   asserts = []
 
   # If a data range was specified, check that the input was in that range
