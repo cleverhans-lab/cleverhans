@@ -1,7 +1,6 @@
 """The Projected Gradient Descent attack."""
-import torch
-
 import numpy as np
+import torch
 
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.utils_pytorch import clip_eta
