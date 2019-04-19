@@ -1,126 +1,13 @@
-"""
-The Fast Gradient Method attack. (PyTorch implementation)
-"""
-# currently tested on pytorch v1.0, numpy v1.16, python 3.6
-
+"""The Fast Gradient Method attack."""
+import torch
 import warnings
 
 import numpy as np
-import torch
 
-from cleverhans.utils_pytorch import get_or_guess_labels, optimize_linear
-
-class FastGradientMethod:
-  """
-  This attack was originally implemented by Goodfellow et al. (2014) with the
-  infinity norm (and is known as the "Fast Gradient Sign Method"). This
-  implementation extends the attack to other norms, and is therefore called
-  the Fast Gradient Method.
-  Paper link: https://arxiv.org/abs/1412.6572
-
-  :param model: PyTorch model. Do not add a softmax gate to the output
-  :param dtype: (optional) dtype of the data
-  """
-
-  def __init__(self, model, dtype=torch.float32):
-    """
-    Create a FastGradientMethod instance.
-    """
-    self.model = model
-    self.dtype = dtype
-
-  def generate(self, x, **kwargs):
-    """
-    Generate adversarial examples for x using FGM.
-
-    :param x: Tensor
-    :param kwargs: See `parse_params`
-    """
-    # Parse and save attack-specific parameters
-    assert self.parse_params(**kwargs)
-    labels = get_or_guess_labels(model=self.model, x=x, **kwargs)
-
-    # set the model to evaluation mode to have DropOut and BatchNorm layers
-    # behave properly
-    self.model.eval()
-
-    return fgm(
-        x=x,
-        model=self.model,
-        y=labels,
-        eps=self.eps,
-        ord=self.ord,
-        clip_min=self.clip_min,
-        clip_max=self.clip_max,
-        targeted=(self.y_target is not None),
-        sanity_checks=self.sanity_checks
-        )
-
-  def parse_params(self,
-                   eps=0.3,
-                   ord=np.inf,
-                   y=None,
-                   y_target=None,
-                   clip_min=None,
-                   clip_max=None,
-                   sanity_checks=True,
-                   **kwargs):
-    """
-    Take in a dictionary of parameters and applies attack-specific checks
-    before saving them as attributes.
-
-    Attack-specific parameters:
-
-    :param eps: (optional) float. Attack step size (input variation)
-    :param ord: (optional) Order of the norm (mimics NumPy).
-                Possible values: np.inf, 1 or 2.
-    :param y: (optional) Tensor, shape (N), where N is the batch size.
-              A tensor with true labels. Only provide
-              this parameter if you'd like to use true labels when crafting
-              adversarial samples. Otherwise, model predictions are used as
-              labels to avoid the "label leaking" effect (explained in this
-              paper: https://arxiv.org/abs/1611.01236). Default is None.
-    :param y_target: (optional) Tensor, shape (N).
-                    A tensor with the labels to target. Leave
-                     y_target=None if y is also set.
-    :param clip_min: (optional) float. Minimum input component value
-    :param clip_max: (optional) float. Maximum input component value
-    :param sanity_checks: bool. If True, include asserts
-      (Turn them off to use less runtime / memory or for unit tests that
-      intentionally pass strange input)
-    """
-    # Save attack-specific parameters
-
-    self.eps = eps
-    self.ord = ord
-    self.y = y
-    self.y_target = y_target
-    self.clip_min = clip_min
-    self.clip_max = clip_max
-    self.sanity_checks = sanity_checks
-
-    if self.y is not None and self.y_target is not None:
-      raise ValueError("Must not set both y and y_target")
-    # Check if order of the norm is acceptable given current implementation
-    if self.ord not in [np.inf, int(1), int(2)]:
-      raise ValueError("Norm order must be either np.inf, 1, or 2.")
-
-    if len(kwargs.keys()) > 0:
-      warnings.warn("kwargs is unused and will be removed on or after "
-                    "2019-04-26.")
-
-    return True
+from cleverhans.utils_pytorch import optimize_linear
 
 
-def fgm(x,
-        model,
-        y=None,
-        eps=0.3,
-        ord=np.inf,
-        clip_min=None,
-        clip_max=None,
-        targeted=False,
-        sanity_checks=True):
+def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=None, targeted=False, sanity_checks=False):
   """
   PyTorch implementation of the Fast Gradient Method.
   :param x: Tensor, shape (N, d_1, ...).
@@ -165,12 +52,12 @@ def fgm(x,
   x = x.clone().detach().to(torch.float).requires_grad_(True)
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
-    _, y = torch.max(model(x), 1)
+    _, y = torch.max(model_fn(x), 1)
 
   # Compute loss
   loss_fn = torch.nn.CrossEntropyLoss()
-  loss = loss_fn(model(x), y)
-  if targeted:
+  loss = loss_fn(model_fn(x), y)
+  if targeted:  # attack is targeted, minimize loss of target label rather than maximize loss of correct label
     loss = -loss
 
   # Define gradient of loss wrt input

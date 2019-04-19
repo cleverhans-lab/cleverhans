@@ -1,10 +1,15 @@
+from absl import app, flags
+from easydict import EasyDict
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 
-import cleverhans.future.torch.attacks as attacks
+from cleverhans.future.torch.attacks import fast_gradient_method, projected_gradient_descent
+
+FLAGS = flags.FLAGS
+
 
 class LeNet5(torch.nn.Module):
   """
@@ -29,149 +34,81 @@ class LeNet5(torch.nn.Module):
     x = self.fc3(x)
     return x
 
-######
-# load MNIST
-######
-train_transforms = torchvision.transforms.Compose(
-        [
-            torchvision.transforms.ToTensor(),
-        ],
-        )
-test_transforms = torchvision.transforms.Compose(
-        [
-            torchvision.transforms.ToTensor(),
-        ],
-        )
-train_dataset = torchvision.datasets.MNIST(
-    root='./data',
-    train=True,
-    transform=train_transforms,
-    download=True
-    )
-test_dataset = torchvision.datasets.MNIST(
-    root='./data',
-    train=False,
-    transform=test_transforms,
-    download=True
-    )
-train_loader = torch.utils.data.DataLoader(
-    train_dataset,
-    batch_size=128,
-    shuffle=True,
-    num_workers=2
-    )
-test_loader = torch.utils.data.DataLoader(
-    test_dataset,
-    batch_size=128,
-    shuffle=False,
-    num_workers=2
-    )
 
-######
-# build and train network
-######
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(device)
+def ld_mnist():
+  train_transforms = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+  test_transforms = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+  train_dataset = torchvision.datasets.MNIST(root='./data', train=True, transform=train_transforms, download=True)
+  test_dataset = torchvision.datasets.MNIST(root='./data', train=False, transform=test_transforms, download=True)
+  train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=2)
+  test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=128, shuffle=False, num_workers=2)
+  return EasyDict(train=train_loader, test=test_loader)
 
-net = LeNet5(1, 2)
-loss_fn = torch.nn.CrossEntropyLoss(reduction='mean')
-optimizer = torch.optim.Adam(net.parameters(), lr=1e-4, weight_decay=0)
 
-def train(n_epoch):
-  print('training starts')
+def main(_):
+  device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+  # Load training and test data
+  data = ld_mnist()
+
+  # Instantiate model, loss, and optimizer for training
+  net = LeNet5(1, 2)
+  loss_fn = torch.nn.CrossEntropyLoss(reduction='mean')
+  optimizer = torch.optim.Adam(net.parameters(), lr=1e-4, weight_decay=0)
+
+  # This will be called later to report accuracy on clean and adversarial examples
+  def eval():
+    net.eval()
+    total = 0
+    total_correct = 0
+    total_correct_fgm = 0
+    total_correct_pgd = 0
+    for x, y in data.test:
+      x_fgm = fast_gradient_method(net, x, FLAGS.eps, np.inf)
+      x_pgd = projected_gradient_descent(net, x, FLAGS.eps, 0.01, 40)
+      _, y_pred = net(x).max(1)  # model prediction on clean examples
+      _, y_pred_fgm = net(x_fgm).max(1)  # model prediction on adversarial examples
+      _, y_pred_pgd = net(x_pgd).max(1)  # model prediction on adversarial examples
+      total += y.size(0)
+      total_correct += y_pred.eq(y).sum().item()
+      total_correct_fgm += y_pred_fgm.eq(y).sum().item()
+      total_correct_pgd += y_pred_pgd.eq(y).sum().item()
+    print('test acc on clean examples (%): {:.3f}'.format(total_correct / total * 100))
+    print('test acc on FGM adversarial examples (%): {:.3f}'.format(total_correct_fgm / total * 100))
+    print('test acc on PGD adversarial examples (%): {:.3f}'.format(total_correct_pgd / total * 100))
+
+  # Train vanilla model
   net.train()
-  for _ in range(n_epoch):
-    for __, (x, y) in enumerate(train_loader):
-      x, y = x.to(device), y.to(device)
+  for epoch in range(FLAGS.nb_epochs):
+    for __, (x, y) in enumerate(data.train):
       optimizer.zero_grad()
       loss = loss_fn(net(x), y)
       loss.backward()
       optimizer.step()
 
-      print('epoch: {}/{}, batch: {}/{}, batch loss({}): {:.3f}'.format(
-          _+1, n_epoch, __+1, len(train_loader), loss_fn.__class__.__name__, loss.item()))
+    print('epoch: {}/{}, last batch loss: {:.3f}'.format(epoch, FLAGS.nb_epochs, loss.item()))
 
-def adv_train(n_epoch):
-  """
-  Adversarial training from the Madry Lab challenge.
-  """
-  print('adversarial training starts')
+  # Evaluate on clean and adversarial data
+  eval()
+
+  # Train model with adversarial training
   net.train()
-  pgd = attacks.ProjectedGradientDescent(net)
-  for _ in range(n_epoch):
-    for __, (x, y) in enumerate(train_loader):
-      x, y = x.to(device), y.to(device)
-      x_adv_pgd = pgd.generate(
-        x,
-        y=y,
-        eps=.3,
-        eps_iter=.01,
-        nb_iter=40,
-        ord=np.inf
-        )
+  for epoch in range(FLAGS.nb_epochs):
+    for __, (x, y) in enumerate(data.train):
+      adv_x = projected_gradient_descent(net, x, FLAGS.eps, 0.01, 40)
       optimizer.zero_grad()
-      loss = loss_fn(net(x_adv_pgd), y)
+      loss = loss_fn(net(adv_x), y)
       loss.backward()
       optimizer.step()
 
-      print('epoch: {}/{}, batch: {}/{}, batch loss({}): {:.3f}'.format(
-          _+1, n_epoch, __+1, len(train_loader), loss_fn.__class__.__name__, loss.item()))
+    print('epoch: {}/{}, last batch loss: {:.3f}'.format(epoch, FLAGS.nb_epochs, loss.item()))
 
-def test():
-  net.eval()
-  with torch.no_grad():
-    total = 0
-    total_correct = 0
+  # Evaluate on clean and adversarial data
+  eval()
 
-    for x, y in test_loader:
-      x, y = x.to(device), y.to(device)
-      _, y_pred = net(x).max(1)
-      total += y.size(0)
-      total_correct += y_pred.eq(y).sum().item()
+if __name__ == '__main__':
+  flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs.')
+  flags.DEFINE_float('eps', 0.3, 'Total epsilon for FGM and PGD attacks.')
 
-    print('test acc (%): {:.3f}'.format(total_correct/total * 100))
 
-if torch.cuda.device_count() > 1:
-  net = torch.nn.DataParallel(net)
-  net.to(device)
-
-# train(10)
-adv_train(200)
-test()
-
-######
-# generate adversarial examples
-######
-fgm = attacks.FastGradientMethod(net)
-pgd = attacks.ProjectedGradientDescent(net)
-
-total = 0
-total_correct_fgm = 0
-total_correct_pgd = 0
-
-for __, (x, y) in enumerate(test_loader):
-  x, y = x.to(device), y.to(device)
-  x_adv_fgm = fgm.generate(
-      x,
-      y=y,
-      eps=.3,
-      ord=np.inf
-      )
-  _, y_pred_fgm = net(x_adv_fgm).max(1)
-  total_correct_fgm += y_pred_fgm.eq(y).sum().item()
-
-  x_adv_pgd = pgd.generate(
-      x,
-      y=y,
-      eps=.3,
-      eps_iter=.01,
-      nb_iter=40,
-      ord=np.inf
-      )
-  _, y_pred_pgd = net(x_adv_pgd).max(1)
-  total += y.size(0)
-  total_correct_pgd += y_pred_pgd.eq(y).sum().item()
-  print('batch {}/{}'.format(__+1, len(test_loader)))
-
-print('fgm test acc (%): {:.3f}'.format(total_correct_fgm/total * 100))
-print('pgd test acc (%): {:.3f}'.format(total_correct_pgd/total * 100))
+  app.run(main)
