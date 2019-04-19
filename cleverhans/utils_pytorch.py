@@ -46,8 +46,8 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
   :return: A model function that maps an input (tf.Tensor) to the
   output of the model (tf.Tensor)
   """
-  warnings.warn("convert_pytorch_model_to_tf will be deprecated in CleverHans"
-                + " v4 as v4 will provide dedicated PyTorch support.")
+  warnings.warn("convert_pytorch_model_to_tf is deprecated, switch to"
+                + " dedicated PyTorch support provided by CleverHans v4.")
 
   torch_state = {
       'logits': None,

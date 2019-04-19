@@ -20,6 +20,7 @@ import torch.nn.functional as F
 from torch import optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
+import warnings
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.compat import flags
@@ -32,6 +33,10 @@ FLAGS = flags.FLAGS
 NB_EPOCHS = 6
 BATCH_SIZE = 128
 LEARNING_RATE = .001
+
+
+warnings.warn("convert_pytorch_model_to_tf is deprecated, switch to"
+              + " dedicated PyTorch support provided by CleverHans v4.")
 
 
 class PytorchMnistModel(nn.Module):
