@@ -35,7 +35,7 @@ install:
 
   - time pip install -q -e ".[test]"
   - if [[ "$PYTORCH" == True ]]; then
-      pip install torch==0.4.0 torchvision==0.2.1 -q;
+      pip install torch==1.0.1.post2 torchvision==0.2.2 -q;
     fi
   # workaround for version incompatibility between the scipy version in conda
   # and the system-provided /usr/lib/x86_64-linux-gnu/libstdc++.so.6
