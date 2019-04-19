@@ -183,6 +183,7 @@ def optimize_linear(grad, eps, ord=np.inf):
 
     max_abs_grad, _ = torch.max(abs_grad.view(grad.size(0), -1), 1)
     max_mask = abs_grad.eq(max_abs_grad.view(ori_shape)).to(torch.float)
+    num_ties = max_mask
     for red_scalar in red_ind:
       num_ties = torch.sum(num_ties, red_scalar, keepdim=True)
     optimal_perturbation = sign * max_mask / num_ties
