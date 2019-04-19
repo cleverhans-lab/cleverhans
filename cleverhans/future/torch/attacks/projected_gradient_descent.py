@@ -1,6 +1,5 @@
 """The Projected Gradient Descent attack."""
 import torch
-import warnings
 
 import numpy as np
 
@@ -38,8 +37,6 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, ord,
   :return: a tensor for the adversarial example
   """
   assert eps_iter <= eps, (eps_iter, eps)
-  if y is not None and y_target is not None:
-    raise ValueError("Must not set both y and y_target")
   if ord == 1:
     raise NotImplementedError("It's not clear that FGM is a good inner loop"
                               " step for PGD when ord=1, because ord=1 FGM "
