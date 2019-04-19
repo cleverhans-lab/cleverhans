@@ -297,6 +297,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Haojie Yuan (University of Science & Technology of China)
 * Zhishuai Zhang (Johns Hopkins)
 * Karen Hambardzumyan (YerevaNN)
+* Jianbo Chen (UC Berkeley)
 * Catherine Olsson (Google Brain)
 * Aidan Gomez (University of Oxford)
 * Zhi Li (University of Toronto)
