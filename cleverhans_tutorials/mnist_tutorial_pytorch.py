@@ -12,6 +12,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import warnings
 import numpy as np
 import tensorflow as tf
 import torch
@@ -20,7 +21,6 @@ import torch.nn.functional as F
 from torch import optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
-import warnings
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.compat import flags
