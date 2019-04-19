@@ -1,8 +1,6 @@
 """The Fast Gradient Method attack."""
-import torch
-import warnings
-
 import numpy as np
+import torch
 
 from cleverhans.utils_pytorch import optimize_linear
 
