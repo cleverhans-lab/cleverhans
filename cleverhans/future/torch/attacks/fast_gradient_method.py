@@ -7,45 +7,38 @@ import numpy as np
 from cleverhans.utils_pytorch import optimize_linear
 
 
-def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=None, targeted=False, sanity_checks=False):
+def fast_gradient_method(model_fn, x, eps, ord,
+                         clip_min=None, clip_max=None, y=None, targeted=False, sanity_checks=False):
   """
   PyTorch implementation of the Fast Gradient Method.
-  :param x: Tensor, shape (N, d_1, ...).
-  :param logits: Tensor, shape (N, C). Raw output of model(x), not softmax
-            probability.
-  :param y: (optional) Tensor, shape (N). True labels. If targeted
-            is true, then provide the target label. Otherwise, only provide
-            this parameter if you'd like to use true labels when crafting
-            adversarial samples. Otherwise, model predictions are used as
-            labels to avoid the "label leaking" effect (explained in this
-            paper: https://arxiv.org/abs/1611.01236). Default is None.
-  :param eps: (optional) float. The epsilon (input variation parameter)
-  :param ord: (optional) Order of the norm (mimics NumPy).
-              Possible values: np.inf, 1 or 2.
-  :param clip_min: (optional) float. Minimum float value for adversarial
-            example components
-  :param clip_max: (optional) float. Maximum float value for adversarial
-            example components
+  :param model_fn: a callable that takes an input tensor and returns the model logits.
+  :param x: input tensor.
+  :param eps: epsilon (input variation parameter); see https://arxiv.org/abs/1412.6572.
+  :param ord: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
+  :param clip_min: (optional) float. Minimum float value for adversarial example components.
+  :param clip_max: (optional) float. Maximum float value for adversarial example components.
+  :param y: (optional) Tensor with true labels. If targeted is true, then provide the
+            target label. Otherwise, only provide this parameter if you'd like to use true
+            labels when crafting adversarial samples. Otherwise, model predictions are used
+            as labels to avoid the "label leaking" effect (explained in this paper:
+            https://arxiv.org/abs/1611.01236). Default is None.
   :param targeted: (optional) bool. Is the attack targeted or untargeted?
             Untargeted, the default, will try to make the label incorrect.
-            Targeted will instead try to move in the direction of being more
-                   like y.
+            Targeted will instead try to move in the direction of being more like y.
+  :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
+            memory or for unit tests that intentionally pass strange input)
   :return: a tensor for the adversarial example
   """
   asserts = []
 
   # If a data range was specified, check that the input was in that range
   if clip_min is not None:
-    asserts.append(torch.all(torch.ge(
-        x,
-        torch.tensor(clip_min, device=x.device, dtype=x.dtype)
-    )))
+    assert_ge = torch.all(torch.ge(x, torch.tensor(clip_min, device=x.device, dtype=x.dtype)))
+    asserts.append(assert_ge)
 
   if clip_max is not None:
-    asserts.append(torch.all(torch.le(
-        x,
-        torch.tensor(clip_max, device=x.device, dtype=x.dtype)
-    )))
+    assert_le = torch.all(torch.le(x, torch.tensor(clip_max, device=x.device, dtype=x.dtype)))
+    asserts.append(assert_le)
 
   # x needs to be a leaf variable, of floating point type and have requires_grad being True for
   # its grad to be computed and stored properly in a backward call
@@ -57,7 +50,8 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   # Compute loss
   loss_fn = torch.nn.CrossEntropyLoss()
   loss = loss_fn(model_fn(x), y)
-  if targeted:  # attack is targeted, minimize loss of target label rather than maximize loss of correct label
+  # If attack is targeted, minimize loss of target label rather than maximize loss of correct label
+  if targeted:
     loss = -loss
 
   # Define gradient of loss wrt input
