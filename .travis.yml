@@ -5,8 +5,8 @@ language: python
 python:
   - 3.5
 env:
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=False
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.12.0 PYTORCH=False
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=True
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.12.0 PYTORCH=True
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=True
 
 install:
