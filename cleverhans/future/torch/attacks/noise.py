@@ -31,8 +31,6 @@ class Noise(Attack):
     def __init__(self, model, dtype='float32', **kwargs):
 
         super(Noise, self).__init__(model, dtype=dtype, **kwargs)
-        #self.feedable_kwargs = ('eps', 'clip_min', 'clip_max')
-        #self.structural_kwargs = ['ord'] 
 
     def generate(self, x, **kwargs):
         """

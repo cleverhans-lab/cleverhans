@@ -12,6 +12,6 @@ class Attack():
         model: The model nn.Module object
         dtype: A string mentioning the data type of the model
     """
-    def __init__(self, model:nn.Module, dtype:str):
+    def __init__(self, model, dtype):
         self.model = model
         self.dtype = dtype
