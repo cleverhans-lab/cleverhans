@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 
-def noise(model, x, eps=0.3, order=np.inf, clip_min=None, clip_max=None):
+def noise(x, eps=0.3, order=np.inf, clip_min=None, clip_max=None):
     """
     A weak attack that just picks a random point in the attacker's action
     space. When combined with an attack bundling function, this can be used to
@@ -21,17 +21,20 @@ def noise(model, x, eps=0.3, order=np.inf, clip_min=None, clip_max=None):
         yield a strong optimizer.
 
     Args:
-        model: Model
-        dtype: dtype of the data
-        kwargs: passed through the super constructor
+    :param x: the input tensor
+    :param eps: (optional float) maximum distortion of adversarial example 
+                compared to original input.
+    :param ord: (optional) Order of the norm.
+    :param clip_min: (optional float) Minimum input component value
+    :param clip_max: (optional float) Maximum input component value
     """
 
-    if ord != np.inf: raise NotImplementedError(ord)
+    if order != np.inf: raise NotImplementedError(ord)
     
-    eta = torch.FloatTensor(*x.shape, dtype=x.dtype, device=x.device)
+    eta = torch.FloatTensor(*x.shape, device=x.device) \
                .uniform_(-eps, eps)
 
-    adv_x = x + eta
+    adv_x = x.float() + eta
 
     if clip_min is not None and clip_max is not None:
         adv_x = torch.clamp(adv_x, min=clip_min, max=clip_max)
