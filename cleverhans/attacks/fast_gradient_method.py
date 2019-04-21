@@ -35,7 +35,7 @@ class FastGradientMethod(Attack):
 
     super(FastGradientMethod, self).__init__(model, sess, dtypestr, **kwargs)
     self.feedable_kwargs = ('eps', 'y', 'y_target', 'clip_min', 'clip_max')
-    self.structural_kwargs = ['ord', 'sanity_checks']
+    self.structural_kwargs = ['ord', 'sanity_checks', 'clip_grad']
 
   def generate(self, x, **kwargs):
     """
@@ -91,6 +91,9 @@ class FastGradientMethod(Attack):
                      one-hot-encoded.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param clip_grad: (optional bool) Ignore gradient components
+                      at positions where the input is already at the boundary
+                      of the domain, and the update step will get clipped out.
     :param sanity_checks: bool, if True, include asserts
       (Turn them off to use less runtime / memory or for unit tests that
       intentionally pass strange input)
@@ -148,6 +151,9 @@ def fgm(x,
               Possible values: np.inf, 1 or 2.
   :param clip_min: Minimum float value for adversarial example components
   :param clip_max: Maximum float value for adversarial example components
+  :param clip_grad: (optional bool) Ignore gradient components
+                    at positions where the input is already at the boundary
+                    of the domain, and the update step will get clipped out.
   :param targeted: Is the attack targeted or untargeted? Untargeted, the
                    default, will try to make the label incorrect. Targeted
                    will instead try to move in the direction of being more
