@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from cleverhans.attacks.attack import Attack
 from cleverhans import utils_tf
-from cleverhans.utils_tf import clip_eta, random_lp_sample
+from cleverhans.utils_tf import clip_eta, random_lp_vector
 from cleverhans.compat import reduce_max, reduce_sum, \
   softmax_cross_entropy_with_logits
 
@@ -70,7 +70,7 @@ class SparseL1Descent(Attack):
 
     # Initialize loop variables
     if self.rand_init:
-      eta = random_lp_sample(tf.shape(x), ord=1,
+      eta = random_lp_vector(tf.shape(x), ord=1,
                              eps=tf.cast(self.eps, x.dtype), dtype=x.dtype)
     else:
       eta = tf.zeros(tf.shape(x))

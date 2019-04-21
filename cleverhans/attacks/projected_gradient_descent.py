@@ -10,7 +10,7 @@ import tensorflow as tf
 from cleverhans.attacks.attack import Attack
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod
 from cleverhans import utils_tf
-from cleverhans.utils_tf import clip_eta, random_lp_sample
+from cleverhans.utils_tf import clip_eta, random_lp_vector
 
 
 class ProjectedGradientDescent(Attack):
@@ -71,7 +71,7 @@ class ProjectedGradientDescent(Attack):
 
     # Initialize loop variables
     if self.rand_init:
-      eta = random_lp_sample(tf.shape(x), self.ord,
+      eta = random_lp_vector(tf.shape(x), self.ord,
                              tf.cast(self.eps, x.dtype), dtype=x.dtype)
     else:
       eta = tf.zeros(tf.shape(x))

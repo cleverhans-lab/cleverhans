@@ -458,12 +458,14 @@ def random_laplace(shape, loc=0.0, scale=1.0, dtype=tf.float32, seed=None):
   return z1 - z2
 
 
-def random_lp_sample(shape, ord, eps, dtype=tf.float32, seed=None):
+def random_lp_vector(shape, ord, eps, dtype=tf.float32, seed=None):
   """
-  Helper function to generate uniformly random samples from a norm ball of
+  Helper function to generate uniformly random vectors from a norm ball of
   radius epsilon.
-  :param shape: Shape of the random sample. The first dimension is the batch
-                dimension. All samples in the batch are i.i.d.
+  :param shape: Output shape of the random sample. The shape is expected to be
+                of the form `(n, d1, d2, ..., dn)` where `n` is the number of
+                i.i.d. samples that will be drawn from a norm ball of dimension
+                `d1*d1*...*dn`.
   :param ord: Order of the norm (mimics Numpy).
               Possible values: np.inf, 1 or 2.
   :param eps: Epsilon, radius of the norm ball.

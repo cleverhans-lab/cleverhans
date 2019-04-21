@@ -115,16 +115,16 @@ class TestUtilsTF(CleverHansTest):
     expected = np.asarray([[1.], [0.], [0.], [1.], [1.], [-1.], [-1.], [1.]])
     self.assertClose(grad2, expected)
 
-  def test_random_lp_sample_linf(self):
+  def test_random_lp_vector_linf(self):
     """
-    test_random_lp_sample_linf: Test that `test_random_lp_sample` returns
+    test_random_lp_sample_linf: Test that `random_lp_vector` returns
     random samples in the l-inf ball.
     """
 
     eps = 0.5
     d = 10
 
-    r = self.sess.run(utils_tf.random_lp_sample((1000, d), np.infty, eps))
+    r = self.sess.run(utils_tf.random_lp_vector((1000, d), np.infty, eps))
 
     # test that some values are close to the boundaries
     self.assertLessEqual(np.max(r), eps)
@@ -136,9 +136,9 @@ class TestUtilsTF(CleverHansTest):
     means = np.mean(r, axis=0)
     self.assertClose(means, np.zeros(d), atol=0.05)
 
-  def test_random_lp_sample_l1_l2(self):
+  def test_random_lp_srandom_lp_vector_l1_l2(self):
     """
-    test_random_lp_sample_l1_l2: Test that `test_random_lp_sample` returns
+    test_random_lp_vector_l1_l2: Test that `random_lp_vector` returns
     random samples in an l1 or l2 ball.
     """
 
@@ -146,7 +146,7 @@ class TestUtilsTF(CleverHansTest):
     d = 10
 
     for ord in [1, 2]:
-      r = self.sess.run(utils_tf.random_lp_sample((1000, d), ord, eps))
+      r = self.sess.run(utils_tf.random_lp_vector((1000, d), ord, eps))
 
       norms = np.linalg.norm(r, axis=-1, ord=ord)
 
