@@ -110,8 +110,9 @@ class ProjectedGradientDescent(Attack):
       raise NotImplementedError("FGM is not a good inner loop step for PGD "
                                 " when ord=1, because ord=1 FGM changes only "
                                 " one pixel at a time. Use the SparseL1Descent "
-                                " attack instead, which allows for controlling "
-                                " the sparsity of the gradient updates.")
+                                " attack instead, which allows fine-grained "
+                                " control over the sparsity of the gradient "
+                                " updates.")
 
     # Use getattr() to avoid errors in eager execution attacks
     FGM = self.FGM_CLASS(
