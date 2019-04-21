@@ -39,7 +39,6 @@ class TestUtilsTF(CleverHansTest):
     # The point of this test is just to make sure the casting logic doesn't raise an exception
     utils_tf.clip_by_value(x, clip_min, clip_max)
 
-
   def test_l2_batch_normalize(self):
     x = tf.random_normal((100, 1000))
     x_norm = self.sess.run(utils_tf.l2_batch_normalize(x))
@@ -98,3 +97,65 @@ class TestUtilsTF(CleverHansTest):
         # argument values we test
         gold = sign * np.array([[1.], [1.], [0.]])
         self.assertClose(grad_value, gold)
+
+  def test_zero_out_clipped_grads(self):
+    """
+    test_zero_out_clipped_grads: Test that gradient gets zeroed out at positions
+    where no progress can be made due to clipping.
+    """
+
+    clip_min = -1
+    clip_max = 1
+    eta = tf.constant([[0.], [-1.], [1], [0.5], [-1], [1], [-0.9], [0.9]])
+    grad = tf.constant([[1.], [-1.], [1.], [1.], [1.], [-1.], [-1.], [1.]])
+
+    grad2 = self.sess.run(
+        utils_tf.zero_out_clipped_grads(grad, eta, clip_min, clip_max))
+
+    expected = np.asarray([[1.], [0.], [0.], [1.], [1.], [-1.], [-1.], [1.]])
+    self.assertClose(grad2, expected)
+
+  def test_random_lp_sample_linf(self):
+    """
+    test_random_lp_sample_linf: Test that `test_random_lp_sample` returns
+    random samples in the l-inf ball.
+    """
+
+    eps = 0.5
+    d = 10
+
+    r = self.sess.run(utils_tf.random_lp_sample((1000, d), np.infty, eps))
+
+    # test that some values are close to the boundaries
+    self.assertLessEqual(np.max(r), eps)
+    self.assertGreaterEqual(np.max(r), 0.95*eps)
+    self.assertGreaterEqual(np.min(r), -eps)
+    self.assertLessEqual(np.min(r), -0.95*eps)
+
+    # test that the mean value of each feature is close to zero
+    means = np.mean(r, axis=0)
+    self.assertClose(means, np.zeros(d), atol=0.05)
+
+  def test_random_lp_sample_l1_l2(self):
+    """
+    test_random_lp_sample_l1_l2: Test that `test_random_lp_sample` returns
+    random samples in an l1 or l2 ball.
+    """
+
+    eps = 0.5
+    d = 10
+
+    for ord in [1, 2]:
+      r = self.sess.run(utils_tf.random_lp_sample((1000, d), ord, eps))
+
+      norms = np.linalg.norm(r, axis=-1, ord=ord)
+
+      # test that some values are close to the boundaries
+      self.assertLessEqual(np.max(norms), eps)
+      self.assertGreaterEqual(np.max(norms), 0.95 * eps)
+
+      # The expected norm is eps * Exp[U[0,1]^(1/d)] where U is a standard
+      # uniform random variable and d is the dimension. The second term is
+      # equal to the expected value of a Beta(d, 1) variable which is d/(d+1).
+      expected_mean_norm = eps * (d / (d + 1.))
+      self.assertClose(np.mean(norms), expected_mean_norm, atol=0.02)

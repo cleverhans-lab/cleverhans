@@ -38,7 +38,7 @@ class MomentumIterativeMethod(Attack):
     self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
                             'clip_max')
     self.structural_kwargs = [
-        'ord', 'nb_iter', 'decay_factor', 'sanity_checks']
+        'ord', 'nb_iter', 'decay_factor', 'sanity_checks', 'clip_grad']
 
   def generate(self, x, **kwargs):
     """
