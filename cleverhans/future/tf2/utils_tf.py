@@ -58,10 +58,10 @@ def initialize_uninitialized_global_variables(sess):
   :return:
   """
   # List all global variables
-  global_vars = tf.global_variables()
+  global_vars = tf.compat.v1.global_variables()
 
   # Find initialized status for all variables
-  is_var_init = [tf.is_variable_initialized(var) for var in global_vars]
+  is_var_init = [tf.compat.v1.is_variable_initialized(var) for var in global_vars]
   is_initialized = sess.run(is_var_init)
 
   # List all variables that were not initialized previously
@@ -70,7 +70,7 @@ def initialize_uninitialized_global_variables(sess):
 
   # Initialize all uninitialized variables found, if any
   if len(not_initialized_vars):
-    sess.run(tf.variables_initializer(not_initialized_vars))
+    sess.run(tf.compat.v1.variables_initializer(not_initialized_vars))
 
 
 def train(sess, loss, x, y, X_train, Y_train, save=False,
@@ -132,13 +132,13 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
   # Define optimizer
   loss_value = loss.fprop(x, y, **fprop_args)
   if optimizer is None:
-    optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    optimizer = tf.optimizers.AdamOptimizer(learning_rate=args.learning_rate)
   else:
-    if not isinstance(optimizer, tf.train.Optimizer):
+    if not isinstance(optimizer, tf.optimizers.Optimizer):
       raise ValueError("optimizer object must be from a child class of "
                        "tf.train.Optimizer")
   # Trigger update operations within the default graph (such as batch_norm).
-  with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+  with tf.control_dependencies(tf.compat.v1.get_collection(tf.v1.compat.GraphKeys.UPDATE_OPS)):
     train_step = optimizer.minimize(loss_value, var_list=var_list)
 
   with sess.as_default():
@@ -150,7 +150,7 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
     else:
       warnings.warn("Update your copy of tensorflow; future versions of "
                     "CleverHans may drop support for this version.")
-      sess.run(tf.initialize_all_variables())
+      sess.run(tf.compat.v1.initialize_all_variables())
 
     for epoch in xrange(args.nb_epochs):
       # Compute number of batches
@@ -183,7 +183,7 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
 
     if save:
       save_path = os.path.join(args.train_dir, args.filename)
-      saver = tf.train.Saver()
+      saver = tf.compat.v1.train.Saver()
       saver.save(sess, save_path)
       _logger.info("Completed model training and saved at: " +
                    str(save_path))
@@ -280,7 +280,7 @@ def tf_model_load(sess, file_path=None):
   :return:
   """
   with sess.as_default():
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
     if file_path is None:
       error = 'file_path argument is missing.'
       raise ValueError(error)
@@ -333,16 +333,16 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
   """
   with tf.name_scope(scope, "l2_batch_normalize") as name_scope:
     x_shape = tf.shape(x)
-    x = tf.contrib.layers.flatten(x)
+    x = tf.keras.layers.Flatten()(x)
     x /= (epsilon + reduce_max(tf.abs(x), 1, keepdims=True))
     square_sum = reduce_sum(tf.square(x), 1, keepdims=True)
-    x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
+    x_inv_norm = tf.math.rsqrt(np.sqrt(epsilon) + square_sum)
     x_norm = tf.multiply(x, x_inv_norm)
     return tf.reshape(x_norm, x_shape, name_scope)
 
 
 def kl_with_logits(p_logits, q_logits, scope=None,
-                   loss_collection=tf.GraphKeys.REGULARIZATION_LOSSES):
+                   loss_collection=tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES):
   """Helper function to compute kl-divergence KL(p || q)
   """
   with tf.name_scope(scope, "kl_divergence") as name:
@@ -444,7 +444,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
   if predictions_adv is not None:
     loss = (loss + model_loss(y, predictions_adv)) / 2
 
-  train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+  train_step = tf.optimizers.AdamOptimizer(learning_rate=args.learning_rate)
   train_step = train_step.minimize(loss, var_list=var_list)
 
   with sess.as_default():
@@ -456,7 +456,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     else:
       warnings.warn("Update your copy of tensorflow; future versions of "
                     "CleverHans may drop support for this version.")
-      sess.run(tf.initialize_all_variables())
+      sess.run(tf.compat.v1.initialize_all_variables())
 
     for epoch in xrange(args.nb_epochs):
       # Compute number of batches
@@ -489,7 +489,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     if save:
       save_path = os.path.join(args.train_dir, args.filename)
-      saver = tf.train.Saver()
+      saver = tf.compat.v1.train.Saver()
       saver.save(sess, save_path)
       _logger.info("Completed model training and saved at: " +
                    str(save_path))
@@ -624,7 +624,7 @@ def assert_less_equal(*args, **kwargs):
   The unwrapped version raises an exception if used with tf.device("/GPU:x").
   """
   with tf.device("/CPU:0"):
-    return tf.assert_less_equal(*args, **kwargs)
+    return tf.debugging.assert_less_equal(*args, **kwargs)
 
 def assert_greater_equal(*args, **kwargs):
   """
@@ -633,7 +633,7 @@ def assert_greater_equal(*args, **kwargs):
   The unwrapped version raises an exception if used with tf.device("/GPU:x").
   """
   with tf.device("/CPU:0"):
-    return tf.assert_greater_equal(*args, **kwargs)
+    return tf.debugging.assert_greater_equal(*args, **kwargs)
 
 def assert_equal(*args, **kwargs):
   """
@@ -642,7 +642,7 @@ def assert_equal(*args, **kwargs):
   The unwrapped version raises an exception if used with tf.device("/GPU:x").
   """
   with tf.device("/CPU:0"):
-    return tf.assert_equal(*args, **kwargs)
+    return tf.debugging.assert_equal(*args, **kwargs)
 
 def jacobian_graph(predictions, x, nb_classes):
   """
