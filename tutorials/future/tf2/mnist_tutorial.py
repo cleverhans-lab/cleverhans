@@ -64,10 +64,10 @@ def main(_):
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     train_loss(loss)
 
-  # keras like display of progress
-  progress_bar_train = tf.keras.utils.Progbar(60000)
   # Train model with adversarial training
   for epoch in range(FLAGS.nb_epochs):
+    # keras like display of progress
+    progress_bar_train = tf.keras.utils.Progbar(60000)
     for (x, y) in data.train:
       if FLAGS.adv_train:
         # Replace clean example with adversarial example for adversarial training
