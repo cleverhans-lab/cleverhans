@@ -42,7 +42,17 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
     # Using model predictions as ground truth to avoid label leaking
     y = tf.argmax(model_fn(x), 1)
 
-  grad = train_step(model_fn, x, y, targeted)
+  loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
+  with tf.GradientTape() as g:
+    g.watch(x)
+    # Compute loss
+    loss = loss_fn(labels=y, logits=model_fn(x))
+    if targeted:  # attack is targeted, minimize loss of target label rather than maximize loss of correct label
+      loss = -loss
+
+  # Define gradient of loss wrt input
+  grad = g.gradient(loss, x)
+
   optimal_perturbation = optimize_linear(grad, eps, ord)
   # Add perturbation to original example to obtain adversarial example
   adv_x = x + optimal_perturbation
@@ -58,34 +68,6 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   return adv_x
 
 
-@tf.function
-def train_step(model_fn, x, y, targeted):
-  """
-  Calculates the gradients with respect to the input x. Wrapped inside
-  of @tf.function to speed up computation.
-  :param model_fn: a callable that takes an input tensor and returns the model logits.
-  :param x: input tensor.
-  :param y: (optional) Tensor with true labels. If targeted is true, then provide the
-            target label. Otherwise, only provide this parameter if you'd like to use true
-            labels when crafting adversarial samples. Otherwise, model predictions are used
-            as labels to avoid the "label leaking" effect (explained in this paper:
-            https://arxiv.org/abs/1611.01236). Default is None.
-  :param targeted: (optional) bool. Is the attack targeted or untargeted?
-            Untargeted, the default, will try to make the label incorrect.
-  """
-  loss_fn = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
-  with tf.GradientTape() as g:
-    g.watch(x)
-    # Compute loss
-    loss = loss_fn(y, model_fn(x))
-    if targeted:  # attack is targeted, minimize loss of target label rather than maximize loss of correct label
-      loss = -loss
-
-  # Define gradient of loss wrt input
-  grad = g.gradient(loss, x)
-  return grad
-
-
 def optimize_linear(grad, eps, ord=np.inf):
   """
   Solves for the optimal input to a linear function under a norm constraint.
@@ -99,18 +81,15 @@ def optimize_linear(grad, eps, ord=np.inf):
     tf tensor containing optimal perturbation
   """
 
-  # In Python 2, the `list` call in the following line is redundant / harmless.
-  # In Python 3, the `list` call is needed to convert the iterator returned by `range` into a list.
+  # Convert the iterator returned by `range` into a list.
   red_ind = list(range(1, len(grad.get_shape())))
   avoid_zero_div = 1e-12
   if ord == np.inf:
     # Take sign of gradient
     optimal_perturbation = tf.sign(grad)
-    # The following line should not change the numerical results.
-    # It applies only because `optimal_perturbation` is the output of
-    # a `sign` op, which has zero derivative anyway.
-    # It should not be applied for the other norms, where the
-    # perturbation has a non-zero derivative.
+    # The following line should not change the numerical results. It applies only because
+    # `optimal_perturbation` is the output of a `sign` op, which has zero derivative anyway.
+    # It should not be applied for the other norms, where the perturbation has a non-zero derivative.
     optimal_perturbation = tf.stop_gradient(optimal_perturbation)
   elif ord == 1:
     abs_grad = tf.abs(grad)
@@ -121,15 +100,11 @@ def optimize_linear(grad, eps, ord=np.inf):
     optimal_perturbation = sign * tied_for_max / num_ties
   elif ord == 2:
     square = tf.maximum(avoid_zero_div,
-                        tf.reduce_sum(tf.square(grad),
-                                      reduction_indices=red_ind,
-                                      keepdims=True))
+                        tf.reduce_sum(tf.square(grad), reduction_indices=red_ind, keepdims=True))
     optimal_perturbation = grad / tf.sqrt(square)
   else:
-    raise NotImplementedError("Only L-inf, L1 and L2 norms are "
-                              "currently implemented.")
+    raise NotImplementedError("Only L-inf, L1 and L2 norms are currently implemented.")
 
-  # Scale perturbation to be the solution for the norm=eps rather than
-  # norm=1 problem
+  # Scale perturbation to be the solution for the norm=eps rather than norm=1 problem
   scaled_perturbation = tf.multiply(eps, optimal_perturbation)
   return scaled_perturbation
