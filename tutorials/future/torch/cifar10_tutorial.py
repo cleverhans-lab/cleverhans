@@ -19,23 +19,23 @@ class CNN(torch.nn.Module):
     self.conv1 = nn.Conv2d(in_channels, 64, 8, 1)
     self.conv2 = nn.Conv2d(64, 128, 6, 2)
     self.conv3 = nn.Conv2d(128, 128, 5, 2)
-    self.fc = nn.Linear(128*2*2, 10)
+    self.fc = nn.Linear(128*3*3, 10)
 
   def forward(self, x):
     x = F.relu(self.conv1(x))
     x = F.relu(self.conv2(x))
     x = F.relu(self.conv3(x))
-    x = x.view(-1, 128*2*2)
+    x = x.view(-1, 128*3*3)
     x = self.fc(x)
     return x
 
 
-def ld_mnist():
+def ld_cifar10():
   """Load training and test data."""
   train_transforms = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
   test_transforms = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-  train_dataset = torchvision.datasets.MNIST(root='/tmp/data', train=True, transform=train_transforms, download=True)
-  test_dataset = torchvision.datasets.MNIST(root='/tmp/data', train=False, transform=test_transforms, download=True)
+  train_dataset = torchvision.datasets.CIFAR10(root='/tmp/data', train=True, transform=train_transforms, download=True)
+  test_dataset = torchvision.datasets.CIFAR10(root='/tmp/data', train=False, transform=test_transforms, download=True)
   train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=2)
   test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=128, shuffle=False, num_workers=2)
   return EasyDict(train=train_loader, test=test_loader)
@@ -43,10 +43,10 @@ def ld_mnist():
 
 def main(_):
   # Load training and test data
-  data = ld_mnist()
+  data = ld_cifar10()
 
   # Instantiate model, loss, and optimizer for training
-  net = CNN(in_channels=1)
+  net = CNN(in_channels=3)
   device = 'cuda' if torch.cuda.is_available() else 'cpu'
   if device == 'cuda':
     net = net.cuda()
