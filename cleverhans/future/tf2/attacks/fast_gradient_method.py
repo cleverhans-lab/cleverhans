@@ -42,16 +42,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
     # Using model predictions as ground truth to avoid label leaking
     y = tf.argmax(model_fn(x), 1)
 
-  loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
-  with tf.GradientTape() as g:
-    g.watch(x)
-    # Compute loss
-    loss = loss_fn(labels=y, logits=model_fn(x))
-    if targeted:  # attack is targeted, minimize loss of target label rather than maximize loss of correct label
-      loss = -loss
-
-  # Define gradient of loss wrt input
-  grad = g.gradient(loss, x)
+  grad = compute_gradient(model_fn, x, y, targeted)
 
   optimal_perturbation = optimize_linear(grad, eps, ord)
   # Add perturbation to original example to obtain adversarial example
@@ -68,6 +59,34 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   return adv_x
 
 
+# Due to performance reasons, this function is wrapped inside of tf.function decorator.
+# Not using the decorator here, or letting the user wrap the attack in tf.function is way
+# slower on Tensorflow 2.0.0-alpha0.
+@tf.function
+def compute_gradient(model_fn, x, y, targeted):
+  """
+  Computes the gradient of the loss with respect to the input tensor.
+  :param model_fn: a callable that takes an input tensor and returns the model logits.
+  :param x: input tensor
+  :param y: Tensor with true labels. If targeted is true, then provide the target label.
+  :param targeted:  bool. Is the attack targeted or untargeted? Untargeted, the default, will
+                    try to make the label incorrect. Targeted will instead try to move in the
+                    direction of being more like y.
+  :return: A tensor containing the gradient of the loss with respect to the input tensor.
+  """
+  loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
+  with tf.GradientTape() as g:
+    g.watch(x)
+    # Compute loss
+    loss = loss_fn(labels=y, logits=model_fn(x))
+    if targeted:  # attack is targeted, minimize loss of target label rather than maximize loss of correct label
+      loss = -loss
+
+  # Define gradient of loss wrt input
+  grad = g.gradient(loss, x)
+  return grad
+
+
 def optimize_linear(grad, eps, ord=np.inf):
   """
   Solves for the optimal input to a linear function under a norm constraint.
@@ -82,7 +101,7 @@ def optimize_linear(grad, eps, ord=np.inf):
   """
 
   # Convert the iterator returned by `range` into a list.
-  red_ind = list(range(1, len(grad.get_shape())))
+  axis = list(range(1, len(grad.get_shape())))
   avoid_zero_div = 1e-12
   if ord == np.inf:
     # Take sign of gradient
@@ -94,13 +113,12 @@ def optimize_linear(grad, eps, ord=np.inf):
   elif ord == 1:
     abs_grad = tf.abs(grad)
     sign = tf.sign(grad)
-    max_abs_grad = tf.reduce_max(abs_grad, red_ind, keepdims=True)
+    max_abs_grad = tf.reduce_max(abs_grad, axis, keepdims=True)
     tied_for_max = tf.dtypes.cast(tf.equal(abs_grad, max_abs_grad), dtype=tf.float32)
-    num_ties = tf.reduce_sum(tied_for_max, red_ind, keepdims=True)
+    num_ties = tf.reduce_sum(tied_for_max, axis, keepdims=True)
     optimal_perturbation = sign * tied_for_max / num_ties
   elif ord == 2:
-    square = tf.maximum(avoid_zero_div,
-                        tf.reduce_sum(tf.square(grad), reduction_indices=red_ind, keepdims=True))
+    square = tf.maximum(avoid_zero_div, tf.reduce_sum(tf.square(grad), axis, keepdims=True))
     optimal_perturbation = grad / tf.sqrt(square)
   else:
     raise NotImplementedError("Only L-inf, L1 and L2 norms are currently implemented.")
