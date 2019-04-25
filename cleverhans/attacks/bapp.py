@@ -263,13 +263,15 @@ class BoundaryAttackPlusPlus(Attack):
     else:
       perturbed = target_image
 
-    dist_post_update = compute_distance(perturbed, sample, self.constraint)
-
     # Project the initialization to the boundary.
-    perturbed, dist = binary_search_batch(sample,
-                                          np.expand_dims(perturbed, 0),
-                                          decision_function, self.shape,
-                                          self.constraint, self.theta)
+    perturbed, dist_post_update = binary_search_batch(sample,
+                                                      np.expand_dims(perturbed, 0),
+                                                      decision_function,
+                                                      self.shape,
+                                                      self.constraint,
+                                                      self.theta)
+
+    dist = compute_distance(perturbed, sample, self.constraint)
 
     for j in np.arange(self.num_iterations):
       current_iteration = j + 1
