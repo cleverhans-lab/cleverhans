@@ -510,7 +510,7 @@ def geometric_progression_for_stepsize(x, update, dist, decision_function,
   epsilon = dist / np.sqrt(current_iteration)
   while True:
     updated = x + epsilon * update
-    success = decision_function(updated[None])
+    success = decision_function(updated[None])[0]
     if success:
       break
     else:
