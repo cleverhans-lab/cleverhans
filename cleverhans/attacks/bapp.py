@@ -258,17 +258,20 @@ class BoundaryAttackPlusPlus(Attack):
 
     # Initialize.
     if target_image is None:
-      perturbed = initialize(decision_function, sample, self.shape)
+      perturbed = initialize(decision_function, sample, self.shape,
+                             self.clip_min, self.clip_max)
     else:
       perturbed = target_image
 
-    dist_post_update = compute_distance(perturbed, sample, self.constraint)
-
     # Project the initialization to the boundary.
-    perturbed, dist = binary_search_batch(sample,
-                                          np.expand_dims(perturbed, 0),
-                                          decision_function, self.shape,
-                                          self.constraint, self.theta)
+    perturbed, dist_post_update = binary_search_batch(sample,
+                                                      np.expand_dims(perturbed, 0),
+                                                      decision_function,
+                                                      self.shape,
+                                                      self.constraint,
+                                                      self.theta)
+
+    dist = compute_distance(perturbed, sample, self.constraint)
 
     for j in np.arange(self.num_iterations):
       current_iteration = j + 1
@@ -298,7 +301,7 @@ class BoundaryAttackPlusPlus(Attack):
                                                      update, dist, decision_function, current_iteration)
 
         # Update the sample.
-        perturbed = clip_image(perturbed + epsilon * gradf,
+        perturbed = clip_image(perturbed + epsilon * update,
                                self.clip_min, self.clip_max)
 
         # Binary search to return to the boundary.
@@ -314,13 +317,17 @@ class BoundaryAttackPlusPlus(Attack):
         epsilons = np.logspace(-4, 0, num=20, endpoint=True) * dist
         epsilons_shape = [20] + len(self.shape) * [1]
         perturbeds = perturbed + epsilons.reshape(epsilons_shape) * update
+        perturbeds = clip_image(perturbeds, self.clip_min, self.clip_max)
         idx_perturbed = decision_function(perturbeds)
 
         if np.sum(idx_perturbed) > 0:
           # Select the perturbation that yields the minimum distance # after binary search.
           perturbed, dist_post_update = binary_search_batch(sample,
-                                                            perturbeds[idx_perturbed], decision_function, self.shape,
-                                                            self.constraint, self.theta)
+                                                            perturbeds[idx_perturbed],
+                                                            decision_function,
+                                                            self.shape,
+                                                            self.constraint,
+                                                            self.theta)
 
       # compute new distance.
       dist = compute_distance(perturbed, sample, self.constraint)
@@ -431,7 +438,6 @@ def binary_search_batch(original_image, perturbed_images, decision_function,
 
   lows = np.zeros(len(perturbed_images))
 
-  # Call recursive function.
   while np.max((highs - lows) / thresholds) > 1:
     # projection to mids.
     mids = (highs + lows) / 2.0
@@ -462,18 +468,22 @@ def binary_search_batch(original_image, perturbed_images, decision_function,
   return out_image, dist
 
 
-def initialize(decision_function, sample, shape):
+def initialize(decision_function, sample, shape, clip_min, clip_max):
   """
   Efficient Implementation of BlendedUniformNoiseAttack in Foolbox.
   """
   success = 0
+  num_evals = 0
 
   # Find a misclassified random noise.
   while True:
-    random_noise = np.random.uniform(-1, 1, size=shape)
-    success = decision_function(random_noise[None])
+    random_noise = np.random.uniform(clip_min, clip_max, size=shape)
+    success = decision_function(random_noise[None])[0]
     if success:
       break
+    num_evals += 1
+    message = "Initialization failed! Try to use a misclassified image as `target_image`"
+    assert num_evals < 1e4, message
 
   # Binary search to minimize l2 distance to original image.
   low = 0.0
@@ -481,7 +491,7 @@ def initialize(decision_function, sample, shape):
   while high - low > 0.001:
     mid = (high + low) / 2.0
     blended = (1 - mid) * sample + mid * random_noise
-    success = decision_function(blended[None])
+    success = decision_function(blended[None])[0]
     if success:
       high = mid
     else:
