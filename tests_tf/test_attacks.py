@@ -169,7 +169,7 @@ class TestVirtualAdversarialMethod(CleverHansTest):
 
 class CommonAttackProperties(CleverHansTest):
   """
-  Abstract base class shared by the tessts for many attacks that want
+  Abstract base class shared by the tests for many attacks that want
   to check the same properties.
   """
 
