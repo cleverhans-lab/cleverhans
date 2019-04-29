@@ -62,11 +62,20 @@ class TestOptimizeLinear(CleverHansTest):
     for eps in self.eps_list:
       eta = self.fn(self.rand_grad, eps=eps, ord=1)
       norm = eta.abs().sum(dim=self.red_ind)
-      self.assertTrue(torch.all(norm == eps * torch.ones_like(norm)))
+      self.assertTrue(torch.allclose(norm, eps * torch.ones_like(norm)))
 
   def test_optimize_linear_l2_satisfies_norm_constraint(self):
     for eps in self.eps_list:
       eta = self.fn(self.rand_grad, eps=eps, ord=2)
+      # optimize_linear uses avoid_zero_div as the divisor for
+      # gradients with overly small l2 norms when performing norm
+      # normalizations on the gradients so as to safeguard against
+      # zero division error. Therefore, the replaced gradient vectors
+      # will not be l2-unit vectors after normalization. In this test,
+      # these gradients are filtered out by the one_mask
+      # below and are not tested.
+      # NOTE the value of avoid_zero_div should be the same as the
+      # avoid_zero_div used in the optimize_linear function
       avoid_zero_div = torch.tensor(1e-12)
       square = torch.max(
           avoid_zero_div,
@@ -75,4 +84,4 @@ class TestOptimizeLinear(CleverHansTest):
       norm = eta.pow(2).sum(dim=self.red_ind, keepdim=True).sqrt()
       one_mask = (square <= avoid_zero_div).to(torch.float) * norm + \
               (square > avoid_zero_div).to(torch.float)
-      self.assertTrue(torch.allclose(norm, eps * one_mask, rtol=1e-05, atol=1e-08))
+      self.assertTrue(torch.allclose(norm, eps * one_mask))
