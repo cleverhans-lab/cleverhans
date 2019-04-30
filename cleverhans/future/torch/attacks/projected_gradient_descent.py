@@ -8,11 +8,11 @@ from cleverhans.utils_pytorch import clip_eta
 
 def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, ord,
                                clip_min=None, clip_max=None, y=None, targeted=False,
-                               rand_init=None, rand_minmax=0.3, sanity_checks=True):
+                               rand_init=True, rand_minmax=None, sanity_checks=True):
   """
   This class implements either the Basic Iterative Method
-  (Kurakin et al. 2016) when rand_init is set to 0. or the
-  Madry et al. (2017) method when rand_minmax is larger than 0.
+  (Kurakin et al. 2016) when rand_init is set to False. or the
+  Madry et al. (2017) method if rand_init is set to True.
   Paper link (Kurakin et al. 2016): https://arxiv.org/pdf/1607.02533.pdf
   Paper link (Madry et al. 2017): https://arxiv.org/pdf/1706.06083.pdf
   :param model_fn: a callable that takes an input tensor and returns the model logits.
@@ -31,6 +31,10 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, ord,
   :param targeted: (optional) bool. Is the attack targeted or untargeted?
             Untargeted, the default, will try to make the label incorrect.
             Targeted will instead try to move in the direction of being more like y.
+  :param rand_init: (optional) bool. Whether to start the attack from a randomly perturbed x.
+  :param rand_minmax: (optional) bool. Support of the continuous uniform distribution from
+            which the random perturbation on x was drawn. Effective only when rand_init is
+            True. Default equals to eps.
   :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
             memory or for unit tests that intentionally pass strange input)
   :return: a tensor for the adversarial example
@@ -58,7 +62,8 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, ord,
 
   # Initialize loop variables
   if rand_init:
-    rand_minmax = eps
+    if rand_minmax is None:
+      rand_minmax = eps
     eta = torch.zeros_like(x).uniform_(-rand_minmax, rand_minmax)
   else:
     eta = torch.zeros_like(x)
