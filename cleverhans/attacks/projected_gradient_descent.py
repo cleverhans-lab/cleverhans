@@ -72,7 +72,8 @@ class ProjectedGradientDescent(Attack):
     # Initialize loop variables
     if self.rand_init:
       eta = random_lp_vector(tf.shape(x), self.ord,
-                             tf.cast(self.eps, x.dtype), dtype=x.dtype)
+                             tf.cast(self.rand_init_eps, x.dtype),
+                             dtype=x.dtype)
     else:
       eta = tf.zeros(tf.shape(x))
 
@@ -177,6 +178,7 @@ class ProjectedGradientDescent(Attack):
                    clip_max=None,
                    y_target=None,
                    rand_init=None,
+                   rand_init_eps=None,
                    clip_grad=False,
                    sanity_checks=True,
                    **kwargs):
@@ -198,6 +200,11 @@ class ProjectedGradientDescent(Attack):
                 Possible values: np.inf, 1 or 2.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param rand_init: (optional) Start the gradient descent from a point chosen
+                      uniformly at random in the norm ball of radius
+                      rand_init_eps
+    :param rand_init_eps: (optional float) size of the norm ball from which
+                          the initial starting point is chosen. Defaults to eps
     :param clip_grad: (optional bool) Ignore gradient components at positions
                       where the input is already at the boundary of the domain,
                       and the update step will get clipped out.
@@ -211,6 +218,10 @@ class ProjectedGradientDescent(Attack):
     if rand_init is None:
       rand_init = self.default_rand_init
     self.rand_init = rand_init
+    if rand_init_eps is None:
+      rand_init_eps = self.eps
+    self.rand_init_eps = rand_init_eps
+
     self.eps_iter = eps_iter
     self.nb_iter = nb_iter
     self.y = y

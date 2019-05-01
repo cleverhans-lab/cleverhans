@@ -3,6 +3,7 @@ The SparseL1Descent attack.
 """
 
 import warnings
+from distutils.version import LooseVersion
 
 import tensorflow as tf
 
@@ -15,15 +16,17 @@ from cleverhans.compat import reduce_max, reduce_sum, \
 
 class SparseL1Descent(Attack):
   """
-  This class implements a variant of Projected Gradient Descent for the l1-norm.
-  The l1-norm case is more tricky than the l-inf and l2 cases covered by the
-  ProjectedGradientDescent class, because the steepest descent direction for
-  the l1-norm is too sparse (it updates a single coordinate in the adversarial
-  perturbation in each step). This attack has an additional parameter that
-  controls the sparsity of the update step. For moderately sparse update steps,
-  the attack vastly outperforms Projected Steepest Descent and is competitive
-  with other attacks targeted at the l1-norm such as the ElasticNetMethod
-  attack (which is much more computationally expensive).
+  This class implements a variant of Projected Gradient Descent for the l1-norm
+  (Tramer and Boneh 2019). The l1-norm case is more tricky than the l-inf and l2
+  cases covered by the ProjectedGradientDescent class, because the steepest
+  descent direction for the l1-norm is too sparse (it updates a single
+  coordinate in the adversarial perturbation in each step). This attack has an
+  additional parameter that controls the sparsity of the update step. For
+  moderately sparse update steps, the attack vastly outperforms Projected
+  Steepest Descent and is competitive with other attacks targeted at the l1-norm
+  such as the ElasticNetMethod attack (which is much more computationally
+  expensive).
+  Paper link (Tramer and Boneh. 2019): https://arxiv.org/pdf/1904.13000.pdf
 
   :param model: cleverhans.model.Model
   :param sess: optional tf.Session
@@ -212,14 +215,19 @@ class SparseL1Descent(Attack):
     if self.clip_grad and (self.clip_min is None or self.clip_max is None):
       raise ValueError("Must set clip_min and clip_max if clip_grad is set")
 
-    # The l1_grad_sparsity argument governs the sparsity of the gradient
+    # The grad_sparsity argument governs the sparsity of the gradient
     # update. It indicates the percentile value above which gradient entries
     # are retained. It can be specified as a scalar or as a 1-dimensional
     # vector of the same size as the input's batch dimension.
     if isinstance(self.grad_sparsity, int) or \
         isinstance(self.grad_sparsity, float):
       if not 0 < self.grad_sparsity < 100:
-        raise ValueError("l1_grad_sparsity should be in (0, 100)")
+        raise ValueError("grad_sparsity should be in (0, 100)")
+    else:
+      self.grad_sparsity = tf.convert_to_tensor(self.grad_sparsity)
+      if len(self.grad_sparsity.shape) > 1:
+        raise ValueError("grad_sparsity should either be a scalar or a vector")
+
 
     self.sanity_checks = sanity_checks
 
@@ -308,11 +316,11 @@ def sparse_l1_descent(x,
 
   # `tf.sort` is much faster than `tf.contrib.distributions.percentile`.
   # For TF <= 1.12, use `tf.nn.top_k` as `tf.sort` is not implemented.
-  if 'sort' in dir(tf):
-    sorted_grad = tf.sort(abs_grad, axis=-1)
-  else:
+  if LooseVersion(tf.__version__) <= LooseVersion('1.12.0'):
     # `tf.sort` is only available in TF 1.13 onwards
     sorted_grad = -tf.nn.top_k(-abs_grad, k=dim, sorted=True)[0]
+  else:
+    sorted_grad = tf.sort(abs_grad, axis=-1)
 
   idx = tf.stack((tf.range(tf.shape(abs_grad)[0]), k), -1)
   percentiles = tf.gather_nd(sorted_grad, idx)

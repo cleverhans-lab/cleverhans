@@ -894,6 +894,39 @@ class TestSparseL1Descent(CleverHansTest):
       numzero = np.sum(x_adv - x_val == 0, axis=-1)
       self.assertAlmostEqual(q * 1000.0 / 100.0, np.mean(numzero), delta=1)
 
+  def test_grad_sparsity_checks(self):
+    # test that the attacks allows `grad_sparsity` to be specified as a scalar
+    # in (0, 100) or as a vector.
+
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # scalar values out of range
+    with self.assertRaises(ValueError) as context:
+      self.attack.generate(x_val, sanity_checks=False, grad_sparsity=0)
+    self.assertTrue(context.exception)
+
+    with self.assertRaises(ValueError) as context:
+      self.attack.generate(x_val, sanity_checks=False, grad_sparsity=100)
+    self.assertTrue(context.exception)
+
+    # sparsity as 2D array should fail
+    with self.assertRaises(ValueError) as context:
+      gs = tf.random.uniform(shape=(100, 2), minval=90, maxval=99)
+      self.attack.generate(x_val, sanity_checks=False, grad_sparsity=gs)
+    self.assertTrue(context.exception)
+
+    # sparsity as 1D array should succeed
+    gs = tf.random.uniform(shape=(100,), minval=90, maxval=99)
+    x_adv = self.attack.generate(x_val, sanity_checks=False, grad_sparsity=gs)
+    self.assertTrue(np.array_equal(x_adv.get_shape().as_list(), [100, 2]))
+
+    # sparsity vector of wrong size should fail
+    with self.assertRaises(ValueError) as context:
+      gs = tf.random.uniform(shape=(101,), minval=90, maxval=99)
+      x_adv = self.attack.generate(x_val, sanity_checks=False, grad_sparsity=gs)
+    self.assertTrue(context.exception)
+
 
 class TestCarliniWagnerL2(CleverHansTest):
   def setUp(self):
