@@ -493,8 +493,6 @@ def random_lp_vector(shape, ord, eps, dtype=tf.float32, seed=None):
                          seed=seed)
       norm = tf.reduce_sum(tf.abs(x), axis=-1, keepdims=True)
     elif ord == 2:
-      dim = tf.reduce_prod(shape[1:])
-
       x = tf.random_normal((shape[0], dim), dtype=dtype, seed=seed)
       norm = tf.sqrt(tf.reduce_sum(tf.square(x), axis=-1, keepdims=True))
     else:
