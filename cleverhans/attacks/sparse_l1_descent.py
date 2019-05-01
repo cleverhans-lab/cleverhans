@@ -26,7 +26,7 @@ class SparseL1Descent(Attack):
   Steepest Descent and is competitive with other attacks targeted at the l1-norm
   such as the ElasticNetMethod attack (which is much more computationally
   expensive).
-  Paper link (Tramer and Boneh. 2019): https://arxiv.org/pdf/1904.13000.pdf
+  Paper link (Tramer and Boneh 2019): https://arxiv.org/pdf/1904.13000.pdf
 
   :param model: cleverhans.model.Model
   :param sess: optional tf.Session
