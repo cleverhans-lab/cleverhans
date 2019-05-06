@@ -39,7 +39,6 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, ord,
             memory or for unit tests that intentionally pass strange input)
   :return: a tensor for the adversarial example
   """
-  assert eps_iter <= eps, (eps_iter, eps)
   if ord == 1:
     raise NotImplementedError("It's not clear that FGM is a good inner loop"
                               " step for PGD when ord=1, because ord=1 FGM "
@@ -48,6 +47,20 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, ord,
                               "before enabling this feature.")
   if ord not in [np.inf, 2]:
     raise ValueError("Norm order must be either np.inf or 2.")
+  assert eps >= 0, \
+      "eps must be greater than or equal to 0, got {} instead".format(eps)
+  if eps == 0:
+    return x
+  assert eps_iter >= 0, \
+      "eps_iter must be greater than or equal to 0, got {} instead".format(eps_iter)
+  if eps_iter == 0:
+    return x
+
+  assert eps_iter <= eps, (eps_iter, eps)
+  if clip_min is not None and clip_max is not None:
+    assert clip_min <= clip_max, \
+      "clip_min must be less than or equal to clip_max, got clip_min={} and clip_max={}".format(
+          clip_min, clip_max)
 
   asserts = []
 
