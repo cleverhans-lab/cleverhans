@@ -35,7 +35,7 @@ class FastGradientMethod(Attack):
 
     super(FastGradientMethod, self).__init__(model, sess, dtypestr, **kwargs)
     self.feedable_kwargs = ('eps', 'y', 'y_target', 'clip_min', 'clip_max')
-    self.structural_kwargs = ['ord', 'sanity_checks']
+    self.structural_kwargs = ['ord', 'sanity_checks', 'clip_grad']
 
   def generate(self, x, **kwargs):
     """
@@ -57,6 +57,7 @@ class FastGradientMethod(Attack):
         ord=self.ord,
         clip_min=self.clip_min,
         clip_max=self.clip_max,
+        clip_grad=self.clip_grad,
         targeted=(self.y_target is not None),
         sanity_checks=self.sanity_checks)
 
@@ -67,6 +68,7 @@ class FastGradientMethod(Attack):
                    y_target=None,
                    clip_min=None,
                    clip_max=None,
+                   clip_grad=False,
                    sanity_checks=True,
                    **kwargs):
     """
@@ -89,6 +91,9 @@ class FastGradientMethod(Attack):
                      one-hot-encoded.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param clip_grad: (optional bool) Ignore gradient components
+                      at positions where the input is already at the boundary
+                      of the domain, and the update step will get clipped out.
     :param sanity_checks: bool, if True, include asserts
       (Turn them off to use less runtime / memory or for unit tests that
       intentionally pass strange input)
@@ -101,6 +106,7 @@ class FastGradientMethod(Attack):
     self.y_target = y_target
     self.clip_min = clip_min
     self.clip_max = clip_max
+    self.clip_grad = clip_grad
     self.sanity_checks = sanity_checks
 
     if self.y is not None and self.y_target is not None:
@@ -108,6 +114,9 @@ class FastGradientMethod(Attack):
     # Check if order of the norm is acceptable given current implementation
     if self.ord not in [np.inf, int(1), int(2)]:
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
+    if self.clip_grad and (self.clip_min is None or self.clip_max is None):
+      raise ValueError("Must set clip_min and clip_max if clip_grad is set")
 
     if len(kwargs.keys()) > 0:
       warnings.warn("kwargs is unused and will be removed on or after "
@@ -123,6 +132,7 @@ def fgm(x,
         ord=np.inf,
         clip_min=None,
         clip_max=None,
+        clip_grad=False,
         targeted=False,
         sanity_checks=True):
   """
@@ -141,6 +151,9 @@ def fgm(x,
               Possible values: np.inf, 1 or 2.
   :param clip_min: Minimum float value for adversarial example components
   :param clip_max: Maximum float value for adversarial example components
+  :param clip_grad: (optional bool) Ignore gradient components
+                    at positions where the input is already at the boundary
+                    of the domain, and the update step will get clipped out.
   :param targeted: Is the attack targeted or untargeted? Untargeted, the
                    default, will try to make the label incorrect. Targeted
                    will instead try to move in the direction of being more
@@ -175,6 +188,9 @@ def fgm(x,
 
   # Define gradient of loss wrt input
   grad, = tf.gradients(loss, x)
+
+  if clip_grad:
+    grad = utils_tf.zero_out_clipped_grads(grad, x, clip_min, clip_max)
 
   optimal_perturbation = optimize_linear(grad, eps, ord)
 

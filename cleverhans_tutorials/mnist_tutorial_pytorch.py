@@ -12,6 +12,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import warnings
 import numpy as np
 import tensorflow as tf
 import torch
@@ -32,6 +33,10 @@ FLAGS = flags.FLAGS
 NB_EPOCHS = 6
 BATCH_SIZE = 128
 LEARNING_RATE = .001
+
+
+warnings.warn("convert_pytorch_model_to_tf is deprecated, switch to"
+              + " dedicated PyTorch support provided by CleverHans v4.")
 
 
 class PytorchMnistModel(nn.Module):

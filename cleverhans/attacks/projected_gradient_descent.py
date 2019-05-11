@@ -10,7 +10,7 @@ import tensorflow as tf
 from cleverhans.attacks.attack import Attack
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod
 from cleverhans import utils_tf
-from cleverhans.utils_tf import clip_eta
+from cleverhans.utils_tf import clip_eta, random_lp_vector
 
 
 class ProjectedGradientDescent(Attack):
@@ -42,7 +42,8 @@ class ProjectedGradientDescent(Attack):
                                                    dtypestr=dtypestr, **kwargs)
     self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
                             'clip_max')
-    self.structural_kwargs = ['ord', 'nb_iter', 'rand_init', 'sanity_checks']
+    self.structural_kwargs = ['ord', 'nb_iter', 'rand_init', 'clip_grad',
+                              'sanity_checks']
     self.default_rand_init = default_rand_init
 
   def generate(self, x, **kwargs):
@@ -70,10 +71,9 @@ class ProjectedGradientDescent(Attack):
 
     # Initialize loop variables
     if self.rand_init:
-      eta = tf.random_uniform(tf.shape(x),
-                              tf.cast(-self.rand_minmax, x.dtype),
-                              tf.cast(self.rand_minmax, x.dtype),
-                              dtype=x.dtype)
+      eta = random_lp_vector(tf.shape(x), self.ord,
+                             tf.cast(self.rand_init_eps, x.dtype),
+                             dtype=x.dtype)
     else:
       eta = tf.zeros(tf.shape(x))
 
@@ -98,19 +98,22 @@ class ProjectedGradientDescent(Attack):
       del model_preds
 
     y_kwarg = 'y_target' if targeted else 'y'
+
     fgm_params = {
         'eps': self.eps_iter,
         y_kwarg: y,
         'ord': self.ord,
         'clip_min': self.clip_min,
-        'clip_max': self.clip_max
+        'clip_max': self.clip_max,
+        'clip_grad': self.clip_grad
     }
     if self.ord == 1:
-      raise NotImplementedError("It's not clear that FGM is a good inner loop"
-                                " step for PGD when ord=1, because ord=1 FGM "
-                                " changes only one pixel at a time. We need "
-                                " to rigorously test a strong ord=1 PGD "
-                                "before enabling this feature.")
+      raise NotImplementedError("FGM is not a good inner loop step for PGD "
+                                " when ord=1, because ord=1 FGM changes only "
+                                " one pixel at a time. Use the SparseL1Descent "
+                                " attack instead, which allows fine-grained "
+                                " control over the sparsity of the gradient "
+                                " updates.")
 
     # Use getattr() to avoid errors in eager execution attacks
     FGM = self.FGM_CLASS(
@@ -175,7 +178,8 @@ class ProjectedGradientDescent(Attack):
                    clip_max=None,
                    y_target=None,
                    rand_init=None,
-                   rand_minmax=0.3,
+                   rand_init_eps=None,
+                   clip_grad=False,
                    sanity_checks=True,
                    **kwargs):
     """
@@ -196,6 +200,14 @@ class ProjectedGradientDescent(Attack):
                 Possible values: np.inf, 1 or 2.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
+    :param rand_init: (optional) Start the gradient descent from a point chosen
+                      uniformly at random in the norm ball of radius
+                      rand_init_eps
+    :param rand_init_eps: (optional float) size of the norm ball from which
+                          the initial starting point is chosen. Defaults to eps
+    :param clip_grad: (optional bool) Ignore gradient components at positions
+                      where the input is already at the boundary of the domain,
+                      and the update step will get clipped out.
     :param sanity_checks: bool Insert tf asserts checking values
         (Some tests need to run with no sanity checks because the
          tests intentionally configure the attack strangely)
@@ -206,10 +218,10 @@ class ProjectedGradientDescent(Attack):
     if rand_init is None:
       rand_init = self.default_rand_init
     self.rand_init = rand_init
-    if self.rand_init:
-      self.rand_minmax = eps
-    else:
-      self.rand_minmax = 0.
+    if rand_init_eps is None:
+      rand_init_eps = self.eps
+    self.rand_init_eps = rand_init_eps
+
     self.eps_iter = eps_iter
     self.nb_iter = nb_iter
     self.y = y
@@ -217,6 +229,7 @@ class ProjectedGradientDescent(Attack):
     self.ord = ord
     self.clip_min = clip_min
     self.clip_max = clip_max
+    self.clip_grad = clip_grad
 
     if isinstance(eps, float) and isinstance(eps_iter, float):
       # If these are both known at compile time, we can check before anything
@@ -228,6 +241,10 @@ class ProjectedGradientDescent(Attack):
     # Check if order of the norm is acceptable given current implementation
     if self.ord not in [np.inf, 1, 2]:
       raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
+    if self.clip_grad and (self.clip_min is None or self.clip_max is None):
+      raise ValueError("Must set clip_min and clip_max if clip_grad is set")
+
     self.sanity_checks = sanity_checks
 
     if len(kwargs.keys()) > 0:
