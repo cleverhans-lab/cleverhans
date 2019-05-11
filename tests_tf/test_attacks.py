@@ -30,6 +30,7 @@ from cleverhans.attacks import FastFeatureAdversaries
 from cleverhans.attacks import LBFGS
 from cleverhans.attacks import SpatialTransformationMethod
 from cleverhans.attacks import BoundaryAttackPlusPlus
+from cleverhans.attacks import SparseL1Descent
 from cleverhans.initializers import HeReLuNormalInitializer
 from cleverhans.model import Model
 
@@ -169,7 +170,7 @@ class TestVirtualAdversarialMethod(CleverHansTest):
 
 class CommonAttackProperties(CleverHansTest):
   """
-  Abstract base class shared by the tessts for many attacks that want
+  Abstract base class shared by the tests for many attacks that want
   to check the same properties.
   """
 
@@ -528,7 +529,7 @@ class TestProjectedGradientDescent(CommonAttackProperties):
         continue
       self.assertTrue(np.max(0.5 - delta) > 0.25)
 
-  def test_attack_strength(self):
+  def test_attack_strength_linf(self):
     """
     If clipping is not done at each iteration (not passing clip_min and
     clip_max to fgm), this attack fails by
@@ -537,7 +538,7 @@ class TestProjectedGradientDescent(CommonAttackProperties):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    # sanity checks turned off becuase this test initializes outside
+    # sanity checks turned off because this test initializes outside
     # the valid range.
     x_adv = self.attack.generate_np(x_val, eps=1.0, ord=np.inf,
                                     clip_min=0.5, clip_max=0.7,
@@ -547,27 +548,71 @@ class TestProjectedGradientDescent(CommonAttackProperties):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertLess(np.mean(orig_labs == new_labs), 0.1)
 
-  def test_clip_eta(self):
+  def test_attack_strength_l2(self):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
+    # sanity checks turned off because this test initializes outside
+    # the valid range.
+    x_adv = self.attack.generate_np(x_val, eps=1, ord=2,
+                                    clip_min=0.5, clip_max=0.7,
+                                    nb_iter=5, sanity_checks=False)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertLess(np.mean(orig_labs == new_labs), 0.1)
+
+  def test_grad_clip_l2(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # sanity checks turned off because this test initializes outside
+    # the valid range.
+    x_adv = self.attack.generate_np(x_val, eps=1, ord=2,
+                                    clip_min=0.5, clip_max=0.7, clip_grad=True,
+                                    nb_iter=10, sanity_checks=False)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertLess(np.mean(orig_labs == new_labs), 0.1)
+
+  def test_clip_eta_linf(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, ord=np.inf, eps=1.0, eps_iter=0.1,
                                     nb_iter=5)
 
     delta = np.max(np.abs(x_adv - x_val), axis=1)
     self.assertLessEqual(np.max(delta), 1.)
 
+  def test_clip_eta_l2(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, ord=2, eps=1.0, eps_iter=0.1,
+                                    nb_iter=5)
+
+    delta = np.sqrt(np.sum(np.square(x_adv - x_val), axis=1))
+    # this projection is less numerically stable so give it some slack
+    self.assertLessEqual(np.max(delta), 1. + 1e-6)
+
   def test_generate_np_gives_clipped_adversarial_examples(self):
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
 
-    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
-                                    nb_iter=5,
-                                    clip_min=-0.2, clip_max=0.3,
-                                    sanity_checks=False)
+    for ord in [1, 2, np.infty]:
+      try:
+        x_adv = self.attack.generate_np(x_val, ord=ord, eps=1.0, eps_iter=0.1,
+                                        nb_iter=5,
+                                        clip_min=-0.2, clip_max=0.3,
+                                        sanity_checks=False)
 
-    self.assertLess(-0.201, np.min(x_adv))
-    self.assertLess(np.max(x_adv), .301)
+        self.assertLess(-0.201, np.min(x_adv))
+        self.assertLess(np.max(x_adv), .301)
+      except NotImplementedError:
+        # Don't raise SkipTest because it will skip the rest of the for loop
+        continue
 
   def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
     x_val = np.random.rand(100, 2)
@@ -631,6 +676,256 @@ class TestProjectedGradientDescent(CommonAttackProperties):
       new_labs_multi[I] = new_labs[I]
 
     self.assertLess(np.mean(orig_labs == new_labs_multi), 0.5)
+
+
+class TestSparseL1Descent(CleverHansTest):
+  def setUp(self):
+    super(TestSparseL1Descent, self).setUp()
+
+    self.sess = tf.Session()
+    self.model = SimpleModel()
+    self.attack = SparseL1Descent(self.model, sess=self.sess)
+
+  def generate_adversarial_examples_np(self, eps, **kwargs):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, eps=eps,
+                                    clip_min=-5, clip_max=5, **kwargs)
+    delta = np.sum(np.abs(x_adv - x_val), axis=1)
+
+    return x_val, x_adv, delta
+
+  def help_generate_np_gives_adversarial_example(self, eps=2.0, **kwargs):
+    x_val, x_adv, delta = self.generate_adversarial_examples_np(eps, **kwargs)
+    self.assertLess(np.max(np.abs(delta-eps)), 1e-3)
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertLess(np.max(np.mean(orig_labs == new_labs)), .5)
+
+  def test_invalid_input(self):
+    x_val = -np.ones((2, 2), dtype='float32')
+    with self.assertRaises(tf.errors.InvalidArgumentError) as context:
+      self.attack.generate_np(x_val, eps=10.0, clip_min=0., clip_max=1.)
+    self.assertTrue(context.exception)
+
+  def test_generate_np_gives_adversarial_example(self):
+    self.help_generate_np_gives_adversarial_example()
+
+  def test_targeted_generate_np_gives_adversarial_example(self):
+    random_labs = np.random.random_integers(0, 1, 100)
+    random_labs_one_hot = np.zeros((100, 2))
+    random_labs_one_hot[np.arange(100), random_labs] = 1
+
+    _, x_adv, delta = self.generate_adversarial_examples_np(
+        eps=10, y_target=random_labs_one_hot)
+
+    self.assertLessEqual(np.max(delta), 10.001)
+
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertTrue(np.mean(random_labs == new_labs) > 0.7)
+
+  def test_generate_np_can_be_called_with_different_eps(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    for eps in [10, 20, 30, 40]:
+      x_adv = self.attack.generate_np(x_val, eps=eps,
+                                      clip_min=-5.0, clip_max=5.0)
+
+      delta = np.max(np.abs(x_adv - x_val), axis=1)
+      self.assertLessEqual(np.max(delta), eps+1e-4)
+
+  def test_generate_can_be_called_with_different_eps(self):
+    # It is crtical that this test uses generate and not generate_np.
+    # All the other tests use generate_np. Even though generate_np calls
+    # generate, it does so in a very standardized way, e.g. with eps
+    # always converted to a tensorflow placeholder, so the other tests
+    # based on generate_np do not exercise the generate API very well.
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+    x = tf.placeholder(tf.float32, x_val.shape)
+
+    for eps in [10, 20, 30, 40]:
+      x_adv = self.attack.generate(x, eps=eps, clip_min=-5.0, clip_max=5.0)
+      x_adv = self.sess.run(x_adv, feed_dict={x: x_val})
+
+      delta = np.max(np.abs(x_adv - x_val), axis=1)
+      self.assertLessEqual(np.max(delta), eps + 1e-4)
+
+  def test_generate_np_clip_works_as_expected(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, eps=10, nb_iter=20, rand_init=True,
+                                    clip_min=-0.2, clip_max=0.1,
+                                    sanity_checks=False)
+
+    self.assertClose(np.min(x_adv), -0.2)
+    self.assertClose(np.max(x_adv), 0.1)
+
+  def test_do_not_reach_lp_boundary(self):
+    """
+    Make sure that iterative attack don't reach boundary of Lp
+    neighbourhood if nb_iter * eps_iter is relatively small compared to
+    epsilon.
+    """
+
+    _, _, delta = self.generate_adversarial_examples_np(
+        eps=.5, nb_iter=10, eps_iter=.01)
+
+    self.assertTrue(np.max(0.5 - delta) > 0.25)
+
+  def test_generate_np_gives_clipped_adversarial_examples(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1,
+                                    nb_iter=5,
+                                    clip_min=-0.2, clip_max=0.3,
+                                    sanity_checks=False)
+
+    self.assertLess(-0.201, np.min(x_adv))
+    self.assertLess(np.max(x_adv), .301)
+
+  def test_generate_np_does_not_cache_graph_computation_for_nb_iter(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # Call it once
+    x_adv = self.attack.generate_np(x_val, eps=1.0,
+                                    clip_min=-5.0, clip_max=5.0,
+                                    nb_iter=10)
+
+    # original labels
+    np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    # new labels
+    np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+
+    # Call it again
+    ok = [False]
+    old_grads = tf.gradients
+    try:
+      def fn(*x, **y):
+        ok[0] = True
+        return old_grads(*x, **y)
+
+      tf.gradients = fn
+
+      x_adv = self.attack.generate_np(x_val, eps=1.0,
+                                      clip_min=-5.0, clip_max=5.0,
+                                      nb_iter=11)
+    finally:
+      tf.gradients = old_grads
+
+    # original labels
+    np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    # new labels
+    np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+
+    self.assertTrue(ok[0])
+
+  def test_clip_eta(self):
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    x_adv = self.attack.generate_np(x_val, eps=1.0, eps_iter=0.1, nb_iter=5)
+
+    delta = np.sum(np.abs(x_adv - x_val), axis=1)
+    # this projection is less numerically stable so give it some slack
+    self.assertLessEqual(np.max(delta), 1. + 1e-6)
+
+  def test_attack_strength(self):
+    """
+    Without clipped gradients, we achieve
+    np.mean(orig_labels == new_labels) == 0.31.
+    """
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # sanity checks turned off because this test initializes outside
+    # the valid range.
+    x_adv = self.attack.generate_np(x_val, eps=10.0, rand_init=True,
+                                    clip_min=0.5, clip_max=0.7,
+                                    nb_iter=10, sanity_checks=False)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertLess(np.mean(orig_labs == new_labs), 0.4)
+    self.assertGreater(np.mean(orig_labs == new_labs), 0.2)
+
+  def test_grad_clip(self):
+    """
+    With clipped gradients, we achieve
+    np.mean(orig_labels == new_labels) == 0.0
+    """
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # sanity checks turned off because this test initializes outside
+    # the valid range.
+    x_adv = self.attack.generate_np(x_val, eps=10.0, rand_init=True,
+                                    clip_min=0.5, clip_max=0.7,
+                                    clip_grad=True,
+                                    nb_iter=10, sanity_checks=False)
+
+    orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
+    new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
+    self.assertLess(np.mean(orig_labs == new_labs), 0.1)
+
+  def test_sparsity(self):
+
+    # use a model with larger input dimensionality for this test.
+    self.model = DummyModel('sparse_l1_descent_dummy_model')
+    self.attack = SparseL1Descent(self.model, sess=self.sess)
+
+    # initialize model
+    with tf.name_scope('sparse_l1_descent_dummy_model'):
+      self.model.get_probs(tf.placeholder(tf.float32, shape=(None, 1000)))
+    self.sess.run(tf.global_variables_initializer())
+
+    x_val = np.random.rand(100, 1000)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    for q in [1, 9, 25.8, 50, 75.4, 90.2, 99, 99.9]:
+      x_adv = self.attack.generate_np(x_val, eps=5.0, grad_sparsity=q,
+                                      nb_iter=1, sanity_checks=False)
+
+      numzero = np.sum(x_adv - x_val == 0, axis=-1)
+      self.assertAlmostEqual(q * 1000.0 / 100.0, np.mean(numzero), delta=1)
+
+  def test_grad_sparsity_checks(self):
+    # test that the attacks allows `grad_sparsity` to be specified as a scalar
+    # in (0, 100) or as a vector.
+
+    x_val = np.random.rand(100, 2)
+    x_val = np.array(x_val, dtype=np.float32)
+
+    # scalar values out of range
+    with self.assertRaises(ValueError) as context:
+      self.attack.generate(x_val, sanity_checks=False, grad_sparsity=0)
+    self.assertTrue(context.exception)
+
+    with self.assertRaises(ValueError) as context:
+      self.attack.generate(x_val, sanity_checks=False, grad_sparsity=100)
+    self.assertTrue(context.exception)
+
+    # sparsity as 2D array should fail
+    with self.assertRaises(ValueError) as context:
+      gs = tf.random.uniform(shape=(100, 2), minval=90, maxval=99)
+      self.attack.generate(x_val, sanity_checks=False, grad_sparsity=gs)
+    self.assertTrue(context.exception)
+
+    # sparsity as 1D array should succeed
+    gs = tf.random.uniform(shape=(100,), minval=90, maxval=99)
+    x_adv = self.attack.generate(x_val, sanity_checks=False, grad_sparsity=gs)
+    self.assertTrue(np.array_equal(x_adv.get_shape().as_list(), [100, 2]))
+
+    # sparsity vector of wrong size should fail
+    with self.assertRaises(ValueError) as context:
+      gs = tf.random.uniform(shape=(101,), minval=90, maxval=99)
+      x_adv = self.attack.generate(x_val, sanity_checks=False, grad_sparsity=gs)
+    self.assertTrue(context.exception)
 
 
 class TestCarliniWagnerL2(CleverHansTest):
