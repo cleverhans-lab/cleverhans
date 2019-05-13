@@ -28,6 +28,7 @@ from cleverhans.attacks.spsa import SPSA, projected_optimization
 from cleverhans.attacks.spatial_transformation_method import SpatialTransformationMethod
 from cleverhans.attacks.virtual_adversarial_method import VirtualAdversarialMethod, vatm
 from cleverhans.attacks.bapp import BoundaryAttackPlusPlus
+from cleverhans.attacks.sparse_l1_descent import SparseL1Descent
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.model import wrapper_warning, wrapper_warning_logits
 from cleverhans.compat import reduce_sum, reduce_mean
