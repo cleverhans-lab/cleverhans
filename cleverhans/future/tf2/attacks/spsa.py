@@ -8,12 +8,11 @@ tf_dtype = tf.as_dtype('float32')
 def spsa(model_fn, x, y, eps, nb_iter, clip_min=None, clip_max=None, targeted=False,
          early_stop_loss_threshold=None, learning_rate=0.01, delta=0.01, spsa_samples=128,
          spsa_iters=1, is_debug=False):
-  """
-  Tensorflow 2.0 implementation of SPSA.
-  This implements the SPSA adversary, as in https://arxiv.org/abs/1802.05666
-  (Uesato et al. 2018). SPSA is a gradient-free optimization method, which
-  is useful when the model is non-differentiable, or more generally, the
-  gradients do not point in useful directions.
+  """Tensorflow 2.0 implementation of SPSA.
+
+  This implements the SPSA adversary, as in https://arxiv.org/abs/1802.05666 (Uesato et al. 2018).
+  SPSA is a gradient-free optimization method, which is useful when the model is non-differentiable,
+  or more generally, the gradients do not point in useful directions.
   :param model_fn: A callable that takes an input tensor and returns the model logits.
   :param x: Input tensor.
   :param y: Tensor with true labels. If targeted is true, then provide the target label.
@@ -49,72 +48,17 @@ def spsa(model_fn, x, y, eps, nb_iter, clip_min=None, clip_max=None, targeted=Fa
     loss_multiplier = 1 if targeted else -1
     return loss_multiplier * margin_logit_loss(logits, label, nb_classes=logits.get_shape()[-1])
 
-  adv_x = projected_optimization(loss_fn, x, y, eps, nb_iter, clip_min, clip_max, optimizer,
+  adv_x = projected_optimization(loss_fn, x, y, eps, nb_iter, optimizer, clip_min, clip_max,
                                  early_stop_loss_threshold, is_debug=is_debug)
 
   return adv_x
 
 
-class TensorAdam(tf.optimizers.Adam):
-  """The Adam optimizer defined in https://arxiv.org/abs/1412.6980."""
-
-  def __init__(self, lr=0.001, beta1=0.9, beta2=0.999, epsilon=1e-9):
-    self._lr = lr
-    self._beta1 = beta1
-    self._beta2 = beta2
-    self._epsilon = epsilon
-
-  def init_state(self, x):
-    """
-    Initialize t, m, and u
-    """
-    optim_state = {}
-    optim_state["t"] = 0.
-    optim_state["m"] = [tf.zeros_like(v) for v in x]
-    optim_state["u"] = [tf.zeros_like(v) for v in x]
-    return optim_state
-
-  def _apply_gradients(self, grads, x, optim_state):
-    """Refer to parent class documentation."""
-    new_x = [None] * len(x)
-    new_optim_state = {
-      "t": optim_state["t"] + 1.,
-      "m": [None] * len(x),
-      "u": [None] * len(x)
-    }
-    t = new_optim_state["t"]
-    for i in range(len(x)):
-      g = grads[i]
-      m_old = optim_state["m"][i]
-      u_old = optim_state["u"][i]
-      new_optim_state["m"][i] = (self._beta1 * m_old + (1. - self._beta1) * g)
-      new_optim_state["u"][i] = (self._beta2 * u_old + (1. - self._beta2) * g * g)
-      m_hat = new_optim_state["m"][i] / (1. - tf.pow(self._beta1, t))
-      u_hat = new_optim_state["u"][i] / (1. - tf.pow(self._beta2, t))
-      new_x[i] = (x[i] - self._lr * m_hat / (tf.sqrt(u_hat) + self._epsilon))
-    return new_x, new_optim_state
-
-  def minimize(self, loss_fn, x, optim_state):
-    """
-    Analogous to tf.Optimizer.minimize
-
-    :param loss_fn: tf Tensor, representing the loss to minimize
-    :param x: list of Tensor, analogous to tf.Optimizer's var_list
-    :param optim_state: A possibly nested dict, containing any optimizer state.
-
-    Returns:
-      new_x: list of Tensor, updated version of `x`
-      new_optim_state: dict, updated version of `optim_state`
-    """
-    grads = self._compute_gradients(loss_fn, x, optim_state)
-    return self._apply_gradients(grads, x, optim_state)
-
-
-class SPSAAdam(TensorAdam):
+class SPSAAdam(tf.optimizers.Adam):
   """Optimizer for gradient-free attacks in https://arxiv.org/abs/1802.05666.
 
-  Gradients estimates are computed using Simultaneous Perturbation Stochastic
-  Approximation (SPSA), combined with the ADAM update rule.
+  Gradients estimates are computed using Simultaneous Perturbation Stochastic Approximation (SPSA),
+  combined with the ADAM update rule (https://arxiv.org/abs/1412.6980).
   """
 
   def __init__(self, lr=0.01, delta=0.01, num_samples=128, num_iters=1,
@@ -133,11 +77,22 @@ class SPSAAdam(TensorAdam):
     )
     return delta_x
 
-  def _compute_gradients(self, loss_fn, x, unused_optim_state):
-    """Compute gradient estimates using SPSA."""
-    # Assumes `x` is a list, containing a [1, H, W, C] image
-    # If static batch dimension is None, tf.reshape to batch size 1
-    # so that static shape can be inferred
+  def _compute_gradients(self, loss_fn, x):
+    """Compute a new value of `x` to minimize `loss_fn` using SPSA.
+
+    Args:
+        loss_fn:  a callable that takes `x`, a batch of images, and returns a batch of loss values.
+                  `x` will be optimized to minimize `loss_fn(x)`.
+        x:  A list of Tensors, the values to be updated. This is analogous to the `var_list` argument
+            in standard TF Optimizer.
+
+    Returns:
+        new_x: A list of Tensors, the same length as `x`, which are updated
+        new_optim_state:  A dict, with the same structure as `optim_state`, which have been updated.
+    """
+
+    # Assumes `x` is a list, containing a [1, H, W, C] image.If static batch dimension is None,
+    # tf.reshape to batch size 1 so that static shape can be inferred.
     assert len(x) == 1
     static_x_shape = x[0].get_shape().as_list()
     if static_x_shape[0] is None:
@@ -172,14 +127,67 @@ class SPSAAdam(TensorAdam):
     avg_grad = tf.reduce_sum(all_grads.stack(), axis=0)
     return [avg_grad]
 
+  def _apply_gradients(self, grads, x, optim_state):
+    """Given a gradient, make one optimization step.
+
+    :param grads: list of tensors, same length as `x`, containing the corresponding gradients
+    :param x: list of tensors to update
+    :param optim_state: dict
+
+    Returns:
+      new_x: list of tensors, updated version of `x`
+      new_optim_state: dict, updated version of `optim_state`
+    """
+
+    new_x = [None] * len(x)
+    new_optim_state = {
+      "t": optim_state["t"] + 1.,
+      "m": [None] * len(x),
+      "u": [None] * len(x)
+    }
+    t = new_optim_state["t"]
+    for i in range(len(x)):
+      g = grads[i]
+      m_old = optim_state["m"][i]
+      u_old = optim_state["u"][i]
+      new_optim_state["m"][i] = (self.beta_1 * m_old + (1. - self.beta_1) * g)
+      new_optim_state["u"][i] = (self.beta_2 * u_old + (1. - self.beta_2) * g * g)
+      m_hat = new_optim_state["m"][i] / (1. - tf.pow(self.beta_1, t))
+      u_hat = new_optim_state["u"][i] / (1. - tf.pow(self.beta_2, t))
+      new_x[i] = (x[i] - self.lr * m_hat / (tf.sqrt(u_hat) + self.epsilon))
+    return new_x, new_optim_state
+
+  def init_state(self, x):
+    """Initialize t, m, and u"""
+    optim_state = {
+      "t": 0.,
+      "m": [tf.zeros_like(v) for v in x],
+      "u": [tf.zeros_like(v) for v in x]
+    }
+    return optim_state
+
+  def minimize(self, loss_fn, x, optim_state):
+    """Analogous to tf.Optimizer.minimize
+
+    :param loss_fn: tf Tensor, representing the loss to minimize
+    :param x: list of Tensor, analogous to tf.Optimizer's var_list
+    :param optim_state: A possibly nested dict, containing any optimizer state.
+
+    Returns:
+      new_x: list of Tensor, updated version of `x`
+      new_optim_state: dict, updated version of `optim_state`
+    """
+    grads = self._compute_gradients(loss_fn, x)
+    return self._apply_gradients(grads, x, optim_state)
+
 
 def margin_logit_loss(model_logits, label, nb_classes=10):
   """Computes difference between logit for `label` and next highest logit.
 
-  The loss is high when `label` is unlikely (targeted by default).
-  This follows the same interface as `loss_fn` for TensorOptimizer and
-  projected_optimization, i.e. it returns a batch of loss values.
+  The loss is high when `label` is unlikely (targeted by default). This follows the same interface
+  as `loss_fn` for projected_optimization, i.e. it returns a batch of loss values.
   """
+
   if 'int' in str(label.dtype):
     logit_mask = tf.one_hot(label, depth=nb_classes, axis=-1)
   else:
@@ -200,9 +208,9 @@ def margin_logit_loss(model_logits, label, nb_classes=10):
 
 
 def _project_perturbation(perturbation, epsilon, input_image, clip_min=None, clip_max=None):
-  """Project `perturbation` onto L-infinity ball of radius `epsilon`.
-  Also project into hypercube such that the resulting adversarial example
-  is between clip_min and clip_max, if applicable.
+  """
+  Project `perturbation` onto L-infinity ball of radius `epsilon`. Also project into hypercube such
+  that the resulting adversarial example is between clip_min and clip_max, if applicable.
   """
 
   if clip_min is None or clip_max is None:
@@ -218,24 +226,25 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None, cli
     return new_image - input_image
 
 
-def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, clip_min=None,
-                           clip_max=None, optimizer=TensorAdam(), early_stop_loss_threshold=None,
-                           project_perturbation=_project_perturbation, is_debug=False):
-  """Generic projected optimization, generalized to work with approximate gradients. Used for e.g.
-   the SPSA attack.
+def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, optimizer,
+                           clip_min=None, clip_max=None, early_stop_loss_threshold=None,
+                           project_perturbation=_project_perturbation,
+                           is_debug=False):
+  """
+  Generic projected optimization, generalized to work with approximate gradients. Used for e.g.
+  the SPSA attack.
 
   Args:
     :param loss_fn: A callable which takes `input_image` and `label` as
-                    arguments, and returns a batch of loss values. Same
-                    interface as TensorOptimizer.
+                    arguments, and returns a batch of loss values.
     :param input_image: Tensor, a batch of images
     :param label: Tensor, a batch of labels
     :param epsilon: float, the L-infinity norm of the maximum allowable
                     perturbation
     :param num_steps: int, the number of steps of gradient descent
+    :param optimizer: A `SPSAAdam` object
     :param clip_min: float, minimum pixel value
     :param clip_max: float, maximum pixel value
-    :param optimizer: A `TensorOptimizer` object
     :param project_perturbation: A function, which will be used to enforce
                                  some constraint. It should have the same
                                  signature as `_project_perturbation`.
@@ -275,7 +284,8 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, clip
 
   def loop_body(i, perturbation, flat_optim_state):
     """Update perturbation to input image."""
-    optim_state = tf.nest.pack_sequence_as(structure=init_optim_state, flat_sequence=flat_optim_state)
+    optim_state = tf.nest.pack_sequence_as(structure=init_optim_state,
+                                           flat_sequence=flat_optim_state)
 
     def wrapped_loss_fn(x):
       return loss_fn(input_image + x, label)
