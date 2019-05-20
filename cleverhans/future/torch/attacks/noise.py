@@ -32,8 +32,7 @@ def noise(x, eps=0.3, order=np.inf, clip_min=None, clip_max=None):
     if order != np.inf: raise NotImplementedError(ord)
     
     eta = torch.FloatTensor(*x.shape, device=x.device).uniform_(-eps, eps)
-
-    adv_x = x.float() + eta
+    adv_x = x + eta
 
     if clip_min is not None or clip_max is not None:
         assert clip_min is not None and clip_max is not None
