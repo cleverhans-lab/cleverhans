@@ -29,7 +29,7 @@ from cleverhans.attacks import ProjectedGradientDescent
 from cleverhans.attacks import FastFeatureAdversaries
 from cleverhans.attacks import LBFGS
 from cleverhans.attacks import SpatialTransformationMethod
-from cleverhans.attacks import BoundaryAttackPlusPlus
+from cleverhans.attacks import HopSkipJumpAttack
 from cleverhans.attacks import SparseL1Descent
 from cleverhans.initializers import HeReLuNormalInitializer
 from cleverhans.model import Model
@@ -1580,15 +1580,15 @@ class TestSpatialTransformationMethod(CleverHansTest):
     self.assertTrue(np.mean(old_labs == new_labs) < 0.3)
 
 
-class TestBoundaryAttackPlusPlus(CleverHansTest):
-  """Tests for TestBoundaryAttackPlusPlus"""
+class TestHopSkipJumpAttack(CleverHansTest):
+  """Tests for Test HopSkipJumpAttack"""
 
   def setUp(self):
-    super(TestBoundaryAttackPlusPlus, self).setUp()
+    super(TestHopSkipJumpAttack, self).setUp()
 
     self.sess = tf.Session()
     self.model = SimpleModel()
-    self.attack = BoundaryAttackPlusPlus(self.model, sess=self.sess)
+    self.attack = HopSkipJumpAttack(self.model, sess=self.sess)
 
   def test_generate_np_untargeted_l2(self):
     x_val = np.random.rand(50, 2)

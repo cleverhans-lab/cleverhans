@@ -10,19 +10,19 @@ from cleverhans import utils, utils_tf
 np_dtype = np.dtype('float32')
 tf_dtype = tf.as_dtype('float32')
 
-_logger = utils.create_logger("cleverhans.attacks.boundary_attack_plus_plus")
+_logger = utils.create_logger("cleverhans.attacks.hop_skip_jump_attack")
 _logger.setLevel(logging.INFO)
 
 
-class BoundaryAttackPlusPlus(Attack):
+class HopSkipJumpAttack(Attack):
   """
-  Boundary Attack ++ was originally proposed by Chen and Jordan.
+  HopSkipJumpAttack was originally proposed by Chen, Jordan and Wainwright.
   It is a decision-based attack that requires access to output
   labels of a model alone.
   Paper link: https://arxiv.org/abs/1904.02144
   At a high level, this attack is an iterative attack composed of three
   steps: Binary search to approach the boundary; gradient estimation;
-  stepsize search. Boundary Attack ++ requires fewer model queries than
+  stepsize search. HopSkipJumpAttack requires fewer model queries than
   Boundary Attack which was based on rejective sampling.
   :param model: cleverhans.model.Model
   :param sess: tf.Session
@@ -40,7 +40,7 @@ class BoundaryAttackPlusPlus(Attack):
       wrapper_warning_logits()
       model = CallableModelWrapper(model, 'logits')
 
-    super(BoundaryAttackPlusPlus, self).__init__(model, sess,
+    super(HopSkipJumpAttack, self).__init__(model, sess,
                                                  dtypestr, **kwargs)
 
     self.feedable_kwargs = ('y_target', 'image_target')
@@ -83,35 +83,35 @@ class BoundaryAttackPlusPlus(Attack):
 
     # Set binary search threshold.
     if self.constraint == 'l2':
-      self.theta = self.gamma / np.sqrt(self.d)
+      self.theta = self.gamma / (np.sqrt(self.d) * self.d)
     else:
-      self.theta = self.gamma / self.d
+      self.theta = self.gamma / (self.d * self.d)
 
     # Construct input placeholder and output for decision function.
     self.input_ph = tf.placeholder(
         tf_dtype, [None] + list(self.shape), name='input_image')
     self.logits = self.model.get_logits(self.input_ph)
 
-    def bapp_wrap(x, target_label, target_image):
+    def hsja_wrap(x, target_label, target_image):
       """ Wrapper to use tensors as input and output. """
-      return np.array(self._bapp(x, target_label, target_image),
+      return np.array(self._hsja(x, target_label, target_image),
                       dtype=self.np_dtype)
 
     if self.y_target is not None:
       # targeted attack that requires target label and image.
-      wrap = tf.py_func(bapp_wrap,
+      wrap = tf.py_func(hsja_wrap,
                         [x[0], self.y_target[0], self.image_target[0]],
                         self.tf_dtype)
     else:
       if self.image_target is not None:
         # untargeted attack with an initialized image.
-        wrap = tf.py_func(lambda x, target_image: bapp_wrap(x,
+        wrap = tf.py_func(lambda x, target_image: hsja_wrap(x,
                                                             None, target_image),
                           [x[0], self.image_target[0]],
                           self.tf_dtype)
       else:
         # untargeted attack without an initialized image.
-        wrap = tf.py_func(lambda x: bapp_wrap(x, None, None),
+        wrap = tf.py_func(lambda x: hsja_wrap(x, None, None),
                           [x[0]],
                           self.tf_dtype)
 
@@ -152,7 +152,7 @@ class BoundaryAttackPlusPlus(Attack):
         single_y_target = np.expand_dims(y_target[i], axis=0)
         kwargs['y_target'] = single_y_target
 
-      adv_img = super(BoundaryAttackPlusPlus,
+      adv_img = super(HopSkipJumpAttack,
                       self).generate_np(img, **kwargs)
       x_adv.append(adv_img)
 
@@ -163,9 +163,9 @@ class BoundaryAttackPlusPlus(Attack):
                    image_target=None,
                    initial_num_evals=100,
                    max_num_evals=10000,
-                   stepsize_search='grid_search',
+                   stepsize_search='geometric_progression',
                    num_iterations=64,
-                   gamma=0.01,
+                   gamma=1.0,
                    constraint='l2',
                    batch_size=128,
                    verbose=True,
@@ -189,8 +189,8 @@ class BoundaryAttackPlusPlus(Attack):
                              optimal epsilon over a grid, in the scale of
                              ||x_t - x||_p.
     :param num_iterations: The number of iterations.
-    :param gamma: The binary search threshold theta is gamma / sqrt(d) for
-                   l2 attack and gamma / d for linf attack.
+    :param gamma: The binary search threshold theta is gamma / d^{3/2} for
+                   l2 attack and gamma / d^2 for linf attack.
     :param constraint: The distance to optimize; choices are 'l2', 'linf'.
     :param batch_size: batch_size for model prediction.
     :param verbose: (boolean) Whether distance at each step is printed.
@@ -212,9 +212,9 @@ class BoundaryAttackPlusPlus(Attack):
     self.clip_max = clip_max
     self.verbose = verbose
 
-  def _bapp(self, sample, target_label, target_image):
+  def _hsja(self, sample, target_label, target_image):
     """
-    Main algorithm for Boundary Attack ++.
+    Main algorithm for HopSkipJumpAttack.
 
     Return a tensor that constructs adversarial examples for the given
     input. Generate uses tf.py_func in order to operate over tensors.
