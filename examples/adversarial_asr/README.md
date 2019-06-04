@@ -33,7 +33,6 @@ export LINGVO_DIR=$HOME/lingvo
 sudo docker run --rm $(test "$LINGVO_DEVICE" = "gpu" && echo "--runtime=nvidia") -it -v ${LINGVO_DIR}:/tmp/lingvo -v ~/lingvo_compiled:/tmp/lingvo_compiled -v ${HOME}/.gitconfig:/home/${USER}/.gitconfig:ro -p 6006:6006 -p 8888:8888 --name lingvo tensorflow:lingvo bash
 
 # In docker
-bazel build -c opt --config=cuda //lingvo/tools:create_asr_features
 bazel build -c opt --config=cuda //lingvo:trainer
 cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo /tmp/lingvo_compiled
 
