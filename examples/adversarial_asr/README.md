@@ -14,3 +14,10 @@ This is a Tensorflow implementation for the ICML 2019 paper "Imperceptible, Robu
 ## Quick Start
 
 The ASR system that is used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). 
+
+```bash
+cd lingvo
+git checkout icml
+cd ..
+LINGVO_DEVICES="gpu"
+```
