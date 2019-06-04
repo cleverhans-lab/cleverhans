@@ -5,10 +5,12 @@ This is a Tensorflow implementation for the ICML 2019 paper "Imperceptible, Robu
 
 ## Dependencies
 
-The code is [based on the Lingvo system](https://github.com/tensorflow/lingvo).
-*   a TensorFlow [installation](https://www.tensorflow.org/install/) (for now
-    tf-nightly-gpu is required),
-*   a `C++` compiler (only g++ 4.8 is officially supported), and
-*   the bazel build system.
+*   a TensorFlow [installation](https://www.tensorflow.org/install/) (tf-nightly-gpu is required),
+*   a `C++` compiler (only g++ 4.8 is officially supported),
+*   the bazel build system,
+*   librosa (pip install librosa).
+
 
 ## Quick Start
+
+The ASR system that is used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). 
