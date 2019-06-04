@@ -19,5 +19,14 @@ The ASR system that is used in this paper is [Lingvo system](https://github.com/
 cd lingvo
 git checkout icml
 cd ..
+mkdir lingvo_compiled
+
 LINGVO_DEVICES="gpu"
+sudo docker build --no-cache --tag tensorflow:lingvo $(test "$LINGVO_DEVICE" = "gpu" && echo "--build-arg base_image=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04") - < lingvo/docker/dev.dockerfile
+
+
+export LINGVO_DIR=$HOME/lingvo
+sudo docker run --rm $(test "$LINGVO_DEVICE" = "gpu" && echo "--runtime=nvidia") -it -v ${LINGVO_DIR}:/tmp/lingvo -v ~/lingvo_compiled:/tmp/lingvo_compiled -v ${HOME}/.gitconfig:/home/${USER}/.gitconfig:ro -p 6006:6006 -p 8888:8888 --name lingvo tensorflow:lingvo bash
+
+
 ```
