@@ -26,7 +26,7 @@ Then we need to compile the lingvo system. The easiest way is to build [Lingvo s
 cd ..
 mkdir lingvo_compiled
 
-LINGVO_DEVICES="gpu"
+export LINGVO_DEVICES="gpu"
 sudo docker build --no-cache --tag tensorflow:lingvo $(test "$LINGVO_DEVICE" = "gpu" && echo "--build-arg base_image=nvidia/cuda:10.0-cudnn7-runtime-ubuntu16.04") - < lingvo/docker/dev.dockerfile
 
 export LINGVO_DIR=$HOME/lingvo
