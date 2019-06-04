@@ -13,11 +13,14 @@ This is a Tensorflow implementation for the ICML 2019 paper "Imperceptible, Robu
 
 ## Quick Start
 
-The automatic speech recognition (ASR) system used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). 
+The automatic speech recognition (ASR) system used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). You can download the forked version [here](https://github.com/yaq007/lingvo).
 
 ```bash
+git clone https://github.com/yaq007/lingvo.git
 cd lingvo
 git checkout icml
+
+# build the docker
 cd ..
 mkdir lingvo_compiled
 
