@@ -9,8 +9,6 @@ This is a Tensorflow implementation for the ICML 2019 paper ["Imperceptible, Rob
 *   the bazel build system,
 *   librosa (```pip install librosa```).
 
-Currently, all the python scripts are tested on one GPU. You can use ```CUDA_VISIBLE_DEVICES=GPU_INDEX``` to choose which gpu to run the python scripts.
-
 ## Data 
 Here we provide 10 audios from LibriSpeech test-clean dataset as an example to show how to run the codes. Please refer to [Lingvo](https://github.com/tensorflow/lingvo/tree/master/lingvo/tasks/asr/tools) or [Librispeech website](http://www.openslr.org/resources/12/) to download the whole test set.
 
@@ -54,6 +52,9 @@ export PYTHONPATH=$PYTHONPATH:~/lingvo_compiled
 The folder ```lingvo/``` in the directory ```lingvo_compiled/``` needs to be placed in the directory ```./adversarial_asr/```. Then this directory becomes ```./adversarial_asr/lingvo/```.
 
 ## Imperceptible Adversarial Examples
+
+Currently, all the python scripts are tested on one GPU. You can use ```CUDA_VISIBLE_DEVICES=GPU_INDEX``` to choose which gpu to run the python scripts.
+
 To generate imperceptible adversarial examples, run
 
 ```bash
