@@ -11,7 +11,9 @@ This is a Tensorflow implementation for the ICML 2019 paper "Imperceptible, Robu
 *   librosa (pip install librosa).
 
 ## Data 
-Here we provide 10 audios from LibriSpeech test-clean dataset as an example to show how to run the codes. The directory of the audios, the corresponding original transcription and the targeted transcription are provided in the file ```read_data.txt```. 
+Here we provide 10 audios from LibriSpeech test-clean dataset as an example to show how to run the codes. Please refer to [Lingvo](https://github.com/tensorflow/lingvo/tree/master/lingvo/tasks/asr/tools) or from [Librispeech website](http://www.openslr.org/resources/12/) to download the whole test set.
+
+In the file ```read_data.txt```, the directory of the audios, the corresponding original transcription and the targeted transcription are provided in the format of [dir, original transcription, targeted transcription]. 
 
 ## Pretrained model
 The pretrained model can be downloaded here.
