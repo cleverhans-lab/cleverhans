@@ -23,14 +23,14 @@ The pretrained model can be downloaded here.
 ## Quick Start
 ### Lingvo ASR system
 
-The automatic speech recognition (ASR) system used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). You can download the forked version [here](https://github.com/yaq007/lingvo) and make sure that you are in the "icml" branch.
+The automatic speech recognition (ASR) system used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). To run our codes, you need to first download the forked version [here](https://github.com/yaq007/lingvo) and make sure that you are in the "icml" branch.
 
 ```bash
 git clone https://github.com/yaq007/lingvo.git
 cd lingvo
 git checkout icml
 ```
-Then we need to compile the lingvo system. The easiest way to build [Lingvo system](https://github.com/tensorflow/lingvo) is to use the docker.
+Then you need to compile the lingvo system. The easiest way to build [Lingvo system](https://github.com/tensorflow/lingvo) is to use the docker.
 
 ```bash
 cd ..
