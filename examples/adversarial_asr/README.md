@@ -67,6 +67,13 @@ python test_imperceptible_adv.py --stage=stage2
 ```
 You can set ```--stage=stage1``` to test the accuracy of Carlini's adversarial examples.
 
+## Robust Adversarial Examples
+To generate robust adversarial examples that are simulated playing over-the-air in the simulated random rooms, we need to first generate the simulated room reverberations.
+```bash
+python generate_room_reverberations.py
+```
+
+
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
 
