@@ -77,7 +77,6 @@ To generate robust adversarial examples that are simulated playing over-the-air 
 ```bash
 python room_simulator.py
 ```
-Then you can run
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
