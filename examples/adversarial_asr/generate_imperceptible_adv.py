@@ -76,8 +76,8 @@ def ReadFromWav(data, batch_size):
         psd_max_batch: a numpy array of the psd_max of the original audio (batch_size)
         max_length: the max length of the batch of audios
         sample_rate_np: a numpy array
-	masks: a numpy array of size (batch_size, max_length)
-	masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
+	    masks: a numpy array of size (batch_size, max_length)
+	    masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
         lengths: a list of the length of original audios
     """
     audios = []
@@ -265,7 +265,7 @@ class Attack:
         
              
         # reassign the variables  
- 	sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
+ 	    sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
         sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
         
         #noise = np.random.normal(scale=2, size=audios.shape)
