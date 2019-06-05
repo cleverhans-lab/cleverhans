@@ -10,6 +10,8 @@ This is a Tensorflow implementation for the ICML 2019 paper "Imperceptible, Robu
 *   the bazel build system,
 *   librosa (pip install librosa).
 
+## Data and pretrained model
+Here we provide 10 audios from LibriSpeech test-clean dataset as an example to show how to run the codes. The directory of the audios, the corresponding original transcription and the targeted transcription are provided in the file ```read_data.txt```. 
 
 ## Quick Start
 ### Lingvo ASR system
