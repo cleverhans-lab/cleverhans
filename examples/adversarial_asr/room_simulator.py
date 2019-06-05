@@ -46,7 +46,7 @@ room_settings = []
 num_rooms = 1500
 
 for i in range(num_rooms):
-	print('Saved room impulse:', i)
+	print("Saved room reverberation:" + str(i))
 	width = random.randint(3, 5)
 	length = random.randint(4, 6)
 	height = random.randint(2, 4)
