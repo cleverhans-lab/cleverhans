@@ -20,8 +20,7 @@ You can run the script ```sh util/convert_name_format.sh``` to convert the audio
 ## Pretrained model
 The pretrained model can be downloaded here. You need to place the downloaded pretrained model into the directory ```./model/```.
 
-## Quick Start
-### Lingvo ASR system
+## Lingvo ASR system
 
 The automatic speech recognition (ASR) system used in this paper is [Lingvo system](https://github.com/tensorflow/lingvo). To run our codes, you need to first download the forked version [here](https://github.com/yaq007/lingvo) and make sure that you are in the "icml" branch.
 
@@ -52,7 +51,7 @@ sudo chown -R $USER ~/lingvo_compiled
 export PYTHONPATH=$PYTHONPATH:~/lingvo_compiled
 ```
 
-### Imperceptible Adversarial Examples
+## Imperceptible Adversarial Examples
 To generate imperceptible adversarial examples, you need to first place all the files in the lingvo_compiled/ into this directory adversarial_adv/ and then run
 
 ```bash
