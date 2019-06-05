@@ -20,7 +20,7 @@ from absl import flags
 from absl import app
 
 # data directory
-flags.DEFINE_string("root_dir", "/home/yaoqin/", "location of Librispeech")
+flags.DEFINE_string("root_dir", "./", "location of Librispeech")
 flags.DEFINE_string('input', 'read_data.txt',
                     'Input audio .wav file(s), at 16KHz (separated by spaces)')
 
@@ -33,7 +33,7 @@ flags.DEFINE_float('initial_bound', '2000', 'initial l infinity norm for adversa
 # training parameters
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
-flags.DEFINE_integer('batch_size', '5')                   
+flags.DEFINE_integer('batch_size', '5', 'batch size')                   
 flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
 flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
 flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
