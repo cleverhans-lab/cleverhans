@@ -30,7 +30,7 @@ git clone https://github.com/yaq007/lingvo.git
 cd lingvo
 git checkout icml
 ```
-Then you need to compile the lingvo system. The easiest way to build [Lingvo system](https://github.com/tensorflow/lingvo) is to use the [docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/). 
+Then you need to compile the lingvo system. The easiest way to build [Lingvo system](https://github.com/tensorflow/lingvo) is to use the [docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/). Here we place the folder ```lingvo/``` and ```lingvo_compiled/``` under the root directory ```~/```. If you change their locations, you need to make corresponding changes in the following commands.
 
 
 ```bash
