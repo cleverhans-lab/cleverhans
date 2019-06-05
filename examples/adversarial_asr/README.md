@@ -69,6 +69,7 @@ python test_imperceptible_adv.py
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
+
 ```
 @InProceedings{pmlr-v97-qin19a,
   title = 	 {Imperceptible, Robust, and Targeted Adversarial Examples for Automatic Speech Recognition},
@@ -78,10 +79,18 @@ If you find the code or the models implemented here are useful, please cite this
   year = 	 {2019},
   volume = 	 {97},
   series = 	 {Proceedings of Machine Learning Research},
-  address = 	 {Long Beach, California, USA},
-  month = 	 {09--15 Jun},
   publisher = 	 {PMLR},
-  pdf = 	 {http://proceedings.mlr.press/v97/qin19a/qin19a.pdf},
-  url = 	 {http://proceedings.mlr.press/v97/qin19a.html},
+}
+```
+
+## Acknowledgement
+This code is based on Lingvo ASR system. Thanks to the contributors of the Lingvo.
+
+```
+@article{shen2019lingvo,
+  title={Lingvo: a modular and scalable framework for sequence-to-sequence modeling},
+  author={Shen, Jonathan and Nguyen, Patrick and Wu, Yonghui and Chen, Zhifeng and Chen, Mia X and Jia, Ye and Kannan, Anjuli and Sainath, Tara and Cao, Yuan and Chiu, Chung-Cheng and others},
+  journal={arXiv preprint arXiv:1902.08295},
+  year={2019}
 }
 ```
