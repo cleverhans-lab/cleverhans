@@ -33,7 +33,7 @@ def normalize(signal, bits=None):
     return s
 
 # name of the rir
-data = np.loadtxt("/home/yaq007/yaoqin/lingvo_compiled/read_data.txt", dtype=str, delimiter=",")
+data = np.loadtxt("./read_data.txt", dtype=str, delimiter=",")
 name = data[0, 0]
 name_sub, _ = name.split('.')
 
@@ -46,6 +46,7 @@ room_settings = []
 num_rooms = 1500
 
 for i in range(num_rooms):
+	print("Saved room reverberation: " + str(i))
 	width = random.randint(3, 5)
 	length = random.randint(4, 6)
 	height = random.randint(2, 4)

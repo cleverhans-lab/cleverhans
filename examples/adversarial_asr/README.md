@@ -3,11 +3,13 @@
 This is a Tensorflow implementation for the ICML 2019 paper ["Imperceptible, Robust and Targeted Adversarial Examples for Automatic Speech Recognition"](http://proceedings.mlr.press/v97/qin19a.html). The details of all the models implemented here can be found in the [paper](http://proceedings.mlr.press/v97/qin19a.html).
 
 ## Dependencies
-
+*   Python 2.7
 *   a TensorFlow [installation](https://www.tensorflow.org/install/) (Tensorflow 1.13 is supported for this version of Lingvo system),
 *   a `C++` compiler (only g++ 4.8 is officially supported),
 *   the bazel build system,
-*   librosa (```pip install librosa```).
+*   librosa (```pip install librosa```),
+*   Cython (```pip install Cython```),
+*   pyroomacoustics (```pip install pyroomacoustics```).
 
 ## Data 
 Here we provide 10 audios from LibriSpeech test-clean dataset as an example to show how to run the codes. Please refer to [Lingvo](https://github.com/tensorflow/lingvo/tree/master/lingvo/tasks/asr/tools) or [Librispeech website](http://www.openslr.org/resources/12/) to download the whole test set.
@@ -73,7 +75,7 @@ You can set ```--stage=stage1``` to test the accuracy of Carlini's adversarial e
 ## Robust Adversarial Examples
 To generate robust adversarial examples that are simulated playing over-the-air in the simulated random rooms, we need to first generate the simulated room reverberations.
 ```bash
-python generate_room_reverberations.py
+python room_simulator.py
 ```
 Then you can run
 
