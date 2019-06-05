@@ -69,7 +69,7 @@ python test_imperceptible_adv.py
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
-
+```
 @InProceedings{pmlr-v97-qin19a,
   title = 	 {Imperceptible, Robust, and Targeted Adversarial Examples for Automatic Speech Recognition},
   author = 	 {Qin, Yao and Carlini, Nicholas and Cottrell, Garrison and Goodfellow, Ian and Raffel, Colin},
@@ -84,3 +84,4 @@ If you find the code or the models implemented here are useful, please cite this
   pdf = 	 {http://proceedings.mlr.press/v97/qin19a/qin19a.pdf},
   url = 	 {http://proceedings.mlr.press/v97/qin19a.html},
 }
+```
