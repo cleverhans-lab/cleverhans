@@ -66,3 +66,21 @@ To test the accuracy of the imperceptible adversarial examples, simply run:
 ```bash
 python test_imperceptible_adv.py
 ```
+
+## Citation
+If you find the code or the models implemented here are useful, please cite this paper:
+
+@InProceedings{pmlr-v97-qin19a,
+  title = 	 {Imperceptible, Robust, and Targeted Adversarial Examples for Automatic Speech Recognition},
+  author = 	 {Qin, Yao and Carlini, Nicholas and Cottrell, Garrison and Goodfellow, Ian and Raffel, Colin},
+  booktitle = 	 {Proceedings of the 36th International Conference on Machine Learning},
+  pages = 	 {5231--5240},
+  year = 	 {2019},
+  volume = 	 {97},
+  series = 	 {Proceedings of Machine Learning Research},
+  address = 	 {Long Beach, California, USA},
+  month = 	 {09--15 Jun},
+  publisher = 	 {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v97/qin19a/qin19a.pdf},
+  url = 	 {http://proceedings.mlr.press/v97/qin19a.html},
+}
