@@ -18,7 +18,7 @@ In the file ```read_data.txt```, the directory of the 10 audios, the correspondi
 You can run the script ```sh util/convert_name_format.sh``` to convert the audios in the LibriSpeech from the format ```.flac```  to ```.wav```. You need to first change the directory of the downloaded LibriSpeech dataset in the script ```./util/convert_name_format.sh```.
 
 ## Pretrained model
-The pretrained model can be downloaded here. You need to place the downloaded pretrained model into the directory ```./model/```.
+The pretrained model can be downloaded [here](http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001). You need to place the downloaded pretrained model into the directory ```./model/```.
 
 ## Lingvo ASR system
 
