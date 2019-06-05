@@ -17,9 +17,9 @@ from lingvo.core import cluster_factory
 
 flags.DEFINE_string('input', 'read_data.txt',
                     'Input audio .wav file(s), at 16KHz (separated by spaces)')
-flags.DEFINE_integer('batch_size', '25',
+flags.DEFINE_integer('batch_size', '5',
                     'batch_size to do the testing')
-flags.DEFINE_string('checkpoint', "/home/yaoqin/librispeech/log/train/ckpt-00908156",
+flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_string('stage', "stage2", 'which stage to test')
 flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
@@ -63,7 +63,7 @@ def Read_input(data, batch_size):
     
     for i in range(batch_size):
         name, _  = data[0,i].split(".")
-        sample_rate_np, audio_temp = wav.read("/home/yaoqin/" + str(name) + "_" + FLAGS.stage + ".wav")
+        sample_rate_np, audio_temp = wav.read("./" + str(name) + "_" + FLAGS.stage + ".wav")
 
         # read the wav form range from [-32767, 32768] or [-1, 1]
         if max(audio_temp) < 1:
