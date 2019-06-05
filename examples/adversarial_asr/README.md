@@ -15,7 +15,7 @@ Here we provide 10 audios from LibriSpeech test-clean dataset as an example to s
 
 In the file ```read_data.txt```, the directory of the 10 audios, the corresponding original transcription and the targeted transcription are provided in the format of [dir, original transcription, targeted transcription]. The full list of 1000 audio examples used in our experiments is provided in ```read_data_ful.txt```.
 
-You can run the following scripts to convert the audios in the LibriSpeech from the format ```.flac```  to ```.wav```.
+You can run the script ```sh convert_name_format.sh``` to convert the audios in the LibriSpeech from the format ```.flac```  to ```.wav```. You need to first change the directory of the downloaded LibriSpeech dataset in the script.
 
 ## Pretrained model
 The pretrained model can be downloaded here.
