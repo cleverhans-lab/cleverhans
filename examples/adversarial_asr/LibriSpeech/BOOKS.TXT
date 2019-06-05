@@ -1,0 +1,1478 @@
+1      | United States Declaration of Independence          | 
+11     | Alice's Adventures in Wonderland                   | 
+12     | Through the Looking-Glass                          | 
+13     | The Hunting of the Snark                           | 
+16     | Peter Pan                                          | 
+17     | The Book of Mormon                                 |  Church of Jesus Christ of Latter-day Saints, Joseph, Jr. Smith, Joseph Smith
+20     | Paradise Lost                                      | 
+23     | Narrative of the Life of Frederick Douglass, an American Slave | Frederick Douglass, Frederick Augustus Washington Bailey, Frederick Augustus Washington Baly
+24     | O Pioneers!                                        | 
+32     | Herland                                            | 
+33     | The Scarlet Letter                                 | 
+35     | The Time Machine                                   | 
+36     | The War of the Worlds                              | 
+44     | The Song of the Lark                               | 
+45     | Anne of Green Gables                               | 
+46     | A Christmas Carol in Prose; Being a Ghost Story of Christmas | 
+47     | Anne of Avonlea                                    | 
+51     | Anne of the Island                                 | 
+54     | The Marvelous Land of Oz                           | 
+55     | The Wonderful Wizard of Oz                         | 
+58     | Paradise Regained                                  | 
+59     | Discourse on the Method of Rightly Conducting One's Reason and of Seeking Truth in the Sciences | 
+60     | The Scarlet Pimpernel                              | 
+62     | A Princess of Mars                                 | 
+64     | The Gods of Mars                                   | 
+68     | Warlord of Mars                                    | 
+72     | Thuvia, Maid of Mars                               | 
+73     | The Red Badge of Courage                           | 
+76     | Adventures of Huckleberry Finn                     | 
+77     | House of the Seven Gables                          | 
+82     | Ivanhoe                                            | 
+83     | From the Earth to the Moon; and, Round the Moon    | 
+84     | Frankenstein                                       | Mary Wollstonecraft Shelley, Mary Wollstonecraft Godwin Shelley
+86     | A Connecticut Yankee in King Arthur's Court        | 
+93     | Tom Sawyer, Detective                              | 
+94     | Alexander's Bridge                                 | 
+98     | A Tale of Two Cities                               | 
+102    | The Tragedy of Pudd'nhead Wilson                   | 
+103    | Around the World in 80 Days                        | 
+105    | Persuasion                                         | 
+107    | Far from the Madding Crowd                         | 
+108    | The Return of Sherlock Holmes                      | 
+110    | Tess of the d'Urbervilles, a Pure Woman            | 
+111    | Freckles                                           | 
+113    | The Secret Garden                                  | 
+120    | Treasure Island                                    | 
+121    | Northanger Abbey                                   | 
+122    | The Return of the Native                           | 
+123    | At the Earth's Core                                | 
+124    | Deuterocanonical Books of the Bible Apocrypha     | 
+128    | The Arabian Nights                                 | 
+130    | Orthodoxy                                          | 
+135    | Les Miserables                                     | 
+136    | A Child's Garden of Verses                         | 
+137    | Sara Crewe: or, What happened at Miss Minchin's boarding school | 
+139    | The Lost World                                     | 
+141    | Mansfield Park                                     | 
+145    | Middlemarch                                        | 
+153    | Jude the Obscure                                   | 
+155    | The Moonstone                                      | 
+158    | Emma                                               | 
+159    | The Island of Doctor Moreau                        | 
+160    | The Awakening and Selected Short Stories           | 
+161    | Sense and Sensibility                              | 
+163    | Flower Fables                                      | 
+165    | McTeague                                           | 
+169    | The Well at the World's End: a tale                | 
+171    | Charlotte Temple                                   | Mrs. Susanna (Haswell) Rowson
+173    | The Insidious Dr. Fu Manchu                        | 
+175    | The Phantom of the Opera                           | 
+204    | The Innocence of Father Brown                      | 
+208    | Daisy Miller                                       | 
+209    | The Turn of the Screw                              | 
+210    | An International Episode                           | 
+215    | The Call of the Wild                               | 
+216    | The Tao Teh King, or the Tao and its Characteristics |  Laozi,  Lao Tse,  Lao Tzu,  Lau-tzu,  
+222    | Moon and Sixpence                                  | 
+225    | At the Back of the North Wind                      | 
+228    | The Aeneid                                         | 
+238    | Dear Enemy                                         | 
+244    | A Study in Scarlet                                 | 
+246    | The Rubaiyat of Omar Khayyam                       | 
+259    | Ballads of a Cheechako                             | 
+269    | Beasts and Super-Beasts                            | 
+271    | Black Beauty                                       | 
+273    | The Smalcald Articles                              | 
+282    | Eothen, or, Traces of Travel Brought Home from the East | Alexander William Kinglake
+283    | The Reef                                           | 
+289    | The Wind in the Willows                            | 
+291    | The Golden Age                                     | 
+308    | Three Men in a Boat                                | 
+325    | Phantastes: A Faerie Romance for Men and Women     | 
+326    | Steep Trails California, Utah, Nevada, Washington, Oregon, the Grand Canyon | 
+338    | Old Indian Legends                                 |  Zitkala-Sa, Gertrude Bonnin
+340    | The Soul of the Indian                             | Charles Alexander Eastman,  Ohiyesa
+345    | Dracula                                            | 
+360    | What is Property?                                  | 
+361    | Miss Billy  Married                                | 
+362    | Miss Billy's Decision                              | 
+367    | The Country of the Pointed Firs                    | 
+368    | Acres of Diamonds: our every-day opportunities     | 
+370    | The Fortunes and Misfortunes of the Famous Moll Flanders | 
+376    | A Journal of the Plague Year, written by a citizen who continued all the while in London | 
+389    | The Great God Pan                                  | 
+402    | Penrod                                             | 
+408    | The Souls of Black Folk                            | W. E. B. (William Edward Burghardt) Du Bois, W. E. B. Du Bois, W. E. B. (William Edward Brughardt) DuBois
+416    | Winesburg, Ohio; a group of tales of Ohio small town life | 
+421    | Kidnapped                                          | 
+434    | The Circular Staircase                             | 
+435    | The Miracle Mongers, an Expose                     | Harry Houdini
+443    | The Love Affairs of a Bibliomaniac                 | 
+472    | The House Behind the Cedars                        | 
+474    | How to Tell Stories to Children, And Some Stories to Tell | 
+479    | Little Lord Fauntleroy                             | 
+481    | In the Bishop's Carriage                           | 
+482    | The Woodlanders                                    | 
+485    | The Road to Oz                                     | 
+498    | Rebecca of Sunnybrook Farm                         | 
+499    | Tom Swift in the Land of Wonders, or, the Underground Search for the Idol of Gold | Victor Appleton
+500    | Adventures of Pinocchio                            | Carlo Collodi, Carlo Lorenzini
+501    | The Story of Doctor Dolittle                       | Hugh Lofting
+503    | The Blue Fairy Book                                | 
+506    | The Shuttle                                        | 
+507    | Adam Bede                                          | George Eliot, Marian Evans Cross, Mary Ann Cross, Marian Evans, Mary Anne Evans, M. E. (Marian Evans) Lewes, Marian Evans Lewes
+514    | Little Women                                       | 
+533    | The Song of the Cardinal                           | 
+537    | Tales of Terror and Mystery                        | 
+540    | The Red Fairy Book                                 | 
+541    | The Age of Innocence                               | 
+543    | Main Street                                        | 
+544    | Anne's House of Dreams                             | 
+556    | Rewards and Fairies                                | Rudyard Kipling, Joseph Rudyard Kipling, R. (Rudyard) Kipling
+559    | Greenmantle                                        | 
+564    | The Mystery of Edwin Drood                         | 
+572    | The Great Big Treasury of Beatrix Potter           | Beatrix Potter, Beatrix Heelis, Helen Beatrix Potter
+574    | Poems of William Blake                             | William Blake
+575    | The Essays or Counsels, Civil and Moral            | 
+580    | The Pickwick Papers                                | 
+599    | Vanity Fair                                        | 
+600    | Notes from the Underground                         | 
+604    | Gulliver of Mars                                   | Edwin Lester Linden Arnold, Edwin L. Arnold
+606    | Indian Why Stories Sparks from War Eagle's Lodge-Fire | Frank Bird Linderman
+619    | The Warden                                         | 
+620    | Sylvie and Bruno                                   | 
+621    | Varieties of Religious Experience, a Study in Human Nature | 
+640    | The Yellow Fairy Book                              | 
+641    | The Violet Fairy Book                              | 
+643    | The Death of the Lion                              | 
+675    | American Notes                                     | 
+677    | The Heroes, or Greek Fairy Tales for My Children   | 
+683    | The Compleat Angler                                | Izaak Walton, Isaak Walton
+697    | The Light Princess                                 | 
+699    | A Child's History of England                       | 
+700    | The Old Curiosity Shop                             | 
+701    | The King of the Golden River                       | 
+708    | The Princess and the Goblin                        | 
+709    | The Princess and Curdie                            | 
+711    | Allan Quatermain                                   | 
+721    | The Birds' Christmas Carol                         | 
+730    | Oliver Twist                                       | 
+731    | History of the Decline and Fall of the Roman Empire  Volume 1 | 
+732    | History of the Decline and Fall of the Roman Empire  Volume 2 | 
+733    | History of the Decline and Fall of the Roman Empire  Volume 3 | Edward Gibbon
+734    | History of the Decline and Fall of the Roman Empire  Volume 4 | 
+735    | History of the Decline and Fall of the Roman Empire  Volume 5 | 
+753    | Arizona Nights                                     | 
+756    | Arizona Sketches                                   | J. A. (Joseph Amasa) Munk
+764    | Hans Brinker; or, the Silver Skates                | 
+766    | David Copperfield                                  | 
+767    | Agnes Grey                                         | 
+768    | Wuthering Heights                                  | 
+769    | The Book of Tea                                    | Kakuzo Okakura,  
+778    | Five Children and It                               | 
+780    | The War in the Air                                 | 
+781    | Sinking of the Titanic and Great Sea Disasters     | 
+783    | The Lost City                                      | Jos. E. (Joseph Edward) Badger, Joseph Edward Badger
+786    | Hard Times                                         | 
+793    | Aeroplanes and Dirigibles of War                   | Frederick Arthur Ambrose Talbot
+804    | A Sentimental Journey Through France and Italy     | 
+805    | This Side of Paradise                              | 
+815    | Democracy in America  Volume 1                     | 
+816    | Democracy in America  Volume 2                     | 
+820    | Edison, His Life and Inventions                    | Frank Lewis Dyer, Thomas Commerford Martin
+829    | Gulliver's Travels                                 | 
+830    | The Argonautica                                    | Rhodius Apollonius, of Rhodes Apollonius, Apollonius Rhodius
+831    | Four Arthurian Romances                            | de Troyes, 12th cent. Chretien, de Troyes, 12th cent. Chretien, Chretien De Troyes, Chretien de Troyes
+833    | Theory of the Leisure Class                        | Thorstein Veblen
+836    | The Phoenix and the Carpet                         | 
+840    | Lorna Doone; a Romance of Exmoor                   | 
+847    | Lays of Ancient Rome                               | 
+848    | The Black Arrow                                    | 
+851    | Narrative of the Captivity and Restoration of Mrs. Mary Rowlandson | Mary White Rowlandson
+852    | Democracy and Education: an introduction to the philosophy of education | 
+871    | The Golden Sayings of Epictetus, with the Hymn of Cleanthes |  Epictetus,  Epicteto,  Epiktit,  Epitteto
+883    | Our Mutual Friend                                  | 
+889    | Two Years in the Forbidden City                    | Princess Der Ling
+903    | The White Company                                  | 
+914    | The Uncommercial Traveller                         | 
+921    | De Profundis                                       | 
+940    | The Last of the Mohicans; A narrative of 1757      | 
+944    | The Voyage of the Beagle                           | 
+946    | Lady Susan                                         | Jane Austen
+951    | Tom Swift and His Sky Racer, or, the Quickest Flight on Record | 
+955    | The Patchwork Girl of Oz                           | 
+956    | Tik-Tok of Oz                                      | 
+961    | Glinda of Oz                                       | 
+963    | Little Dorrit                                      | 
+964    | The Adventures of Robin Hood                       | 
+965    | The Black Tulip                                    | 
+967    | Nicholas Nickleby                                  | 
+969    | The Tenant of Wildfell Hall                        | Anne Bronte, Acton Bell, Anne Bronte
+970    | Uncle Josh's Punkin Centre Stories                 | Cal Stewart, Calvin Edward Stewart
+972    | The Devil's Dictionary                             | 
+974    | The Secret Agent a Simple Tale                    | 
+976    | Tanglewood Tales                                   | 
+977    | American Notes                                     | 
+980    | Alice Adams                                        | 
+981    | Beowulf                                            | 
+1004   | Divine Comedy, Longfellow's Translation, Complete  | 
+1014   | The Lure of the Dim Trails                         | B. M. Bower, B. M. (Bertha Muzzy) Sinclair, Bertha Muzzy Sinclair
+1019   | Poems by Currer, Ellis, and Acton Bell             | Emily Bronte, Ellis Bell, Emily Bronte
+1023   | Bleak House                                        | 
+1028   | The Professor                                      | Charlotte Bronte, Currer Bell, Charlotte Bronte,  Charlotte Bronte
+1041   | Shakespeare's Sonnets                              | 
+1046   | God the Invisible King                             | 
+1056   | Martin Eden                                        | 
+1058   | The Mirror of the Sea                              | 
+1079   | The Life and Opinions of Tristram Shandy, Gentleman | Laurence Sterne, Mr. Yorick
+1080   | A Modest Proposal                                  | 
+1081   | Dead Souls                                         | Nikolai Vasilievich Gogol, Nikolay Vasilyevich Gogol,  
+1093   | The Beast in the Jungle                            | 
+1098   | The Turmoil, a novel                               | 
+1142   | Typhoon                                            | 
+1153   | The Chessmen of Mars                               | 
+1158   | Penrod and Sam                                     | 
+1164   | The Iron Heel                                      | 
+1167   | A Strange Disappearance                            | 
+1183   | The Return of Dr. Fu-Manchu                        | 
+1184   | The Count of Monte Cristo                          | 
+1188   | Lair of the White Worm                             | 
+1193   | The Coxon Fund                                     | 
+1198   | Robbery under Arms; a story of life and adventure in the bush and in the Australian goldfields | Rolf Boldrewood, Thomas Alexander Browne
+1202   | Tales of Unrest                                    | 
+1210   | Kwaidan: Stories and Studies of Strange Things     | 
+1218   | The Adventures of Jimmie Dale                      | 
+1249   | Anthem                                             | 
+1250   | Anthem                                             | Ayn Rand, Alissa Zinovievna Rosenbaum
+1251   | Le Mort d'Arthur: Volume 1                         | 
+1252   | Le Mort d'Arthur: Volume 2                         | 
+1257   | The Three Musketeers                               | 
+1259   | Twenty Years After                                 | 
+1260   | Jane Eyre                                          | 
+1264   | The Wheels of Chance: a Bicycling Idyll            | 
+1268   | The Mysterious Island                              | 
+1273   | The Autobiography of a Slander                     | 
+1278   | Penelope's English Experiences                     | 
+1282   | Tom Swift Among the Diamond Makers, or, the Secret of Phantom Mountain | 
+1312   | Selected Stories of Bret Harte                     | 
+1322   | Leaves of Grass                                    | 
+1325   | Twenty Years at Hull House; with autobiographical notes | 
+1342   | Pride and Prejudice                                | 
+1353   | Off on a Comet! a Journey through Planetary Space  | 
+1355   | The Underground City; Or, The Black Indies (Sometimes Called The Child of the Cavern) | 
+1365   | The Complete Poems of Henry Wadsworth Longfellow   | 
+1399   | Anna Karenina                                      | 
+1400   | Great Expectations                                 | 
+1401   | Tarzan the Untamed                                 | 
+1404   | The Federalist Papers                              | 
+1423   | No Thoroughfare                                    | 
+1430   | Beautiful Stories from Shakespeare                 | 
+1438   | No Name                                            | 
+1441   | The Story of an African Farm, a novel              | 
+1446   | Perfect Behavior; a guide for ladies and gentlemen in all social crises | Donald Ogden Stewart
+1450   | Pollyanna                                          | 
+1468   | The History of England, from the Accession of James II  Volume 1 | 
+1472   | In a German Pension                                | 
+1477   | The Toys of Peace, and other papers                |  Saki, H. H. (Hector Hugh) Munro, Hector Hugh Munro
+1482   | Modeste Mignon                                     | 
+1497   | The Republic                                       | 
+1549   | Commentary on the Epistle to the Galatians         | 
+1557   | Men of Iron                                        | 
+1560   | The San Francisco calamity by earthquake and fire  | 
+1565   | Last Days of Pompeii                               | 
+1571   | Critias                                            | 
+1572   | Timaeus                                            | 
+1574   | Historic Girls Stories Of Girls Who Have Influenced The History Of Their Times | Elbridge Streeter Brooks
+1587   | The Black Robe                                     | Wilkie Collins, William Wilkie Collins
+1593   | How to Tell the Birds from the Flowers             | 
+1597   | Andersen's Fairy Tales                             | 
+1603   | The Blue Flower                                    | 
+1608   | Camille                                            | 
+1622   | The Law and the Lady                               | 
+1624   | The Two Destinies                                  | 
+1627   | The Evil Genius                                    | 
+1629   | I Say No                                           | 
+1635   | Ion                                                | 
+1640   | Lilith, a romance                                  | 
+1674   | The Narrative of Sojourner Truth                   | Olive Gilbert, Sojourner Truth
+1684   | The Egoist                                         | 
+1685   | Mystery of the Yellow Room                         | 
+1688   | The People of the Abyss                            | 
+1693   | Dangerous Days                                     | 
+1697   | Madam How and Lady Why                             | 
+1709   | New Grub Street                                    | 
+1719   | The Ballad of the White Horse                      | 
+1725   | Heart of the West                                  | 
+1727   | The Odyssey Rendered into English prose for the use of those who cannot read the original | 
+1734   | Secret Places of the Heart                         | 
+1751   | Twilight Land                                      | 
+1805   | The Gentle Grafter                                 | 
+1827   | Life of Charlotte Bronte  Volume 1                 | 
+1831   | The Lock and Key Library Classic Mystery and Detective Stories: Old Time English | 
+1839   | Other Things Being Equal                           | Emma Wolf
+1845   | Zuleika Dobson, or, an Oxford love story           | Max, Sir Beerbohm
+1851   | The Woman in the Alcove                            | 
+1857   | Initials Only                                      | 
+1858   | Plain Tales from the Hills                         | 
+1862   | Tartarin of Tarascon                               | 
+1864   | Hero Tales from American History                   | 
+1870   | Reginald in Russia and other sketches              | 
+1885   | Bunyan Characters (1st Series)                     | 
+1887   | The Life of the Spider                             | 
+1892   | Extracts from Adam's Diary, translated from the original ms. | 
+1895   | Armadale                                           | 
+1897   | The Seventh Man                                    | 
+1900   | Typee: A Romance of the South Seas                 | 
+1902   | The Old Peabody Pew                                | 
+1906   | Erewhon                                            | 
+1911   | Concerning Christian Liberty                       | 
+1913   | The Drums of Jeopardy                              | 
+1930   | Penguin Island                                     | 
+1937   | The Second Jungle Book                             | 
+1938   | Resurrection                                       | 
+1941   | Letters of Two Brides                              | 
+1948   | The Story of a Bad Boy                             | 
+1953   | A Book of Strife in the Form of The Diary of an Old Soul | 
+1965   | Captain Blood                                      | 
+1972   | History of the Britons (Historia Brittonum)        | fl. 796 Nennius
+1989   | The Foolish Dictionary An exhausting work of reference to un-certain English words, their origin, meaning, legitimate and illegitimate use, confused by a few pictures [not included] | Gideon Wurdz
+1998   | Thus Spake Zarathustra A book for all and none    | 
+2002   | Sonnets from the Portuguese                        | 
+2003   | Spirits in bondage; a cycle of lyrics              | C. S. (Clive Staples) Lewis, Clive Hamilton
+2005   | Piccadilly Jim                                     | 
+2017   | Dhammapada, a collection of verses; being one of the canonical books of the Buddhists | 
+2021   | Nostromo, a Tale of the Seaboard                   | 
+2024   | Diary of a Pilgrimage                              | 
+2032   | Martin Pippin in the Apple Orchard                 | Eleanor Farjeon
+2046   | Clotel; or, the President's Daughter               | 
+2048   | The Sketch-Book of Geoffrey Crayon                 | 
+2049   | Liber Amoris, or, the New Pygmalion                | 
+2055   | Two Years Before the Mast                          | 
+2083   | In Search of the Castaways; or the Children of Captain Grant | 
+2126   | The Quest of the Sacred Slipper                    | 
+2130   | Utopia                                             | 
+2142   | Childhood                                          | Leo, graf Tolstoy, Leo Tolstoi, Lyof N. Tolstoi,  
+2145   | Ben-Hur; a tale of the Christ                      | 
+2147   | The Works of Edgar Allan Poe  Volume 1             | 
+2148   | The Works of Edgar Allan Poe  Volume 2             | 
+2149   | The Works of Edgar Allan Poe  Volume 3             | 
+2150   | The Works of Edgar Allan Poe  Volume 4             | 
+2151   | The Works of Edgar Allan Poe  Volume 5             | 
+2153   | Mary Barton                                        | 
+2158   | The Prime Minister                                 | 
+2166   | King Solomon's Mines                               | 
+2184   | Unbeaten Tracks in Japan                           | 
+2197   | The Gambler                                        | 
+2198   | Stories from the Pentamerone                       | Giambattista Basile
+2233   | A Damsel in Distress                               | 
+2271   | He Fell in Love with His Wife                      | 
+2275   | The Pioneers                                       | 
+2291   | David Elginbrod                                    | 
+2293   | A New England girlhood, outlined from memory (Beverly, MA) | Lucy Larcom
+2295   | Waifs and Strays Part 1                            | 
+2300   | The Descent of Man                                 | 
+2351   | John Halifax, Gentleman                            | 
+2376   | Up from Slavery: an autobiography                  | 
+2383   | The Canterbury Tales, and Other Poems              | 
+2395   | The Golden Fleece and the Heroes Who Lived Before Achilles | 
+2397   | The Story of my life; with her letters (1887-1901) and a supplementary account of her education, including passages from the reports and letters of her teacher, Anne Mansfield Sullivan, by John Albert Macy | John Albert Macy, Annie Sullivan
+2435   | The Crimson Fairy Book                             | 
+2439   | The History of England, from the Accession of James II  Volume 2 | 
+2441   | The Burgess Animal Book for Children               | 
+2464   | History of Florence and of the Affairs of Italy    | 
+2486   | Queer Little Folks                                 | Harriet Beecher Stowe, Christopher Crowfield, H. B. (Harriet Beecher) Stowe, Harriet Elizabeth Beecher Stowe
+2488   | Twenty Thousand Leagues Under the Sea              | 
+2505   | The Heir of Redclyffe                              | 
+2511   | The History of Henry Esmond, Esq. A Colonel in the Service of Her Majesty Queen Anne | 
+2512   | The Cruise of the Snark                            | 
+2515   | Stepping Heavenward                                | E. (Elizabeth) Prentiss, E. P. (Elizabeth Payson) Prentiss, Elizabeth Payson Prentiss
+2518   | The Hungry Stones and Other Stories                | 
+2524   | My Lady Ludlow                                     | 
+2529   | The Analysis of Mind                               | 
+2554   | Crime and Punishment                               | 
+2569   | The Day's Work - Volume 1                          | 
+2591   | Grimm's Fairy Tales                                | 
+2600   | War and Peace                                      | 
+2604   | The Longest Journey                                | 
+2607   | Psmith, Journalist                                 | 
+2609   | The Vicomte De Bragelonne                          | 
+2612   | The History of England, from the Accession of James II  Volume 3 | 
+2613   | The History of England, from the Accession of James II  Volume 4 | 
+2614   | The History of England, from the Accession of James II  Volume 5 | 
+2618   | A House-Boat on the Styx                           | 
+2657   | The Writings of Abraham Lincoln  Volume 5: 1858-1862 | 
+2662   | Under the Greenwood Tree, or, the Mellstock quire; a rural painting of the Dutch school | 
+2667   | The Vicar of Wakefield                             | 
+2678   | Poems by Emily Dickinson, Series One               | Emily Dickinson
+2679   | Poems by Emily Dickinson, Series Two               | 
+2681   | Ten Years Later                                    | 
+2686   | The Book of Snobs                                  | 
+2688   | The Clue of the Twisted Candle                     | 
+2691   | Nan Sherwood at Pine Camp; Or, The Old Lumberman's Secret | 
+2710   | Louise de la Valliere                              | 
+2741   | The Borgias Celebrated Crimes                     | 
+2770   | Five Little Peppers and How They Grew              | 
+2775   | The Good Soldier                                   | Ford Madox Ford, Ford Madox Hueffer
+2776   | The Four Million                                   | 
+2781   | Just So Stories                                    | 
+2787   | An Old-Fashioned Girl                              | 
+2788   | Little Men                                         | 
+2814   | Dubliners                                          | 
+2816   | The City of the Sun                                | 
+2830   | Reginald                                           | 
+2833   | The Portrait of a Lady  Volume 1                   | 
+2834   | The Portrait of a Lady  Volume 2                   | 
+2842   | Black Heart and White Heart                        | 
+2845   | Sir Nigel                                          | 
+2848   | Antiquities of the Jews                            | 
+2850   | The Wars of the Jews; Or, The History of the Destruction of Jerusalem | 
+2852   | The Hound of the Baskervilles                      | 
+2860   | Framley Parsonage                                  | 
+2864   | The Trumpet-Major                                  | 
+2865   | Otto of the Silver Hand                            | 
+2866   | Windsor Castle                                     | 
+2876   | The Light That Failed                              | 
+2885   | The House of the Wolfings                          | 
+2891   | Howards End                                        | 
+2893   | The Wizard                                         | 
+2944   | Essays  First Series                               | 
+2950   | The Midnight Queen                                 | 
+2981   | The Complete Memoirs of Jacques Casanova de Seingalt | 
+3005   | Tom Swift and His Airship                          | 
+3007   | The Smoky God, or, a voyage to the inner world     | Willis George Emerson
+3021   | A Boy's Will                                       | 
+3028   | The Peterkin papers                                | 
+3030   | The Tavern Knight                                  | 
+3045   | The Last Chronicle of Barset                       | 
+3050   | Notes of a War Correspondent                       | 
+3053   | Signs of Change                                    | 
+3074   | The Burgess Bird Book for Children                 | 
+3075   | The Return                                         | 
+3076   | Ten Days That Shook the World                      | John Reed
+3091   | Eight Hundred Leagues on the Amazon                | 
+3127   | Being a Boy                                        | 
+3154   | The Surprising Adventures of Baron Munchausen      | Rudolf Erich Raspe
+3155   | She                                                | 
+3169   | The Pursuit of the House-Boat                      | 
+3178   | The Gilded Age A tale of today                     | 
+3261   | News from Nowhere, or, an Epoch of Rest : being some chapters from a utopian romance | 
+3266   | Miss Billy                                         | 
+3268   | The Mysteries of Udolpho                           | Ann Ward Radcliffe
+3282   | The Brown Fairy Book                               | 
+3300   | An Inquiry into the Nature and Causes of the Wealth of Nations | Adam Smith
+3322   | East Lynne                                         | 
+3326   | The Well-Beloved                                   | 
+3335   | Theodore Roosevelt; an Autobiography               | 
+3424   | For the Term of His Natural Life                   | Marcus Andrew Hislop Clarke
+3429   | St. George for England                             | 
+3435   | The Book of the Thousand Nights and a Night  Volume 01 | 
+3436   | The Book of the Thousand Nights and a Night  Volume 02 | 
+3437   | The Book of the Thousand Nights and a Night  Volume 03 | 
+3438   | The Book of the Thousand Nights and a Night  Volume 04 | 
+3439   | The Book of the Thousand Nights and a Night  Volume 05 | 
+3440   | The Book of the Thousand Nights and a Night  Volume 06 | 
+3441   | The Book of the Thousand Nights and a Night  Volume 07 | 
+3454   | The Lilac Fairy Book                               | 
+3475   | The Efficiency Expert                              | 
+3479   | The Metal Monster                                  | Abraham Merritt, A. (Abraham) Merritt
+3499   | Jo's Boys                                          | 
+3526   | Five Weeks in a Balloon Or, Journeys and Discoveries in Africa by Three Englishmen | 
+3529   | Letters Written During a Short Residence in Sweden, Norway, and Denmark | 
+3533   | Sunshine Sketches of a Little Town                 | 
+3600   | Essays of Michel de Montaigne  Complete            | 
+3604   | Jailed for Freedom                                 | Doris Stevens, Doris Stevens Mitchell, Mrs. Jonathan Mitchell
+3622   | The Duke's Children                                | 
+3623   | The Golden Bough: A Study of Magic and Religion    | 
+3629   | The Titan                                          | 
+3633   | Jezebel's Daughter                                 | 
+3634   | The Guilty River                                   | 
+3635   | Mother: A Story                                    | Kathleen Thompson Norris
+3642   | The Belgian Twins                                  | 
+3653   | The Guns of Bull Run: A Story of the Civil War's Eve | 
+3659   | The Rosary                                         | Florence L. (Florence Louisa) Barclay, Florence Louisa (Charlesworth), Mrs. Barclay, Brandon Roy
+3688   | The Chronicles of Clovis                           | 
+3697   | A Century of Roundels                              | 
+3707   | The Trimmed Lamp, and other Stories of the Four Million | 
+3721   | Pioneers of France in the New World                | 
+3722   | A Daughter of the Land                             | 
+3725   | Famous Men of the Middle Ages                      | John H. (John Henry) Haaren, Addison B. Poland, A. B. (Addison B.) Poland
+3748   | A Journey into the Interior of the Earth           | 
+3755   | Common Sense                                       | 
+3760   | Sybil, Or, The Two Nations                         | 
+3795   | Under the Lilacs                                   | 
+3797   | In the Days of the Comet                           | 
+3800   | Ethics                                             | 
+3810   | The Man-Eaters of Tsavo, and Other East African Adventures | 
+4002   | The Honor of the Name                              | 
+4012   | The Dutch Twins                                    | 
+4018   | Japanese Fairy Tales                               | 
+4020   | Arcadian Adventures with the Idle Rich             | 
+4028   | The Autobiography of Benvenuto Cellini             | Benvenuto Cellini, Benvenuto Chellini
+4032   | Atlantis: The Antedeluvian World                   | Ignatius Donnelly, Edmund Boisgilbert, I. L. (Ignatius L.) Donnelly
+4037   | Appreciations, with an Essay on Style              | 
+4042   | Mozart: The Man and the Artist, as Revealed in His Own Words | 
+4051   | Lady Bridget in the Never-Never Land: a story of Australian life | Campbell, Mrs. Praed, Rosa Caroline Murray-Prior, Rosa Caroline Murray Prior Praed
+4071   | Monsieur Lecoq, v. 1                               | 
+4077   | The Mariner of St. Malo : A chronicle of the voyages of Jacques Cartier | 
+4084   | The Adventures of Peregrine Pickle                 | 
+4204   | The Elements of Geology                            | William Harmon Norton
+4217   | A Portrait of the Artist as a Young Man            | James Joyce
+4224   | Mr. Hogarth's Will                                 | Catherine Helen Spence
+4227   | Tom Swift and His Wireless Message; Or, The Castaways of Earthquake Island | 
+4229   | The South Pole; an account of the Norwegian Antarctic expedition in the "Fram," 1910-12  Volume 1 and Volume 2 | 
+4274   | Wives and Daughters                                | 
+4276   | North and South                                    | 
+4280   | The Critique of Pure Reason                        | 
+4298   | The Paying Guest                                   | 
+4300   | Ulysses                                            | 
+4301   | The Nether World                                   | 
+4307   | In the Year of Jubilee                             | 
+4320   | An Enquiry Concerning the Principles of Morals     | 
+4357   | American Fairy Tales                               | 
+4363   | Beyond Good and Evil                               | Friedrich Wilhelm Nietzsche
+4367   | Personal Memoirs of U. S. Grant, Complete          | 
+4368   | Flappers and Philosophers                          | F. Scott (Francis Scott) Fitzgerald, Francis Scott Key Fitzgerald
+4379   | The Fortunate Youth                                | 
+4405   | The Shaving of Shagpat; an Arabian entertainment  Complete | 
+4507   | As a Man Thinketh                                  | James Allen
+4524   | Familiar Letters on Chemistry, and Its Relation to Commerce, Physiology, and Agriculture | 
+4531   | The Secret Passage                                 | 
+4537   | Sylvia's Lovers  Complete                          | 
+4540   | In His Steps                                       | 
+4583   | Dialogues Concerning Natural Religion              | 
+4599   | The Small House at Allington                       | 
+4602   | "The Kingdom of God Is Within You" Christianity Not as a Mystic Religion but as a New Theory of Life | 
+4605   | Basil                                              | 
+4624   | Off-Hand Sketches, a Little Dashed with Humor      | 
+4675   | The Sea-Witch; Or, The African Quadroon: A Story of the Slave Coast | 
+4693   | Famous Affinities of History: The Romance of Devotion. Vol 1-4, Complete | 
+4705   | A Treatise of Human Nature                         | 
+4735   | The Shepherd of the Hills                          | 
+4737   | A Tale of a Tub                                    | 
+4761   | The Cossacks: A Tale of 1852                       | 
+4767   | The Mayor's Wife                                   | Anna Katharine Green, Anna Katharine Green Rohlfs, Mrs. Charles Rohlfs
+4770   | Work: A Story of Experience                        | 
+4792   | In Freedom's Cause : A Story of Wallace and Bruce  | 
+4925   | The Age of Fable                                   | Thomas Bulfinch
+4926   | The Age of Chivalry                                | 
+4927   | Legends of Charlemagne                             | 
+4939   | Chopin : the Man and His Music                     | 
+4940   | Grace Harlowe's Senior Year at High School         | 
+4953   | Revolution, and Other Essays                       | 
+4964   | Waverley; Or, 'Tis Sixty Years Since  Volume 1     | 
+4965   | Waverley; Or, 'Tis Sixty Years Since  Volume 2     | 
+4985   | Ruth Fielding of the Red Mill; Or, Jasper Parloe's Secret | 
+4991   | The Pony Rider Boys in New Mexico; Or, The End of the Silver Trail | 
+5061   | The Children's Book of Christmas Stories           | 
+5066   | The Whole Family: a Novel by Twelve Authors        | Mary Heaton Vorse, M. H. (Mary Heaton) Vorse, Mary Marvin Heaton Vorse
+5079   | Ziska: The Problem of a Wicked Soul                | Marie Corelli, Maria Corelli, Mary Mackay
+5090   | I Will Repay                                       | 
+5118   | The American Senator                               | 
+5121   | Dark Hollow                                        | 
+5122   | The Trail of the Lonesome Pine                     | 
+5128   | The Young Carthaginian: A Story of The Times of Hannibal | 
+5131   | Childe Harold's Pilgrimage                         | 
+5136   | Around the World on a Bicycle - Volume I From San Francisco to Teheran | Thomas Stevens, T. (Thomas) Stevens
+5140   | He Knew He Was Right                               | 
+5157   | How I Found Livingstone Travels, adventures, and discoveres in Central Africa, including an account of four months' residence with Dr. Livingstone, by Henry M. Stanley | 
+5162   | Agatha Webb                                        | 
+5164   | The Beetle                                         | 
+5202   | The Golden Lion of Granpere                        | 
+5207   | The Guns of Shiloh: A Story of the Great Western Campaign | Joseph A. (Joseph Alexander) Altsheler, J. A. (Joseph Alexander) Altsheler, Joseph Alexander Altsheler
+5225   | The Satyricon  Complete                            | 
+5228   | Ayesha, the Return of She                          | 
+5257   | The Broad Highway                                  | 
+5265   | The Ball and the Cross                             | 
+5267   | Sister Carrie                                      | 
+5270   | The Film Mystery                                   | 
+5308   | The Paradise Mystery                               | 
+5312   | Mother Goose in Prose                              | 
+5341   | Kilmeny of the Orchard                             | 
+5342   | The Story Girl                                     | 
+5472   | Joshua  Complete                                   | 
+5516   | Arachne  Complete                                  | 
+5615   | The Pink Fairy Book                                | 
+5630   | The Story of "Mormonism" and The Philosophy of "Mormonism" | 
+5632   | Five Little Peppers Midway                         | 
+5658   | Lord Jim                                           | 
+5660   | Mary Louise                                        | 
+5664   | The Arabian Nights Entertainments  Volume 01       | 
+5669   | Considerations on Representative Government        | 
+5670   | Jacob's Room                                       | 
+5676   | A Double Story                                     | 
+5682   | Fundamental Principles of the Metaphysic of Morals | 
+5696   | A Yankee Girl at Fort Sumter                       | 
+5703   | The Lord of Death and the Queen of Life            | 
+5720   | A Shropshire Lad                                   | 
+5726   | The Fairy-Land of Science                          | Arabella B. (Arabella Burton) Buckley, Arabella Burton Buckley Fisher
+5734   | Life in the Grey Nunnery at Montreal An Authentic Narrative of the Horrors, Mysteries, and Cruelties of Convent Life | Sarah J. Richardson
+5750   | St. George and St. Michael Volume I                | 
+5773   | Annals of a Quiet Neighbourhood                    | 
+5776   | 100%: the Story of a Patriot                       | 
+5788   | A Tramp Abroad  Volume 07                          | 
+5792   | The Stories Mother Nature Told Her Children        | Jane Andrews
+5803   | Not that it Matters                                | 
+5827   | The Problems of Philosophy                         | 
+5829   | The Moneychangers                                  | 
+5874   | Dawn                                               | 
+5875   | The Rover Boys on the Ocean; Or, A chase for a fortune | 
+5921   | The History of Don Quixote, Volume 1, Complete     | 
+5946   | The History of Don Quixote, Volume 2, Complete     | 
+5960   | Little Sister Snow                                 | 
+5961   | Samuel the Seeker                                  | 
+5962   | Oh, Money! Money! A Novel                          | 
+5965   | The Devolutionist and the Emancipatrix             | 
+5976   | Thomas Wingfold, Curate                            | 
+5978   | An Autobiography of Anthony Trollope               | 
+6005   | Celibates                                          | 
+6026   | The Great Fortress : A chronicle of Louisbourg 1720-1760 | 
+6053   | Evelina, Or, the History of a Young Lady's Entrance into the World | 
+6054   | Mrs. Caudle's Curtain Lectures                     | Douglas William Jerrold, Henry Brownrigg, D. W. (Douglas William) Jerrold, Barabbas Whitefeather
+6067   | The Pony Rider Boys in the Rockies; Or, The Secret of the Lost Claim | Frank Gee Patchin, Frank Glines Patchin
+6068   | The Pony Rider Boys in Montana; Or, The Mystery of the Old Custer Trail | 
+6069   | The Pony Rider Boys in the Ozarks; Or, The Secret of Ruby Mountain | 
+6086   | The Scottish Chiefs                                | 
+6093   | Far Away and Long Ago: A History of My Early Life  | 
+6094   | The Scouts of Stonewall: The Story of the Great Valley Campaign | 
+6098   | Amelia  Complete                                   | 
+6100   | Pollyanna Grows Up                                 | 
+6107   | The Truth about Jesus : Is He a Myth?              | 
+6124   | Pamela, or Virtue Rewarded                         | Samuel Richardson
+6150   | The Iliad                                          | 
+6157   | What Men Live By, and Other Tales                  | 
+6308   | Hypatia  or New Foes with an Old Face              | 
+6328   | The Junior Classics  Volume 5: Stories that never grow old | 
+6378   | Victory: An Island Tale                            | 
+6400   | The Lives of the Twelve Caesars, Complete          | 
+6409   | How to Speak and Write Correctly                   | Joseph Devlin
+6413   | From October to Brest-Litovsk                      | 
+6424   | A Modern Utopia                                    | 
+6440   | Elsie Dinsmore                                     | 
+6456   | Public Opinion                                     | 
+6471   | The Children of the New Forest                     | 
+6500   | The Log-Cabin Lady  An Anonymous Autobiography     | 
+6593   | History of Tom Jones, a Foundling                  | 
+6626   | Theresa Raquin                                     | 
+6630   | Curiosities of the Sky                             | 
+6634   | A Popular History of Ireland : from the Earliest Period to the Emancipation of the Catholics  Complete | 
+6674   | Umbrellas and Their History                        | William Sangster
+6684   | Uneasy Money                                       | 
+6688   | The Mill on the Floss                              | 
+6692   | The Swiss Family Robinson, Told in Words of One Syllable | 
+6709   | A Strange Manuscript Found in a Copper Cylinder    | James De Mille, James DeMille, James de Mille
+6711   | Philip Dru: Administrator; A Story of Tomorrow, 1920-1935 | Edward Mandell House, Colonel House
+6737   | The Social Cancer: A Complete English Version of Noli Me Tangere | 
+6746   | The Grey Fairy Book                                | 
+6753   | Psmith in the City                                 | 
+6754   | The Tale of Brownie Beaver                         | 
+6763   | Aristotle on the art of poetry                     | 
+6801   | Beverly of Graustark                               | 
+6812   | Abraham Lincoln: a History  Volume 01              | John G. (John George) Nicolay, John George Nicolay
+6823   | Army Letters from an Officer's Wife, 1871-1888     | Frances Marie Antoinette Mack Roe, Frances M. A. (Frances Marie Antoinette) Roe
+6880   | The Coming of Bill                                 | 
+6882   | This Simian World                                  | 
+6884   | Sleeping Fires: a Novel                            | 
+6911   | The Majesty of Calmness; individual problems and posibilities | William George Jordan
+6917   | The Gerrard Street Mystery and Other Weird Tales   | 
+6933   | The Jesuits in North America in the Seventeenth Century | 
+6936   | Robinson Crusoe  in Words of One Syllable          | 
+6950   | The Bobbsey Twins at the Seashore                  | 
+6955   | The Prince and Betty                               | 
+6960   | A Narrative of the Life of Mrs. Mary Jemison       | James E. (James Everett) Seaver, James Everett Seaver
+6987   | Five Little Peppers Abroad                         | 
+6991   | Across the Years                                   | 
+7025   | Rob Roy  Complete                                  | 
+7026   | Children's Edition of Touching Incidents and Remarkable Answers to Prayer | S. B. (Solomon Benjamin) Shaw, Solomon Benjamin Shaw
+7031   | The Sheik: A Novel                                 | 
+7040   | Paula the Waldensian                               | Eva Lecomte
+7055   | Gone to Earth                                      | Mary Gladys Meredith Webb, Mary Meredith
+7076   | Prisoner for Blasphemy                             | 
+7088   | The Pilgrim's Progress in Words of One Syllable    | 
+7091   | The Yosemite                                       | 
+7098   | Tales of the Enchanted Islands of the Atlantic     | 
+7112   | Erema; Or, My Father's Sin                         | 
+7128   | Indian Fairy Tales                                 | 
+7129   | The Prospective Mother, a Handbook for Women During Pregnancy | J. Morris (Josiah Morris) Slemons, Josiah Morris Slemons
+7142   | The History of the Peloponnesian War               |  Thucydides,  ,  
+7230   | Not George Washington  an Autobiographical Novel   | H. W. (Herbert Wetton) Westbrook, Herbert Wetton Westbrook
+7277   | The Green Fairy Book                               | 
+7291   | The Two Paths                                      | 
+7345   | Travels in Alaska                                  | 
+7347   | The Lincoln Story Book A Judicious Collection of the Best Stories and Anecdotes of the Great President, Many Appearing Here for the First Time in Book Form | 
+7352   | First and Last                                     | 
+7354   | On Something                                       | 
+7374   | An American Politician: A Novel                    | 
+7381   | The Eustace Diamonds                               | 
+7401   | A Crystal Age                                      | 
+7437   | A Peep Behind the Scenes                           | 
+7469   | Daniel Deronda                                     | 
+7477   | The Book of Wonder                                 | 
+7481   | The Three Clerks                                   | 
+7498   | Five Little Peppers Grown Up                       | 
+7502   | Annie Kilburn : a Novel                            | 
+7504   | Tom of the Raiders                                 | Austin Bishop
+7862   | The Sword of Antietam: A Story of the Nation's Crisis | 
+7882   | The Life of Kit Carson: Hunter, Trapper, Guide, Indian Agent and Colonel U.S.A. | 
+7885   | Celtic Fairy Tales                                 | 
+7891   | The Dead Alive                                     | 
+7964   | The Mystery of Cloomber                            | 
+8075   | The Junior Classics  Volume 8: Animal and Nature Stories | 
+8082   | Canyons of the Colorado                            | 
+8101   | Bertram Cope's Year                                | 
+8128   | In Ghostly Japan                                   | 
+8140   | Lectures of Col. R. G. Ingersoll, Volume I Including His Answers to the Clergy, His Oration at His Brother's Grave, Etc., Etc. | 
+8157   | Esther Waters                                      | 
+8166   | Gargantua and Pantagruel, Illustrated, Book 1      | 
+8167   | Gargantua and Pantagruel, Illustrated, Book 2      | 
+8183   | Time and the Gods                                  | 
+8201   | Mary Marston                                       | 
+8318   | The Bible, Douay-Rheims, Book 18: Judith The Challoner Revision | 
+8390   | Buddhism and Buddhists in China                    | Lewis Hodous
+8394   | The Doings of Raffles Haw                          | 
+8395   | The Gods of Pegana                                 | 
+8457   | Frenzied Fiction                                   | 
+8492   | The King in Yellow                                 | 
+8642   | Woman in the Nineteenth Century and Kindred Papers Relating to the Sphere, Condition and Duties, of Woman. | 
+8644   | The Story of Ab: A Tale of the Time of the Cave Man | 
+8660   | Woman and the New Race                             | 
+8694   | The Abbot's Ghost, or Maurice Treherne's Temptation: A Christmas Story | 
+8728   | The Winning of Canada: a Chronicle of Wolfe        | 
+8813   | Complete Prose Works Specimen Days and Collect, November Boughs and Goodbye My Fancy | 
+8859   | True to the Old Flag: A Tale of the American War of Independence | 
+8867   | The Magnificent Ambersons                          | 
+8874   | Queechy                                            | 
+8913   | The Portent and Other Stories                      | 
+8918   | Life of Johnson, Volume 1 1709-1765               | 
+8933   | Popular Tales from the Norse                       | 
+8994   | What Katy Did                                      | 
+8995   | What Katy Did Next                                 | 
+9052   | The Golden Calf                                    | 
+9057   | Unspoken Sermons, Series I., II., and III.         | 
+9072   | Life of Johnson, Volume 2 1765-1776               | 
+9097   | Robert's Rules of Order Pocket Manual of Rules of Order for Deliberative Assemblies | Henry M. (Henry Martyn) Robert, Henry Martyn Robert
+9101   | Domestic Cookery, Useful Receipts, and Hints to Young Housekeepers | Elizabeth E. (Elizabeth Ellicott) Lea, Elizabeth Ellicott Lea
+9102   | Run to Earth: A Novel                              | 
+9103   | Miracles of Our Lord                               | 
+9107   | Tales and Novels  Volume 09                        | 
+9180   | Life of Johnson, Volume 3 1776-1780               | 
+9189   | Henry Dunbar: A Novel                              | 
+9192   | The Channings: A Story                             | 
+9267   | Chip, of the Flying U                              | 
+9296   | Clarissa Harlowe; or the history of a young lady  Volume 1 | 
+9301   | Ranald Bannerman's Boyhood                         | 
+9363   | The Best British Short Stories of 1922             | 
+9378   | The Lone Wolf A Melodrama                         | 
+9405   | The Book of Old English Ballads                    | 
+9455   | Tales and Novels  Volume 03 Belinda               | 
+9464   | Bohemian San Francisco Its restaurants and their most famous recipesThe elegant art of dining. | 
+9487   | A Fair Barbarian                                   | 
+9571   | Snow Bound, and other poems Part 4 From Volume II of The Works of John Greenleaf Whittier | 
+9618   | The Field of Ice Part II of the Adventures of Captain Hatteras | 
+9662   | An Enquiry Concerning Human Understanding          | 
+9664   | An Amiable Charlatan                               | 
+9745   | The Rock of Chickamauga A Story of the Western Crisis | 
+9746   | The Ashiel mystery: A Detective Story              | Charles, Mrs. Bryce, Mrs. Charles Bryce
+9798   | Clarissa Harlowe; or the history of a young lady  Volume 2 | 
+9808   | The Loudwater Mystery                              | Edgar Jepson
+9834   | The Talleyrand Maxim                               | 
+9845   | The Spy                                            | 
+9869   | The Confession of a Child of the Century           | 
+9908   | The False Faces Further Adventures from the History of the Lone Wolf | 
+9963   | Elsie's Girlhood A Sequel to "Elsie Dinsmore" and "Elsie's Holidays at Roselands" | 
+9983   | Wylder's Hand                                      | 
+10002  | The House on the Borderland                        | William Hope Hodgson
+10011  | 365 Foreign Dishes A Foreign Dish for Every Day in the Year | 
+10030  | The Life of Hon. William F. Cody, Known as Buffalo Bill, the Famous Hunter, Scout and Guide An Autobiography | 
+10056  | Chinese Literature Comprising the Analects of Confucius, the Sayings of Mencius, the Shi-King, the Travels of Fa-Hien, and the Sorrows of Han | ca. 337-422 Faxian,  Mencius,  Fa-hsien,  ,  Mengzi,  
+10059  | Aunt Jane's Nieces on Vacation                     | 
+10123  | Aunt Jane's Nieces                                 | 
+10136  | The Book of Household Management                   | 
+10150  | Dracula's Guest                                    | 
+10314  | The Sonnets of Michael Angelo Buonarroti and Tommaso Campanella; Now for the First Time Translated into Rhymed English | Tommaso Campanella,  Michelangelo Buonarroti, Michelangelo Buonarroti
+10337  | Lady into Fox                                      | David Garnett, Leda Burke
+10338  | With the Turks in Palestine                        | Alexander Aaronsohn
+10359  | Aunt Jane's Nieces at Millville                    | 
+10360  | Kitty's Class Day and Other Stories                | 
+10371  | The Cinema Murder                                  | 
+10373  | The Middle Temple Murder                           | 
+10377  | The Evil Guest                                     | 
+10378  | Autobiography                                      | 
+10390  | The Edinburgh Lectures on Mental Science           | 
+10418  | The Money Moon: A Romance                          | 
+10446  | The Green Flag And Other Stories of War and Sport | 
+10463  | The Little House in the Fairy Wood                 | Ethel Cook Eliot
+10466  | Little Saint Elizabeth and Other Stories           | 
+10496  | Red Masquerade Being the Story of the Lone Wolf's Daughter | 
+10513  | On the Seashore Cassell's "Eyes and No Eyes" Series, Book VII | R. Cadwallader Smith
+10540  | Mother Carey's Chickens                            | 
+10615  | An Essay Concerning Humane Understanding, Volume 1 MDCXC, Based on the 2nd Edition, Books 1 and 2 | 
+10624  | Three John Silence Stories                         | 
+10659  | Three More John Silence Stories                    | 
+10708  | Miscellaneous Essays                               | 
+10732  | The Essays of Arthur Schopenhauer; Studies in Pessimism | 
+10743  | Moonfleet                                          | 
+10760  | A Florida Sketch-Book                              | 
+10800  | The Anatomy of Melancholy                          | Robert Burton,  Democritus Junior
+10855  | Is Mars habitable? A critical examination of Professor Percival Lowell's book "Mars and its canals," with an alternative explanation | 
+10869  | The Abandoned Room                                 | 
+10880  | Teddy's Button                                     | 
+10940  | Manners, Customs, and Dress During the Middle Ages and During the Renaissance Period | P. L. Jacob, Paul L. Jacob, Paul Lacroix
+10943  | Elusive Isabel                                     | 
+10991  | Dogs and All about Them                            | 
+11052  | The Custom of the Country                          | 
+11069  | Squinty the Comical Pig His Many Adventures        | 
+11093  | Trailin'!                                          | 
+11097  | Young Robin Hood                                   | 
+11116  | The Wonderful Bed                                  | Gertrude Knevels
+11127  | The Case of Jennie Brice                           | 
+11128  | The Red Thumb Mark                                 | 
+11136  | A Discourse Upon the Origin and the Foundation of the Inequality Among Mankind | 
+11138  | Comic History of England                           | 
+11146  | The Expedition of the Donner Party and its Tragic Fate | Eliza Poor Donner Houghton, Eliza Poor Donner
+11229  | The Purple Cloud                                   | 
+11231  | Bartleby, the Scrivener: A Story of Wall-Street    | 
+11323  | Caleb Williams Or Things as They Are              | William Godwin, Edward Baldwin
+11377  | The Man Whom the Trees Loved                       | 
+11417  | French Mediaeval Romances from the Lays of Marie de France | de France, 12th cent. Marie, Marie de France
+11451  | The Rome Express                                   | 
+11579  | Scott's Last Expedition Volume I Being the journals of Captain R. F. Scott | Robert Falcon Scott, R. F. (Robert Falcon) Scott
+11582  | Old Greek Stories                                  | 
+11620  | My Brilliant Career                                | 
+11628  | Gossip in a Library                                | 
+11667  | Gentle Measures in the Management and Training of the Young Or, the Principles on Which a Firm Parental Authority May Be Established and Maintained, Without Violence or Anger, and the Right Development of the Moral and Mental Capacities Be Promoted by Methods in Harmony with the Structure and the Characteristics of the Juvenile Mind | 
+11738  | Hindoo Tales Or, the Adventures of Ten Princes     | 7th cent. Dandin,  Dandi,  Dandyacarya,  Dandyacharya, Slob-dpon Dbyug-pa-can,  Tantiyaciriyar
+11746  | Through the Brazilian Wilderness                   | 
+11867  | The Alaskan                                        | 
+11880  | Ronicky Doone                                      | 
+11909  | Bob the Castaway; Or, The Wreck of the Eagle       | 
+11938  | Folklore of the Santal Parganas                    | Cecil Henry Bompas, C. H. (Cecil Henry) Bompas
+11953  | A Popular History of France from the Earliest Times, Volume 3 | 
+11954  | A Popular History of France from the Earliest Times, Volume 4 | 
+12027  | Crime: Its Cause and Treatment                     | Clarence Darrow, Clarence Seward Darrow
+12060  | The German Classics of the Nineteenth and Twentieth Centuries, Volume 04 Masterpieces of German Literature Translated into English. in Twenty Volumes | 
+12067  | The Bee-Man of Orn and Other Fanciful Tales        | 
+12069  | Joe Tilden's Recipes for Epicures                  | Joe Tilden, Joseph Tilden
+12081  | Lives of Girls Who Became Famous                   | Sarah Knowles Bolton, Mrs. C. E. Bolton, Sarah K. Bolton
+12084  | Revelations of a Wife The Story of a Honeymoon     | Adele Garrison
+12163  | The Sleeper Awakes A Revised Edition of When the Sleeper Wakes | 
+12170  | The Wolf Hunters A Tale of Adventure in the Wilderness | 
+12176  | The Gate of the Giant Scissors                     | 
+12177  | The Precipice A Novel                             | 
+12187  | The Mystery of 31 New Inn                          | 
+12216  | The Pirates Own Book Authentic Narratives of the Most Celebrated Sea Robbers | Charles Ellms
+12234  | Mr. Scarborough's Family                           | 
+12239  | Dead Men's Money                                   | 
+12243  | Round the Block An American Novel                 | John Bell Bouton
+12257  | The Go-Getter: A Story That Tells You How to be One | 
+12314  | Ashton-Kirk, Investigator                          | John Thomas McIntyre, John T. (John Thomas) McIntyre
+12317  | Two Little Knights of Kentucky                     | 
+12347  | The Morgesons A Novel                             | Elizabeth Stoddard, Elizabeth Drew Barstow, Elizabeth Drew (Barstow) Stoddard
+12369  | Library of the World's Best Literature, Ancient and Modern  Volume 1 | 
+12383  | The Poetical Works of William Wordsworth  Volume 3 | 
+12415  | Byways Around San Francisco Bay                    | William E. Hutchinson
+12434  | Twelve Studies on the Making of a Nation The Beginnings of Israel's History | Jeremiah Whipple Jenks
+12441  | The House of a Thousand Candles                    | 
+12460  | Pomona's Travels A Series of Letters to the Mistress of Rudder Grange from her Former Handmaiden | 
+12544  | The Love Letters of Dorothy Osborne to Sir William Temple, 1652-54 | Dorothy Osborne, Dorothy, Lady Temple
+12587  | The Man Who Laughs A Romance of English History   | 
+12600  | Old and New Masters                                | 
+12669  | Marriage                                           | Susan Ferrier, Susan Edmonstone Ferrier
+12672  | A Spinner in the Sun                               | Myrtle Reed, Olive Green
+12758  | Library of the World's Best Mystery and Detective Stories | 
+12788  | Library of the World's Best Literature, Ancient and Modern  Volume 2 | 
+12933  | Little Journeys to the Homes of the Great - Volume 01 Little Journeys to the Homes of Good Men and Great | 
+12980  | The Pony Rider Boys with the Texas Rangers; Or, On the Trail of the Border Bandits | 
+13010  | Frank Mildmay Or, The Naval Officer               | 
+13015  | Tales of Old Japan                                 | Algernon Bertram Freeman-Mitford, Baron Redesdale, Algernon Bertram Freeman-Mitford, Algernon Bertram Mitford
+13028  | Library of the World's Best Literature, Ancient and Modern  Volume 3 | 
+13029  | The Art of the Moving Picture                      | 
+13035  | The Goop Directory of Juvenile Offenders Famous for their Misdeeds and Serving as a Salutary Example for all Virtuous Children | 
+13042  | Knickerbocker's History of New York, Complete      | 
+13104  | The Abominations of Modern Society                 | 
+13110  | Aunt Jane's Nieces at Work                         | 
+13158  | The Weapons of Mystery                             | 
+13182  | Prefaces and Prologues to Famous Books with Introductions, Notes and Illustrations | 
+13193  | Supreme Personality Fun in Living A Doubt, Fear, and Worry Cure | Delmer Eugene Croft
+13202  | "Co. Aytch" Maury Grays, First Tennessee Regiment or, A Side Show of the Big Show | Samuel R. (Samuel Rush) Watkins, Sam Watkins
+13220  | Library of the World's Best Literature, Ancient and Modern  Volume 4 | 
+13234  | Ester Ried                                         | 
+13249  | Our Vanishing Wild Life Its Extermination and Preservation | 
+13372  | The Gloved Hand                                    | 
+13384  | The Covered Wagon                                  | Emerson Hough
+13409  | The Horse-Stealers and Other Stories               | 
+13415  | The Lady with the Dog and Other Stories            | 
+13437  | Best Russian Short Stories                         | 
+13441  | The Sunny Side                                     | 
+13505  | The Duel and Other Stories                         | 
+13610  | Studies in the Psychology of Sex, Volume 1 The Evolution of Modesty; The Phenomena of Sexual Periodicity; Auto-Erotism | 
+13611  | Studies in the Psychology of Sex, Volume 2 Sexual Inversion | 
+13707  | Twice Told Tales                                   | 
+13728  | Marcella                                           | 
+13782  | Lady Rose's Daughter                               | 
+13833  | Blackfeet Indian Stories                           | 
+13852  | Literary Taste: How to Form It With Detailed Instructions for Collecting a Complete Library of English Literature | 
+14021  | Lord of the World                                  | 
+14055  | Food Guide for War Service at Home Prepared under the direction of the United States Food Administration in co-operation with the United States Department of Agriculture and the Bureau of Education, with a preface by Herbert Hoover | Katharine Blunt, Florence Powdermaker, Frances Lucy Swain,  United States Food Administration, United States Food Administration
+14168  | Widdershins                                        | 
+14240  | Reviews                                            | 
+14255  | Hints for Lovers                                   | Arnold Haultain, T. Arnold (Theodore Arnold) Haultain, Theodore Arnold Haultain
+14280  | Holidays at Roselands A Sequel to Elsie Dinsmore  | 
+14293  | The Complete Book of Cheese                        | Bob Brown, Robert Carlton Brown
+14328  | The Consolation of Philosophy                      |  Boethius, Anicius Manlius Severinus Boethius
+14382  | The Missing Bride                                  | 
+14410  | Gawayne and the Green Knight A Fairy Tale         | Charlton Miner Lewis
+14420  | The Exemplary Novels of Cervantes                  | 
+14453  | The Hope of the Gospel                             | 
+14552  | A Catechism of Christian Doctrine                  | 
+14566  | Elsie's Motherhood                                 | 
+14627  | Veronica                                           | 
+14681  | The Art of Travel Or, Shifts and Contrivances Available in Wild Countries | 
+14725  | Treatise on Light In which are explained the causes of that which occurs in reflexion, & in refraction and particularly in the strange refraction of Iceland crystal | Christiaan Huygens, Christianus Hugenius, Christian Hugens, Christianus Huygens, Christian Huyghens, Christianus Hugenius Zuilichemius, Christian Huygens van Zuylichem
+14770  | Life in a Thousand Worlds                          | 
+14851  | Uncle Silas A Tale of Bartram-Haugh                | 
+14874  | Elsie's Womanhood                                  | 
+14916  | Fairy Tales Every Child Should Know                | 
+14958  | Mother West Wind 'Why' Stories                     | 
+14971  | History of Holland                                 | George Edmundson
+15000  | The Life of Reason The Phases of Human Progress   | 
+15082  | The Life of the Spirit and the Life of To-day      | Evelyn Underhill
+15096  | My Life In The South                               | Jacob Stroyer
+15143  | Famous Modern Ghost Stories                        | 
+15145  | My Book of Favorite Fairy Tales                    | Edric Vredenburg, E. (Edric) Vredenburg
+15158  | In Time of Emergency A Citizen's Handbook on Nuclear Attack, Natural Disasters (1968) |  United States. Office of Civil Defense
+15164  | Folk Tales Every Child Should Know                 | 
+15202  | Young Folks' Treasury, Volume 2 (of 12) Myths and Legendary Heroes | 
+15233  | Authentic Narrative of the Death of Lord Nelson    | William Beatty
+15263  | The Underground Railroad A Record of Facts, Authentic Narratives, Letters, &c., Narrating the Hardships, Hair-Breadth Escapes and Death Struggles of the Slaves in Their Efforts for Freedom, As Related by Themselves and Others, or Witnessed by the Author. | William Still
+15265  | The Quest of the Silver Fleece: A Novel            | 
+15268  | John Stuart Mill; His Life and Works Twelve Sketches by Herbert Spencer, Henry Fawcett, Frederic Harrison, and Other Distinguished Authors | 
+15280  | Lulu, Alice and Jimmie Wibblewobble                | 
+15344  | Grace Harlowe's Sophomore Year at High School The Record of the Girl Chums in Work and Athletics | 
+15419  | Letters to a Daughter and A Little Sermon to School Girls | Helen Ekin Starrett
+15437  | The Letters of Lord Nelson to Lady Hamilton, Vol II. With A Supplement Of Interesting Letters By Distinguished Characters | Horatio Nelson, Viscount Nelson, Horacio, Viscount Nelson, Lord Nelson
+15469  | The Letters of Lord Nelson to Lady Hamilton, Vol. I. With A Supplement Of Interesting Letters By Distinguished Characters | 
+15489  | Dream Psychology Psychoanalysis for Beginners      | 
+15705  | The Silly Syclopedia A Terrible Thing in the Form of a Literary Torpedo which is Launched for Hilarious Purposes Only Inaccurate in Every Particular Containing Copious Etymological Derivations and Other Useless Things | 
+15709  | The Christmas Angel                                | 
+15741  | The Little Colonel's House Party                   | 
+15766  | The Claverings                                     | 
+15776  | The Economic Consequences of the Peace             | John Maynard Keynes, J. M. (John Maynard) Keynes, John Maynard Keynes, Baron Keynes
+15818  | The Melting of Molly                               | 
+15929  | Mother Stories                                     | Maud Lindsay
+15992  | Come Rack! Come Rope!                              | 
+16064  | Carolina Chansons Legends of the Low Country       | Hervey Allen, DuBose Heyward
+16127  | The Diamond Cross Mystery Being a Somewhat Different Detective Story | 
+16134  | The First Christmas Tree A Story of the Forest    | 
+16140  | The Curious Book of Birds                          | 
+16158  | The Facts of Reconstruction                        | John Roy Lynch
+16204  | The Mansion of Mystery Being a Certain Case of Importance, Taken from the Note-book of Adam Adams, Investigator and Detective | Chester K. Steele
+16247  | Famous Stories Every Child Should Know             | 
+16259  | The Surprising Adventures of the Magical Monarch of Mo and His People | 
+16274  | The Life and Adventures of Kit Carson, the Nestor of the Rocky Mountains, from Facts Narrated by Himself | De Witt C. (De Witt Clinton) Peters, De Witt Clinton Peters, Dewitt C. (Dewitt Clinton) Peters
+16317  | The Art of Public Speaking                         | Dale Carnegie, Dale Carnagey, Dale Breckinridge Carnegie
+16332  | A Short Life of Abraham Lincoln Condensed from Nicolay & Hay's Abraham Lincoln: A History | 
+16349  | The Book of the Bush Containing Many Truthful Sketches Of The Early Colonial Life Of Squatters, Whalers, Convicts, Diggers, And Others Who Left Their Native Land And Never Returned | George Dunderdale
+16362  | The Glugs of Gosh                                  | 
+16389  | The Enchanted April                                | 
+16532  | The Plastic Age                                    | Percy Marks
+16537  | Myths That Every Child Should Know A Selection Of The Classic Myths Of All Times For Young People | 
+16566  | Aunt Jane's Nieces Abroad                          | 
+16567  | Aunt Jane's Nieces in the Red Cross                | 
+16653  | Myths of Babylonia and Assyria                     | 
+16726  | Four Weird Tales                                   | 
+16728  | A Catechism of Familiar Things; Their History, and the Events Which Led to Their Discovery. With a Short Explanation of Some of the Principal Natural Phenomena. For the Use of Schools and Families. Enlarged and Revised Edition. | 
+16739  | The Greatest Thing In the World and Other Addresses | 
+16772  | The Story of a Soul (L'Histoire d'une Ame): The Autobiography of St. Therese of Lisieux With Additional Writings and Sayings of St. Therese | de Lisieux, Sainte Therese, de Lisieux, Saint Therese
+16960  | History of the United States                       | Charles A. (Charles Austin) Beard, Mary Ritter Beard
+16981  | Old Peter's Russian Tales                          | 
+17125  | More William                                       | Richmal Crompton
+17188  | Buccaneers and Pirates of Our Coasts               | 
+17189  | Autumn Leaves Original Pieces in Prose and Verse  | 
+17190  | Greek and Roman Ghost Stories                      | Lacy Collison-Morley
+17226  | Emily Fox-Seton Being "The Making of a Marchioness" and "The Methods of Lady Walderhurst" | 
+17371  | Raggedy Andy Stories Introducing the Little Rag Brother of Raggedy Ann | 
+17405  | The Art of War                                     | 
+17417  | What Prohibition Has Done to America               | Fabian Franklin
+17498  | When Knighthood Was in Flower or, the Love Story of Charles Brandon and Mary Tudor the King's Sister, and Happening in the Reign of His August Majesty King Henry the Eighth | 
+17504  | The Mintage Being Ten Stories & One More          | 
+17592  | A Narrative of the Expedition to Dongola and Sennaar Under the Command of His Excellence Ismael Pasha, undertaken by Order of His Highness Mehemmed Ali Pasha, Viceroy of Egypt, By An American In The Service Of The Viceroy | 
+17611  | Summa Theologica, Part I (Prima Pars) From the Complete American Edition | 
+17655  | Observations of an Orderly Some Glimpses of Life and Work in an English War Hospital | Ward Muir
+17701  | The Tales Of The Heptameron, Vol. I. (of V.)       | 
+17749  | The Mystic Will A Method of Developing and Strengthening the Faculties of the Mind, through the Awakened Will, by a Simple, Scientific Process Possible to Any Person of Ordinary Intelligence | 
+17780  | Scenes of Clerical Life                            | 
+17797  | Memoir of Jane Austen                              | James Edward Austen-Leigh
+17807  | Uncle Wiggily in the Woods                         | 
+17811  | Grace Harlowe's Junior Year at High School Or, Fast Friends in the Sororities | 
+17854  | The Sport of the Gods                              | 
+17866  | Murder in the Gunroom                              | 
+17946  | Eirik the Red's Saga                               | 
+17958  | Warlord of Kor                                     | Terry Gene Carr
+17985  | Tom Swift and The Visitor from Planet X            | 
+17988  | Grace Harlowe's First Year at Overton College      | 
+18000  | Phineas Finn The Irish Member                      | 
+18004  | Told in a French Garden August, 1914               | Mildred Aldrich
+18018  | The Free Press                                     | 
+18096  | The Social History of Smoking                      | George Latimer Apperson
+18137  | Little Fuzzy                                       | 
+18149  | Conjuror's House A Romance of the Free Forest      | 
+18190  | Raggedy Ann Stories                                | Johnny Gruelle, John B. (John Barton) Gruelle
+18193  | Ways of Wood Folk                                  | 
+18247  | The Last Man                                       | 
+18284  | For Every Music Lover A Series of Practical Essays on Music | Aubertine Woodward Moore
+18362  | Fifteen Thousand Useful Phrases A Practical Handbook Of Pertinent Expressions, Striking Similes, Literary, Commercial, Conversational, And Oratorical Terms, For The Embellishment Of Speech And Literature, And The Improvement Of The Vocabulary Of Those Persons Who Read, Write, And Speak English | Grenville Kleiser
+18435  | Good Things to Eat as Suggested by Rufus A Collection of Practical Recipes for Preparing Meats, Game, Fowl, Fish, Puddings, Pastries, Etc. | Rufus Estes
+18439  | What the Mother of a Deaf Child Ought to Know      | John Dutton Wright
+18442  | Fifty Famous Stories Retold                        | James Baldwin
+18464  | The Wit and Humor of America, Volume I. (of X.)    | 
+18465  | The Wit and Humor of America, Volume II. (of X.)   | 
+18470  | The Second Latchkey                                | 
+18492  | Star Surgeon                                       | 
+18542  | How to Cook Fish                                   | 
+18561  | The Ontario Readers Third Book                     |  Ontario. Ministry of Education, Ontario Ministry of Education
+18584  | The Edge of the Knife                              | 
+18640  | Phineas Redux                                      | 
+18656  | The Tale of Pony Twinkleheels                      | 
+18734  | The Wit and Humor of America, Volume III. (of X.)  | 
+18776  | The Wit and Humor of America, Volume IV. (of X.)   | 
+18857  | A Journey to the Centre of the Earth               | 
+18883  | The Four Feathers                                  | 
+18891  | Dot and the Kangaroo                               | Ethel C. Pedley
+18945  | Robin                                              | 
+18948  | Damn! A Book of Calumny                            | 
+18972  | Zadig Or, The Book of Fate                         | 
+18992  | Current Superstitions Collected from the Oral Tradition of English Speaking Folk | 
+19019  | Aids to Forensic Medicine and Toxicology           | W. G. Aitchison (William George Aitchison ) Robertson, William George Aitchison Robertson
+19023  | A Daughter of the Sioux: A Tale of the Indian frontier | 
+19044  | Adrift on an Ice-Pan                               | Wilfred Thomason, Sir Grenfell
+19066  | Brigands of the Moon                               | 
+19067  | Police Operation                                   | 
+19069  | The Silent House                                   | 
+19079  | The Adventures of Lightfoot the Deer               | 
+19087  | The King Nobody Wanted                             | Norman F. Langford, N. F. (Norman F.) Langford
+19090  | Star Hunter                                        | 
+19207  | The Firelight Fairy Book                           | 
+19209  | The Andes and the Amazon Or, Across the Continent of South America | James Orton
+19211  | The History of England in Three Volumes, Vol.I., Part A. From the Britons of Early Times to King John | 
+19212  | The History of England in Three Volumes, Vol.I., Part B. From Henry III. to Richard III. | 
+19213  | The History of England in Three Volumes, Vol.I., Part C. From Henry VII. to Mary | David Hume
+19214  | The History of England in Three Volumes, Vol.I., Part D. From Elizabeth to James I. | 
+19215  | The History of England in Three Volumes, Vol.I., Part E. From Charles I. to Cromwell | 
+19221  | The Golden Treasury Of the Best Songs and Lyrical Poems in the English Language | 
+19229  | Anticipations Of the Reaction of Mechanical and Scientific Progress upon Human life and Thought | 
+19264  | Japanese Literature Including Selections from Genji Monogatari and Classical Poetry and Drama of Japan | 
+19289  | Some Answered Questions                            | 
+19323  | The Wit and Humor of America, Volume V. (of X.)    | 
+19324  | The Wit and Humor of America, Volume VI. (of X.)   | 
+19325  | The Wit and Humor of America, Volume VII. (of X.)  | 
+19342  | Complete Hypnotism, Mesmerism, Mind-Reading and Spiritualism How to Hypnotize: Being an Exhaustive and Practical System of Method, Application, and Use | A. Alpheus
+19347  | The Myths of the New World A Treatise on the Symbolism and Mythology of the Red Race of America | 
+19381  | Among the Farmyard People                          | 
+19403  | Murder at Bridge                                   | Anne Austin
+19445  | Omnilingual                                        | 
+19459  | Born Again                                         | Alfred W. (Alfred William) Lawson
+19471  | Badge of Infamy                                    | 
+19474  | Uller Uprising                                     | 
+19499  | Music Notation and Terminology                     | Karl Wilson Gehrkens
+19500  | Can You Forgive Her?                               | 
+19526  | Stand by for Mars!                                 | 
+19717  | The Bostonians, Vol. I (of II)                     | 
+19726  | The Door Through Space                             | Marion Zimmer Bradley
+19734  | The Fairy Book The Best Popular Stories Selected and Rendered Anew | 
+19771  | Henrietta Temple: A Love Story                     | 
+19810  | My Antonia                                         | 
+19831  | The Rise and Fall of the Confederate Government    | 
+19910  | Boys' Book of Famous Soldiers                      | 
+19942  | Candide                                            | 
+19993  | Childhood's Favorites and Fairy Stories The Young Folks Treasury, Volume 1 | 
+19994  | The Aesop for Children With pictures by Milo Winter | 
+20019  | Lectures on Landscape Delivered at Oxford in Lent Term, 1871 | 
+20064  | Captains of Industry; or, Men of Business Who Did Something Besides Making Money | 
+20087  | The Pony Rider Boys in Texas; Or, The Veiled Riddle of the Plains | 
+20092  | Saint Bartholomew's Eve A Tale of the Huguenot Wars | 
+20097  | The Tale of Mrs. Ladybug                           | 
+20151  | Hidden Treasures Or, Why Some Succeed While Others Fail | Harry A. Lewis
+20183  | John Quincy Adams American Statesmen Series        | John Torrey Morse, John T. (John Torrey) Morse
+20190  | The Handy Cyclopedia of Things Worth Knowing A Manual of Ready Reference | Joseph Triemens
+20203  | Autobiography of Benjamin Franklin                 | 
+20212  | Police Your Planet                                 | 
+20239  | The Ten Books on Architecture                      | 
+20248  | The Necessity of Atheism                           | David Marshall Brooks
+20317  | A Treatise on Staff Making and Pivoting Containing Complete Directions for Making and Fitting New Staffs from the Raw Material | Eugene Edward Hall
+20321  | A Brief Account of the Destruction of the Indies Or, a faithful NARRATIVE OF THE Horrid and Unexampled Massacres, Butcheries, and all manner of Cruelties, that Hell and Malice could invent, committed by the Popish Spanish Party on the inhabitants of West-India, TOGETHER With the Devastations of several Kingdoms in America by Fire and Sword, for the space of Forty and Two Years, from the time of its first Discovery by them. | Bartolome de las Casas, Bartolome de las Casas
+20357  | Jerry                                              | 
+20473  | Grace Harlowe's Third Year at Overton College      | 
+20487  | Shakspere, Personal Recollections                  | John A. (John Alexander) Joyce, John Alexander Joyce
+20494  | The Shrieking Pit                                  | 
+20513  | How to Succeed or, Stepping-Stones to Fame and Fortune | 
+20559  | R. Holmes & Co. Being the Remarkable Adventures of Raffles Holmes, Esq., Detective and Amateur Cracksman by Birth | 
+20636  | The Military Journals of Two Private Soldiers, 1758-1775 With Numerous Illustrative Notes | Abraham Tomlinson
+20726  | A Slave is a Slave                                 | 
+20740  | Myths and Legends of All Nations Famous Stories from the Greek, German, English, Spanish, Scandinavian, Danish, French, Russian, Bohemian, Italian and other sources | 
+20795  | The Cricket on the Hearth                          | 
+20830  | The Good Housekeeping Marriage Book                | 
+20832  | Campfire Girls at Twin Lakes The Quest of a Summer Vacation | 
+20912  | The Daffodil Mystery                               | 
+20962  | Sandman's Goodnight Stories                        | Abbie Phillips Walker
+21004  | The Singing Mouse Stories                          | 
+21032  | Exercises in Knitting                              | Cornelia Mee
+21048  | Just Patty                                         | 
+21069  | For Treasure Bound                                 | 
+21077  | The Mind and the Brain Being the Authorised Translation of L'Ame et le Corps | 
+21087  | The Ghost Ship A Mystery of the Sea                | 
+21249  | Clayhanger                                         | 
+21291  | Pushing to the Front                               | Orison Swett Marden
+21297  | Cutlass and Cudgel                                 | 
+21301  | Bunyip Land A Story of Adventure in New Guinea     | 
+21333  | Doom Castle                                        | 
+21415  | The Young Visiters or, Mr. Salteena's Plan         | 
+21510  | Legacy                                             | 
+21530  | The Angel of Terror                                | 
+21639  | When Patty Went to College                         | 
+21647  | Subspace Survivors                                 | 
+21686  | The Works of Robert Louis Stevenson - Swanston Edition, Vol. 1 | 
+21700  | Don Juan                                           | George Gordon Byron, Baron Byron, George Gordon Noel Byron, Baron Byron, George Gordon Noel Byron, Baron Byron
+21728  | The Dog Crusoe and his Master                      | 
+21769  | Songs Of The Road                                  | 
+21813  | The Madman and the Pirate                          | 
+21816  | The Confidence-Man: His Masquerade                 | 
+21854  | The Woman in Black                                 | 
+21873  | Planet of the Damned                               | 
+21889  | Peter the Great                                    | 
+21892  | At the Time Appointed                              | 
+21895  | The Old Coast Road From Boston to Plymouth         | Agnes Rothery, Agnes Rothery Pratt, Agnes Edwards Rothery
+21904  | The Millionaire Baby                               | 
+21959  | Letters from a Self-Made Merchant to His Son Being the Letters written by John Graham, Head of the House of Graham & Company, Pork-Packers in Chicago, familiarly known on 'Change as "Old Gorgon Graham," to his Son, Pierrepont, facetiously known to his intimates as "Piggy." | 
+21975  | The Barbadoes Girl A Tale for Young People         | 
+22000  | Kept in the Dark                                   | 
+22002  | A Simple Story                                     | 
+22079  | The Brighton Boys in the Radio Service             | James R. Driscoll
+22088  | Apologia Pro Vita Sua                              | 
+22108  | The Untroubled Mind                                | Herbert J. (Herbert James) Hall
+22173  | The Grell Mystery                                  | Frank Froest
+22215  | The Frozen Pirate                                  | 
+22269  | The Autobiography of Madame Guyon                  | 
+22302  | The Western United States A Geographical Reader    | 
+22362  | Appreciations and Criticisms of the Works of Charles Dickens | 
+22381  | Myths and Legends of Ancient Greece and Rome       | E.M. Berens
+22396  | King Arthur's Knights The Tales Re-told for Boys & Girls | Henry Gilbert
+22409  | A Woman who went to Alaska                         | 
+22472  | The Book of the Damned                             | Charles Fort
+22699  | Pipefuls                                           | 
+22759  | The English at the North Pole Part I of the Adventures of Captain Hatteras | 
+22775  | Psychotherapy                                      | 
+22781  | 32 Caliber                                         | Donald McGibeny
+22814  | A Practical Guide to Self-Hypnosis                 | Melvin Powers
+22834  | Voyage of H.M.S. Pandora Despatched to Arrest the Mutineers of the 'Bounty' in the South Seas, 1790-1791 | Edward, Captain R. N. Edwards, George, surgeon Hamilton
+22925  | The Story of Young Abraham Lincoln                 | Wayne Whipple
+22948  | Rival Pitchers of Oakdale                          | Morgan Scott
+23066  | The Prairie Traveler A Hand-book for Overland Expeditions | Randolph Barnes Marcy
+23136  | Creative Unity                                     | 
+23296  | The Fighting Shepherdess                           | 
+23449  | Behind the Beyond, and Other Contributions to Human Knowledge | Stephen Leacock, Stephen Butler Leacock
+23564  | Rookwood                                           | 
+23580  | The Children's Bible                               | Henry A. Sherman
+23735  | The Story-teller                                   | 
+23772  | Devotions Upon Emergent Occasions Together with Death's Duel | 
+24020  | Romola                                             | 
+24022  | A Christmas Carol                                  | 
+24055  | The Sayings Of Confucius                           |  Confucius,  
+24119  | Make Mine Homogenized                              | 
+24160  | The Basket of Flowers                              | Christoph von Schmid, Christoph Von Schmid
+24210  | Deerbrook                                          | 
+24354  | Historic Boyhoods                                  | 
+24407  | The Italian Cook Book The Art of Eating Well; Practical Recipes of the Italian Cuisine, Pastries, Sweets, Frozen Delicacies, and Syrups | Maria Gentile
+24432  | The Wit and Humor of America, Volume VIII (of X)   | 
+24433  | The Wit and Humor of America, Volume IX (of X)     | 
+24434  | The Wit and Humor of America, Volume X (of X)      | 
+24461  | Third class in Indian railways                     | 
+24482  | Zip, the Adventures of a Frisky Fox Terrier        | 
+24518  | Memoirs of Extraordinary Popular Delusions and the Madness of Crowds | 
+24554  | Down South or, Yacht Adventure in Florida          | 
+24583  | Langstroth on the Hive and the Honey-Bee A Bee Keeper's Manual | L. L. (Lorenzo Lorraine) Langstroth
+24585  | The Story of Cole Younger, by Himself              | Cole Younger
+24652  | Diversions in Sicily                               | Henry Festing Jones
+24711  | Little Prudy                                       | 
+24714  | Fairy Tales from Brazil How and Why Tales from Brazilian Folk-Lore | 
+24775  | Up the River or, Yachting on the Mississippi       | 
+24777  | Celebrated Travels and Travellers Part I. The Exploration of the World | 
+24811  | Viking Tales                                       | 
+24852  | The Wonders of the Jungle Book One                 | 
+24869  | The Ramayan of Valmiki, translated into English verse |  Valmiki,  Valmiki
+24872  | The Tale of Master Meadow Mouse                    | 
+24873  | Lucy Maud Montgomery Short Stories, 1896 to 1901   | 
+24874  | Lucy Maud Montgomery Short Stories, 1902 to 1903   | 
+24875  | Lucy Maud Montgomery Short Stories, 1904           | 
+24876  | Lucy Maud Montgomery Short Stories, 1905 to 1906   | 
+24877  | Lucy Maud Montgomery Short Stories, 1907 to 1908   | 
+24921  | It's like this, cat                                | Emily Neville
+24968  | Behind the Scenes or, Thirty years a slave, and Four Years in the White House | Elizabeth Keckley, Elizabeth Keckly
+25031  | Davy and The Goblin What Followed Reading 'Alice's Adventures in Wonderland' | 
+25270  | Hunters Out of Space                               | Joseph Everidge Kelleam
+25326  | Lives of the Most Eminent Painters Sculptors and Architects Vol. 01 (of 10), Cimabue to Agnolo Gaddi | 
+25333  | The Great K. & A. Robbery                          | 
+25429  | The Peril Finders                                  | George Manville Fenn, G. Manville Fenn
+25438  | The Airlords of Han                                | Philip Francis Nowlan
+25474  | The Job: An American Novel                         | 
+25493  | A Cathedral Courtship                              | 
+25546  | Songs of a Sourdough                               | 
+25570  | The Manxman A Novel - 1895                         | 
+25637  | The Dark House A Knot Unravelled                   | 
+25652  | A Treasury of Heroes and Heroines A Record of High Endeavour and Strange Adventure from 500 B.C. to 1920 A.D. | 
+25817  | The Cruise of the "Esmeralda"                      | 
+25907  | Indian Child Life                                  | 
+25914  | The Khaki Kook Book A Collection of a Hundred Cheap and Practical Recipes Mostly from Hindustan | Mary Kennedy Core
+25953  | Kalevala, The Land of the Heroes, Volume One       | 
+26020  | Apis Mellifica or, The Poison of the Honey-Bee, Considered as a Therapeutic Agent | C. W. Wolf
+26033  | How I Know God Answers Prayer The Personal Testimony of One Life-Time | 
+26041  | Aunt Jo's Scrap-Bag                                | 
+26053  | This Giddy Globe                                   | 
+26098  | Happy Days                                         | 
+26115  | A Small Boy and Others                             | 
+26117  | Sketches of the Fair Sex, in All Parts of the World | 
+26177  | The Book of Stories for the Story-teller           | Fanny E. Coe
+26282  | The Witch of Salem or Credulity Run Mad            | 
+26361  | The New Testament of our Lord and Savior Jesus Christ. The common English version, corrected by the final committee of the American Bible Union. | 
+26379  | Vice in its Proper Shape Or, The Wonderful and Melancholy Transformation of Several Naughty Masters and Misses Into Those Contemptible Animals Which They Most Resemble In Disposition. | 
+26448  | The Dragon of Wantley His Tale                     | 
+26500  | Anecdotes of Dogs                                  | Edward Jesse
+26541  | The Vicar of Bullhampton                           | 
+26640  | The Humbugs of the World An Account of Humbugs, Delusions, Impositions, Quackeries, Deceits and Deceivers Generally, in All Ages | 
+26651  | The Flaming Jewel                                  | 
+26654  | Peter and Wendy                                    | 
+26690  | The Pirates of Panama or, The Buccaneers of America; a True Account of the Famous Adventures and Daring Deeds of Sir Henry Morgan and Other Notorious Freebooters of the Spanish Main | A. O. (Alexandre Olivier) Exquemelin, Alexander Olivier Esquemeling, Alexandre Olivier Oexmelin
+26732  | Free Air                                           | 
+26862  | Howard Pyle's Book of Pirates Fiction, Fact & Fancy Concerning the Buccaneers & Marooners of the Spanish Main | 
+26950  | Humorous Ghost Stories                             | Dorothy Scarborough
+26995  | Montezuma's Castle and Other Weird Tales           | Charles B. (Charles Barney) Cory, Charles Barney Cory
+27067  | The Fixed Period                                   | 
+27090  | Great Pirate Stories                               | 
+27174  | Captain Jim                                        | 
+27365  | Tales of Space and Time                            | 
+27435  | The Faith of Our Fathers                           | James Gibbons, James, Cardinal Gibbons
+27448  | The Indian To-day The Past and Future of the First American | 
+27465  | Birds in the Calendar                              | Frederick G. (Frederick George) Aflalo
+27683  | The World I Live In                                | 
+27706  | Life of St. Vincent de Paul                        | 
+27726  | Tolstoy on Shakespeare: A Critical Essay on Shakespeare | 
+27771  | Once on a Time                                     | 
+27826  | The Olive Fairy Book                               | 
+27922  | David and the Phoenix                              | Edward Ormondroyd
+27969  | The County Regiment A Sketch of the Second Regiment of Connecticut Volunteer Heavy Artillery, Originally the Nineteenth Volunteer Infantry, in the Civil War | Dudley Landon Vaill
+27990  | Theo: A Sprightly Love Story                       | 
+28054  | The Brothers Karamazov                             | 
+28337  | Hushed Up! A Mystery of London                     | 
+28340  | Birdseye Views of Far Lands                        | James T. (James Thomas) Nichols, James Thomas Nichols
+28346  | Deathworld                                         | 
+28452  | The American Housewife Containing the Most Valuable and Original Receipts in all the Various Branches of Cookery; and Written in a Minute and Methodical Manner | 
+28572  | Letters on an Elk Hunt                             | Elinore Pruitt Stewart
+28613  | Pioneers of Science                                | 
+28617  | Astounding Stories of Super-Science February 1930  | 
+28700  | Robin Hood                                         | Paul Creswick
+28725  | Harding's luck                                     | 
+28900  | English Synonyms and Antonyms With Notes on the Correct Use of Prepositions | James Champlin Fernald
+28952  | Mr. Wicker's Window                                | Carley Dawson
+29021  | The Fairy Tales of Charles Perrault                | 
+29203  | Ruth Fielding at Briarwood Hall or Solving the Campus Mystery | 
+29255  | Astounding Stories of Super-Science September 1930 | 
+29306  | Afloat on the Ohio An Historical Pilgrimage of a Thousand Miles in a Skiff, from Redstone to Cairo | Reuben Gold Thwaites, R. G. (Reuben Gold) Thwaites
+29433  | Nature                                             | 
+29543  | Ox-Team Days on the Oregon Trail                   | Howard R. (Howard Roscoe) Driggs, Ezra Meeker, Howard Roscoe Driggs, E. (Ezra) Meeker
+29607  | Astounding Stories of Super-Science, March 1930    | 
+29734  | Experiments and Observations on Different Kinds of Air | 
+29766  | Audrey Craven                                      | 
+29786  | Raiding with Morgan                                | Byron A. (Byron Archibald) Dunn, Byron Archibald Dunn
+29809  | Astounding Stories of Super-Science, May, 1930     | 
+29828  | Is He Popenjoy?                                    | 
+29866  | Hidden Hand                                        | 
+29885  | The Cariboo Trail A Chronicle of the Gold-fields of British Columbia | 
+29886  | Pioneers of the Pacific Coast A Chronicle of Sea Rovers and Fur Hunters | Agnes C. (Agnes Christina) Laut, Agnes Christina Laut
+30006  | Cloudy Jewel                                       | 
+30017  | My Father's Dragon                                 | Ruth Stiles Gannett
+30031  | The Eye of Dread                                   | 
+30092  | Lords of the Housetops: Thirteen Cat Tales         | 
+30127  | Tales from Dickens                                 | 
+30228  | Officer 666                                        | Barton Wood Currie, Augustin McHugh, Augustin MacHugh
+30340  | The Passionate Friends                             | 
+30477  | The Sign of Silence                                | 
+30601  | How to Analyze People on Sight Through the Science of Human Analysis: The Five Human Types | Elsie Lincoln Benedict, Ralph Paine Benedict
+30689  | The Brass Bottle                                   | 
+30754  | The Stones of Venice, Volume I (of 3)              | 
+30853  | Mrs. Raffles Being the Adventures of an Amateur Crackswoman | 
+30905  | The Boarded-Up House                               | 
+30908  | The Bible in its Making: The most Wonderful Book in the World | Noel Hope, Sarah L. Morewood
+30970  | Miss Cayley's Adventures                           | 
+30973  | East of the Sun and West of the Moon Old Tales from the North | Jrgen Engebretsen Moe, J. E. (Jrgen Engebretsen) Moe, Jorgen Engebretsen Moe
+31100  | The Complete Project Gutenberg Works of Jane Austen A Linked Index of all PG Editions of Jane Austen | 
+31184  | Poems                                              | 
+31243  | Twentieth Century Inventions A Forecast            | George Sutherland
+31274  | Lady Anna                                          | 
+32069  | Letters from a Cat                                 | Helen Hunt Jackson, Saxe Holm, Helen Maria Fiske Hunt, H. H. (Helen Hunt) Jackson, Helen Maria Fiske Hunt Jackson
+32167  | The Ballad of St. Barbara And Other Verses         | 
+32198  | Cleek of Scotland Yard Detective Stories           | 
+32233  | The Wind Among the Reeds                           | 
+32393  | Toby Tyler; Or, Ten Weeks with a Circus            | 
+32408  | Marie Antoinette and the Downfall of Royalty       | 
+32429  | The Mountain Girl                                  | Payne Erskine, Emma Payne Erskine
+32449  | Japanese Girls and Women Revised and Enlarged Edition | Alice Mabel Bacon
+32455  | Christmas Eve and Christmas Day Ten Christmas stories | 
+32530  | Armageddon2419 A.D.                                | 
+32534  | Neighbors: Life Stories of the Other Half          | 
+32547  | Essays in Radical Empiricism                       | 
+32620  | The Three Mulla-mulgars                            | 
+32628  | The Child's Book of American Biography             | Mary Stoyell Stimpson
+32755  | Peasant Tales of Russia                            | V.I. Nemirovitch-Dantchenko
+33020  | English Costume                                    | 
+33146  | Careers of Danger and Daring                       | 
+33277  | John Dene of Toronto A Comedy of Whitehall         | 
+33405  | Familiar Talks on ScienceWorld-Building and Life. Earth, Air and Water. | Elisha Gray
+33410  | A-Birding on a Bronco                              | Florence A. Merriam
+33432  | Mr. Munchausen  Being a True Account of Some of the Recent Adventures beyond the Styx of the Late Hieronymus Carl Friedrich, Sometime Baron Munchausen of Bodenwerder | 
+33504  | Opticks or, a Treatise of the Reflections, Refractions, Inflections, and Colours of Light | 
+33556  | The Fortunes Of Glencore                           | Charles James Lever, Harry Lorrequer, Cornelius O'Dowd
+33695  | X Y Z: A Detective Story                           | 
+33701  | Fraternal Charity                                  | Benoit Valuy
+33800  | The Mysteries of Paris, Volume 1 of 6              | 
+33917  | The Science of Being Well                          | Wallace Delois Wattles
+33927  | Not Quite Eighteen                                 | 
+34000  | Rachel Ray                                         | 
+34020  | The Window at the White Cat                        | 
+34130  | The Princess Galva A Romance                       | David Whitelaw
+34181  | Irene Iddesleigh                                   | Amanda McKittrick Ros
+34221  | Electricity and Magnetism                          | 
+34259  | Hunting Dogs Describes in a Practical Manner the Training, Handling, Treatment, Breeds, Etc., Best Adapted for Night Hunting as Well as Gun Dogs for Daylight Sport | Oliver Hartley
+34277  | A Mysterious Disappearance                         | 
+34366  | Vera                                               | Elizabeth Von Arnim, Elizabeth von Arnim, Countess Elizabeth von Arnim-Schlagenthin, Mary Annette Beauchamp, Alice Cholmondeley, Mary Annette Beauchamp Russell, Countess Russell
+34426  | The Enchanted Barn                                 | 
+34431  | The Islands of Magic Legends, Folk and Fairy Tales from the Azores | 
+34448  | Rick and Ruddy: The Story of a Boy and His Dog     | 
+34468  | Christopher Quarles: College Professor and Master Detective | 
+34580  | The Ego and His Own                                | Max Stirner
+34610  | How to Appreciate Music                            | Gustav Kobbe, Gustav Kobbe
+34661  | The Pioneers                                       | 
+34757  | Mashi and Other Stories                            | 
+34894  | Briarwood Girls                                    | Julia Lestarjette Glover
+34901  | On Liberty                                         | John Stuart Mill, J. S. (John Stuart) Mill
+34912  | Woman in Science With an Introductory Chapter on Woman's Long Struggle for Things of the Mind | John Augustine Zahm
+34943  | Among the Meadow People                            | Clara Dillingham Pierson
+34944  | Brenda, Her School and Her Club                    | 
+35002  | Among the Pond People                              | 
+35029  | Half-Past Bedtime                                  | H. H. Bashford
+35117  | Lord Tony's Wife An Adventure of the Scarlet Pimpernel | 
+35123  | The Ladies' Book of Etiquette, and Manual of Politeness A Complete Hand Book for the Use of the Lady in Polite Society | Florence Hartley
+35196  | Gwen Wynn A Romance of the Wye                     | 
+35211  | War                                                | 
+35302  | The Genial Idiot His Views and Reviews             | 
+35450  | Our Cats and All About Them Their Varieties, Habits, and Management; and for Show, the Standard of Excellence and Beauty; Described and Pictured | Harrison Weir, Harrison William Weir
+35486  | The Great Gold Rush A Tale of the Klondike         | W. H. P. (William Henry Pope) Jarvis
+35499  | The Pharaoh and the Priest An Historical Novel of Ancient Egypt | Bolesaw Prus, Aleksander Glowacki, Aleksander Gowacki, Boleslaw Prus
+35505  | Anna of the Five Towns                             | 
+35587  | The Headless Horseman A Strange Tale of Texas      | 
+35679  | Pieces of Hate; And Other Enthusiasms              | 
+35690  | Omens and Superstitions of Southern India          | 
+35710  | Claimants to Royalty                               | John Henry Ingram, J. H. (John Henry) Ingram, Felix de Salamanca
+35793  | Seeing Things at Night                             | 
+35862  | Celtic Folk and Fairy Tales                        | 
+35898  | The Seven Lamps of Architecture                    | 
+35941  | Life of Saint Monica                               | F. A. (Frances Alice) Forbes, Frances Alice Monica Forbes
+35950  | Lives of Poor Boys Who Became Famous               | 
+36127  | Curious Myths of the Middle Ages                   | 
+36183  | The Life of George Washington in Words of One Syllable | Josephine Pollard
+36221  | Spinning-Wheel Stories                             | 
+36279  | Wood and Garden Notes and thoughts, practical and critical, of a working amateur | Gertrude Jekyll
+36401  | The Turn of the Tide The Story of How Margaret Solved Her Problem | 
+36423  | The Pony Rider Boys in the Alkali; Or, Finding a Key to the Desert Maze | 
+36508  | Eight Harvard Poets                                | S. Foster (Samuel Foster) Damon, R. S. Mitchell, William A. Norris, Dudley Poore, Cuthbert Wright, Samuel Foster Damon
+36638  | A Book of Ghosts                                   | 
+36668  | Polish Fairy Tales                                 | A. J. Glinski
+36686  | The Vicar of Wrexhill                              | 
+36951  | Jock of the Bushveld                               | 
+37039  | The Red Room                                       | 
+37134  | The Elements of Style                              | William Strunk
+37149  | Fritz to the Front, or, the Ventriloquist Scamp-Hunter | 
+37348  | The Old-Fashioned Fairy Book                       | Constance Cary Harrison
+37381  | Snowdrop and Other Tales                           | 
+37437  | The Wanderer (Volume 1 of 5) or, Female Difficulties | 
+37472  | Zanzibar Tales Told by natives of the East Coast of Africa | 
+37660  | Of All Things                                      | Robert C. Benchley
+37669  | In the Arctic Seas A Narrative of the Discovery of the Fate of Sir John Franklin and his Companions | Francis Leopold McClintock
+37756  | The Byzantine Empire                               | Charles William Chadwick Oman
+37915  | Notes on the Book of Genesis                       | 
+37952  | The Adventures of Chatterer the Red Squirrel       | 
+37976  | Dot and Tot of Merryland                           | 
+38039  | History of 'Billy the Kid'                         | 
+38117  | The Book of Life                                   | 
+38172  | Atlantic Narratives: Modern Short Stories          | Katharine Butler, Madeleine Z. Doty, H. G. Dwight, Katharine Fullerton Gerould, Zephine Humphrey, Mary Lerner, F. J. Louriet, Margaret Lynn, C. A. Mercer, Ernest Starr, Amy Wentworth Stone, Arthur Russell Taylor
+38188  | Amusement Only                                     | 
+38219  | A General Introduction to Psychoanalysis           | 
+38326  | Bede's Ecclesiastical History of England           | the Venerable Bede
+38355  | Light and Peace Instructions for devout souls to dispel their doubts and allay their fears | Carlo Giuseppe Quadrupani
+38427  | The World As Will And Idea (Vol. 1 of 3)           | Arthur Schopenhauer
+38469  | The Life of Benjamin Franklin Illustrated by Tales, Sketches, and Anecdotes | 
+38490  | And So They Were Married                           | 
+38555  | Dorothy Dale in the City                           | 
+38556  | Historic WaterwaysSix Hundred Miles of Canoeing Down the Rock, Fox, and Wisconsin Rivers | 
+38573  | Christina                                          | L. G. Moberly
+38675  | Hoof and Claw                                      | 
+38693  | The Watchers A Novel                               | 
+38804  | The Works of Robert G. Ingersoll, Vol. 4 (of 12) Dresden EditionLectures | 
+38840  | The Adventures of Buffalo Bill                     |  Buffalo Bill, Buffalo Bill, Buffalo Bill Cody, William F. (William Frederick) Cody, William Frederick Cody
+39119  | Satires And Profanities                            | James Thomson
+39159  | Sky Island Being the Further Exciting Adventures of Trot and Cap'n Bill after Their Visit to the Sea Fairies | 
+39206  | Insect Stories                                     | 
+39324  | The Literary Sense                                 | 
+39374  | The Curse of Carne's Hold A Tale of Adventure      | 
+39592  | Princess Mary's Gift Book All profits on sale given to the Queen's "Work for Women" Fund which is acting in Conjunction with The National Relief Fund | 
+39843  | Women of History Selected from the Writings of Standard Authors | 
+39971  | Bonaparte in Egypt and the Egyptians of To-day     | Haji A. Browne
+40077  | The Principles of Economics With Applications to Practical Problems | 
+40359  | The Fairy Ring                                     | 
+40367  | The Decoration of Houses                           | Ogden Codman
+40393  | The Letters of a Post-Impressionist Being the Familiar Correspondence of Vincent Van Gogh | Vincent Van Gogh
+40453  | Tom Ossington's Ghost                              | 
+40477  | With Fire and Sword                                | 
+40591  | Alexander Hamilton                                 | Charles A. Conant
+40745  | Short Stories                                      | 
+40901  | The Gentleman and Lady's Book of Politeness and Propriety of Deportment, Dedicated to the Youth of Both Sexes | Elisabeth Celnart
+40921  | Grim: The Story of a Pike                          | Svend Fleuron
+40999  | Stolen Souls                                       | 
+41020  | Clara Vaughan, Volume I (of III)                   | 
+41085  | The New Life (La Vita Nuova)                       | 
+41326  | The Girls of St. Wode's                            | 
+41402  | The Yellow House Master of Men                     | 
+41481  | Astounding Stories of Super-Science January 1930   | Captain S. P. Meek, Anthony Pelcher, Victor Rousseau, M. L. Staley, C. V. Tench
+41546  | Curiosities of Olden Times                         | 
+41630  | The Story of Geronimo                              | 
+41641  | Just Sixteen.                                      | 
+41651  | Futuria Fantasia, Spring 1940                      | 
+41666  | The Story of Ancient Irish Civilization            | 
+41790  | Quintus Oakes A Detective Story                    | Charles Ross Jackson
+41921  | The Maker of Rainbows And other Fairy-tales and Fables | 
+41932  | A Fair Mystery The Story of a Coquette             | Charlotte M. Brame, Charlotte Monica Braeme, Charlotte Mary Brame, Bertha M. Clay
+41977  | Our Little Hindu Cousin                            | 
+42014  | Meg of Mystery Mountain                            | Grace May North
+42056  | The Red Window                                     | 
+42079  | Mari, Our Little Norwegian Cousin                  | Mary Hazelton Blanchard Wade
+42214  | On a Donkey's Hurricane Deck A Tempestous Voyage of Four Thousand and Ninety-Six Miles Across the American Continent on a Burro, in 340 Days and 2 Hours | R. Pitcher Woodward
+42259  | The People of the Black Circle                     | 
+42398  | Historic Adventures Tales from American History    | 
+42574  | Uncle Wiggily in Wonderland                        | 
+42630  | The Outdoor Chums in the Big Woods Rival Hunters of Lumber Run | 
+42710  | Bizarre                                            | Lawton Mackall
+42796  | The Box-Car Children                               | Gertrude Chandler Warner
+43005  | The Inevitable                                     | 
+43249  | Our Little Canadian Cousin                         | Elizabeth Roberts MacDonald
+43250  | Our Little English Cousin                          | 
+43425  | Jean, Our Little Australian Cousin                 | Mary F. Nixon-Roulet
+43429  | Cats Their Points and Characteristics, with Curiosities of Cat Life, and a Chapter on Feline Ailments | 
+43538  | Historic Girlhoods Part One                        | 
+43585  | Our Little Jewish Cousin                           | 
+43699  | The Phantom Town Mystery                           | Carol Norton
+43790  | The Book of Cats A Chit-chat Chronicle of Feline Facts and Fancies, Legendary, Lyrical, Medical, Mirthful and Miscellaneous | Charles H. Ross
+43833  | Our Little Japanese Cousin                         | 
+43863  | Child Life in Colonial Days                        | 
+43864  | Running Fox                                        | 
+43898  | Florence Nightingale the Angel of the Crimea A Story for Young People | 
+43930  | The Cat Its Natural History; Domestic Varieties; Management and Treatment | Philip M. Rule
+44326  | Wanted: A Husband A Novel                          | 

@@ -1,0 +1,2496 @@
+; Some pipe(|) separated metadata about all LibriVox readers, whose work was used
+; in the corpus.
+;
+; The meaning of the fields in left-to-right order is as follows:
+;
+; reader_id: the ID of the reader in the LibriVox's database
+; gender: 'F' for female, 'M' for male
+; subset: the corpus subset to which the reader's audio is assigned
+; duration: total number of minutes of speech by the reader, included in the corpus
+; name: the name under which the reader is registered in LibriVox
+;
+;ID  |SEX| SUBSET           |MINUTES| NAME
+14   | F | train-clean-360  | 25.03 | Kristin LeMoine
+16   | F | train-clean-360  | 25.11 | Alys AtteWater
+17   | M | train-clean-360  | 25.04 | Gord Mackenzie
+19   | F | train-clean-100  | 25.19 | Kara Shallenberg
+20   | F | train-other-500  | 30.07 | Gesine
+22   | F | train-clean-360  | 25.14 | Michelle Crandall
+23   | F | train-clean-360  | 25.23 | Anita Roy Dobbs
+25   | M | train-other-500  | 30.16 | John Gonzalez
+26   | M | train-clean-100  | 25.08 | Denny Sayers
+27   | M | train-clean-100  | 20.14 | Sean McKinley
+28   | F | train-clean-360  | 25.03 | Kristin Hughes
+29   | M | train-other-500  | 30.10 | Linton
+30   | F | train-clean-360  | 25.19 | Annie Coleman Rothenberg
+31   | M | train-other-500  | 23.79 | Martin Clifton
+32   | F | train-clean-100  | 24.01 | Betsie Bush
+36   | M | train-other-500  | 25.85 | Chip
+37   | M | train-other-500  | 30.04 | wolvrin
+38   | M | train-clean-360  | 25.11 | R. Francis Smith
+39   | F | train-clean-100  | 25.05 | Sherry Crowther
+40   | F | train-clean-100  | 25.04 | Vicki Barbour
+44   | F | train-other-500  | 25.90 | travelbratd
+45   | F | train-other-500  | 8.85  | Kelly Bescherer
+46   | M | train-other-500  | 30.02 | Aaron Hochwimmer
+47   | F | train-other-500  | 30.09 | Amanda
+49   | M | train-other-500  | 28.62 | vrk74
+51   | M | train-other-500  | 24.13 | rakkar
+52   | F | train-other-500  | 10.99 | Luisa Hall
+54   | F | train-clean-360  | 25.07 | Westwinds12
+55   | M | train-clean-360  | 25.21 | David Jaquay
+56   | F | train-clean-360  | 25.07 | Kirsten Ferreri
+57   | F | train-other-500  | 29.41 | Ophelia Darcy
+58   | M | train-other-500  | 30.06 | George Coutts
+60   | M | train-clean-100  | 20.18 | |CBW|Simon
+61   | M | test-clean       | 8.08  | Paul-Gabriel Wiener
+62   | M | train-other-500  | 17.80 | Faris
+64   | F | train-clean-360  | 23.51 | Robin Cotter
+65   | F | train-other-500  | 27.32 | chriss the girl
+66   | M | train-other-500  | 30.22 | Alex Foster
+70   | M | train-clean-360  | 21.61 | Kurt Copeland
+75   | M | train-other-500  | 30.10 | Jim Mowatt
+77   | F | train-other-500  | 30.10 | JemmaBlythe
+78   | M | train-clean-100  | 25.05 | Hugh McGuire
+79   | F | train-clean-360  | 25.01 | Jennifer Crispin
+81   | M | train-clean-360  | 25.22 | Aaron Decker
+82   | F | train-other-500  | 30.15 | Marlo Dianne
+83   | F | train-clean-100  | 25.04 | Catharine Eastman
+84   | F | dev-clean        | 8.02  | Christie Nowak
+85   | M | train-other-500  | 30.02 | David Leaman
+87   | F | train-clean-100  | 25.10 | Rosalind Wills
+89   | F | train-clean-100  | 25.08 | Kristen McQuillin
+90   | M | train-clean-360  | 25.17 | Dan Threetrees
+91   | M | train-other-500  | 30.05 | Stephan Mobius
+92   | F | train-other-500  | 26.78 | Cori Samuel
+93   | F | train-clean-360  | 25.02 | Kathy
+94   | M | train-other-500  | 30.11 | David Barnes
+98   | F | train-clean-360  | 25.03 | Patricia Oakley
+100  | F | train-clean-360  | 25.06 | Judy Bieber
+101  | M | train-clean-360  | 25.04 | paulino
+102  | F | train-other-500  | 30.18 | Linda Leu
+103  | F | train-clean-100  | 23.72 | Karen Savage
+104  | F | train-other-500  | 30.21 | Laura M.D.
+107  | M | train-other-500  | 18.64 | John Greenman
+110  | F | train-other-500  | 30.07 | Cynthia Lyons (1946-2011)
+111  | F | train-other-500  | 22.36 | Linda Wilcox
+112  | F | train-clean-360  | 25.23 | Christiane Levesque
+114  | F | train-clean-360  | 25.03 | Jen Kidd
+115  | F | train-clean-360  | 25.02 | Maddie
+116  | M | dev-other        | 10.02 | Steven Collins
+118  | M | train-clean-100  | 25.05 | Alex Buie
+119  | M | train-clean-360  | 25.11 | Alex Patterson
+121  | F | test-clean       | 8.01  | Nikolle Doolin
+122  | M | train-clean-360  | 25.15 | J.C.
+123  | F | train-other-500  | 30.01 | Ezwa
+125  | F | train-clean-100  | 25.18 | Claire Goget
+126  | F | train-clean-360  | 25.15 | Susan Denney
+127  | M | train-other-500  | 29.49 | John Hicken
+128  | M | train-other-500  | 25.63 | ML Cohen
+133  | M | train-other-500  | 13.89 | Mick
+147  | M | train-other-500  | 10.79 | Thomas Hoover
+149  | M | train-other-500  | 17.69 | Joshua Young
+150  | F | train-clean-100  | 25.13 | Fox in the Stars
+151  | F | train-other-500  | 10.54 | Gwen
+152  | M | train-other-500  | 28.67 | Andy Minter
+153  | M | train-other-500  | 30.16 | Graham Williams
+154  | M | train-clean-360  | 25.13 | Robert Foster
+157  | M | train-clean-360  | 22.96 | Ben Douglas
+159  | M | train-clean-360  | 25.03 | hugh mac
+161  | M | train-other-500  | 30.09 | Cyril Law, Jr.
+163  | M | train-clean-100  | 25.06 | Andrew Miller
+166  | F | train-clean-360  | 25.16 | Paula Berinstein
+167  | M | train-other-500  | 21.75 | Peter Yearsley
+168  | M | train-other-500  | 28.32 | Chris Goringe
+173  | F | train-other-500  | 11.25 | vlooi
+174  | M | dev-clean        | 8.04  | Peter Eastman
+175  | F | train-clean-360  | 25.03 | Meredith Hughes
+176  | M | train-clean-360  | 25.20 | Vinny Bove
+177  | F | train-other-500  | 26.69 | Kymm Zuckert
+188  | F | train-clean-360  | 25.26 | Mary Anderson
+192  | F | train-clean-360  | 25.19 | Deborah Clark
+196  | M | train-clean-100  | 25.24 | Stewart Wills
+198  | F | train-clean-100  | 25.02 | Heather Barnett
+199  | F | train-other-500  | 7.08  | Maria Morabe
+200  | F | train-clean-100  | 25.14 | Maureen S. O'Brien
+201  | M | train-clean-100  | 25.19 | Joplin James
+202  | F | train-other-500  | 30.04 | Geetu Melwani
+203  | F | train-clean-360  | 25.01 | Marian Brown
+204  | M | train-clean-360  | 25.18 | Mark F. Smith
+205  | F | train-clean-360  | 25.07 | Esther
+207  | M | train-clean-360  | 25.00 | Kevin McAsh
+208  | F | train-clean-360  | 13.28 | Andrea L
+209  | F | train-clean-360  | 25.08 | Moira Fogarty
+210  | M | train-clean-360  | 25.12 | Aldark
+211  | F | train-clean-100  | 25.22 | shanda_w
+215  | F | train-other-500  | 29.09 | Alice Elizabeth Still
+216  | M | train-clean-360  | 25.08 | Thomas Davoren
+217  | F | train-clean-360  | 17.71 | firefly
+218  | M | train-other-500  | 14.46 | Kelly Clear
+224  | F | train-clean-360  | 25.20 | Caitlin Kelly
+225  | F | train-clean-360  | 25.17 | Brenda Dayne
+226  | F | train-clean-100  | 25.21 | Deb Bacon-Ziegler
+227  | F | train-clean-360  | 25.16 | Sarah Key-DeLyria
+228  | F | train-other-500  | 28.84 | Arctura
+229  | M | train-clean-100  | 19.56 | carnright
+231  | M | train-clean-360  | 22.19 | Sean McGaughey
+233  | M | train-clean-100  | 24.72 | Steve Karafit
+237  | F | test-clean       | 8.02  | rachelellen
+238  | F | train-other-500  | 10.11 | Maria Elmvang
+240  | M | train-clean-360  | 25.06 | Shurtagal
+242  | F | train-clean-360  | 25.12 | Cagirlwithasoutherndrawl
+243  | F | train-other-500  | 30.04 | Jennifer Stearns
+245  | M | train-other-500  | 30.25 | Peter of Buckinghamshire England
+246  | F | train-clean-360  | 22.43 | Beth Dudek
+248  | F | train-clean-100  | 25.13 | Becky Miller
+249  | M | train-clean-360  | 18.69 | pww214
+250  | F | train-clean-100  | 25.16 | Mary Reagan
+251  | M | dev-clean        | 8.04  | Mark Nelson
+252  | M | train-other-500  | 30.26 | Rainer
+253  | M | train-other-500  | 27.43 | Stefan Schmelz
+254  | M | train-clean-100  | 25.06 | Alan Davis Drake (1945-2010)
+255  | M | train-other-500  | 30.10 | Chris Hawk
+258  | M | train-clean-360  | 24.53 | Kurt Wong
+260  | M | test-clean       | 8.05  | Brad Bush
+263  | M | train-other-500  | 16.03 | Michael Sirois
+264  | M | train-other-500  | 22.55 | Chris Hughes
+265  | M | train-other-500  | 10.38 | Janice
+272  | M | train-clean-360  | 16.45 | Mr. Baby Man
+273  | M | train-other-500  | 30.02 | Jim Cadwell
+274  | F | train-clean-360  | 25.18 | Eileen George
+277  | F | train-other-500  | 25.72 | Alessia
+278  | F | train-clean-360  | 22.05 | AliceG
+283  | M | train-other-500  | 15.42 | Asaf Bartov
+288  | F | train-clean-360  | 25.13 | Bookworm
+289  | F | train-clean-100  | 19.64 | Barbara Wedge
+294  | F | train-other-500  | 20.51 | Calliope
+296  | M | train-clean-360  | 25.16 | Carl Manchester
+298  | F | train-clean-100  | 25.00 | Caroline Morse
+302  | F | train-clean-100  | 25.04 | Chris Peterson
+303  | M | train-clean-360  | 25.03 | Tony Hightower
+307  | M | train-clean-100  | 25.11 | Randy Phillips
+310  | F | train-other-500  | 25.15 | Dexnell Peters
+311  | M | train-clean-100  | 25.17 | deadwhitemales
+313  | F | train-other-500  | 30.03 | Dilini Jayasinghe
+317  | M | train-other-500  | 28.14 | Mike Gardom
+318  | F | train-clean-360  | 25.17 | Eileen aka e
+319  | M | train-other-500  | 30.07 | Ed Good
+322  | F | train-clean-100  | 25.20 | Elisabeth Shields
+323  | F | train-clean-360  | 14.36 | Erica Kuntz
+328  | F | train-clean-100  | 19.35 | Elizabeth Palmer
+329  | M | train-clean-360  | 25.09 | Todd Cranston-Cuebas
+331  | M | train-other-500  | 30.12 | Richard Grove
+332  | M | train-clean-100  | 19.00 | Aaron Teiser
+335  | M | train-clean-360  | 25.08 | Paul Harvey
+336  | M | train-other-500  | 21.97 | Harvey Chinn
+337  | F | train-clean-360  | 25.15 | Barbara Harvey
+339  | F | train-clean-360  | 25.07 | Heather Ordover
+340  | M | train-clean-360  | 25.17 | Scott Henkel
+345  | M | train-clean-360  | 25.19 | Micah Sheppard
+348  | M | train-other-500  | 30.02 | ianish
+353  | M | train-clean-360  | 20.10 | Jamey Osborne
+359  | M | train-clean-360  | 25.08 | John Nicholson
+362  | F | train-clean-360  | 25.07 | Judith Brown
+365  | M | train-other-500  | 30.01 | Jon Ingram
+366  | F | train-other-500  | 30.12 | Katy Preston
+367  | F | test-other       | 6.74  | Kathleen Dang
+369  | M | train-clean-360  | 19.56 | Kevin Readdean
+373  | F | train-clean-360  | 25.18 | Kim Braun
+374  | M | train-clean-100  | 25.16 | kumarei
+377  | M | train-other-500  | 21.39 | Lenny Glionna Jr.
+380  | F | train-clean-360  | 25.15 | Laurie Campbell
+392  | F | train-other-500  | 23.64 | Maria Celano
+398  | M | train-clean-360  | 23.56 | James Smith
+402  | F | train-other-500  | 30.19 | Sharmini Kumar
+403  | F | train-clean-100  | 25.14 | Nocturna
+404  | F | train-other-500  | 24.68 | Nomenphile
+405  | M | train-clean-100  | 25.04 | Eric Dennison
+408  | F | train-clean-360  | 25.17 | Claudine Chen
+409  | M | train-clean-360  | 25.13 | Mike Kauffmann
+412  | M | train-clean-100  | 22.38 | Brian Roberg
+413  | M | train-other-500  | 19.72 | Daniel Watkins
+421  | M | train-other-500  | 29.09 | Patrick
+422  | M | dev-clean        | 8.38  | President Lethe
+426  | F | train-clean-100  | 25.21 | Norah Piehl
+428  | M | train-other-500  | 27.22 | Rayburn Beale
+432  | M | train-other-500  | 30.10 | Steve Andersen
+434  | F | train-clean-360  | 25.09 | Joyce Nussbaum
+439  | M | train-clean-360  | 25.16 | Robert Garrison
+441  | F | train-clean-100  | 25.19 | Sandra in Wales, United Kingdom
+444  | F | train-other-500  | 28.32 | Sage Tyrtle
+445  | M | train-clean-100  | 11.08 | Dave Foss
+446  | M | train-clean-100  | 25.00 | Steve Hartzog
+448  | F | train-other-500  | 23.84 | scrappylibrarian
+451  | F | train-clean-360  | 22.93 | Sonserae Leese-Calver
+453  | M | train-other-500  | 22.78 | Glen Hallstrom
+454  | M | train-clean-360  | 25.20 | Tom Yates
+458  | M | train-clean-100  | 17.30 | Scott Splavec
+459  | M | train-clean-360  | 25.05 | Mark Bradford
+460  | M | train-clean-100  | 25.23 | Dave Ranson
+464  | M | train-clean-360  | 18.24 | Mike Wilson
+466  | F | train-other-500  | 30.21 | Joy Chan
+470  | M | train-other-500  | 30.06 | Chris Chapman
+472  | F | train-clean-360  | 25.02 | Tina Tilney
+474  | M | train-other-500  | 29.00 | Zachary Brewster-Geisz
+475  | M | train-clean-360  | 23.95 | Jason X.
+476  | M | train-clean-360  | 25.08 | Chuck Spann
+479  | F | train-clean-360  | 25.00 | wedschild
+480  | M | train-clean-360  | 25.13 | Chris Vee
+481  | M | train-clean-100  | 25.08 | Neal Foley
+483  | F | train-other-500  | 26.75 | junk science
+487  | M | train-clean-360  | 17.12 | Clayton J. Smith
+489  | F | train-other-500  | 26.53 | Tora
+492  | M | train-clean-360  | 25.19 | TBOL3
+497  | M | train-clean-360  | 25.00 | audiotoshokan
+500  | M | train-clean-360  | 25.04 | galaxiant
+501  | M | train-clean-360  | 25.06 | mikenkat
+505  | M | train-other-500  | 29.49 | Menno
+510  | M | train-clean-360  | 25.07 | Kirk Thomas
+511  | M | train-clean-360  | 25.23 | Matthew Shepherd
+512  | M | train-clean-360  | 25.12 | Anthony Craine
+517  | M | train-other-500  | 23.59 | Matthew Walton
+525  | F | train-clean-360  | 25.03 | Victoria Long
+533  | F | test-other       | 10.05 | Ana Simao
+534  | F | train-clean-360  | 25.01 | Jean O'Sullivan
+542  | M | train-other-500  | 29.87 | J. Hall
+543  | M | train-clean-360  | 25.10 | Ted Delorme
+544  | M | train-other-500  | 25.89 | bozgeez
+548  | M | train-clean-360  | 25.14 | Chris Mitchell
+549  | F | train-clean-360  | 18.99 | SarahHadley
+551  | M | train-other-500  | 30.20 | Guntar
+557  | M | train-other-500  | 30.07 | fieldsofgold
+559  | M | train-clean-360  | 25.16 | Bill Stackpole
+561  | M | train-clean-360  | 24.78 | Quentin
+567  | M | train-other-500  | 6.49  | Aaron Benedict
+568  | M | train-other-500  | 30.21 | JD Weber
+569  | M | train-other-500  | 8.36  | Frank
+572  | M | train-other-500  | 29.18 | Rebecca Dittman
+576  | F | train-clean-360  | 20.69 | Caroline Mercier
+580  | M | train-clean-360  | 25.22 | Ryan
+581  | M | train-clean-360  | 25.20 | C. Berrius
+583  | M | train-clean-360  | 24.67 | Russ Maxwell
+584  | F | train-other-500  | 30.10 | miette
+585  | F | train-other-500  | 30.05 | pheo
+587  | F | train-clean-100  | 25.20 | Joy Scaglione
+589  | F | train-clean-360  | 25.01 | Stephanie Konig
+593  | M | train-clean-360  | 24.55 | Eric S. Piotrowski
+594  | M | train-clean-360  | 25.12 | KentF
+596  | F | train-clean-360  | 25.00 | Carol Goode
+597  | F | train-clean-360  | 25.25 | Lisa Chau
+598  | F | train-clean-360  | 25.02 | Kim
+606  | M | train-clean-360  | 25.02 | Julian Jamison
+608  | F | train-other-500  | 30.09 | Baranduin
+612  | F | train-clean-360  | 21.70 | Cindy Steib
+613  | M | train-other-500  | 29.85 | D.E. Wittkower
+614  | F | train-other-500  | 27.57 | Christine Blachford
+622  | M | train-other-500  | 23.15 | Andrew Lebrun
+625  | M | train-clean-100  | 25.01 | toriasuncle
+636  | F | train-clean-360  | 25.03 | Zale Schafer (Rose May Chamberlin Memorial Foundat
+637  | M | train-clean-360  | 25.11 | Michael Scherer
+639  | M | train-clean-360  | 25.10 | Robert Beach
+644  | M | train-other-500  | 30.17 | Daniele
+652  | M | dev-clean        | 8.31  | Scott Walter
+663  | M | train-clean-360  | 25.10 | Bruce Stafford
+664  | F | train-clean-360  | 25.20 | Wendy G.
+666  | F | train-clean-360  | 24.58 | Monique
+667  | F | train-clean-360  | 25.04 | Bethany Simpson
+669  | F | train-clean-100  | 25.17 | Anne
+671  | M | train-clean-360  | 24.11 | koijmonop
+672  | M | test-clean       | 8.27  | Taylor Burton-Edward
+679  | M | train-other-500  | 13.04 | rhodian
+681  | F | train-other-500  | 30.01 | Lucy Burgoyne
+684  | F | train-other-500  | 30.04 | Lizzie Driver
+688  | F | train-clean-360  | 25.19 | J. M. Smallheer
+690  | F | train-other-500  | 22.10 | Silver
+696  | F | train-clean-100  | 25.11 | Tamara R. Schwartz
+698  | F | train-clean-360  | 25.03 | Randi Warwick
+699  | F | train-clean-360  | 25.06 | Diana Kiesners
+700  | F | dev-other        | 10.01 | Susan Hooks
+705  | F | train-other-500  | 30.09 | eva
+707  | M | train-clean-360  | 24.76 | Jason Mayoff
+708  | M | train-clean-360  | 21.01 | Kevin Devine
+711  | M | train-clean-360  | 25.13 | Roy Schreiber
+712  | M | train-other-500  | 28.91 | Michael Shook
+713  | F | train-other-500  | 25.71 | Onjana Yawnghwe
+716  | M | train-clean-360  | 22.52 | martyd
+718  | M | train-clean-360  | 25.08 | clarknova
+720  | M | train-other-500  | 30.09 | Peter Gallagher
+724  | M | train-clean-360  | 25.08 | Michael Crowl
+726  | M | train-other-500  | 30.19 | Paul
+727  | M | train-other-500  | 27.18 | Andrew Richards
+728  | M | train-other-500  | 30.21 | Eric Connover
+730  | F | train-clean-100  | 25.19 | Karen Labenz
+731  | F | train-clean-360  | 25.14 | Megan-Jane Daniels Suyasu
+737  | M | train-other-500  | 24.83 | Roger W. Barnett
+742  | M | train-other-500  | 18.38 | Peter Groom
+753  | M | train-other-500  | 26.92 | Tim Bulkeley
+764  | M | train-clean-360  | 25.08 | Carl Vonnoh, III
+766  | M | train-other-500  | 24.41 | Jean Crevier
+770  | M | train-clean-360  | 25.00 | Justin S Barrett
+774  | F | train-other-500  | 8.75  | Sara Walsh
+777  | M | dev-clean        | 8.06  | fling93
+778  | M | train-other-500  | 30.17 | Branko Collin
+779  | M | train-other-500  | 30.09 | Greg
+780  | M | train-other-500  | 24.65 | Lloyd Davis
+781  | M | train-clean-360  | 25.12 | Mitchell Dwyer
+782  | F | train-other-500  | 30.18 | Michele Pacey
+783  | F | train-clean-360  | 23.98 | Gina
+789  | F | train-other-500  | 17.71 | Eva
+791  | M | train-other-500  | 27.56 | Ivan
+792  | F | train-other-500  | 19.73 | mjd-s
+797  | M | train-other-500  | 13.94 | Mike Shapiro
+803  | M | train-clean-360  | 25.02 | Greg Elmensdorp
+806  | M | train-clean-360  | 22.41 | Aaron Andradne
+807  | M | train-other-500  | 25.31 | Luke Venediger
+810  | M | train-other-500  | 21.54 | Joseph Loverti
+811  | F | train-other-500  | 25.09 | Elizabeth
+815  | M | train-clean-360  | 16.20 | mawrtea
+816  | M | train-clean-360  | 23.23 | Jeff Robinson
+820  | M | train-clean-360  | 24.64 | Scoot
+826  | M | train-other-500  | 18.49 | Thomas Wells
+829  | F | train-clean-360  | 25.14 | frenchfry
+830  | F | train-clean-360  | 22.26 | sebrazer
+831  | M | train-clean-100  | 25.22 | Nick Gallant
+834  | F | train-clean-360  | 25.14 | nausicaa
+835  | M | train-clean-360  | 18.61 | echo
+836  | M | train-clean-360  | 25.01 | Kevin LaVergne
+839  | M | train-clean-100  | 19.95 | rovert405
+844  | F | train-other-500  | 27.30 | Martina
+845  | M | train-other-500  | 11.71 | DaveF
+846  | M | train-other-500  | 30.12 | Anadaxis_Canejia
+850  | M | train-clean-360  | 22.03 | tonypettit
+851  | M | train-other-500  | 9.02  | brenthumphries
+868  | M | train-clean-360  | 25.07 | Mike Rosenlof
+876  | F | train-other-500  | 22.85 | Alisha
+882  | F | train-clean-360  | 24.14 | Mur Lafferty
+884  | M | train-other-500  | 17.23 | sayeth
+886  | M | train-other-500  | 24.31 | Paul S. Jenkins
+887  | F | train-clean-100  | 25.11 | Lana Taylor
+895  | M | train-other-500  | 15.01 | Max Porter Zasada
+899  | M | train-clean-360  | 25.09 | thomahal
+908  | M | test-clean       | 8.05  | Sam Stinson
+909  | M | train-clean-100  | 25.00 | Greg Bryant
+911  | M | train-clean-100  | 23.83 | frankjf
+915  | M | train-other-500  | 21.21 | Ted Kaouk
+920  | F | train-clean-360  | 21.36 | Sarah Bean
+921  | M | train-other-500  | 29.10 | Brian J. Callaghan
+922  | M | train-clean-360  | 25.07 | Steven H. Wilson
+923  | F | train-other-500  | 21.33 | Layna
+925  | F | train-clean-360  | 25.22 | pattymarie
+927  | M | train-other-500  | 26.13 | Nerijus
+937  | F | train-other-500  | 30.14 | Susie G.
+948  | F | train-clean-360  | 25.13 | Chere Theriot
+949  | M | train-clean-360  | 25.08 | ontheroad
+951  | F | train-other-500  | 30.04 | thomasina
+953  | M | train-clean-360  | 20.76 | Jim Mullins
+954  | M | train-clean-360  | 14.44 | Brooks Seveer
+956  | F | train-other-500  | 23.96 | krithiga
+957  | M | train-clean-360  | 25.06 | iscatel
+960  | F | train-other-500  | 27.55 | Marloes Schoonheim
+964  | M | train-other-500  | 17.09 | Paul Sze
+968  | F | train-clean-360  | 24.49 | Pat Elder
+969  | M | train-other-500  | 30.10 | Czechchris
+976  | F | train-other-500  | 30.11 | Alison Raouf
+978  | M | train-other-500  | 27.56 | Rick Box
+979  | F | train-clean-360  | 5.59  | Kelli Robinson
+982  | M | train-other-500  | 22.28 | Mike Roop
+984  | M | train-clean-360  | 23.39 | J A Carter
+985  | M | train-other-500  | 30.05 | George Pilling
+986  | M | train-clean-360  | 15.96 | Michael Kirkpatrick
+1001 | M | train-clean-360  | 25.25 | Eric
+1006 | F | train-other-500  | 30.00 | Marta Kornowska
+1012 | F | train-clean-360  | 21.38 | Lizzie Oldfather
+1018 | M | train-clean-360  | 25.07 | JimmyLogan
+1025 | M | train-clean-360  | 22.99 | rdmagpie
+1027 | M | train-clean-360  | 25.09 | Brooks Jensen
+1028 | M | train-clean-360  | 25.03 | Tim Lundeen
+1031 | F | train-clean-360  | 23.73 | swroot
+1034 | M | train-clean-100  | 16.71 | Kevin O'Coin
+1040 | M | train-clean-100  | 15.70 | John Garvin
+1046 | M | train-clean-360  | 24.65 | durnburr
+1049 | M | train-other-500  | 14.93 | Sam Fold
+1050 | F | train-clean-360  | 25.04 | entada
+1051 | F | train-other-500  | 28.33 | E. Moulton
+1052 | F | train-clean-360  | 25.13 | Kathy Jacobs
+1053 | F | train-clean-360  | 25.04 | katyleah
+1054 | F | train-clean-360  | 24.80 | Igor Teaforay
+1058 | M | train-clean-360  | 25.10 | James Tiley
+1060 | F | train-clean-360  | 20.07 | Val Grimm
+1061 | F | train-clean-360  | 25.14 | Missie
+1065 | M | train-other-500  | 30.18 | Justin Brett
+1066 | F | train-clean-360  | 25.20 | Laurie Anne Walden
+1069 | F | train-clean-100  | 25.15 | Dawn
+1079 | F | train-clean-360  | 21.26 | Mary aka Breadchick
+1081 | M | train-clean-100  | 25.18 | Fracture
+1084 | F | train-other-500  | 29.12 | Nichole Karl
+1085 | M | train-other-500  | 30.24 | hefyd
+1088 | F | train-clean-100  | 25.18 | Christabel
+1089 | M | test-clean       | 8.05  | Peter Bobbe
+1092 | F | train-other-500  | 30.17 | Maria
+1093 | F | train-clean-360  | 25.11 | Kiki Baessell
+1094 | M | train-other-500  | 30.03 | tubeyes
+1096 | M | train-other-500  | 26.95 | Geoff Dugwyler
+1097 | M | train-other-500  | 30.18 | Euthymius
+1098 | F | train-clean-100  | 18.31 | Merryb
+1100 | F | train-clean-360  | 23.87 | Danielle Flores
+1107 | M | train-other-500  | 30.10 | Jason Oakley
+1110 | M | train-other-500  | 24.85 | Graeme Jolliffe
+1112 | M | train-clean-360  | 25.15 | RedToby
+1116 | F | train-clean-100  | 25.12 | Megan Stemm-Wade
+1121 | M | train-clean-360  | 25.12 | John Lieder
+1124 | F | train-other-500  | 30.03 | Ancilla
+1132 | M | train-other-500  | 30.04 | Giles Baker
+1152 | F | train-other-500  | 28.04 | Millbeach
+1154 | F | train-other-500  | 30.12 | Larysa Jaworski
+1160 | M | train-clean-360  | 25.20 | Gary Gilberd
+1161 | M | train-other-500  | 21.87 | Dominic Moore
+1165 | M | train-clean-360  | 25.13 | Bob Graff
+1166 | F | train-other-500  | 21.27 | Debra Lynn
+1168 | F | train-other-500  | 21.61 | Ree
+1171 | F | train-other-500  | 30.01 | Julia Claussen
+1175 | M | train-clean-360  | 25.02 | Brother Patrick
+1179 | M | train-other-500  | 28.84 | Alan Chant
+1182 | M | train-clean-360  | 25.06 | Brett Condron
+1183 | F | train-clean-100  | 9.72  | roolynninms
+1184 | M | train-other-500  | 28.84 | Jeremy Pavier
+1187 | M | train-other-500  | 30.02 | Paul Hansen
+1188 | M | test-clean       | 8.20  | Duncan Murrell
+1195 | F | train-clean-360  | 25.03 | Jennette Selig
+1200 | M | train-other-500  | 30.04 | hosmer_angel
+1212 | F | train-clean-360  | 25.07 | Lee Ann Howlett
+1221 | F | test-clean       | 8.07  | Dianne
+1222 | M | train-clean-360  | 25.12 | Joseph Ugoretz
+1224 | F | train-clean-360  | 22.11 | Heather Duncan
+1225 | M | train-other-500  | 30.08 | Chris Langston
+1226 | M | train-clean-360  | 25.11 | Russ Lemker
+1230 | M | train-other-500  | 30.03 | Ian Skillen
+1235 | M | train-clean-100  | 25.09 | Tim Gregory
+1239 | M | train-other-500  | 20.69 | Scott Robbins
+1241 | F | train-clean-360  | 25.12 | Catherine Fitz
+1246 | F | train-clean-100  | 25.09 | Sandra
+1250 | F | train-other-500  | 30.23 | Christina Boyles
+1252 | F | train-other-500  | 15.47 | Avery
+1255 | M | dev-other        | 10.03 | Simon Evers
+1258 | M | train-other-500  | 18.03 | Mellors
+1259 | F | train-clean-360  | 25.12 | Elizabeth Klett
+1260 | M | train-other-500  | 24.01 | Chris Hughes
+1261 | M | train-other-500  | 21.04 | Mans Broo
+1263 | F | train-clean-100  | 25.16 | Leonie Rose
+1264 | M | train-clean-360  | 25.01 | Matthew Hinman
+1265 | M | train-clean-360  | 25.18 | Edward Elmer
+1266 | F | train-other-500  | 27.94 | Jenilee
+1271 | M | train-clean-360  | 25.18 | Christian Pecaut
+1272 | M | dev-clean        | 8.02  | John Rose
+1274 | M | train-other-500  | 15.99 | Larry Gilman
+1280 | M | train-other-500  | 23.94 | Tim Makarios
+1283 | M | train-clean-360  | 24.22 | Paul Siegel
+1284 | F | test-clean       | 8.16  | Daniel Anaya
+1289 | F | train-clean-360  | 25.00 | Joanne Pauwels
+1290 | F | train-clean-360  | 15.49 | librarianite
+1291 | F | train-other-500  | 28.53 | Patti Brugman
+1296 | F | train-clean-360  | 25.09 | Gigi Minden
+1298 | F | train-other-500  | 30.03 | Wina Hathaway
+1311 | M | train-clean-360  | 25.04 | Scott D. Farquhar
+1313 | M | train-clean-360  | 25.18 | Scott Sherris
+1316 | M | train-clean-360  | 25.04 | Estragon
+1320 | M | test-clean       | 8.02  | number6
+1322 | M | train-clean-360  | 25.17 | chris tierney
+1323 | M | train-clean-360  | 25.08 | Leon Mire
+1331 | M | train-other-500  | 28.73 | Adrian Praetzellis
+1334 | M | train-clean-100  | 23.89 | John Schell
+1335 | F | train-clean-360  | 25.08 | Clarica
+1336 | M | train-clean-360  | 25.19 | Charlie Blakemore
+1337 | M | train-clean-360  | 25.02 | Steven Rushing
+1341 | M | train-other-500  | 28.77 | Coastalbloke
+1342 | F | train-other-500  | 30.20 | SueAnn Dozier
+1343 | F | train-clean-360  | 25.13 | Laura Koskinen
+1347 | M | train-other-500  | 21.35 | Ted Nugent
+1348 | F | train-clean-360  | 22.68 | Janet Friday
+1349 | M | train-clean-360  | 25.14 | John Pruden
+1353 | M | train-other-500  | 30.04 | Clarke Bell
+1355 | M | train-clean-100  | 22.31 | Chris Gladis
+1363 | F | train-clean-100  | 21.87 | Tammy Sanders
+1365 | M | train-clean-360  | 25.19 | Joel Poortenga
+1367 | M | train-other-500  | 30.12 | Joe Brenneman
+1370 | F | train-other-500  | 19.78 | Lee Elliott
+1373 | F | train-other-500  | 26.93 | Kira Belkin
+1374 | M | train-other-500  | 17.76 | Graham Thomsen
+1379 | M | train-clean-360  | 25.09 | Ken Crooker
+1382 | F | train-clean-360  | 21.44 | Heather Lawrence
+1383 | M | train-clean-360  | 23.92 | David Best
+1384 | M | train-other-500  | 24.51 | Stephen Lamb
+1387 | M | train-clean-360  | 25.05 | Scott Mather
+1390 | F | train-clean-360  | 16.65 | C.L.Coney
+1392 | M | train-clean-360  | 25.22 | Chris Masterson
+1401 | F | train-clean-360  | 25.19 | Sibella Denton
+1403 | M | train-other-500  | 17.40 | tipaew
+1413 | M | train-clean-360  | 25.08 | ryanaw
+1414 | F | train-other-500  | 7.83  | guava
+1417 | F | train-clean-360  | 25.19 | Psuke Bariah
+1421 | F | train-other-500  | 28.68 | Madame Tusk
+1422 | F | train-clean-360  | 25.19 | Yazpistachio
+1425 | F | train-clean-360  | 25.26 | Jeanette Ferguson
+1430 | M | train-other-500  | 23.75 | Alok Karulkar
+1444 | M | train-other-500  | 11.74 | Ryan Mease
+1445 | M | train-clean-360  | 25.15 | Michael Yard
+1446 | M | train-clean-360  | 25.01 | Michael Loftus
+1447 | F | train-clean-100  | 25.18 | Luigina
+1448 | F | train-clean-360  | 25.07 | marevalo
+1455 | M | train-clean-100  | 25.13 | webslog
+1456 | M | train-clean-360  | 25.12 | Jason Isbell
+1460 | F | train-clean-360  | 25.01 | E. Plein
+1462 | F | dev-clean        | 8.04  | E. Tavano
+1463 | F | train-clean-360  | 25.23 | Vivian Bush
+1469 | M | train-other-500  | 16.96 | Fr. Richard Zeile of Detroit
+1472 | F | train-clean-360  | 25.15 | Sarah Jennings
+1473 | M | train-clean-360  | 25.10 | Dan Polanco
+1474 | F | train-other-500  | 30.03 | Jc Guan
+1482 | M | train-clean-360  | 25.00 | Joshua B. Christensen
+1485 | M | train-other-500  | 24.24 | Robert Flach
+1487 | M | train-clean-360  | 23.93 | radioreader
+1492 | M | train-other-500  | 30.14 | mb
+1494 | M | train-other-500  | 6.27  | George Deprez, PhD
+1495 | M | train-other-500  | 24.44 | Glendower Jones
+1498 | F | train-clean-360  | 18.38 | Lori Hebel
+1502 | F | train-clean-100  | 25.05 | Ann Boyer
+1505 | M | train-other-500  | 25.98 | Mark Norman
+1509 | F | train-clean-360  | 25.04 | Miranda Stinson
+1513 | M | train-clean-360  | 25.11 | Simon-Peter Zak
+1535 | M | train-clean-360  | 22.74 | Robert Scott
+1536 | M | train-clean-360  | 25.23 | Marco
+1544 | F | train-other-500  | 30.18 | LilianaVale
+1545 | F | train-other-500  | 9.17  | AmyAG
+1547 | F | train-clean-360  | 17.45 | Riddleman
+1552 | M | train-clean-360  | 15.62 | Roger Turnau
+1553 | F | train-clean-100  | 22.49 | Mim Ritty
+1556 | M | train-clean-360  | 25.13 | geofred
+1559 | M | train-other-500  | 18.95 | Luke Harrison
+1563 | F | train-other-500  | 13.26 | Chandra Gioiello
+1564 | F | train-other-500  | 22.58 | Hedvig
+1566 | F | train-other-500  | 27.46 | Anna Christensen
+1569 | F | train-other-500  | 25.00 | Kristine Mackin
+1571 | M | train-clean-360  | 25.24 | Bob Tassinari
+1572 | M | train-other-500  | 30.14 | Alan Clare
+1578 | F | train-clean-100  | 25.01 | Lorelle Anderson
+1579 | F | train-other-500  | 30.06 | Philippa Willitts
+1580 | F | test-clean       | 8.07  | TinyPines
+1585 | F | dev-other        | 10.03 | Nelly ()
+1593 | F | train-other-500  | 28.90 | Kristine Bekere
+1594 | M | train-clean-100  | 25.10 | Jon Scott Jones
+1595 | M | train-other-500  | 30.22 | Riccardo Fasol
+1601 | M | train-other-500  | 13.36 | Michael Yourshaw
+1603 | M | train-clean-360  | 25.16 | Arouet
+1607 | M | train-clean-360  | 24.74 | Claude Banta
+1614 | M | train-other-500  | 30.11 | FNH
+1618 | M | train-other-500  | 23.98 | Nicholas James Bridgewater
+1621 | M | train-other-500  | 28.45 | Caliban
+1624 | M | train-clean-100  | 22.03 | Daniel Shorten
+1629 | F | train-clean-360  | 25.09 | Gwyneth
+1630 | F | dev-other        | 10.06 | spiritualbeing
+1633 | F | train-other-500  | 30.09 | Beecher
+1634 | M | train-clean-360  | 17.65 | daxm
+1636 | F | train-other-500  | 28.48 | Sandra Zera
+1638 | M | train-clean-360  | 23.25 | Kyle M.
+1639 | M | train-clean-360  | 25.07 | Joe Konno
+1641 | F | train-clean-360  | 16.60 | Rohanna
+1643 | M | train-other-500  | 12.85 | Chris Leslie-Hynan
+1645 | M | train-clean-360  | 1.92  | David Shamp
+1646 | M | train-other-500  | 30.03 | Ben Cobbett
+1647 | M | train-other-500  | 30.07 | Rich Meyers
+1648 | F | train-other-500  | 8.01  | Accent
+1649 | F | train-clean-360  | 25.04 | Kalynda
+1650 | M | dev-other        | 10.07 | WangHaojie
+1651 | M | dev-other        | 4.53  | Brendan Hodge
+1653 | F | train-other-500  | 28.72 | Carmina Sansone
+1664 | F | train-other-500  | 27.98 | Shauna M
+1665 | F | train-other-500  | 30.11 | Jessica AC Snyder
+1668 | F | train-clean-360  | 22.96 | stepheather
+1673 | F | dev-clean        | 8.07  | Tonia
+1674 | F | train-other-500  | 30.15 | Jo
+1678 | F | train-clean-360  | 25.08 | leonardswench
+1679 | F | train-other-500  | 22.59 | Polly
+1680 | F | train-other-500  | 18.27 | intothelight
+1681 | F | train-other-500  | 28.90 | islajane
+1685 | M | train-other-500  | 30.05 | Jonathan Horniblow
+1686 | F | dev-other        | 10.11 | neelma
+1688 | M | test-other       | 9.83  | winam
+1690 | F | train-other-500  | 23.47 | Anne-Marie
+1691 | F | train-other-500  | 25.27 | Classicsfan
+1693 | F | train-other-500  | 9.41  | 4Cullen
+1695 | F | train-other-500  | 23.70 | Steph
+1696 | F | train-other-500  | 24.25 | Darcywil
+1699 | M | train-other-500  | 29.66 | Gavin Smith
+1701 | M | dev-other        | 10.03 | camelot2302
+1704 | F | train-other-500  | 19.92 | JB
+1705 | F | train-clean-360  | 23.78 | tittletattle
+1708 | M | train-other-500  | 15.80 | Alaaious
+1710 | F | train-other-500  | 12.02 | Gilly
+1714 | F | train-other-500  | 16.02 | lauralee
+1715 | F | train-other-500  | 24.53 | Marianna
+1717 | F | train-other-500  | 14.81 | PJ
+1721 | F | train-other-500  | 19.66 | Linnea
+1723 | M | train-clean-100  | 25.12 | Rob Whelan
+1724 | F | train-clean-360  | 25.05 | Anna Simon
+1726 | F | train-other-500  | 22.71 | janeite
+1731 | F | train-clean-360  | 25.06 | Dani
+1733 | F | train-other-500  | 22.94 | Mira Cheskis
+1734 | F | train-clean-360  | 15.86 | LuvDemBrooders
+1736 | F | train-other-500  | 29.58 | LC
+1737 | F | train-clean-100  | 25.04 | Erin Hastings
+1740 | F | train-clean-360  | 25.22 | Shubda
+1743 | M | train-clean-100  | 21.29 | Bryan Ness
+1746 | M | train-other-500  | 21.36 | Theo Bacher
+1748 | M | train-clean-360  | 25.16 | Brad Powers
+1750 | F | train-other-500  | 30.09 | Lorie Heinrichs
+1752 | F | train-clean-360  | 22.90 | Jan MacGillivray
+1754 | F | train-clean-360  | 25.08 | Joan Freeman
+1756 | F | train-other-500  | 30.02 | Tamara Hamilton
+1757 | F | train-other-500  | 30.12 | cricket
+1760 | F | train-other-500  | 29.06 | Matthew Howell
+1765 | F | train-other-500  | 22.66 | Kelly Elizabeth
+1767 | F | train-other-500  | 26.17 | Cori Dean
+1769 | M | train-clean-360  | 25.21 | ej
+1772 | M | train-other-500  | 30.11 | David A. Stokely
+1773 | F | train-other-500  | 30.05 | Eliza Horne
+1776 | M | train-clean-360  | 25.17 | Jim Eastman
+1777 | M | train-clean-360  | 25.14 | Professor Chronotis
+1779 | F | train-clean-360  | 18.05 | Cynthia Zocca
+1780 | M | train-other-500  | 18.02 | Micah
+1784 | F | train-other-500  | 21.61 | grovejade
+1789 | M | train-clean-360  | 25.01 | Vin Reilly
+1795 | M | train-other-500  | 17.33 | Muhammad Mussnoon
+1800 | F | train-clean-360  | 25.14 | Scarlett!
+1801 | M | train-clean-360  | 16.59 | Antonio
+1804 | F | train-other-500  | 30.12 | Marie Manis
+1806 | M | train-clean-360  | 25.05 | Gary W. Sherwin
+1809 | F | train-other-500  | 23.28 | cucciasv
+1811 | M | train-clean-360  | 20.41 | Eric Ray
+1813 | F | train-other-500  | 16.81 | tesoro007
+1815 | M | train-other-500  | 27.79 | Aringguth
+1819 | F | train-other-500  | 28.09 | Shannon
+1825 | F | train-clean-360  | 25.00 | srshel
+1826 | M | train-clean-360  | 25.18 | Jacob Miller
+1827 | M | train-clean-360  | 10.55 | Doug Wetzel
+1828 | M | train-other-500  | 28.27 | James Gladwin
+1841 | F | train-clean-100  | 25.13 | Laura Caldwell
+1844 | M | train-other-500  | 23.49 | noonday
+1845 | F | train-clean-360  | 25.15 | Katie Gibboney
+1846 | M | train-other-500  | 30.02 | valikojohn
+1849 | M | train-clean-360  | 25.05 | Kelly Dougherty
+1851 | F | train-clean-360  | 25.03 | Kehinde
+1859 | F | train-clean-360  | 25.17 | Jan Baxter
+1863 | F | train-other-500  | 21.50 | Ania
+1867 | M | train-clean-100  | 25.16 | Rowdy Delaney
+1868 | M | train-other-500  | 30.08 | Graham Redman
+1870 | M | train-other-500  | 29.41 | Stuart Bell
+1874 | M | train-clean-360  | 25.21 | Ernst Schnell
+1878 | M | train-other-500  | 27.47 | BLRossow
+1885 | F | train-clean-360  | 14.38 | inkwelldragon
+1898 | F | train-clean-100  | 25.01 | Jennifer
+1901 | F | train-other-500  | 30.01 | Allyson Hester
+1903 | M | train-clean-360  | 24.21 | Michael Thomas Robinson
+1913 | M | train-clean-360  | 25.03 | Geoff Cowgill
+1914 | M | train-clean-360  | 25.04 | Kevin Kivikko
+1919 | F | dev-clean        | 8.17  | nprigoda
+1920 | F | train-other-500  | 30.05 | Annika Feilbach
+1923 | F | train-clean-360  | 25.05 | Maire Rhode
+1924 | M | train-other-500  | 30.21 | Andrew Drinkwater
+1926 | F | train-clean-100  | 25.19 | Nikki Sullivan
+1931 | F | train-other-500  | 15.74 | poormedea
+1933 | F | train-clean-360  | 14.97 | iremonger
+1938 | M | train-other-500  | 22.02 | icyjumbo (1964-2010)
+1943 | M | train-clean-360  | 23.10 | Corun
+1944 | F | train-clean-360  | 25.03 | Carolyn Frances
+1958 | M | train-clean-360  | 25.17 | Furio
+1961 | F | train-clean-360  | 25.18 | Qhali
+1963 | F | train-clean-100  | 25.19 | Belinda Brown
+1968 | F | train-other-500  | 20.25 | lizzyblack
+1970 | F | train-clean-100  | 25.13 | Dawn Larsen
+1974 | F | train-clean-360  | 25.16 | Katie Baynes
+1977 | F | train-other-500  | 27.80 | Jennie Hughes
+1985 | M | train-other-500  | 24.71 | Jonny Lee
+1987 | M | train-clean-360  | 25.19 | Michael Macedonia
+1988 | F | dev-clean        | 8.16  | Ransom
+1989 | M | train-other-500  | 8.99  | Sergio Baldelli
+1992 | F | train-clean-100  | 12.29 | Michelle White
+1993 | F | dev-clean        | 8.11  | Wendy Belcher
+1995 | F | test-clean       | 8.06  | AJai Hilton
+1998 | F | test-other       | 10.02 | Sonja
+2001 | M | train-other-500  | 19.90 | Phillip David
+2002 | M | train-clean-100  | 24.94 | Larry Maddocks
+2003 | M | train-other-500  | 23.18 | The Penang Lawyer
+2004 | F | train-clean-360  | 25.26 | Kim S
+2007 | F | train-clean-100  | 25.21 | Sheila Morton
+2010 | F | train-clean-360  | 21.53 | Julie Bynum
+2012 | M | train-clean-360  | 25.20 | jburby
+2013 | M | train-other-500  | 30.05 | Mark
+2021 | M | train-other-500  | 30.04 | Keri Ford
+2026 | F | train-other-500  | 29.39 | Mil Nicholson
+2033 | M | test-other       | 10.03 | Filippo Gioachin
+2035 | F | dev-clean        | 8.11  | Sharon Bautista
+2039 | M | train-clean-360  | 25.02 | Anton
+2042 | F | train-other-500  | 29.25 | Charlene V. Smith
+2045 | M | train-clean-360  | 24.96 | David O'Connell
+2046 | M | train-other-500  | 19.01 | kyleti
+2050 | F | train-other-500  | 28.21 | Xe Sands
+2051 | M | train-other-500  | 22.13 | Grant Petersen
+2053 | F | train-clean-360  | 25.03 | Vincent Tapia
+2056 | F | train-clean-360  | 22.72 | Nancy Roberts
+2060 | F | train-clean-360  | 25.02 | Julie Pandya
+2061 | F | train-clean-360  | 25.08 | Jodi Krangle
+2062 | F | train-other-500  | 30.25 | Mindy H
+2063 | M | train-other-500  | 22.02 | hearhis
+2067 | M | train-other-500  | 30.15 | Nick Gisburne
+2068 | F | train-other-500  | 14.75 | Priya, India
+2074 | M | train-clean-360  | 25.06 | Tysto
+2078 | M | dev-clean        | 8.03  | Kathy Caver
+2085 | F | train-clean-360  | 25.09 | Stephanie Dupal-Demartin
+2086 | M | dev-clean        | 8.04  | Nicodemus
+2089 | F | train-other-500  | 30.14 | Martina
+2090 | F | train-other-500  | 26.41 | Melissa
+2092 | F | train-clean-100  | 25.10 | Elaine Hamby
+2093 | M | train-clean-360  | 25.11 | RK Wilcox
+2094 | F | test-clean       | 8.09  | amycsj
+2096 | M | train-other-500  | 15.93 | Nick Marsh
+2100 | F | train-other-500  | 26.76 | Katherine Holt
+2104 | M | train-other-500  | 29.52 | R. S. Steinberg
+2110 | M | train-clean-360  | 25.09 | Aaron Elliott
+2113 | M | train-clean-360  | 24.66 | Andrew Vidal
+2122 | M | train-other-500  | 10.61 | Kenneth R. Morefield
+2127 | M | train-clean-360  | 20.16 | wrongshore
+2133 | M | train-other-500  | 28.63 | Mat Messerschmidt
+2136 | M | train-clean-100  | 25.18 | Great Plains
+2137 | M | train-clean-360  | 25.02 | Jerome Lawsen
+2140 | M | train-other-500  | 27.77 | Ralph Snelson
+2143 | F | train-other-500  | 15.47 | Cat Schirf
+2146 | M | train-clean-360  | 4.89  | Jeff Stuckey
+2148 | F | train-other-500  | 30.17 | BethAnne
+2149 | M | train-clean-360  | 23.08 | Mark Penfold
+2152 | F | train-other-500  | 30.04 | redabrus
+2156 | M | train-clean-360  | 25.18 | Roger Melin
+2159 | M | train-clean-100  | 25.12 | Matthew Westra
+2162 | M | train-clean-360  | 25.10 | Ray Clare
+2167 | M | train-clean-360  | 25.00 | spiderman0521
+2182 | F | train-clean-100  | 25.15 | Susan Umpleby
+2185 | M | train-other-500  | 24.88 | Jonathan Feldman
+2194 | F | train-clean-360  | 25.06 | RobbieRogers
+2195 | M | train-other-500  | 29.06 | Joe Earley
+2196 | F | train-clean-100  | 25.24 | Andrea Fiore
+2198 | M | train-other-500  | 29.82 | Clive Catterall
+2201 | M | train-clean-360  | 25.13 | Stephen Escalera
+2204 | F | train-clean-360  | 25.04 | Pamnache
+2208 | M | train-other-500  | 28.66 | Alan Brown
+2229 | M | train-clean-360  | 21.96 | Pete Williams, Pittsburgh, PA
+2230 | F | train-clean-360  | 25.03 | Isosceles
+2234 | M | train-other-500  | 30.06 | Lars Rolander
+2237 | F | train-other-500  | 23.41 | Chloey Winters
+2238 | M | train-clean-360  | 25.09 | Will Larson
+2240 | M | train-clean-360  | 25.17 | Ralph Volpi
+2246 | M | train-other-500  | 30.11 | RaySee
+2254 | F | train-clean-360  | 25.07 | Heidi Preuss
+2256 | F | train-clean-360  | 25.06 | tamurile
+2262 | M | train-other-500  | 25.53 | Andy
+2269 | F | train-clean-360  | 25.06 | Rhonda Federman
+2270 | F | train-other-500  | 30.08 | Megan Kunkel
+2272 | M | train-clean-360  | 25.18 | Alec Daitsman
+2273 | M | train-other-500  | 22.65 | Peter Kelleher
+2275 | F | train-other-500  | 19.97 | Lori H
+2276 | F | train-other-500  | 30.09 | Andrea
+2277 | F | dev-clean        | 8.01  | zinniz
+2279 | M | train-other-500  | 20.83 | Gilles Lehoux
+2284 | M | train-other-500  | 30.20 | Zapo
+2285 | M | train-clean-360  | 25.16 | Bob Sage
+2288 | F | train-other-500  | 30.13 | Ellis Christoff
+2289 | M | train-clean-100  | 25.08 | David Kleparek
+2292 | M | train-other-500  | 30.17 | Dick Durette
+2294 | M | train-clean-360  | 25.24 | James Christopher
+2297 | F | train-other-500  | 30.20 | Philippa
+2299 | M | train-clean-360  | 25.23 | cpalmer17
+2300 | M | test-clean       | 8.19  | Mitchell L Leopard
+2301 | F | train-other-500  | 30.09 | Chris Jones
+2309 | M | train-other-500  | 30.03 | Wyatt
+2312 | F | train-other-500  | 30.22 | Lucy Lo Faro
+2319 | M | train-clean-360  | 25.21 | Jack Farrell
+2334 | M | train-clean-360  | 25.03 | David Lipa
+2339 | F | train-other-500  | 30.09 | skellie
+2341 | M | train-other-500  | 30.04 | webround
+2346 | F | train-other-500  | 17.91 | FirstKnight
+2348 | F | train-clean-360  | 22.53 | KellyLC
+2351 | F | train-other-500  | 30.08 | hugoceline
+2356 | M | train-other-500  | 30.20 | Paul Curran
+2361 | F | train-other-500  | 30.24 | M. J. Boyle
+2364 | F | train-clean-360  | 23.86 | Anna-Maria Viola
+2368 | M | train-clean-360  | 25.08 | Alex C. Telander
+2374 | F | train-other-500  | 21.75 | M.C.Y.
+2380 | M | train-other-500  | 17.00 | Jacob Cherry
+2384 | M | train-clean-100  | 20.21 | Ger
+2388 | M | train-clean-360  | 25.01 | Greg Bell
+2391 | F | train-clean-100  | 24.54 | treefingers
+2393 | M | train-clean-360  | 22.63 | Michael Bradford
+2397 | M | train-clean-360  | 25.14 | texttalker
+2401 | F | train-clean-360  | 21.95 | Matt Warzel
+2404 | M | train-clean-360  | 25.21 | n8evv
+2405 | M | train-other-500  | 30.11 | musil
+2407 | M | train-other-500  | 28.95 | ajmacbeth
+2411 | F | train-clean-360  | 25.04 | kristiface
+2412 | F | dev-clean        | 8.06  | calystra
+2414 | M | test-other       | 10.10 | Ashwin Jain
+2416 | F | train-clean-100  | 25.17 | Julia Albath
+2427 | M | train-clean-360  | 25.02 | Ed Meade
+2428 | M | dev-clean        | 8.02  | Stephen Kinford
+2436 | M | train-clean-100  | 25.15 | Seth Adam Sher
+2437 | M | train-other-500  | 21.23 | Wetcoast
+2445 | F | train-other-500  | 13.04 | musici123
+2448 | M | train-other-500  | 23.07 | David Federman
+2473 | M | train-clean-360  | 25.16 | Hoosemon
+2481 | F | train-clean-360  | 25.07 | Alana Jordan
+2485 | F | train-other-500  | 30.03 | Serin
+2487 | F | train-other-500  | 28.17 | Rachel Lintern
+2488 | F | train-other-500  | 30.16 | Lisa Wilson
+2491 | M | train-other-500  | 20.67 | johnb
+2494 | M | train-clean-360  | 25.03 | Mark Cawley
+2496 | M | train-other-500  | 30.10 | Ben Dutton
+2498 | F | train-clean-360  | 25.05 | B. Grebe
+2499 | M | train-clean-360  | 25.14 | Paul Henry Tremblay
+2504 | F | train-other-500  | 14.22 | Helen Elsbeth
+2506 | F | dev-other        | 8.52  | Julie VW
+2512 | F | train-clean-360  | 24.05 | Marion
+2514 | M | train-clean-100  | 25.11 | S. Young
+2517 | M | train-clean-360  | 25.25 | Gayland Darnell
+2518 | M | train-clean-100  | 25.06 | Rob Powell
+2522 | F | train-other-500  | 23.34 | senshisteph
+2526 | M | train-other-500  | 30.09 | Bob Gilham
+2531 | M | train-clean-360  | 25.12 | Greg Weeks
+2532 | F | train-clean-360  | 25.11 | Jennifer Lott
+2533 | M | train-clean-360  | 15.81 | Steven Proctor
+2541 | M | train-other-500  | 30.04 | Eddie Winter
+2544 | F | train-other-500  | 30.02 | Annise
+2545 | M | train-other-500  | 15.29 | the quiet fox
+2552 | M | train-other-500  | 28.82 | Daniel Cranston
+2553 | F | train-other-500  | 30.04 | daisy55
+2562 | M | train-clean-360  | 25.19 | Scott Merrill
+2568 | F | train-other-500  | 30.07 | Elena the Quiet
+2570 | F | train-clean-360  | 25.05 | kindlibrarian
+2573 | F | train-clean-360  | 25.00 | Becca B
+2574 | M | train-other-500  | 28.34 | TimSC
+2577 | F | train-clean-360  | 25.16 | K Hindall
+2581 | F | train-clean-360  | 25.12 | Julie Levi
+2582 | F | train-clean-360  | 25.16 | dolce
+2587 | F | train-other-500  | 30.13 | Anne Cheng
+2588 | M | train-other-500  | 26.44 | Padraig O'hIceadha
+2589 | M | train-clean-360  | 25.04 | Jordan
+2592 | F | train-clean-360  | 20.82 | Anna Roberts
+2598 | F | train-clean-360  | 23.05 | Barbara Bulkeley
+2606 | M | train-other-500  | 30.16 | Marc Tanti
+2607 | F | train-other-500  | 30.11 | Ruth Golding
+2609 | M | test-other       | 10.10 | Ian Hatley
+2618 | M | train-clean-360  | 24.51 | Phil Surette
+2624 | M | train-other-500  | 30.05 | David Nicol
+2625 | F | train-other-500  | 20.53 | Auntie Em
+2628 | M | train-clean-360  | 25.22 | Zloot
+2638 | F | train-clean-360  | 25.02 | Dawn
+2652 | F | train-clean-360  | 15.01 | MixieArmadillo
+2654 | M | train-clean-360  | 16.45 | Notelrac
+2660 | M | train-other-500  | 30.01 | mpetranech
+2671 | F | train-other-500  | 21.49 | Foreign Girl
+2673 | M | train-clean-360  | 25.06 | jude kaider
+2674 | M | train-clean-360  | 24.32 | Jason Procopio
+2676 | F | train-other-500  | 27.44 | missizii
+2688 | M | train-clean-360  | 25.15 | Christopher Jennings
+2691 | F | train-clean-100  | 25.16 | Donna Stewart
+2694 | F | train-other-500  | 29.43 | DianaJMB
+2696 | M | train-clean-360  | 15.92 | anonymous
+2709 | F | train-clean-360  | 17.49 | PopularOutcast
+2712 | F | train-other-500  | 27.11 | anoldfashiongirl
+2724 | M | train-other-500  | 20.73 | Michael Dalling
+2730 | F | train-other-500  | 24.25 | Shirley Anderson
+2733 | M | train-other-500  | 15.37 | CalmDragon
+2735 | F | train-other-500  | 14.04 | ASchindler
+2740 | M | train-other-500  | 22.19 | Tony Ashworth
+2741 | F | train-clean-360  | 25.21 | Jan Dawn Doronila
+2748 | F | train-other-500  | 24.78 | Annoying Twit
+2751 | F | train-clean-360  | 24.39 | Angela Kelley
+2754 | F | train-other-500  | 30.12 | peaceuntoyou
+2758 | F | train-clean-360  | 25.19 | SopranoHarmony
+2762 | F | train-other-500  | 30.01 | Phillipa Chantry
+2764 | F | train-clean-100  | 25.19 | Piper Hale
+2769 | M | train-clean-360  | 25.25 | Anthony Wilson
+2774 | M | train-clean-360  | 25.14 | William Kevin Manire
+2775 | F | train-clean-360  | 25.17 | ink tree
+2785 | F | train-clean-360  | 25.23 | humeangel
+2787 | M | train-clean-360  | 19.66 | Quentin Manuel
+2790 | F | train-clean-360  | 25.09 | Victoria Slonosky
+2792 | F | train-other-500  | 30.16 | Varra Unreal
+2803 | M | dev-clean        | 8.20  | aquielisunari
+2812 | M | train-clean-360  | 14.63 | Greg Hartley
+2815 | M | train-clean-360  | 15.98 | Michael Sample
+2816 | M | train-clean-360  | 25.19 | Andrew Symons
+2817 | F | train-clean-100  | 25.14 | Catherine Millward
+2823 | M | train-clean-360  | 18.78 | ChrisC
+2825 | M | train-other-500  | 30.02 | Ernst Pattynama
+2827 | M | train-clean-360  | 21.49 | David Leeson
+2830 | M | test-clean       | 8.04  | Tim Perkins
+2834 | F | train-other-500  | 30.02 | Ksushi
+2836 | F | train-clean-100  | 25.12 | Linda McDaniel
+2843 | M | train-clean-100  | 25.18 | ricell
+2853 | F | train-clean-360  | 25.00 | Jane Greensmith
+2854 | M | train-other-500  | 30.25 | Andrew Coleman
+2882 | F | train-clean-360  | 23.84 | ayngelwing
+2893 | M | train-clean-100  | 24.41 | Ryan Sutter
+2895 | F | train-other-500  | 24.14 | Jenny Lundak
+2902 | M | dev-clean        | 8.10  | dexter
+2909 | F | train-other-500  | 30.13 | Petra
+2910 | F | train-clean-100  | 22.33 | Janna
+2911 | M | train-clean-100  | 25.10 | David Lawrence
+2919 | F | train-other-500  | 30.17 | Raerity
+2920 | F | train-clean-360  | 25.18 | Rechelle
+2925 | F | train-other-500  | 26.47 | Darla
+2929 | M | train-clean-360  | 25.15 | Topaz
+2930 | M | train-other-500  | 20.36 | BUAES
+2943 | F | train-other-500  | 30.09 | Sarah Gutierrez
+2946 | M | train-other-500  | 19.68 | Markus Wachenheim
+2952 | M | train-clean-100  | 25.02 | Scott Carpenter
+2960 | M | train-clean-360  | 25.03 | Scotty
+2961 | F | test-clean       | 8.07  | Leni
+2967 | F | train-other-500  | 30.26 | Landii
+2971 | M | train-clean-360  | 25.01 | Matthew C. Heckel
+2975 | F | train-other-500  | 26.46 | Sarafina Suransky
+2979 | F | train-other-500  | 18.85 | Jilliane Brandt
+2985 | M | train-other-500  | 21.98 | Cantor
+2988 | F | train-other-500  | 30.16 | Larissa Little
+2989 | F | train-clean-100  | 25.21 | Jamie Strassenburg, Cypress, California
+2990 | M | train-other-500  | 30.07 | Tom Crawford
+2992 | M | train-clean-360  | 24.13 | davechase
+2997 | F | train-other-500  | 30.26 | Violet
+2998 | M | train-other-500  | 30.04 | Kim Jansen
+2999 | M | train-clean-360  | 25.16 | Joseph Finkberg
+3000 | M | dev-clean        | 8.03  | Brian von Dedenroth
+3001 | F | train-clean-360  | 21.97 | priscilla hewitt
+3003 | F | train-clean-360  | 25.09 | Sue Anderson
+3005 | M | test-other       | 10.04 | Ken Tischler
+3006 | F | train-other-500  | 30.14 | MorganScorpion
+3008 | F | train-clean-360  | 25.17 | Gloria Zbilicki
+3009 | M | train-clean-360  | 25.00 | Jim Ruddy
+3020 | M | train-other-500  | 30.07 | Mike Vendetti
+3021 | M | train-other-500  | 29.27 | leetcr
+3025 | F | train-clean-360  | 25.07 | MichelleHarris
+3032 | M | train-clean-360  | 25.10 | Utek
+3033 | F | train-other-500  | 30.09 | valli
+3045 | M | train-other-500  | 27.99 | Cameron Conaway
+3046 | F | train-clean-360  | 25.21 | Stephanie Land
+3053 | F | train-other-500  | 20.98 | Tracy Yonemoto
+3054 | M | train-other-500  | 23.13 | GerryR
+3060 | M | train-other-500  | 26.15 | Didier
+3063 | M | train-other-500  | 25.29 | markman
+3070 | M | train-clean-360  | 25.15 | Mike Schwabe
+3072 | M | train-clean-360  | 25.05 | Chris Amos
+3079 | F | train-other-500  | 7.10  | nivedita
+3080 | F | test-other       | 10.13 | breathe
+3081 | F | dev-clean        | 8.00  | Renata
+3082 | M | train-clean-360  | 17.05 | Logan McCamon
+3083 | F | train-clean-360  | 25.06 | Emily Jarmard
+3088 | M | train-other-500  | 14.21 | Sean O'Hara
+3090 | F | train-other-500  | 22.39 | kelcymx
+3092 | F | train-clean-360  | 25.06 | Maggie Russell
+3094 | F | train-clean-360  | 25.10 | moe
+3097 | M | train-other-500  | 28.71 | nitram
+3098 | M | train-other-500  | 28.85 | woggy298
+3100 | M | train-other-500  | 29.56 | David Higham
+3105 | M | train-clean-360  | 25.20 | gfairch511
+3109 | M | train-other-500  | 30.20 | Diogenes Dog
+3112 | F | train-clean-100  | 25.08 | Jessica Louise
+3114 | M | train-clean-360  | 25.04 | Geoffrey Edwards
+3118 | M | train-clean-360  | 25.06 | George Yeager
+3119 | F | train-clean-360  | 25.18 | Sharon Riskedahl
+3125 | F | train-other-500  | 30.23 | Fran
+3132 | M | train-other-500  | 29.97 | Andy Yu
+3135 | M | train-other-500  | 20.03 | Steve Foreman
+3137 | M | train-other-500  | 20.23 | Parrot
+3138 | F | train-other-500  | 3.53  | Labyrinth Composer
+3142 | M | train-other-500  | 15.12 | RogerA
+3143 | F | train-other-500  | 23.59 | suzanne
+3144 | M | train-other-500  | 30.01 | jfmarchini
+3148 | M | train-other-500  | 18.41 | artos
+3157 | F | train-clean-360  | 25.05 | TriciaG
+3168 | M | train-clean-100  | 23.90 | David Anton
+3170 | M | dev-clean        | 8.10  | VOICEGUY
+3171 | M | train-clean-360  | 25.11 | JoeD
+3172 | F | train-other-500  | 29.24 | Beatrice
+3179 | F | train-other-500  | 26.80 | Robin
+3180 | M | train-clean-360  | 25.01 | Mike Conrad
+3185 | M | train-clean-360  | 25.02 | JohnNewman
+3187 | M | train-clean-360  | 24.32 | Wasichu
+3192 | M | train-other-500  | 30.07 | Arfuhrm
+3196 | F | train-other-500  | 30.19 | Elizabeth Harker
+3214 | M | train-clean-100  | 25.08 | fourteatoo
+3215 | F | train-clean-360  | 25.02 | Shirley Ellen
+3221 | M | train-clean-360  | 25.12 | David Schoepf
+3224 | F | train-clean-360  | 25.19 | Acacia Wood
+3227 | F | train-other-500  | 17.26 | Betina
+3228 | F | train-clean-360  | 25.01 | Benuathanasia
+3230 | M | train-clean-360  | 25.13 | rasputin
+3235 | F | train-clean-100  | 24.94 | Karen Commins
+3238 | M | train-other-500  | 19.07 | nihilist00
+3240 | M | train-clean-100  | 25.09 | flakker
+3242 | M | train-clean-100  | 25.03 | peac
+3244 | F | train-other-500  | 30.09 | wilwarin
+3245 | F | train-other-500  | 30.10 | wendy
+3257 | M | train-other-500  | 30.17 | Jay Vance
+3258 | F | train-clean-360  | 23.50 | mwalimu
+3259 | F | train-clean-100  | 25.19 | Kate West
+3261 | M | train-other-500  | 16.03 | fourgrays
+3268 | M | train-other-500  | 30.06 | Patrick McHaffie
+3271 | M | train-other-500  | 19.99 | Ancient mariner
+3272 | M | train-other-500  | 19.89 | Matthew_J_Almeida
+3274 | M | train-clean-360  | 25.26 | Morgan Saletta
+3285 | M | train-other-500  | 30.03 | David Collins
+3288 | M | train-other-500  | 30.09 | Euan Bayliss
+3289 | M | train-clean-360  | 25.06 | lukeprog
+3290 | F | train-other-500  | 29.75 | Marian Martin
+3294 | F | train-clean-360  | 19.45 | Marcy Fraser
+3307 | M | train-clean-360  | 25.06 | Doug Allison
+3314 | F | train-other-500  | 30.14 | Carol Stripling
+3318 | F | train-other-500  | 30.19 | Magdalena
+3319 | F | train-other-500  | 28.56 | mjbrichant
+3328 | M | train-clean-360  | 25.16 | Al Dano
+3330 | F | train-clean-360  | 25.10 | B. G. Oxford
+3331 | F | test-other       | 10.08 | Peggy
+3334 | F | train-other-500  | 14.57 | joi
+3340 | M | train-clean-360  | 25.12 | Preston McConkie
+3346 | F | train-other-500  | 30.03 | Hannah Dowell
+3347 | F | train-clean-360  | 25.23 | tornadogrrrl
+3356 | F | train-other-500  | 20.03 | Diana Solomon
+3357 | F | train-clean-360  | 24.37 | swade
+3361 | F | train-clean-360  | 25.19 | Linda Lee Paquet
+3368 | M | train-clean-360  | 25.19 | Jim Allman
+3370 | M | train-clean-360  | 25.16 | Glenn Simonsen
+3373 | M | train-other-500  | 18.98 | cvd
+3374 | M | train-clean-100  | 25.17 | Craig Campbell
+3379 | F | train-clean-360  | 25.09 | Kele
+3380 | F | train-clean-360  | 25.06 | DrBeccaAnne
+3381 | M | train-other-500  | 2.99  | Cagliostro
+3389 | M | train-clean-360  | 25.25 | von
+3394 | F | train-other-500  | 30.03 | Jackie Provau
+3400 | F | train-other-500  | 17.98 | Laura Davis
+3409 | F | train-other-500  | 30.24 | Philippa Brodie
+3411 | F | train-other-500  | 28.43 | SuD
+3417 | M | train-other-500  | 17.97 | Albatross
+3433 | M | train-other-500  | 30.24 | Bob Sherman
+3436 | M | train-clean-100  | 25.25 | Anders Lankford
+3440 | F | train-clean-100  | 25.18 | Heidi Will
+3446 | F | train-clean-360  | 25.24 | kayo
+3448 | M | train-clean-360  | 25.24 | Todd Lennon
+3465 | F | train-other-500  | 29.59 | ravenotation
+3467 | F | train-other-500  | 30.23 | js392
+3470 | M | train-other-500  | 30.11 | Jason Mills
+3479 | F | train-other-500  | 30.09 | Karan Yamada
+3482 | F | train-clean-360  | 25.22 | Hayden
+3483 | M | train-clean-360  | 25.20 | Alan Winterrowd
+3486 | M | train-clean-100  | 25.08 | Robin Balmer
+3488 | M | train-other-500  | 17.57 | Tom Weiss
+3490 | M | train-clean-360  | 25.10 | Gregg Margarite (1957-2012)
+3493 | F | train-clean-360  | 21.49 | Gail Mattern
+3500 | F | train-other-500  | 28.86 | B. Treadgold
+3503 | M | train-other-500  | 28.15 | Christian Al-Kadi
+3513 | F | train-clean-360  | 25.01 | Symmie
+3521 | M | train-clean-360  | 25.07 | NickNumber
+3526 | F | train-clean-100  | 25.18 | Bereni
+3528 | F | test-other       | 10.26 | minimoose83
+3536 | F | dev-clean        | 8.15  | Arielle Lipshaw
+3537 | F | train-clean-360  | 25.10 | Tracy Datlen
+3538 | F | test-other       | 10.03 | Wyndelyn
+3540 | M | train-clean-360  | 24.55 | Bill Ruhsam
+3541 | M | train-other-500  | 30.14 | Termin Dyan
+3546 | F | train-clean-360  | 25.21 | Jeannie
+3547 | M | train-other-500  | 30.11 | BenW
+3549 | F | train-clean-360  | 25.05 | Katie Riley
+3551 | F | train-clean-360  | 25.10 | Annie Kirkpatrick
+3553 | M | train-other-500  | 25.03 | Luc Kordas
+3554 | F | train-other-500  | 30.06 | LaraC, Louisville, KY
+3557 | F | train-other-500  | 30.08 | Rachel Triska
+3559 | F | train-other-500  | 30.06 | Kerry Hiles
+3564 | F | train-other-500  | 24.04 | Vanessa
+3567 | M | train-other-500  | 30.12 | David Lazarus
+3570 | F | test-clean       | 8.05  | sarac
+3571 | M | train-other-500  | 23.68 | HarryInk
+3575 | F | test-clean       | 8.06  | supergirl
+3576 | F | dev-clean        | 8.00  | JudyGibson
+3584 | F | train-clean-360  | 22.30 | Bridget Gaige
+3587 | M | train-other-500  | 25.46 | John Nixon
+3588 | F | train-other-500  | 30.06 | Neeru Iyer
+3592 | M | train-other-500  | 10.77 | Paul McCartan
+3595 | M | train-other-500  | 30.07 | Martin Geeson
+3598 | F | train-other-500  | 26.07 | Dawn
+3606 | M | train-other-500  | 28.34 | Ashwath Ganesan
+3607 | M | train-clean-100  | 22.10 | Richard Wallis
+3615 | F | train-clean-360  | 25.05 | Lucy Perry
+3618 | M | train-other-500  | 26.32 | Timothy Ferguson
+3630 | F | train-clean-360  | 12.45 | Rachel Gatwood
+3638 | F | train-clean-360  | 25.16 | AmyG
+3641 | F | train-other-500  | 25.50 | Joelle Peebles
+3645 | F | train-clean-360  | 25.08 | MaryAnn
+3647 | F | train-other-500  | 30.24 | Channe
+3650 | M | train-other-500  | 23.18 | Jonathan Ross
+3654 | M | train-clean-360  | 25.09 | Mark Wilson
+3656 | M | train-other-500  | 30.26 | Kai Lu
+3657 | M | train-other-500  | 30.03 | Bellona Times
+3660 | M | dev-other        | 10.26 | Russ Clough
+3663 | F | dev-other        | 10.13 | ppezz
+3664 | M | train-clean-100  | 25.06 | Barry Eads
+3665 | M | train-other-500  | 24.95 | C.J. Casey
+3675 | F | train-other-500  | 26.63 | Linda Ferguson
+3679 | F | train-other-500  | 20.97 | veronasser
+3681 | F | train-other-500  | 30.09 | Ann Boulais
+3686 | M | train-clean-360  | 25.07 | Doug Delisle
+3691 | M | train-other-500  | 29.41 | Hollis Hanover
+3698 | F | train-other-500  | 30.04 | Nadine Eckert-Boulet
+3699 | M | train-clean-100  | 25.15 | Bruce Pirie
+3703 | F | train-clean-360  | 25.06 | Linda Andrus
+3717 | M | train-clean-360  | 25.09 | Elliott Miller
+3723 | M | train-clean-100  | 25.07 | Kevin Lavin
+3728 | F | train-clean-360  | 25.17 | amycs
+3729 | F | test-clean       | 8.03  | Heather Hogan
+3733 | F | train-clean-360  | 25.01 | Melanie Schleeter McCalmont
+3738 | F | train-clean-360  | 25.01 | Collee McKinnon
+3744 | M | train-other-500  | 28.62 | Jonathan Burchard
+3747 | M | train-other-500  | 15.39 | Keith Henige
+3752 | M | dev-clean        | 8.06  | Mark Welch
+3757 | F | train-other-500  | 18.90 | EmAllise
+3764 | F | test-other       | 10.12 | Gabrielle Lambrick
+3779 | F | train-other-500  | 30.11 | Rachel Steely
+3780 | M | train-other-500  | 29.90 | Pete
+3781 | F | train-clean-360  | 25.02 | Celena Arter
+3783 | M | train-other-500  | 16.30 | TexasSteve
+3790 | F | train-clean-360  | 25.10 | hpark
+3792 | M | train-clean-360  | 16.38 | Brian Keith Barnes
+3793 | M | train-other-500  | 30.18 | Nathan
+3796 | M | train-other-500  | 26.72 | Mario Pineda
+3798 | F | train-other-500  | 30.22 | Bianca Kramer
+3807 | M | train-clean-100  | 22.31 | Jesse Noar
+3816 | F | train-clean-360  | 25.05 | Bev J Stevens
+3819 | M | train-other-500  | 30.04 | StarrDog
+3825 | M | train-clean-360  | 17.60 | Matt Wills
+3830 | M | train-clean-100  | 24.01 | rymd80
+3835 | M | train-clean-360  | 18.92 | M.White
+3843 | F | train-other-500  | 30.16 | storm
+3845 | M | train-other-500  | 30.22 | Ray Smith
+3848 | F | train-other-500  | 28.82 | skoval
+3851 | F | train-clean-360  | 25.26 | mbousquet
+3852 | F | train-clean-360  | 22.37 | selniff
+3853 | F | dev-clean        | 8.05  | M. Bertke
+3857 | M | train-clean-100  | 25.17 | Epistomolus
+3864 | M | train-clean-360  | 24.20 | Tom Watts
+3866 | M | train-clean-360  | 25.12 | SilverG
+3867 | F | train-other-500  | 28.37 | Roberta Carlisle
+3869 | M | train-clean-360  | 25.02 | Timothy Pinkham
+3871 | M | train-other-500  | 29.98 | Figura
+3876 | F | train-clean-360  | 25.03 | Frances Marcinkiewicz
+3879 | F | train-clean-100  | 25.10 | Keneva
+3885 | F | train-other-500  | 24.69 | Elli
+3889 | F | train-clean-360  | 25.07 | Alina
+3894 | M | train-other-500  | 18.14 | Indy Gosal
+3895 | M | train-other-500  | 13.98 | porlob
+3896 | M | train-other-500  | 30.23 | Will Zufall
+3905 | F | train-clean-360  | 23.23 | J. Rebecca Franklin
+3906 | F | train-other-500  | 30.04 | tabithat
+3909 | F | train-other-500  | 30.03 | Evelyn Clarke
+3911 | F | train-other-500  | 18.56 | Joseph Couves
+3912 | M | train-other-500  | 30.18 | Bob Neufeld
+3914 | M | train-clean-360  | 25.22 | Rob James
+3915 | F | dev-other        | 10.32 | JenniferW
+3922 | F | train-clean-360  | 25.20 | Ashley Candland
+3923 | M | train-clean-360  | 25.10 | Sean Michael Hogan
+3925 | F | train-other-500  | 14.78 | Viglione
+3926 | F | train-other-500  | 29.85 | Denise Lacey
+3927 | M | train-clean-360  | 25.16 | Bob Stretch
+3928 | F | train-other-500  | 30.11 | Marianne Coleman-Hipkins
+3934 | F | train-other-500  | 21.35 | Lynne Carroll
+3945 | M | train-clean-360  | 22.57 | Floyd Wilde
+3947 | F | train-clean-100  | 22.43 | johnell
+3955 | M | train-other-500  | 24.95 | Fredrik Karlsson
+3959 | M | train-other-500  | 30.24 | rjhargrav
+3962 | M | train-other-500  | 25.43 | writerboyontour
+3967 | F | train-clean-360  | 21.86 | Christine Dufour
+3969 | F | train-other-500  | 30.01 | CM Slosson
+3972 | F | train-clean-360  | 25.07 | Joy Easton
+3977 | M | train-clean-360  | 25.11 | LivelyHive
+3979 | F | train-clean-360  | 25.14 | Dale A. Bade
+3982 | F | train-clean-100  | 25.07 | Kate Adams
+3983 | F | train-clean-100  | 25.01 | lavocedorata
+3989 | M | train-clean-360  | 25.06 | Rayne
+3990 | F | train-other-500  | 28.44 | Jessi
+3992 | F | train-other-500  | 30.24 | perpetualdreamworld
+3994 | F | train-clean-360  | 25.09 | Miriam Esther Goldman
+3997 | F | test-other       | 10.31 | Sophia Choi
+4005 | F | train-other-500  | 30.14 | Jhiu
+4009 | F | train-other-500  | 29.26 | Diana Majlinger
+4010 | M | train-clean-360  | 25.19 | David Baldwin
+4013 | M | train-clean-360  | 25.14 | Kevin Maxson
+4014 | M | train-clean-100  | 25.20 | Tom Clifton
+4015 | M | train-other-500  | 30.01 | JimOCR
+4017 | M | train-other-500  | 28.96 | gsolgaard
+4018 | M | train-clean-100  | 25.17 | Nicholas Clifford
+4019 | M | train-other-500  | 27.31 | brrrrrr6
+4020 | M | train-other-500  | 17.91 | Linda
+4021 | F | train-other-500  | 30.21 | Linda Woods
+4034 | F | train-other-500  | 30.24 | Sienna
+4039 | M | train-clean-360  | 25.15 | Shawn Craig Smith
+4042 | M | train-other-500  | 30.02 | Ryan DeRamos
+4044 | F | train-clean-360  | 23.50 | serenitylee
+4051 | F | train-clean-100  | 25.14 | Liz Devens
+4054 | M | train-clean-360  | 15.16 | Ryan Gubele
+4057 | F | train-clean-360  | 25.26 | RoseA
+4059 | M | train-other-500  | 29.84 | Troy Bond
+4063 | F | train-other-500  | 16.23 | Abigail Bartels
+4064 | F | train-clean-360  | 25.12 | Margaret Espaillat
+4071 | F | train-clean-360  | 25.04 | Nichelle von Lauder
+4077 | M | test-clean       | 8.14  | Nathan Markham
+4078 | M | train-other-500  | 21.58 | Richard Kilmer
+4085 | M | train-other-500  | 18.85 | Paul P Miller
+4088 | F | train-clean-100  | 25.15 | Blazin48
+4090 | F | train-other-500  | 25.53 | madmouth
+4098 | F | train-clean-360  | 25.04 | Rachell Lovett
+4104 | F | train-other-500  | 28.44 | Linda Dodge
+4108 | M | train-clean-360  | 25.21 | garymacf
+4110 | M | train-clean-360  | 25.18 | Richard Ellwood
+4111 | F | train-clean-360  | 25.07 | Rachel P.
+4116 | F | train-clean-360  | 25.06 | Amy Benton
+4122 | M | train-other-500  | 29.44 | Wendel Topper
+4133 | M | train-clean-360  | 24.12 | BigStory
+4137 | F | train-clean-100  | 24.92 | Sarah LuAnn
+4138 | F | train-clean-360  | 21.69 | daltongirl
+4145 | F | train-clean-360  | 25.20 | Patti Cunningham
+4148 | M | train-clean-360  | 25.18 | David A. Moore.
+4152 | M | train-clean-360  | 25.18 | Ata Khudayberdiev
+4153 | F | dev-other        | 10.01 | Hilara
+4156 | F | train-other-500  | 30.03 | Caroline Shapiro
+4160 | F | train-clean-100  | 25.09 | Rosie
+4161 | M | train-other-500  | 20.59 | Daniel Paashaus
+4172 | M | train-other-500  | 29.53 | Graeme Dunlop
+4174 | F | train-other-500  | 30.01 | Availle
+4179 | M | train-other-500  | 30.18 | Robert Keiper
+4189 | F | train-other-500  | 28.25 | Megan Argo
+4191 | M | train-other-500  | 22.03 | Grant Hurlock
+4192 | F | train-other-500  | 18.59 | MaryModern
+4193 | M | train-other-500  | 30.23 | Ethan Rampton
+4195 | F | train-clean-100  | 25.08 | bj
+4196 | M | train-other-500  | 30.09 | Jim Clevenger
+4198 | M | test-other       | 10.14 | Examinfo
+4205 | M | train-other-500  | 22.17 | psi_mon
+4211 | F | train-other-500  | 27.31 | A. Knight
+4214 | F | train-clean-100  | 17.45 | A. Janelle Risa
+4216 | F | train-other-500  | 30.02 | Hannah Skoonberg
+4217 | M | train-other-500  | 30.06 | Brendan Tannam
+4218 | M | train-other-500  | 29.74 | David Cole
+4222 | F | train-clean-360  | 25.22 | msjodi777
+4225 | F | train-other-500  | 26.78 | gmiteva
+4226 | M | train-clean-360  | 25.12 | Jud Niven
+4234 | F | train-other-500  | 30.02 | laineyben
+4235 | F | train-other-500  | 28.44 | Haylayer Flaga
+4236 | M | train-clean-360  | 16.01 | Nicholas Feulner
+4238 | F | train-clean-360  | 24.09 | Chela
+4243 | M | train-clean-360  | 25.16 | Ian Grae
+4246 | M | train-clean-360  | 15.61 | JLaddJr
+4257 | M | train-clean-360  | 22.42 | garbageman99
+4260 | F | train-clean-360  | 23.54 | Clacas
+4262 | F | train-other-500  | 23.66 | LoraBeth Davis
+4263 | F | train-other-500  | 29.88 | Chelsea Baker
+4267 | M | train-clean-100  | 25.14 | Ric F
+4273 | F | train-other-500  | 13.25 | as101
+4277 | M | train-other-500  | 19.92 | JohanG
+4278 | M | train-clean-360  | 25.07 | smhamon
+4280 | F | train-other-500  | 27.64 | BB
+4289 | F | train-clean-360  | 22.49 | Veronica Jenkins
+4290 | M | train-clean-360  | 25.01 | Joshua Paul Johnson
+4294 | F | test-other       | 10.17 | Jessamy Gloor
+4295 | M | train-other-500  | 30.17 | Slawek
+4297 | F | train-clean-100  | 25.04 | Tina Horning
+4305 | F | train-other-500  | 18.60 | Aspergine
+4310 | F | train-other-500  | 10.29 | grace4him
+4313 | F | train-other-500  | 29.54 | May Low
+4321 | F | train-other-500  | 30.03 | Xenutia
+4323 | F | dev-other        | 10.02 | BookAngel7
+4327 | F | train-other-500  | 30.01 | brokenaltar
+4331 | F | train-clean-360  | 24.77 | Barbara Clements
+4335 | M | train-clean-360  | 21.74 | davidb
+4340 | F | train-clean-100  | 21.97 | kiwafruit
+4344 | M | train-other-500  | 26.88 | Tadhg
+4345 | M | train-other-500  | 23.32 | Richard Schipper
+4350 | M | test-other       | 10.12 | willem
+4352 | F | train-other-500  | 29.82 | Martina Hutchins
+4356 | F | train-clean-360  | 25.07 | Patricia Rutledge
+4358 | M | train-clean-360  | 25.11 | Kim Stich
+4362 | F | train-clean-100  | 25.18 | Michelle Montano
+4363 | F | train-clean-360  | 25.04 | Emily Livingston
+4379 | M | train-other-500  | 30.01 | Scott Dahlem
+4381 | F | train-clean-360  | 6.58  | Denise Resnik
+4396 | F | train-other-500  | 30.07 | Michael Wolf
+4397 | M | train-clean-100  | 25.06 | John Dennison
+4402 | M | train-other-500  | 22.67 | Christopher Sanner
+4406 | M | train-clean-100  | 25.12 | Matthew Scott Surprenant
+4407 | M | train-other-500  | 21.73 | Ted Drury
+4411 | F | train-other-500  | 27.13 | Zarnaz
+4415 | F | train-other-500  | 12.54 | Anita Fleming
+4420 | M | train-other-500  | 23.18 | Steve Lomas
+4422 | F | train-other-500  | 30.05 | Kamna
+4423 | M | train-other-500  | 25.86 | David Dwight
+4425 | M | train-clean-360  | 17.73 | Gary Coy
+4427 | F | train-clean-360  | 25.06 | Lynne Handler
+4428 | M | train-other-500  | 20.43 | Blueoyster101
+4433 | M | train-clean-360  | 12.83 | Ken Sterry
+4434 | F | train-clean-360  | 25.03 | Sarah Nuxoll
+4438 | M | train-clean-360  | 25.00 | Greg W.
+4441 | M | train-clean-100  | 25.06 | William Peck
+4442 | M | train-other-500  | 27.21 | Pep
+4443 | F | train-other-500  | 30.09 | THOVO
+4446 | F | test-clean       | 8.00  | Jen Maxwell
+4447 | M | train-other-500  | 30.14 | Cascades
+4455 | F | train-other-500  | 30.00 | Patrick Wells
+4463 | F | train-other-500  | 29.36 | Cate Mackenzie
+4474 | M | train-other-500  | 28.95 | John L. Clark
+4480 | M | train-other-500  | 30.03 | Iskander Shafikov
+4481 | F | train-clean-100  | 22.56 | margo zinberg
+4484 | M | train-other-500  | 30.23 | Phil Griffiths
+4487 | F | train-other-500  | 30.19 | Nienke
+4490 | F | train-clean-360  | 25.01 | Rachel Weaver
+4492 | F | train-other-500  | 30.11 | P.Hynes
+4495 | M | train-clean-360  | 25.09 | Dillon Stiles
+4507 | F | test-clean       | 8.05  | Rachel Nelson-Smith
+4511 | F | train-other-500  | 25.81 | Jeanie
+4513 | F | train-other-500  | 7.64  | Gabi
+4515 | M | dev-other        | 10.00 | Doug
+4519 | F | train-clean-360  | 22.04 | Mimi Wang
+4520 | F | train-other-500  | 19.56 | Dorlene Kaplan
+4535 | M | train-clean-360  | 24.62 | Brett W. Downey
+4545 | M | train-other-500  | 30.01 | SunshinePaul
+4546 | F | train-other-500  | 30.18 | Estelle Jobson
+4549 | F | train-other-500  | 26.71 | Kristen Zaza
+4563 | F | train-other-500  | 28.02 | Wiebke
+4570 | M | dev-other        | 10.10 | Bill Mosley
+4572 | M | dev-other        | 10.28 | om123
+4576 | F | train-other-500  | 30.22 | Snaefaxi
+4583 | M | train-other-500  | 27.07 | Jersey City Frankie
+4586 | M | train-clean-360  | 25.05 | Chris Caron
+4590 | M | train-clean-360  | 25.22 | Diapadion
+4591 | M | train-other-500  | 23.65 | Robert White
+4592 | F | train-clean-360  | 25.08 | WestWestest
+4594 | M | train-other-500  | 28.76 | mailman61953
+4595 | M | train-clean-360  | 25.13 | Eric Leach
+4598 | F | train-clean-360  | 21.75 | cher0520
+4599 | M | train-other-500  | 15.72 | xibu
+4629 | M | train-clean-360  | 25.21 | Edward W. LaBonte
+4640 | F | train-clean-100  | 25.06 | Karen Mason
+4652 | F | train-other-500  | 9.07  | Savanna Herrold
+4659 | M | train-other-500  | 30.00 | Stephen Marsh
+4660 | F | train-other-500  | 30.12 | SusieSA
+4667 | F | train-other-500  | 28.29 | Maria Therese
+4680 | F | train-clean-100  | 25.15 | pachayes
+4681 | M | train-clean-360  | 19.11 | Frank Adams
+4687 | M | train-other-500  | 30.13 | mevans
+4693 | M | train-other-500  | 30.25 | Robert Parker
+4697 | F | train-other-500  | 28.58 | Jannie Meisberger
+4699 | M | train-other-500  | 10.43 | Jason Justice
+4701 | M | train-other-500  | 30.11 | CC
+4703 | F | train-other-500  | 24.21 | HurstPP
+4705 | M | train-other-500  | 30.06 | Algy Pug
+4706 | F | train-other-500  | 28.48 | SallyMc
+4710 | M | train-other-500  | 30.18 | David Huston
+4712 | F | train-other-500  | 26.18 | Alisson Veldhuis
+4719 | M | train-clean-360  | 22.99 | M. Craun
+4731 | F | train-clean-360  | 25.27 | Becky Cook
+4733 | M | train-clean-360  | 19.08 | dwegowy
+4734 | M | train-clean-360  | 17.07 | Adib Masumian
+4738 | M | train-other-500  | 29.33 | Leonard Wilson
+4741 | M | train-other-500  | 22.64 | Nullifidian
+4742 | F | train-other-500  | 11.24 | Little Tee
+4744 | F | train-clean-360  | 25.15 | Amy Gramour
+4748 | M | train-other-500  | 30.15 | Dirk Eichhorn
+4750 | M | train-other-500  | 30.12 | Paul Huckerby
+4757 | F | train-other-500  | 10.61 | Grace Dobson
+4766 | F | train-other-500  | 19.73 | Melanie
+4767 | M | train-other-500  | 19.26 | Delysid
+4770 | F | train-clean-360  | 20.50 | Jeanne Luft
+4771 | M | train-other-500  | 21.91 | scrawl
+4773 | F | train-other-500  | 30.04 | Kathryn Lois
+4779 | F | train-other-500  | 30.00 | Angel5
+4788 | M | train-clean-100  | 25.04 | Bill Boerst
+4791 | F | train-other-500  | 30.10 | MelanieMae
+4799 | M | train-other-500  | 29.45 | Matt Judd
+4800 | F | train-clean-360  | 25.14 | Mary Herndon Bell
+4806 | M | train-clean-360  | 16.25 | Jason Ingolfsland
+4807 | F | train-clean-360  | 16.73 | Fuzz
+4813 | M | train-clean-100  | 25.12 | Steve Mattern
+4821 | M | train-other-500  | 17.35 | Zachary Johnson
+4824 | F | train-other-500  | 30.14 | meyerli
+4830 | M | train-clean-100  | 24.05 | George Aalto
+4831 | F | dev-other        | 10.07 | Lisa Meyers
+4836 | M | train-other-500  | 23.06 | Preston Scrape
+4837 | F | train-clean-360  | 21.92 | Sharon Kilmer
+4839 | F | train-clean-360  | 25.06 | Julie K. Rose
+4841 | F | train-other-500  | 26.21 | Haley Pereira
+4846 | F | train-clean-360  | 19.94 | Kathrin Salazar
+4848 | M | train-clean-360  | 25.09 | Dee Wykoff
+4852 | M | test-other       | 10.20 | Arthur Piantadosi
+4853 | F | train-clean-100  | 25.04 | Barbara Derksen
+4854 | M | train-clean-360  | 25.20 | Doctor_wu
+4856 | M | train-clean-360  | 25.04 | Steven Seitel
+4859 | M | train-clean-100  | 20.37 | nathank
+4860 | M | train-clean-360  | 20.58 | Jonah Cummings
+4863 | M | train-other-500  | 30.16 | I M CLIFFORD
+4872 | M | train-other-500  | 30.02 | R E Faust
+4894 | M | train-other-500  | 20.97 | Gary Dzierlenga
+4898 | M | train-clean-100  | 25.11 | greatbasinrain
+4899 | F | train-clean-360  | 25.23 | Theresa L. Downey
+4910 | F | train-other-500  | 21.56 | Amanda Martin Sandino
+4915 | M | train-other-500  | 26.95 | Andrew Bowles
+4926 | F | train-clean-360  | 25.21 | browneyedgirl32382
+4930 | M | train-other-500  | 30.19 | Adrian Levitsky
+4931 | M | train-other-500  | 18.71 | KevS
+4936 | F | train-other-500  | 28.12 | jedopi
+4945 | M | train-clean-360  | 25.07 | Charles RUHE
+4948 | M | train-other-500  | 30.11 | Tom Barron
+4955 | M | train-other-500  | 24.90 | Elwood Mott
+4957 | F | train-clean-360  | 25.06 | P Moscato
+4958 | M | train-other-500  | 16.99 | David P. Sroka
+4959 | F | train-other-500  | 21.22 | Piper Hayes
+4964 | F | train-other-500  | 25.18 | rashada
+4965 | F | train-other-500  | 27.43 | Rachel Craig
+4967 | F | train-clean-360  | 25.02 | Karen
+4969 | M | train-other-500  | 30.07 | Garth Burton
+4970 | F | test-clean       | 8.15  | airandwaters
+4973 | M | train-clean-360  | 25.03 | Michael Lipschultz
+4979 | M | train-other-500  | 22.72 | Eric
+4991 | F | train-other-500  | 28.58 | Jacqueline (Jacqui) Grady
+4992 | F | test-clean       | 8.21  | Joyce Martin
+4993 | M | train-other-500  | 30.22 | BillMac
+5000 | F | train-other-500  | 20.78 | Anna-Lisa Ott
+5002 | M | train-clean-360  | 22.52 | Brendan Stallard
+5005 | F | train-other-500  | 29.27 | pinhsien
+5007 | F | train-clean-360  | 22.98 | Kathleen Nelson
+5009 | M | train-other-500  | 30.12 | Michael Reuss
+5012 | F | train-clean-360  | 25.06 | Morgan Schlicker
+5013 | M | train-other-500  | 25.43 | Joseph Dsouza
+5019 | F | train-other-500  | 29.72 | Sandra Estenson
+5022 | F | train-clean-100  | 25.12 | Kathleen Costa
+5023 | F | train-other-500  | 26.64 | Elizabeth Zaranka
+5029 | F | train-clean-360  | 25.02 | Courtney Sandhu
+5036 | F | train-other-500  | 27.42 | NicolaRuth
+5038 | M | train-other-500  | 30.14 | John Kooz
+5039 | F | train-clean-360  | 25.10 | Inga Parsons
+5043 | M | train-other-500  | 30.25 | edbucks
+5044 | F | train-other-500  | 22.47 | Andrea Keene
+5045 | F | train-other-500  | 30.24 | Mounica
+5049 | M | train-clean-100  | 25.08 | Bradley Smith
+5054 | F | train-clean-360  | 25.13 | Denice Stradling
+5060 | F | train-other-500  | 30.03 | Linda Moreau
+5062 | F | train-clean-360  | 25.09 | E Ogston
+5063 | F | train-clean-360  | 7.96  | susanfrom
+5076 | M | train-other-500  | 30.19 | Jules Hawryluk
+5077 | F | train-other-500  | 30.05 | Sandra G
+5082 | F | train-other-500  | 30.11 | SummerWind
+5092 | M | train-clean-360  | 25.24 | Josh Smith
+5093 | F | train-clean-360  | 25.23 | Nicole Kay
+5101 | F | train-other-500  | 23.83 | E.Lee
+5104 | M | train-clean-100  | 25.03 | Chuck Burke
+5105 | M | test-clean       | 8.12  | elongman
+5115 | F | train-clean-360  | 25.01 | Terry Goodyer
+5118 | M | train-other-500  | 30.13 | klbonds
+5123 | M | train-clean-360  | 25.11 | wvthcomp
+5126 | M | train-clean-360  | 25.06 | Tom Lennon
+5132 | M | train-other-500  | 25.62 | David Stryker
+5133 | F | train-clean-360  | 25.04 | Jo Karabasz
+5136 | F | train-other-500  | 30.21 | Felicity C
+5139 | F | train-clean-360  | 25.16 | Katine
+5141 | M | train-other-500  | 30.17 | David Goldfarb
+5142 | F | test-clean       | 8.07  | Mary Ballard-Johansson
+5147 | M | train-clean-360  | 25.04 | Cody2
+5152 | M | train-other-500  | 30.02 | Liam Neely
+5154 | F | train-clean-360  | 22.28 | Danarra
+5157 | M | train-clean-360  | 25.25 | drewmac
+5163 | F | train-clean-100  | 23.57 | LilyAnne
+5164 | F | train-other-500  | 30.09 | Vsilverlining
+5172 | M | train-other-500  | 15.94 | Equilibrium33
+5181 | M | train-other-500  | 28.26 | Joel Nisbet
+5183 | M | train-other-500  | 30.09 | Kenneth Sergeant Gaghan
+5185 | M | train-other-500  | 27.52 | okei
+5186 | M | train-clean-360  | 25.00 | Brendan Brown
+5189 | M | train-clean-360  | 25.25 | Samanem
+5190 | M | train-clean-360  | 25.15 | Rom Maczka
+5192 | M | train-clean-100  | 24.14 | Jason Esteves
+5198 | M | train-other-500  | 25.89 | Brian
+5199 | F | train-other-500  | 21.67 | Diana Fast
+5206 | M | train-clean-360  | 25.07 | Simon Dexter
+5217 | F | train-other-500  | 4.25  | Anqi Wang
+5220 | F | train-other-500  | 30.03 | Mary Schneider
+5224 | M | train-other-500  | 29.58 | Matt Soar
+5230 | F | train-other-500  | 26.89 | Aubrey Anne
+5233 | F | train-other-500  | 17.95 | summerdaze
+5239 | M | train-clean-360  | 25.05 | compozr
+5242 | M | train-clean-360  | 22.52 | Michael Monhollon
+5244 | F | train-other-500  | 29.49 | Carolin Ksr
+5245 | M | train-other-500  | 26.36 | Dymmesdale
+5246 | M | train-clean-360  | 22.77 | Mike Bloomfield
+5248 | M | train-other-500  | 30.23 | Don Stirno
+5252 | M | train-other-500  | 30.14 | Michael Deng
+5261 | M | train-clean-360  | 25.14 | Ali Kazerani
+5266 | F | train-clean-360  | 23.87 | Jill
+5269 | F | train-other-500  | 4.84  | Elizabeth Barr
+5271 | F | train-other-500  | 24.92 | Amanda
+5278 | M | train-other-500  | 29.66 | Mike Harris
+5280 | M | train-other-500  | 30.05 | penboy7000
+5285 | F | train-other-500  | 30.07 | Sweetlilbirdy
+5287 | F | train-other-500  | 23.96 | adsum iam
+5290 | F | train-clean-360  | 25.04 | Natalie
+5293 | M | train-clean-360  | 21.97 | Ned Troxel
+5296 | F | train-other-500  | 22.97 | Joselyn Hasty
+5299 | F | train-other-500  | 28.69 | Becky Doughty
+5304 | M | train-clean-360  | 21.08 | Don W. Jenkins
+5319 | M | train-clean-360  | 25.13 | Guero
+5321 | M | train-other-500  | 29.97 | Adam Whybray
+5322 | M | train-clean-100  | 25.03 | Jay Bidal
+5325 | M | train-other-500  | 18.83 | Rory Lawton
+5328 | M | train-other-500  | 28.14 | Nathan Jordan
+5333 | M | train-clean-360  | 25.07 | Robert Fletcher
+5337 | F | train-clean-360  | 23.43 | Danielle
+5338 | F | dev-clean        | 8.07  | S R Colon
+5339 | F | train-clean-100  | 25.13 | Lauren McCullough
+5340 | F | train-other-500  | 24.25 | Mary-Beth Blackburn
+5350 | F | train-other-500  | 29.53 | Cath Garde
+5355 | F | train-other-500  | 30.17 | Carrie Heyes
+5361 | F | train-other-500  | 28.03 | scarlettraces
+5375 | F | train-other-500  | 28.35 | BumbleVee
+5379 | M | train-other-500  | 24.72 | lennich
+5386 | M | train-clean-360  | 25.16 | Tim Ferreira
+5389 | M | train-clean-360  | 25.03 | Joseph Lawler
+5390 | M | train-clean-100  | 25.20 | Charles Bice
+5393 | F | train-clean-100  | 25.22 | Amy Hengst
+5400 | F | train-clean-360  | 25.25 | Natalie Sullivan
+5401 | M | train-clean-360  | 25.20 | Andrew Nelson
+5405 | F | train-other-500  | 30.08 | Anka
+5412 | F | train-other-500  | 12.44 | tommybascue
+5424 | F | train-other-500  | 30.04 | Julia Niedermaier
+5429 | M | train-other-500  | 25.06 | Dennis Lane Pretoria
+5439 | F | train-other-500  | 30.06 | Laine S.
+5442 | F | test-other       | 10.11 | oneiros81
+5445 | F | train-other-500  | 30.07 | Liz DeLassus
+5448 | M | train-clean-360  | 20.40 | Bryan Reid
+5456 | M | train-clean-100  | 19.77 | e_scarab
+5459 | M | train-other-500  | 16.04 | bryan.peterson
+5460 | M | train-other-500  | 28.84 | Max Lindberg
+5463 | M | train-clean-100  | 25.00 | GLM
+5468 | F | train-other-500  | 30.12 | ashleighjane
+5471 | F | train-other-500  | 27.22 | ElleyKat
+5480 | F | train-other-500  | 30.01 | ESFJ Girl
+5484 | F | test-other       | 10.11 | Nastassia
+5487 | F | train-other-500  | 28.40 | Michaela O'Connor
+5489 | F | train-clean-360  | 22.21 | LizMourant
+5506 | M | train-other-500  | 29.80 | Frank Booker
+5513 | M | train-clean-360  | 23.93 | David Callahan
+5514 | F | train-clean-100  | 17.39 | Ella Jane Quentin
+5519 | M | train-clean-360  | 23.06 | scoutman77
+5536 | M | dev-clean        | 8.13  | David Mix
+5538 | F | train-clean-360  | 25.06 | Linda Velwest
+5543 | F | dev-other        | 10.07 | Anya
+5545 | M | train-other-500  | 30.04 | Gary Olman
+5561 | F | train-clean-100  | 23.86 | Ellen Jones
+5565 | M | train-other-500  | 17.18 | Ken Padgitt
+5567 | M | train-other-500  | 17.50 | BStapley
+5569 | F | train-other-500  | 17.39 | Beth Hitesman
+5570 | F | train-clean-360  | 25.05 | Corinna Schultz
+5583 | F | train-clean-360  | 25.25 | Claudia Wilson
+5588 | F | train-clean-360  | 25.09 | Gail Timmerman Vaughan
+5604 | F | train-clean-360  | 25.05 | kittyandcheese
+5606 | F | train-clean-360  | 25.11 | PrincessG
+5618 | F | train-clean-360  | 25.07 | Shirleyroses
+5620 | M | train-other-500  | 16.40 | jerryB
+5622 | F | train-clean-360  | 25.15 | Roseanne Schmidt
+5628 | M | train-other-500  | 30.02 | Adrian Wheal
+5635 | M | train-clean-360  | 25.07 | Matthew Reece
+5636 | F | train-other-500  | 30.17 | Joyce Couch
+5637 | M | train-clean-360  | 17.23 | Anthony
+5639 | M | test-clean       | 8.28  | Ulf Bjorklund
+5641 | M | train-other-500  | 27.47 | Gerald Peter Morgan
+5649 | F | train-other-500  | 30.08 | hazelra
+5652 | F | train-clean-100  | 25.05 | amicrazy2u
+5653 | F | train-other-500  | 30.06 | Kimberly Anderson
+5655 | F | train-clean-360  | 25.14 | Christine Rodriguez
+5656 | M | train-clean-360  | 25.17 | Joe Mabry
+5660 | F | train-clean-360  | 25.17 | hollz
+5661 | F | train-other-500  | 30.04 | Dianne Lanning
+5665 | F | train-other-500  | 26.45 | Lynda Sizemore
+5671 | F | train-other-500  | 30.11 | Trihypoo
+5672 | M | train-clean-360  | 25.21 | Jacob Paul Starr
+5678 | M | train-clean-100  | 25.10 | jgoffena
+5682 | F | train-other-500  | 30.15 | Lmwong
+5683 | F | test-clean       | 8.01  | Rachael Lapidis
+5684 | F | train-clean-360  | 22.39 | Elsa Youngsteadt
+5688 | F | train-clean-100  | 25.17 | Jennifer Dionne
+5694 | M | dev-clean        | 8.01  | Winston Tharp
+5700 | M | train-other-500  | 30.13 | Paul Adams
+5703 | M | train-clean-100  | 25.10 | Garth Comira
+5712 | F | train-clean-360  | 25.06 | Alexandra Huckabay
+5717 | M | train-clean-360  | 25.14 | Phil Chenevert
+5719 | M | train-other-500  | 27.22 | John Fricker
+5720 | F | train-other-500  | 30.12 | Thelma Meyer
+5723 | F | train-clean-360  | 25.24 | Linda Hogan
+5724 | F | train-clean-360  | 25.01 | paintgirl
+5725 | F | train-other-500  | 26.86 | doublemirrors
+5727 | M | train-clean-360  | 25.25 | JDavidMoore
+5731 | F | train-clean-360  | 25.14 | Andrea Boltz
+5733 | F | train-other-500  | 30.22 | Spinhop
+5735 | F | train-other-500  | 11.45 | Filipa
+5740 | F | train-clean-360  | 25.22 | Alisa
+5746 | M | train-clean-360  | 25.08 | DL Pead
+5750 | M | train-clean-100  | 25.08 | laurencetrask
+5756 | F | train-other-500  | 25.36 | Mich_elle
+5764 | M | test-other       | 10.06 | Herman Roskams
+5765 | M | train-other-500  | 30.20 | A. J. Carroll
+5767 | M | train-clean-360  | 17.85 | taijohn
+5772 | M | train-other-500  | 30.06 | jessecoy
+5776 | M | train-clean-360  | 17.71 | Chris Pauley
+5778 | F | train-clean-100  | 21.81 | Laura Victoria
+5781 | M | train-other-500  | 30.14 | Parrot17
+5784 | M | train-other-500  | 30.01 | Chris Donnelly
+5789 | F | train-clean-100  | 25.16 | Kirsten Wever
+5791 | M | train-other-500  | 30.15 | croudy
+5796 | F | train-other-500  | 30.15 | Linette Geisel
+5802 | M | train-clean-360  | 25.22 | Christopher Maust
+5808 | M | train-clean-100  | 25.16 | jeandelfrio
+5809 | F | train-clean-360  | 25.25 | kattekliek
+5810 | M | train-clean-360  | 25.02 | Patrick Reinhart
+5825 | F | train-other-500  | 30.25 | Vira Denton
+5826 | M | train-other-500  | 30.12 | Phineas Redux
+5831 | F | train-other-500  | 30.20 | Kirsty Leishman
+5837 | F | train-other-500  | 24.19 | Debbie Pieterse
+5840 | M | train-other-500  | 20.88 | Dick Summerfield
+5849 | F | dev-other        | 10.00 | ashleyspence
+5854 | M | train-other-500  | 21.70 | Gabriel Glenn
+5860 | F | train-other-500  | 27.18 | J L Raimundo
+5867 | F | train-clean-100  | 23.63 | Sharon Omi
+5868 | M | train-clean-360  | 25.06 | alwpoe
+5874 | M | train-other-500  | 29.88 | Paul Andrews
+5876 | F | train-clean-360  | 25.15 | kelleywyskiel
+5883 | M | train-clean-360  | 25.03 | Jerry Romero
+5886 | M | train-other-500  | 20.49 | Simon Brown
+5890 | F | train-other-500  | 16.91 | GabrielleC
+5893 | F | train-other-500  | 30.12 | Elizabeth Fiedler
+5894 | M | train-other-500  | 30.01 | Paul Stephens
+5895 | F | dev-clean        | 8.02  | iamartin
+5906 | F | train-other-500  | 29.04 | Lily-LLM
+5909 | M | train-clean-360  | 25.14 | Mark Mickelson
+5910 | M | train-other-500  | 18.31 | Anthony Lee
+5911 | M | train-other-500  | 30.14 | Paul C. Newman
+5913 | M | train-other-500  | 30.24 | dmbrought
+5914 | M | train-clean-360  | 25.14 | bobbybrill
+5918 | M | train-clean-360  | 25.20 | Mike Wajda
+5929 | F | train-other-500  | 27.51 | Gryphon Perkins
+5933 | M | train-other-500  | 27.99 | Barry O'Neill
+5935 | M | train-clean-360  | 25.07 | Mike Okonek
+5940 | M | train-clean-360  | 25.06 | Gargoyle
+5949 | F | train-other-500  | 28.22 | debolee
+5951 | M | train-other-500  | 25.81 | Stevan Simmons
+5952 | F | train-other-500  | 29.66 | sherlock85
+5968 | F | train-clean-360  | 25.05 | Cate Barratt
+5970 | M | train-other-500  | 27.77 | Larry Degala
+5975 | M | train-clean-360  | 25.12 | Tony Maxey
+5977 | M | train-other-500  | 30.18 | Ken Felt
+5979 | M | train-other-500  | 30.12 | Pentti Hirvonen
+5980 | F | train-other-500  | 17.12 | Nichole Thompson
+5983 | F | train-other-500  | 30.15 | Katew
+5984 | F | train-clean-360  | 25.06 | sbburke
+5985 | M | train-clean-360  | 25.01 | James K. White
+5993 | M | train-other-500  | 30.18 | garyday
+6000 | F | train-clean-100  | 18.04 | MissRose
+6003 | M | train-other-500  | 9.91  | sparks0314
+6006 | F | train-clean-360  | 25.16 | Stephanie Lee
+6009 | M | train-other-500  | 30.01 | AVG
+6010 | M | train-other-500  | 30.17 | Ralph Kerwin
+6014 | F | train-clean-360  | 25.09 | Tina Nuzzi
+6019 | M | train-clean-100  | 25.17 | DerekP
+6025 | F | train-other-500  | 29.77 | Lonelle Yoder
+6030 | F | train-other-500  | 30.00 | Shiromi
+6032 | F | train-clean-360  | 25.14 | Beverly Scott
+6035 | M | train-other-500  | 29.45 | Marty Kris
+6037 | M | train-clean-360  | 8.12  | bish
+6038 | F | train-clean-360  | 25.17 | Sirmelja
+6051 | M | train-other-500  | 24.29 | Ric Cornwall
+6054 | F | train-clean-360  | 18.24 | Leslie Stevens Suhy
+6060 | M | train-clean-360  | 22.81 | Jonathan Lange
+6064 | F | train-clean-100  | 25.04 | Deborah Knight
+6065 | M | train-other-500  | 24.49 | David Olson
+6070 | F | test-other       | 10.01 | Saab
+6072 | F | train-other-500  | 24.62 | CrowGirl
+6075 | M | train-clean-360  | 25.08 | Rob Smith
+6076 | M | train-other-500  | 30.03 | Saethram
+6077 | M | train-other-500  | 30.25 | Steve Belleguelle
+6078 | F | train-clean-100  | 25.02 | dobsonfly
+6080 | M | train-clean-360  | 25.18 | progressingamerica
+6081 | M | train-clean-100  | 25.10 | Lazuli
+6082 | F | train-clean-360  | 25.06 | EyeBones
+6084 | M | train-other-500  | 22.16 | Amallen
+6087 | F | train-other-500  | 27.90 | Caroline Driggs
+6088 | F | train-other-500  | 30.12 | burk
+6097 | M | train-other-500  | 30.12 | Phil Benson
+6098 | M | train-clean-360  | 25.07 | Kancamagus
+6099 | F | train-clean-360  | 25.17 | Cheri Gardner
+6102 | F | train-other-500  | 15.61 | Rachel Bossier
+6104 | F | train-clean-360  | 25.15 | Juliana M.
+6106 | F | train-other-500  | 23.92 | Ruth Kidson
+6111 | F | train-other-500  | 30.14 | Jill Preston
+6115 | M | train-clean-360  | 25.10 | MitchHerd
+6119 | M | train-clean-360  | 18.01 | Vinnie Tesla
+6120 | F | train-clean-360  | 24.31 | Terra Mendoza
+6121 | F | train-other-500  | 30.10 | Imagine
+6123 | F | dev-other        | 10.06 | chocmuse
+6126 | M | train-other-500  | 19.22 | David Abbott
+6127 | F | train-other-500  | 30.20 | Andee
+6128 | F | test-other       | 10.13 | Isabelle Brasme
+6131 | F | train-other-500  | 21.84 | Malane
+6135 | F | train-other-500  | 22.88 | Spike Holcomb
+6138 | F | train-other-500  | 30.09 | Deborah Brabyn
+6139 | F | train-clean-360  | 25.08 | Lois C. Johnson
+6145 | F | train-other-500  | 30.07 | Madeleine Brook
+6147 | F | train-clean-100  | 25.05 | Liberty Stump
+6153 | F | train-other-500  | 30.16 | anjieliu
+6157 | M | train-clean-360  | 22.97 | HotConflict
+6159 | M | train-other-500  | 26.45 | Ted Garvin
+6160 | F | train-clean-360  | 17.76 | FaithR
+6167 | F | train-clean-360  | 25.08 | Janet
+6173 | F | train-other-500  | 30.14 | Carol Box
+6177 | M | train-other-500  | 30.02 | wminbru
+6178 | F | train-other-500  | 21.18 | alegriavida
+6181 | M | train-clean-100  | 25.09 | Mike
+6184 | M | train-other-500  | 23.82 | Adam Tomkins
+6188 | F | train-clean-360  | 22.61 | Roxanna Nazari
+6189 | F | train-clean-360  | 23.67 | Shana Cohen
+6196 | M | train-other-500  | 11.75 | Martin Gradwell
+6199 | M | train-other-500  | 30.08 | bobolink
+6206 | F | train-clean-360  | 25.12 | Yvonne Smith
+6209 | M | train-clean-100  | 25.04 | deckerteach
+6211 | F | train-other-500  | 30.18 | Caeliveres
+6215 | F | train-clean-360  | 25.08 | Janet248
+6221 | M | train-other-500  | 22.84 | pwu909
+6224 | M | train-other-500  | 30.16 | dave k
+6227 | F | train-other-500  | 30.05 | EliMarieHK
+6232 | M | train-other-500  | 18.47 | Paul Denton
+6233 | F | train-clean-360  | 25.24 | Gen Jones
+6235 | F | train-clean-360  | 21.98 | ReadWriteLib
+6236 | M | train-other-500  | 29.03 | jcwyatt
+6241 | M | dev-clean        | 8.05  | badey
+6242 | F | train-other-500  | 26.65 | Lucinda Gainey
+6248 | M | train-other-500  | 30.24 | Kevin Green
+6249 | M | train-other-500  | 20.45 | Thomas A. Copeland
+6251 | F | train-other-500  | 30.03 | Theresa Sheridan
+6254 | F | train-other-500  | 19.26 | Chelsea S.
+6258 | M | train-clean-360  | 20.49 | haggisreflux
+6267 | M | dev-other        | 10.06 | Cata
+6269 | M | train-clean-360  | 25.13 | Don Halpert
+6272 | F | train-clean-100  | 25.14 | jlenardon
+6276 | M | train-other-500  | 30.17 | dan_h
+6281 | F | train-other-500  | 16.33 | Beth Thomas
+6284 | F | train-other-500  | 17.71 | cklee
+6286 | F | train-clean-360  | 25.01 | Wendy Almeida
+6288 | F | train-clean-360  | 25.07 | Sunni West
+6294 | M | train-clean-360  | 24.10 | humanode
+6295 | M | dev-clean        | 8.04  | Michael Packard
+6300 | F | train-clean-360  | 25.07 | Sarah Crampton
+6308 | F | train-clean-360  | 23.36 | Easton
+6311 | M | train-other-500  | 21.53 | TRUEBRIT
+6313 | F | dev-clean        | 8.17  | Jennifer Wiginton
+6317 | F | train-clean-360  | 25.20 | Sarah K
+6319 | F | dev-clean        | 8.01  | thestorygirl
+6323 | M | train-other-500  | 18.48 | Caluminium
+6324 | F | train-other-500  | 7.40  | Barbara E. McCarthy
+6330 | M | train-clean-360  | 25.04 | David Cummings
+6332 | F | train-other-500  | 18.50 | Kelli England
+6333 | M | train-other-500  | 29.43 | Max Korlinge
+6339 | F | train-clean-360  | 25.13 | Michelle Remington
+6341 | F | train-clean-360  | 23.72 | Tiffany J. Kim
+6345 | F | dev-clean        | 8.07  | Jean Bascom
+6346 | M | train-other-500  | 13.65 | Matthew Pagan
+6351 | F | train-other-500  | 24.51 | C. L. W. Rollins
+6352 | F | train-clean-360  | 22.96 | stmacduff
+6353 | F | train-other-500  | 30.20 | Jennifer Randall
+6356 | M | train-other-500  | 30.03 | John O
+6358 | F | train-other-500  | 30.24 | selway
+6359 | F | train-clean-360  | 18.27 | Susan Hanfield
+6364 | M | train-other-500  | 30.02 | Todd Ulbrich
+6367 | M | train-clean-100  | 25.04 | Vince Dee
+6368 | M | train-other-500  | 18.20 | Marc Pizzuti
+6370 | M | train-other-500  | 29.53 | Dan Craig
+6371 | F | train-clean-360  | 21.30 | Rebecca King
+6373 | F | train-clean-360  | 25.20 | Sandie Guenther
+6377 | M | train-other-500  | 30.03 | Maxim Babich
+6378 | F | train-clean-360  | 23.17 | Michelle Day
+6385 | F | train-clean-100  | 25.09 | Novella Serena
+6388 | F | train-clean-360  | 23.04 | Leda
+6391 | F | train-other-500  | 15.17 | polkadotish
+6395 | M | train-clean-360  | 25.06 | Richard Carpenter
+6399 | M | train-other-500  | 29.43 | Edmund Bloxam
+6402 | M | train-other-500  | 29.38 | Chiquito Crasto
+6406 | F | train-clean-360  | 21.92 | Abigail Rasmussen
+6407 | M | train-other-500  | 30.06 | AdamH
+6411 | F | train-other-500  | 18.23 | Feyaza
+6415 | F | train-clean-100  | 25.18 | Daryl Wor
+6418 | M | train-other-500  | 30.02 | Iolo Jones
+6426 | F | train-clean-360  | 25.14 | Pat Redstone
+6432 | M | test-other       | 10.02 | Ditchdog
+6436 | M | train-other-500  | 28.84 | Steve Mattingly
+6437 | M | train-clean-100  | 25.09 | John Hoerr
+6446 | M | train-clean-360  | 25.11 | Bob Gonzalez
+6454 | M | train-clean-100  | 25.22 | David Wales
+6455 | F | dev-other        | 7.14  | Betty Chen
+6458 | M | train-clean-360  | 25.05 | Dennis Blake
+6459 | M | train-other-500  | 26.29 | Nigel Boydell
+6467 | M | dev-other        | 10.04 | sid
+6476 | F | train-clean-100  | 25.17 | Viridian
+6482 | M | train-other-500  | 27.01 | Delmar H Dolbier
+6484 | F | train-other-500  | 29.16 | ilianthe
+6488 | F | train-other-500  | 19.83 | Kendall Ashyby
+6492 | M | train-clean-360  | 22.75 | Hugh Gillis
+6494 | M | train-clean-360  | 25.15 | Morey Kunin
+6497 | M | train-clean-360  | 25.04 | James E. Carson
+6499 | M | train-clean-360  | 25.19 | dave7
+6505 | F | train-clean-360  | 25.00 | Elena
+6506 | M | train-other-500  | 23.36 | Tim Quinn
+6509 | F | train-clean-360  | 25.22 | Marianna Foos
+6510 | M | train-clean-360  | 25.05 | JimD
+6512 | M | train-other-500  | 30.26 | mcgovern1934
+6513 | F | train-other-500  | 30.12 | Susan de Raadt
+6518 | F | train-clean-360  | 25.05 | Wayfarer
+6519 | F | train-clean-360  | 25.23 | Monica Knuppe
+6529 | M | train-clean-100  | 25.04 | Fred DeBerardinis
+6531 | F | train-clean-100  | 21.46 | janesandberg
+6533 | M | train-other-500  | 26.88 | drewmore
+6534 | F | train-other-500  | 30.00 | Helen Falconer
+6535 | M | train-other-500  | 13.21 | Ron Altman
+6538 | M | train-clean-360  | 25.19 | Juan Federico
+6539 | M | train-other-500  | 29.19 | David W. Wolfe
+6540 | M | train-other-500  | 28.77 | Craig Gulliver
+6544 | F | train-clean-360  | 25.22 | Amanda Friday
+6548 | F | train-other-500  | 27.26 | Kristin Gjerlw
+6549 | F | train-other-500  | 28.81 | Sandra Luna
+6550 | M | train-clean-360  | 25.07 | elfpen
+6553 | M | train-clean-360  | 25.18 | DublinGothic
+6555 | M | train-clean-360  | 25.02 | Alexandre Laplante
+6557 | F | train-other-500  | 27.34 | Tika Sabu
+6563 | M | train-clean-100  | 21.58 | William Tomcho
+6567 | F | train-clean-360  | 25.05 | vikvenom
+6568 | F | train-other-500  | 28.93 | Heather Hamtil
+6574 | M | train-clean-360  | 25.02 | Caden Vaughn Clegg
+6575 | M | train-clean-360  | 24.07 | Patrick Painter
+6583 | F | train-other-500  | 30.12 | NastassiaS
+6590 | F | train-other-500  | 30.01 | Marea Brook
+6594 | F | train-other-500  | 30.08 | Amelia Chantarotwong
+6599 | M | dev-other        | 3.03  | rohde
+6609 | M | train-other-500  | 29.53 | Patrick Wallace
+6610 | F | train-other-500  | 30.07 | sylly
+6614 | F | train-other-500  | 28.25 | Veronica Schlette
+6620 | F | train-clean-360  | 12.88 | Amy Koenig
+6625 | M | train-other-500  | 30.10 | hearmeout7
+6627 | F | train-other-500  | 14.57 | Amber Hamilton
+6636 | M | train-other-500  | 27.50 | Philip Martin
+6637 | F | train-clean-360  | 25.21 | Christine Nendza
+6641 | F | train-other-500  | 29.93 | Julienne
+6643 | F | train-clean-360  | 25.14 | cbooren
+6652 | M | train-other-500  | 25.43 | Brendon Wright
+6660 | F | train-other-500  | 30.19 | Nicole Lee
+6668 | M | train-other-500  | 30.01 | Ecological Humanist
+6670 | M | train-other-500  | 29.92 | Mike Pelton
+6673 | F | train-clean-360  | 20.46 | Jenna Lanman
+6674 | M | train-other-500  | 28.55 | jimmylee
+6676 | F | train-other-500  | 27.67 | Chill28
+6683 | F | train-clean-360  | 25.22 | Julia Kelley
+6685 | M | train-other-500  | 23.76 | Jonathan Drury
+6686 | M | train-clean-360  | 20.63 | Elin
+6687 | M | train-other-500  | 27.69 | KirksVoice
+6689 | F | train-other-500  | 28.36 | Tiffany Halla Colonna
+6690 | M | train-clean-360  | 23.34 | T Michael Burke
+6694 | M | train-clean-360  | 25.02 | Ross Williamson
+6695 | F | train-other-500  | 28.66 | Linda Fredericks
+6696 | F | train-clean-360  | 25.14 | Katryn Wiese
+6701 | M | train-clean-360  | 25.13 | Dayle
+6705 | F | train-other-500  | 30.05 | D. A. Frank
+6707 | M | train-other-500  | 27.06 | Lewis
+6709 | M | train-other-500  | 26.15 | vinphizz
+6713 | M | train-other-500  | 12.85 | stephenreader
+6724 | F | train-other-500  | 30.05 | Kristin Young
+6726 | F | train-other-500  | 30.15 | metgmz
+6727 | M | train-clean-360  | 9.40  | Tony Russell
+6733 | F | train-other-500  | 27.65 | Snapdragon
+6735 | F | train-other-500  | 30.11 | fshort
+6741 | F | train-other-500  | 24.76 | Sharon C.
+6743 | M | train-other-500  | 9.91  | Rick Rodney
+6746 | M | train-other-500  | 25.94 | Robin Skelcey
+6747 | M | train-other-500  | 17.49 | Ryan Lothian
+6749 | F | train-other-500  | 30.12 | MaryA
+6752 | M | train-other-500  | 26.78 | maxvon_d
+6753 | M | train-other-500  | 13.29 | T.E. McHenry
+6754 | M | train-other-500  | 30.04 | ToddHW
+6758 | F | train-other-500  | 12.46 | The Gypsy
+6763 | F | train-clean-360  | 21.20 | Manjit Bains
+6773 | M | train-other-500  | 17.55 | MostafaRazavi
+6777 | M | train-other-500  | 30.23 | Rick Saffery
+6782 | F | train-clean-360  | 23.36 | zcameo
+6784 | M | train-other-500  | 29.98 | SteveBuys
+6788 | F | train-clean-360  | 25.11 | Pamela Krantz
+6792 | M | train-other-500  | 30.24 | montmorency
+6794 | F | train-other-500  | 21.11 | Rachel Moyar
+6798 | M | train-other-500  | 30.04 | Aesthete's Readings
+6804 | M | train-other-500  | 30.19 | Nick Duncan
+6807 | F | train-other-500  | 30.08 | Lisa Caputo
+6818 | F | train-clean-100  | 25.17 | beckyboyd
+6821 | F | train-other-500  | 21.87 | Rholdah
+6828 | F | train-clean-360  | 25.11 | Lori Fuller Chugiak, AK
+6829 | F | test-clean       | 8.24  | LadyBug
+6836 | M | train-clean-100  | 25.01 | John
+6841 | M | dev-other        | 10.06 | A. E. Maroney
+6846 | M | train-other-500  | 18.48 | John Leonard
+6848 | M | train-clean-100  | 25.17 | KarlHenning
+6849 | M | train-other-500  | 26.68 | Dan Raynham
+6853 | F | train-other-500  | 22.04 | J. McKnight
+6865 | F | train-clean-360  | 25.03 | Jing Li
+6875 | M | train-other-500  | 21.09 | Bill Miller
+6877 | M | train-clean-360  | 25.23 | Bear Schacht
+6880 | M | train-clean-100  | 25.10 | Capybara
+6882 | M | train-other-500  | 29.24 | David Isenhower
+6883 | M | train-other-500  | 30.05 | Adam Doughty
+6892 | M | train-other-500  | 30.05 | Piotr Nater
+6895 | F | train-clean-360  | 25.23 | Reeses118
+6902 | F | train-other-500  | 23.36 | Barbara Edelman
+6904 | F | train-clean-360  | 24.57 | Kirsten Nelson
+6906 | F | train-other-500  | 20.67 | Joanna1
+6912 | M | train-other-500  | 30.13 | Richard Beck
+6913 | F | train-other-500  | 12.55 | daisyb
+6914 | F | train-other-500  | 28.92 | Katalina Watt
+6918 | F | train-clean-360  | 25.11 | Marilyn Mack
+6923 | M | train-other-500  | 30.15 | Szindbad
+6924 | F | train-clean-360  | 25.12 | Rapunzelina
+6925 | M | train-clean-100  | 17.07 | Thomas Meaney
+6927 | F | train-clean-360  | 25.00 | Sarika Pawar
+6930 | M | test-clean       | 8.00  | Nolan Fout
+6937 | F | train-clean-360  | 23.29 | DVoice
+6938 | F | test-other       | 2.64  | Simmy
+6943 | F | train-other-500  | 30.21 | Chieko Steely
+6945 | M | train-other-500  | 30.07 | Daniel George
+6947 | F | train-other-500  | 30.22 | Grace
+6950 | F | train-other-500  | 27.30 | elmay
+6951 | F | train-other-500  | 18.65 | redhed3095
+6954 | M | train-other-500  | 30.08 | Paul Richards
+6956 | M | train-clean-360  | 25.10 | DannyHauger
+6962 | M | train-other-500  | 10.53 | mattoscarlomas
+6963 | M | train-other-500  | 23.89 | Kasper
+6965 | M | train-clean-360  | 25.00 | NoelBadrian
+6967 | F | train-other-500  | 30.06 | sganatra81
+6974 | M | train-other-500  | 8.01  | Michael Armenta
+6978 | F | train-other-500  | 30.04 | Debra
+6981 | M | train-clean-360  | 25.09 | nlonghu
+6993 | M | train-clean-360  | 25.24 | Seyed
+7000 | M | train-clean-360  | 24.75 | Kevin Alix
+7001 | F | train-other-500  | 30.09 | Arienne
+7008 | M | train-other-500  | 21.23 | John Trevithick
+7009 | M | train-other-500  | 24.38 | roeg11
+7011 | M | train-clean-360  | 17.59 | Icprice
+7012 | F | train-other-500  | 30.00 | Erin McKelle
+7018 | M | test-other       | 10.24 | FSharp
+7021 | M | test-clean       | 8.14  | Nodo420
+7026 | F | train-other-500  | 23.84 | Michele Eaton
+7030 | M | train-clean-360  | 20.57 | Conrad T
+7046 | M | train-other-500  | 24.11 | Pascal Ramseier
+7051 | M | train-clean-360  | 13.88 | Andrew White
+7055 | M | train-other-500  | 30.03 | gemtwist
+7059 | F | train-clean-100  | 25.02 | Joannemmp
+7061 | M | train-clean-360  | 25.26 | AllenJohns
+7062 | F | train-other-500  | 28.30 | Rebecca Thomas
+7065 | M | train-other-500  | 24.16 | smitaj
+7067 | M | train-clean-100  | 25.17 | Matthew Wall
+7069 | M | train-clean-360  | 25.08 | John Schuurman
+7073 | F | train-other-500  | 24.98 | Jill Janovetz
+7078 | F | train-clean-100  | 25.14 | Mary in Arkansas
+7079 | F | train-other-500  | 29.43 | Chuck Williamson
+7085 | M | train-clean-360  | 25.19 | voicebynatalie
+7090 | M | train-clean-360  | 25.05 | Jon Sindell
+7092 | F | train-other-500  | 30.15 | Lorraine B
+7095 | M | train-clean-360  | 25.15 | Wesseling
+7096 | M | train-other-500  | 17.43 | Gary Iredale
+7097 | F | train-other-500  | 26.23 | novelreader
+7105 | M | test-other       | 10.15 | jennycbnyn
+7107 | M | train-other-500  | 30.09 | titankin77
+7113 | F | train-clean-100  | 25.20 | Sukaina Jaffer
+7117 | F | train-clean-360  | 25.17 | Art Leung
+7120 | F | train-clean-360  | 25.10 | L D Hamilton
+7121 | M | train-other-500  | 27.88 | 384403
+7125 | F | train-other-500  | 18.82 | Peggy
+7126 | M | train-clean-360  | 21.69 | pekein
+7127 | M | test-clean       | 8.32  | Bill Kneeland
+7128 | M | train-clean-360  | 25.01 | morganreads
+7131 | F | train-other-500  | 24.22 | Eden Rea-Hedrick
+7134 | M | train-clean-360  | 25.10 | Steve Jackson
+7135 | F | train-other-500  | 29.21 | Maggie Smallwood
+7138 | F | train-other-500  | 30.08 | CaprishaPage
+7139 | M | train-clean-360  | 25.11 | gabrielv
+7140 | F | train-clean-360  | 23.60 | Deanna Bovee
+7143 | F | train-other-500  | 20.54 | Minni Ang
+7145 | F | train-clean-360  | 21.84 | Lita Ledesma
+7147 | M | train-other-500  | 19.94 | S.Nevets
+7148 | F | train-clean-100  | 25.02 | Vickie Ranz
+7150 | M | train-other-500  | 30.20 | asterix
+7155 | M | train-other-500  | 30.11 | pklipp
+7169 | M | train-clean-360  | 16.01 | Ryan Ransom
+7170 | M | train-other-500  | 25.81 | alanmapstone
+7176 | M | test-clean       | 8.06  | KalenXI
+7177 | F | train-other-500  | 15.43 | shana
+7178 | F | train-clean-100  | 25.11 | J.K. Neely
+7188 | M | train-clean-360  | 25.07 | Marty
+7189 | M | train-other-500  | 29.34 | doonaboon
+7190 | M | train-clean-100  | 25.22 | Tony Posante
+7197 | F | train-other-500  | 23.88 | Christine Richardson
+7198 | F | train-other-500  | 27.75 | Daniela Austin
+7199 | F | train-other-500  | 30.01 | T.K. Kirven
+7205 | F | train-other-500  | 30.24 | genierose
+7208 | M | train-other-500  | 30.10 | KK
+7215 | M | train-other-500  | 28.97 | BensonBrunswin
+7218 | F | train-other-500  | 28.76 | MJ Franck
+7220 | F | train-other-500  | 28.59 | LynnAlison
+7223 | F | train-other-500  | 23.26 | eye hear voices
+7226 | M | train-clean-100  | 25.05 | Jonathan Moore
+7228 | M | train-other-500  | 29.36 | Peter John Keeble
+7229 | F | train-clean-360  | 21.53 | Linda Ciano
+7238 | M | train-other-500  | 27.44 | Uday Sagar
+7239 | M | train-other-500  | 19.74 | manofwealth
+7240 | F | train-clean-360  | 25.11 | Lucretia B.
+7241 | M | train-clean-360  | 25.16 | AdrianBisson
+7242 | F | train-other-500  | 30.02 | Renate
+7245 | F | train-clean-360  | 25.04 | Laura Atkinson
+7246 | F | train-other-500  | 27.02 | Lyn Silva
+7247 | M | train-clean-360  | 25.10 | Robert Hoffman
+7250 | F | train-other-500  | 22.08 | A. J. Elliot
+7255 | F | train-other-500  | 18.60 | Jendia
+7258 | M | train-clean-360  | 25.08 | acloward
+7263 | F | train-other-500  | 14.62 | rachaelg
+7264 | M | train-clean-100  | 23.42 | Sean McClain
+7265 | F | train-other-500  | 30.21 | Annie
+7276 | F | train-clean-360  | 25.00 | ASPotter
+7277 | F | train-other-500  | 30.02 | Jenny Bradshaw
+7278 | M | train-clean-100  | 25.01 | Jon Smith
+7285 | F | train-clean-360  | 25.07 | Christina M. Glavas
+7286 | F | train-clean-360  | 23.75 | kindfish
+7294 | F | train-clean-360  | 25.01 | Muriel
+7297 | F | train-clean-360  | 18.65 | Mudlark
+7299 | F | train-other-500  | 21.99 | Barbara Miller
+7301 | M | train-other-500  | 5.54  | jonseverity
+7302 | F | train-clean-100  | 25.10 | Asta1234
+7307 | M | train-other-500  | 27.58 | Anthony Ogus
+7312 | M | train-clean-100  | 5.44  | nkneer
+7313 | M | train-clean-360  | 25.24 | Mark DeVol
+7314 | M | train-clean-360  | 25.17 | Rick Cahill
+7315 | F | train-other-500  | 11.77 | Charlotte Duckett
+7316 | F | train-clean-360  | 18.80 | Joy S Grape
+7318 | F | train-clean-360  | 25.13 | Anise
+7320 | F | train-other-500  | 26.51 | Monika Rolley
+7326 | M | train-other-500  | 20.91 | Adam
+7327 | M | train-other-500  | 25.46 | Tommy Howell
+7331 | F | train-other-500  | 30.15 | AnabelleC
+7333 | F | train-other-500  | 30.22 | Lydia Paterson
+7335 | F | train-clean-360  | 23.72 | Kathryn Louise
+7337 | F | train-other-500  | 24.93 | Adina Owen
+7338 | M | train-other-500  | 30.11 | Eberle Thomas
+7339 | M | train-clean-360  | 25.10 | wildalaska
+7342 | F | train-clean-360  | 25.01 | Carol
+7346 | M | train-other-500  | 17.89 | James Bendall
+7348 | F | train-other-500  | 30.16 | acousticwave
+7354 | M | train-other-500  | 30.01 | TrevorD777
+7357 | M | train-other-500  | 12.31 | rebcult
+7360 | F | train-other-500  | 27.64 | Caroline Hemmerly Kunkle
+7367 | M | train-clean-100  | 25.13 | NIneFive83
+7376 | F | train-other-500  | 30.12 | Nyssa E. Schmidt
+7383 | F | train-clean-360  | 20.20 | Meg Cowan
+7384 | F | train-clean-360  | 20.30 | Diana Dolan
+7387 | F | train-other-500  | 28.58 | Tara Dow
+7389 | M | train-other-500  | 30.17 | Steve C
+7391 | M | train-other-500  | 30.15 | Cary Simz
+7392 | F | train-other-500  | 30.09 | MicheleW
+7395 | F | train-clean-360  | 18.05 | Katherine
+7398 | F | train-clean-360  | 25.09 | Marie Daum
+7402 | M | train-clean-100  | 25.01 | Canby Ibarra
+7408 | M | train-other-500  | 30.14 | David Clarke
+7416 | F | train-clean-360  | 22.16 | Jeanni Hall
+7423 | M | train-other-500  | 30.09 | Gilles G. Le Blanc
+7424 | M | train-other-500  | 30.04 | Christopher Smith
+7433 | F | train-other-500  | 30.00 | Gabriela Cowan
+7434 | F | train-clean-360  | 23.58 | Emily Feuka
+7436 | M | train-other-500  | 24.52 | Gregory Eccles
+7437 | M | train-clean-360  | 25.20 | Graham McMillan
+7445 | F | train-clean-360  | 25.14 | Emily Anderson
+7447 | M | train-clean-100  | 25.24 | dasbury
+7448 | M | train-other-500  | 18.19 | Kevin Johnson
+7460 | M | train-clean-360  | 25.24 | Larry Beasley
+7463 | M | train-other-500  | 30.08 | Pete Milan
+7467 | F | train-other-500  | 29.01 | freshface
+7475 | M | train-clean-360  | 6.10  | Jared Hess
+7478 | M | train-clean-360  | 25.03 | Dan Froese
+7480 | F | train-other-500  | 23.93 | Tricia F.
+7481 | F | train-clean-360  | 22.09 | Karen Howard
+7484 | M | train-clean-360  | 22.63 | Tyran Rexx
+7491 | F | train-other-500  | 30.11 | Lilaread
+7492 | F | train-other-500  | 30.13 | Scheherazade
+7495 | F | train-clean-360  | 25.02 | Arlene Joyce
+7498 | F | train-clean-360  | 20.70 | MarianneVictoria
+7502 | M | train-other-500  | 17.53 | mikefernlea
+7505 | M | train-clean-100  | 25.13 | Ron Lockhart
+7507 | F | train-other-500  | 30.22 | UnaVersal
+7510 | F | train-other-500  | 28.25 | Kathrine Engan
+7511 | F | train-clean-100  | 25.00 | Sherri Vance
+7512 | M | train-other-500  | 15.20 | dudeman
+7514 | F | train-other-500  | 6.57  | Barbara Baker
+7515 | F | train-clean-360  | 25.17 | Cynthia Moyer
+7517 | F | train-clean-100  | 24.29 | Raz Mason
+7518 | M | train-clean-360  | 25.07 | TJDasch
+7520 | M | train-clean-360  | 24.21 | Richard Jackson
+7522 | F | train-other-500  | 15.28 | Kelsey P
+7525 | F | train-clean-360  | 25.19 | Jeannie Tirado
+7538 | M | train-clean-360  | 25.04 | Logan West
+7540 | M | train-clean-360  | 25.26 | Christopher Webber
+7552 | F | train-other-500  | 22.45 | KateC
+7553 | M | train-clean-360  | 25.22 | BDSEmpire
+7555 | F | train-clean-360  | 23.23 | Suebee
+7556 | M | train-other-500  | 30.14 | Alex Lau
+7558 | M | train-clean-360  | 11.00 | J. A. Cook
+7559 | M | train-other-500  | 29.99 | gassumpcao
+7561 | M | train-other-500  | 9.12  | Shawn Bayern
+7565 | M | train-other-500  | 30.07 | Derek
+7569 | M | train-clean-360  | 25.17 | Stephen L. Moss
+7584 | F | train-other-500  | 29.57 | kandice stehlik
+7585 | M | train-other-500  | 30.07 | MaxSitting
+7594 | F | train-clean-360  | 25.00 | Kristel Tretter
+7597 | F | train-other-500  | 30.21 | Inah Derby
+7601 | M | dev-other        | 10.18 | Malone
+7603 | M | train-other-500  | 20.56 | Wupperhippo
+7607 | F | train-other-500  | 7.10  | C F de Rosset
+7608 | M | train-other-500  | 9.33  | rookieblue
+7609 | F | train-other-500  | 30.14 | detroitreads
+7618 | M | train-other-500  | 28.96 | Stipsky
+7635 | F | train-clean-100  | 25.06 | Judy Guinan
+7640 | M | train-other-500  | 28.97 | Dan Darbandi
+7641 | M | dev-other        | 10.03 | Moromis
+7644 | F | train-other-500  | 15.19 | Raphael Platt
+7647 | M | train-clean-360  | 21.83 | Daniel T. Miller
+7649 | F | train-other-500  | 30.16 | Lanerd
+7654 | M | train-other-500  | 12.73 | Word And Mouth
+7657 | F | train-clean-360  | 11.93 | shalclark
+7665 | M | train-clean-360  | 23.27 | Christian Mitchell
+7672 | M | train-other-500  | 30.10 | Cooper Leith
+7679 | F | train-other-500  | 30.14 | Libby Gohn
+7683 | F | train-other-500  | 17.41 | Carolyne
+7687 | F | train-other-500  | 30.05 | Demosthenes
+7688 | M | train-clean-360  | 25.19 | Leslie Walden
+7691 | M | train-other-500  | 26.40 | engineerdst
+7697 | M | dev-other        | 10.07 | JustinJYN
+7699 | F | train-other-500  | 30.11 | DylanTG
+7700 | M | train-other-500  | 28.24 | Dave Wills
+7702 | F | train-other-500  | 16.08 | Linda Jenner
+7704 | M | train-clean-360  | 25.16 | Robert Harder
+7705 | M | train-clean-360  | 25.01 | Timothy Luke
+7708 | F | train-other-500  | 29.71 | Savannah
+7713 | M | train-other-500  | 30.11 | Sacha Chander
+7717 | F | train-clean-360  | 25.01 | Astrid Fingerhut
+7720 | M | train-clean-360  | 25.03 | jeffwiltzius
+7729 | M | test-clean       | 8.17  | Tim Bower
+7730 | F | train-clean-360  | 25.23 | Fiddlesticks
+7732 | M | train-clean-360  | 24.92 | Daniel Vimont
+7733 | F | train-clean-360  | 19.49 | Jewel Raquel
+7737 | F | train-other-500  | 27.17 | Elisabeth Sollog
+7739 | F | train-clean-360  | 25.19 | Melissa Burns-Price
+7746 | M | train-other-500  | 28.01 | Tom Causby
+7749 | M | train-other-500  | 22.83 | Sammy Bean
+7752 | F | train-clean-360  | 25.08 | Samantha Miles
+7754 | F | train-clean-360  | 25.12 | Iridescat
+7756 | F | train-other-500  | 30.12 | Lynne Thompson
+7762 | F | train-other-500  | 17.51 | Fannie
+7764 | M | train-other-500  | 16.55 | Mike Nelson
+7766 | F | train-clean-360  | 25.12 | Maryanka
+7769 | M | train-other-500  | 29.01 | David Biro
+7777 | M | train-clean-360  | 16.44 | Jacob Paine
+7780 | F | train-clean-100  | 23.50 | tazzle
+7783 | F | train-clean-360  | 20.00 | Rebecca Owens
+7786 | M | train-other-500  | 28.11 | Kevin W. Davidson
+7789 | F | train-clean-360  | 25.04 | Lauren Jane
+7794 | F | train-clean-100  | 25.23 | mlcui
+7795 | M | train-other-500  | 18.46 | Cubrick
+7796 | M | train-other-500  | 30.13 | Raybrite
+7800 | F | train-clean-100  | 25.21 | Arie
+7802 | F | train-clean-360  | 25.12 | Samantha J Gubitz
+7809 | M | train-clean-360  | 25.10 | D. T. McGregor
+7816 | F | train-clean-360  | 25.04 | Stefanie Heinrichs
+7823 | M | train-other-500  | 27.40 | Bart in 't Veld
+7825 | M | train-clean-360  | 11.35 | PDyer
+7826 | M | train-other-500  | 27.31 | Dave Shaw
+7828 | M | train-clean-360  | 25.00 | Dan Mason
+7832 | M | train-clean-360  | 25.01 | DJRickyV
+7833 | M | train-clean-360  | 25.15 | Jesse Crisp-Sears
+7835 | M | train-other-500  | 13.79 | kageokami
+7837 | M | train-clean-360  | 22.24 | Alfian
+7839 | F | train-other-500  | 30.22 | Loveday
+7843 | F | train-other-500  | 19.14 | Annette McGuinness
+7848 | M | train-other-500  | 29.06 | bala
+7850 | F | dev-clean        | 8.06  | Jill Engle
+7859 | F | train-clean-100  | 21.58 | xinamarieuhl
+7867 | M | train-clean-360  | 25.08 | nomorejeffs
+7868 | F | train-clean-360  | 25.03 | Chessie Joy
+7871 | M | train-other-500  | 30.15 | Rocit
+7874 | M | train-clean-360  | 25.16 | dgulino
+7879 | F | train-other-500  | 29.10 | deongines
+7881 | M | train-clean-360  | 22.90 | Sam Naishtat
+7883 | F | train-other-500  | 30.03 | Annapurna
+7886 | F | train-other-500  | 7.80  | Mariah Lyons
+7892 | F | train-other-500  | 9.14  | Alexis Castro
+7898 | F | train-other-500  | 30.09 | Coreena
+7902 | M | test-other       | 10.09 | Kyle Van DeGlast
+7909 | M | train-clean-360  | 1.92  | MGreenberg
+7910 | F | train-clean-360  | 25.24 | southernemma
+7912 | M | train-other-500  | 30.19 | Nathan Dickey
+7923 | M | train-other-500  | 26.15 | amaskill
+7925 | F | train-other-500  | 22.64 | Etel Buss
+7926 | M | train-clean-360  | 25.18 | Steven Reynolds
+7932 | F | train-clean-360  | 25.25 | Tammy Stalcup
+7933 | F | train-clean-360  | 25.09 | Highlandoaks
+7938 | M | train-clean-360  | 25.18 | Goss45
+7939 | M | train-clean-360  | 25.19 | DPranitis
+7942 | M | train-other-500  | 30.02 | Luke Sartor
+7945 | F | train-clean-360  | 18.87 | Lois Browne
+7946 | F | train-other-500  | 15.89 | Flash
+7949 | M | train-clean-360  | 22.19 | Jon Miller
+7956 | M | train-clean-360  | 20.78 | Devon Purtz
+7957 | M | train-clean-360  | 21.63 | Wiley Combs
+7959 | F | train-clean-360  | 25.03 | Lily Took
+7962 | F | train-clean-360  | 25.15 | Jolie O'Dell
+7967 | F | train-clean-360  | 22.42 | Lois Hill
+7975 | M | test-other       | 10.04 | William A Crenshaw
+7976 | M | dev-clean        | 8.13  | JenniferRutters
+7981 | M | train-clean-360  | 25.06 | timothyFR
+7982 | F | train-clean-360  | 25.11 | Lori Arsenault
+7988 | M | train-other-500  | 27.62 | JaySands
+7991 | M | train-clean-360  | 25.01 | Aaron Weber
+7994 | F | train-clean-360  | 25.08 | Marian Cervassi
+7995 | F | train-clean-360  | 25.20 | Marie Hoffman
+7997 | M | train-other-500  | 30.16 | Tom Merritt
+8005 | F | train-other-500  | 29.84 | Julia Wells
+8006 | M | train-clean-360  | 25.10 | TyroneS
+8008 | M | train-clean-360  | 25.18 | Paul Adamson
+8009 | F | train-other-500  | 30.10 | Frances Brown
+8011 | M | train-clean-360  | 25.09 | Greg Giordano
+8012 | F | train-other-500  | 30.04 | WoollyBee
+8014 | F | train-clean-100  | 14.42 | constatine
+8015 | F | train-other-500  | 28.07 | Underhill
+8023 | M | train-other-500  | 24.86 | JamesMcAndrew
+8028 | M | train-clean-360  | 25.10 | Tom Geller
+8033 | M | train-other-500  | 30.08 | geoffbl
+8040 | F | train-other-500  | 27.02 | NatalieOram
+8042 | M | train-other-500  | 30.18 | Jack Watson Warr
+8044 | F | train-other-500  | 30.21 | Sarah Hannah
+8050 | M | train-clean-360  | 22.02 | Jake Woldstad
+8051 | F | train-clean-100  | 25.23 | Maria Kasper
+8057 | F | train-clean-360  | 16.93 | Linda Dougherty
+8058 | M | train-other-500  | 19.53 | RLC
+8063 | M | train-clean-100  | 25.08 | Robert Snoza
+8066 | M | train-clean-360  | 25.15 | Tim Cote
+8071 | F | train-other-500  | 30.22 | Vanessa Garcia
+8072 | F | train-other-500  | 8.03  | Kimberly Krause
+8075 | F | train-clean-360  | 25.21 | Melora
+8080 | F | train-clean-360  | 25.23 | e.a.zokaites
+8087 | M | train-other-500  | 30.16 | Arnie Horton
+8088 | M | train-clean-100  | 25.06 | Jason Bolestridge
+8095 | M | train-clean-100  | 25.03 | Theodulf
+8097 | F | train-clean-360  | 25.04 | lewildesen
+8098 | M | train-clean-100  | 25.18 | Arnold
+8108 | M | train-clean-100  | 25.03 | drakaunus
+8112 | F | train-other-500  | 22.66 | Christine Lamberton
+8113 | F | train-clean-360  | 25.06 | PennyAnn
+8118 | F | train-clean-360  | 25.00 | Katie McClain
+8119 | M | train-clean-360  | 25.16 | Malcolm Cameron
+8123 | F | train-clean-100  | 25.15 | Sheila Wood
+8131 | M | test-other       | 10.04 | Christian Alexander
+8138 | M | train-clean-360  | 25.20 | Lee Smalley
+8142 | M | train-clean-360  | 25.06 | Timothy Lucas
+8143 | M | train-other-500  | 30.01 | Nick Whitley
+8148 | F | train-other-500  | 28.08 | Xiph
+8152 | M | train-clean-360  | 25.20 | Bigcowfeet
+8156 | F | train-other-500  | 30.03 | Brooke Cunningham
+8163 | F | train-clean-360  | 25.02 | Greengecko
+8164 | M | train-other-500  | 23.10 | Rob Board
+8168 | F | train-other-500  | 18.41 | Kiera Davidson
+8169 | M | train-other-500  | 25.51 | tovarisch
+8172 | M | train-other-500  | 16.88 | Alan Weyman
+8173 | F | dev-other        | 5.23  | emmablob
+8176 | M | train-clean-360  | 18.78 | Jon Kerfoot
+8180 | F | train-other-500  | 27.70 | Elanor Sakamoto
+8183 | F | train-clean-360  | 25.18 | Cheri Jordan
+8188 | M | test-other       | 10.12 | Matthew Calvin
+8190 | F | train-clean-360  | 21.67 | Lisa Phelps Gonzalez
+8193 | F | train-clean-360  | 25.23 | helengraves
+8194 | F | train-clean-360  | 25.04 | MsMO
+8195 | M | train-clean-360  | 25.04 | Mr Krause
+8197 | F | train-other-500  | 27.75 | Victoria P
+8199 | F | train-other-500  | 26.29 | maryagneskatherine
+8200 | M | train-other-500  | 30.02 | Dan S
+8208 | M | train-other-500  | 30.08 | zaanta
+8215 | M | train-other-500  | 30.23 | readread
+8222 | M | train-clean-360  | 25.09 | Greg Golding
+8224 | M | test-clean       | 8.24  | Leanne Kinkopf
+8225 | M | train-clean-360  | 25.09 | Matt Lusher
+8226 | M | train-clean-100  | 25.18 | Adam Picot
+8228 | F | train-clean-360  | 7.38  | hgal2010
+8230 | M | test-clean       | 8.25  | David Jenkins
+8238 | F | train-clean-100  | 25.08 | Madam Fickle
+8240 | F | train-other-500  | 30.17 | Gertrude Durette
+8242 | F | train-other-500  | 30.13 | Anita Slusser
+8245 | M | train-other-500  | 24.91 | gscheids
+8246 | M | train-other-500  | 18.83 | beeveeo
+8250 | M | train-other-500  | 29.44 | Stephen Gibbons
+8254 | F | dev-other        | 10.05 | Jeana Wei
+8259 | F | train-other-500  | 21.68 | Lawrence
+8262 | M | train-other-500  | 28.44 | Jack Powell
+8266 | M | train-clean-360  | 25.02 | Jeff K.
+8272 | F | train-other-500  | 25.07 | Haili
+8273 | M | train-other-500  | 30.21 | Lucas Boulding
+8280 | F | test-other       | 8.15  | AlaynaMay
+8288 | M | dev-other        | 6.66  | Wayne Donovan
+8291 | M | train-other-500  | 30.19 | Elliot Gage
+8295 | F | train-other-500  | 30.14 | Susan Morin
+8296 | F | train-other-500  | 20.34 | Bria Snow
+8297 | M | dev-clean        | 8.04  | David Mecionis
+8300 | F | train-clean-360  | 24.44 | Judith Parker
+8302 | F | train-other-500  | 25.50 | Charlotte Day
+8307 | M | train-other-500  | 29.32 | Nick Bulka
+8312 | F | train-clean-100  | 25.14 | Jaimie Noy
+8316 | M | train-other-500  | 17.30 | Rocket Rodger
+8321 | F | train-other-500  | 30.15 | SamR
+8322 | M | train-other-500  | 29.61 | yeknod
+8324 | F | train-clean-100  | 25.16 | Kathy Wright
+8328 | M | train-other-500  | 28.24 | William Gavula
+8329 | F | train-clean-360  | 21.14 | Betty Perry
+8334 | M | train-other-500  | 26.14 | Doug Reed
+8337 | F | train-other-500  | 30.09 | Claudia Salto
+8346 | M | train-other-500  | 28.71 | Al Rocca
+8347 | M | train-clean-360  | 21.88 | Terry Torres
+8356 | M | train-other-500  | 30.16 | Paul Mazumdar
+8367 | M | train-other-500  | 24.19 | ophiuroidea
+8382 | F | train-other-500  | 26.80 | Claire Schreuder
+8388 | F | train-clean-360  | 22.87 | Jacki Horn
+8389 | M | train-other-500  | 25.06 | Steven Bateman
+8392 | F | train-other-500  | 23.95 | Katharina Huang
+8394 | M | train-other-500  | 18.93 | Matthew Walker
+8396 | M | train-clean-360  | 25.16 | gloriousjob
+8401 | M | train-clean-360  | 24.29 | Alexander Hatton
+8404 | F | train-clean-360  | 23.61 | Lynne Ray
+8410 | F | train-clean-360  | 25.05 | Shauna Kennett
+8413 | M | train-other-500  | 10.28 | PaulMichael1084
+8414 | F | train-other-500  | 12.07 | jtueller
+8415 | F | train-other-500  | 23.44 | Rusty Dancer
+8419 | M | train-clean-100  | 25.22 | Jon Kissack
+8421 | F | train-clean-360  | 20.02 | Jackie Drown
+8422 | M | train-other-500  | 30.24 | pjhoury
+8424 | F | train-other-500  | 23.87 | Schums
+8425 | M | train-clean-100  | 25.16 | Larry Wilson
+8430 | F | train-other-500  | 30.02 | shihping
+8432 | F | train-other-500  | 10.80 | Emma Joyce
+8441 | F | train-other-500  | 23.64 | ryoko
+8443 | F | train-other-500  | 22.83 | Marsha Payne
+8444 | M | train-other-500  | 29.41 | Anthony Webster
+8445 | M | train-other-500  | 30.21 | Brett G. Hirsch
+8447 | F | train-other-500  | 17.37 | Anastasiia Solokha
+8455 | M | test-clean       | 8.03  | thecheops
+8459 | M | train-clean-360  | 25.09 | sdaeley17
+8461 | F | test-other       | 10.13 | Allie Cingi
+8463 | F | test-clean       | 8.05  | Michele Fry
+8464 | M | train-clean-360  | 18.03 | HappyMiamiDad
+8465 | F | train-clean-100  | 24.88 | TinaNygard2
+8466 | M | train-other-500  | 19.38 | Chris Cartwright
+8468 | F | train-clean-100  | 25.23 | Jennifer Dorr
+8470 | F | train-other-500  | 26.24 | Rebecca Braunert-Plunkett
+8474 | M | train-clean-360  | 25.07 | Scott Snowman
+8476 | F | train-other-500  | 20.74 | Julie Mansius
+8479 | M | train-clean-360  | 14.02 | R.W. Rushing
+8490 | M | train-clean-360  | 16.96 | Matt Parker
+8494 | M | train-clean-360  | 24.20 | Bill Yallalee
+8498 | M | train-clean-360  | 25.10 | Ian Quinlan
+8499 | M | train-other-500  | 30.02 | ReadAllDay
+8500 | M | train-other-500  | 30.12 | Ravi Shankar
+8506 | F | train-clean-360  | 25.03 | Denise Nordell
+8527 | M | train-clean-360  | 25.15 | Gary Bohannon
+8531 | M | train-other-500  | 19.27 | imenadel
+8534 | M | train-clean-360  | 23.94 | Chris Clark
+8536 | M | train-other-500  | 29.74 | Jonathan Brubaker
+8543 | F | train-other-500  | 25.05 | luckyemma
+8544 | F | train-other-500  | 19.21 | Pooja DSr
+8545 | F | train-clean-360  | 25.14 | Joanne Rochon
+8555 | F | test-clean       | 8.03  | Michelle Goode
+8565 | M | train-other-500  | 28.92 | Patrick Eaton
+8573 | F | train-clean-360  | 25.05 | Paige G
+8575 | M | train-clean-360  | 25.04 | Jeremy Robertson
+8576 | M | train-other-500  | 18.24 | Phil Schempf
+8580 | M | train-clean-100  | 19.82 | Gary Dana
+8587 | M | train-other-500  | 25.08 | Drew Johnson
+8590 | M | train-other-500  | 27.96 | bobrose
+8591 | F | train-clean-360  | 22.02 | Jude Somers
+8592 | M | train-clean-360  | 18.66 | Dylan Posa
+8605 | F | train-clean-360  | 25.06 | Kate Sterner
+8609 | M | train-clean-100  | 25.10 | noblesavage
+8619 | M | train-clean-360  | 25.03 | Tad E.
+8625 | F | train-other-500  | 30.16 | Ellen Preckel
+8629 | M | train-clean-100  | 25.13 | Shivansh Dhar
+8630 | M | train-clean-100  | 23.50 | Eduardo
+8631 | M | train-other-500  | 30.06 | Edward Kirkby
+8632 | M | train-other-500  | 21.05 | Geremia
+8635 | M | train-clean-360  | 25.07 | ACBowgus
+8643 | M | train-clean-360  | 25.08 | jabc1950
+8644 | F | train-other-500  | 24.78 | Eenae
+8664 | F | train-other-500  | 30.20 | Pam Castille
+8666 | M | train-other-500  | 25.61 | josembi
+8671 | M | train-other-500  | 16.80 | Simon Smoke
+8675 | M | train-other-500  | 30.11 | Larry Greene
+8677 | F | train-clean-360  | 25.17 | KHand
+8678 | F | train-other-500  | 19.40 | Amy
+8684 | F | train-clean-360  | 21.46 | Alison Stewart
+8687 | M | train-clean-360  | 21.21 | EccentricOwl
+8699 | F | train-clean-360  | 22.64 | Jessica Atha
+8705 | M | train-clean-360  | 25.00 | dsilber01
+8710 | M | train-other-500  | 28.74 | Ralph Crown
+8713 | M | train-clean-360  | 25.23 | Expatriate
+8718 | F | train-clean-360  | 25.07 | Deena Rhoads
+8722 | F | train-clean-360  | 24.13 | Emily Maynard
+8725 | M | train-clean-360  | 25.02 | Gary Ericson
+8742 | M | train-clean-360  | 25.03 | Adam Taylor
+8747 | M | train-clean-100  | 23.49 | DeanOBuchanan
+8753 | M | train-other-500  | 28.87 | Walt Allan
+8758 | M | train-clean-360  | 25.05 | Krzysztof Rowinski
+8765 | M | train-other-500  | 28.03 | jciesielski
+8770 | M | train-clean-100  | 25.13 | Paul Simonin
+8771 | F | train-clean-360  | 15.40 | Anna Millard
+8772 | M | train-clean-360  | 25.03 | Martin Reyto
+8776 | F | train-clean-360  | 21.90 | Taliesin
+8778 | F | train-other-500  | 30.25 | Francoise
+8786 | M | train-clean-360  | 25.12 | Bruce Kachuk
+8791 | M | train-clean-360  | 23.93 | ScottReyonoldsVoice
+8797 | M | train-clean-100  | 22.76 | Sean Grabosky
+8799 | M | train-other-500  | 29.05 | Peter Tucker
+8803 | M | train-other-500  | 23.76 | Ben Lindsey-Clark
+8808 | M | train-other-500  | 22.91 | davidpr
+8820 | M | train-clean-360  | 25.19 | Ignare
+8824 | M | train-clean-360  | 25.21 | Mark Johnston
+8825 | F | train-clean-360  | 23.93 | Erin Schellhase
+8838 | M | train-clean-100  | 25.06 | Kevin Owens
+8842 | F | dev-clean        | 8.10  | Mary J
+8846 | F | train-other-500  | 30.14 | MariaS
+8848 | M | train-clean-360  | 25.12 | Craig Kenneth Bryant
+8855 | M | train-clean-360  | 25.01 | Eric Metzler
+8867 | F | train-other-500  | 7.58  | sorbet87
+8875 | M | train-clean-360  | 17.77 | David D'Huet
+8879 | M | train-clean-360  | 25.07 | Son of the Exiles
+8887 | M | train-clean-360  | 21.11 | Andrew Hernandez
+8897 | F | train-other-500  | 30.15 | beyondutopia
+8975 | F | train-clean-100  | 25.11 | Daisy Flaim
+9000 | M | train-other-500  | 27.26 | Ramon Escamilla
+9022 | F | train-clean-360  | 25.17 | Claire M
+9023 | F | train-clean-360  | 25.19 | P. J. Morgan
+9026 | F | train-clean-360  | 21.75 | Tammy Porter
