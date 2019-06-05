@@ -44,10 +44,15 @@ export PYTHONPATH=$PYTHONPATH:~/lingvo_compiled
 
 ### Imperceptible Adversarial Examples
 To generate imperceptible adversarial examples, you need to first place all the files in the lingvo_compiled/ into this directory adversarial_adv/ and then run
+
 ```bash
-CUDA_VISIBLE_DEVICES=0 python generate_imperceptible_adv.py
+python generate_imperceptible_adv.py
 ```
 
 The adversarial examples saved with the name ended with "stage1" is the adversarial examples in [Carlini's work](https://arxiv.org/abs/1801.01944). Adversarial examples ended with the name "stage2" is our imperceptible adversarial examples using frequency masking threshold.
 
+To test the accuracy of the imperceptible adversarial examples, simply run:
 
+```bash
+python test_imperceptible_adv.py
+```
