@@ -50,7 +50,7 @@ cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo /tmp/lingvo_compiled
 sudo chown -R $USER ~/lingvo_compiled
 export PYTHONPATH=$PYTHONPATH:~/lingvo_compiled
 ```
-The compiled lingvo in the directory ```lingvo_compiled/``` needs to be placed in the directory ```./adversarial_asr/```. Then it will be ```./adversarial_asr/lingvo/```.
+The folder ```lingvo/``` in the directory ```lingvo_compiled/``` needs to be placed in the directory ```./adversarial_asr/```. Then this directory becomes ```./adversarial_asr/lingvo/```.
 
 ## Imperceptible Adversarial Examples
 To generate imperceptible adversarial examples, run
