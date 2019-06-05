@@ -33,7 +33,7 @@ def normalize(signal, bits=None):
     return s
 
 # name of the rir
-data = np.loadtxt("/home/yaq007/yaoqin/lingvo_compiled/read_data.txt", dtype=str, delimiter=",")
+data = np.loadtxt("./read_data.txt", dtype=str, delimiter=",")
 name = data[0, 0]
 name_sub, _ = name.split('.')
 
