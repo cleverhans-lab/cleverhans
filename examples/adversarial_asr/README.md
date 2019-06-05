@@ -50,9 +50,10 @@ cp -rfL bazel-bin/lingvo/trainer.runfiles/__main__/lingvo /tmp/lingvo_compiled
 sudo chown -R $USER ~/lingvo_compiled
 export PYTHONPATH=$PYTHONPATH:~/lingvo_compiled
 ```
+The compiled lingvo in the directory ```lingvo_compiled/``` needs to be placed in the directory ```./adversarial_asr/```. Then it will be ```./adversarial_asr/lingvo/```.
 
 ## Imperceptible Adversarial Examples
-To generate imperceptible adversarial examples, you need to first place all the files in the lingvo_compiled/ into this directory adversarial_adv/ and then run
+To generate imperceptible adversarial examples, run
 
 ```bash
 python generate_imperceptible_adv.py
@@ -60,11 +61,12 @@ python generate_imperceptible_adv.py
 
 The adversarial examples saved with the name ended with "stage1" is the adversarial examples in [Carlini's work](https://arxiv.org/abs/1801.01944). Adversarial examples ended with the name "stage2" is our imperceptible adversarial examples using frequency masking threshold.
 
-To test the accuracy of the imperceptible adversarial examples, simply run:
+To test the accuracy of our imperceptible adversarial examples, simply run:
 
 ```bash
-python test_imperceptible_adv.py
+python test_imperceptible_adv.py --stage=stage2
 ```
+You can set ```--stage=stage1``` to test the accuracy of Carlini's adversarial examples.
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
