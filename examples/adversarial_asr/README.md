@@ -42,9 +42,7 @@ export PYTHONPATH=$PYTHONPATH:~/lingvo_compiled
 ```
 
 ### Imperceptible Adversarial Examples
-To generate imperceptible adversarial examples, you need to first place all the files in the lingvo_compiled/ into this directory adversarial_adv/.
-
-Then simply run
+To generate imperceptible adversarial examples, you need to first place all the files in the lingvo_compiled/ into this directory adversarial_adv/ and then run
 ```bash
 CUDA_VISIBLE_DEVICES=0 python generate_imperceptible_adv.py
 ```
