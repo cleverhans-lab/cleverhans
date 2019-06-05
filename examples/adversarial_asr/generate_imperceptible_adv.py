@@ -31,7 +31,7 @@ flags.DEFINE_integer('max_length_dataset', '223200',
 flags.DEFINE_float('initial_bound', '2000', 'initial l infinity norm for adversarial perturbation')
 
 # training parameters
-flags.DEFINE_string('checkpoint', "/home/yaoqin/librispeech/log/train/ckpt-00908156",
+flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_integer('batch_size', '5')                   
 flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
