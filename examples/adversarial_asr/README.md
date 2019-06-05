@@ -7,7 +7,7 @@ This is a Tensorflow implementation for the ICML 2019 paper ["Imperceptible, Rob
 *   a TensorFlow [installation](https://www.tensorflow.org/install/) (Tensorflow 1.13 is supported for this version of Lingvo system),
 *   a `C++` compiler (only g++ 4.8 is officially supported),
 *   the bazel build system,
-*   librosa (pip install librosa).
+*   librosa (```pip install librosa```).
 
 Currently, all the python scripts are tested on one GPU. You can use ```CUDA_VISIBLE_DEVICES=GPU_INDEX``` to choose which gpu to run the python scripts.
 
