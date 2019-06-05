@@ -75,7 +75,7 @@ To generate robust adversarial examples that are simulated playing over-the-air 
 ```bash
 python generate_room_reverberations.py
 ```
-
+Then you can run
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
@@ -104,3 +104,4 @@ This code is based on Lingvo ASR system. Thanks to the contributors of the Lingv
   year={2019}
 }
 ```
+
