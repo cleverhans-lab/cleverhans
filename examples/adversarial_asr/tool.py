@@ -64,6 +64,34 @@ def create_inputs(model, features, tgt, batch_size, mask_freq):
     inputs.src = py_utils.NestedMap(src_inputs=src_frames, paddings=src_paddings)
     inputs.sample_ids = tf.zeros([batch_size])
     return inputs
+    
+def create_speech_rir(audios, rir, lengths_audios, max_len, batch_size):
+    """
+    Returns:
+        A tensor of speech with reverberations (Convolve the audio with the rir) 
+    """
+    speech_rir = []
+
+    for i in range(batch_size):
+        s1 = lengths_audios[i]
+        s2 = tf.convert_to_tensor(tf.shape(rir))
+        shape = s1 + s2 - 1 
+        
+        # Compute convolution in fourier space
+        sp1 = tf.spectral.rfft(rir, shape)
+        sp2 = tf.spectral.rfft(tf.slice(tf.reshape(audios[i], [-1,]), [0], [lengths_audios[i]]), shape)
+        ret = tf.spectral.irfft(sp1 * sp2, shape)
+
+        # normalization
+        ret /= tf.reduce_max(tf.abs(ret))
+        ret *= 2 ** (16 - 1) -1
+        ret = tf.clip_by_value(ret, -2 **(16 - 1), 2**(16-1) - 1)
+        ret = tf.pad(ret, tf.constant([[0, 100000]]))
+        ret = ret[:max_len]
+    
+        speech_rir.append(tf.expand_dims(ret, axis=0))
+    speech_rirs = tf.concat(speech_rir, axis=0)
+    return speech_rirs
 
 class Transform(object):
     '''

@@ -1,18 +1,10 @@
 import tensorflow as tf
 from lingvo import model_imports
 from lingvo import model_registry
-
-from lingvo.core import py_utils
-import six
-import os
-import re
-import tarfile
 import numpy as np
-from lingvo.core import asr_frontend
-from tensorflow.contrib.framework.python.ops import audio_ops as contrib_audio
-from tensorflow.python import pywrap_tensorflow
-import subprocess
 import scipy.io.wavfile as wav
+import generate_masking_threshold as generate_mask
+from tool import create_features, create_inputs, create_speech_rir
 import time
 from lingvo.core import cluster_factory
 from absl import flags
@@ -27,7 +19,6 @@ flags.DEFINE_string('rir_dir', 'LibriSpeech/test-clean/3575/170457/3575-170457-0
                     'directory of generated room reverberations')
 
 # data processing
-flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
 flags.DEFINE_integer('max_length_dataset', '223200', 'the length of the longest audio in the whole dataset')
 flags.DEFINE_float('initial_bound', '2000.', 'initial l infinity norm for adversarial perturbation')
 flags.DEFINE_integer('num_rir', '1000', 'number of room reverberations used in training')
@@ -46,31 +37,6 @@ flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
 
 FLAGS = flags.FLAGS
-
-def _MakeLogMel(audio, sample_rate): 
-  audio = tf.expand_dims(audio, axis=0)
-  static_sample_rate = 16000
-  mel_frontend = _CreateAsrFrontend()
-  with tf.control_dependencies(
-      [tf.assert_equal(sample_rate, static_sample_rate)]):
-    log_mel, _ = mel_frontend.FPropDefaultTheta(audio)
-  return log_mel
-
-def _CreateAsrFrontend():
-  p = asr_frontend.MelFrontend.Params()
-  p.sample_rate = 16000.
-  p.frame_size_ms = 25.
-  p.frame_step_ms = 10.
-  p.num_bins = 80
-  p.lower_edge_hertz = 125.
-  p.upper_edge_hertz = 7600.
-  p.preemph = 0.97
-  p.noise_scale = 0.
-  p.pad_end = False
-  # Stack 3 frames and sub-sample by a factor of 3.
-  p.left_context = 2
-  p.output_stride = 3
-  return p.cls(p)
 
 def ReadFromWav(data, batch_size):
     """
@@ -126,73 +92,10 @@ def Readrir():
         rir: a numpy array of the room reverberation
         
     '''        
-    index = random.randint(0, FLAGS.num_rir - 1)       
+    index = random.randint(1, FLAGS.num_rir)       
     _, rir = wav.read(FLAGS.root_dir + FLAGS.rir_dir + "_rir_" + str(index) + ".wav")   
     return rir
 
-def create_features(input_tf, sample_rate_tf, mask_freq):
-    """
-    Return:
-        A tensor of features with size (batch_size, max_time_steps, 80)
-    """
-    
-    features_list = []      
-    # unstact the features with placeholder    
-    input_unpack = tf.unstack(input_tf, axis=0)
-    for i in range(len(input_unpack)):
-        features = _MakeLogMel(input_unpack[i], sample_rate_tf)
-        features = tf.reshape(features, shape=[-1, 80]) 
-        features = tf.expand_dims(features, dim=0)  
-        features_list.append(features)
-    features_tf = tf.concat(features_list, axis=0) 
-    features_tf = features_tf * mask_freq
-    return features_tf    
-          
-def create_inputs(model, features, tgt, batch_size, mask_freq):    
-    tgt_ids, tgt_labels, tgt_paddings = model.GetTask().input_generator.StringsToIds(tgt)
-    
-    # we expect src_inputs to be of shape [batch_size, num_frames, feature_dim, channels]
-    src_paddings = tf.zeros([tf.shape(features)[0], tf.shape(features)[1]], dtype=tf.float32)
-    src_paddings = 1. - mask_freq[:,:,0]
-    src_frames = tf.expand_dims(features, dim=-1)
-
-    inputs = py_utils.NestedMap()
-    inputs.tgt = py_utils.NestedMap(
-        ids=tgt_ids,
-        labels=tgt_labels,
-        paddings=tgt_paddings,
-        weights=1.0 - tgt_paddings)
-    inputs.src = py_utils.NestedMap(src_inputs=src_frames, paddings=src_paddings)
-    inputs.sample_ids = tf.zeros([batch_size])
-    return inputs
-       
-def create_speech_rir(audios, rir, lengths_audios, max_len, batch_size):
-    """
-    Returns:
-        A tensor of speech with reverberations (Convolve the audio with the rir) 
-    """
-    speech_rir = []
-
-    for i in range(batch_size):
-        s1 = lengths_audios[i]
-        s2 = tf.convert_to_tensor(tf.shape(rir))
-        shape = s1 + s2 - 1 
-        
-        # Compute convolution in fourier space
-        sp1 = tf.spectral.rfft(rir, shape)
-        sp2 = tf.spectral.rfft(tf.slice(tf.reshape(audios[i], [-1,]), [0], [lengths_audios[i]]), shape)
-        ret = tf.spectral.irfft(sp1 * sp2, shape)
-
-        # normalization
-        ret /= tf.reduce_max(tf.abs(ret))
-        ret *= 2 ** (16 - 1) -1
-        ret = tf.clip_by_value(ret, -2 **(16 - 1), 2**(16-1) - 1)
-        ret = tf.pad(ret, tf.constant([[0, 100000]]))
-        ret = ret[:max_len]
-    
-        speech_rir.append(tf.expand_dims(ret, axis=0))
-    speech_rirs = tf.concat(speech_rir, axis=0)
-    return speech_rirs
 
 class Attack:
     def __init__(self, sess, batch_size=1,
@@ -358,7 +261,7 @@ class Attack:
             
         return final_adv, final_perturb 
 
-    def attack_stage2(self, audios, adv, rescales, trans, maxlen, sample_rate, masks, masks_freq, num_loop, data, lengths):       
+    def attack_stage2(self, audios, trans, adv, rescales, maxlen, sample_rate, masks, masks_freq, num_loop, data, lengths):       
         sess = self.sess       
         # initialize and load the pretrained model
         sess.run(tf.initializers.global_variables())
@@ -516,6 +419,7 @@ def main(argv):
                 adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios
                 rescales = np.max(np.abs(adv), axis=1) + FLAGS.max_delta
+                rescales = np.expand_dims(rescales, axis=1)
 
                 audios, trans, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)                                                                      
                 adv_example, perturb = attack.attack_stage2(audios, trans, adv, rescales, maxlen, sample_rate, masks, masks_freq, l, data_sub, lengths)
