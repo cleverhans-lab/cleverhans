@@ -1,19 +1,14 @@
 import tensorflow as tf
 from lingvo import model_imports
 from lingvo import model_registry
-from lingvo.core import py_utils
-import six
-import os
-import re
-import tarfile
 import numpy as np
-from lingvo.core import asr_frontend
-from tensorflow.contrib.framework.python.ops import audio_ops as contrib_audio
-import subprocess
 import scipy.io.wavfile as wav
+import generate_masking_threshold as generate_mask
+from tool import Transform, create_features, create_inputs
+import time
+from lingvo.core import cluster_factory
 from absl import flags
 from absl import app
-from lingvo.core import cluster_factory
 
 flags.DEFINE_string('input', 'read_data.txt',
                     'the text file saved the dir of audios and the corresponding original and targeted transcriptions')
@@ -22,33 +17,7 @@ flags.DEFINE_integer('batch_size', '5',
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_string('stage', "stage2", 'which stage to test')
-flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
 FLAGS = flags.FLAGS
-
-def _MakeLogMel(audio, sample_rate): 
-  audio = tf.expand_dims(audio, axis=0)
-  static_sample_rate = 16000
-  mel_frontend = _CreateAsrFrontend()
-  with tf.control_dependencies(
-      [tf.assert_equal(sample_rate, static_sample_rate)]):
-    log_mel, _ = mel_frontend.FPropDefaultTheta(audio)
-  return log_mel
-
-def _CreateAsrFrontend():
-  p = asr_frontend.MelFrontend.Params()
-  p.sample_rate = 16000.
-  p.frame_size_ms = 25.
-  p.frame_step_ms = 10.
-  p.num_bins = 80
-  p.lower_edge_hertz = 125.
-  p.upper_edge_hertz = 7600.
-  p.preemph = 0.97
-  p.noise_scale = 0.
-  p.pad_end = False
-  # Stack 3 frames and sub-sample by a factor of 3.
-  p.left_context = 2
-  p.output_stride = 3
-  return p.cls(p)
 
 def Read_input(data, batch_size):
     """
@@ -92,46 +61,6 @@ def Read_input(data, batch_size):
     trans = data[2, :]
     
     return audios_np, sample_rate_np, trans, masks_freq
-
-def create_features(input_tf, sample_rate_tf, mask_freq):
-    """
-    Return:
-        A tensor of features with size (batch_size, max_time_steps, 80)
-    """
-    
-    features_list = []      
-    # unstact the features with placeholder    
-    input_unpack = tf.unstack(input_tf, axis=0)
-    #length_unpack = tf.unstack(lengths_tf, axis=0)
-    for i in range(len(input_unpack)):
-        features = _MakeLogMel(input_unpack[i], sample_rate_tf)
-        features = tf.reshape(features, shape=[-1, 80]) 
-        features = tf.expand_dims(features, dim=0)  
-        features_list.append(features)
-    features_tf = tf.concat(features_list, axis=0) 
-    features_tf = features_tf * mask_freq
-    return features_tf
-    
-    
-def create_inputs(model, features, tgt, batch_size, mask_freq):    
-    tgt_ids, tgt_labels, tgt_paddings = model.GetTask().input_generator.StringsToIds(tgt)
-    
-    # src_inputs has the shape [batch_size, num_frames, feature_dim, channels]
-    src_paddings = tf.zeros([tf.shape(features)[0], tf.shape(features)[1]], dtype=tf.float32)
-    
-    src_paddings = ( 1 - mask_freq[:,:, 0])   
-    src_frames = tf.expand_dims(features, dim=-1)
-
-    inputs = py_utils.NestedMap()
-    inputs.tgt = py_utils.NestedMap(
-        ids=tgt_ids,
-        labels=tgt_labels,
-        paddings=tgt_paddings,
-        weights=1.0 - tgt_paddings)
-    inputs.src = py_utils.NestedMap(src_inputs=src_frames, paddings=src_paddings)
-    inputs.sample_ids = tf.zeros([batch_size])
-    return inputs, src_paddings
-      
 
 def main(argv):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
