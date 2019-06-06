@@ -1,28 +1,19 @@
 import tensorflow as tf
-from lingvo import model_imports
 from lingvo import model_registry
-
-from lingvo.core import py_utils
-import six
-import os
-import re
-import tarfile
 import numpy as np
-from lingvo.core import asr_frontend
-from tensorflow.contrib.framework.python.ops import audio_ops as contrib_audio
-from tensorflow.python import pywrap_tensorflow
-import subprocess
 import scipy.io.wavfile as wav
 import generate_masking_threshold as generate_mask
+from tool import Transform, create_features, create_inputs
 import time
 from lingvo.core import cluster_factory
 from absl import flags
 from absl import app
 
+
 # data directory
 flags.DEFINE_string("root_dir", "./", "location of Librispeech")
 flags.DEFINE_string('input', 'read_data.txt',
-                    'the text file saved the dir of audios and the corresponding original and targeted transcriptions')
+                    'Input audio .wav file(s), at 16KHz (separated by spaces)')
 
 # data processing
 flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
@@ -42,30 +33,6 @@ flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
 
 FLAGS = flags.FLAGS
 
-def _MakeLogMel(audio, sample_rate): 
-  audio = tf.expand_dims(audio, axis=0)
-  static_sample_rate = 16000
-  mel_frontend = _CreateAsrFrontend()
-  with tf.control_dependencies(
-      [tf.assert_equal(sample_rate, static_sample_rate)]):
-    log_mel, _ = mel_frontend.FPropDefaultTheta(audio)
-  return log_mel
-
-def _CreateAsrFrontend():
-  p = asr_frontend.MelFrontend.Params()
-  p.sample_rate = 16000.
-  p.frame_size_ms = 25.
-  p.frame_step_ms = 10.
-  p.num_bins = 80
-  p.lower_edge_hertz = 125.
-  p.upper_edge_hertz = 7600.
-  p.preemph = 0.97
-  p.noise_scale = 0.
-  p.pad_end = False
-  # Stack 3 frames and sub-sample by a factor of 3.
-  p.left_context = 2
-  p.output_stride = 3
-  return p.cls(p)
 
 def ReadFromWav(data, batch_size):
     """
@@ -76,8 +43,8 @@ def ReadFromWav(data, batch_size):
         psd_max_batch: a numpy array of the psd_max of the original audio (batch_size)
         max_length: the max length of the batch of audios
         sample_rate_np: a numpy array
-	masks: a numpy array of size (batch_size, max_length)
-	masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
+	    masks: a numpy array of size (batch_size, max_length)
+	    masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
         lengths: a list of the length of original audios
     """
     audios = []
@@ -125,58 +92,7 @@ def ReadFromWav(data, batch_size):
     trans = data[2, :]
     
     return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
-
-def create_features(input_tf, sample_rate_tf, mask_freq):
-    """
-    Return:
-        A tensor of features with size (batch_size, max_time_steps, 80)
-    """
-    
-    features_list = []      
-    # unstact the features with placeholder    
-    input_unpack = tf.unstack(input_tf, axis=0)
-    for i in range(len(input_unpack)):
-        features = _MakeLogMel(input_unpack[i], sample_rate_tf)
-        features = tf.reshape(features, shape=[-1, 80]) 
-        features = tf.expand_dims(features, dim=0)  
-        features_list.append(features)
-    features_tf = tf.concat(features_list, axis=0) 
-    features_tf = features_tf * mask_freq
-    return features_tf    
-          
-def create_inputs(model, features, tgt, batch_size, mask_freq):    
-    tgt_ids, tgt_labels, tgt_paddings = model.GetTask().input_generator.StringsToIds(tgt)
-    
-    # we expect src_inputs to be of shape [batch_size, num_frames, feature_dim, channels]
-    src_paddings = tf.zeros([tf.shape(features)[0], tf.shape(features)[1]], dtype=tf.float32)
-    src_paddings = 1. - mask_freq[:,:,0]
-    src_frames = tf.expand_dims(features, dim=-1)
-
-    inputs = py_utils.NestedMap()
-    inputs.tgt = py_utils.NestedMap(
-        ids=tgt_ids,
-        labels=tgt_labels,
-        paddings=tgt_paddings,
-        weights=1.0 - tgt_paddings)
-    inputs.src = py_utils.NestedMap(src_inputs=src_frames, paddings=src_paddings)
-    inputs.sample_ids = tf.zeros([batch_size])
-    return inputs
         
-class Transform(object):
-    '''
-    Return: PSD
-    '''    
-    def __init__(self):
-        self.scale = 8. / 3.
-        self.frame_length = int(FLAGS.window_size)
-        self.frame_step = int(FLAGS.window_size//4)
-    
-    def __call__(self, x, psd_max_ori):
-        win = tf.contrib.signal.stft(x, self.frame_length, self.frame_step)
-        z = self.scale *tf.abs(win / FLAGS.window_size)
-        psd = tf.square(z)
-        PSD = tf.pow(10., 9.6) / tf.reshape(psd_max_ori, [-1, 1, 1]) * psd
-        return PSD
 
 class Attack:
     def __init__(self, sess, batch_size=1,
@@ -261,9 +177,9 @@ class Attack:
         sess.run(tf.initializers.global_variables())
         saver = tf.train.Saver([x for x in tf.global_variables() if x.name.startswith("librispeech")])
         saver.restore(sess, FLAGS.checkpoint)
-             
+                    
         # reassign the variables  
- 	sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
+ 	    sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
         sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
         
         #noise = np.random.normal(scale=2, size=audios.shape)
@@ -510,4 +426,5 @@ def main(argv):
 
 if __name__ == '__main__':
     app.run(main)
+    
     
