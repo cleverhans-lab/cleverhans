@@ -10,6 +10,7 @@ from lingvo.core import cluster_factory
 from absl import flags
 from absl import app
 
+flags.DEFINE_string("root_dir", "./", "location of Librispeech")
 flags.DEFINE_string('input', 'read_data.txt',
                     'the text file saved the dir of audios and the corresponding original and targeted transcriptions')
 flags.DEFINE_string('rir_dir', 'LibriSpeech/test-clean/3575/170457/3575-170457-0013',
