@@ -133,11 +133,11 @@ class Attack:
             self.lengths = tf.placeholder(np.int32, shape=[batch_size,])
             
             # variable
-            self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32), name='qq_rescale')    
+            self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32) * FLAGS.initial_bound, name='qq_rescale')    
             
             # extract the delta
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])                      
-            self.apply_delta = tf.clip_by_value(self.delta, -FLAGS.initial_bound, FLAGS.initial_bound) * self.rescale
+            self.apply_delta = tf.clip_by_value(self.delta, -self.rescale, self.rescale) 
             self.before_rir = tf.clip_by_value(self.apply_delta * self.mask + self.input_tf, -2**15, 2**15-1)
             self.new_input = create_speech_rir(self.before_rir, self.rir, self.lengths, self.maxlen, self.batch_size) * self.mask
             self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2**15, 2**15-1)            
@@ -170,7 +170,7 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
                      
         # reassign the variables 
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))        
+        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32) * FLAGS.initial_bound))        
         sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
              
         noise = np.zeros(audios.shape)
@@ -237,16 +237,16 @@ class Attack:
                         rescale = sess.run(self.rescale)
                         # update rescale
                         if i % 10 == 0:
-                            if rescale[ii] *  FLAGS.initial_bound > np.max(np.abs(d[ii])):                            
-                                rescale[ii] = np.max(np.abs(d[ii])) / FLAGS.initial_bound                      
+                            if rescale[ii]  > np.max(np.abs(d[ii])):                            
+                                rescale[ii] = np.max(np.abs(d[ii]))                   
                             rescale[ii] *= .8
-                            print("Iteration i=%d, worked ii=%d celoss=%f bound=%f"%(i, ii, cl[ii], FLAGS.initial_bound * rescale[ii]))   
+                            print("Iteration i=%d, worked ii=%d celoss=%f bound=%f"%(i, ii, cl[ii], rescale[ii]))   
                             sess.run(tf.assign(self.rescale, rescale))    
 
                         # save the best adversarial example
                         final_adv[ii] = new_input[ii]
                         final_perturb[ii] = apply_delta[ii]
-                        print("Stage 1: save the example at iteration i=%d example ii=%d celoss=%f bound=%f" % (i, ii, cl[ii], FLAGS.initial_bound * rescale[ii]))
+                        print("Stage 1: save the example at iteration i=%d example ii=%d celoss=%f bound=%f" % (i, ii, cl[ii], rescale[ii]))
                                                                                                                                 
                 # in case no final_delta return        
                 if (i == MAX-1 and final_adv[ii] is None):
