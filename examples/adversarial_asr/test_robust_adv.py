@@ -166,9 +166,9 @@ def main(argv):
                         predictions = sess.run(decoded_outputs, feed_dict)
                         
                         task.PostProcessDecodeOut(predictions, dec_metrics_dict)
-                        wer_value = dec_metrics_dict['wer'].value
+                        wer_value = dec_metrics_dict['wer'].value * 100.
                         print("--------------------------------") 
-                        print("By far, the WER is: {}".format(wer_value))                                             
+                        print("Now, the WER is: {}%".format(wer_value))                                             
                         
                         for i in range(batch_size):   
                             print("example: {}, loss_ce: {}".format(l*batch_size + i, losses[i]))
@@ -180,11 +180,11 @@ def main(argv):
                                 correct += 1
                     print("num of examples succeed for room {}: {}".format(num_room, correct))
                     success_rate = correct / float(num) * 100
-                    print("success rate for room {}: {}".format(num_room, success_rate))
+                    print("success rate for room {}: {}%".format(num_room, success_rate))
                     
                     success_rates.append(success_rate)
                 success_ave = float(sum(success_rates))/len(success_rates)
-                print("success rate overall: {}".format(success_ave))                  
+                print("success rate overall: {}%".format(success_ave))                  
                     
 if __name__ == '__main__':
     app.run(main)
