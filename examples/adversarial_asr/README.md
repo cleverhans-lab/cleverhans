@@ -85,6 +85,12 @@ In the paper, we test the last 100 audios in the ```./util/read_data_full.txt```
 
 Empirically, for longer audios, you might need to increase the ```initial bound``` of perturbation to generate robust adversarial examples that can successfully attack the simulated rooms. Correspndingly, you also need to increase ```num_iter_stage1``` to allow the adversarial generation to converge. You can tune the training parameters in ```generate_robust_adv.py``` to play with your data.
 
+To test the performance of robust adversarial examples, simply run 
+```
+python test_robust_adv.py --stage=stage2 --adv=True
+```
+If you want to test the performance of clean examples played in the simulated rooms, you can set ```-adv=False```.
+
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
 
