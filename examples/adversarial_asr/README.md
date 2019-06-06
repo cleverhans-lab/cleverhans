@@ -89,7 +89,7 @@ To test the performance of robust adversarial examples, simply run
 ```
 python test_robust_adv.py --stage=stage2 --adv=True
 ```
-If you want to test the performance of clean examples played in the simulated rooms, you can set ```-adv=False```.
+If you want to test the performance of clean examples played in the simulated rooms, you can set ```--adv=False```.
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
