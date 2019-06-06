@@ -168,7 +168,7 @@ def main(argv):
                         task.PostProcessDecodeOut(predictions, dec_metrics_dict)
                         wer_value = dec_metrics_dict['wer'].value * 100.
                         print("--------------------------------") 
-                        print("Now, the WER is: {}%".format(wer_value))                                             
+                        print("Now, the WER is: {0:.2f}%".format(wer_value))                                             
                         
                         for i in range(batch_size):   
                             print("example: {}, loss_ce: {}".format(l*batch_size + i, losses[i]))

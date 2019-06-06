@@ -17,6 +17,8 @@ flags.DEFINE_integer('batch_size', '5',
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
                     'location of checkpoint')
 flags.DEFINE_string('stage', "stage2", 'which stage to test')
+flags.DEFINE_boolean('adv', 'True', 'to test adversarial examples or clean examples')
+
 FLAGS = flags.FLAGS
 
 def Read_input(data, batch_size):
@@ -32,7 +34,10 @@ def Read_input(data, batch_size):
     
     for i in range(batch_size):
         name, _  = data[0,i].split(".")
-        sample_rate_np, audio_temp = wav.read("./" + str(name) + "_" + FLAGS.stage + ".wav")
+        if FLAGS.adv:
+            sample_rate_np, audio_temp = wav.read("./" + str(name) + "_" + FLAGS.stage + ".wav")
+        else:
+            sample_rate_np, audio_temp = wav.read("./" + str(name) + ".wav")
 
         # read the wav form range from [-32767, 32768] or [-1, 1]
         if max(audio_temp) < 1:
@@ -44,6 +49,7 @@ def Read_input(data, batch_size):
         
         audios.append(audio_np)
         lengths.append(length)
+
     
     max_length = max(lengths)   
     lengths_freq = (np.array(lengths) // 2 + 1) // 240 * 3
@@ -58,7 +64,10 @@ def Read_input(data, batch_size):
         masks_freq[i, :lengths_freq[i], :] = 1
         
     audios_np = audios_np.astype(float)
-    trans = data[2, :]
+    if FLAGS.adv:
+        trans = data[2, :]
+    else:
+        trans = data[1, :]
     
     return audios_np, sample_rate_np, trans, masks_freq
 
@@ -131,7 +140,7 @@ def main(argv):
                             print("example {} succeeds".format(i))
                         
                 print("num of examples succeed: {}".format(correct))
-                print("success rate: {}".format(correct / float(num) * 100))
+                print("success rate: {}%".format(correct / float(num) * 100))
              
 
 if __name__ == '__main__':
