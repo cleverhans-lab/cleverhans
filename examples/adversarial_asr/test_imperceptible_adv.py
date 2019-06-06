@@ -129,9 +129,7 @@ def main(argv):
                     
                     task.PostProcessDecodeOut(predictions, dec_metrics_dict)
                     wer_value = dec_metrics_dict['wer'].value * 100.
-                    print("--------------------------------") 
-                    print("Now, the WER is: {0:.2f}%".format(wer_value)) 
-
+                    
                     for i in range(batch_size):                                           
                         print("pred:{}".format(predictions['topk_decoded'][i, 0]))
                         print("targ:{}".format(tgt_np[i].lower()))
@@ -141,7 +139,8 @@ def main(argv):
                             correct += 1
                             print("------------------------------")
                             print("example {} succeeds".format(i))
-                        
+
+                    print("Now, the WER is: {0:.2f}%".format(wer_value))    
                 print("num of examples succeed: {}".format(correct))
                 print("success rate: {}%".format(correct / float(num) * 100))
              
