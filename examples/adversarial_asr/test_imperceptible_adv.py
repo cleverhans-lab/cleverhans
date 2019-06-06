@@ -16,7 +16,7 @@ from absl import app
 from lingvo.core import cluster_factory
 
 flags.DEFINE_string('input', 'read_data.txt',
-                    'Input audio .wav file(s), at 16KHz (separated by spaces)')
+                    'the text file saved the dir of audios and the corresponding original and targeted transcriptions')
 flags.DEFINE_integer('batch_size', '5',
                     'batch_size to do the testing')
 flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
