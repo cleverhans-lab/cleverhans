@@ -22,7 +22,7 @@ from absl import app
 # data directory
 flags.DEFINE_string("root_dir", "./", "location of Librispeech")
 flags.DEFINE_string('input', 'read_data.txt',
-                    'Input audio .wav file(s), at 16KHz (separated by spaces)')
+                    'the text file saved the dir of audios and the corresponding original and targeted transcriptions')
 
 # data processing
 flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
