@@ -15,16 +15,18 @@ flags.DEFINE_string('input', 'read_data.txt',
                     'the text file saved the dir of audios and the corresponding original and targeted transcriptions')
 flags.DEFINE_string('rir_dir', 'LibriSpeech/test-clean/3575/170457/3575-170457-0013',
                     'directory of generated room reverberations')
-flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
+flags.DEFINE_string('checkpoint', './model/ckpt-00908156',
                     'location of checkpoint')
 
 flags.DEFINE_integer('batch_size', '5',
                     'batch_size to do the testing')
-flags.DEFINE_string('stage', "stage2", 'which step to test')
+flags.DEFINE_string('stage', 'stage2', 'which step to test')
+flags.DEFINE_boolean('adv', 'True', 'to test adversarial examples or clean examples')
 flags.DEFINE_integer('num_test_rooms', '100',
                     'batch_size to do the testing')
 flags.DEFINE_integer('num_train_rooms', '1000',
                     'batch_size to do the testing')
+
 
 FLAGS = flags.FLAGS
 
@@ -40,7 +42,11 @@ def Read_input(data, batch_size):
 
     for i in range(batch_size):
         name, _  = data[0,i].split(".")
-        sample_rate_np, audio_temp = wav.read("./" + str(name) + "_robust_" + FLAGS.stage + ".wav")
+        if FLAGS.adv：
+            sample_rate_np, audio_temp = wav.read("./" + str(name) + "_robust_" + FLAGS.stage + ".wav")
+        else:
+            sample_rate_np, audio_temp = wav.read("./" + str(name) + ".wav")
+
 
         # read the wav form range from [-32767, 32768] or [-1, 1]
         if max(audio_temp) < 1:
@@ -68,7 +74,12 @@ def Read_input(data, batch_size):
         masks_freq[i, :lengths_freq[i], :] = 1
         
     audios_np = audios_np.astype(float)
-    trans = data[2, :]
+    
+    if FLAGS.adv:
+        trans = data[2, :]
+    else:
+        trans = data[1, :]
+
     lengths = np.array(lengths).astype(np.int32)
     
     return audios_np, sample_rate_np, trans, masks_freq, lengths, max_length, masks
