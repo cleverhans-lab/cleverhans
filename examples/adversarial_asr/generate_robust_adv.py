@@ -358,8 +358,6 @@ class Attack:
             
         return final_adv, final_perturb 
 
-
-
     def attack_stage2(self, audios, adv, rescales, trans, maxlen, sample_rate, masks, masks_freq, num_loop, data, lengths):       
         sess = self.sess       
         # initialize and load the pretrained model
@@ -468,8 +466,7 @@ class Attack:
          
             if i % 10 == 0:
                 print("ten iterations take around {} ".format(clock))
-                clock = 0
-             
+                clock = 0             
             clock += time.time() - now
             
         return final_adv, final_perturb
@@ -523,7 +520,7 @@ def main(argv):
                 audios, trans, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)                                                                      
                 adv_example, perturb = attack.attack_stage2(audios, trans, adv, rescales, maxlen, sample_rate, masks, masks_freq, l, data_sub, lengths)
                 
-                # save the adversarial examples in stage 2 that can only successfully attack a set of simulated rooms
+                # save the adversarial examples in stage 2 that can successfully attack a set of simulated rooms
                 for i in range(batch_size):
                     print("Final distortion for stage 2", np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))                                      
                     name, _ = data_sub[0, i].split(".")                    
