@@ -4,7 +4,7 @@ from lingvo import model_registry
 import numpy as np
 import scipy.io.wavfile as wav
 import generate_masking_threshold as generate_mask
-from tool import Transform, create_features, create_inputs
+from tool import create_features, create_inputs
 import time
 from lingvo.core import cluster_factory
 from absl import flags
