@@ -10,7 +10,6 @@ from lingvo.core import cluster_factory
 from absl import flags
 from absl import app
 
-
 # data directory
 flags.DEFINE_string("root_dir", "./", "location of Librispeech")
 flags.DEFINE_string('input', 'read_data.txt',
@@ -44,8 +43,8 @@ def ReadFromWav(data, batch_size):
         psd_max_batch: a numpy array of the psd_max of the original audio (batch_size)
         max_length: the max length of the batch of audios
         sample_rate_np: a numpy array
-	    masks: a numpy array of size (batch_size, max_length)
-	    masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
+        masks: a numpy array of size (batch_size, max_length)
+        masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
         lengths: a list of the length of original audios
     """
     audios = []
