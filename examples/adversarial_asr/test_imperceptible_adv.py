@@ -96,7 +96,7 @@ def main(argv):
                 # generate the features and inputs
                 features = create_features(input_tf, sample_rate_tf, mask_tf)
                 shape = tf.shape(features)
-                inputs, src_paddings = create_inputs(model, features, tgt_tf, batch_size, mask_tf)
+                inputs = create_inputs(model, features, tgt_tf, batch_size, mask_tf)
                 
                 # loss
                 metrics = task.FPropDefaultTheta(inputs)              
