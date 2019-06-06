@@ -1,4 +1,5 @@
 import tensorflow as tf
+from lingvo import model_imports
 from lingvo import model_registry
 import numpy as np
 import scipy.io.wavfile as wav
@@ -150,7 +151,7 @@ class Attack:
         
         # compute the loss for masking threshold
         self.loss_th_list = []
-        self.transform = Transform()
+        self.transform = Transform(FLAGS.window_size)
         for i in range(self.batch_size):
             logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
             loss_th =  tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[i]))            
@@ -179,7 +180,7 @@ class Attack:
         saver.restore(sess, FLAGS.checkpoint)
                     
         # reassign the variables  
- 	    sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
+        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
         sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
         
         #noise = np.random.normal(scale=2, size=audios.shape)
