@@ -27,7 +27,6 @@ flags.DEFINE_integer('num_test_rooms', '100',
 flags.DEFINE_integer('num_train_rooms', '1000',
                     'batch_size to do the testing')
 
-
 FLAGS = flags.FLAGS
 
 def Read_input(data, batch_size):
@@ -42,7 +41,8 @@ def Read_input(data, batch_size):
 
     for i in range(batch_size):
         name, _  = data[0,i].split(".")
-        if FLAGS.adv：
+
+        if FLAGS.adv:
             sample_rate_np, audio_temp = wav.read("./" + str(name) + "_robust_" + FLAGS.stage + ".wav")
         else:
             sample_rate_np, audio_temp = wav.read("./" + str(name) + ".wav")
@@ -74,7 +74,7 @@ def Read_input(data, batch_size):
         masks_freq[i, :lengths_freq[i], :] = 1
         
     audios_np = audios_np.astype(float)
-    
+
     if FLAGS.adv:
         trans = data[2, :]
     else:
