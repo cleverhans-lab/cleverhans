@@ -81,9 +81,9 @@ Then you can run the following command to generate robust adversarial examples.
 ```
 python generate_robust_adv.py --initial_bound=2000 --num_iter_stage1=2000
 ```
-In the paper, we test the last 100 audios in the ```./util/read_data_full.txt``` and we use the 2000 for the ```initial bound``` of perturbation and ```num_iter_stage1```.
+In the paper, we test the last 100 audios in the ```./util/read_data_full.txt``` and we use the ```2000``` for the parameter ```initial bound``` and ```num_iter_stage1```.
 
-For longer audios, you might need to increase the ```initial bound``` of perturbation to generate robust adversarial examples that can successfully attack the simulated rooms. Correspndingly, you also need to increase ```num_iter_stage1``` to allow the adversarial generation to converge.
+Empirically, for longer audios, you might need to increase the ```initial bound``` of perturbation to generate robust adversarial examples that can successfully attack the simulated rooms. Correspndingly, you also need to increase ```num_iter_stage1``` to allow the adversarial generation to converge. You can tune the training parameters in ```generate_robust_adv.py``` to play with your data.
 
 ## Citation
 If you find the code or the models implemented here are useful, please cite this paper:
