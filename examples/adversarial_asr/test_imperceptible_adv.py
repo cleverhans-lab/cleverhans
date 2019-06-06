@@ -128,7 +128,10 @@ def main(argv):
                     predictions = sess.run(decoded_outputs, feed_dict)
                     
                     task.PostProcessDecodeOut(predictions, dec_metrics_dict)
-                                        
+                    wer_value = dec_metrics_dict['wer'].value * 100.
+                    print("--------------------------------") 
+                    print("Now, the WER is: {0:.2f}%".format(wer_value)) 
+
                     for i in range(batch_size):                                           
                         print("pred:{}".format(predictions['topk_decoded'][i, 0]))
                         print("targ:{}".format(tgt_np[i].lower()))
