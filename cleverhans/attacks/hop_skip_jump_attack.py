@@ -3,6 +3,7 @@
 import logging
 import numpy as np
 import tensorflow as tf
+from warnings import warn
 from cleverhans.attacks import Attack
 from cleverhans.model import CallableModelWrapper, Model, wrapper_warning_logits
 from cleverhans import utils, utils_tf
@@ -339,6 +340,12 @@ class HopSkipJumpAttack(Attack):
     return perturbed
 
 
+def BoundaryAttackPlusPlus(model, sess, dtypestr='float32', **kwargs):
+  """
+  A previous name used for HopSkipJumpAttack.
+  """
+  warn("BoundaryAttackPlusPlus is deprecated; use HopSkipJumpAttack.")
+  HopSkipJumpAttack(model, sess, dtypestr, **kwargs)
 
 def _check_first_dimension(x, tensor_name):
   message = "Tensor {} should have batch_size of 1.".format(tensor_name)
