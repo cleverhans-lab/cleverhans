@@ -68,9 +68,9 @@ The adversarial examples saved with the name ended with "stage1" is the adversar
 To test the accuracy of our imperceptible adversarial examples, simply run:
 
 ```bash
-python test_imperceptible_adv.py --stage=stage2
+python test_imperceptible_adv.py --stage=stage2 --adv=True
 ```
-You can set ```--stage=stage1``` to test the accuracy of Carlini's adversarial examples.
+You can set ```--stage=stage1``` to test the accuracy of Carlini's adversarial examples. If you set ```--adv=False```, then you can test the performance for clean examples with its corresponding original transcriptions.
 
 ## Robust Adversarial Examples
 To generate robust adversarial examples that are simulated playing over-the-air in the simulated random rooms, we need to first generate the simulated room reverberations.
