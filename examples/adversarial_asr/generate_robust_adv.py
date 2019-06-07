@@ -405,11 +405,11 @@ def main(argv):
                 for i in range(batch_size):
                     print("Final distortion for stage 1", np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))                                      
                     name, _ = data_sub[0, i].split(".")                    
-                    saved_name = FLAGS.root_dir + str(name) + "_robust_stage1.wav"                     
+                    saved_name = FLAGS.root_dir + str(name) + "_robust_speechrir_stage1.wav"                     
                     adv_example_float =  adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(adv_example_float[:lengths[i]], -2**15, 2**15-1)))
 
-                    saved_name = FLAGS.root_dir + str(name) + "_robust_stage1.wav"                     
+                    saved_name = FLAGS.root_dir + str(name) + "_robust_perturb_stage1.wav"                     
                     perturb_float =  perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2**15, 2**15-1)))
                     print(saved_name) 
@@ -428,11 +428,11 @@ def main(argv):
                 for i in range(batch_size):
                     print("Final distortion for stage 2", np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))                                      
                     name, _ = data_sub[0, i].split(".")                    
-                    saved_name = FLAGS.root_dir + str(name) + "_robust_stage2.wav"                     
+                    saved_name = FLAGS.root_dir + str(name) + "_robust_speechrir_stage2.wav"                     
                     adv_example_float =  adv_example[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(adv_example_float[:lengths[i]], -2**15, 2**15-1)))
 
-                    saved_name = FLAGS.root_dir + str(name) + "_robust_stage2.wav"                     
+                    saved_name = FLAGS.root_dir + str(name) + "_robust_perturb_stage2.wav"                     
                     perturb_float =  perturb[i] / 32768.
                     wav.write(saved_name, 16000, np.array(np.clip(perturb_float[:lengths[i]], -2**15, 2**15-1)))
                     print(saved_name) 

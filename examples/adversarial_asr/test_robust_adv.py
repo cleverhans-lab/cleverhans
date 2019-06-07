@@ -42,18 +42,15 @@ def Read_input(data, batch_size):
     for i in range(batch_size):
         name, _  = data[0,i].split(".")
 
-        if FLAGS.adv:
-            sample_rate_np, audio_temp = wav.read("./" + str(name) + "_robust_" + FLAGS.stage + ".wav")
+        if FLAGS.adv:  
+            sample_rate_np, delta = wav.read("./" + str(name) + "_robust_perturb_" + FLAGS.stage + ".wav")
+            _, audio_orig = wav.read("./" + str(name) + ".wav")  
+            if max(delta) < 1:
+                delta = delta * 32768
+            audio_np = audio_orig + delta
         else:
-            sample_rate_np, audio_temp = wav.read("./" + str(name) + ".wav")
+            sample_rate_np, audio_np = wav.read("./" + str(name) + ".wav")
 
-
-        # read the wav form range from [-32767, 32768] or [-1, 1]
-        if max(audio_temp) < 1:
-            audio_np = audio_temp * 32768
-            
-        else:
-            audio_np = audio_temp
         length = len(audio_np)
         
         audios.append(audio_np)
