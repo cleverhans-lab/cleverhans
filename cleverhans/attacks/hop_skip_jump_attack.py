@@ -344,7 +344,7 @@ def BoundaryAttackPlusPlus(model, sess, dtypestr='float32', **kwargs):
   """
   A previous name used for HopSkipJumpAttack.
   """
-  warn("BoundaryAttackPlusPlus is deprecated; use HopSkipJumpAttack.")
+  warn("BoundaryAttackPlusPlus will be removed after 2019-12-08; use HopSkipJumpAttack.")
   return HopSkipJumpAttack(model, sess, dtypestr, **kwargs)
 
 def _check_first_dimension(x, tensor_name):
