@@ -345,7 +345,7 @@ def BoundaryAttackPlusPlus(model, sess, dtypestr='float32', **kwargs):
   A previous name used for HopSkipJumpAttack.
   """
   warn("BoundaryAttackPlusPlus is deprecated; use HopSkipJumpAttack.")
-  HopSkipJumpAttack(model, sess, dtypestr, **kwargs)
+  return HopSkipJumpAttack(model, sess, dtypestr, **kwargs)
 
 def _check_first_dimension(x, tensor_name):
   message = "Tensor {} should have batch_size of 1.".format(tensor_name)
