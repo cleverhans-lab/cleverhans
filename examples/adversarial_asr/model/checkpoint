@@ -1,0 +1,4 @@
+model_checkpoint_path: "/tmp/librispeech/log/train/ckpt-00908156"
+all_model_checkpoint_paths: "/tmp/librispeech/log/train/ckpt-00000000"
+all_model_checkpoint_paths: "/tmp/librispeech/log/train/ckpt-00000005"
+all_model_checkpoint_paths: "/tmp/librispeech/log/train/ckpt-00000011"
