@@ -4,7 +4,7 @@ This is a Tensorflow implementation for the ICML 2019 paper ["Imperceptible, Rob
 
 ## Dependencies
 *   Python 2.7
-*   a TensorFlow [installation](https://www.tensorflow.org/install/) (Tensorflow 1.13 is supported for this version of Lingvo system),
+*   a TensorFlow [installation](https://www.tensorflow.org/install/) (Tensorflow 1.13 is supported for this version of Lingvo system and Tensorflow 1.14 is not supported),
 *   a `C++` compiler (only g++ 4.8 is officially supported),
 *   the bazel build system,
 *   librosa (```pip install librosa```),
