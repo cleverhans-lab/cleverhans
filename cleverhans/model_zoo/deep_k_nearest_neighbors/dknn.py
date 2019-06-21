@@ -9,6 +9,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy
 import copy
 import os
 from bisect import bisect_left
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
-import falconn
+import faiss
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.dataset import MNIST
@@ -105,31 +106,18 @@ class DkNNModel(Model):
       self.train_activations_lsh[layer] -= center
       self.centers[layer] = center
 
-      # LSH parameters
-      params_cp = falconn.LSHConstructionParameters()
-      params_cp.dimension = len(self.train_activations_lsh[layer][1])
-      params_cp.lsh_family = falconn.LSHFamily.CrossPolytope
-      params_cp.distance_function = falconn.DistanceFunction.EuclideanSquared
-      params_cp.l = self.nb_tables
-      params_cp.num_rotations = 2  # for dense set it to 1; for sparse data set it to 2
-      params_cp.seed = 5721840
-      # we want to use all the available threads to set up
-      params_cp.num_setup_threads = 0
-      params_cp.storage_hash_table = falconn.StorageHashTable.BitPackedFlatHashTable
-
-      # we build 18-bit hashes so that each table has
-      # 2^18 bins; this is a good choice since 2^18 is of the same
-      # order of magnitude as the number of data points
-      falconn.compute_number_of_hash_functions(self.number_bits, params_cp)
-
       print('Constructing the LSH table')
-      table = falconn.LSHIndex(params_cp)
-      table.setup(self.train_activations_lsh[layer])
+      index_dim = self.train_activations_lsh[layer].shape[1]
+      l2_flat_index = faiss.IndexLSH(
+        index_dim,
+        # limitation of faiss LSH, IndexLSH.cpp:40
+        min(self.number_bits, index_dim),
+        # rotate_data = false, deterministic result
+        False
+      )
 
-      # Parse test feature vectors and find k nearest neighbors
-      query_object = table.construct_query_object()
-      query_object.set_num_probes(self.nb_tables)
-      self.query_objects[layer] = query_object
+      l2_flat_index.add(self.train_activations_lsh[layer])
+      self.query_objects[layer] = l2_flat_index
 
   def find_train_knns(self, data_activations):
     """
@@ -151,19 +139,32 @@ class DkNNModel(Model):
       knns_ind[layer] = np.zeros(
           (data_activations_layer.shape[0], self.neighbors), dtype=np.int32)
       knn_errors = 0
-      for i in range(data_activations_layer.shape[0]):
-        query_res = self.query_objects[layer].find_k_nearest_neighbors(
-            data_activations_layer[i], self.neighbors)
-        try:
-          knns_ind[layer][i, :] = query_res
-        except:  # pylint: disable-msg=W0702
-          knns_ind[layer][i, :len(query_res)] = query_res
-          knn_errors += knns_ind[layer].shape[1] - len(query_res)
+
+      neighbor_distance, neighbor_index = self.query_objects[layer].search(
+        data_activations_layer, self.neighbors
+      )
+
+      d1 = neighbor_index.reshape(-1)
+      m1 = d1 == -1
+
+      knns_ind[layer].reshape(-1)[
+        numpy.logical_not(m1)
+      ] = d1[
+        numpy.logical_not(m1)
+      ]
+
+      knn_erros = numpy.sum(m1)
 
       # Find labels of neighbors found in the training data.
       knns_labels[layer] = np.zeros((nb_data, self.neighbors), dtype=np.int32)
-      for data_id in range(nb_data):
-        knns_labels[layer][data_id, :] = self.train_labels[knns_ind[layer][data_id]]
+
+      knns_labels[layer].reshape(-1)[
+        numpy.logical_not(m1)
+      ] = self.train_labels[
+        knns_ind[layer].reshape(-1)[
+          numpy.logical_not(m1)
+        ]
+      ]
 
     return knns_ind, knns_labels
 
@@ -248,9 +249,9 @@ class DkNNModel(Model):
     cali_knns_ind, cali_knns_labels = self.find_train_knns(
         self.cali_activations)
     assert all([v.shape == (self.nb_cali, self.neighbors)
-                for v in cali_knns_ind.itervalues()])
+                for v in cali_knns_ind.values()])
     assert all([v.shape == (self.nb_cali, self.neighbors)
-                for v in cali_knns_labels.itervalues()])
+                for v in cali_knns_labels.values()])
 
     cali_knns_not_in_class = self.nonconformity(cali_knns_labels)
     cali_knns_not_in_l = np.zeros(self.nb_cali, dtype=np.int32)
@@ -389,8 +390,16 @@ def dknn_tutorial():
       layers = ['ReLU1', 'ReLU3', 'ReLU5', 'logits']
 
       # Wrap the model into a DkNNModel
-      dknn = DkNNModel(FLAGS.neighbors, layers, get_activations,
-                       train_data, train_labels, nb_classes, scope='dknn')
+      dknn = DkNNModel(
+        FLAGS.neighbors,
+        layers,
+        get_activations,
+        train_data,
+        train_labels,
+        nb_classes,
+        scope='dknn',
+        number_bits=FLAGS.number_bits
+      )
       dknn.calibrate(cali_data, cali_labels)
 
       # Generate adversarial examples
@@ -413,8 +422,12 @@ def dknn_tutorial():
 def main(argv=None):
   assert dknn_tutorial()
 
-
-if __name__ == '__main__':
+def define_default_argument_values():
+  tf.flags.DEFINE_integer(
+    'number_bits',
+    17,
+    'number of hash bits used by LSH Index'
+  )
   tf.flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
   tf.flags.DEFINE_integer('batch_size', 500, 'Size of training batches')
   tf.flags.DEFINE_float('lr', 0.001, 'Learning rate for training')
@@ -423,5 +436,9 @@ if __name__ == '__main__':
       'nb_cali', 750, 'Number of calibration points for the DkNN')
   tf.flags.DEFINE_integer(
       'neighbors', 75, 'Number of neighbors per layer for the DkNN')
+
+
+if __name__ == '__main__':
+  define_default_argument_values()
 
   tf.app.run()
