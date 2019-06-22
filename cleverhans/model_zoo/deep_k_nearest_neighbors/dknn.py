@@ -9,7 +9,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy
 import copy
 import os
 from bisect import bisect_left
@@ -17,8 +16,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from six.moves import xrange
-import tensorflow as tf
 import faiss
+import enum
+import tensorflow as tf
+import falconn
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.dataset import MNIST
@@ -51,6 +52,141 @@ def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
   return model
 
 
+class LSH:
+  class BACKEND(enum.Enum):
+    FALCONN = 1
+    FAISS = 2
+
+  def __init__(
+    self,
+    backend,
+    dimension,
+    neighbors,
+    number_bits,
+    nb_tables=None,
+  ):
+    assert backend in LSH.BACKEND
+
+    self._NEIGHBORS = neighbors
+    self._BACKEND = backend
+
+    if self._BACKEND is LSH.BACKEND.FALCONN:
+      self._init_falconn(
+        dimension,
+        number_bits,
+        nb_tables
+      )
+    elif self._BACKEND is LSH.BACKEND.FAISS:
+      self._init_faiss(
+        dimension,
+        number_bits
+      )
+    else:
+      raise NotImplementedError
+
+  def _init_falconn(
+    self,
+    dimension,
+    number_bits,
+    nb_tables,
+  ):
+    assert nb_tables >= self._NEIGHBORS
+
+    # LSH parameters
+    params_cp = falconn.LSHConstructionParameters()
+    params_cp.dimension = dimension
+    params_cp.lsh_family = falconn.LSHFamily.CrossPolytope
+    params_cp.distance_function = falconn.DistanceFunction.EuclideanSquared
+    params_cp.l = nb_tables
+    params_cp.num_rotations = 2  # for dense set it to 1; for sparse data set it to 2
+    params_cp.seed = 5721840
+    # we want to use all the available threads to set up
+    params_cp.num_setup_threads = 0
+    params_cp.storage_hash_table = falconn.StorageHashTable.BitPackedFlatHashTable
+
+    # we build 18-bit hashes so that each table has
+    # 2^18 bins; this is a good choice since 2^18 is of the same
+    # order of magnitude as the number of data points
+    falconn.compute_number_of_hash_functions(number_bits, params_cp)
+    self._falconn_table = falconn.LSHIndex(params_cp)
+    self._falconn_query_object = None
+    self._FALCONN_NB_TABLES = nb_tables
+
+  def _init_faiss(
+    self,
+    dimension,
+    number_bits
+  ):
+    self._faiss_lsh_index = faiss.IndexLSH(
+      dimension,
+      # limitation of faiss LSH, IndexLSH.cpp:40
+      min(number_bits, dimension),
+      # rotate_data = false, deterministic result
+      False
+    )
+
+  def _find_knns_falconn(self, x, output):
+    # Late falconn query_object construction
+    # Since I suppose there might be an error
+    # if table.setup() will be called after
+    if self._falconn_query_object is None:
+      self._falconn_query_object = self._falconn_table.construct_query_object()
+      self._falconn_query_object.set_num_probes(
+        self._FALCONN_NB_TABLES
+      )
+
+    missing_indices = np.zeros(output.shape, dtype=np.bool)
+
+    for i in range(x.shape[0]):
+      query_res = self._falconn_query_object.find_k_nearest_neighbors(
+        x[i],
+        self._NEIGHBORS
+      )
+      try:
+        output[i, :] = query_res
+      except:  # pylint: disable-msg=W0702
+        # mark missing indices
+        missing_indices[i, len(query_res):] = True
+
+        output[i, :len(query_res)] = query_res
+
+    return missing_indices
+
+  def _find_knns_faiss(self, x, output):
+    neighbor_distance, neighbor_index = self._faiss_lsh_index.search(
+      x,
+      self._NEIGHBORS
+    )
+
+    missing_indices = neighbor_distance == -1
+
+    d1 = neighbor_index.reshape(-1)
+
+    output.reshape(-1)[
+      np.logical_not(missing_indices.flatten())
+    ] = d1[
+      np.logical_not(missing_indices.flatten())
+    ]
+
+    return missing_indices
+
+  def add(self, x):
+    if self._BACKEND is LSH.BACKEND.FALCONN:
+      self._falconn_table.setup(x)
+    elif self._BACKEND is LSH.BACKEND.FAISS:
+      self._faiss_lsh_index.add(x)
+    else:
+      raise NotImplementedError
+
+  def find_knns(self, x, output):
+    if self._BACKEND is LSH.BACKEND.FALCONN:
+      return self._find_knns_falconn(x, output)
+    elif self._BACKEND is LSH.BACKEND.FAISS:
+      return self._find_knns_faiss(x, output)
+    else:
+      raise NotImplementedError
+
+
 class DkNNModel(Model):
   def __init__(self, neighbors, layers, get_activations, train_data, train_labels,
                nb_classes, scope=None, nb_tables=200, number_bits=17):
@@ -65,7 +201,7 @@ class DkNNModel(Model):
     :param nb_classes: the number of classes in the task.
     :param scope: a TF scope that was used to create the underlying model.
     :param nb_tables: number of tables used by FALCONN to perform locality-sensitive hashing.
-    :param number_bits: number of hash bits used by FALCONN.
+    :param number_bits: number of hash bits used by LSH.
     """
     super(DkNNModel, self).__init__(nb_classes=nb_classes, scope=scope)
     self.neighbors = neighbors
@@ -95,8 +231,6 @@ class DkNNModel(Model):
     # mean of training data representation per layer (that needs to be substracted before LSH).
     self.centers = {}
     for layer in self.layers:
-      assert self.nb_tables >= self.neighbors
-
       # Normalize all the lenghts, since we care about the cosine similarity.
       self.train_activations_lsh[layer] /= np.linalg.norm(
           self.train_activations_lsh[layer], axis=1).reshape(-1, 1)
@@ -107,17 +241,15 @@ class DkNNModel(Model):
       self.centers[layer] = center
 
       print('Constructing the LSH table')
-      index_dim = self.train_activations_lsh[layer].shape[1]
-      l2_flat_index = faiss.IndexLSH(
-        index_dim,
-        # limitation of faiss LSH, IndexLSH.cpp:40
-        min(self.number_bits, index_dim),
-        # rotate_data = false, deterministic result
-        False
+      self.query_objects[layer] = LSH(
+        backend=FLAGS.lsh_backend,
+        dimension=self.train_activations_lsh[layer].shape[1],
+        number_bits=self.number_bits,
+        neighbors=self.neighbors,
+        nb_tables=self.nb_tables
       )
 
-      l2_flat_index.add(self.train_activations_lsh[layer])
-      self.query_objects[layer] = l2_flat_index
+      self.query_objects[layer].add(self.train_activations_lsh[layer])
 
   def find_train_knns(self, data_activations):
     """
@@ -140,29 +272,25 @@ class DkNNModel(Model):
           (data_activations_layer.shape[0], self.neighbors), dtype=np.int32)
       knn_errors = 0
 
-      neighbor_distance, neighbor_index = self.query_objects[layer].search(
-        data_activations_layer, self.neighbors
+      knn_missing_indices = self.query_objects[layer].find_knns(
+        data_activations_layer,
+        knns_ind[layer],
       )
 
-      d1 = neighbor_index.reshape(-1)
-      m1 = d1 == -1
-
-      knns_ind[layer].reshape(-1)[
-        numpy.logical_not(m1)
-      ] = d1[
-        numpy.logical_not(m1)
-      ]
-
-      knn_erros = numpy.sum(m1)
+      knn_errors += knn_missing_indices.flatten().sum()
 
       # Find labels of neighbors found in the training data.
       knns_labels[layer] = np.zeros((nb_data, self.neighbors), dtype=np.int32)
 
       knns_labels[layer].reshape(-1)[
-        numpy.logical_not(m1)
+        np.logical_not(
+          knn_missing_indices.flatten()
+        )
       ] = self.train_labels[
         knns_ind[layer].reshape(-1)[
-          numpy.logical_not(m1)
+          np.logical_not(
+            knn_missing_indices.flatten()
+          )
         ]
       ]
 
@@ -427,6 +555,12 @@ def define_default_argument_values():
     'number_bits',
     17,
     'number of hash bits used by LSH Index'
+  )
+  tf.flags.DEFINE_enum_class(
+    'lsh_backend',
+    LSH.BACKEND.FALCONN,
+    LSH.BACKEND,
+    'LSH backend'
   )
   tf.flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
   tf.flags.DEFINE_integer('batch_size', 500, 'Size of training batches')
