@@ -16,10 +16,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from six.moves import xrange
-import faiss
 import enum
 import tensorflow as tf
-import falconn
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.dataset import MNIST
@@ -90,6 +88,8 @@ class LSH:
     number_bits,
     nb_tables,
   ):
+    import falconn
+
     assert nb_tables >= self._NEIGHBORS
 
     # LSH parameters
@@ -117,6 +117,8 @@ class LSH:
     dimension,
     number_bits
   ):
+    import faiss
+
     self._faiss_lsh_index = faiss.IndexLSH(
       dimension,
       # limitation of faiss LSH, IndexLSH.cpp:40
@@ -550,7 +552,8 @@ def dknn_tutorial():
 def main(argv=None):
   assert dknn_tutorial()
 
-def define_default_argument_values():
+
+if __name__ == '__main__':
   tf.flags.DEFINE_integer(
     'number_bits',
     17,
@@ -570,9 +573,5 @@ def define_default_argument_values():
       'nb_cali', 750, 'Number of calibration points for the DkNN')
   tf.flags.DEFINE_integer(
       'neighbors', 75, 'Number of neighbors per layer for the DkNN')
-
-
-if __name__ == '__main__':
-  define_default_argument_values()
 
   tf.app.run()
