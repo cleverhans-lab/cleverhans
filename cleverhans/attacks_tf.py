@@ -55,7 +55,7 @@ def fgm(x, preds, *args, **kwargs):
 def apply_perturbations(i, j, X, increase, theta, clip_min, clip_max):
   """
   TensorFlow implementation for apply perturbations to input features based
-  on salency maps
+  on saliency maps
   :param i: index of first selected feature
   :param j: index of second selected feature
   :param X: a matrix containing our input features for our sample
