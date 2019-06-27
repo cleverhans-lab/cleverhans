@@ -90,7 +90,7 @@ def main(_):
 
     # Evaluate model on adversarial data
     model_fn = lambda images: predict(params, images)
-    test_images_adv = fast_gradient_method(model_fn, test_images, FLAGS.eps)
+    test_images_adv = fast_gradient_method(model_fn, test_images, FLAGS.eps, np.inf)
     test_acc_adv = accuracy(params, (test_images_adv, test_labels))
 
     print("Epoch {} in {:0.2f} sec".format(epoch, epoch_time))
