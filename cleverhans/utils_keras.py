@@ -1,6 +1,7 @@
 """
 Model construction utilities based on keras
 """
+from distutils.version import LooseVersion
 import warnings
 import tensorflow as tf
 
@@ -156,7 +157,10 @@ class KerasModelWrapper(Model):
 
     node = softmax_layer._inbound_nodes[0]
 
-    logits_name = node.inbound_layers[0].name
+    if LooseVersion(tf.__version__) < LooseVersion('1.14.0'):
+      logits_name = node.inbound_layers[0].name
+    else:
+      logits_name = node.inbound_layers.name
 
     return logits_name
 
