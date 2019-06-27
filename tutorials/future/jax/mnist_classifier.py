@@ -1,67 +1,34 @@
-# Copyright 2018 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+from absl import app, flags
 
-"""A basic MNIST example using JAX together with the mini-libraries stax, for
-neural network building, and optimizers, for first-order stochastic optimization.
-"""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import time
+import datasets
 import itertools
-
-import numpy.random as npr
-
+import time
 import jax.numpy as np
+import numpy.random as npr
 from jax.config import config
 from jax import jit, grad, random
 from jax.experimental import optimizers
 from jax.experimental import stax
-from jax.experimental.stax import Dense, Relu, LogSoftmax
-from examples import datasets
+from jax.experimental.stax import Dense, Relu, logsoftmax
 
+from cleverhans.future.jax.attacks import fast_gradient_method
 
-def loss(params, batch):
-  inputs, targets = batch
-  preds = predict(params, inputs)
-  return -np.mean(preds * targets)
+FLAGS = flags.FLAGS
 
-def accuracy(params, batch):
-  inputs, targets = batch
-  target_class = np.argmax(targets, axis=1)
-  predicted_class = np.argmax(predict(params, inputs), axis=1)
-  return np.mean(predicted_class == target_class)
-
-init_random_params, predict = stax.serial(
-    Dense(1024), Relu,
-    Dense(1024), Relu,
-    Dense(10), LogSoftmax)
-
-if __name__ == "__main__":
+def main(_):
   rng = random.PRNGKey(0)
 
-  step_size = 0.001
-  num_epochs = 10
-  batch_size = 128
-  momentum_mass = 0.9
-
+  # Load MNIST dataset
   train_images, train_labels, test_images, test_labels = datasets.mnist()
+
+  batch_size = 128
+  batch_shape = (-1, 28, 28, 1)
   num_train = train_images.shape[0]
   num_complete_batches, leftover = divmod(num_train, batch_size)
   num_batches = num_complete_batches + bool(leftover)
+
+  train_images = np.reshape(train_images, batch_shape)
+  test_images = np.reshape(test_images, batch_shape)
 
   def data_stream():
     rng = npr.RandomState(0)
@@ -72,50 +39,68 @@ if __name__ == "__main__":
         yield train_images[batch_idx], train_labels[batch_idx]
   batches = data_stream()
 
-  opt_init, opt_update, get_params = optimizers.momentum(step_size, mass=momentum_mass)
+  # Model, loss, and accuracy functions
+  init_random_params, predict = stax.serial(
+          stax.Conv(32, (8, 8), strides=(2, 2), padding='SAME'),
+          stax.Relu,
+          stax.Conv(128, (6, 6), strides=(2, 2), padding='VALID'),
+          stax.Relu,
+          stax.Conv(128, (5, 5), strides=(1, 1), padding='VALID'),
+          stax.Flatten,
+          stax.Dense(128),
+          stax.Relu,
+          stax.Dense(10))
+
+  def loss(params, batch):
+    inputs, targets = batch
+    preds = predict(params, inputs)
+    return -np.mean(logsoftmax(preds) * targets)
+
+  def accuracy(params, batch):
+    inputs, targets = batch
+    target_class = np.argmax(targets, axis=1)
+    predicted_class = np.argmax(predict(params, inputs), axis=1)
+    return np.mean(predicted_class == target_class)
+
+  # Instantiate an optimizer
+  opt_init, opt_update, get_params = optimizers.adam(0.001)
 
   @jit
   def update(i, opt_state, batch):
     params = get_params(opt_state)
     return opt_update(i, grad(loss)(params, batch), opt_state)
 
-  _, init_params = init_random_params(rng, (-1, 28 * 28))
+  # Initialize model
+  _, init_params = init_random_params(rng, batch_shape)
   opt_state = opt_init(init_params)
   itercount = itertools.count()
 
-
-  ###################################################################
-  # BEGIN CLEVERHANS TEST
-  ###################################################################
-
-  from jax import vmap
-  @jit
-  def generate(images, labels, params, eps=0.05):
-    def loss_adv(image, label):
-      pred = predict(params, image)
-      return - np.sum(label * pred)
-    grads_fn = vmap(grad(loss_adv), in_axes=(0, 0), out_axes=0)
-    grads = grads_fn(images, labels)
-    perturbations = eps * np.sign(grads)
-    return images + perturbations
-
-  ###################################################################
-  # END CLEVERHANS TEST
-  ###################################################################
-
+  # Training loop
   print("\nStarting training...")
-  for epoch in range(num_epochs):
+  for epoch in range(FLAGS.nb_epochs):
     start_time = time.time()
     for _ in range(num_batches):
       opt_state = update(next(itercount), opt_state, next(batches))
     epoch_time = time.time() - start_time
 
+    # Evaluate model on clean data
     params = get_params(opt_state)
     train_acc = accuracy(params, (train_images, train_labels))
     test_acc = accuracy(params, (test_images, test_labels))
-    test_images_adv = generate(test_images, test_labels, params, eps=0.25)
+
+    # Evaluate model on adversarial data
+    model_fn = lambda images: predict(params, images)
+    test_images_adv = fast_gradient_method(model_fn, test_images, FLAGS.eps)
     test_acc_adv = accuracy(params, (test_images_adv, test_labels))
+
     print("Epoch {} in {:0.2f} sec".format(epoch, epoch_time))
-    print("Training set accuracy {}".format(train_acc))
-    print("Test set accuracy {}".format(test_acc))
-    print("Test set accuracy adv {}".format(test_acc_adv))
+    print("Training set accuracy: {}".format(train_acc))
+    print("Test set accuracy on clean examples: {}".format(test_acc))
+    print("Test set accuracy on adversarial examples: {}".format(test_acc_adv))
+
+if __name__ == '__main__':
+  flags.DEFINE_integer('nb_epochs', 8, 'Number of epochs.')
+  flags.DEFINE_float('eps', 0.3, 'Total epsilon for FGM and PGD attacks.')
+  flags.DEFINE_bool('adv_train', False, 'Use adversarial training (on PGD adversarial examples).')
+
+  app.run(main)
