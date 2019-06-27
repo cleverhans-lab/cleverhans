@@ -1,66 +1,38 @@
 import tensorflow as tf
 from lingvo import model_imports
 from lingvo import model_registry
-
-from lingvo.core import py_utils
-import six
-import os
-import re
-import tarfile
 import numpy as np
-from lingvo.core import asr_frontend
-from tensorflow.contrib.framework.python.ops import audio_ops as contrib_audio
-from tensorflow.python import pywrap_tensorflow
-import subprocess
 import scipy.io.wavfile as wav
-import generate_mask_mul as generate_mask
+import generate_masking_threshold as generate_mask
+from tool import Transform, create_features, create_inputs
 import time
 from lingvo.core import cluster_factory
 from absl import flags
 from absl import app
 
+# data directory
+flags.DEFINE_string("root_dir", "./", "location of Librispeech")
 flags.DEFINE_string('input', 'read_data.txt',
                     'Input audio .wav file(s), at 16KHz (separated by spaces)')
-flags.DEFINE_string('checkpoint', "/home/yaoqin/librispeech/log/train/ckpt-00908156",
-                    'location of checkpoint')
-flags.DEFINE_string("root_dir", "/home/yaoqin/", "location of Librispeech")
-flags.DEFINE_integer('batch_size', '25',
-                    'batch_size to do the testing')
+
+# data processing
 flags.DEFINE_integer('window_size', '2048', 'window size in spectrum analysis')
-flags.DEFINE_float('lr_step1', '100', 'learning_rate for step1')
-flags.DEFINE_float('lr_step2', '1', 'learning_rate for step2')
-flags.DEFINE_integer('num_iter_step1', '1000', 'number of iterations in step 1')
-flags.DEFINE_integer('num_iter_step2', '4000', 'number of iterations in step 2')
+flags.DEFINE_integer('max_length_dataset', '223200', 
+                    'the length of the longest audio in the whole dataset')
+flags.DEFINE_float('initial_bound', '2000', 'initial l infinity norm for adversarial perturbation')
+
+# training parameters
+flags.DEFINE_string('checkpoint', "./model/ckpt-00908156",
+                    'location of checkpoint')
+flags.DEFINE_integer('batch_size', '5', 'batch size')                   
+flags.DEFINE_float('lr_stage1', '100', 'learning_rate for stage 1')
+flags.DEFINE_float('lr_stage2', '1', 'learning_rate for stage 2')
+flags.DEFINE_integer('num_iter_stage1', '1000', 'number of iterations in stage 1')
+flags.DEFINE_integer('num_iter_stage2', '4000', 'number of iterations in stage 2')
 flags.DEFINE_integer('num_gpu', '0', 'which gpu to run')
-
-
 
 FLAGS = flags.FLAGS
 
-def _MakeLogMel(audio, sample_rate): 
-  audio = tf.expand_dims(audio, axis=0)
-  static_sample_rate = 16000
-  mel_frontend = _CreateAsrFrontend()
-  with tf.control_dependencies(
-      [tf.assert_equal(sample_rate, static_sample_rate)]):
-    log_mel, _ = mel_frontend.FPropDefaultTheta(audio)
-  return log_mel
-
-def _CreateAsrFrontend():
-  p = asr_frontend.MelFrontend.Params()
-  p.sample_rate = 16000.
-  p.frame_size_ms = 25.
-  p.frame_step_ms = 10.
-  p.num_bins = 80
-  p.lower_edge_hertz = 125.
-  p.upper_edge_hertz = 7600.
-  p.preemph = 0.97
-  p.noise_scale = 0.
-  p.pad_end = False
-  # Stack 3 frames and sub-sample by a factor of 3.
-  p.left_context = 2
-  p.output_stride = 3
-  return p.cls(p)
 
 def ReadFromWav(data, batch_size):
     """
@@ -71,7 +43,9 @@ def ReadFromWav(data, batch_size):
         psd_max_batch: a numpy array of the psd_max of the original audio (batch_size)
         max_length: the max length of the batch of audios
         sample_rate_np: a numpy array
-        lengths: a list of length of original audio
+        masks: a numpy array of size (batch_size, max_length)
+        masks_freq: a numpy array of size (batch_size, max_length_freq, 80)
+        lengths: a list of the length of original audios
     """
     audios = []
     lengths = []
@@ -107,7 +81,7 @@ def ReadFromWav(data, batch_size):
         masks_freq[i, :lengths_freq[i], :] = 1
  
         # compute the masking threshold        
-        th, _, psd_max = generate_mask.generate_th(audios_np[i], sample_rate_np, FLAGS.window_size)
+        th, psd_max = generate_mask.generate_th(audios_np[i], sample_rate_np, FLAGS.window_size)
         th_batch.append(th)
         psd_max_batch.append(psd_max) 
      
@@ -118,70 +92,18 @@ def ReadFromWav(data, batch_size):
     trans = data[2, :]
     
     return audios_np, trans, th_batch, psd_max_batch, max_length, sample_rate_np, masks, masks_freq, lengths
-
-def create_features(input_tf, sample_rate_tf, mask_freq):
-    """
-    Return:
-        A tensor of features with size (batch_size, max_time_steps, 80)
-    """
-    
-    features_list = []      
-    # unstact the features with placeholder    
-    input_unpack = tf.unstack(input_tf, axis=0)
-    for i in range(len(input_unpack)):
-        features = _MakeLogMel(input_unpack[i], sample_rate_tf)
-        features = tf.reshape(features, shape=[-1, 80]) 
-        features = tf.expand_dims(features, dim=0)  
-        features_list.append(features)
-    features_tf = tf.concat(features_list, axis=0) 
-    features_tf = features_tf * mask_freq
-    return features_tf    
-          
-def create_inputs(model, features, tgt, batch_size, mask_freq):    
-    tgt_ids, tgt_labels, tgt_paddings = model.GetTask().input_generator.StringsToIds(tgt)
-    
-    # we expect src_inputs to be of shape [batch_size, num_frames, feature_dim, channels]
-    src_paddings = tf.zeros([tf.shape(features)[0], tf.shape(features)[1]], dtype=tf.float32)
-    src_paddings = 1. - mask_freq[:,:,0]
-    src_frames = tf.expand_dims(features, dim=-1)
-
-    inputs = py_utils.NestedMap()
-    inputs.tgt = py_utils.NestedMap(
-        ids=tgt_ids,
-        labels=tgt_labels,
-        paddings=tgt_paddings,
-        weights=1.0 - tgt_paddings)
-    inputs.src = py_utils.NestedMap(src_inputs=src_frames, paddings=src_paddings)
-    inputs.sample_ids = tf.zeros([batch_size])
-    return inputs
         
-class Transform(object):
-    '''
-    Return: PSD
-    '''    
-    def __init__(self):
-        self.scale = 8. / 3.
-        self.frame_length = int(FLAGS.window_size)
-        self.frame_step = int(FLAGS.window_size//4)
-    
-    def __call__(self, x, psd_max_ori):
-        win = tf.contrib.signal.stft(x, self.frame_length, self.frame_step)
-        z = self.scale *tf.abs(win / FLAGS.window_size)
-        psd = tf.square(z)
-        PSD = tf.pow(10., 9.6) / tf.reshape(psd_max_ori, [-1, 1, 1]) * psd
-        return PSD
 
 class Attack:
     def __init__(self, sess, batch_size=1,
-                 lr_step1=100, lr_step2=0.1, num_iter_step1=1000, num_iter_step2=4000, th=None,
+                 lr_stage1=100, lr_stage2=0.1, num_iter_stage1=1000, num_iter_stage2=4000, th=None,
                         psd_max_ori=None):
        
         self.sess = sess
-        self.num_iter_step1 = num_iter_step1
-        self.num_iter_step2 = num_iter_step2
+        self.num_iter_stage1 = num_iter_stage1
+        self.num_iter_stage2 = num_iter_stage2
         self.batch_size = batch_size     
-        self.lr_step1 = lr_step1
-        #self.lr_step2 = lr_step2                
+        self.lr_stage1 = lr_stage1
         
         tf.set_random_seed(1234)
         params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
@@ -191,7 +113,7 @@ class Attack:
         cluster = cluster_factory.Cluster(params.cluster)
         with cluster, tf.device(cluster.GetPlacer()):
             model = params.cls(params)
-            self.delta_large = tf.Variable(np.zeros((batch_size, 223200), dtype=np.float32), name='qq_delta')
+            self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32), name='qq_delta')
             
             # placeholders
             self.input_tf = tf.placeholder(tf.float32, shape=[batch_size, None], name='qq_input')
@@ -200,11 +122,10 @@ class Attack:
             self.th = tf.placeholder(tf.float32, shape=[batch_size, None, None], name='qq_th')
             self.psd_max_ori = tf.placeholder(tf.float32, shape=[batch_size], name='qq_psd')            
             self.mask = tf.placeholder(dtype=np.float32, shape=[batch_size, None], name='qq_mask')   
-            self.mask_freq = tf.placeholder(dtype=np.float32, shape=[batch_size, None, 80])
-            #noise = tf.random_normal(self.new_input.shape, stddev=2)
+            self.mask_freq = tf.placeholder(dtype=np.float32, shape=[batch_size, None, 80])   
             self.noise = tf.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
             self.maxlen = tf.placeholder(np.int32)
-            self.lr_step2 = tf.placeholder(np.float32)
+            self.lr_stage2 = tf.placeholder(np.float32)
             
             # variable
             self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32), name='qq_rescale')
@@ -212,9 +133,8 @@ class Attack:
             
             # extract the delta
             self.delta = tf.slice(tf.identity(self.delta_large), [0, 0], [batch_size, self.maxlen])                      
-            self.apply_delta = tf.clip_by_value(self.delta, -2000, 2000) * self.rescale
-            self.new_input = self.apply_delta * self.mask + self.input_tf 
-            #pass_in = tf.clip_by_value(self.new_input, -2**15, 2**15-1)
+            self.apply_delta = tf.clip_by_value(self.delta, -FLAGS.initial_bound, FLAGS.initial_bound) * self.rescale
+            self.new_input = self.apply_delta * self.mask + self.input_tf            
             self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2**15, 2**15-1)
        
             # generate the inputs that are needed for the lingvo model
@@ -230,7 +150,7 @@ class Attack:
         
         # compute the loss for masking threshold
         self.loss_th_list = []
-        self.transform = Transform()
+        self.transform = Transform(FLAGS.window_size)
         for i in range(self.batch_size):
             logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
             loss_th =  tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[i]))            
@@ -239,8 +159,8 @@ class Attack:
         self.loss_th = tf.concat(self.loss_th_list, axis=0)
         
         
-        self.optimizer1 = tf.train.AdamOptimizer(self.lr_step1)
-        self.optimizer2 = tf.train.AdamOptimizer(self.lr_step2)
+        self.optimizer1 = tf.train.AdamOptimizer(self.lr_stage1)
+        self.optimizer2 = tf.train.AdamOptimizer(self.lr_stage2)
              
         grad1, var1 = self.optimizer1.compute_gradients(self.celoss, [self.delta_large])[0]      
         grad21, var21 = self.optimizer2.compute_gradients(self.celoss, [self.delta_large])[0]
@@ -251,18 +171,16 @@ class Attack:
         self.train22 = self.optimizer2.apply_gradients([(grad22, var22)])
         self.train2 = tf.group(self.train21, self.train22)       
         
-    def attack_step1(self, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, num_loop, data, lr_step2):
+    def attack_stage1(self, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, num_loop, data, lr_stage2):
         sess = self.sess       
         # initialize and load the pretrained model
         sess.run(tf.initializers.global_variables())
         saver = tf.train.Saver([x for x in tf.global_variables() if x.name.startswith("librispeech")])
         saver.restore(sess, FLAGS.checkpoint)
-        
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))        
-             
-        # reassign the variables        
-        sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, 223200), dtype=np.float32)))
-        #print(sess.run(self.delta_large))
+                    
+        # reassign the variables  
+        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
+        sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
         
         #noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
@@ -275,7 +193,7 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise, 
                      self.maxlen: maxlen,
-                     self.lr_step2: lr_step2}
+                     self.lr_stage2: lr_stage2}
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
        
         # show the initial predictions 
@@ -288,7 +206,7 @@ class Attack:
        
         # We'll make a bunch of iterations of gradient descent here
         now = time.time()
-        MAX = self.num_iter_step1
+        MAX = self.num_iter_stage1
         loss_th = [np.inf] * self.batch_size
         final_deltas = [None] * self.batch_size
         clock = 0
@@ -316,14 +234,14 @@ class Attack:
                         
                         # update rescale
                         rescale = sess.run(self.rescale)
-                        if rescale[ii] * 2000 > np.max(np.abs(d[ii])):                            
-                            rescale[ii] = np.max(np.abs(d[ii])) / 2000.0                      
+                        if rescale[ii] * FLAGS.initial_bound > np.max(np.abs(d[ii])):                            
+                            rescale[ii] = np.max(np.abs(d[ii])) / FLAGS.initial_bound                     
                         rescale[ii] *= .8
 
                         # save the best adversarial example
                         final_deltas[ii] = new_input[ii]
                    
-                        print("Iteration i=%d, worked ii=%d celoss=%f bound=%f"%(i, ii, cl[ii], 2000 * rescale[ii]))                                   
+                        print("Iteration i=%d, worked ii=%d celoss=%f bound=%f"%(i, ii, cl[ii], FLAGS.initial_bound * rescale[ii]))                                   
                         sess.run(tf.assign(self.rescale, rescale))
                                                       
                 # in case no final_delta return        
@@ -338,7 +256,7 @@ class Attack:
             
         return final_deltas
 
-    def attack_step2(self, audios, trans, adv, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, num_loop, data, lr_step2):
+    def attack_stage2(self, audios, trans, adv, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, num_loop, data, lr_stage2):
         sess = self.sess       
         # initialize and load the pretrained model
         sess.run(tf.initializers.global_variables())
@@ -362,7 +280,7 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise, 
                      self.maxlen: maxlen,
-                     self.lr_step2: lr_step2}
+                     self.lr_stage2: lr_stage2}
         losses, predictions = sess.run((self.celoss, self.decoded), feed_dict)
        
         # show the initial predictions 
@@ -375,7 +293,7 @@ class Attack:
        
         # We'll make a bunch of iterations of gradient descent here
         now = time.time()
-        MAX = self.num_iter_step2
+        MAX = self.num_iter_stage2
         loss_th = [np.inf] * self.batch_size
         final_deltas = [None] * self.batch_size
         final_alpha = [None] * self.batch_size
@@ -386,7 +304,7 @@ class Attack:
             now = time.time()
             if i == 3000:
                 #min_th = -np.inf
-                lr_step2 = 0.1
+                lr_stage2 = 0.1
                 feed_dict = {self.input_tf: audios, 
                      self.tgt_tf: trans, 
                      self.sample_rate_tf: sample_rate, 
@@ -396,7 +314,7 @@ class Attack:
                      self.mask_freq: masks_freq,
                      self.noise: noise, 
                      self.maxlen: maxlen,
-                     self.lr_step2: lr_step2}
+                     self.lr_stage2: lr_stage2}
 
             # Actually do the optimization                          
             sess.run(self.train2, feed_dict) 
@@ -453,68 +371,56 @@ class Attack:
 
 def main(argv):
     data = np.loadtxt(FLAGS.input, dtype=str, delimiter=",")
-    #data = data[:, FLAGS.num_gpu * 125 : (FLAGS.num_gpu + 1) * 125]
-    data = data[:, 325: 350]
+    data = data[:, FLAGS.num_gpu * 10 : (FLAGS.num_gpu + 1) * 10]
     num = len(data[0])
-    print(num)
     batch_size = FLAGS.batch_size
-    print(batch_size)
     num_loops = num / batch_size 
     assert num % batch_size == 0
     
     with tf.device("/gpu:0"):
-        #tfconf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
         tfconf = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=tfconf) as sess: 
             # set up the attack class
             attack = Attack(sess, 
                             batch_size=batch_size,
-                            lr_step1=FLAGS.lr_step1,
-                            lr_step2=FLAGS.lr_step2,
-                            num_iter_step1=FLAGS.num_iter_step1,
-                            num_iter_step2=FLAGS.num_iter_step2)
+                            lr_stage1=FLAGS.lr_stage1,
+                            lr_stage2=FLAGS.lr_stage2,
+                            num_iter_stage1=FLAGS.num_iter_stage1,
+                            num_iter_stage2=FLAGS.num_iter_stage2)
 
             for l in range(num_loops):
                 data_sub = data[:, l * batch_size:(l + 1) * batch_size] 
                                
-                # step 1
+                # stage 1
                 # all the output are numpy arrays
                 audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, lengths = ReadFromWav(data_sub, batch_size)                                                                      
-                adv_example = attack.attack_step1(audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, l, data_sub, FLAGS.lr_step2)
+                adv_example = attack.attack_stage1(audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, l, data_sub, FLAGS.lr_stage2)
                 
-                # save the adversarial examples in step 1
+                # save the adversarial examples in stage 1
                 for i in range(batch_size):
-                    print("Final distortion for step 1", np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))                                      
+                    print("Final distortion for stage 1", np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])))                                      
                     name, _ = data_sub[0, i].split(".")                    
-                    saved_name = FLAGS.root_dir + str(name) + "_step1.wav"                     
+                    saved_name = FLAGS.root_dir + str(name) + "_stage1.wav"                     
                     adv_example_float =  adv_example[i] / 32768.
-                    wav.write(saved_name, 16000, np.array(np.clip(adv_example_float[:lengths[i]], -2**15, 2**15-1)))
+                    wav.write(saved_name, 16000, np.array(adv_example_float[:lengths[i]]))
                     print(saved_name)                    
                                     
-                # step 2                
-                # read the adversarial examples saved in step 1
-                adv = np.zeros([batch_size, 223200])
+                # stage 2                
+                # read the adversarial examples saved in stage 1
+                adv = np.zeros([batch_size, FLAGS.max_length_dataset])
                 adv[:, :maxlen] = adv_example - audios
-                #for i in range(batch_size):
-                #    name, _ = data_sub[0,i].split(".")
-                #    sample_rate_np, audio_temp = wav.read(FLAGS.root_dir + str(name) + "_step1.wav")
-                #    if max(audio_temp) < 1:
-                 #       audio_np = audio_temp * 32768
-                #    else:
-                #        audio_np = audio_temp
-                 #   adv[i, :lengths[i]] = audio_np - audios[i, :lengths[i]]
 
-                adv_example, loss_th, final_alpha = attack.attack_step2(audios, trans, adv, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, l, data_sub, FLAGS.lr_step2)
+                adv_example, loss_th, final_alpha = attack.attack_stage2(audios, trans, adv, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, l, data_sub, FLAGS.lr_stage2)
                 
-                # save the adversarial examples in step 2
+                # save the adversarial examples in stage 2
                 for i in range(batch_size):
                     print("example: {}".format(i))                    
-                    print("Final distortion for step 2: {}, final alpha is {}, final loss_th is {}".format(np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])), final_alpha[i], loss_th[i]))
+                    print("Final distortion for stage 2: {}, final alpha is {}, final loss_th is {}".format(np.max(np.abs(adv_example[i][:lengths[i]] - audios[i, :lengths[i]])), final_alpha[i], loss_th[i]))
                                      
                     name, _ = data_sub[0, i].split(".")                 
-                    saved_name = FLAGS.root_dir + str(name) + "_step2.wav"                                       
+                    saved_name = FLAGS.root_dir + str(name) + "_stage2.wav"                                       
                     adv_example[i] =  adv_example[i] / 32768.
-                    wav.write(saved_name, 16000, np.array(np.clip(adv_example[i][:lengths[i]], -2**15, 2**15-1)))
+                    wav.write(saved_name, 16000, np.array(adv_example[i][:lengths[i]]))
                     print(saved_name)                    
                     
 
