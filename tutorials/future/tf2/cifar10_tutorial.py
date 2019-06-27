@@ -50,7 +50,17 @@ def ld_cifar10():
   dataset, info = tfds.load('cifar10',
                             with_info=True,
                             as_supervised=True)
-  mnist_train, mnist_test = dataset['train'], dataset['test']
+
+    def augment_mirror(x):
+      return tf.image.random_flip_left_right(x)
+
+    def augment_shift(x, w=4):
+      y = tf.pad(x, [[w] * 2, [w] * 2, [0] * 2], mode='REFLECT')
+      return tf.random_crop(y, tf.shape(x))
+
+    mnist_train, mnist_test = dataset['train'], dataset['test']
+    # Augmentation helps a lot in CIFAR10
+    mnist_train = mnist_train.map(lambda x, y: (augment_mirror(augment_shift(x)), y))
   mnist_train = mnist_train.map(convert_types).shuffle(10000).batch(128)
   mnist_test = mnist_test.map(convert_types).batch(128)
   return EasyDict(train=mnist_train, test=mnist_test)
