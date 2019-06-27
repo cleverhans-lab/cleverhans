@@ -4,7 +4,7 @@ import tensorflow_datasets as tfds
 from absl import app, flags
 from easydict import EasyDict
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Dense, Flatten, Conv2D
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D
 
 from cleverhans.future.tf2.attacks import projected_gradient_descent, fast_gradient_method
 
@@ -14,16 +14,22 @@ FLAGS = flags.FLAGS
 class Net(Model):
   def __init__(self):
     super(Net, self).__init__()
-    self.conv1 = Conv2D(32, 3, activation='relu')
+    self.conv1 = Conv2D(64, 8, strides=(2, 2), activation='relu', padding='same')
+    self.conv2 = Conv2D(128, 6, strides=(2, 2), activation='relu', padding='valid')
+    self.conv3 = Conv2D(128, 5, strides=(1, 1), activation='relu', padding='valid')
+    self.dropout = Dropout(0.25)
     self.flatten = Flatten()
-    self.d1 = Dense(128, activation='relu')
-    self.d2 = Dense(10)
+    self.dense1 = Dense(128, activation='relu')
+    self.dense2 = Dense(10)
 
   def call(self, x):
     x = self.conv1(x)
+    x = self.conv2(x)
+    x = self.conv3(x)
+    x = self.dropout(x)
     x = self.flatten(x)
-    x = self.d1(x)
-    return self.d2(x)
+    x = self.dense1(x)
+    return self.dense2(x)
 
 
 def ld_mnist():
@@ -34,7 +40,9 @@ def ld_mnist():
     image /= 255
     return image, label
 
-  dataset, info = tfds.load('mnist', data_dir='gs://tfds-data/datasets', with_info=True,
+  dataset, info = tfds.load('mnist', 
+                            data_dir='gs://tfds-data/datasets', 
+                            with_info=True,
                             as_supervised=True)
   mnist_train, mnist_test = dataset['train'], dataset['test']
   mnist_train = mnist_train.map(convert_types).shuffle(10000).batch(128)
@@ -47,7 +55,7 @@ def main(_):
   data = ld_mnist()
   model = Net()
   loss_object = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
-  optimizer = tf.optimizers.Adam()
+  optimizer = tf.optimizers.Adam(learning_rate=0.001)
 
   # Metrics to track the different accuracies.
   train_loss = tf.metrics.Mean(name='train_loss')
