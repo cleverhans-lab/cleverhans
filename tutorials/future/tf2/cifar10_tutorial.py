@@ -13,7 +13,7 @@ from cleverhans.future.tf2.attacks import projected_gradient_descent, fast_gradi
 FLAGS = flags.FLAGS
 
 class CNN(Model):
-  def __init__(self, nb_filters=32):
+  def __init__(self, nb_filters=64):
     super(CNN, self).__init__()
     img_size = 32
     log_resolution = int(round(math.log(img_size) / math.log(2)))
@@ -23,7 +23,7 @@ class CNN(Model):
             padding='same')
     self.layers_obj = []
     for scale in range(log_resolution - 2):
-      conv1 = Conv2D(nb_filters << scale, **conv_args) 
+      conv1 = Conv2D(nb_filters << scale, **conv_args)
       conv2 = Conv2D(nb_filters << (scale + 1), **conv_args)
       pool = AveragePooling2D(pool_size=(2, 2), strides=(2, 2))
       self.layers_obj.append(conv1)
@@ -43,10 +43,11 @@ def ld_cifar10():
 
   def convert_types(image, label):
     image = tf.cast(image, tf.float32)
-    image /= 255
+    image /= 127.5
+    image -= 1.
     return image, label
 
-  dataset, info = tfds.load('cifar10', 
+  dataset, info = tfds.load('cifar10',
                             with_info=True,
                             as_supervised=True)
   mnist_train, mnist_test = dataset['train'], dataset['test']
@@ -110,7 +111,7 @@ def main(_):
 
 
 if __name__ == '__main__':
-  flags.DEFINE_integer('nb_epochs', 40, 'Number of epochs.')
+  flags.DEFINE_integer('nb_epochs', 200, 'Number of epochs.')
   flags.DEFINE_float('eps', 0.05, 'Total epsilon for FGM and PGD attacks.')
   flags.DEFINE_bool('adv_train', False, 'Use adversarial training (on PGD adversarial examples).')
   app.run(main)
