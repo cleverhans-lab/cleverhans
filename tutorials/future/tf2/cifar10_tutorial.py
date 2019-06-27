@@ -56,7 +56,7 @@ def ld_cifar10():
 
   def augment_shift(x, w=4):
     y = tf.pad(x, [[w] * 2, [w] * 2, [0] * 2], mode='REFLECT')
-    return tf.random_crop(y, tf.shape(x))
+    return tf.image.random_crop(y, tf.shape(x))
 
   mnist_train, mnist_test = dataset['train'], dataset['test']
   # Augmentation helps a lot in CIFAR10
