@@ -15,11 +15,13 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   :param ord: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
   :param clip_min: (optional) float. Minimum float value for adversarial example components.
   :param clip_max: (optional) float. Maximum float value for adversarial example components.
-  :param y: (optional) Tensor with true labels. If targeted is true, then provide the
-            target label. Otherwise, only provide this parameter if you'd like to use true
+  :param y: (optional) Tensor with one-hot true labels. If targeted is true, then provide the
+            target one-hot label. Otherwise, only provide this parameter if you'd like to use true
             labels when crafting adversarial samples. Otherwise, model predictions are used
             as labels to avoid the "label leaking" effect (explained in this paper:
-            https://arxiv.org/abs/1611.01236). Default is None.
+            https://arxiv.org/abs/1611.01236). Default is None. This argument does not have
+            to be a binary one-hot label (e.g., [0, 1, 0, 0]), it can be floating points values
+            that sum up to 1 (e.g., [0.05, 0.85, 0.05, 0.05]).
   :param targeted: (optional) bool. Is the attack targeted or untargeted?
             Untargeted, the default, will try to make the label incorrect.
             Targeted will instead try to move in the direction of being more like y.
@@ -31,7 +33,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
     y = one_hot(x_labels, 10)
 
   def loss_adv(image, label):
-    pred = model_fn(np.expand_dims(image, axis=0)) #predict(params, image)
+    pred = model_fn(image[None])
     loss = - np.sum(logsoftmax(pred) * label)
     if targeted:
     	loss = -loss

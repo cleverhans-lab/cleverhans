@@ -27,6 +27,8 @@ from six.moves.urllib.request import urlretrieve
 
 import numpy as np
 
+from cleverhans.future.jax.utils import one_hot, partial_flatten
+
 
 _DATA = "/tmp/jax_example_data/"
 
@@ -39,16 +41,6 @@ def _download(url, filename):
   if not path.isfile(out_file):
     urlretrieve(url, out_file)
     print("downloaded {} to {}".format(url, _DATA))
-
-
-def _partial_flatten(x):
-  """Flatten all but the first dimension of an ndarray."""
-  return np.reshape(x, (x.shape[0], -1))
-
-
-def _one_hot(x, k, dtype=np.float32):
-  """Create a one-hot encoding of x of size k."""
-  return np.array(x[:, None] == np.arange(k), dtype)
 
 
 def mnist_raw():
@@ -83,10 +75,10 @@ def mnist(permute_train=False):
   """Download, parse and process MNIST data to unit scale and one-hot labels."""
   train_images, train_labels, test_images, test_labels = mnist_raw()
 
-  train_images = _partial_flatten(train_images) / np.float32(255.)
-  test_images = _partial_flatten(test_images) / np.float32(255.)
-  train_labels = _one_hot(train_labels, 10)
-  test_labels = _one_hot(test_labels, 10)
+  train_images = partial_flatten(train_images) / np.float32(255.)
+  test_images = partial_flatten(test_images) / np.float32(255.)
+  train_labels = one_hot(train_labels, 10)
+  test_labels = one_hot(test_labels, 10)
 
   if permute_train:
     perm = np.random.RandomState(0).permutation(train_images.shape[0])
