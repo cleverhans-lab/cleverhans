@@ -45,7 +45,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   grads_fn = vmap(grad(loss_adv), in_axes=(0, 0), out_axes=0)
   grads = grads_fn(x, y)
 
-  axis = list(range(1, len(grad.shape)))
+  axis = list(range(1, len(grads.shape)))
   avoid_zero_div = 1e-12
   if ord == np.inf:
     perturbation = eps * np.sign(grads)
