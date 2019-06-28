@@ -28,10 +28,6 @@ class SimpleModel(torch.nn.Module):
 class CommonAttackProperties(CleverHansTest):
 
   def setUp(self):
-    # pylint: disable=unidiomatic-typecheck
-    if type(self) is CommonAttackProperties:
-      raise SkipTest()
-
     super(CommonAttackProperties, self).setUp()
     self.model = SimpleModel()
     self.x = torch.randn(100, 2)
