@@ -292,8 +292,9 @@ class TestProjectedGradientMethod(CommonAttackProperties):
         sanity_checks=False)
     _, ori_label = self.model(self.normalized_x).max(1)
     _, adv_label = self.model(x_adv).max(1)
-    adv_acc = adv_label.eq(ori_label).sum().to(torch.float)\
-        / self.normalized_x.size(0)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / self.normalized_x.size(0))
     self.assertLess(adv_acc, .1)
 
   def test_eps(self):
