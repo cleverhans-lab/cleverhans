@@ -84,7 +84,7 @@ class TestFastGradientMethod(CommonAttackProperties):
   def test_invalid_eps(self):
     for ord in self.ord_list:
       self.assertRaises(
-          AssertionError, self.attack, model_fn=self.model,
+          ValueError, self.attack, model_fn=self.model,
           x=self.x, eps=-.1, ord=ord)
 
   def test_eps_equals_zero(self):
@@ -117,7 +117,7 @@ class TestFastGradientMethod(CommonAttackProperties):
     clip_max = -.5
     for ord in self.ord_list:
       self.assertRaises(
-          AssertionError, self.attack, model_fn=self.model, x=self.x, eps=.1,
+          ValueError, self.attack, model_fn=self.model, x=self.x, eps=.1,
           ord=ord, clip_min=clip_min, clip_max=clip_max
           )
 
@@ -175,7 +175,7 @@ class TestProjectedGradientMethod(CommonAttackProperties):
     for ord in self.ord_list:
       try:
         self.assertRaises(
-            AssertionError, self.attack, model_fn=self.model,
+            ValueError, self.attack, model_fn=self.model,
             x=self.x, eps=-.1, ord=ord, nb_iter=1, eps_iter=.01)
       except NotImplementedError:
         continue
@@ -184,7 +184,7 @@ class TestProjectedGradientMethod(CommonAttackProperties):
     for ord in self.ord_list:
       try:
         self.assertRaises(
-            AssertionError, self.attack, model_fn=self.model,
+            ValueError, self.attack, model_fn=self.model,
             x=self.x, eps=.1, ord=ord, nb_iter=1, eps_iter=-.01)
       except NotImplementedError:
         continue
@@ -217,7 +217,7 @@ class TestProjectedGradientMethod(CommonAttackProperties):
     for ord in self.ord_list:
       try:
         self.assertRaises(
-            AssertionError, self.attack, model_fn=self.model, x=self.x, eps=.1,
+            ValueError, self.attack, model_fn=self.model, x=self.x, eps=.1,
             ord=ord, clip_min=clip_min, clip_max=clip_max, nb_iter=10,
             eps_iter=.01)
       except NotImplementedError:
