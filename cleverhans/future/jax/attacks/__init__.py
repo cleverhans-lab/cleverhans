@@ -1,0 +1,1 @@
+from cleverhans.future.jax.attacks.fast_gradient_method import fast_gradient_method
