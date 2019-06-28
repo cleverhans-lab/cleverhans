@@ -85,8 +85,9 @@ class TestOptimizeLinear(CleverHansTest):
           torch.sum(self.rand_grad ** 2, self.red_ind, keepdim=True)
           )
       norm = eta.pow(2).sum(dim=self.red_ind, keepdim=True).sqrt()
-      one_mask = (square <= avoid_zero_div).to(torch.float) * norm + \
-              (square > avoid_zero_div).to(torch.float)
+      one_mask = (
+          (square <= avoid_zero_div).to(torch.float) * norm +
+          (square > avoid_zero_div).to(torch.float))
       self.assertTrue(torch.allclose(norm, eps * one_mask))
 
   def test_clip_eta_linf(self):

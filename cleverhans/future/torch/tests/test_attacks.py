@@ -39,8 +39,9 @@ class CommonAttackProperties(CleverHansTest):
     x_adv = self.attack(model_fn=self.model, x=self.normalized_x, **kwargs)
     _, ori_label = self.model(self.normalized_x).max(1)
     _, adv_label = self.model(x_adv).max(1)
-    adv_acc = adv_label.eq(ori_label).sum().to(torch.float)\
-        / self.normalized_x.size(0)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / self.normalized_x.size(0))
     self.assertLess(adv_acc, .5)
 
   def help_targeted_adv_examples_success_rate(self, **kwargs):
@@ -50,8 +51,9 @@ class CommonAttackProperties(CleverHansTest):
         y=y_target, targeted=True, **kwargs)
 
     _, adv_label = self.model(x_adv).max(1)
-    adv_success = adv_label.eq(y_target).sum().to(torch.float)\
-        / self.normalized_x.size(0)
+    adv_success = (
+        adv_label.eq(y_target).sum().to(torch.float)
+        / self.normalized_x.size(0))
     self.assertGreater(adv_success, .7)
 
 class TestFastGradientMethod(CommonAttackProperties):
@@ -343,6 +345,7 @@ class TestProjectedGradientMethod(CommonAttackProperties):
       i = ori_label.eq(new_label_multi)
       new_label_multi[i] = new_label[i]
 
-    failed_attack = ori_label.eq(new_label_multi).sum().to(torch.float)\
-        / self.normalized_x.size(0)
+    failed_attack = (
+        ori_label.eq(new_label_multi).sum().to(torch.float)
+        / self.normalized_x.size(0))
     self.assertLess(failed_attack, .5)
