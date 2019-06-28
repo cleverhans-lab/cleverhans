@@ -27,6 +27,9 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
             Targeted will instead try to move in the direction of being more like y.
   :return: a tensor for the adversarial example
   """
+  if ord not in [np.inf, 1, 2]:
+    raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
     x_labels = np.argmax(model_fn(x), 1)
@@ -42,12 +45,22 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   grads_fn = vmap(grad(loss_adv), in_axes=(0, 0), out_axes=0)
   grads = grads_fn(x, y)
 
+  axis = list(range(1, len(grad.shape)))
+  avoid_zero_div = 1e-12
   if ord == np.inf:
-    perturbations = eps * np.sign(grads)
-  else:
-    raise NotImplementedError("Only L-inf are currently implemented.")
+    perturbation = eps * np.sign(grads)
+  elif ord == 1:
+    abs_grads = np.abs(grads)
+    sign = np.sign(grads)
+    max_abs_grads = np.amax(abs_grads, axis=axis)
+    tied_for_max = np.asarray(np.equal(abs_grads, max_abs_grads), np.float32)
+    num_ties = np.sum(tied_for_max, axis=axis)
+    perturbation = sign * tied_for_max / num_ties
+  elif ord == 2:
+    square = np.maximum(avoid_zero_div, np.sum(np.square(grads), axis=axis))
+    perturbation = grad / np.sqrt(square)
 
-  adv_x = x + perturbations
+  adv_x = x + perturbation
 
   # If clipping is needed, reset all values outside of [clip_min, clip_max]
   if (clip_min is not None) or (clip_max is not None):
