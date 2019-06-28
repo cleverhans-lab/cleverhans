@@ -45,12 +45,9 @@ class CommonAttackProperties(CleverHansTest):
 
   def help_targeted_adv_examples_success_rate(self, **kwargs):
     y_target = torch.randint(low=0, high=2, size=(self.normalized_x.size(0),))
-    try:
-      x_adv = self.attack(
-          model_fn=self.model, x=self.normalized_x,
-          y=y_target, targeted=True, **kwargs)
-    except NotImplementedError:
-      raise SkipTest()
+    x_adv = self.attack(
+        model_fn=self.model, x=self.normalized_x,
+        y=y_target, targeted=True, **kwargs)
 
     _, adv_label = self.model(x_adv).max(1)
     adv_success = adv_label.eq(y_target).sum().to(torch.float)\
@@ -159,65 +156,79 @@ class TestProjectedGradientMethod(CommonAttackProperties):
   def test_invalid_input(self):
     x = torch.tensor([[-2., 3.]])
     for ord in self.ord_list:
-      try:
+      if ord == 1:
+        self.assertRaises(
+            NotImplementedError, self.attack, model_fn=self.model, x=x, eps=.1,
+            nb_iter=1, eps_iter=.05, ord=ord, clip_min=-1., clip_max=1.,
+            sanity_checks=True)
+      else:
         self.assertRaises(
             AssertionError, self.attack, model_fn=self.model, x=x, eps=.1,
             nb_iter=1, eps_iter=.05, ord=ord, clip_min=-1., clip_max=1.,
             sanity_checks=True)
-      except NotImplementedError:
-        continue
 
   def test_invalid_eps(self):
     for ord in self.ord_list:
-      try:
+      if ord == 1:
+        self.assertRaises(
+            NotImplementedError, self.attack, model_fn=self.model,
+            x=self.x, eps=-.1, ord=ord, nb_iter=1, eps_iter=.01)
+      else:
         self.assertRaises(
             ValueError, self.attack, model_fn=self.model,
             x=self.x, eps=-.1, ord=ord, nb_iter=1, eps_iter=.01)
-      except NotImplementedError:
-        continue
 
   def test_invalid_eps_iter(self):
     for ord in self.ord_list:
-      try:
+      if ord == 1:
+        self.assertRaises(
+            NotImplementedError, self.attack, model_fn=self.model,
+            x=self.x, eps=.1, ord=ord, nb_iter=1, eps_iter=-.01)
+      else:
         self.assertRaises(
             ValueError, self.attack, model_fn=self.model,
             x=self.x, eps=.1, ord=ord, nb_iter=1, eps_iter=-.01)
-      except NotImplementedError:
-        continue
 
   def test_eps_equals_zero(self):
     for ord in self.ord_list:
-      try:
+      if ord == 1:
+        self.assertRaises(
+            NotImplementedError, self.attack, model_fn=self.model,
+            x=self.x, eps=0, ord=ord, nb_iter=10, eps_iter=.01)
+      else:
         self.assertClose(
             self.attack(
                 model_fn=self.model, x=self.x, eps=0, ord=ord, nb_iter=10,
                 eps_iter=.01),
             self.x)
-      except NotImplementedError:
-        continue
 
   def test_eps_iter_equals_zero(self):
     for ord in self.ord_list:
-      try:
+      if ord == 1:
+        self.assertRaises(
+            NotImplementedError, self.attack, model_fn=self.model, x=self.x,
+            eps=.5, ord=ord, nb_iter=10, eps_iter=0)
+      else:
         self.assertClose(
             self.attack(
                 model_fn=self.model, x=self.x, eps=.5, ord=ord, nb_iter=10,
                 eps_iter=0),
             self.x)
-      except NotImplementedError:
-        continue
 
   def test_invalid_clips(self):
     clip_min = .5
     clip_max = -.5
     for ord in self.ord_list:
-      try:
+      if ord == 1:
+        self.assertRaises(
+            NotImplementedError, self.attack, model_fn=self.model, x=self.x, eps=.1,
+            ord=ord, clip_min=clip_min, clip_max=clip_max, nb_iter=10,
+            eps_iter=.01)
+      else:
         self.assertRaises(
             ValueError, self.attack, model_fn=self.model, x=self.x, eps=.1,
             ord=ord, clip_min=clip_min, clip_max=clip_max, nb_iter=10,
             eps_iter=.01)
-      except NotImplementedError:
-        continue
 
   def test_adv_example_success_rate_linf(self):
     # use normalized_x to make sure the same eps gives uniformly high attack
@@ -230,18 +241,20 @@ class TestProjectedGradientMethod(CommonAttackProperties):
         ord=np.inf, **self.attack_param)
 
   def test_adv_example_success_rate_l1(self):
-    try:
-      self.help_adv_examples_success_rate(
-          ord=1, **self.attack_param)
-    except NotImplementedError:
-      raise SkipTest()
+    self.assertRaises(
+        NotImplementedError, self.help_adv_examples_success_rate, ord=1,
+        **self.attack_param)
+    # TODO uncomment the actual test below after we have implemented the L1 attack
+    # self.help_adv_examples_success_rate(
+    #     ord=1, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l1(self):
-    try:
-      self.help_targeted_adv_examples_success_rate(
-          ord=1, **self.attack_param)
-    except NotImplementedError:
-      raise SkipTest()
+    self.assertRaises(
+        NotImplementedError, self.help_targeted_adv_examples_success_rate,
+        ord=1, **self.attack_param)
+    # TODO uncomment the actual test below after we have implemented the L1 attack
+    # self.help_targeted_adv_examples_success_rate(
+    #     ord=1, **self.attack_param)
 
   def test_adv_example_success_rate_l2(self):
     self.help_adv_examples_success_rate(
@@ -253,14 +266,18 @@ class TestProjectedGradientMethod(CommonAttackProperties):
 
   def test_do_not_reach_lp_boundary(self):
     for ord in self.ord_list:
-      try:
+      if ord == 1:
+        self.assertRaises(
+            NotImplementedError, self.attack, model_fn=self.model,
+            x=self.normalized_x, eps=.5, nb_iter=10, ord=ord, eps_iter=.01)
+        continue
+      else:
         x_adv = self.attack(
             model_fn=self.model, x=self.normalized_x, eps=.5, nb_iter=10,
             ord=ord, eps_iter=.01)
-      except NotImplementedError:
-        continue
+
       if ord == np.inf:
-        delta, _ = torch.abs(x_adv - self.normalized_x).max(dim=1) 
+        delta, _ = torch.abs(x_adv - self.normalized_x).max(dim=1)
       elif ord == 1:
         delta = torch.abs(x_adv - self.normalized_x).sum(dim=1)
       elif ord == 2:
@@ -294,12 +311,16 @@ class TestProjectedGradientMethod(CommonAttackProperties):
     clip_min = -1.
     clip_max = 1.
     for ord in self.ord_list:
-      try:
+      if ord == 1:
+        self.assertRaises(
+            NotImplementedError, model_fn=self.model, x=self.normalized_x,
+            eps=.3, eps_iter=.03, ord=ord, nb_iter=10, clip_min=clip_min,
+            clip_max=clip_max)
+        continue
+      else:
         x_adv = self.attack(
             model_fn=self.model, x=self.normalized_x, eps=.3, eps_iter=.03,
             ord=ord, nb_iter=10, clip_min=clip_min, clip_max=clip_max)
-      except NotImplementedError:
-        continue
       self.assertTrue(torch.all(x_adv <= clip_max))
       self.assertTrue(torch.all(x_adv >= clip_min))
 
