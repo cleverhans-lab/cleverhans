@@ -12,7 +12,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   :param model_fn: a callable that takes an input tensor and returns the model logits.
   :param x: input tensor.
   :param eps: epsilon (input variation parameter); see https://arxiv.org/abs/1412.6572.
-  :param ord: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
+  :param ord: Order of the norm (mimics NumPy). Possible values: np.inf or 2.
   :param clip_min: (optional) float. Minimum float value for adversarial example components.
   :param clip_max: (optional) float. Maximum float value for adversarial example components.
   :param y: (optional) Tensor with one-hot true labels. If targeted is true, then provide the
@@ -27,8 +27,8 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
             Targeted will instead try to move in the direction of being more like y.
   :return: a tensor for the adversarial example
   """
-  if ord not in [np.inf, 1, 2]:
-    raise ValueError("Norm order must be either np.inf, 1, or 2.")
+  if ord not in [np.inf, 2]:
+    raise ValueError("Norm order must be either np.inf or 2.")
 
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
@@ -50,12 +50,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   if ord == np.inf:
     perturbation = eps * np.sign(grads)
   elif ord == 1:
-    abs_grads = np.abs(grads)
-    sign = np.sign(grads)
-    max_abs_grads = np.amax(abs_grads, axis=axis, keepdims=True)
-    tied_for_max = np.asarray(np.equal(abs_grads, max_abs_grads), dtype=np.float32)
-    num_ties = np.sum(tied_for_max, axis=axis, keepdims=True)
-    perturbation = sign * tied_for_max / num_ties
+    raise NotImplementedError("L_1 norm has not been implemented yet.")
   elif ord == 2:
     square = np.maximum(avoid_zero_div, np.sum(np.square(grads), axis=axis, keepdims=True))
     perturbation = grads / np.sqrt(square)
