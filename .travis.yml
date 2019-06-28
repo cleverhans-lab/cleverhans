@@ -73,7 +73,7 @@ script:
   # Tests for certification code require Tensorflow 1.9 or higher,
   # thus skipping these tests for lower version of Tensorflow.
   - if [[ "$PYTORCH" == True ]]; then
-      nosetests --nologcapture -v --stop tests_pytorch;
+      nosetests --nologcapture -v --stop cleverhans/future/torch/tests;
     elif [[ "$PYTORCH" == False ]]; then
       if [[ "$TENSORFLOW_V" == "1.8.0" ]]; then
         nosetests -v --nologcapture --stop --exclude-dir=cleverhans/experimental/certification cleverhans;
