@@ -111,7 +111,7 @@ def clip_eta(eta, ord, eps):
     eta = torch.clamp(eta, -eps, eps)
   else:
     if ord == 1:
-      # TODO raise NotImplementedError("L1 clip is not implemented.")
+      raise NotImplementedError("L1 clip is not implemented.")
       norm = torch.max(
           avoid_zero_div,
           torch.sum(torch.abs(eta), dim=reduc_ind, keepdim=True)
