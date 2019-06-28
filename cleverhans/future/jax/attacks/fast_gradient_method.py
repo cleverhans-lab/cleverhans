@@ -53,7 +53,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
     abs_grads = np.abs(grads)
     sign = np.sign(grads)
     max_abs_grads = np.amax(abs_grads, axis=axis, keepdims=True)
-    tied_for_max = np.equal(abs_grads, max_abs_grads)
+    tied_for_max = np.asarray(np.equal(abs_grads, max_abs_grads), dtype=np.float32)
     num_ties = np.sum(tied_for_max, axis=axis, keepdims=True)
     perturbation = sign * tied_for_max / num_ties
   elif ord == 2:
