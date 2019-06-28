@@ -60,8 +60,7 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, ord,
     x_labels = np.argmax(model_fn(x), 1)
     y = one_hot(x_labels, 10)
 
-  i = 0
-  while i < nb_iter:
+  for _ in range(nb_iter):
     adv_x = fast_gradient_method(model_fn, adv_x, eps_iter, ord, clip_min=clip_min,
                                  clip_max=clip_max, y=y, targeted=targeted)
 
@@ -75,6 +74,5 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, ord,
     # small numerical error.
     if clip_min is not None or clip_max is not None:
       adv_x = np.clip(adv_x, a_min=clip_min, a_max=clip_max)
-    i += 1
 
   return adv_x
