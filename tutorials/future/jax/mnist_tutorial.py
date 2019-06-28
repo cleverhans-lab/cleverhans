@@ -11,7 +11,7 @@ from jax.experimental import optimizers
 from jax.experimental import stax
 from jax.experimental.stax import Dense, Relu, logsoftmax
 
-from cleverhans.future.jax.attacks import fast_gradient_method
+from cleverhans.future.jax.attacks import fast_gradient_method, projected_gradient_descent
 
 FLAGS = flags.FLAGS
 
@@ -90,13 +90,16 @@ def main(_):
 
     # Evaluate model on adversarial data
     model_fn = lambda images: predict(params, images)
-    test_images_adv = fast_gradient_method(model_fn, test_images, FLAGS.eps, np.inf)
-    test_acc_adv = accuracy(params, (test_images_adv, test_labels))
+    test_images_fgm = fast_gradient_method(model_fn, test_images, FLAGS.eps, np.inf)
+    test_images_pgd = projected_gradient_descent(model_fn, test_images, FLAGS.eps, 0.01, 40, np.inf)
+    test_acc_fgm = accuracy(params, (test_images_fgm, test_labels))
+    test_acc_pgd = accuracy(params, (test_images_pgd, test_labels))
 
     print("Epoch {} in {:0.2f} sec".format(epoch, epoch_time))
     print("Training set accuracy: {}".format(train_acc))
     print("Test set accuracy on clean examples: {}".format(test_acc))
-    print("Test set accuracy on adversarial examples: {}".format(test_acc_adv))
+    print("Test set accuracy on FGM adversarial examples: {}".format(test_acc_fgm))
+    print("Test set accuracy on PGD adversarial examples: {}".format(test_acc_pgd))
 
 if __name__ == '__main__':
   flags.DEFINE_integer('nb_epochs', 8, 'Number of epochs.')

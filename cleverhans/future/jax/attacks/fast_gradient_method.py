@@ -12,7 +12,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   :param model_fn: a callable that takes an input tensor and returns the model logits.
   :param x: input tensor.
   :param eps: epsilon (input variation parameter); see https://arxiv.org/abs/1412.6572.
-  :param ord: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
+  :param ord: Order of the norm (mimics NumPy). Possible values: np.inf or 2.
   :param clip_min: (optional) float. Minimum float value for adversarial example components.
   :param clip_max: (optional) float. Maximum float value for adversarial example components.
   :param y: (optional) Tensor with one-hot true labels. If targeted is true, then provide the
@@ -27,6 +27,9 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
             Targeted will instead try to move in the direction of being more like y.
   :return: a tensor for the adversarial example
   """
+  if ord not in [np.inf, 2]:
+    raise ValueError("Norm order must be either np.inf or 2.")
+
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
     x_labels = np.argmax(model_fn(x), 1)
@@ -42,12 +45,17 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   grads_fn = vmap(grad(loss_adv), in_axes=(0, 0), out_axes=0)
   grads = grads_fn(x, y)
 
+  axis = list(range(1, len(grads.shape)))
+  avoid_zero_div = 1e-12
   if ord == np.inf:
-    perturbations = eps * np.sign(grads)
-  else:
-    raise NotImplementedError("Only L-inf are currently implemented.")
+    perturbation = eps * np.sign(grads)
+  elif ord == 1:
+    raise NotImplementedError("L_1 norm has not been implemented yet.")
+  elif ord == 2:
+    square = np.maximum(avoid_zero_div, np.sum(np.square(grads), axis=axis, keepdims=True))
+    perturbation = grads / np.sqrt(square)
 
-  adv_x = x + perturbations
+  adv_x = x + perturbation
 
   # If clipping is needed, reset all values outside of [clip_min, clip_max]
   if (clip_min is not None) or (clip_max is not None):
