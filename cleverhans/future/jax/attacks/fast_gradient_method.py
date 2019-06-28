@@ -52,13 +52,13 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
   elif ord == 1:
     abs_grads = np.abs(grads)
     sign = np.sign(grads)
-    max_abs_grads = np.amax(abs_grads, axis=axis)
-    tied_for_max = np.asarray(np.equal(abs_grads, max_abs_grads), np.float32)
-    num_ties = np.sum(tied_for_max, axis=axis)
+    max_abs_grads = np.amax(abs_grads, axis=axis, keepdims=True)
+    tied_for_max = np.equal(abs_grads, max_abs_grads, dtype=np.float32)
+    num_ties = np.sum(tied_for_max, axis=axis, keepdims=True)
     perturbation = sign * tied_for_max / num_ties
   elif ord == 2:
-    square = np.maximum(avoid_zero_div, np.sum(np.square(grads), axis=axis))
-    perturbation = grad / np.sqrt(square)
+    square = np.maximum(avoid_zero_div, np.sum(np.square(grads), axis=axis, keepdims=True))
+    perturbation = grads / np.sqrt(square)
 
   adv_x = x + perturbation
 

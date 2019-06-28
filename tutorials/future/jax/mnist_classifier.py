@@ -90,7 +90,7 @@ def main(_):
 
     # Evaluate model on adversarial data
     model_fn = lambda images: predict(params, images)
-    test_images_fgm = fast_gradient_method(model_fn, test_images, FLAGS.eps, np.inf)
+    test_images_fgm = fast_gradient_method(model_fn, test_images, FLAGS.eps, 1)
     test_images_pgd = projected_gradient_descent(model_fn, test_images, FLAGS.eps, 0.01, 40, np.inf)
     test_acc_fgm = accuracy(params, (test_images_fgm, test_labels))
     test_acc_pgd = accuracy(params, (test_images_pgd, test_labels))
