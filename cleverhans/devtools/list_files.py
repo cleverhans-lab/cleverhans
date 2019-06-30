@@ -26,7 +26,7 @@ def list_files(suffix=""):
   repo_path = os.path.abspath(os.path.join(cleverhans_path, os.pardir))
   file_list = _list_files(cleverhans_path, suffix)
 
-  extra_dirs = ['cleverhans_tutorials', 'examples', 'scripts', 'tests_tf', 'tests_pytorch']
+  extra_dirs = ['cleverhans_tutorials', 'scripts', 'tests_tf', 'tests_pytorch']
 
   for extra_dir in extra_dirs:
     extra_path = os.path.join(repo_path, extra_dir)

@@ -53,7 +53,7 @@ def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
   return model
 
 
-class NearestNeighbor:
+class NearestNeighbor:  # pylint: disable=old-style-class
   class BACKEND(enum.Enum):
     FALCONN = 1
     FAISS = 2
