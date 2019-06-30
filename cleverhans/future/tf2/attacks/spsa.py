@@ -270,9 +270,9 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
   optimize a loss function in a single sess.run() call.
   """
   assert num_steps is not None
-  if is_debug:
-    with tf.device("/cpu:0"):
-      tf.print("Starting PGD attack with epsilon: %s" % epsilon)  # pylint: disable=syntax-error
+  #if is_debug:
+  #  with tf.device("/cpu:0"):
+  #    tf.print("Starting PGD attack with epsilon: %s" % epsilon)
 
   init_perturbation = tf.random.uniform(tf.shape(input_image),
                                         minval=tf.cast(-epsilon, input_image.dtype),

@@ -219,8 +219,7 @@ class SparseL1Descent(Attack):
     # update. It indicates the percentile value above which gradient entries
     # are retained. It can be specified as a scalar or as a 1-dimensional
     # vector of the same size as the input's batch dimension.
-    if isinstance(self.grad_sparsity, int) or \
-        isinstance(self.grad_sparsity, float):
+    if isinstance(self.grad_sparsity, (int, float)):
       if not 0 < self.grad_sparsity < 100:
         raise ValueError("grad_sparsity should be in (0, 100)")
     else:

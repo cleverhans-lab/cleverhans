@@ -1712,4 +1712,3 @@ class TestHopSkipJumpAttack(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(np.argmax(y_target, axis=1) == new_labs)
                     > 0.9)
-
