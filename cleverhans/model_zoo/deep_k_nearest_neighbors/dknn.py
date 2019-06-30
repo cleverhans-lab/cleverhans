@@ -242,7 +242,7 @@ class DkNNModel(Model):
 
       print('Constructing the NearestNeighbor table')
       self.query_objects[layer] = NearestNeighbor(
-        backend=FLAGS.lsh_backend,
+        backend=FLAGS.nearest_neighbor_backend,
         dimension=self.train_activations_lsh[layer].shape[1],
         number_bits=self.number_bits,
         neighbors=self.neighbors,
@@ -575,7 +575,7 @@ if __name__ == '__main__':
     'amount of the GPU memory to allocate for a tensorflow Session'
   )
   tf.flags.DEFINE_enum_class(
-    'lsh_backend',
+    'nearest_neighbor_backend',
     NearestNeighbor.BACKEND.FALCONN,
     NearestNeighbor.BACKEND,
     'NearestNeighbor backend'
