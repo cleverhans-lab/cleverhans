@@ -1,3 +1,7 @@
+"""
+Utilities for TF Eager implementation of CleverHans.
+"""
+
 import numpy as np
 import tensorflow as tf
 
