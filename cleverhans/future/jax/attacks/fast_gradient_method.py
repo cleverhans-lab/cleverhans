@@ -1,3 +1,5 @@
+"""The Fast Gradient Method attack in JAX."""
+
 import jax.numpy as np
 from jax import grad, vmap
 from jax.experimental.stax import logsoftmax
@@ -36,6 +38,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
     y = one_hot(x_labels, 10)
 
   def loss_adv(image, label):
+    """Compute loss that adversary is optimizing."""
     pred = model_fn(image[None])
     loss = - np.sum(logsoftmax(pred) * label)
     if targeted:
