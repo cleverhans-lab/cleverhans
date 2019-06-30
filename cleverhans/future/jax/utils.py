@@ -1,3 +1,6 @@
+"""
+Utilities for JAX implementation of CleverHans.
+"""
 import jax.numpy as np
 
 

@@ -42,7 +42,7 @@ class HopSkipJumpAttack(Attack):
       model = CallableModelWrapper(model, 'logits')
 
     super(HopSkipJumpAttack, self).__init__(model, sess,
-                                                 dtypestr, **kwargs)
+                                            dtypestr, **kwargs)
 
     self.feedable_kwargs = ('y_target', 'image_target')
 
@@ -236,7 +236,7 @@ class HopSkipJumpAttack(Attack):
     if target_label is None:
       original_label = np.argmax(
           self.sess.run(self.logits, feed_dict={self.input_ph: sample[None]})
-          )
+      )
     else:
       target_label = np.argmax(target_label)
 
@@ -347,6 +347,7 @@ def BoundaryAttackPlusPlus(model, sess, dtypestr='float32', **kwargs):
   warn("BoundaryAttackPlusPlus will be removed after 2019-12-08; use HopSkipJumpAttack.")
   return HopSkipJumpAttack(model, sess, dtypestr, **kwargs)
 
+
 def _check_first_dimension(x, tensor_name):
   message = "Tensor {} should have batch_size of 1.".format(tensor_name)
   if x.get_shape().as_list()[0] is None:
@@ -369,6 +370,7 @@ def compute_distance(x_ori, x_pert, constraint='l2'):
   elif constraint == 'linf':
     dist = np.max(abs(x_ori - x_pert))
   return dist
+
 
 def approximate_gradient(decision_function, sample, num_evals,
                          delta, constraint, shape, clip_min, clip_max):
