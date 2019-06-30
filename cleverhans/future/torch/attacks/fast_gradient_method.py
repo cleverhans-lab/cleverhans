@@ -34,11 +34,11 @@ def fast_gradient_method(model_fn, x, eps, ord,
 
   # If a data range was specified, check that the input was in that range
   if clip_min is not None:
-    assert_ge = torch.all(torch.ge(x, torch.tensor(clip_min, device=x.device, dtype=x.dtype)))
+    assert_ge = torch.all(torch.ge(x, torch.tensor(clip_min, device=x.device, dtype=x.dtype)))  # pylint: disable=not-callable
     asserts.append(assert_ge)
 
   if clip_max is not None:
-    assert_le = torch.all(torch.le(x, torch.tensor(clip_max, device=x.device, dtype=x.dtype)))
+    assert_le = torch.all(torch.le(x, torch.tensor(clip_max, device=x.device, dtype=x.dtype)))  # pylint: disable=not-callable
     asserts.append(assert_le)
 
   # x needs to be a leaf variable, of floating point type and have requires_grad being True for
