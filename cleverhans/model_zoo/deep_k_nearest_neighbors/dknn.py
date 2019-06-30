@@ -106,9 +106,9 @@ class NearestNeighbor:
     params_cp.num_setup_threads = 0
     params_cp.storage_hash_table = falconn.StorageHashTable.BitPackedFlatHashTable
 
-    # we build 18-bit hashes so that each table has
-    # 2^18 bins; this is a good choice since 2^18 is of the same
-    # order of magnitude as the number of data points
+    # we build number_bits-bit hashes so that each table has
+    # 2^number_bits bins; a rule of thumb is to have the number
+    # of bins be the same order of magnitude as the number of data points
     falconn.compute_number_of_hash_functions(number_bits, params_cp)
     self._falconn_table = falconn.LSHIndex(params_cp)
     self._falconn_query_object = None
