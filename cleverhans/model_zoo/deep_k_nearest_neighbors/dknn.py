@@ -77,7 +77,6 @@ class NearestNeighbor:
     elif self._BACKEND is NearestNeighbor.BACKEND.FAISS:
       self._init_faiss(
         dimension,
-        number_bits
       )
     else:
       raise NotImplementedError
@@ -115,7 +114,6 @@ class NearestNeighbor:
   def _init_faiss(
     self,
     dimension,
-    number_bits
   ):
     import faiss
 
