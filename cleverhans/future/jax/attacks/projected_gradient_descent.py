@@ -1,3 +1,5 @@
+"""The Projected Gradient Descent attack implementation in JAX."""
+
 import jax.numpy as np
 
 from cleverhans.future.jax.attacks import fast_gradient_method
