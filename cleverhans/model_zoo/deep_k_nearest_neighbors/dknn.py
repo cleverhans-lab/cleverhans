@@ -59,12 +59,12 @@ class NearestNeighbor:
     FAISS = 2
 
   def __init__(
-    self,
-    backend,
-    dimension,
-    neighbors,
-    number_bits,
-    nb_tables=None,
+      self,
+      backend,
+      dimension,
+      neighbors,
+      number_bits,
+      nb_tables=None,
   ):
     assert backend in NearestNeighbor.BACKEND
 
@@ -73,22 +73,22 @@ class NearestNeighbor:
 
     if self._BACKEND is NearestNeighbor.BACKEND.FALCONN:
       self._init_falconn(
-        dimension,
-        number_bits,
-        nb_tables
+          dimension,
+          number_bits,
+          nb_tables
       )
     elif self._BACKEND is NearestNeighbor.BACKEND.FAISS:
       self._init_faiss(
-        dimension,
+          dimension,
       )
     else:
       raise NotImplementedError
 
   def _init_falconn(
-    self,
-    dimension,
-    number_bits,
-    nb_tables,
+      self,
+      dimension,
+      number_bits,
+      nb_tables,
   ):
     import falconn
 
@@ -115,16 +115,16 @@ class NearestNeighbor:
     self._FALCONN_NB_TABLES = nb_tables
 
   def _init_faiss(
-    self,
-    dimension,
+      self,
+      dimension,
   ):
     import faiss
 
     res = faiss.StandardGpuResources()
 
     self._faiss_index = faiss.GpuIndexFlatL2(
-      res,
-      dimension,
+        res,
+        dimension,
     )
 
   def _find_knns_falconn(self, x, output):
@@ -134,15 +134,15 @@ class NearestNeighbor:
     if self._falconn_query_object is None:
       self._falconn_query_object = self._falconn_table.construct_query_object()
       self._falconn_query_object.set_num_probes(
-        self._FALCONN_NB_TABLES
+          self._FALCONN_NB_TABLES
       )
 
     missing_indices = np.zeros(output.shape, dtype=np.bool)
 
     for i in range(x.shape[0]):
       query_res = self._falconn_query_object.find_k_nearest_neighbors(
-        x[i],
-        self._NEIGHBORS
+          x[i],
+          self._NEIGHBORS
       )
       try:
         output[i, :] = query_res
@@ -156,8 +156,8 @@ class NearestNeighbor:
 
   def _find_knns_faiss(self, x, output):
     neighbor_distance, neighbor_index = self._faiss_index.search(
-      x,
-      self._NEIGHBORS
+        x,
+        self._NEIGHBORS
     )
 
     missing_indices = neighbor_distance == -1
@@ -165,9 +165,9 @@ class NearestNeighbor:
     d1 = neighbor_index.reshape(-1)
 
     output.reshape(-1)[
-      np.logical_not(missing_indices.flatten())
+        np.logical_not(missing_indices.flatten())
     ] = d1[
-      np.logical_not(missing_indices.flatten())
+        np.logical_not(missing_indices.flatten())
     ]
 
     return missing_indices
@@ -245,11 +245,11 @@ class DkNNModel(Model):
 
       print('Constructing the NearestNeighbor table')
       self.query_objects[layer] = NearestNeighbor(
-        backend=FLAGS.nearest_neighbor_backend,
-        dimension=self.train_activations_lsh[layer].shape[1],
-        number_bits=self.number_bits,
-        neighbors=self.neighbors,
-        nb_tables=self.nb_tables
+          backend=FLAGS.nearest_neighbor_backend,
+          dimension=self.train_activations_lsh[layer].shape[1],
+          number_bits=self.number_bits,
+          neighbors=self.neighbors,
+          nb_tables=self.nb_tables
       )
 
       self.query_objects[layer].add(self.train_activations_lsh[layer])
@@ -276,8 +276,8 @@ class DkNNModel(Model):
       knn_errors = 0
 
       knn_missing_indices = self.query_objects[layer].find_knns(
-        data_activations_layer,
-        knns_ind[layer],
+          data_activations_layer,
+          knns_ind[layer],
       )
 
       knn_errors += knn_missing_indices.flatten().sum()
@@ -286,15 +286,15 @@ class DkNNModel(Model):
       knns_labels[layer] = np.zeros((nb_data, self.neighbors), dtype=np.int32)
 
       knns_labels[layer].reshape(-1)[
-        np.logical_not(
-          knn_missing_indices.flatten()
-        )
-      ] = self.train_labels[
-        knns_ind[layer].reshape(-1)[
           np.logical_not(
-            knn_missing_indices.flatten()
+              knn_missing_indices.flatten()
           )
-        ]
+      ] = self.train_labels[
+          knns_ind[layer].reshape(-1)[
+              np.logical_not(
+                  knn_missing_indices.flatten()
+              )
+          ]
       ]
 
     return knns_ind, knns_labels
@@ -466,15 +466,15 @@ def plot_reliability_diagram(confidence, labels, filepath):
 
 
 def get_tensorflow_session():
-    gpu_options = tf.GPUOptions()
-    gpu_options.per_process_gpu_memory_fraction=FLAGS.tensorflow_gpu_memory_fraction
-    sess = tf.Session(
-        config=tf.ConfigProto(
-            gpu_options=gpu_options
-        )
-    )
+  gpu_options = tf.GPUOptions()
+  gpu_options.per_process_gpu_memory_fraction = FLAGS.tensorflow_gpu_memory_fraction
+  sess = tf.Session(
+      config=tf.ConfigProto(
+          gpu_options=gpu_options
+      )
+  )
 
-    return sess
+  return sess
 
 
 def dknn_tutorial():
@@ -534,14 +534,14 @@ def dknn_tutorial():
 
       # Wrap the model into a DkNNModel
       dknn = DkNNModel(
-        FLAGS.neighbors,
-        layers,
-        get_activations,
-        train_data,
-        train_labels,
-        nb_classes,
-        scope='dknn',
-        number_bits=FLAGS.number_bits
+          FLAGS.neighbors,
+          layers,
+          get_activations,
+          train_data,
+          train_labels,
+          nb_classes,
+          scope='dknn',
+          number_bits=FLAGS.number_bits
       )
       dknn.calibrate(cali_data, cali_labels)
 
@@ -568,20 +568,20 @@ def main(argv=None):
 
 if __name__ == '__main__':
   tf.flags.DEFINE_integer(
-    'number_bits',
-    17,
-    'number of hash bits used by LSH Index'
+      'number_bits',
+      17,
+      'number of hash bits used by LSH Index'
   )
   tf.flags.DEFINE_float(
-    'tensorflow_gpu_memory_fraction',
-    0.25,
-    'amount of the GPU memory to allocate for a tensorflow Session'
+      'tensorflow_gpu_memory_fraction',
+      0.25,
+      'amount of the GPU memory to allocate for a tensorflow Session'
   )
   tf.flags.DEFINE_enum_class(
-    'nearest_neighbor_backend',
-    NearestNeighbor.BACKEND.FALCONN,
-    NearestNeighbor.BACKEND,
-    'NearestNeighbor backend'
+      'nearest_neighbor_backend',
+      NearestNeighbor.BACKEND.FALCONN,
+      NearestNeighbor.BACKEND,
+      'NearestNeighbor backend'
   )
   tf.flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
   tf.flags.DEFINE_integer('batch_size', 500, 'Size of training batches')

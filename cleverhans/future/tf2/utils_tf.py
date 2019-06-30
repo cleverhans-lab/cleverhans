@@ -26,7 +26,7 @@ def clip_eta(eta, ord, eps):
     elif ord == 2:
       # avoid_zero_div must go inside sqrt to avoid a divide by zero in the gradient through this operation
       norm = tf.sqrt(
-        tf.maximum(avoid_zero_div, tf.reduce_sum(tf.square(eta), axis, keepdims=True)))
+          tf.maximum(avoid_zero_div, tf.reduce_sum(tf.square(eta), axis, keepdims=True)))
     # We must *clip* to within the norm ball, not *normalize* onto the surface of the ball
     factor = tf.minimum(1., tf.math.divide(eps, norm))
     eta = eta * factor

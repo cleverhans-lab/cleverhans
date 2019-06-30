@@ -6,7 +6,7 @@ from cleverhans.future.jax.utils import one_hot
 
 
 def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=None,
-	targeted=False):
+                         targeted=False):
   """
   JAX implementation of the Fast Gradient Method.
   :param model_fn: a callable that takes an input tensor and returns the model logits.
@@ -39,7 +39,7 @@ def fast_gradient_method(model_fn, x, eps, ord, clip_min=None, clip_max=None, y=
     pred = model_fn(image[None])
     loss = - np.sum(logsoftmax(pred) * label)
     if targeted:
-    	loss = -loss
+      loss = -loss
     return loss
 
   grads_fn = vmap(grad(loss_adv), in_axes=(0, 0), out_axes=0)

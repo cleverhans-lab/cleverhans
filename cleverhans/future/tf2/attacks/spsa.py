@@ -73,7 +73,7 @@ class SPSAAdam(tf.optimizers.Adam):
   def _get_delta(self, x, delta):
     x_shape = x.get_shape().as_list()
     delta_x = delta * tf.sign(
-      tf.random.uniform([self._num_samples] + x_shape[1:], minval=-1., maxval=1., dtype=tf_dtype)
+        tf.random.uniform([self._num_samples] + x_shape[1:], minval=-1., maxval=1., dtype=tf_dtype)
     )
     return delta_x
 
@@ -106,8 +106,8 @@ class SPSAAdam(tf.optimizers.Adam):
       delta_x = self._get_delta(x, delta)
       delta_x = tf.concat([delta_x, -delta_x], axis=0)
       loss_vals = tf.reshape(
-        loss_fn(x + delta_x),
-        [2 * self._num_samples] + [1] * (len(x_shape) - 1))
+          loss_fn(x + delta_x),
+          [2 * self._num_samples] + [1] * (len(x_shape) - 1))
       avg_grad = tf.reduce_mean(loss_vals * delta_x, axis=0) / delta
       avg_grad = tf.expand_dims(avg_grad, axis=0)
       new_grad_array = grad_array.write(i, avg_grad)
@@ -117,13 +117,13 @@ class SPSAAdam(tf.optimizers.Adam):
       return i < self._num_iters
 
     _, all_grads = tf.while_loop(
-      cond,
-      body,
-      loop_vars=[
-        0, tf.TensorArray(size=self._num_iters, dtype=tf_dtype)
-      ],
-      back_prop=False,
-      parallel_iterations=1)
+        cond,
+        body,
+        loop_vars=[
+            0, tf.TensorArray(size=self._num_iters, dtype=tf_dtype)
+        ],
+        back_prop=False,
+        parallel_iterations=1)
     avg_grad = tf.reduce_sum(all_grads.stack(), axis=0)
     return [avg_grad]
 
@@ -141,9 +141,9 @@ class SPSAAdam(tf.optimizers.Adam):
 
     new_x = [None] * len(x)
     new_optim_state = {
-      "t": optim_state["t"] + 1.,
-      "m": [None] * len(x),
-      "u": [None] * len(x)
+        "t": optim_state["t"] + 1.,
+        "m": [None] * len(x),
+        "u": [None] * len(x)
     }
     t = new_optim_state["t"]
     for i in range(len(x)):
@@ -160,9 +160,9 @@ class SPSAAdam(tf.optimizers.Adam):
   def init_state(self, x):
     """Initialize t, m, and u"""
     optim_state = {
-      "t": 0.,
-      "m": [tf.zeros_like(v) for v in x],
-      "u": [tf.zeros_like(v) for v in x]
+        "t": 0.,
+        "m": [tf.zeros_like(v) for v in x],
+        "u": [tf.zeros_like(v) for v in x]
     }
     return optim_state
 
@@ -198,8 +198,8 @@ def margin_logit_loss(model_logits, label, nb_classes=10):
     label_logits = tf.reduce_sum(logit_mask * model_logits, axis=-1)
   except TypeError:
     raise TypeError(
-      "Could not take row-wise dot product between logit mask, of dtype " + str(logit_mask.dtype)
-      + " and model_logits, of dtype " + str(model_logits.dtype)
+        "Could not take row-wise dot product between logit mask, of dtype " + str(logit_mask.dtype)
+        + " and model_logits, of dtype " + str(model_logits.dtype)
     )
   logits_with_target_label_neg_inf = model_logits - logit_mask * 99999
   highest_nonlabel_logits = tf.reduce_max(logits_with_target_label_neg_inf, axis=-1)
@@ -218,8 +218,8 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None, cli
 
   # Ensure inputs are in the correct range
   with tf.control_dependencies([
-    tf.debugging.assert_less_equal(input_image, tf.cast(clip_max, input_image.dtype)),
-    tf.debugging.assert_greater_equal(input_image, tf.cast(clip_min, input_image.dtype))
+      tf.debugging.assert_less_equal(input_image, tf.cast(clip_max, input_image.dtype)),
+      tf.debugging.assert_greater_equal(input_image, tf.cast(clip_min, input_image.dtype))
   ]):
     clipped_perturbation = tf.clip_by_value(perturbation, -epsilon, epsilon)
     new_image = tf.clip_by_value(input_image + clipped_perturbation, clip_min, clip_max)
@@ -319,12 +319,12 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
 
   flat_init_optim_state = tf.nest.flatten(init_optim_state)
   _, final_perturbation, _ = tf.while_loop(
-    cond,
-    loop_body,
-    loop_vars=(tf.constant(0.), init_perturbation, flat_init_optim_state),
-    parallel_iterations=1,
-    back_prop=False,
-    maximum_iterations=num_steps
+      cond,
+      loop_body,
+      loop_vars=(tf.constant(0.), init_perturbation, flat_init_optim_state),
+      parallel_iterations=1,
+      back_prop=False,
+      maximum_iterations=num_steps
   )
 
   if project_perturbation is _project_perturbation:
@@ -335,9 +335,9 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
     # 2) I think it should probably check the *absolute value* of final_perturbation
     perturbation_max = epsilon * 1.1
     check_diff = tf.debugging.assert_less_equal(
-      final_perturbation,
-      tf.cast(perturbation_max, final_perturbation.dtype),
-      message="final_perturbation must change no pixel by more than %s" % perturbation_max
+        final_perturbation,
+        tf.cast(perturbation_max, final_perturbation.dtype),
+        message="final_perturbation must change no pixel by more than %s" % perturbation_max
     )
   else:
     # TODO: let caller pass in a check_diff function as well as
@@ -347,8 +347,8 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
   if clip_min is None or clip_max is None:
     raise NotImplementedError("This function only supports clipping for now")
   check_range = [
-    tf.debugging.assert_less_equal(input_image, tf.cast(clip_max, input_image.dtype)),
-    tf.debugging.assert_greater_equal(input_image, tf.cast(clip_min, input_image.dtype))
+      tf.debugging.assert_less_equal(input_image, tf.cast(clip_max, input_image.dtype)),
+      tf.debugging.assert_greater_equal(input_image, tf.cast(clip_min, input_image.dtype))
   ]
 
   with tf.control_dependencies([check_diff] + check_range):
