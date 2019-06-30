@@ -50,7 +50,7 @@ def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
   return model
 
 
-class LSH:
+class NearestNeighbor:
   class BACKEND(enum.Enum):
     FALCONN = 1
     FAISS = 2
@@ -63,18 +63,18 @@ class LSH:
     number_bits,
     nb_tables=None,
   ):
-    assert backend in LSH.BACKEND
+    assert backend in NearestNeighbor.BACKEND
 
     self._NEIGHBORS = neighbors
     self._BACKEND = backend
 
-    if self._BACKEND is LSH.BACKEND.FALCONN:
+    if self._BACKEND is NearestNeighbor.BACKEND.FALCONN:
       self._init_falconn(
         dimension,
         number_bits,
         nb_tables
       )
-    elif self._BACKEND is LSH.BACKEND.FAISS:
+    elif self._BACKEND is NearestNeighbor.BACKEND.FAISS:
       self._init_faiss(
         dimension,
         number_bits
@@ -119,12 +119,11 @@ class LSH:
   ):
     import faiss
 
-    self._faiss_lsh_index = faiss.IndexLSH(
+    res = faiss.StandardGpuResources()
+
+    self._faiss_index = faiss.GpuIndexFlatL2(
+      res,
       dimension,
-      # limitation of faiss LSH, IndexLSH.cpp:40
-      min(number_bits, dimension),
-      # rotate_data = false, deterministic result
-      False
     )
 
   def _find_knns_falconn(self, x, output):
@@ -155,7 +154,7 @@ class LSH:
     return missing_indices
 
   def _find_knns_faiss(self, x, output):
-    neighbor_distance, neighbor_index = self._faiss_lsh_index.search(
+    neighbor_distance, neighbor_index = self._faiss_index.search(
       x,
       self._NEIGHBORS
     )
@@ -173,17 +172,17 @@ class LSH:
     return missing_indices
 
   def add(self, x):
-    if self._BACKEND is LSH.BACKEND.FALCONN:
+    if self._BACKEND is NearestNeighbor.BACKEND.FALCONN:
       self._falconn_table.setup(x)
-    elif self._BACKEND is LSH.BACKEND.FAISS:
-      self._faiss_lsh_index.add(x)
+    elif self._BACKEND is NearestNeighbor.BACKEND.FAISS:
+      self._faiss_index.add(x)
     else:
       raise NotImplementedError
 
   def find_knns(self, x, output):
-    if self._BACKEND is LSH.BACKEND.FALCONN:
+    if self._BACKEND is NearestNeighbor.BACKEND.FALCONN:
       return self._find_knns_falconn(x, output)
-    elif self._BACKEND is LSH.BACKEND.FAISS:
+    elif self._BACKEND is NearestNeighbor.BACKEND.FAISS:
       return self._find_knns_faiss(x, output)
     else:
       raise NotImplementedError
@@ -230,7 +229,8 @@ class DkNNModel(Model):
     """
     self.query_objects = {
     }  # contains the object that can be queried to find nearest neighbors at each layer.
-    # mean of training data representation per layer (that needs to be substracted before LSH).
+    # mean of training data representation per layer (that needs to be substracted before
+    # NearestNeighbor).
     self.centers = {}
     for layer in self.layers:
       # Normalize all the lenghts, since we care about the cosine similarity.
@@ -242,8 +242,8 @@ class DkNNModel(Model):
       self.train_activations_lsh[layer] -= center
       self.centers[layer] = center
 
-      print('Constructing the LSH table')
-      self.query_objects[layer] = LSH(
+      print('Constructing the NearestNeighbor table')
+      self.query_objects[layer] = NearestNeighbor(
         backend=FLAGS.lsh_backend,
         dimension=self.train_activations_lsh[layer].shape[1],
         number_bits=self.number_bits,
@@ -464,6 +464,18 @@ def plot_reliability_diagram(confidence, labels, filepath):
   plt.savefig(filepath, bbox_inches='tight')
 
 
+def get_tensorflow_session():
+    gpu_options = tf.GPUOptions()
+    gpu_options.per_process_gpu_memory_fraction=FLAGS.tensorflow_gpu_memory_fraction
+    sess = tf.Session(
+        config=tf.ConfigProto(
+            gpu_options=gpu_options
+        )
+    )
+
+    return sess
+
+
 def dknn_tutorial():
   # Get MNIST data.
   mnist = MNIST()
@@ -474,7 +486,7 @@ def dknn_tutorial():
   img_rows, img_cols, nchannels = x_train.shape[1:4]
   nb_classes = y_train.shape[1]
 
-  with tf.Session() as sess:
+  with get_tensorflow_session() as sess:
     with tf.variable_scope('dknn'):
       # Define input TF placeholder.
       x = tf.placeholder(tf.float32, shape=(
@@ -559,11 +571,16 @@ if __name__ == '__main__':
     17,
     'number of hash bits used by LSH Index'
   )
+  tf.flags.DEFINE_float(
+    'tensorflow_gpu_memory_fraction',
+    0.25,
+    'amount of the GPU memory to allocate for a tensorflow Session'
+  )
   tf.flags.DEFINE_enum_class(
     'lsh_backend',
-    LSH.BACKEND.FALCONN,
-    LSH.BACKEND,
-    'LSH backend'
+    NearestNeighbor.BACKEND.FALCONN,
+    NearestNeighbor.BACKEND,
+    'NearestNeighbor backend'
   )
   tf.flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
   tf.flags.DEFINE_integer('batch_size', 500, 'Size of training batches')
