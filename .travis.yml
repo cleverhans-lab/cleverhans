@@ -5,9 +5,8 @@ language: python
 python:
   - 3.5
 env:
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=True
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.12.0 PYTORCH=True
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.8.0 PYTORCH=True
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 PYTORCH=False
+  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.14.0 PYTORCH=True
 
 install:
   # code below is taken from http://conda.pydata.org/docs/travis.html
@@ -27,11 +26,12 @@ install:
   - pip install matplotlib
 
   # install TensorFlow
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.8.0" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.8.0-cp35-cp35m-linux_x86_64.whl;
-    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.12.0" ]]; then
-      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.12.0rc1-cp35-cp35m-linux_x86_64.whl;
-    fi
+  #- if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.14.0" ]]; then
+  #    pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp35-cp35m-linux_x86_64.whl;
+  #  elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" && "$TENSORFLOW_V" == "1.12.0" ]]; then
+  #    pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.12.0rc1-cp35-cp35m-linux_x86_64.whl;
+  #  fi
+  - pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp35-cp35m-linux_x86_64.whl;
 
   - time pip install -q -e ".[test]"
   - if [[ "$PYTORCH" == True ]]; then
@@ -75,11 +75,7 @@ script:
   - if [[ "$PYTORCH" == True ]]; then
       nosetests --nologcapture -v --stop tests_pytorch;
     elif [[ "$PYTORCH" == False ]]; then
-      if [[ "$TENSORFLOW_V" == "1.8.0" ]]; then
-        nosetests -v --nologcapture --stop --exclude-dir=cleverhans/experimental/certification cleverhans;
-      else
-        nosetests -v --nologcapture --stop cleverhans;
-      fi;
+      nosetests -v --nologcapture --stop cleverhans;
       for test_path in tests_tf/*.py ; do
         nosetests --nocapture -v --stop $test_path;
       done
