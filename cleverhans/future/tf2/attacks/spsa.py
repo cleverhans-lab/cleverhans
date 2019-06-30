@@ -34,6 +34,8 @@ def spsa(model_fn, x, y, eps, nb_iter, clip_min=None, clip_max=None, targeted=Fa
                       is on `spsa_samples` different inputs.
   :param is_debug: If True, print the adversarial loss after each update.
   """
+  if is_debug:
+    raise NotImplementedError("is_debug is not implemented yet in this TF2 variant of PGD.")
   if x.get_shape().as_list()[0] != 1:
     raise ValueError("For SPSA, input tensor x must have batch_size of 1.")
 
@@ -305,9 +307,9 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
       # SPSA calculates the loss at randomly perturbed points but doesn't calculate the loss at the current point.
       loss = tf.reduce_mean(wrapped_loss_fn(projected_perturbation), axis=0)
 
-      if is_debug:
-        with tf.device("/cpu:0"):
-          tf.print(loss, "Total batch loss")
+      # if is_debug:
+      #   with tf.device("/cpu:0"):
+      #     tf.print(loss, "Total batch loss")
 
       if early_stop:
         i = tf.cond(tf.less(loss, early_stop_loss_threshold), lambda: float(num_steps), lambda: i)
