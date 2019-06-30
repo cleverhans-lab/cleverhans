@@ -22,7 +22,7 @@ def noise(x, eps=0.3, order=np.inf, clip_min=None, clip_max=None):
 
   Args:
   :param x: the input tensor
-  :param eps: (optional float) maximum distortion of adversarial example 
+  :param eps: (optional float) maximum distortion of adversarial example
               compared to original input.
   :param ord: (optional) Order of the norm.
   :param clip_min: (optional float) Minimum input component value
