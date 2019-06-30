@@ -1002,7 +1002,7 @@ class TestCarliniWagnerL2(CleverHansTest):
                                     clip_min=-0.2, clip_max=0.3,
                                     batch_size=100)
 
-    self.assertTrue(-0.201 < np.min(x_adv))
+    self.assertTrue(np.min(x_adv) > -0.201)
     self.assertTrue(np.max(x_adv) < .301)
 
   def test_generate_np_high_confidence_targeted_examples(self):
@@ -1142,7 +1142,7 @@ class TestElasticNetMethod(CleverHansTest):
                                     clip_min=-0.2, clip_max=0.3,
                                     batch_size=100)
 
-    self.assertTrue(-0.201 < np.min(x_adv))
+    self.assertTrue(np.min(x_adv) > -0.201)
     self.assertTrue(np.max(x_adv) < .301)
 
   def test_generate_np_high_confidence_targeted_examples(self):
@@ -1284,7 +1284,7 @@ class TestDeepFool(CleverHansTest):
                                     nb_candidate=2, clip_min=-0.2,
                                     clip_max=0.3)
 
-    self.assertTrue(-0.201 < np.min(x_adv))
+    self.assertTrue(np.min(x_adv) > -0.201)
     self.assertTrue(np.max(x_adv) < .301)
 
 
@@ -1473,7 +1473,7 @@ class TestLBFGS(CleverHansTest):
                                     clip_min=-0.2, clip_max=0.3,
                                     batch_size=100, y_target=feed_labs)
 
-    self.assertTrue(-0.201 < np.min(x_adv))
+    self.assertTrue(np.min(x_adv) > -0.201)
     self.assertTrue(np.max(x_adv) < .301)
 
 
@@ -1712,3 +1712,4 @@ class TestHopSkipJumpAttack(CleverHansTest):
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
     self.assertTrue(np.mean(np.argmax(y_target, axis=1) == new_labs)
                     > 0.9)
+

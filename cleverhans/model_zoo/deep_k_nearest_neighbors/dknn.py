@@ -15,11 +15,11 @@ from __future__ import unicode_literals
 import copy
 import os
 from bisect import bisect_left
+import enum
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from six.moves import xrange
-import enum
 import tensorflow as tf
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy

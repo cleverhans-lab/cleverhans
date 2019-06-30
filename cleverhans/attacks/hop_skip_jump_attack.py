@@ -1,9 +1,9 @@
 """ Boundary Attack++
 """
 import logging
+from warnings import warn
 import numpy as np
 import tensorflow as tf
-from warnings import warn
 from cleverhans.attacks import Attack
 from cleverhans.model import CallableModelWrapper, Model, wrapper_warning_logits
 from cleverhans import utils, utils_tf
