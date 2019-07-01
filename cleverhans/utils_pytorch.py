@@ -94,30 +94,30 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
   return tf_model_fn
 
 
-def clip_eta(eta, ord, eps):
+def clip_eta(eta, norm, eps):
   """
   PyTorch implementation of the clip_eta in utils_tf.
 
   :param eta: Tensor
-  :param ord: np.inf, 1, or 2
+  :param norm: np.inf, 1, or 2
   :param eps: float
   """
-  if ord not in [np.inf, 1, 2]:
-    raise ValueError('ord must be np.inf, 1, or 2.')
+  if norm not in [np.inf, 1, 2]:
+    raise ValueError('norm must be np.inf, 1, or 2.')
 
   avoid_zero_div = torch.tensor(1e-12, dtype=eta.dtype, device=eta.device)
   reduc_ind = list(range(1, len(eta.size())))
-  if ord == np.inf:
+  if norm == np.inf:
     eta = torch.clamp(eta, -eps, eps)
   else:
-    if ord == 1:
+    if norm == 1:
       # TODO
       # raise NotImplementedError("L1 clip is not implemented.")
       norm = torch.max(
           avoid_zero_div,
           torch.sum(torch.abs(eta), dim=reduc_ind, keepdim=True)
       )
-    elif ord == 2:
+    elif norm == 2:
       norm = torch.sqrt(torch.max(
           avoid_zero_div,
           torch.sum(eta ** 2, dim=reduc_ind, keepdim=True)
@@ -156,24 +156,24 @@ def get_or_guess_labels(model, x, **kwargs):
   return labels
 
 
-def optimize_linear(grad, eps, ord=np.inf):
+def optimize_linear(grad, eps, norm=np.inf):
   """
   Solves for the optimal input to a linear function under a norm constraint.
 
-  Optimal_perturbation = argmax_{eta, ||eta||_{ord} < eps} dot(eta, grad)
+  Optimal_perturbation = argmax_{eta, ||eta||_{norm} < eps} dot(eta, grad)
 
   :param grad: Tensor, shape (N, d_1, ...). Batch of gradients
   :param eps: float. Scalar specifying size of constraint region
-  :param ord: np.inf, 1, or 2. Order of norm constraint.
+  :param norm: np.inf, 1, or 2. Order of norm constraint.
   :returns: Tensor, shape (N, d_1, ...). Optimal perturbation
   """
 
   red_ind = list(range(1, len(grad.size())))
   avoid_zero_div = torch.tensor(1e-12, dtype=grad.dtype, device=grad.device)
-  if ord == np.inf:
+  if norm == np.inf:
     # Take sign of gradient
     optimal_perturbation = torch.sign(grad)
-  elif ord == 1:
+  elif norm == 1:
     abs_grad = torch.abs(grad)
     sign = torch.sign(grad)
     red_ind = list(range(1, len(grad.size())))
@@ -191,7 +191,7 @@ def optimize_linear(grad, eps, ord=np.inf):
     # check that the optimal perturbations have been correctly computed
     opt_pert_norm = optimal_perturbation.abs().sum(dim=red_ind)
     assert torch.all(opt_pert_norm == torch.ones_like(opt_pert_norm))
-  elif ord == 2:
+  elif norm == 2:
     square = torch.max(
         avoid_zero_div,
         torch.sum(grad ** 2, red_ind, keepdim=True)

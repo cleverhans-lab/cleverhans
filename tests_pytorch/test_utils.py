@@ -11,7 +11,7 @@ class TestOptimizeLinear(CleverHansTest):
   """
   def test_optimize_linear_linf(self):
     grad = torch.tensor([[1., -2.]])
-    eta = utils_pytorch.optimize_linear(grad, eps=1., ord=np.inf)
+    eta = utils_pytorch.optimize_linear(grad, eps=1., norm=np.inf)
     objective = torch.sum(grad * eta)
 
     self.assertEqual(grad.size(), eta.size())
@@ -20,7 +20,7 @@ class TestOptimizeLinear(CleverHansTest):
 
   def test_optimize_linear_l2(self):
     grad = torch.tensor([[.5 ** .5, -.5 ** .5]])
-    eta = utils_pytorch.optimize_linear(grad, eps=1., ord=2)
+    eta = utils_pytorch.optimize_linear(grad, eps=1., norm=2)
     objective = torch.sum(grad * eta)
 
     self.assertEqual(grad.size(), eta.size())
@@ -29,7 +29,7 @@ class TestOptimizeLinear(CleverHansTest):
 
   def test_optimize_linear_l1(self):
     grad = torch.tensor([[1., -2.]])
-    eta = utils_pytorch.optimize_linear(grad, eps=1., ord=1)
+    eta = utils_pytorch.optimize_linear(grad, eps=1., norm=1)
     objective = torch.sum(grad * eta)
 
     self.assertEqual(grad.size(), eta.size())
@@ -38,7 +38,7 @@ class TestOptimizeLinear(CleverHansTest):
 
   def test_optimize_linear_l1_ties(self):
     grad = torch.tensor([[2., -2.]])
-    eta = utils_pytorch.optimize_linear(grad, eps=1., ord=1)
+    eta = utils_pytorch.optimize_linear(grad, eps=1., norm=1)
     objective = torch.sum(grad * eta)
 
     self.assertEqual(grad.size(), eta.size())
