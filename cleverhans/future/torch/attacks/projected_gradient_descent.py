@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
-from cleverhans.utils_pytorch import clip_eta
+from cleverhans.future.torch.utils import clip_eta
 
 
 def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,

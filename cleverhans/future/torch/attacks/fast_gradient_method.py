@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 
-from cleverhans.utils_pytorch import optimize_linear
+from cleverhans.future.torch.utils import optimize_linear
 
 
 def fast_gradient_method(model_fn, x, eps, norm,
