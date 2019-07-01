@@ -2,6 +2,9 @@
 This code reproduces the MNIST results from the paper
 Deep k-Nearest Neighbors: Towards Confident, Interpretable and Robust Deep Learning
 https://arxiv.org/abs/1803.04765
+
+The LSH backend used in the paper is FALCONN. This script also demonstrates
+how to use an alternative backend called FAISS.
 """
 # pylint: disable=missing-docstring
 from __future__ import absolute_import
@@ -16,8 +19,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from six.moves import xrange
+import enum
 import tensorflow as tf
-import falconn
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.loss import CrossEntropy
 from cleverhans.dataset import MNIST
@@ -50,6 +53,142 @@ def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
   return model
 
 
+class NearestNeighbor:
+  class BACKEND(enum.Enum):
+    FALCONN = 1
+    FAISS = 2
+
+  def __init__(
+    self,
+    backend,
+    dimension,
+    neighbors,
+    number_bits,
+    nb_tables=None,
+  ):
+    assert backend in NearestNeighbor.BACKEND
+
+    self._NEIGHBORS = neighbors
+    self._BACKEND = backend
+
+    if self._BACKEND is NearestNeighbor.BACKEND.FALCONN:
+      self._init_falconn(
+        dimension,
+        number_bits,
+        nb_tables
+      )
+    elif self._BACKEND is NearestNeighbor.BACKEND.FAISS:
+      self._init_faiss(
+        dimension,
+      )
+    else:
+      raise NotImplementedError
+
+  def _init_falconn(
+    self,
+    dimension,
+    number_bits,
+    nb_tables,
+  ):
+    import falconn
+
+    assert nb_tables >= self._NEIGHBORS
+
+    # LSH parameters
+    params_cp = falconn.LSHConstructionParameters()
+    params_cp.dimension = dimension
+    params_cp.lsh_family = falconn.LSHFamily.CrossPolytope
+    params_cp.distance_function = falconn.DistanceFunction.EuclideanSquared
+    params_cp.l = nb_tables
+    params_cp.num_rotations = 2  # for dense set it to 1; for sparse data set it to 2
+    params_cp.seed = 5721840
+    # we want to use all the available threads to set up
+    params_cp.num_setup_threads = 0
+    params_cp.storage_hash_table = falconn.StorageHashTable.BitPackedFlatHashTable
+
+    # we build number_bits-bit hashes so that each table has
+    # 2^number_bits bins; a rule of thumb is to have the number
+    # of bins be the same order of magnitude as the number of data points
+    falconn.compute_number_of_hash_functions(number_bits, params_cp)
+    self._falconn_table = falconn.LSHIndex(params_cp)
+    self._falconn_query_object = None
+    self._FALCONN_NB_TABLES = nb_tables
+
+  def _init_faiss(
+    self,
+    dimension,
+  ):
+    import faiss
+
+    res = faiss.StandardGpuResources()
+
+    self._faiss_index = faiss.GpuIndexFlatL2(
+      res,
+      dimension,
+    )
+
+  def _find_knns_falconn(self, x, output):
+    # Late falconn query_object construction
+    # Since I suppose there might be an error
+    # if table.setup() will be called after
+    if self._falconn_query_object is None:
+      self._falconn_query_object = self._falconn_table.construct_query_object()
+      self._falconn_query_object.set_num_probes(
+        self._FALCONN_NB_TABLES
+      )
+
+    missing_indices = np.zeros(output.shape, dtype=np.bool)
+
+    for i in range(x.shape[0]):
+      query_res = self._falconn_query_object.find_k_nearest_neighbors(
+        x[i],
+        self._NEIGHBORS
+      )
+      try:
+        output[i, :] = query_res
+      except:  # pylint: disable-msg=W0702
+        # mark missing indices
+        missing_indices[i, len(query_res):] = True
+
+        output[i, :len(query_res)] = query_res
+
+    return missing_indices
+
+  def _find_knns_faiss(self, x, output):
+    neighbor_distance, neighbor_index = self._faiss_index.search(
+      x,
+      self._NEIGHBORS
+    )
+
+    missing_indices = neighbor_distance == -1
+
+    d1 = neighbor_index.reshape(-1)
+
+    output.reshape(-1)[
+      np.logical_not(missing_indices.flatten())
+    ] = d1[
+      np.logical_not(missing_indices.flatten())
+    ]
+
+    return missing_indices
+
+  def add(self, x):
+    if self._BACKEND is NearestNeighbor.BACKEND.FALCONN:
+      self._falconn_table.setup(x)
+    elif self._BACKEND is NearestNeighbor.BACKEND.FAISS:
+      self._faiss_index.add(x)
+    else:
+      raise NotImplementedError
+
+  def find_knns(self, x, output):
+    if self._BACKEND is NearestNeighbor.BACKEND.FALCONN:
+      return self._find_knns_falconn(x, output)
+    elif self._BACKEND is NearestNeighbor.BACKEND.FAISS:
+      return self._find_knns_faiss(x, output)
+    else:
+      raise NotImplementedError
+
+
 class DkNNModel(Model):
   def __init__(self, neighbors, layers, get_activations, train_data, train_labels,
                nb_classes, scope=None, nb_tables=200, number_bits=17):
@@ -64,7 +203,7 @@ class DkNNModel(Model):
     :param nb_classes: the number of classes in the task.
     :param scope: a TF scope that was used to create the underlying model.
     :param nb_tables: number of tables used by FALCONN to perform locality-sensitive hashing.
-    :param number_bits: number of hash bits used by FALCONN.
+    :param number_bits: number of hash bits used by LSH.
     """
     super(DkNNModel, self).__init__(nb_classes=nb_classes, scope=scope)
     self.neighbors = neighbors
@@ -91,11 +230,10 @@ class DkNNModel(Model):
     """
     self.query_objects = {
     }  # contains the object that can be queried to find nearest neighbors at each layer.
-    # mean of training data representation per layer (that needs to be substracted before LSH).
+    # mean of training data representation per layer (that needs to be substracted before
+    # NearestNeighbor).
     self.centers = {}
     for layer in self.layers:
-      assert self.nb_tables >= self.neighbors
-
       # Normalize all the lenghts, since we care about the cosine similarity.
       self.train_activations_lsh[layer] /= np.linalg.norm(
           self.train_activations_lsh[layer], axis=1).reshape(-1, 1)
@@ -105,31 +243,16 @@ class DkNNModel(Model):
       self.train_activations_lsh[layer] -= center
       self.centers[layer] = center
 
-      # LSH parameters
-      params_cp = falconn.LSHConstructionParameters()
-      params_cp.dimension = len(self.train_activations_lsh[layer][1])
-      params_cp.lsh_family = falconn.LSHFamily.CrossPolytope
-      params_cp.distance_function = falconn.DistanceFunction.EuclideanSquared
-      params_cp.l = self.nb_tables
-      params_cp.num_rotations = 2  # for dense set it to 1; for sparse data set it to 2
-      params_cp.seed = 5721840
-      # we want to use all the available threads to set up
-      params_cp.num_setup_threads = 0
-      params_cp.storage_hash_table = falconn.StorageHashTable.BitPackedFlatHashTable
+      print('Constructing the NearestNeighbor table')
+      self.query_objects[layer] = NearestNeighbor(
+        backend=FLAGS.nearest_neighbor_backend,
+        dimension=self.train_activations_lsh[layer].shape[1],
+        number_bits=self.number_bits,
+        neighbors=self.neighbors,
+        nb_tables=self.nb_tables
+      )
 
-      # we build 18-bit hashes so that each table has
-      # 2^18 bins; this is a good choice since 2^18 is of the same
-      # order of magnitude as the number of data points
-      falconn.compute_number_of_hash_functions(self.number_bits, params_cp)
-
-      print('Constructing the LSH table')
-      table = falconn.LSHIndex(params_cp)
-      table.setup(self.train_activations_lsh[layer])
-
-      # Parse test feature vectors and find k nearest neighbors
-      query_object = table.construct_query_object()
-      query_object.set_num_probes(self.nb_tables)
-      self.query_objects[layer] = query_object
+      self.query_objects[layer].add(self.train_activations_lsh[layer])
 
   def find_train_knns(self, data_activations):
     """
@@ -151,19 +274,28 @@ class DkNNModel(Model):
       knns_ind[layer] = np.zeros(
           (data_activations_layer.shape[0], self.neighbors), dtype=np.int32)
       knn_errors = 0
-      for i in range(data_activations_layer.shape[0]):
-        query_res = self.query_objects[layer].find_k_nearest_neighbors(
-            data_activations_layer[i], self.neighbors)
-        try:
-          knns_ind[layer][i, :] = query_res
-        except:  # pylint: disable-msg=W0702
-          knns_ind[layer][i, :len(query_res)] = query_res
-          knn_errors += knns_ind[layer].shape[1] - len(query_res)
+
+      knn_missing_indices = self.query_objects[layer].find_knns(
+        data_activations_layer,
+        knns_ind[layer],
+      )
+
+      knn_errors += knn_missing_indices.flatten().sum()
 
       # Find labels of neighbors found in the training data.
       knns_labels[layer] = np.zeros((nb_data, self.neighbors), dtype=np.int32)
-      for data_id in range(nb_data):
-        knns_labels[layer][data_id, :] = self.train_labels[knns_ind[layer][data_id]]
+
+      knns_labels[layer].reshape(-1)[
+        np.logical_not(
+          knn_missing_indices.flatten()
+        )
+      ] = self.train_labels[
+        knns_ind[layer].reshape(-1)[
+          np.logical_not(
+            knn_missing_indices.flatten()
+          )
+        ]
+      ]
 
     return knns_ind, knns_labels
 
@@ -248,9 +380,9 @@ class DkNNModel(Model):
     cali_knns_ind, cali_knns_labels = self.find_train_knns(
         self.cali_activations)
     assert all([v.shape == (self.nb_cali, self.neighbors)
-                for v in cali_knns_ind.itervalues()])
+                for v in cali_knns_ind.values()])
     assert all([v.shape == (self.nb_cali, self.neighbors)
-                for v in cali_knns_labels.itervalues()])
+                for v in cali_knns_labels.values()])
 
     cali_knns_not_in_class = self.nonconformity(cali_knns_labels)
     cali_knns_not_in_l = np.zeros(self.nb_cali, dtype=np.int32)
@@ -333,6 +465,18 @@ def plot_reliability_diagram(confidence, labels, filepath):
   plt.savefig(filepath, bbox_inches='tight')
 
 
+def get_tensorflow_session():
+    gpu_options = tf.GPUOptions()
+    gpu_options.per_process_gpu_memory_fraction=FLAGS.tensorflow_gpu_memory_fraction
+    sess = tf.Session(
+        config=tf.ConfigProto(
+            gpu_options=gpu_options
+        )
+    )
+
+    return sess
+
+
 def dknn_tutorial():
   # Get MNIST data.
   mnist = MNIST()
@@ -343,7 +487,7 @@ def dknn_tutorial():
   img_rows, img_cols, nchannels = x_train.shape[1:4]
   nb_classes = y_train.shape[1]
 
-  with tf.Session() as sess:
+  with get_tensorflow_session() as sess:
     with tf.variable_scope('dknn'):
       # Define input TF placeholder.
       x = tf.placeholder(tf.float32, shape=(
@@ -389,8 +533,16 @@ def dknn_tutorial():
       layers = ['ReLU1', 'ReLU3', 'ReLU5', 'logits']
 
       # Wrap the model into a DkNNModel
-      dknn = DkNNModel(FLAGS.neighbors, layers, get_activations,
-                       train_data, train_labels, nb_classes, scope='dknn')
+      dknn = DkNNModel(
+        FLAGS.neighbors,
+        layers,
+        get_activations,
+        train_data,
+        train_labels,
+        nb_classes,
+        scope='dknn',
+        number_bits=FLAGS.number_bits
+      )
       dknn.calibrate(cali_data, cali_labels)
 
       # Generate adversarial examples
@@ -415,6 +567,22 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
+  tf.flags.DEFINE_integer(
+    'number_bits',
+    17,
+    'number of hash bits used by LSH Index'
+  )
+  tf.flags.DEFINE_float(
+    'tensorflow_gpu_memory_fraction',
+    0.25,
+    'amount of the GPU memory to allocate for a tensorflow Session'
+  )
+  tf.flags.DEFINE_enum_class(
+    'nearest_neighbor_backend',
+    NearestNeighbor.BACKEND.FALCONN,
+    NearestNeighbor.BACKEND,
+    'NearestNeighbor backend'
+  )
   tf.flags.DEFINE_integer('nb_epochs', 6, 'Number of epochs to train model')
   tf.flags.DEFINE_integer('batch_size', 500, 'Size of training batches')
   tf.flags.DEFINE_float('lr', 0.001, 'Learning rate for training')

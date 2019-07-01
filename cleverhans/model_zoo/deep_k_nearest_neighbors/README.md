@@ -3,6 +3,7 @@
 Code in `dknn.py` shows how to reproduce one of the results from the
 following paper, using the MNIST dataset. It can be
 adapted to use other datasets and any attack supported by CleverHans.
+The LSH backend used in the paper is FALCONN.
 
 **Deep k-Nearest Neighbors: Towards Confident, Interpretable and Robust Deep Learning**
 *Nicolas Papernot, Patrick McDaniel*
