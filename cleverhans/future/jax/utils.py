@@ -11,24 +11,24 @@ def partial_flatten(x):
   return np.reshape(x, (x.shape[0], -1))
 
 
-def clip_eta(eta, ord, eps):
+def clip_eta(eta, norm, eps):
   """
   Helper function to clip the perturbation to epsilon norm ball.
   :param eta: A tensor with the current perturbation.
-  :param ord: Order of the norm (mimics Numpy).
+  :param norm: Order of the norm (mimics Numpy).
               Possible values: np.inf or 2.
   :param eps: Epsilon, bound of the perturbation.
   """
 
-  # Clipping perturbation eta to self.ord norm ball
-  if ord not in [np.inf, 2]:
-    raise ValueError('ord must be np.inf or 2.')
+  # Clipping perturbation eta to self.norm norm ball
+  if norm not in [np.inf, 2]:
+    raise ValueError('norm must be np.inf or 2.')
 
   axis = list(range(1, len(eta.shape)))
   avoid_zero_div = 1e-12
-  if ord == np.inf:
+  if norm == np.inf:
     eta = np.clip(eta, a_min=-eps, a_max=eps)
-  elif ord == 2:
+  elif norm == 2:
     # avoid_zero_div must go inside sqrt to avoid a divide by zero in the gradient through this operation
     norm = np.sqrt(np.maximum(avoid_zero_div, np.sum(np.square(eta), axis=axis, keepdims=True)))
     # We must *clip* to within the norm ball, not *normalize* onto the surface of the ball
