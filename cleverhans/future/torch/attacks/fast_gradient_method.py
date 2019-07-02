@@ -28,7 +28,7 @@ def fast_gradient_method(model_fn, x, eps, norm,
   :return: a tensor for the adversarial example
   """
   if norm not in [np.inf, 1, 2]:
-    raise ValueError("Norm order must be either np.inf, 1, or 2, got {} instead.".format(ord))
+    raise ValueError("Norm order must be either np.inf, 1, or 2, got {} instead.".format(norm))
   if eps < 0:
     raise ValueError("eps must be greater than or equal to 0, got {} instead".format(eps))
   if eps == 0:

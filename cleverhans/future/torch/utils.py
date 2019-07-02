@@ -22,8 +22,7 @@ def clip_eta(eta, norm, eps):
     eta = torch.clamp(eta, -eps, eps)
   else:
     if norm == 1:
-      # TODO
-      # raise NotImplementedError("L1 clip is not implemented.")
+      raise NotImplementedError("L1 clip is not implemented.")
       norm = torch.max(
           avoid_zero_div,
           torch.sum(torch.abs(eta), dim=reduc_ind, keepdim=True)
@@ -111,8 +110,9 @@ def optimize_linear(grad, eps, norm=np.inf):
     # TODO integrate below to a test file
     # check that the optimal perturbations have been correctly computed
     opt_pert_norm = optimal_perturbation.pow(2).sum(dim=red_ind, keepdim=True).sqrt()
-    one_mask = (square <= avoid_zero_div).to(torch.float) * opt_pert_norm + \
-            (square > avoid_zero_div).to(torch.float)
+    one_mask = (
+        (square <= avoid_zero_div).to(torch.float) * opt_pert_norm +
+        (square > avoid_zero_div).to(torch.float))
     assert torch.allclose(opt_pert_norm, one_mask, rtol=1e-05, atol=1e-08)
   else:
     raise NotImplementedError("Only L-inf, L1 and L2 norms are "

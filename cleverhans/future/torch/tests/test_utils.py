@@ -11,7 +11,7 @@ class TestOptimizeLinear(CleverHansTest):
   """
   def setUp(self):
     super(TestOptimizeLinear, self).setUp()
-    self.clip_eta = utils_pytorch.clip_eta
+    self.clip_eta = utils.clip_eta
     self.rand_grad = torch.randn(100, 3, 2)
     self.rand_eta = torch.randn(100, 3, 2)
     self.red_ind = list(range(1, len(self.rand_grad.size())))
@@ -56,18 +56,18 @@ class TestOptimizeLinear(CleverHansTest):
 
   def test_optimize_linear_linf_satisfies_norm_constraint(self):
     for eps in self.eps_list:
-      eta = utils.optimize_linear(self.rand_grad, eps=eps, ord=np.inf)
+      eta = utils.optimize_linear(self.rand_grad, eps=eps, norm=np.inf)
       self.assertClose(eta.abs(), eps)
 
   def test_optimize_linear_l1_satisfies_norm_constraint(self):
     for eps in self.eps_list:
-      eta = utils.optimize_linear(self.rand_grad, eps=eps, ord=1)
+      eta = utils.optimize_linear(self.rand_grad, eps=eps, norm=1)
       norm = eta.abs().sum(dim=self.red_ind)
       self.assertTrue(torch.allclose(norm, eps * torch.ones_like(norm)))
 
   def test_optimize_linear_l2_satisfies_norm_constraint(self):
     for eps in self.eps_list:
-      eta = utils.optimize_linear(self.rand_grad, eps=eps, ord=2)
+      eta = utils.optimize_linear(self.rand_grad, eps=eps, norm=2)
       # optimize_linear uses avoid_zero_div as the divisor for
       # gradients with overly small l2 norms when performing norm
       # normalizations on the gradients so as to safeguard against
@@ -89,20 +89,20 @@ class TestOptimizeLinear(CleverHansTest):
       self.assertTrue(torch.allclose(norm, eps * one_mask))
 
   def test_clip_eta_linf(self):
-    clipped = self.clip_eta(eta=self.rand_eta, ord=np.inf, eps=.5)
+    clipped = self.clip_eta(eta=self.rand_eta, norm=np.inf, eps=.5)
     self.assertTrue(torch.all(clipped <= .5))
     self.assertTrue(torch.all(clipped >= -.5))
 
   def test_clip_eta_l1(self):
     self.assertRaises(
-        NotImplementedError, self.clip_eta, eta=self.rand_eta, ord=1, eps=.5)
+        NotImplementedError, self.clip_eta, eta=self.rand_eta, norm=1, eps=.5)
     
     # TODO uncomment the actual test below after we have implemented the L1 attack
-    # clipped = self.clip_eta(eta=self.rand_eta, ord=1, eps=.5)
+    # clipped = self.clip_eta(eta=self.rand_eta, norm=1, eps=.5)
     # norm = clipped.abs().sum(dim=self.red_ind)
     # self.assertTrue(torch.all(norm <= .5001))
 
   def test_clip_eta_l2(self):
-    clipped = self.clip_eta(eta=self.rand_eta, ord=2, eps=.5)
+    clipped = self.clip_eta(eta=self.rand_eta, norm=2, eps=.5)
     norm = clipped.pow(2).sum(dim=self.red_ind).pow(.5)
     self.assertTrue(torch.all(norm <= .5001))
