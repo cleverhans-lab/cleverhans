@@ -28,7 +28,16 @@ def fast_gradient_method(model_fn, x, eps, norm,
   :return: a tensor for the adversarial example
   """
   if norm not in [np.inf, 1, 2]:
-    raise ValueError("Norm order must be either np.inf, 1, or 2.")
+    raise ValueError("Norm order must be either np.inf, 1, or 2, got {} instead.".format(norm))
+  if eps < 0:
+    raise ValueError("eps must be greater than or equal to 0, got {} instead".format(eps))
+  if eps == 0:
+    return x
+  if clip_min is not None and clip_max is not None:
+    if clip_min > clip_max:
+      raise ValueError(
+          "clip_min must be less than or equal to clip_max, got clip_min={} and clip_max={}".format(
+              clip_min, clip_max))
 
   asserts = []
 
@@ -64,8 +73,9 @@ def fast_gradient_method(model_fn, x, eps, norm,
 
   # If clipping is needed, reset all values outside of [clip_min, clip_max]
   if (clip_min is not None) or (clip_max is not None):
-    # We don't currently support one-sided clipping
-    assert clip_min is not None and clip_max is not None
+    if clip_min is None or clip_max is None:
+      raise ValueError(
+          "One of clip_min and clip_max is None but we don't currently support one-sided clipping")
     adv_x = torch.clamp(adv_x, clip_min, clip_max)
 
   if sanity_checks:

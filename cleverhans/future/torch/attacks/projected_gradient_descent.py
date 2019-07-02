@@ -8,11 +8,11 @@ from cleverhans.future.torch.utils import clip_eta
 
 def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
                                clip_min=None, clip_max=None, y=None, targeted=False,
-                               rand_init=None, rand_minmax=0.3, sanity_checks=True):
+                               rand_init=True, rand_minmax=None, sanity_checks=True):
   """
   This class implements either the Basic Iterative Method
-  (Kurakin et al. 2016) when rand_init is set to 0. or the
-  Madry et al. (2017) method when rand_minmax is larger than 0.
+  (Kurakin et al. 2016) when rand_init is set to False. or the
+  Madry et al. (2017) method if rand_init is set to True.
   Paper link (Kurakin et al. 2016): https://arxiv.org/pdf/1607.02533.pdf
   Paper link (Madry et al. 2017): https://arxiv.org/pdf/1706.06083.pdf
   :param model_fn: a callable that takes an input tensor and returns the model logits.
@@ -31,11 +31,14 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
   :param targeted: (optional) bool. Is the attack targeted or untargeted?
             Untargeted, the default, will try to make the label incorrect.
             Targeted will instead try to move in the direction of being more like y.
+  :param rand_init: (optional) bool. Whether to start the attack from a randomly perturbed x.
+  :param rand_minmax: (optional) bool. Support of the continuous uniform distribution from
+            which the random perturbation on x was drawn. Effective only when rand_init is
+            True. Default equals to eps.
   :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
             memory or for unit tests that intentionally pass strange input)
   :return: a tensor for the adversarial example
   """
-  assert eps_iter <= eps, (eps_iter, eps)
   if norm == 1:
     raise NotImplementedError("It's not clear that FGM is a good inner loop"
                               " step for PGD when norm=1, because norm=1 FGM "
@@ -44,6 +47,23 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
                               "before enabling this feature.")
   if norm not in [np.inf, 2]:
     raise ValueError("Norm order must be either np.inf or 2.")
+  if eps < 0:
+    raise ValueError(
+        "eps must be greater than or equal to 0, got {} instead".format(eps))
+  if eps == 0:
+    return x
+  if eps_iter < 0:
+    raise ValueError(
+        "eps_iter must be greater than or equal to 0, got {} instead".format(eps_iter))
+  if eps_iter == 0:
+    return x
+
+  assert eps_iter <= eps, (eps_iter, eps)
+  if clip_min is not None and clip_max is not None:
+    if clip_min > clip_max:
+      raise ValueError(
+          "clip_min must be less than or equal to clip_max, got clip_min={} and clip_max={}".format(
+              clip_min, clip_max))
 
   asserts = []
 
@@ -58,7 +78,8 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
 
   # Initialize loop variables
   if rand_init:
-    rand_minmax = eps
+    if rand_minmax is None:
+      rand_minmax = eps
     eta = torch.zeros_like(x).uniform_(-rand_minmax, rand_minmax)
   else:
     eta = torch.zeros_like(x)
