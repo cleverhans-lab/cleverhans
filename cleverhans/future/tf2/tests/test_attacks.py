@@ -87,7 +87,7 @@ class TestFastGradientMethod(CommonAttackProperties):
     # test_utils, so duplicate tests are not needed here.
     # Although, if ever switch the engine of the FGM method to some
     # function other than optimize_linear. This test should be added.
-    raise self.skipTest("TODO")
+    self.skipTest("TODO")
 
   def test_clips(self):
     clip_min = -1.
