@@ -132,7 +132,3 @@ class TestFastGradientMethod(CommonAttackProperties):
   def test_targeted_adv_example_success_rate_l2(self):
     self.help_targeted_adv_examples_success_rate(
         norm=2, **self.attack_param)
-
-
-if __name__ == "__main__":
-  tf.test.main()
