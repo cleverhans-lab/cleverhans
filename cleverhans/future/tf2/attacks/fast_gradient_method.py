@@ -27,7 +27,18 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
   :return: a tensor for the adversarial example
   """
   if norm not in [np.inf, 1, 2]:
-    raise ValueError("Norm order must be either np.inf, 1, or 2.")
+    raise ValueError(
+        "Norm order must be either np.inf, 1, or 2, got {} instead.".format(norm))
+  if eps < 0:
+    raise ValueError(
+        "eps must be greater than or equal to 0, got {} instead.".format(eps))
+  if eps == 0:
+    return x
+  if clip_min is not None and clip_max is not None:
+    if clip_min > clip_max:
+      raise ValueError(
+          "clip_min must be less than or equal to clip_max, got clip_min={} and clip_max={}.".format(
+              clip_min, clip_max))
 
   asserts = []
 
@@ -51,7 +62,9 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
   # If clipping is needed, reset all values outside of [clip_min, clip_max]
   if (clip_min is not None) or (clip_max is not None):
     # We don't currently support one-sided clipping
-    assert clip_min is not None and clip_max is not None
+    if clip_min is None or clip_max is None:
+      raise ValueError(
+          "One of clip_min and clip_max is None but we don't currently support one-sided clipping.")
     adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
 
   if sanity_checks:
@@ -114,14 +127,17 @@ def optimize_linear(grad, eps, norm=np.inf):
     abs_grad = tf.abs(grad)
     sign = tf.sign(grad)
     max_abs_grad = tf.reduce_max(abs_grad, axis, keepdims=True)
-    tied_for_max = tf.dtypes.cast(tf.equal(abs_grad, max_abs_grad), dtype=tf.float32)
+    tied_for_max = tf.dtypes.cast(
+        tf.equal(abs_grad, max_abs_grad), dtype=tf.float32)
     num_ties = tf.reduce_sum(tied_for_max, axis, keepdims=True)
     optimal_perturbation = sign * tied_for_max / num_ties
   elif norm == 2:
-    square = tf.maximum(avoid_zero_div, tf.reduce_sum(tf.square(grad), axis, keepdims=True))
+    square = tf.maximum(avoid_zero_div, tf.reduce_sum(
+        tf.square(grad), axis, keepdims=True))
     optimal_perturbation = grad / tf.sqrt(square)
   else:
-    raise NotImplementedError("Only L-inf, L1 and L2 norms are currently implemented.")
+    raise NotImplementedError(
+        "Only L-inf, L1 and L2 norms are currently implemented.")
 
   # Scale perturbation to be the solution for the norm=eps rather than norm=1 problem
   scaled_perturbation = tf.multiply(eps, optimal_perturbation)
