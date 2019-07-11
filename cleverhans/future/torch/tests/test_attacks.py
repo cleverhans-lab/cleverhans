@@ -11,6 +11,7 @@ import torch
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
+from cleverhans.future.torch.attacks.spsa import spsa
 
 class SimpleModel(torch.nn.Module):
 
@@ -349,3 +350,70 @@ class TestProjectedGradientMethod(CommonAttackProperties):
         ori_label.eq(new_label_multi).sum().to(torch.float)
         / self.normalized_x.size(0))
     self.assertLess(failed_attack, .5)
+
+
+class TestSPSA(CommonAttackProperties):
+
+  def setUp(self):
+    super(TestSPSA, self).setUp()
+    self.attack = spsa
+    self.attack_param = {
+        'eps': .5,
+        'clip_min': -5,
+        'clip_max': 5,
+        'nb_iter': 50,
+    }
+
+  def test_invalid_input(self):
+    x = torch.tensor([[-20., 30.]])
+    self.assertRaises(AssertionError, self.attack, model_fn=self.model, x=x, eps=.1,
+                      nb_iter=1, clip_min=-1., clip_max=1., sanity_checks=True)
+
+  def test_invalid_eps(self):
+    self.assertRaises(
+        ValueError, self.attack, model_fn=self.model, x=self.x, eps=-.1, nb_iter=1)
+
+  def test_eps_equals_zero(self):
+    self.assertClose(
+        self.attack(model_fn=self.model, x=self.x, eps=0, nb_iter=10),
+        self.x)
+
+  def test_invalid_clips(self):
+    self.assertRaises(
+        ValueError, self.attack, model_fn=self.model, x=self.x, eps=.1,
+        clip_min=.5, clip_max=-.5, nb_iter=10)
+
+  def test_adv_example_success_rate_linf(self):
+    # use normalized_x to make sure the same eps gives uniformly high attack
+    # success rate across randomized tests
+    self.help_adv_examples_success_rate(**self.attack_param)
+
+  def test_targeted_adv_example_success_rate_linf(self):
+    self.help_targeted_adv_examples_success_rate(**self.attack_param)
+
+  def test_attack_strength(self):
+    x_adv = self.attack(
+        model_fn=self.model, x=self.normalized_x, eps=1.,
+        clip_min=.5, clip_max=.7, nb_iter=20,
+        sanity_checks=False)
+    _, ori_label = self.model(self.normalized_x).max(1)
+    _, adv_label = self.model(x_adv).max(1)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / self.normalized_x.size(0))
+    self.assertLess(adv_acc, .1)
+
+  def test_eps(self):
+    x_adv = self.attack(
+        model_fn=self.model, x=self.normalized_x, eps=.5, nb_iter=10)
+    delta, _ = torch.abs(x_adv - self.normalized_x).max(dim=1)
+    self.assertTrue(torch.all(delta <= .5 + 1e-6))
+
+  def test_clips(self):
+    clip_min = -1.
+    clip_max = 1.
+    x_adv = self.attack(
+        model_fn=self.model, x=self.normalized_x, eps=.3,
+        nb_iter=10, clip_min=clip_min, clip_max=clip_max)
+    self.assertTrue(torch.all(x_adv <= clip_max))
+    self.assertTrue(torch.all(x_adv >= clip_min))
