@@ -128,15 +128,21 @@ def deepfool(model_fn, x, clip_min=-np.inf, clip_max=np.inf,
       grads_diff = (grads_target - grads_correct).detach()
       logits_margin = (logits_target - logits[live, y[live]]).detach()
 
-      grads_norm = grads_diff.norm(p=2, dim=list(range(1, len(grads_diff.size()))))
+      grads_norm = grads_diff.norm(p=1 if norm == np.inf else 2,
+                                   dim=list(range(1, len(grads_diff.size()))))
       magnitudes = logits_margin.abs() / grads_norm
 
       magnitudes_expanded = magnitudes
       for _ in range(len(grads_diff.size()) - 1):
         grads_norm = grads_norm.unsqueeze(-1)
         magnitudes_expanded = magnitudes_expanded.unsqueeze(-1)
-      perturbation_updates = ((magnitudes_expanded + 1e-4) * grads_diff /
-                              grads_norm)
+
+      if norm == np.inf:
+        perturbation_updates = ((magnitudes_expanded + 1e-4) *
+                                torch.sign(grads_diff))
+      else:
+        perturbation_updates = ((magnitudes_expanded + 1e-4) * grads_diff /
+                                 grads_norm)
 
       smaller = magnitudes < smallest_magnitudes
       smallest_perturbation_updates[smaller] = perturbation_updates[smaller]
