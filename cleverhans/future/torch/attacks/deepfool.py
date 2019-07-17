@@ -128,8 +128,10 @@ def deepfool(model_fn, x, clip_min=-np.inf, clip_max=np.inf,
       grads_diff = (grads_target - grads_correct).detach()
       logits_margin = (logits_target - logits[live, y[live]]).detach()
 
-      grads_norm = grads_diff.norm(p=1 if norm == np.inf else 2,
-                                   dim=list(range(1, len(grads_diff.size()))))
+      p = 1 if norm == np.inf else 2
+
+      grads_norm = (grads_diff ** p).abs().sum(dim=list(range(1, len(grads_diff.size())))) \
+        ** (1. / p)
       magnitudes = logits_margin.abs() / grads_norm
 
       magnitudes_expanded = magnitudes
