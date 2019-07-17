@@ -110,7 +110,7 @@ def spsa(model_fn, x, eps, nb_iter, clip_min=-np.inf, clip_max=np.inf, y=None,
     if early_stop_loss_threshold is not None and loss < early_stop_loss_threshold:
       break
 
-  adv_x = (x + perturbation).detach()
+  adv_x = torch.clamp((x + perturbation).detach(), clip_min, clip_max)
 
   asserts.append(torch.all(torch.abs(adv_x - x) <= eps + 1e-6))
   asserts.append(torch.all(adv_x >= clip_min))
