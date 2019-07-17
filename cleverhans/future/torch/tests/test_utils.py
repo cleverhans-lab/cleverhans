@@ -94,13 +94,9 @@ class TestOptimizeLinear(CleverHansTest):
     self.assertTrue(torch.all(clipped >= -.5))
 
   def test_clip_eta_l1(self):
-    self.assertRaises(
-        NotImplementedError, self.clip_eta, eta=self.rand_eta, norm=1, eps=.5)
-    
-    # TODO uncomment the actual test below after we have implemented the L1 attack
-    # clipped = self.clip_eta(eta=self.rand_eta, norm=1, eps=.5)
-    # norm = clipped.abs().sum(dim=self.red_ind)
-    # self.assertTrue(torch.all(norm <= .5001))
+    clipped = self.clip_eta(eta=self.rand_eta, norm=1, eps=.5)
+    norm = clipped.abs().sum(dim=self.red_ind)
+    self.assertTrue(torch.all(norm <= .5001))
 
   def test_clip_eta_l2(self):
     clipped = self.clip_eta(eta=self.rand_eta, norm=2, eps=.5)
