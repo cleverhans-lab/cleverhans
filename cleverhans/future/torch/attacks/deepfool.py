@@ -8,7 +8,7 @@ from cleverhans.future.torch.utils import clip_eta
 def deepfool(model_fn, x, clip_min=-np.inf, clip_max=np.inf,
              y=None, targeted=False, eps=None, norm=None,
              num_classes=10, overshoot=0.02, max_iter=50,
-             is_debug=True, sanity_checks=False):
+             is_debug=False, sanity_checks=False):
   """
   PyTorch implementation of DeepFool (https://arxiv.org/pdf/1511.04599.pdf).
   :param model_fn: A callable that takes an input tensor and returns the model logits.
@@ -122,7 +122,7 @@ def deepfool(model_fn, x, clip_min=-np.inf, clip_max=np.inf,
       zero_gradients(x_adv)
 
       logits_target = logits[live, target_classes[live, k]]
-      logits_target.sum().backward()
+      logits_target.sum().backward(retain_graph=True)
       grads_target = x_adv.grad.data[live].clone().detach()
 
       grads_diff = (grads_target - grads_correct).detach()

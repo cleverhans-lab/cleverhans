@@ -10,6 +10,8 @@ from nose.plugins.skip import SkipTest
 import torch
 from torch.autograd import Variable
 from torch.autograd.gradcheck import zero_gradients
+import torch.nn.functional as F
+from torch import nn
 
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
@@ -24,24 +26,6 @@ class SimpleModel(torch.nn.Module):
     self.w2 = torch.tensor([[-2.4, 1.2], [.5, -2.3]])
 
   def forward(self, x):
-    x = torch.matmul(x, self.w1)
-    x = torch.sigmoid(x)
-    x = torch.matmul(x, self.w2)
-    return x
-
-
-class SimpleImageModel(torch.nn.Module):
-
-  def __init__(self):
-    super(SimpleImageModel, self).__init__()
-    self.w1 = torch.tensor([[1.5, .3], [-2, .3]])
-    self.w2 = torch.tensor([[-2.4, 1.2], [.5, -2.3]])
-
-  def forward(self, x):
-    if len(x.size()) == 4:
-      x = x[:, 0, 0]
-    elif len(x.size()) == 3:
-      x = x[None, 0, 0]
     x = torch.matmul(x, self.w1)
     x = torch.sigmoid(x)
     x = torch.matmul(x, self.w2)
@@ -374,13 +358,35 @@ class TestProjectedGradientMethod(CommonAttackProperties):
     self.assertLess(failed_attack, .5)
 
 
+class SimpleImageModel(torch.nn.Module):
+  """
+  This slightly more complex model is useful for testing Deepfool. It has
+  two full-connected layers (one hidden) with ReLU activations between and outputs
+  five classes.
+  """
+
+  def __init__(self):
+    super(SimpleImageModel, self).__init__()
+    self.l1 = nn.Linear(2, 10)
+    self.l2 = nn.Linear(10, 5)
+
+  def forward(self, x):
+    if len(x.size()) == 4:
+      x = x[:, 0, 0]
+    elif len(x.size()) == 3:
+      x = x[None, 0, 0]
+    x = self.l1(x)
+    x = F.relu(x)
+    x = self.l2(x)
+    return x
+
+
 class TestDeepFool(CommonAttackProperties):
 
   def setUp(self):
     super(TestDeepFool, self).setUp()
     self.attack = deepfool
     self.attack_param = {
-        'eps' : .5,
         'clip_min' : -5,
         'clip_max' : 5,
         }
@@ -511,12 +517,11 @@ class TestDeepFool(CommonAttackProperties):
 
   def test_matches_reference(self):
     model = SimpleImageModel()
-    for image in self.x:
+    x_adv = self.attack(model_fn=model, x=self.x[:, None, None, :])
+    for image, adv_image in zip(self.x, x_adv):
       image = image[None, None, :]
-      _, _, _, _, pert_image = TestDeepFool.reference_deepfool(image, model, num_classes=2)
-      self.assertClose(
-          self.attack(model_fn=model, x=image[None])[0],
-          pert_image)
+      _, _, _, _, pert_image = TestDeepFool.reference_deepfool(image, model, num_classes=5)
+      assert torch.norm(adv_image - pert_image) < 1e-4, (adv_image, pert_image)
 
   @staticmethod
   def reference_deepfool(image, net, num_classes=10, overshoot=0.02, max_iter=50):
