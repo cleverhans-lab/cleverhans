@@ -21,22 +21,7 @@ def clip_eta(eta, norm, eps):
   if norm == np.inf:
     eta = torch.clamp(eta, -eps, eps)
   else:
-    if norm == 1:
-      raise NotImplementedError("L1 clip is not implemented.")
-      norm = torch.max(
-          avoid_zero_div,
-          torch.sum(torch.abs(eta), dim=reduc_ind, keepdim=True)
-      )
-    elif norm == 2:
-      norm = torch.sqrt(torch.max(
-          avoid_zero_div,
-          torch.sum(eta ** 2, dim=reduc_ind, keepdim=True)
-      ))
-    factor = torch.min(
-        torch.tensor(1., dtype=eta.dtype, device=eta.device),
-        eps / norm
-        )
-    eta *= factor
+    eta = torch.renorm(eta, p=norm, dim=0, maxnorm=eps)
   return eta
 
 def get_or_guess_labels(model, x, **kwargs):
