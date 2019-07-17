@@ -465,8 +465,8 @@ class TestDeepFool(CommonAttackProperties):
 
   def test_attack_strength(self):
     x_adv = self.attack(
-        model_fn=self.model, x=self.normalized_x,
-        clip_min=0., clip_max=1.,
+        model_fn=self.model, x=self.normalized_x, eps=1.,
+        norm=np.inf, clip_min=.5, clip_max=.7, 
         sanity_checks=False)
     _, ori_label = self.model(self.normalized_x).max(1)
     _, adv_label = self.model(x_adv).max(1)

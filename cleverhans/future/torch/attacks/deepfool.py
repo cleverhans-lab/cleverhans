@@ -146,11 +146,17 @@ def deepfool(model_fn, x, clip_min=-np.inf, clip_max=np.inf,
     all_perturbation_updates[live] = smallest_perturbation_updates
     perturbations.add_(all_perturbation_updates)
 
-  perturbations *= (1 + overshoot)
-  if eps is not None:
-    perturbations = clip_eta(perturbations, norm, eps)
+    perturbations *= (1 + overshoot)
+    if eps is not None:
+      perturbations = clip_eta(perturbations, norm, eps)
+    perturbations = torch.clamp(x + perturbations, clip_min, clip_max) - x
+    perturbations /= (1 + overshoot)
 
-  x_adv = torch.clamp(x + perturbations, clip_min, clip_max)
+#   perturbations *= (1 + overshoot)
+#   if eps is not None:
+#     perturbations = clip_eta(perturbations, norm, eps)
+# 
+  x_adv = x + perturbations * (1 + overshoot)
 
   asserts.append(torch.all(x_adv >= clip_min))
   asserts.append(torch.all(x_adv <= clip_max))
