@@ -391,6 +391,30 @@ class TestSPSA(CommonAttackProperties):
   def test_targeted_adv_example_success_rate_linf(self):
     self.help_targeted_adv_examples_success_rate(**self.attack_param)
 
+  def test_adv_example_success_rate_l1(self):
+    self.assertRaises(
+        NotImplementedError, self.help_adv_examples_success_rate, norm=1,
+        **self.attack_param)
+    # TODO uncomment the actual test below after we have implemented the L1 attack
+    # self.help_adv_examples_success_rate(
+    #     norm=1, **self.attack_param)
+
+  def test_targeted_adv_example_success_rate_l1(self):
+    self.assertRaises(
+        NotImplementedError, self.help_targeted_adv_examples_success_rate,
+        norm=1, **self.attack_param)
+    # TODO uncomment the actual test below after we have implemented the L1 attack
+    # self.help_targeted_adv_examples_success_rate(
+    #     norm=1, **self.attack_param)
+
+  def test_adv_example_success_rate_l2(self):
+    self.help_adv_examples_success_rate(
+        norm=2, **self.attack_param)
+
+  def test_targeted_adv_example_success_rate_l2(self):
+    self.help_targeted_adv_examples_success_rate(
+        norm=2, **self.attack_param)
+
   def test_attack_strength(self):
     x_adv = self.attack(
         model_fn=self.model, x=self.normalized_x, eps=1.,

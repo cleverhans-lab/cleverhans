@@ -2,9 +2,10 @@
 import numpy as np
 import torch
 from torch import optim
+from cleverhans.future.torch.utils import clip_eta
 
 
-def spsa(model_fn, x, eps, nb_iter, clip_min=-np.inf, clip_max=np.inf, y=None,
+def spsa(model_fn, x, eps, nb_iter, norm=np.inf, clip_min=-np.inf, clip_max=np.inf, y=None,
          targeted=False, early_stop_loss_threshold=None, learning_rate=0.01, delta=0.01,
          spsa_samples=128, spsa_iters=1, is_debug=False, sanity_checks=True):
   """
@@ -17,6 +18,7 @@ def spsa(model_fn, x, eps, nb_iter, clip_min=-np.inf, clip_max=np.inf, y=None,
   :param x: Input tensor.
   :param eps: The size of the maximum perturbation, measured in the L-infinity norm.
   :param nb_iter: The number of optimization steps.
+  :param norm: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
   :param clip_min: If specified, the minimum input value.
   :param clip_max: If specified, the maximum input value.
   :param y: (optional) Tensor with true labels. If targeted is true, then provide the
@@ -54,7 +56,7 @@ def spsa(model_fn, x, eps, nb_iter, clip_min=-np.inf, clip_max=np.inf, y=None,
     adv_x = []
     for x_single, y_single in zip(x, y):
       adv_x_single = spsa(model_fn=model_fn, x=x_single.unsqueeze(0), eps=eps,
-                          nb_iter=nb_iter, clip_min=clip_min, clip_max=clip_max,
+                          nb_iter=nb_iter, norm=norm, clip_min=clip_min, clip_max=clip_max,
                           y=y_single.unsqueeze(0), targeted=targeted,
                           early_stop_loss_threshold=early_stop_loss_threshold,
                           learning_rate=learning_rate, delta=delta,
@@ -85,7 +87,7 @@ def spsa(model_fn, x, eps, nb_iter, clip_min=-np.inf, clip_max=np.inf, y=None,
     print("Starting SPSA attack with eps = {}".format(eps))
 
   perturbation = (torch.rand_like(x) * 2 - 1) * eps
-  _project_perturbation(perturbation, eps, x, clip_min, clip_max)
+  _project_perturbation(perturbation, norm, eps, x, clip_min, clip_max)
   optimizer = optim.Adam([perturbation], lr=learning_rate)
 
   for i in range(nb_iter):
@@ -102,7 +104,7 @@ def spsa(model_fn, x, eps, nb_iter, clip_min=-np.inf, clip_max=np.inf, y=None,
     perturbation.grad = spsa_grad
     optimizer.step()
 
-    _project_perturbation(perturbation, eps, x, clip_min, clip_max)
+    _project_perturbation(perturbation, norm, eps, x, clip_min, clip_max)
 
     loss = loss_fn(perturbation).item()
     if is_debug:
@@ -112,7 +114,11 @@ def spsa(model_fn, x, eps, nb_iter, clip_min=-np.inf, clip_max=np.inf, y=None,
 
   adv_x = torch.clamp((x + perturbation).detach(), clip_min, clip_max)
 
-  asserts.append(torch.all(torch.abs(adv_x - x) <= eps + 1e-6))
+  if norm == np.inf:
+    asserts.append(torch.all(torch.abs(adv_x - x) <= eps + 1e-6))
+  else:
+    asserts.append(torch.all(torch.abs(
+      torch.renorm(adv_x - x, p=norm, dim=0,  maxnorm=eps) - (adv_x - x) < 1e-6)))
   asserts.append(torch.all(adv_x >= clip_min))
   asserts.append(torch.all(adv_x <= clip_max))
 
@@ -122,7 +128,7 @@ def spsa(model_fn, x, eps, nb_iter, clip_min=-np.inf, clip_max=np.inf, y=None,
   return adv_x
 
 
-def _project_perturbation(perturbation, epsilon, input_image, clip_min=-np.inf,
+def _project_perturbation(perturbation, norm, epsilon, input_image, clip_min=-np.inf,
                           clip_max=np.inf):
   """
   Project `perturbation` onto L-infinity ball of radius `epsilon`. Also project into
@@ -130,7 +136,7 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=-np.inf,
   if applicable. This is an in-place operation.
   """
 
-  clipped_perturbation = torch.clamp(perturbation, -epsilon, epsilon)
+  clipped_perturbation = clip_eta(perturbation, norm, epsilon)
   new_image = torch.clamp(input_image + clipped_perturbation,
                           clip_min, clip_max)
 
