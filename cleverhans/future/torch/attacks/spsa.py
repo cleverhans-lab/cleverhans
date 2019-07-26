@@ -118,7 +118,7 @@ def spsa(model_fn, x, eps, nb_iter, norm=np.inf, clip_min=-np.inf, clip_max=np.i
     asserts.append(torch.all(torch.abs(adv_x - x) <= eps + 1e-6))
   else:
     asserts.append(torch.all(torch.abs(
-      torch.renorm(adv_x - x, p=norm, dim=0,  maxnorm=eps) - (adv_x - x) < 1e-6)))
+      torch.renorm(adv_x - x, p=norm, dim=0,  maxnorm=eps) - (adv_x - x)) < 1e-6))
   asserts.append(torch.all(adv_x >= clip_min))
   asserts.append(torch.all(adv_x <= clip_max))
 
