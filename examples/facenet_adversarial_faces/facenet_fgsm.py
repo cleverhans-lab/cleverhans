@@ -9,7 +9,7 @@ import set_loader
 
 
 class InceptionResnetV1Model(Model):
-  model_path = "models/facenet/20170512-110547/20170512-110547.pb"
+  model_path = "models/facenet/20180402-114759/20180402-114759.pb"
 
   def __init__(self):
     super(InceptionResnetV1Model, self).__init__(scope='model')
@@ -25,7 +25,7 @@ class InceptionResnetV1Model(Model):
     # Create victim_embedding placeholder
     self.victim_embedding_input = tf.placeholder(
         tf.float32,
-        shape=(None, 128))
+        shape=(None, 512))
 
     # Squared Euclidean Distance between embeddings
     distance = tf.reduce_sum(
@@ -46,7 +46,7 @@ class InceptionResnetV1Model(Model):
     self.layer_names = []
     self.layers = []
     self.layers.append(self.softmax_output)
-    self.layer_names.append('probs')
+    self.layer_names.append('logits')
 
   def fprop(self, x, set_ref=False):
     return dict(zip(self.layer_names, self.layers))
@@ -60,7 +60,8 @@ with tf.Graph().as_default():
     model.convert_to_classifier()
 
     # Load pairs of faces and their labels in one-hot encoding
-    faces1, faces2, labels = set_loader.load_testset(1000)
+    size = 100
+    faces1, faces2, labels = set_loader.load_testset(size)
 
     # Create victims' embeddings using Facenet itself
     graph = tf.get_default_graph()
@@ -131,3 +132,6 @@ with tf.Graph().as_default():
           + 'different people faces (impersonation): '
           + str(accuracy * 100)
           + '%')
+		  
+    # Save images to folder
+    set_loader.save_images(adv, faces1, faces2, size)
