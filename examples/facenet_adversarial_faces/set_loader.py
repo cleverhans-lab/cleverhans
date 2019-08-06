@@ -1,19 +1,42 @@
+import shutil
+import os
+
 import lfw
 import facenet
 
 import numpy as np
 
+from PIL import Image
+
 
 pairs_path = "datasets/lfw/pairs.txt"
 testset_path = "datasets/lfw/lfw_mtcnnpy_160"
-file_extension = 'png'
 image_size = 160
+
+
+def save_images(adv, faces1, faces2, size):
+  save_images_to_folder(adv, size, 'images/adversarial/')
+  save_images_to_folder(0.5 + (adv - faces1), size, 'images/noise/')
+  save_images_to_folder(faces1, size, 'images/faces1/')
+  save_images_to_folder(faces2, size, 'images/faces2/')
+	
+
+def save_images_to_folder(images, size, path):
+  if os.path.isdir(path):
+    shutil.rmtree(path)
+  os.makedirs(path)
+
+  for index in range(images.shape[0]):
+    if index < size:
+      image_array = (np.reshape(images[index], (160, 160, 3)) 
+                    * 255).astype(np.uint8)
+      Image.fromarray(image_array, 'RGB').save(path + str(index) + '.png')
 
 
 def load_testset(size):
   # Load images paths and labels
   pairs = lfw.read_pairs(pairs_path)
-  paths, labels = lfw.get_paths(testset_path, pairs, file_extension)
+  paths, labels = lfw.get_paths(testset_path, pairs)
 
   # Random choice
   permutation = np.random.choice(len(labels), size, replace=False)
