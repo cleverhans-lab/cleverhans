@@ -4,7 +4,7 @@ Model construction utilities based on keras
 from distutils.version import LooseVersion
 import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
+from keras.layers import Dense, Activation, Flatten, BatchNormalization, MaxPooling2D, Dropout
 
 from .model import Model, NoSuchLayerError
 
@@ -96,6 +96,69 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
   else:
     return model
 
+def VGG_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
+              channels=1, nb_filters=64, nb_classes=10):
+  """
+  Defines a VGG model using Keras sequential model
+  :param logits: If set to False, returns a Keras model, otherwise will also
+                  return logits tensor
+  :param input_ph: The TensorFlow tensor for the input
+                  (needed if returning logits)
+                  ("ph" stands for placeholder but it need not actually be a
+                  placeholder)
+  :param img_rows: number of row in the image
+  :param img_cols: number of columns in the image
+  :param channels: number of color channels (e.g., 1 for MNIST)
+  :param nb_filters: number of convolutional filters per layer
+  :param nb_classes: the number of output classes
+  :return:
+  """
+  model = Sequential()
+
+  # Define the layers successively (convolution layers are version dependent)
+  if keras.backend.image_dim_ordering() == 'th':
+    input_shape = (channels, img_rows, img_cols)
+  else:
+    input_shape = (img_rows, img_cols, channels)
+
+  layers = [conv_2d(nb_filters, (3, 3), strides=(2, 2), padding="same",
+                    input_shape=input_shape),
+            Activation('relu'),
+            BatchNormalization(axis=channels),
+            conv_2d(nb_filters, (3, 3), strides=(1, 1), padding="valid"),
+            Activation('relu'),
+            BatchNormalization(axis=channels),
+            MaxPooling2D(pool_size=(2, 2)),
+            Dropout(0.25),
+            
+            conv_2d((nb_filters * 2), (3, 3), strides=(1, 1), padding="valid"),
+            Activation("relu"),
+            BatchNormalization(axis=channels),
+            conv_2d((nb_filters * 4), (3, 3), strides=(1,1), padding="valid"),
+            Activation("relu"),
+            BatchNormalization(axis=channels),
+            MaxPooling2D(pool_size=(2, 2)),
+            Dropout(0.25),
+            
+            Flatten(),
+            Dense(1024),
+            Activation("relu"),
+            BatchNormalization(),
+            Dropout(0.5),
+            
+            Dense(nb_classes)]
+
+  for layer in layers:
+    model.add(layer)
+
+  if logits:
+    logits_tensor = model(input_ph)
+  model.add(Activation('softmax'))
+
+  if logits:
+    return model, logits_tensor
+  else:
+    return model
 
 class KerasModelWrapper(Model):
   """
