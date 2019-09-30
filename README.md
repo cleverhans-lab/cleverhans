@@ -288,6 +288,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Tzu-Wei Sung (National Taiwan University)
 * Alexey Kurakin (Google Brain)
 * Reuben Feinman (New York University)
+* Shiyu Duan (University of Florida)
 * Phani Krishna (Video Analytics Lab)
 * David Berthelot (Google Brain)
 * Tom Brown (Google Brain)
