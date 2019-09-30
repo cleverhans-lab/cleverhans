@@ -159,7 +159,7 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
       # Check if success was achieved
       res = int(model_argmax(sess, x, preds, adv_x) == target)
 
-      # Computer number of modified features
+      # Compute number of modified features
       adv_x_reshape = adv_x.reshape(-1)
       test_in_reshape = x_test[sample_ind].reshape(-1)
       nb_changed = np.where(adv_x_reshape != test_in_reshape)[0].shape[0]
