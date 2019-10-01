@@ -15,7 +15,7 @@
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
+# documentation root, use os.path.abspath to make it absolute, as shown here.
 #
 import os
 import sys
@@ -99,7 +99,7 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-# Custom sidebar templates, must be a dictionary that maps document names
+# Custom sidebar templates must be a dictionary that maps document names
 # to template names.
 #
 # This is required for the alabaster theme
