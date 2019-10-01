@@ -15,8 +15,8 @@ pip install -e .
 ### Examples
 Two example scripts are included. 
 
-- enjoy-adv.py : sample implementation of test-time FGSM attack on pre-trained DQN Atari agents.
-- train.py: sample implementation of training-time FGSM attack on DQN Atari agents.
+- enjoy-adv.py : a sample implementation of test-time FGSM attack on pre-trained DQN Atari agents.
+- train.py: a sample implementation of training-time FGSM attack on DQN Atari agents.
 
 Some example executions on the Breakout game environment are: 
 
