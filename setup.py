@@ -13,6 +13,7 @@ setup(name='cleverhans',
           "mnist ~= 0.2",
           "numpy",
           "tensorflow-probability",
+          "joblib",
       ],
       # Explicit dependence on TensorFlow is not supported.
       # See https://github.com/tensorflow/tensorflow/issues/7166
