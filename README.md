@@ -301,6 +301,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Yen-Chen Lin (MIT)
 * Vahid Behzadan (Kansas State)
 * Jonathan Uesato (DeepMind)
+* Florian Tramèr (Stanford University)
 * Haojie Yuan (University of Science & Technology of China)
 * Zhishuai Zhang (Johns Hopkins)
 * Karen Hambardzumyan (YerevaNN)
