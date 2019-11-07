@@ -1,6 +1,6 @@
 """The ElasticNetMethod attack.
 """
-# pylint: disable=missing-docstring
+
 import logging
 
 import numpy as np
