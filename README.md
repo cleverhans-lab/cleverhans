@@ -223,10 +223,6 @@ example contests. We do not offer nearly as much ongoing maintenance or support
 for this directory as the rest of the library, and if code in here gets broken
 we may just delete it without warning.
 
-## List of attacks
-
-You can find a full list attacks along with their function signatures at [cleverhans.readthedocs.io](http://cleverhans.readthedocs.io/)
-
 ## Reporting benchmarks
 
 When reporting benchmarks, please:
