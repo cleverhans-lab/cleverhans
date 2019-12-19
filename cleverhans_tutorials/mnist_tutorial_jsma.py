@@ -188,11 +188,11 @@ def mnist_tutorial_jsma(train_start=0, train_end=60000, test_start=0,
   report.clean_train_adv_eval = 1. - succ_rate
 
   # Compute the average distortion introduced by the algorithm
-  percent_perturbed = np.mean(perturbations)
+  percent_perturbed = np.mean(perturbations[np.where(perturbations!=0)])
   print('Avg. rate of perturbed features {0:.4f}'.format(percent_perturbed))
 
   # Compute the average distortion introduced for successful samples only
-  percent_perturb_succ = np.mean(perturbations * (results == 1))
+  percent_perturb_succ = np.mean(perturbations[np.where(perturbations!=0)] * (results[np.where(perturbations!=0)] == 1))
   print('Avg. rate of perturbed features for successful '
         'adversarial examples {0:.4f}'.format(percent_perturb_succ))
 
