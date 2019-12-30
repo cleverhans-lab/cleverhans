@@ -39,6 +39,7 @@ def clip_eta(eta, norm, eps):
     eta *= factor
   return eta
 
+
 def get_or_guess_labels(model, x, **kwargs):
   """
   Get the label to use in generating an adversarial example for x.
@@ -84,7 +85,6 @@ def optimize_linear(grad, eps, norm=np.inf):
     # Take sign of gradient
     optimal_perturbation = torch.sign(grad)
   elif norm == 1:
-    abs_grad = torch.abs(grad)
     sign = torch.sign(grad)
     red_ind = list(range(1, len(grad.size())))
     abs_grad = torch.abs(grad)
