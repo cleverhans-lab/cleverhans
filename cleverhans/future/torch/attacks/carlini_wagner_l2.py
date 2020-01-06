@@ -24,48 +24,57 @@ def carlini_wagner_l2(model_fn, x, n_classes,
   lower distortion than other attacks. This comes at the cost of speed,
   as this attack is often much slower than others.
 
-  :param model_fn: a callable that takes an input tensor and returns the model logits.
+  :param model_fn: a callable that takes an input tensor and returns
+            the model logits.
   :param x: input tensor.
   :param n_classes: the number of classes.
-  :param y: (optional) Tensor with true labels. If targeted is true, then provide the
-            target label. Otherwise, only provide this parameter if you'd like to use true
-            labels when crafting adversarial samples. Otherwise, model predictions are used
-            as labels to avoid the "label leaking" effect (explained in this paper:
+  :param y: (optional) Tensor with true labels. If targeted is true,
+            then provide the target label. Otherwise, only provide
+            this parameter if you'd like to use true labels when
+            crafting adversarial samples. Otherwise, model predictions
+            are used as labels to avoid the "label leaking" effect
+            (explained in this paper:
             https://arxiv.org/abs/1611.01236). Default is None.
-  :param targeted: (optional) bool. Is the attack targeted or untargeted?
-            Untargeted, the default, will try to make the label incorrect.
-            Targeted will instead try to move in the direction of being more like y.
-  :param lr: (optional) float. The learning rate for the attack algorithm.
-  :param confidence: (optional) float. Confidence of adversarial examples: higher produces
-                       examples with larger l2 distortion, but more
-                       strongly classified as adversarial.
-  :param clip_min: (optional) float. Minimum float value for adversarial example components.
-  :param clip_max: (optional) float. Maximum float value for adversarial example components.
+  :param targeted: (optional) bool. Is the attack targeted or
+            untargeted? Untargeted, the default, will try to make the
+            label incorrect. Targeted will instead try to move in the
+            direction of being more like y.
+  :param lr: (optional) float. The learning rate for the attack
+            algorithm. Default is 5e-3.
+  :param confidence: (optional) float. Confidence of adversarial
+            examples: higher produces examples with larger l2
+            distortion, but more strongly classified as adversarial.
+            Default is 0.
+  :param clip_min: (optional) float. Minimum float value for
+            adversarial example components. Default is 0.
+  :param clip_max: (optional) float. Maximum float value for
+            adversarial example components. Default is 1.
   :param initial_const: The initial tradeoff-constant to use to tune the
-                          relative importance of size of the pururbation
-                          and confidence of classification.
-                          If binary_search_steps is large, the initial
-                          constant is not important. A smaller value of
-                          this constant gives lower distortion results.
-  :param batch_size: (optional) int. Number of attacks to run simultaneously.
-  :param binary_search_steps: (optional) int. The number of times we perform binary
-                                search to find the optimal tradeoff-
-                                constant between norm of the purturbation
-                                and confidence of the classification.
-  :param max_iterations: (optional) int. The maximum number of iterations. Setting this
-                           to a larger value will produce lower distortion
-                           results. Using only a few iterations requires
-                           a larger learning rate, and will produce larger
-                           distortion results.
+            relative importance of size of the perturbation and
+            confidence of classification. If binary_search_steps is
+            large, the initial constant is not important. A smaller
+            value of this constant gives lower distortion results.
+            Default is 1e-2.
+  :param binary_search_steps: (optional) int. The number of times we
+            perform binary search to find the optimal tradeoff-constant
+            between norm of the perturbation and confidence of the
+            classification. Default is 5.
+  :param max_iterations: (optional) int. The maximum number of
+            iterations. Setting this to a larger value will produce
+            lower distortion results. Using only a few iterations
+            requires a larger learning rate, and will produce larger
+            distortion results. Default is 1000.
   """
   def compare(pred, label, is_logits=False):
     """
     A helper function to compare prediction against a label.
     Returns true if the attack is considered successful.
 
-    :param pred: can be either a 1D tensor of logits or a predicted class (int).
+    :param pred: can be either a 1D tensor of logits or a predicted
+            class (int).
     :param label: int. A label to compare against.
-    :param is_logits: (optional) bool. If True, treat pred as an array of logits.
+    :param is_logits: (optional) bool. If True, treat pred as an
+            array of logits. Default is False.
     """
 
     # Convert logits to predicted class if necessary
