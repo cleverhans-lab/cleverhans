@@ -25,8 +25,11 @@ def carlini_wagner_l2(model_fn, x, n_classes,
   as this attack is often much slower than others.
 
   :param model_fn: a callable that takes an input tensor and returns
-            the model logits.
-  :param x: input tensor.
+            the model logits. The logits should be a tensor of shape
+            (n_examples, n_classes).
+  :param x: input tensor of shape (n_examples, ...), where ... can
+            be any arbitrary dimension that is compatible with
+            model_fn.
   :param n_classes: the number of classes.
   :param y: (optional) Tensor with true labels. If targeted is true,
             then provide the target label. Otherwise, only provide
@@ -34,7 +37,9 @@ def carlini_wagner_l2(model_fn, x, n_classes,
             crafting adversarial samples. Otherwise, model predictions
             are used as labels to avoid the "label leaking" effect
             (explained in this paper:
-            https://arxiv.org/abs/1611.01236). Default is None.
+            https://arxiv.org/abs/1611.01236). If provide y, it
+            should be a 1D tensor of shape (n_examples, ).
+            Default is None.
   :param targeted: (optional) bool. Is the attack targeted or
             untargeted? Untargeted, the default, will try to make the
             label incorrect. Targeted will instead try to move in the
@@ -83,13 +88,37 @@ def carlini_wagner_l2(model_fn, x, n_classes,
       pred_copy[label] += confidence * (-1) ** int(targeted)
       pred = torch.argmax(pred_copy)
 
-    return pred == label if targeted else pred !=label
+    return pred == label if targeted else pred != label
 
 
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
     pred = model_fn(x)
-    _, y = torch.max(pred, 1)
+    y = torch.argmax(pred, 1)
+
+  # Initialize some values needed for binary search on const
+  lower_bound = [0.] * len(x)
+  upper_bound = [1e10] * len(x)
+  const = x.new_ones(len(x), 1) * initial_const
+
+  o_bestl2 = [1e10] * len(x)
+  o_bestscore = [-1.] * len(x)
+  x = torch.clamp(x, clip_min, clip_max)
+  ox = x.clone().detach() # save the original x
+  o_bestattack = x.clone().detach()
+
+  # Map images into the tanh-space
+  # TODO as of 01/06/2020, PyTorch does not natively support
+  # arctanh (see, e.g.,
+  # https://github.com/pytorch/pytorch/issues/10324).
+  # This particular implementation here is not numerically
+  # stable and should be substituted w/ PyTorch's native
+  # implementation when it comes out in the future
+  arctanh = lambda x: 0.5 * torch.log((1 + x) / (1 - x))
+  x = (x - clip_min) / (clip_max - clip_min)
+  x = torch.clamp(x, 0, 1)
+  x = x * 2 - 1
+  x = arctanh(x * .999999)
 
   # Prepare some variables
   modifier = torch.zeros_like(x, requires_grad=True)
@@ -103,15 +132,6 @@ def carlini_wagner_l2(model_fn, x, n_classes,
   )
   l2dist_fn = lambda x, y: torch.pow(x - y, 2).sum(list(range(len(x.size())))[1:])
   optimizer = torch.optim.Adam([modifier], lr=lr)
-
-  # Initialize some values needed for binary search on const
-  lower_bound = [0.] * len(x)
-  upper_bound = [1e10] * len(x)
-  const = x.new_ones(len(x), 1) * initial_const
-
-  o_bestl2 = [1e10] * len(x)
-  o_bestscore = [-1.] * len(x)
-  o_bestattack = x.clone().detach()
 
   # Outer loop performing binary search on const
   for outer_step in range(binary_search_steps):
@@ -131,7 +151,7 @@ def carlini_wagner_l2(model_fn, x, n_classes,
 
       optimizer.zero_grad()
       f = f_fn(real, other, targeted)
-      l2 = l2dist_fn(new_x, x)
+      l2 = l2dist_fn(new_x, ox)
       loss = (const * f + l2).sum()
       loss.backward()
       optimizer.step()
@@ -175,12 +195,10 @@ if __name__ == '__main__':
 
   # targeted
   new_x = carlini_wagner_l2(model_fn, x, 10, targeted=True, y=y)
-
   new_pred = model_fn(new_x)
   new_pred = torch.argmax(new_pred, 1)
 
   # untargeted
-  new_x = carlini_wagner_l2(model_fn, x, 10, targeted=False, y=y)
-
-  new_pred = model_fn(new_x)
-  new_pred = torch.argmax(new_pred, 1)
+  new_x_untargeted = carlini_wagner_l2(model_fn, x, 10, targeted=False, y=y)
+  new_pred_untargeted = model_fn(new_x_untargeted)
+  new_pred_untargeted = torch.argmax(new_pred_untargeted, 1)
