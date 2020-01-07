@@ -12,6 +12,15 @@ from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
+class TrivialModel(torch.nn.Module):
+
+  def __init__(self):
+    super(TrivialModel, self).__init__()
+    self.w1 = torch.tensor([[1., -1]])
+
+  def forward(self, x, **kwargs):
+    return torch.matmul(x, self.w1)
+
 class SimpleModel(torch.nn.Module):
 
   def __init__(self):
@@ -30,21 +39,22 @@ class CommonAttackProperties(CleverHansTest):
   def setUp(self):
     super(CommonAttackProperties, self).setUp()
     self.model = SimpleModel()
+    self.trivial_model = TrivialModel()
     self.x = torch.randn(100, 2)
     self.normalized_x = torch.rand(100, 2) # truncated between [0, 1)
     self.red_ind = list(range(1, len(self.x.size())))
     self.ord_list = [1, 2, np.inf]
 
-  def help_adv_examples_success_rate(self, **kwargs):
+  def help_adv_examples_success_rate(self, rate=.5, **kwargs):
     x_adv = self.attack(model_fn=self.model, x=self.normalized_x, **kwargs)
     _, ori_label = self.model(self.normalized_x).max(1)
     _, adv_label = self.model(x_adv).max(1)
     adv_acc = (
         adv_label.eq(ori_label).sum().to(torch.float)
         / self.normalized_x.size(0))
-    self.assertLess(adv_acc, .5)
+    self.assertLess(adv_acc, rate)
 
-  def help_targeted_adv_examples_success_rate(self, **kwargs):
+  def help_targeted_adv_examples_success_rate(self, rate=.7, **kwargs):
     y_target = torch.randint(low=0, high=2, size=(self.normalized_x.size(0),))
     x_adv = self.attack(
         model_fn=self.model, x=self.normalized_x,
@@ -54,7 +64,7 @@ class CommonAttackProperties(CleverHansTest):
     adv_success = (
         adv_label.eq(y_target).sum().to(torch.float)
         / self.normalized_x.size(0))
-    self.assertGreater(adv_success, .7)
+    self.assertGreater(adv_success, rate)
 
 class TestFastGradientMethod(CommonAttackProperties):
 
