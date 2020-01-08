@@ -11,6 +11,7 @@ import torch
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
+from cleverhans.future.torch.attacks.carlini_wagner_l2 import carlini_wagner_l2
 
 class TrivialModel(torch.nn.Module):
 
@@ -359,3 +360,33 @@ class TestProjectedGradientMethod(CommonAttackProperties):
         ori_label.eq(new_label_multi).sum().to(torch.float)
         / self.normalized_x.size(0))
     self.assertLess(failed_attack, .5)
+
+class TestCarliniWagnerL2(CommonAttackProperties):
+
+  def setUp(self):
+    super(TestCarliniWagnerL2, self).setUp()
+    self.attack = carlini_wagner_l2
+    self.attack_param = {
+      'n_classes': 2,
+      'max_iterations': 100,
+      'binary_search_steps': 3,
+      'initial_const': 1,
+    }
+
+  def test_adv_example_success_rate(self):
+    self.help_adv_examples_success_rate(
+      rate=.1, **self.attack_param)
+
+  def test_targeted_adv_example_success_rate(self):
+    self.help_targeted_adv_examples_success_rate(
+      rate=.9, **self.attack_param)
+
+  def test_adv_examples_clipped_successfully(self):
+    x_adv = self.attack(model_fn=self.model,
+                        x=self.normalized_x,
+                        clip_min=-.2,
+                        clip_max=.3,
+                        **self.attack_param
+                        )
+    self.assertGreater(torch.min(x_adv), -.201)
+    self.assertLess(torch.max(x_adv), .301)
