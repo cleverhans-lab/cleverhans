@@ -46,22 +46,22 @@ class CommonAttackProperties(CleverHansTest):
     self.red_ind = list(range(1, len(self.x.size())))
     self.ord_list = [1, 2, np.inf]
 
-  def help_adv_examples_success_rate(self, rate=.5, **kwargs):
-    x_adv = self.attack(model_fn=self.model, x=self.normalized_x, **kwargs)
-    _, ori_label = self.model(self.normalized_x).max(1)
-    _, adv_label = self.model(x_adv).max(1)
+  def help_adv_examples_success_rate(self, model, rate=.5, **kwargs):
+    x_adv = self.attack(model_fn=model, x=self.normalized_x, **kwargs)
+    _, ori_label = model(self.normalized_x).max(1)
+    _, adv_label = model(x_adv).max(1)
     adv_acc = (
         adv_label.eq(ori_label).sum().to(torch.float)
         / self.normalized_x.size(0))
     self.assertLess(adv_acc, rate)
 
-  def help_targeted_adv_examples_success_rate(self, rate=.7, **kwargs):
+  def help_targeted_adv_examples_success_rate(self, model, rate=.7, **kwargs):
     y_target = torch.randint(low=0, high=2, size=(self.normalized_x.size(0),))
     x_adv = self.attack(
-        model_fn=self.model, x=self.normalized_x,
+        model_fn=model, x=self.normalized_x,
         y=y_target, targeted=True, **kwargs)
 
-    _, adv_label = self.model(x_adv).max(1)
+    _, adv_label = model(x_adv).max(1)
     adv_success = (
         adv_label.eq(y_target).sum().to(torch.float)
         / self.normalized_x.size(0))
@@ -131,27 +131,27 @@ class TestFastGradientMethod(CommonAttackProperties):
     # use normalized_x to make sure the same eps gives uniformly high attack
     # success rate across randomized tests
     self.help_adv_examples_success_rate(
-        norm=np.inf, **self.attack_param)
+        model=self.model, norm=np.inf, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_linf(self):
     self.help_targeted_adv_examples_success_rate(
-        norm=np.inf, **self.attack_param)
+        model=self.model, norm=np.inf, **self.attack_param)
 
   def test_adv_example_success_rate_l1(self):
     self.help_adv_examples_success_rate(
-        norm=1, **self.attack_param)
+        model=self.model, norm=1, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l1(self):
     self.help_targeted_adv_examples_success_rate(
-        norm=1, **self.attack_param)
+        model=self.model, norm=1, **self.attack_param)
 
   def test_adv_example_success_rate_l2(self):
     self.help_adv_examples_success_rate(
-        norm=2, **self.attack_param)
+        model=self.model, norm=2, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l2(self):
     self.help_targeted_adv_examples_success_rate(
-        norm=2, **self.attack_param)
+        model=self.model, norm=2, **self.attack_param)
 
 class TestProjectedGradientMethod(CommonAttackProperties):
 
@@ -247,34 +247,34 @@ class TestProjectedGradientMethod(CommonAttackProperties):
     # use normalized_x to make sure the same eps gives uniformly high attack
     # success rate across randomized tests
     self.help_adv_examples_success_rate(
-        norm=np.inf, **self.attack_param)
+        model=self.model, norm=np.inf, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_linf(self):
     self.help_targeted_adv_examples_success_rate(
-        norm=np.inf, **self.attack_param)
+        model=self.model, norm=np.inf, **self.attack_param)
 
   def test_adv_example_success_rate_l1(self):
     self.assertRaises(
-        NotImplementedError, self.help_adv_examples_success_rate, norm=1,
-        **self.attack_param)
+        NotImplementedError, self.help_adv_examples_success_rate, model=self.model,
+      norm=1, **self.attack_param)
     # TODO uncomment the actual test below after we have implemented the L1 attack
     # self.help_adv_examples_success_rate(
-    #     norm=1, **self.attack_param)
+    #     model=self.model, norm=1, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l1(self):
     self.assertRaises(
         NotImplementedError, self.help_targeted_adv_examples_success_rate,
-        norm=1, **self.attack_param)
+        model=self.model, norm=1, **self.attack_param)
     # TODO uncomment the actual test below after we have implemented the L1 attack
     # self.help_targeted_adv_examples_success_rate(
-    #     norm=1, **self.attack_param)
+    #     model=self.model, norm=1, **self.attack_param)
 
   def test_adv_example_success_rate_l2(self):
-    self.help_adv_examples_success_rate(
+    self.help_adv_examples_success_rate(model=self.model,
         norm=2, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l2(self):
-    self.help_targeted_adv_examples_success_rate(
+    self.help_targeted_adv_examples_success_rate(model=self.model,
         norm=2, **self.attack_param)
 
   def test_do_not_reach_lp_boundary(self):
@@ -374,11 +374,11 @@ class TestCarliniWagnerL2(CommonAttackProperties):
     }
 
   def test_adv_example_success_rate(self):
-    self.help_adv_examples_success_rate(
+    self.help_adv_examples_success_rate(model=self.model,
       rate=.1, **self.attack_param)
 
   def test_targeted_adv_example_success_rate(self):
-    self.help_targeted_adv_examples_success_rate(
+    self.help_targeted_adv_examples_success_rate(model=self.model,
       rate=.9, **self.attack_param)
 
   def test_adv_examples_clipped_successfully(self):
