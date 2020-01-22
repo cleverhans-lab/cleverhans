@@ -159,7 +159,8 @@ def _compute_spsa_gradient(loss_fn, x, delta, samples, iters):
   for i in range(iters):
     delta_x = delta * torch.sign(torch.rand_like(x_batch) - 0.5)
     delta_x = torch.cat([delta_x, -delta_x])
-    loss_vals = loss_fn(x + delta_x)
+    with torch.no_grad():
+      loss_vals = loss_fn(x + delta_x)
     while len(loss_vals.size()) < num_dims:
       loss_vals = loss_vals.unsqueeze(-1)
     avg_grad = torch.mean(loss_vals * torch.sign(delta_x), dim=0, keepdim=True) / delta
