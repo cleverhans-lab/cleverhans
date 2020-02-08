@@ -37,5 +37,8 @@ from cleverhans.compat import softmax_cross_entropy_with_logits
 from cleverhans.utils_tf import clip_eta
 from cleverhans import utils_tf
 
+from cleverhans.attacks.pixel_threshold import PixelAttack
+from cleverhans.attacks.pixel_threshold import ThresholdAttack
+
 _logger = utils.create_logger("cleverhans.attacks")
 tf_dtype = tf.as_dtype('float32')
