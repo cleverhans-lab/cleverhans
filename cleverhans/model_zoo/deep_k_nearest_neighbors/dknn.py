@@ -341,7 +341,7 @@ class DkNNModel(Model):
             self.cali_nonconformity, knns_not_in_class[i, class_id])) / float(self.nb_cali)
 
       preds_knn[i] = np.argmax(p_value)
-      confs[i, preds_knn[i]] = 1. - p_value[np.argsort(p_value)[-2]]
+      confs[i, preds_knn[i]] = 1. - np.sort(p_value)[-2]
       creds[i, preds_knn[i]] = p_value[preds_knn[i]]
     return preds_knn, confs, creds
 
