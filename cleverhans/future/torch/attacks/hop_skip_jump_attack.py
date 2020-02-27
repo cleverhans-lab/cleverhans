@@ -69,10 +69,6 @@ def hop_skip_jump_attack(model_fn, x, norm,
     def hsja(sample, target_label, target_image):
       if target_label is None:
         _, original_label = torch.max(model_fn(sample), 1)
-      else:
-        # May not be needed:
-        _, target_label = torch.argmax(target_label)
-
 
       def decision_function(images):
         """
@@ -147,7 +143,7 @@ def hop_skip_jump_attack(model_fn, x, norm,
         elif stepsize_search == 'grid_search':
           # Grid search for stepsize.
           epsilons = torch.from_numpy(np.logspace(-4, 0, num=20, endpoint=True)).to(perturbed.device).float() * dist
-          perturbeds = perturbed + epsilons.view(20, 1, 1, 1) * update
+          perturbeds = perturbed + epsilons.view((20,) + (1,) * (len(shape) - 1)) * update
           perturbeds = torch.clamp(perturbeds, clip_min, clip_max)
           idx_perturbed = decision_function(perturbeds)
 
@@ -209,7 +205,7 @@ def approximate_gradient(decision_function, sample, num_evals,
 
   # query the model.
   decisions = decision_function(perturbed).float()
-  fval = 2.0 * decisions.view(decisions.shape[0], 1, 1, 1) - 1.0
+  fval = 2.0 * decisions.view((decisions.shape[0],) + (1,) * len(shape)) - 1.0
 
   # Baseline subtraction (when fval differs)
   fval_mean = torch.mean(fval)
@@ -228,7 +224,7 @@ def approximate_gradient(decision_function, sample, num_evals,
 
 def project(original_image, perturbed_images, alphas, shape, constraint):
   """ Projection onto given l2 / linf balls in a batch. """
-  alphas = alphas.view(alphas.shape[0], 1, 1, 1)
+  alphas = alphas.view((alphas.shape[0],) + (1,) * (len(shape) - 1))
   if constraint == 2:
     projected = (1-alphas) * original_image + alphas * perturbed_images
   elif constraint == np.inf:

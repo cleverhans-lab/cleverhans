@@ -11,6 +11,7 @@ import torch
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
+from cleverhans.future.torch.attacks.hop_skip_jump_attack import hop_skip_jump_attack
 
 class SimpleModel(torch.nn.Module):
 
@@ -349,3 +350,107 @@ class TestProjectedGradientMethod(CommonAttackProperties):
         ori_label.eq(new_label_multi).sum().to(torch.float)
         / self.normalized_x.size(0))
     self.assertLess(failed_attack, .5)
+
+class TestHopSkipJumpAttack(CommonAttackProperties):
+
+  def setUp(self):
+    super(TestHopSkipJumpAttack, self).setUp()
+    self.attack = hop_skip_jump_attack
+
+  def test_generate_np_untargeted_l2(self):
+    x_val = torch.rand(50, 2)
+    bapp_params = {
+        'norm': 2,
+        'stepsize_search': 'geometric_progression',
+        'num_iterations': 10,
+        'verbose': True,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val, **bapp_params)
+
+    _, ori_label = self.model(x_val).max(1)
+    _, adv_label = self.model(x_adv).max(1)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / x_val.size(0))
+
+    self.assertLess(adv_acc, .1)
+
+  def test_generate_untargeted_linf(self):
+    x_val = torch.rand(50, 2)
+    bapp_params = {
+        'norm': np.inf,
+        'stepsize_search': 'grid_search',
+        'num_iterations': 10,
+        'verbose': True,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val, **bapp_params)
+
+    _, ori_label = self.model(x_val).max(1)
+    _, adv_label = self.model(x_adv).max(1)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / x_val.size(0))
+
+    self.assertLess(adv_acc, .1)
+
+  def test_generate_np_targeted_linf(self):
+    x_val = torch.rand(200, 2)
+
+    _, ori_label = self.model(x_val).max(1)
+    x_val_pos = x_val[ori_label == 1]
+    x_val_neg = x_val[ori_label == 0]
+
+    x_val_under_attack = torch.cat(
+        (x_val_pos[:25], x_val_neg[:25]), dim=0)
+    y_target = torch.cat([torch.zeros(25, dtype=torch.int64), torch.ones(25, dtype=torch.int64)])
+    image_target = torch.cat((x_val_neg[25:50], x_val_pos[25:50]), dim=0)
+
+    bapp_params = {
+        'norm': np.inf,
+        'stepsize_search': 'geometric_progression',
+        'num_iterations': 10,
+        'verbose': True,
+        'y_target': y_target,
+        'image_target': image_target,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val_under_attack, **bapp_params)
+
+    _, new_labs = self.model(x_adv).max(1)
+
+    adv_acc = (
+        new_labs.eq(y_target).sum().to(torch.float)
+        / y_target.size(0))
+
+    self.assertGreater(adv_acc, .9)
+
+  def test_generate_targeted_l2(self):
+    # Create data in numpy arrays.
+    x_val = torch.rand(200, 2)
+
+    _, ori_label = self.model(x_val).max(1)
+    x_val_pos = x_val[ori_label == 1]
+    x_val_neg = x_val[ori_label == 0]
+
+    x_val_under_attack = torch.cat(
+        (x_val_pos[:25], x_val_neg[:25]), dim=0)
+    y_target = torch.cat([torch.zeros(25, dtype=torch.int64), torch.ones(25, dtype=torch.int64)])
+    image_target = torch.cat((x_val_neg[25:50], x_val_pos[25:50]), dim=0)
+
+    # Create graph.
+    bapp_params = {
+        'norm': 'l2',
+        'stepsize_search': 'grid_search',
+        'num_iterations': 10,
+        'verbose': True,
+        'y_target': y_target,
+        'image_target': image_target,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val_under_attack, **bapp_params)
+
+    _, new_labs = self.model(x_adv).max(1)
+
+    adv_acc = (
+        new_labs.eq(y_target).sum().to(torch.float)
+        / y_target.size(0))
+
+    self.assertGreater(adv_acc, .9)
