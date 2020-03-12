@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.future.tf2.attacks.fast_gradient_method import fast_gradient_method
-from cleverhans.future.tf2.utils_tf import clip_eta
+from cleverhans.future.tf2.utils_tf import clip_eta, random_lp_vector
 
 
 def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
@@ -66,8 +66,7 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
       rand_minmax = eps
 
   if rand_init:
-    # TODO: Currently, random sampling only works on L_inf norm
-    eta = tf.random.uniform(x.shape, -rand_minmax, rand_minmax)
+    eta = random_lp_vector(tf.shape(x), norm, tf.cast(rand_minmax, x.dtype), dtype=x.dtype)
   else:
     eta = tf.zeros_like(x)
 
