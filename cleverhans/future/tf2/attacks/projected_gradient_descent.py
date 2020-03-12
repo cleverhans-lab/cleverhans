@@ -9,7 +9,7 @@ from cleverhans.future.tf2.utils_tf import clip_eta
 
 def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
                                clip_min=None, clip_max=None, y=None, targeted=False,
-                               rand_init=None, rand_minmax=0.3, sanity_checks=True):
+                               rand_init=None, rand_minmax=None, sanity_checks=False):
   """
   This class implements either the Basic Iterative Method
   (Kurakin et al. 2016) when rand_init is set to 0. or the
@@ -32,6 +32,11 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
   :param targeted: (optional) bool. Is the attack targeted or untargeted?
             Untargeted, the default, will try to make the label incorrect.
             Targeted will instead try to move in the direction of being more like y.
+  :param rand_init: (optional) Start the gradient descent from a point chosen
+                      uniformly at random in the norm ball of radius
+                      rand_init_eps
+  :param rand_minmax: (optional float) size of the norm ball from which
+                      the initial starting point is chosen. Defaults to eps
   :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
             memory or for unit tests that intentionally pass strange input)
   :return: a tensor for the adversarial example
@@ -57,8 +62,11 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
     asserts.append(tf.math.less_equal(x, clip_max))
 
   # Initialize loop variables
+  if rand_minmax is None:
+      rand_minmax = eps
+
   if rand_init:
-    rand_minmax = eps
+    # TODO: Currently, random sampling only works on L_inf norm
     eta = tf.random.uniform(x.shape, -rand_minmax, rand_minmax)
   else:
     eta = tf.zeros_like(x)
