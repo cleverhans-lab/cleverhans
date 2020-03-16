@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y=None,
+def fast_gradient_method(model_fn, x, eps, norm, loss_fn=None, clip_min=None, clip_max=None, y=None,
                          targeted=False, sanity_checks=False):
   """
   Tensorflow 2.0 implementation of the Fast Gradient Method.
@@ -12,6 +12,8 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
   :param x: input tensor.
   :param eps: epsilon (input variation parameter); see https://arxiv.org/abs/1412.6572.
   :param norm: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
+  :param loss_fn: loss function that takes (labels, logits) as arguments and returns loss.
+                  default function is 'tf.nn.sparse_softmax_cross_entropy_with_logits'
   :param clip_min: (optional) float. Minimum float value for adversarial example components.
   :param clip_max: (optional) float. Maximum float value for adversarial example components.
   :param y: (optional) Tensor with true labels. If targeted is true, then provide the
@@ -29,6 +31,9 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
   if norm not in [np.inf, 1, 2]:
     raise ValueError("Norm order must be either np.inf, 1, or 2.")
 
+  if loss_fn is None:
+    loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
+
   asserts = []
 
   # If a data range was specified, check that the input was in that range
@@ -42,7 +47,7 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
     # Using model predictions as ground truth to avoid label leaking
     y = tf.argmax(model_fn(x), 1)
 
-  grad = compute_gradient(model_fn, x, y, targeted)
+  grad = compute_gradient(model_fn, loss_fn, x, y, targeted)
 
   optimal_perturbation = optimize_linear(grad, eps, norm)
   # Add perturbation to original example to obtain adversarial example
@@ -63,10 +68,11 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
 # Not using the decorator here, or letting the user wrap the attack in tf.function is way
 # slower on Tensorflow 2.0.0-alpha0.
 @tf.function
-def compute_gradient(model_fn, x, y, targeted):
+def compute_gradient(model_fn, loss_fn, x, y, targeted):
   """
   Computes the gradient of the loss with respect to the input tensor.
   :param model_fn: a callable that takes an input tensor and returns the model logits.
+  :param loss_fn: loss function that takes (labels, logits) as arguments and returns loss.
   :param x: input tensor
   :param y: Tensor with true labels. If targeted is true, then provide the target label.
   :param targeted:  bool. Is the attack targeted or untargeted? Untargeted, the default, will
@@ -74,7 +80,7 @@ def compute_gradient(model_fn, x, y, targeted):
                     direction of being more like y.
   :return: A tensor containing the gradient of the loss with respect to the input tensor.
   """
-  loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
+
   with tf.GradientTape() as g:
     g.watch(x)
     # Compute loss

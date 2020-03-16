@@ -7,7 +7,7 @@ from cleverhans.future.tf2.attacks.fast_gradient_method import fast_gradient_met
 from cleverhans.future.tf2.utils_tf import clip_eta, random_lp_vector
 
 
-def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
+def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm, loss_fn=None,
                                clip_min=None, clip_max=None, y=None, targeted=False,
                                rand_init=None, rand_minmax=None, sanity_checks=False):
   """
@@ -22,6 +22,8 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
   :param eps_iter: step size for each attack iteration
   :param nb_iter: Number of attack iterations.
   :param norm: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
+  :param loss_fn: loss function that takes (labels, logits) as arguments and returns loss.
+                  default function is 'tf.nn.sparse_softmax_cross_entropy_with_logits'
   :param clip_min: (optional) float. Minimum float value for adversarial example components.
   :param clip_max: (optional) float. Maximum float value for adversarial example components.
   :param y: (optional) Tensor with true labels. If targeted is true, then provide the
@@ -51,6 +53,9 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
                               "before enabling this feature.")
   if norm not in [np.inf, 2]:
     raise ValueError("Norm order must be either np.inf or 2.")
+
+  if loss_fn is None:
+    loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
 
   asserts = []
 
@@ -82,7 +87,7 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
 
   i = 0
   while i < nb_iter:
-    adv_x = fast_gradient_method(model_fn, adv_x, eps_iter, norm, clip_min=clip_min,
+    adv_x = fast_gradient_method(model_fn, adv_x, eps_iter, norm, loss_fn, clip_min=clip_min,
                                  clip_max=clip_max, y=y, targeted=targeted)
 
     # Clipping perturbation eta to norm norm ball
