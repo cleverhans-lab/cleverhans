@@ -10,6 +10,7 @@ import tensorflow as tf
 from cleverhans.attacks.attack import Attack
 from cleverhans.attacks.fast_gradient_method import FastGradientMethod
 from cleverhans import utils_tf
+from cleverhans.compat import softmax_cross_entropy_with_logits
 from cleverhans.utils_tf import clip_eta, random_lp_vector
 
 
@@ -43,7 +44,7 @@ class ProjectedGradientDescent(Attack):
     self.feedable_kwargs = ('eps', 'eps_iter', 'y', 'y_target', 'clip_min',
                             'clip_max')
     self.structural_kwargs = ['ord', 'nb_iter', 'rand_init', 'clip_grad',
-                              'sanity_checks']
+                              'sanity_checks', 'loss_fn']
     self.default_rand_init = default_rand_init
 
   def generate(self, x, **kwargs):
@@ -103,6 +104,7 @@ class ProjectedGradientDescent(Attack):
         'eps': self.eps_iter,
         y_kwarg: y,
         'ord': self.ord,
+        'loss_fn': self.loss_fn,
         'clip_min': self.clip_min,
         'clip_max': self.clip_max,
         'clip_grad': self.clip_grad
@@ -174,6 +176,7 @@ class ProjectedGradientDescent(Attack):
                    nb_iter=10,
                    y=None,
                    ord=np.inf,
+                   loss_fn=softmax_cross_entropy_with_logits,
                    clip_min=None,
                    clip_max=None,
                    y_target=None,
@@ -198,6 +201,7 @@ class ProjectedGradientDescent(Attack):
                      one-hot-encoded.
     :param ord: (optional) Order of the norm (mimics Numpy).
                 Possible values: np.inf, 1 or 2.
+    :param loss_fn: Loss function that takes (labels, logits) as arguments and returns loss
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     :param rand_init: (optional) Start the gradient descent from a point chosen
@@ -227,6 +231,7 @@ class ProjectedGradientDescent(Attack):
     self.y = y
     self.y_target = y_target
     self.ord = ord
+    self.loss_fn = loss_fn
     self.clip_min = clip_min
     self.clip_max = clip_max
     self.clip_grad = clip_grad
