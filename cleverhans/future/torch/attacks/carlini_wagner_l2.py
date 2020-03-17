@@ -2,6 +2,7 @@
 import torch
 
 
+INF = float('inf')
 def carlini_wagner_l2(model_fn, x, n_classes,
                       y=None,
                       targeted=False,
@@ -85,7 +86,7 @@ def carlini_wagner_l2(model_fn, x, n_classes,
     # Convert logits to predicted class if necessary
     if is_logits:
       pred_copy = pred.clone().detach()
-      pred_copy[label] += confidence * (-1) ** int(targeted)
+      pred_copy[label] += (-confidence if targeted else confidence)
       pred = torch.argmax(pred_copy)
 
     return pred == label if targeted else pred != label
@@ -101,7 +102,7 @@ def carlini_wagner_l2(model_fn, x, n_classes,
   upper_bound = [1e10] * len(x)
   const = x.new_ones(len(x), 1) * initial_const
 
-  o_bestl2 = [1e10] * len(x)
+  o_bestl2 = [INF] * len(x)
   o_bestscore = [-1.] * len(x)
   x = torch.clamp(x, clip_min, clip_max)
   ox = x.clone().detach() # save the original x
@@ -127,7 +128,7 @@ def carlini_wagner_l2(model_fn, x, n_classes,
 
   # Define loss functions and optimizer
   f_fn = lambda real, other, targeted: torch.max(
-    (-1) ** int(targeted) * (real - other) + confidence,
+    ((other - real) if targeted else (real - other)) + confidence,
     torch.tensor(0.)
   )
   l2dist_fn = lambda x, y: torch.pow(x - y, 2).sum(list(range(len(x.size())))[1:])
@@ -136,7 +137,7 @@ def carlini_wagner_l2(model_fn, x, n_classes,
   # Outer loop performing binary search on const
   for outer_step in range(binary_search_steps):
     # Initialize some values needed for the inner loop
-    bestl2 = [1e10] * len(x)
+    bestl2 = [INF] * len(x)
     bestscore = [-1.] * len(x)
 
     # Inner loop performing attack iterations
