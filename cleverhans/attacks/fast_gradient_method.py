@@ -35,7 +35,7 @@ class FastGradientMethod(Attack):
 
     super(FastGradientMethod, self).__init__(model, sess, dtypestr, **kwargs)
     self.feedable_kwargs = ('eps', 'y', 'y_target', 'clip_min', 'clip_max')
-    self.structural_kwargs = ['ord', 'sanity_checks', 'clip_grad']
+    self.structural_kwargs = ['ord', 'sanity_checks', 'clip_grad', 'loss_fn']
 
   def generate(self, x, **kwargs):
     """
@@ -55,6 +55,7 @@ class FastGradientMethod(Attack):
         y=labels,
         eps=self.eps,
         ord=self.ord,
+        loss_fn=self.loss_fn,
         clip_min=self.clip_min,
         clip_max=self.clip_max,
         clip_grad=self.clip_grad,
@@ -64,6 +65,7 @@ class FastGradientMethod(Attack):
   def parse_params(self,
                    eps=0.3,
                    ord=np.inf,
+                   loss_fn=softmax_cross_entropy_with_logits,
                    y=None,
                    y_target=None,
                    clip_min=None,
@@ -80,6 +82,7 @@ class FastGradientMethod(Attack):
     :param eps: (optional float) attack step size (input variation)
     :param ord: (optional) Order of the norm (mimics NumPy).
                 Possible values: np.inf, 1 or 2.
+    :param loss_fn: Loss function that takes (labels, logits) as arguments and returns loss
     :param y: (optional) A tensor with the true labels. Only provide
               this parameter if you'd like to use true labels when crafting
               adversarial samples. Otherwise, model predictions are used as
@@ -102,6 +105,7 @@ class FastGradientMethod(Attack):
 
     self.eps = eps
     self.ord = ord
+    self.loss_fn = loss_fn
     self.y = y
     self.y_target = y_target
     self.clip_min = clip_min
@@ -130,6 +134,7 @@ def fgm(x,
         y=None,
         eps=0.3,
         ord=np.inf,
+        loss_fn=softmax_cross_entropy_with_logits,
         clip_min=None,
         clip_max=None,
         clip_grad=False,
@@ -149,6 +154,7 @@ def fgm(x,
   :param eps: the epsilon (input variation parameter)
   :param ord: (optional) Order of the norm (mimics NumPy).
               Possible values: np.inf, 1 or 2.
+  :param loss_fn: Loss function that takes (labels, logits) as arguments and returns loss
   :param clip_min: Minimum float value for adversarial example components
   :param clip_max: Maximum float value for adversarial example components
   :param clip_grad: (optional bool) Ignore gradient components
@@ -182,7 +188,7 @@ def fgm(x,
   y = y / reduce_sum(y, 1, keepdims=True)
 
   # Compute loss
-  loss = softmax_cross_entropy_with_logits(labels=y, logits=logits)
+  loss = loss_fn(labels=y, logits=logits)
   if targeted:
     loss = -loss
 

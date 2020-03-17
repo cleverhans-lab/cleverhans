@@ -293,7 +293,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Aashish Kumar (HARMAN X)
 * Aurko Roy (Google Brain)
 * Alexander Matyasko (Nanyang Technological University)
-* Anshuman Suri (Microsoft)
+* Anshuman Suri (University of Virginia)
 * Yen-Chen Lin (MIT)
 * Vahid Behzadan (Kansas State)
 * Jonathan Uesato (DeepMind)
