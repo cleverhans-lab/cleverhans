@@ -36,7 +36,7 @@ def clip_eta(eta, norm, eps):
         torch.tensor(1., dtype=eta.dtype, device=eta.device),
         eps / norm
         )
-    eta *= factor
+    eta = eta * factor
   return eta
 
 
