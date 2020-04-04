@@ -18,7 +18,7 @@ class CarliniWagnerL2(object):
     def __init__(self,
                  model_fn,
                  y=None,
-                 targeted=False,
+                 batch_size=128,
                  clip_min=0.,
                  clip_max=1.,
                  binary_search_steps=5,
@@ -38,10 +38,8 @@ class CarliniWagnerL2(object):
         as this attack is often much slower than others.
 
         :param model_fn: a callable that takes an input tensor and returns the model logits.
-        :param y: (optional) Tensor with true labels. If targeted is true, then provide the target label.
-        :param targeted: (optional) bool. Is the attack targeted or untargeted? Untargeted, the default,
-                will try to make the label incorrect. Targeted will instead try to move in the direction
-                of being more like y.
+        :param y: (optional) Tensor with target labels. 
+        :param batch_size: Number of attacks to run simultaneously.
         :param clip_min: (optional) float. Minimum float values for adversarial example components.
         :param clip_max: (optional) float. Maximum float value for adversarial example components.
         :param binary_search_steps: The number of times we perform binary
@@ -71,8 +69,10 @@ class CarliniWagnerL2(object):
         """
         self.model_fn = model_fn
 
+        self.batch_size = batch_size
+
         self.y = y
-        self.targeted = targeted
+        self.targeted = y is not None
 
         self.clip_min = clip_min
         self.clip_max = clip_max
@@ -85,9 +85,24 @@ class CarliniWagnerL2(object):
         self.confidence = confidence
         self.initial_const = initial_const
 
+        self.optimizer = tf.keras.optimizers.Adam(self.learning_rate)
+
         super(CarliniWagnerL2, self).__init__()
 
     def attack(self, x):
+        """
+        Returns adversarial examples for the tensor.
+        :param x: input tensor.
+        :return: a tensor for the adversarial example.
+        """
+        adv_ex = np.zeros_like(x)
+        for i in range(0, len(x), self.batch_size):
+            adv_ex[i:i +
+                   self.batch_size] = self._attack(x[i:i+self.batch_size]).numpy()
+
+        return adv_ex
+
+    def _attack(self, x):
         """
         Returns adversarial examples for the tensor x.
         :param x: input tensor.
@@ -99,14 +114,14 @@ class CarliniWagnerL2(object):
         if self.clip_max is not None:
             assert np.all(tf.math.less_equal(x, self.clip_max))
 
-        self.y, _ = get_or_guess_labels(
+        y, _ = get_or_guess_labels(
             self.model_fn, x, y=self.y, targeted=self.targeted)
 
         # cast to tensor if provided as numpy array
         original_x = tf.cast(x, tf.float32)
         shape = original_x.shape
 
-        assert self.y.shape.as_list()[0] == original_x.shape.as_list()[0]
+        assert y.shape.as_list()[0] == original_x.shape.as_list()[0]
 
         # re-scale x to [0, 1]
         x = original_x
@@ -138,12 +153,10 @@ class CarliniWagnerL2(object):
         modifier = tf.Variable(
             tf.zeros(shape, dtype=x.dtype), trainable=True)
 
-        optimizer = tf.keras.optimizers.Adam(self.learning_rate)
-
         for outer_step in range(self.binary_search_steps):
             # at each iteration reset variable state
             modifier.assign(tf.zeros(shape, dtype=x.dtype))
-            for var in optimizer.variables():
+            for var in self.optimizer.variables():
                 var.assign(tf.zeros(var.shape, dtype=var.dtype))
 
             # variables to keep track in the inner loop
@@ -160,7 +173,7 @@ class CarliniWagnerL2(object):
 
             for iteration in range(self.max_iterations):
                 x_new, loss, preds, l2_dist = self.attack_step(
-                    x, modifier, optimizer, const)
+                    x, y, modifier, const)
 
                 # check if we made progress, abort otherwise
                 if self.abort_early and iteration % ((self.max_iterations // 10) or 1) == 0:
@@ -169,7 +182,7 @@ class CarliniWagnerL2(object):
 
                     prev = loss
 
-                lab = tf.argmax(self.y, axis=1)
+                lab = tf.argmax(y, axis=1)
 
                 pred_with_conf = preds - self.confidence if self.targeted else preds + self.confidence
                 pred_with_conf = tf.argmax(pred_with_conf, axis=1)
@@ -210,7 +223,6 @@ class CarliniWagnerL2(object):
 
                 # mask is of shape [batch_size]; best_attack is [batch_size, image_size]
                 # need to expand
-                found_examples = tf.reduce_sum(tf.cast(mask, tf.int32)).numpy()
                 mask = tf.reshape(mask, [-1, 1, 1, 1])
                 mask = tf.tile(mask, [1, *best_attack.shape[1:]])
 
@@ -223,7 +235,7 @@ class CarliniWagnerL2(object):
             #      upper_bound[e] = min(upper_bound[e], const[e])
             #      if upper_bound[e] < 1e9:
             #          const[e] = (lower_bound[e] + upper_bound[e]) / 2.
-            lab = tf.argmax(self.y, axis=1)
+            lab = tf.argmax(y, axis=1)
             lab = tf.cast(lab, tf.int32)
 
             # we first compute the mask for the upper bound
@@ -296,15 +308,15 @@ class CarliniWagnerL2(object):
         return loss, l2_dist
 
     @tf.function
-    def attack_step(self, x, modifier, optimizer, const):
+    def attack_step(self, x, y, modifier, const):
         # compute the actual attack
         with tf.GradientTape() as tape:
             adv_image = modifier + x
             x_new = self.clip_tanh(adv_image)
             preds = self.model_fn(x_new)
             loss, l2_dist = self.loss_fn(
-                x=x, x_new=x_new, y_true=self.y, y_pred=preds, const=const)
+                x=x, x_new=x_new, y_true=y, y_pred=preds, const=const)
 
         grads = tape.gradient(loss, adv_image)
-        optimizer.apply_gradients([(grads, modifier)])
+        self.optimizer.apply_gradients([(grads, modifier)])
         return x_new, loss, preds, l2_dist
