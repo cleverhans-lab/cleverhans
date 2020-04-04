@@ -51,6 +51,8 @@ def get_or_guess_labels(model_fn, x, y=None, targeted=False):
     # labels set by the user
     if y is not None:
         nb_classes = y.shape[-1]
+        if len(y) == 1:
+            assert False
         return y, nb_classes
 
     # must be an untargeted attack
@@ -58,5 +60,15 @@ def get_or_guess_labels(model_fn, x, y=None, targeted=False):
     nb_classes = preds.shape[-1]
 
     labels = tf.cast(tf.equal(tf.reduce_max(
-        preds, keepdims=True), preds), x.dtype)
+        preds, axis=1, keepdims=True), preds), x.dtype)
+
     return labels, nb_classes
+
+
+def set_with_mask(x, x_other, mask):
+    """Helper function which returns a tensor similar to x with all the values
+       of x replaced by x_other where the mask evaluates to true.
+    """
+    mask = tf.cast(mask, x.dtype)
+    ones = tf.ones_like(mask, dtype=x.dtype)
+    return x_other * mask + x * (ones - mask)
