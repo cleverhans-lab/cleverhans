@@ -48,17 +48,23 @@ def get_or_guess_labels(model_fn, x, y=None, targeted=False):
     if targeted is True and y is None:
         raise ValueError("Must provide y for a targeted attack!")
 
-    # labels set by the user
-    if y is not None:
-        nb_classes = y.shape[-1]
-        if len(y) == 1:
-            assert False
-        return y, nb_classes
-
-    # must be an untargeted attack
     preds = model_fn(x)
     nb_classes = preds.shape[-1]
 
+    # labels set by the user
+    if y is not None:
+        y = np.asarray(y)
+
+        if len(y.shape) == 1:
+            # the user provided a list/1D-array
+            idx = y.reshape([-1, 1])
+            y = np.zeros_like(preds)
+            y[:, idx] = 1
+
+        y = tf.cast(y, x.dtype)
+        return y, nb_classes
+
+    # must be an untargeted attack
     labels = tf.cast(tf.equal(tf.reduce_max(
         preds, axis=1, keepdims=True), preds), x.dtype)
 

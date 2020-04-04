@@ -93,7 +93,7 @@ class CarliniWagnerL2(object):
         """
         Returns adversarial examples for the tensor.
         :param x: input tensor.
-        :return: a tensor for the adversarial example.
+        :return: a numpy tensor with the adversarial example.
         """
         adv_ex = np.zeros_like(x)
         for i in range(0, len(x), self.batch_size):
@@ -103,11 +103,6 @@ class CarliniWagnerL2(object):
         return adv_ex
 
     def _attack(self, x):
-        """
-        Returns adversarial examples for the tensor x.
-        :param x: input tensor.
-        :return: a tensor for the adversarial example.
-        """
         if self.clip_min is not None:
             assert np.all(tf.math.greater_equal(x, self.clip_min))
 
@@ -169,7 +164,7 @@ class CarliniWagnerL2(object):
                 const = upper_bound
 
             # early stopping criteria
-            prev = 1e6
+            prev = None
 
             for iteration in range(self.max_iterations):
                 x_new, loss, preds, l2_dist = self.attack_step(
@@ -177,7 +172,7 @@ class CarliniWagnerL2(object):
 
                 # check if we made progress, abort otherwise
                 if self.abort_early and iteration % ((self.max_iterations // 10) or 1) == 0:
-                    if loss > prev * 0.9999:
+                    if prev is not None and loss > prev * 0.9999:
                         break
 
                     prev = loss
