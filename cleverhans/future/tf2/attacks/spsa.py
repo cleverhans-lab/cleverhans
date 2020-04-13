@@ -34,7 +34,11 @@ def spsa(model_fn, x, y, eps, nb_iter, clip_min=None, clip_max=None, targeted=Fa
                       is on `spsa_samples` different inputs.
   :param is_debug: If True, print the adversarial loss after each update.
   """
-  if x.get_shape().as_list()[0] != 1:
+
+  if tf.is_tensor(x) is False:
+    x = tf.convert_to_tensor(x)
+
+  if tf.shape(x)[0] != 1:
     raise ValueError("For SPSA, input tensor x must have batch_size of 1.")
 
   optimizer = SPSAAdam(lr=learning_rate, delta=delta, num_samples=spsa_samples,
@@ -44,7 +48,7 @@ def spsa(model_fn, x, y, eps, nb_iter, clip_min=None, clip_max=None, targeted=Fa
     """
     Margin logit loss, with correct sign for targeted vs untargeted loss.
     """
-    logits = model_fn(x)
+    logits = model_fn(x, training=False)
     loss_multiplier = 1 if targeted else -1
     return loss_multiplier * margin_logit_loss(logits, label, nb_classes=logits.get_shape()[-1])
 
@@ -108,7 +112,7 @@ class SPSAAdam(tf.optimizers.Adam):
       loss_vals = tf.reshape(
         loss_fn(x + delta_x),
         [2 * self._num_samples] + [1] * (len(x_shape) - 1))
-      avg_grad = tf.reduce_mean(loss_vals * delta_x, axis=0) / delta
+      avg_grad = tf.reduce_mean(loss_vals / delta_x, axis=0)
       avg_grad = tf.expand_dims(avg_grad, axis=0)
       new_grad_array = grad_array.write(i, avg_grad)
       return i + 1, new_grad_array
