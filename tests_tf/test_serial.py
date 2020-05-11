@@ -17,13 +17,13 @@ class TestSerial(CleverHansTest):
     """test_save_and_load_var: Test that we can save and load a
     PicklableVariable with joblib
     """
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     with sess.as_default():
       x = np.ones(1)
       xv = PicklableVariable(x)
       xv.var.initializer.run()
       save("/tmp/var.joblib", xv)
-      sess.run(tf.assign(xv.var, np.ones(1) * 2))
+      sess.run(tf.compat.v1.assign(xv.var, np.ones(1) * 2))
       new_xv = load("/tmp/var.joblib")
       self.assertClose(sess.run(xv.var), np.ones(1) * 2)
       self.assertClose(sess.run(new_xv.var), np.ones(1))

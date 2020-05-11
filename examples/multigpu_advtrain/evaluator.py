@@ -48,7 +48,7 @@ def create_adv_by_name(model, x, attack_type, sess, dataset, y=None, **kwargs):
                   'clip_max': 1., 'nb_iter': 20}
   }
 
-  with tf.variable_scope(attack_type):
+  with tf.compat.v1.variable_scope(attack_type):
     attack_class = attack_names[attack_type]
     attack = attack_class(model, sess=sess)
 
@@ -121,8 +121,8 @@ class Evaluator(object):
       preds_adv = model.get_probs(adv_x)
       self.attacks[att_type] = (adv_x, preds_adv)
       # visualize adversarial image
-      tf.summary.image(att_type, adv_x, max_outputs=10)
-    self.sum_op = tf.summary.merge_all()
+      tf.compat.v1.summary.image(att_type, adv_x, max_outputs=10)
+    self.sum_op = tf.compat.v1.summary.merge_all()
 
   def log_value(self, tag, val, desc=''):
     """
@@ -172,7 +172,7 @@ class Evaluator(object):
     Y_test = self.Y_test
     writer = self.writer
 
-    self.summary = tf.Summary()
+    self.summary = tf.compat.v1.Summary()
     report = {}
 
     # Evaluate on train set

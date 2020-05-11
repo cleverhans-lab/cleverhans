@@ -51,7 +51,7 @@ def setup_tutorial():
   """
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
+  tf.compat.v1.set_random_seed(1234)
 
   return True
 
@@ -110,9 +110,9 @@ class ModelSubstitute(Model):
   def fprop(self, x, **kwargs):
     del kwargs
     my_dense = functools.partial(
-        tf.layers.dense, kernel_initializer=HeReLuNormalInitializer)
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
-      y = tf.layers.flatten(x)
+        tf.compat.v1.layers.dense, kernel_initializer=HeReLuNormalInitializer)
+    with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
+      y = tf.compat.v1.layers.flatten(x)
       y = my_dense(y, self.nb_filters, activation=tf.nn.relu)
       y = my_dense(y, self.nb_filters, activation=tf.nn.relu)
       logits = my_dense(y, self.nb_classes)
@@ -217,7 +217,7 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
   assert setup_tutorial()
 
   # Create TF session
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
 
   # Get MNIST data
   mnist = MNIST(train_start=train_start, train_end=train_end,
@@ -238,9 +238,9 @@ def mnist_blackbox(train_start=0, train_end=60000, test_start=0,
   nb_classes = y_train.shape[1]
 
   # Define input TF placeholder
-  x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+  x = tf.compat.v1.placeholder(tf.float32, shape=(None, img_rows, img_cols,
                                         nchannels))
-  y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+  y = tf.compat.v1.placeholder(tf.float32, shape=(None, nb_classes))
 
   # Seed random number generator so tutorial is reproducible
   rng = np.random.RandomState([2017, 8, 30])
@@ -320,4 +320,4 @@ if __name__ == '__main__':
   flags.DEFINE_integer('data_aug_batch_size', AUG_BATCH_SIZE,
                        'Batch size for augmentation')
 
-  tf.app.run()
+  tf.compat.v1.app.run()

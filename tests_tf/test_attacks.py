@@ -46,7 +46,7 @@ class SimpleModel(Model):
 
   def fprop(self, x, **kwargs):
     del kwargs
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
       w1 = tf.constant([[1.5, .3], [-2, 0.3]],
                        dtype=tf.as_dtype(x.dtype))
       w2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]],
@@ -68,7 +68,7 @@ class TrivialModel(Model):
 
   def fprop(self, x, **kwargs):
     del kwargs
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
       w1 = tf.constant([[1, -1]], dtype=tf.float32)
     res = tf.matmul(x, w1)
     return {self.O_LOGITS: res,
@@ -86,7 +86,7 @@ class DummyModel(Model):
 
   def fprop(self, x, **kwargs):
     del kwargs
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
       net = slim.flatten(x)
       net = slim.fully_connected(net, 60)
       logits = slim.fully_connected(net, 10, activation_fn=None)
@@ -97,11 +97,11 @@ class DummyModel(Model):
 class TestAttackClassInitArguments(CleverHansTest):
 
   def test_model(self):
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
 
     # Exception is thrown when model does not have __call__ attribute
     with self.assertRaises(Exception) as context:
-      model = tf.placeholder(tf.float32, shape=(None, 10))
+      model = tf.compat.v1.placeholder(tf.float32, shape=(None, 10))
       Attack(model, sess=sess)
     self.assertTrue(context.exception)
 
@@ -109,7 +109,7 @@ class TestAttackClassInitArguments(CleverHansTest):
     # Test that it is permitted to provide no session.
     # The session still needs to be created prior to running the attack.
     # TODO: does anyone know why we need to make an unused session and put it in a with statement?
-    with tf.Session():
+    with tf.compat.v1.Session():
       Attack(Model('model', 10, {}), sess=None)
 
   def test_sess_generate_np(self):
@@ -122,7 +122,7 @@ class TestAttackClassInitArguments(CleverHansTest):
     # Test that generate_np is NOT permitted without a session.
     # The session still needs to be created prior to running the attack.
     # TODO: does anyone know why we need to make an unused session and put it in a with statement?
-    with tf.Session():
+    with tf.compat.v1.Session():
       attack = DummyAttack(model, sess=None)
       with self.assertRaises(Exception) as context:
         attack.generate_np(0.)
@@ -131,7 +131,7 @@ class TestAttackClassInitArguments(CleverHansTest):
 
 class TestParseParams(CleverHansTest):
   def test_parse(self):
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
 
     test_attack = Attack(Model('model', 10, {}), sess=sess)
     self.assertTrue(test_attack.parse_params({}))
@@ -141,15 +141,15 @@ class TestVirtualAdversarialMethod(CleverHansTest):
   def setUp(self):
     super(TestVirtualAdversarialMethod, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.sess.as_default()
     self.model = DummyModel('virtual_adv_dummy_model')
     self.attack = VirtualAdversarialMethod(self.model, sess=self.sess)
 
     # initialize model
-    with tf.name_scope('virtual_adv_dummy_model'):
-      self.model.get_probs(tf.placeholder(tf.float32, shape=(None, 1000)))
-    self.sess.run(tf.global_variables_initializer())
+    with tf.compat.v1.name_scope('virtual_adv_dummy_model'):
+      self.model.get_probs(tf.compat.v1.placeholder(tf.float32, shape=(None, 1000)))
+    self.sess.run(tf.compat.v1.global_variables_initializer())
 
   def test_parse_params(self):
     self.attack.parse_params()
@@ -187,7 +187,7 @@ class CommonAttackProperties(CleverHansTest):
       raise SkipTest()
 
     super(CommonAttackProperties, self).setUp()
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
 
   def generate_adversarial_examples_np(self, ord, eps, **kwargs):
@@ -232,7 +232,7 @@ class CommonAttackProperties(CleverHansTest):
   def test_generate_respects_dtype(self):
     self.attack = FastGradientMethod(self.model, sess=self.sess,
                                      dtypestr='float64')
-    x = tf.placeholder(dtype=tf.float64, shape=(100, 2))
+    x = tf.compat.v1.placeholder(dtype=tf.float64, shape=(100, 2))
     x_adv = self.attack.generate(x)
     self.assertEqual(x_adv.dtype, tf.float64)
 
@@ -271,7 +271,7 @@ class CommonAttackProperties(CleverHansTest):
     # based on generate_np do not exercise the generate API very well.
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
-    x = tf.placeholder(tf.float32, x_val.shape)
+    x = tf.compat.v1.placeholder(tf.float32, x_val.shape)
 
     for eps in [0.1, 0.2, 0.3, 0.4]:
       x_adv = self.attack.generate(x, eps=eps, ord=np.inf,
@@ -308,16 +308,16 @@ class TestOptimizeLinear(CleverHansTest):
 
   def setUp(self):
     super(TestOptimizeLinear, self).setUp()
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
 
   def test_optimize_linear_linf(self):
 
-    grad = tf.placeholder(tf.float32, shape=[1, 2])
+    grad = tf.compat.v1.placeholder(tf.float32, shape=[1, 2])
 
     # Build the graph for the attack
     eta = attacks.optimize_linear(grad, eps=1., ord=np.inf)
-    objective = tf.reduce_sum(grad * eta)
+    objective = tf.reduce_sum(input_tensor=grad * eta)
 
     grad_val = np.array([[1., -2.]])
     eta, objective = self.sess.run([eta, objective],
@@ -332,11 +332,11 @@ class TestOptimizeLinear(CleverHansTest):
 
   def test_optimize_linear_l2(self):
 
-    grad = tf.placeholder(tf.float32, shape=[1, 2])
+    grad = tf.compat.v1.placeholder(tf.float32, shape=[1, 2])
 
     # Build the graph for the attack
     eta = attacks.optimize_linear(grad, eps=1., ord=2)
-    objective = tf.reduce_sum(grad * eta)
+    objective = tf.reduce_sum(input_tensor=grad * eta)
 
     grad_val = np.array([[np.sqrt(.5), -np.sqrt(.5)]])
     eta, objective = self.sess.run([eta, objective],
@@ -360,11 +360,11 @@ class TestOptimizeLinear(CleverHansTest):
 
     # We need just one example in the batch and two features to show the
     # common misconception is suboptimal.
-    grad = tf.placeholder(tf.float32, shape=[1, 2])
+    grad = tf.compat.v1.placeholder(tf.float32, shape=[1, 2])
 
     # Build the graph for the attack
     eta = attacks.optimize_linear(grad, eps=1., ord=1)
-    objective = tf.reduce_sum(grad * eta)
+    objective = tf.reduce_sum(input_tensor=grad * eta)
 
     # Make sure the largest entry of the gradient for the test case is
     # negative, to catch
@@ -386,11 +386,11 @@ class TestOptimizeLinear(CleverHansTest):
 
     # We need just one example in the batch and two features to construct
     # a tie.
-    grad = tf.placeholder(tf.float32, shape=[1, 2])
+    grad = tf.compat.v1.placeholder(tf.float32, shape=[1, 2])
 
     # Build the graph for the attack
     eta = attacks.optimize_linear(grad, eps=1., ord=1)
-    objective = tf.reduce_sum(grad * eta)
+    objective = tf.reduce_sum(input_tensor=grad * eta)
 
     # Run a test case with a tie for largest absolute value.
     # Make one feature negative to make sure we're checking for ties in
@@ -410,7 +410,7 @@ class TestSPSA(CleverHansTest):
   def setUp(self):
     super(TestSPSA, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
     self.attack = SPSA(self.model, sess=self.sess)
 
@@ -423,8 +423,8 @@ class TestSPSA(CleverHansTest):
     # TODO: change this to use standard cleverhans label conventions
     feed_labs = np.random.randint(0, 2, n_samples)
 
-    x_input = tf.placeholder(tf.float32, shape=(1, 2))
-    y_label = tf.placeholder(tf.int32, shape=(1,))
+    x_input = tf.compat.v1.placeholder(tf.float32, shape=(1, 2))
+    y_label = tf.compat.v1.placeholder(tf.int32, shape=(1,))
 
     x_adv_op = self.attack.generate(
         x_input, y=y_label,
@@ -495,7 +495,7 @@ class TestProjectedGradientDescent(CommonAttackProperties):
   def setUp(self):
     super(TestProjectedGradientDescent, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
     self.attack = ProjectedGradientDescent(self.model, sess=self.sess)
 
@@ -682,7 +682,7 @@ class TestSparseL1Descent(CleverHansTest):
   def setUp(self):
     super(TestSparseL1Descent, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
     self.attack = SparseL1Descent(self.model, sess=self.sess)
 
@@ -744,7 +744,7 @@ class TestSparseL1Descent(CleverHansTest):
     # based on generate_np do not exercise the generate API very well.
     x_val = np.random.rand(100, 2)
     x_val = np.array(x_val, dtype=np.float32)
-    x = tf.placeholder(tf.float32, x_val.shape)
+    x = tf.compat.v1.placeholder(tf.float32, x_val.shape)
 
     for eps in [10, 20, 30, 40]:
       x_adv = self.attack.generate(x, eps=eps, clip_min=-5.0, clip_max=5.0)
@@ -880,9 +880,9 @@ class TestSparseL1Descent(CleverHansTest):
     self.attack = SparseL1Descent(self.model, sess=self.sess)
 
     # initialize model
-    with tf.name_scope('sparse_l1_descent_dummy_model'):
-      self.model.get_probs(tf.placeholder(tf.float32, shape=(None, 1000)))
-    self.sess.run(tf.global_variables_initializer())
+    with tf.compat.v1.name_scope('sparse_l1_descent_dummy_model'):
+      self.model.get_probs(tf.compat.v1.placeholder(tf.float32, shape=(None, 1000)))
+    self.sess.run(tf.compat.v1.global_variables_initializer())
 
     x_val = np.random.rand(100, 1000)
     x_val = np.array(x_val, dtype=np.float32)
@@ -932,7 +932,7 @@ class TestCarliniWagnerL2(CleverHansTest):
   def setUp(self):
     super(TestCarliniWagnerL2, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
     self.attack = CarliniWagnerL2(self.model, sess=self.sess)
 
@@ -976,8 +976,8 @@ class TestCarliniWagnerL2(CleverHansTest):
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     feed_labs = np.zeros((100, 2))
     feed_labs[np.arange(100), orig_labs] = 1
-    x = tf.placeholder(tf.float32, x_val.shape)
-    y = tf.placeholder(tf.float32, feed_labs.shape)
+    x = tf.compat.v1.placeholder(tf.float32, x_val.shape)
+    y = tf.compat.v1.placeholder(tf.float32, feed_labs.shape)
 
     x_adv_p = self.attack.generate(x, max_iterations=100,
                                    binary_search_steps=3,
@@ -1072,7 +1072,7 @@ class TestElasticNetMethod(CleverHansTest):
   def setUp(self):
     super(TestElasticNetMethod, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
     self.attack = ElasticNetMethod(self.model, sess=self.sess)
 
@@ -1116,8 +1116,8 @@ class TestElasticNetMethod(CleverHansTest):
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     feed_labs = np.zeros((100, 2))
     feed_labs[np.arange(100), orig_labs] = 1
-    x = tf.placeholder(tf.float32, x_val.shape)
-    y = tf.placeholder(tf.float32, feed_labs.shape)
+    x = tf.compat.v1.placeholder(tf.float32, x_val.shape)
+    y = tf.compat.v1.placeholder(tf.float32, feed_labs.shape)
 
     x_adv_p = self.attack.generate(x, max_iterations=100,
                                    binary_search_steps=3,
@@ -1212,15 +1212,15 @@ class TestSaliencyMapMethod(CleverHansTest):
   def setUp(self):
     super(TestSaliencyMapMethod, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.sess.as_default()
     self.model = DummyModel()
     self.attack = SaliencyMapMethod(self.model, sess=self.sess)
 
     # initialize model
-    with tf.name_scope('dummy_model'):
-      self.model.get_logits(tf.placeholder(tf.float32, shape=(None, 1000)))
-    self.sess.run(tf.global_variables_initializer())
+    with tf.compat.v1.name_scope('dummy_model'):
+      self.model.get_logits(tf.compat.v1.placeholder(tf.float32, shape=(None, 1000)))
+    self.sess.run(tf.compat.v1.global_variables_initializer())
 
     self.attack = SaliencyMapMethod(self.model, sess=self.sess)
 
@@ -1243,7 +1243,7 @@ class TestDeepFool(CleverHansTest):
   def setUp(self):
     super(TestDeepFool, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
     self.attack = DeepFool(self.model, sess=self.sess)
 
@@ -1265,7 +1265,7 @@ class TestDeepFool(CleverHansTest):
     x_val = np.array(x_val, dtype=np.float32)
 
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
-    x = tf.placeholder(tf.float32, x_val.shape)
+    x = tf.compat.v1.placeholder(tf.float32, x_val.shape)
 
     x_adv_p = self.attack.generate(x, overshoot=0.02, max_iter=50,
                                    nb_candidate=2, clip_min=-5, clip_max=5)
@@ -1315,7 +1315,7 @@ class TestMadryEtAl(CleverHansTest):
   def setUp(self):
     super(TestMadryEtAl, self).setUp()
     self.model = DummyModel('madryetal_dummy_model')
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
 
   def test_attack_can_be_constructed(self):
     # The test passes if this does not raise an exception
@@ -1326,7 +1326,7 @@ class TestBasicIterativeMethod(CleverHansTest):
   def setUp(self):
     super(TestBasicIterativeMethod, self).setUp()
     self.model = DummyModel('bim_dummy_model')
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
 
   def test_attack_can_be_constructed(self):
     # The test passes if this raises no exceptions
@@ -1349,18 +1349,18 @@ class TestFastFeatureAdversaries(CleverHansTest):
 
         def fprop(self, x, **kwargs):
           del kwargs
-          my_conv = functools.partial(tf.layers.conv2d,
+          my_conv = functools.partial(tf.compat.v1.layers.conv2d,
                                       kernel_size=3,
                                       strides=2,
                                       padding='valid',
                                       activation=tf.nn.relu,
                                       kernel_initializer=HeReLuNormalInitializer)
-          my_dense = functools.partial(tf.layers.dense,
+          my_dense = functools.partial(tf.compat.v1.layers.dense,
                                        kernel_initializer=HeReLuNormalInitializer)
-          with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+          with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
             for depth in [96, 256, 384, 384, 256]:
               x = my_conv(x, depth)
-            y = tf.layers.flatten(x)
+            y = tf.compat.v1.layers.flatten(x)
             y = my_dense(y, 4096, tf.nn.relu)
             y = fc7 = my_dense(y, 4096, tf.nn.relu)
             y = my_dense(y, 1000)
@@ -1371,7 +1371,7 @@ class TestFastFeatureAdversaries(CleverHansTest):
       return ModelImageNetCNN('imagenet')
 
     self.input_shape = [10, 224, 224, 3]
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = make_imagenet_cnn(self.input_shape)
     self.attack = FastFeatureAdversaries(self.model, sess=self.sess)
 
@@ -1382,10 +1382,10 @@ class TestFastFeatureAdversaries(CleverHansTest):
     at least 50% closer to the guide compared to the original distance of
     the source and the guide.
     """
-    tf.set_random_seed(1234)
+    tf.compat.v1.set_random_seed(1234)
     input_shape = self.input_shape
-    x_src = tf.abs(tf.random_uniform(input_shape, 0., 1.))
-    x_guide = tf.abs(tf.random_uniform(input_shape, 0., 1.))
+    x_src = tf.abs(tf.random.uniform(input_shape, 0., 1.))
+    x_guide = tf.abs(tf.random.uniform(input_shape, 0., 1.))
 
     layer = 'fc7'
     attack_params = {'eps': 5. / 256, 'clip_min': 0., 'clip_max': 1.,
@@ -1396,7 +1396,7 @@ class TestFastFeatureAdversaries(CleverHansTest):
     h_src = self.model.fprop(x_src)[layer]
     h_guide = self.model.fprop(x_guide)[layer]
 
-    init = tf.global_variables_initializer()
+    init = tf.compat.v1.global_variables_initializer()
     self.sess.run(init)
 
     ha, hs, hg, _xa, _xs, _xg = self.sess.run(
@@ -1418,7 +1418,7 @@ class TestLBFGS(CleverHansTest):
   def setUp(self):
     super(TestLBFGS, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
     self.attack = LBFGS(self.model, sess=self.sess)
 
@@ -1445,8 +1445,8 @@ class TestLBFGS(CleverHansTest):
 
     feed_labs = np.zeros((100, 2))
     feed_labs[np.arange(100), np.random.randint(0, 1, 100)] = 1
-    x = tf.placeholder(tf.float32, x_val.shape)
-    y = tf.placeholder(tf.float32, feed_labs.shape)
+    x = tf.compat.v1.placeholder(tf.float32, x_val.shape)
+    y = tf.compat.v1.placeholder(tf.float32, feed_labs.shape)
 
     x_adv_p = self.attack.generate(x, max_iterations=100,
                                    binary_search_steps=3,
@@ -1492,7 +1492,7 @@ class SimpleSpatialBrightPixelModel(Model):
     del kwargs
 
     flat_x = slim.flatten(x)
-    first_logit = tf.reduce_max(flat_x, axis=1)
+    first_logit = tf.reduce_max(input_tensor=flat_x, axis=1)
     second_logit = tf.ones_like(first_logit) * 0.5
     res = tf.stack([second_logit, first_logit], axis=1)
     return {self.O_LOGITS: res,
@@ -1511,20 +1511,20 @@ class TestSpatialTransformationMethod(CleverHansTest):
     """
     super(TestSpatialTransformationMethod, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleSpatialBrightPixelModel()
     self.attack = SpatialTransformationMethod(self.model, sess=self.sess)
 
     # initialize model
-    with tf.name_scope('dummy_model_spatial'):
-      self.model.get_logits(tf.placeholder(tf.float32, shape=(None, 2, 2, 1)))
-    self.sess.run(tf.global_variables_initializer())
+    with tf.compat.v1.name_scope('dummy_model_spatial'):
+      self.model.get_logits(tf.compat.v1.placeholder(tf.float32, shape=(None, 2, 2, 1)))
+    self.sess.run(tf.compat.v1.global_variables_initializer())
 
   def test_no_transformation(self):
     """Test that setting transformation params to 0. is a no-op"""
     x_val = np.random.rand(100, 2, 2, 1)
     x_val = np.array(x_val, dtype=np.float32)
-    x = tf.placeholder(tf.float32, shape=(None, 2, 2, 1))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, 2, 2, 1))
 
     x_adv_p = self.attack.generate(x, batch_size=100, dx_min=0.0,
                                    dx_max=0.0, n_dxs=1, dy_min=0.0,
@@ -1543,7 +1543,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
     y = np.zeros([100, 2])
     y[:, 0] = 1.
 
-    x = tf.placeholder(tf.float32, shape=(None, 2, 2, 1))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, 2, 2, 1))
     x_adv_p = self.attack.generate(x,
                                    y=y, batch_size=100, dx_min=-0.5,
                                    dx_max=0.5, n_dxs=3, dy_min=-0.5,
@@ -1566,7 +1566,7 @@ class TestSpatialTransformationMethod(CleverHansTest):
     y = np.zeros([100, 2])
     y[:, 0] = 1.
 
-    x = tf.placeholder(tf.float32, shape=(None, 2, 2, 1))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, 2, 2, 1))
     x_adv_p = self.attack.generate(x,
                                    y=y, batch_size=100, dx_min=-0.5,
                                    dx_max=0.5, n_dxs=3, dy_min=-0.5,
@@ -1586,7 +1586,7 @@ class TestHopSkipJumpAttack(CleverHansTest):
   def setUp(self):
     super(TestHopSkipJumpAttack, self).setUp()
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
     self.attack = HopSkipJumpAttack(self.model, sess=self.sess)
 
@@ -1614,7 +1614,7 @@ class TestHopSkipJumpAttack(CleverHansTest):
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
 
     # Requires input to have batchsize 1.
-    x = tf.placeholder(tf.float32, [1, 2])
+    x = tf.compat.v1.placeholder(tf.float32, [1, 2])
 
     bapp_params = {
         'constraint': 'linf',
@@ -1682,9 +1682,9 @@ class TestHopSkipJumpAttack(CleverHansTest):
 
     # Create placeholders.
     # Require input has batchsize 1.
-    x = tf.placeholder(tf.float32, [1, 2])
-    y_target_ph = tf.placeholder(tf.float32, [1, 2])
-    image_target_ph = tf.placeholder(tf.float32, [1, 2])
+    x = tf.compat.v1.placeholder(tf.float32, [1, 2])
+    y_target_ph = tf.compat.v1.placeholder(tf.float32, [1, 2])
+    image_target_ph = tf.compat.v1.placeholder(tf.float32, [1, 2])
 
     # Create graph.
     bapp_params = {

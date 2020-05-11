@@ -162,9 +162,9 @@ def cifar_tf_preprocess(inp, random_crop=True, random_flip=True, whiten=True,
   image_size = 32
   image = inp
   if random_crop:
-    image = tf.image.resize_image_with_crop_or_pad(inp, image_size + 4,
+    image = tf.image.resize_with_crop_or_pad(inp, image_size + 4,
                                                    image_size + 4)
-    image = tf.random_crop(image, [image_size, image_size, 3])
+    image = tf.image.random_crop(image, [image_size, image_size, 3])
   if random_flip:
     image = tf.image.random_flip_left_right(image)
   # Brightness/saturation/constrast provides small gains .2%~.5% on cifar.

@@ -55,15 +55,15 @@ class TrainManager(object):
   def _init_session(self):
     # Set TF random seed to improve reproducibility
     self.rng = np.random.RandomState([2017, 8, 30])
-    tf.set_random_seed(1234)
+    tf.compat.v1.set_random_seed(1234)
 
     # Create TF session
-    self.sess = tf.Session(
-        config=tf.ConfigProto(allow_soft_placement=True))
+    self.sess = tf.compat.v1.Session(
+        config=tf.compat.v1.ConfigProto(allow_soft_placement=True))
 
     # Object used to keep track of (and return) key accuracies
     if self.hparams.save:
-      self.writer = tf.summary.FileWriter(self.hparams.save_dir,
+      self.writer = tf.compat.v1.summary.FileWriter(self.hparams.save_dir,
                                           flush_secs=10)
     else:
       self.writer = None
@@ -109,9 +109,9 @@ class TrainManager(object):
     input_shape = self.input_shape
     # Define input TF placeholder
     with tf.device('/gpu:0'):
-      x_pre = tf.placeholder(tf.float32, shape=input_shape, name='x')
+      x_pre = tf.compat.v1.placeholder(tf.float32, shape=input_shape, name='x')
       x = preprocess_batch(x_pre, preproc_func)
-      y = tf.placeholder(tf.float32, shape=(self.batch_size, 10),
+      y = tf.compat.v1.placeholder(tf.float32, shape=(self.batch_size, 10),
                          name='y')
 
     self.g0_inputs = {'x_pre': x_pre, 'x': x, 'y': y}
@@ -169,7 +169,7 @@ class TrainManager(object):
       raise NotImplementedError("this configuration of this example is no longer maintained")
 
     # Define loss
-    with tf.variable_scope('train_loss'):
+    with tf.compat.v1.variable_scope('train_loss'):
       if predictions_adv is not None:
         if hparams.only_adv_train:
           loss = build_train_op(y, predictions_adv)
@@ -183,7 +183,7 @@ class TrainManager(object):
     if hparams.model_type == 'resnet_tf':
       train_step = model.build_train_op_from_cost(loss)
     else:
-      optim = tf.train.AdamOptimizer(learning_rate=hparams.adam_lrn)
+      optim = tf.compat.v1.train.AdamOptimizer(learning_rate=hparams.adam_lrn)
       train_step = optim.minimize(loss)
 
     return train_step
@@ -268,7 +268,7 @@ class TrainManager(object):
                 or epoch == nb_epochs)
         if hparams.save and cond:
           save_path = os.path.join(train_dir, filename)
-          saver = tf.train.Saver()
+          saver = tf.compat.v1.train.Saver()
           saver.save(sess, save_path)
           logging.info("Model saved at: " + str(save_path))
     logging.info("Completed model training.")
@@ -277,7 +277,7 @@ class TrainManager(object):
     x_pre = self.g0_inputs['x_pre']
     y = self.g0_inputs['y']
     fd = {x_pre: X_batch, y: Y_batch}
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     self.sess.run(init_op, feed_dict=fd)
 
   def _run(self, X_batch=None):
@@ -331,7 +331,7 @@ class TrainerMultiGPU(TrainManager):
       # Create the graph for i'th step of attack
       device_name = inputs[i]['x'].device
       with tf.device(device_name):
-        with tf.variable_scope('step%d' % i):
+        with tf.compat.v1.variable_scope('step%d' % i):
           for k, v in g0_inputs.iteritems():
             if k not in inputs[i]:
               v_copy = clone_variable(k, v)
@@ -377,7 +377,7 @@ class TrainerMultiGPU(TrainManager):
     device_name = '/gpu:%d' % (hparams.ngpu-1)
     model.set_device(device_name)
     with tf.device(device_name):
-      with tf.variable_scope('last'):
+      with tf.compat.v1.variable_scope('last'):
         inputs += [OrderedDict()]
         for k, v in outputs[-1].iteritems():
           v_copy = clone_variable(k, v)

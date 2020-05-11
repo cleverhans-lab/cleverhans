@@ -79,7 +79,7 @@ class CarliniWagnerL2(Attack):
     def cw_wrap(x_val, y_val):
       return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
-    wrap = tf.py_func(cw_wrap, [x, labels], self.tf_dtype)
+    wrap = tf.compat.v1.py_func(cw_wrap, [x, labels], self.tf_dtype)
     wrap.set_shape(x.get_shape())
 
     return wrap
@@ -221,10 +221,10 @@ class CWL2(object):
         np.zeros(batch_size), dtype=tf_dtype, name='const')
 
     # and here's what we use to assign them
-    self.assign_timg = tf.placeholder(tf_dtype, shape, name='assign_timg')
-    self.assign_tlab = tf.placeholder(
+    self.assign_timg = tf.compat.v1.placeholder(tf_dtype, shape, name='assign_timg')
+    self.assign_tlab = tf.compat.v1.placeholder(
         tf_dtype, (batch_size, num_labels), name='assign_tlab')
-    self.assign_const = tf.placeholder(
+    self.assign_const = tf.compat.v1.placeholder(
         tf_dtype, [batch_size], name='assign_const')
 
     # the resulting instance, tanh'd to keep bounded from clip_min
@@ -259,10 +259,10 @@ class CWL2(object):
     self.loss = self.loss1 + self.loss2
 
     # Setup the adam optimizer and keep track of variables we're creating
-    start_vars = set(x.name for x in tf.global_variables())
-    optimizer = tf.train.AdamOptimizer(self.LEARNING_RATE)
+    start_vars = set(x.name for x in tf.compat.v1.global_variables())
+    optimizer = tf.compat.v1.train.AdamOptimizer(self.LEARNING_RATE)
     self.train = optimizer.minimize(self.loss, var_list=[modifier])
-    end_vars = tf.global_variables()
+    end_vars = tf.compat.v1.global_variables()
     new_vars = [x for x in end_vars if x.name not in start_vars]
 
     # these are the variables to initialize when we run
@@ -271,7 +271,7 @@ class CWL2(object):
     self.setup.append(self.tlab.assign(self.assign_tlab))
     self.setup.append(self.const.assign(self.assign_const))
 
-    self.init = tf.variables_initializer(var_list=[modifier] + new_vars)
+    self.init = tf.compat.v1.variables_initializer(var_list=[modifier] + new_vars)
 
   def attack(self, imgs, targets):
     """

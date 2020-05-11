@@ -58,10 +58,10 @@ def initialize_uninitialized_global_variables(sess):
   :return:
   """
   # List all global variables
-  global_vars = tf.global_variables()
+  global_vars = tf.compat.v1.global_variables()
 
   # Find initialized status for all variables
-  is_var_init = [tf.is_variable_initialized(var) for var in global_vars]
+  is_var_init = [tf.compat.v1.is_variable_initialized(var) for var in global_vars]
   is_initialized = sess.run(is_var_init)
 
   # List all variables that were not initialized previously
@@ -70,7 +70,7 @@ def initialize_uninitialized_global_variables(sess):
 
   # Initialize all uninitialized variables found, if any
   if len(not_initialized_vars):
-    sess.run(tf.variables_initializer(not_initialized_vars))
+    sess.run(tf.compat.v1.variables_initializer(not_initialized_vars))
 
 
 def train(sess, loss, x, y, X_train, Y_train, save=False,
@@ -132,25 +132,25 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
   # Define optimizer
   loss_value = loss.fprop(x, y, **fprop_args)
   if optimizer is None:
-    optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=args.learning_rate)
   else:
-    if not isinstance(optimizer, tf.train.Optimizer):
+    if not isinstance(optimizer, tf.compat.v1.train.Optimizer):
       raise ValueError("optimizer object must be from a child class of "
                        "tf.train.Optimizer")
   # Trigger update operations within the default graph (such as batch_norm).
-  with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+  with tf.control_dependencies(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)):
     train_step = optimizer.minimize(loss_value, var_list=var_list)
 
   with sess.as_default():
     if hasattr(tf, "global_variables_initializer"):
       if init_all:
-        tf.global_variables_initializer().run()
+        tf.compat.v1.global_variables_initializer().run()
       else:
         initialize_uninitialized_global_variables(sess)
     else:
       warnings.warn("Update your copy of tensorflow; future versions of "
                     "CleverHans may drop support for this version.")
-      sess.run(tf.initialize_all_variables())
+      sess.run(tf.compat.v1.initialize_all_variables())
 
     for epoch in xrange(args.nb_epochs):
       # Compute number of batches
@@ -183,7 +183,7 @@ def train(sess, loss, x, y, X_train, Y_train, save=False,
 
     if save:
       save_path = os.path.join(args.train_dir, args.filename)
-      saver = tf.train.Saver()
+      saver = tf.compat.v1.train.Saver()
       saver.save(sess, save_path)
       _logger.info("Completed model training and saved at: " +
                    str(save_path))
@@ -223,8 +223,8 @@ def model_eval(sess, x, y, predictions, X_test=None, Y_test=None,
   if key in _model_eval_cache:
     correct_preds = _model_eval_cache[key]
   else:
-    correct_preds = tf.equal(tf.argmax(y, axis=-1),
-                             tf.argmax(predictions, axis=-1))
+    correct_preds = tf.equal(tf.argmax(input=y, axis=-1),
+                             tf.argmax(input=predictions, axis=-1))
     _model_eval_cache[key] = correct_preds
 
   # Init result var
@@ -280,7 +280,7 @@ def tf_model_load(sess, file_path=None):
   :return:
   """
   with sess.as_default():
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
     if file_path is None:
       error = 'file_path argument is missing.'
       raise ValueError(error)
@@ -331,27 +331,27 @@ def l2_batch_normalize(x, epsilon=1e-12, scope=None):
   :param epsilon: stabilizes division
   :return: the batch of l2 normalized vector
   """
-  with tf.name_scope(scope, "l2_batch_normalize") as name_scope:
-    x_shape = tf.shape(x)
+  with tf.compat.v1.name_scope(scope, "l2_batch_normalize") as name_scope:
+    x_shape = tf.shape(input=x)
     x = tf.contrib.layers.flatten(x)
     x /= (epsilon + reduce_max(tf.abs(x), 1, keepdims=True))
     square_sum = reduce_sum(tf.square(x), 1, keepdims=True)
-    x_inv_norm = tf.rsqrt(np.sqrt(epsilon) + square_sum)
+    x_inv_norm = tf.math.rsqrt(np.sqrt(epsilon) + square_sum)
     x_norm = tf.multiply(x, x_inv_norm)
     return tf.reshape(x_norm, x_shape, name_scope)
 
 
 def kl_with_logits(p_logits, q_logits, scope=None,
-                   loss_collection=tf.GraphKeys.REGULARIZATION_LOSSES):
+                   loss_collection=tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES):
   """Helper function to compute kl-divergence KL(p || q)
   """
-  with tf.name_scope(scope, "kl_divergence") as name:
+  with tf.compat.v1.name_scope(scope, "kl_divergence") as name:
     p = tf.nn.softmax(p_logits)
     p_log = tf.nn.log_softmax(p_logits)
     q_log = tf.nn.log_softmax(q_logits)
     loss = reduce_mean(reduce_sum(p * (p_log - q_log), axis=1),
                        name=name)
-    tf.losses.add_loss(loss, loss_collection)
+    tf.compat.v1.losses.add_loss(loss, loss_collection)
     return loss
 
 
@@ -379,7 +379,7 @@ def clip_eta(eta, ord, eps):
 
     eps = tf.cast(eps, eta.dtype)
 
-    dim = tf.reduce_prod(tf.shape(eta)[1:])
+    dim = tf.reduce_prod(input_tensor=tf.shape(input=eta)[1:])
     eta_flat = tf.reshape(eta, (-1, dim))
     abs_eta = tf.abs(eta_flat)
 
@@ -392,16 +392,16 @@ def clip_eta(eta, ord, eps):
     js = tf.cast(tf.divide(1, tf.range(1, dim + 1)), eta.dtype)
     t = tf.cast(tf.greater(mu - js * (cumsums - eps), 0), eta.dtype)
 
-    rho = tf.argmax(t * cumsums, axis=-1)
-    rho_val = tf.reduce_max(t * cumsums, axis=-1)
+    rho = tf.argmax(input=t * cumsums, axis=-1)
+    rho_val = tf.reduce_max(input_tensor=t * cumsums, axis=-1)
     theta = tf.divide(rho_val - eps, tf.cast(1 + rho, eta.dtype))
 
     eta_sgn = tf.sign(eta_flat)
     eta_proj = eta_sgn * tf.maximum(abs_eta - theta[:, tf.newaxis], 0)
-    eta_proj = tf.reshape(eta_proj, tf.shape(eta))
+    eta_proj = tf.reshape(eta_proj, tf.shape(input=eta))
 
-    norm = tf.reduce_sum(tf.abs(eta), reduc_ind)
-    eta = tf.where(tf.greater(norm, eps), eta_proj, eta)
+    norm = tf.reduce_sum(input_tensor=tf.abs(eta), axis=reduc_ind)
+    eta = tf.compat.v1.where(tf.greater(norm, eps), eta_proj, eta)
 
   elif ord == 2:
     # avoid_zero_div must go inside sqrt to avoid a divide by zero
@@ -435,7 +435,7 @@ def zero_out_clipped_grads(grad, x, clip_min, clip_max):
   clip_high = tf.logical_and(tf.greater_equal(x, tf.cast(clip_max, x.dtype)),
                              tf.greater(signed_grad, 0))
   clip = tf.logical_or(clip_low, clip_high)
-  grad = tf.where(clip, mul(grad, 0), grad)
+  grad = tf.compat.v1.where(clip, mul(grad, 0), grad)
 
   return grad
 
@@ -445,7 +445,7 @@ def random_exponential(shape, rate=1.0, dtype=tf.float32, seed=None):
   Helper function to sample from the exponential distribution, which is not
   included in core TensorFlow.
   """
-  return tf.random_gamma(shape, alpha=1, beta=1. / rate, dtype=dtype, seed=seed)
+  return tf.random.gamma(shape, alpha=1, beta=1. / rate, dtype=dtype, seed=seed)
 
 
 def random_laplace(shape, loc=0.0, scale=1.0, dtype=tf.float32, seed=None):
@@ -474,7 +474,7 @@ def random_lp_vector(shape, ord, eps, dtype=tf.float32, seed=None):
     raise ValueError('ord must be np.inf, 1, or 2.')
 
   if ord == np.inf:
-    r = tf.random_uniform(shape, -eps, eps, dtype=dtype, seed=seed)
+    r = tf.random.uniform(shape, -eps, eps, dtype=dtype, seed=seed)
   else:
 
     # For ord=1 and ord=2, we use the generic technique from
@@ -486,15 +486,15 @@ def random_lp_vector(shape, ord, eps, dtype=tf.float32, seed=None):
     # and `d` is the dimension of the ball. In high dimensions, this is roughly
     # equivalent to sampling from the surface of the ball.
 
-    dim = tf.reduce_prod(shape[1:])
+    dim = tf.reduce_prod(input_tensor=shape[1:])
 
     if ord == 1:
       x = random_laplace((shape[0], dim), loc=1.0, scale=1.0, dtype=dtype,
                          seed=seed)
-      norm = tf.reduce_sum(tf.abs(x), axis=-1, keepdims=True)
+      norm = tf.reduce_sum(input_tensor=tf.abs(x), axis=-1, keepdims=True)
     elif ord == 2:
-      x = tf.random_normal((shape[0], dim), dtype=dtype, seed=seed)
-      norm = tf.sqrt(tf.reduce_sum(tf.square(x), axis=-1, keepdims=True))
+      x = tf.random.normal((shape[0], dim), dtype=dtype, seed=seed)
+      norm = tf.sqrt(tf.reduce_sum(input_tensor=tf.square(x), axis=-1, keepdims=True))
     else:
       raise ValueError('ord must be np.inf, 1, or 2.')
 
@@ -557,19 +557,19 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
   if predictions_adv is not None:
     loss = (loss + model_loss(y, predictions_adv)) / 2
 
-  train_step = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+  train_step = tf.compat.v1.train.AdamOptimizer(learning_rate=args.learning_rate)
   train_step = train_step.minimize(loss, var_list=var_list)
 
   with sess.as_default():
     if hasattr(tf, "global_variables_initializer"):
       if init_all:
-        tf.global_variables_initializer().run()
+        tf.compat.v1.global_variables_initializer().run()
       else:
         initialize_uninitialized_global_variables(sess)
     else:
       warnings.warn("Update your copy of tensorflow; future versions of "
                     "CleverHans may drop support for this version.")
-      sess.run(tf.initialize_all_variables())
+      sess.run(tf.compat.v1.initialize_all_variables())
 
     for epoch in xrange(args.nb_epochs):
       # Compute number of batches
@@ -602,7 +602,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
     if save:
       save_path = os.path.join(args.train_dir, args.filename)
-      saver = tf.train.Saver()
+      saver = tf.compat.v1.train.Saver()
       saver.save(sess, save_path)
       _logger.info("Completed model training and saved at: " +
                    str(save_path))
@@ -737,7 +737,7 @@ def assert_less_equal(*args, **kwargs):
   The unwrapped version raises an exception if used with tf.device("/GPU:x").
   """
   with tf.device("/CPU:0"):
-    return tf.assert_less_equal(*args, **kwargs)
+    return tf.compat.v1.assert_less_equal(*args, **kwargs)
 
 def assert_greater_equal(*args, **kwargs):
   """
@@ -746,7 +746,7 @@ def assert_greater_equal(*args, **kwargs):
   The unwrapped version raises an exception if used with tf.device("/GPU:x").
   """
   with tf.device("/CPU:0"):
-    return tf.assert_greater_equal(*args, **kwargs)
+    return tf.compat.v1.assert_greater_equal(*args, **kwargs)
 
 def assert_equal(*args, **kwargs):
   """
@@ -755,7 +755,7 @@ def assert_equal(*args, **kwargs):
   The unwrapped version raises an exception if used with tf.device("/GPU:x").
   """
   with tf.device("/CPU:0"):
-    return tf.assert_equal(*args, **kwargs)
+    return tf.compat.v1.assert_equal(*args, **kwargs)
 
 def jacobian_graph(predictions, x, nb_classes):
   """
@@ -772,7 +772,7 @@ def jacobian_graph(predictions, x, nb_classes):
 
   # Define the TF graph elements to compute our derivatives for each class
   for class_ind in xrange(nb_classes):
-    derivatives, = tf.gradients(predictions[:, class_ind], x)
+    derivatives, = tf.gradients(ys=predictions[:, class_ind], xs=x)
     list_derivatives.append(derivatives)
 
   return list_derivatives

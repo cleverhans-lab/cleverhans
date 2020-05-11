@@ -54,7 +54,7 @@ def main(argv=None):
   model_filepath = argv[1]
   adv_x_filepaths = argv[2:]
 
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
   with sess.as_default():
     model = serial.load(model_filepath)
 
@@ -107,4 +107,4 @@ if __name__ == '__main__':
                        'range of test examples to use')
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
   flags.DEFINE_integer('batch_size', BATCH_SIZE, 'batch size')
-  tf.app.run()
+  tf.compat.v1.app.run()

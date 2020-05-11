@@ -78,7 +78,7 @@ class DeepFool(Attack):
                             self.max_iter, self.clip_min, self.clip_max,
                             self.nb_classes)
 
-    wrap = tf.py_func(deepfool_wrap, [x], self.tf_dtype)
+    wrap = tf.compat.v1.py_func(deepfool_wrap, [x], self.tf_dtype)
     wrap.set_shape(x.get_shape())
     return wrap
 

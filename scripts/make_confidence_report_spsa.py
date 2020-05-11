@@ -82,13 +82,13 @@ def make_confidence_report_spsa(filepath, train_start=TRAIN_START,
   """
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
+  tf.compat.v1.set_random_seed(1234)
 
   # Set logging level to see debug information
   set_log_level(logging.INFO)
 
   # Create TF session
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
 
   if report_path is None:
     assert filepath.endswith('.joblib')
@@ -168,4 +168,4 @@ if __name__ == '__main__':
   flags.DEFINE_string('report_path', REPORT_PATH, 'Path to save to')
   flags.DEFINE_integer('batch_size', BATCH_SIZE,
                        'Batch size for most jobs')
-  tf.app.run()
+  tf.compat.v1.app.run()

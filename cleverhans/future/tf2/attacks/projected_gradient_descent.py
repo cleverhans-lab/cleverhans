@@ -71,7 +71,7 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
 
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
-    y = tf.argmax(model_fn(x), 1)
+    y = tf.argmax(input=model_fn(x), axis=1)
 
   i = 0
   while i < nb_iter:

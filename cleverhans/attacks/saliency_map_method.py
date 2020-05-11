@@ -68,7 +68,7 @@ class SaliencyMapMethod(Attack):
           return result
 
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
-        self.y_target = tf.py_func(random_targets, [labels],
+        self.y_target = tf.compat.v1.py_func(random_targets, [labels],
                                    self.tf_dtype)
         self.y_target.set_shape([None, nb_classes])
 
@@ -190,12 +190,12 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
     # Create graph for model logits and predictions
     logits = model.get_logits(x_in)
     preds = tf.nn.softmax(logits)
-    preds_onehot = tf.one_hot(tf.argmax(preds, axis=1), depth=nb_classes)
+    preds_onehot = tf.one_hot(tf.argmax(input=preds, axis=1), depth=nb_classes)
 
     # create the Jacobian graph
     list_derivatives = []
     for class_ind in xrange(nb_classes):
-      derivatives = tf.gradients(logits[:, class_ind], x_in)
+      derivatives = tf.gradients(ys=logits[:, class_ind], xs=x_in)
       list_derivatives.append(derivatives[0])
     grads = tf.reshape(
         tf.stack(list_derivatives), shape=[nb_classes, -1, nb_features])
@@ -205,7 +205,7 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
     # and other_class to [nb_classes, -1, 1].
     # The last dimention is added to allow broadcasting later.
     target_class = tf.reshape(
-        tf.transpose(y_in, perm=[1, 0]), shape=[nb_classes, -1, 1])
+        tf.transpose(a=y_in, perm=[1, 0]), shape=[nb_classes, -1, 1])
     other_classes = tf.cast(tf.not_equal(target_class, 1), tf_dtype)
 
     grads_target = reduce_sum(grads * target_class, axis=0)
@@ -241,10 +241,10 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
     # Extract the best two pixels
     best = tf.argmax(
-        tf.reshape(scores, shape=[-1, nb_features * nb_features]), axis=1)
+        input=tf.reshape(scores, shape=[-1, nb_features * nb_features]), axis=1)
 
-    p1 = tf.mod(best, nb_features)
-    p2 = tf.floordiv(best, nb_features)
+    p1 = tf.math.floormod(best, nb_features)
+    p2 = tf.math.floordiv(best, nb_features)
     p1_one_hot = tf.one_hot(p1, depth=nb_features)
     p2_one_hot = tf.one_hot(p2, depth=nb_features)
 
@@ -274,8 +274,8 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
 
   # Run loop to do JSMA
   x_adv, _, _, _, _ = tf.while_loop(
-      condition,
-      body, [x, y_target, search_domain, 0, True],
+      cond=condition,
+      body=body, loop_vars=[x, y_target, search_domain, 0, True],
       parallel_iterations=1)
 
   return x_adv

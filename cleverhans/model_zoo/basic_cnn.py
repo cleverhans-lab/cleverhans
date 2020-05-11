@@ -23,21 +23,21 @@ class ModelBasicCNN(Model):
 
     # Do a dummy run of fprop to make sure the variables are created from
     # the start
-    self.fprop(tf.placeholder(tf.float32, [128, 28, 28, 1]))
+    self.fprop(tf.compat.v1.placeholder(tf.float32, [128, 28, 28, 1]))
     # Put a reference to the params in self so that the params get pickled
     self.params = self.get_params()
 
   def fprop(self, x, **kwargs):
     del kwargs
     my_conv = functools.partial(
-        tf.layers.conv2d, activation=tf.nn.relu,
+        tf.compat.v1.layers.conv2d, activation=tf.nn.relu,
         kernel_initializer=initializers.HeReLuNormalInitializer)
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
       y = my_conv(x, self.nb_filters, 8, strides=2, padding='same')
       y = my_conv(y, 2 * self.nb_filters, 6, strides=2, padding='valid')
       y = my_conv(y, 2 * self.nb_filters, 5, strides=1, padding='valid')
-      logits = tf.layers.dense(
-          tf.layers.flatten(y), self.nb_classes,
+      logits = tf.compat.v1.layers.dense(
+          tf.compat.v1.layers.flatten(y), self.nb_classes,
           kernel_initializer=initializers.HeReLuNormalInitializer)
       return {self.O_LOGITS: logits,
               self.O_PROBS: tf.nn.softmax(logits=logits)}

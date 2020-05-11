@@ -13,7 +13,7 @@ from cleverhans.experimental.certification import nn
 from cleverhans.experimental.certification import optimization
 from cleverhans.experimental.certification import utils
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_string('checkpoint', None,
                     'Path of checkpoint with trained model to verify')
@@ -76,24 +76,24 @@ MIN_LANCZOS_ITER = 5
 
 def main(_):
   # pylint: disable=missing-docstring
-  tf.logging.set_verbosity(FLAGS.verbosity)
+  tf.compat.v1.logging.set_verbosity(FLAGS.verbosity)
 
   start_time = time.time()
 
   # Initialize neural network based on config files
   input_shape = [FLAGS.num_rows, FLAGS.num_columns, FLAGS.num_channels]
   nn_params = nn.load_network_from_checkpoint(FLAGS.checkpoint, FLAGS.model_json, input_shape)
-  tf.logging.info('Loaded neural network with size of layers: %s',
+  tf.compat.v1.logging.info('Loaded neural network with size of layers: %s',
                   nn_params.sizes)
-  tf.logging.info('Loaded neural network with input shapes: %s',
+  tf.compat.v1.logging.info('Loaded neural network with input shapes: %s',
                   nn_params.input_shapes)
-  tf.logging.info('Loaded neural network with output shapes: %s',
+  tf.compat.v1.logging.info('Loaded neural network with output shapes: %s',
                   nn_params.output_shapes)
   dual_var = utils.initialize_dual(
       nn_params, FLAGS.init_dual_file, init_nu=FLAGS.init_nu)
 
   # Reading test input and reshaping
-  with tf.gfile.Open(FLAGS.test_input) as f:
+  with tf.io.gfile.GFile(FLAGS.test_input) as f:
     test_input = np.load(f)
   test_input = np.reshape(test_input, [np.size(test_input), 1])
 
@@ -104,7 +104,7 @@ def main(_):
     start_class = FLAGS.adv_class
     end_class = FLAGS.adv_class + 1
   for adv_class in range(start_class, end_class):
-    tf.logging.info('Running certification for adversarial class %d', adv_class)
+    tf.compat.v1.logging.info('Running certification for adversarial class %d', adv_class)
     if adv_class == FLAGS.true_class:
       continue
 
@@ -132,7 +132,7 @@ def main(_):
         'min_iter': MIN_LANCZOS_ITER,
         'max_iter': FLAGS.lanczos_steps
     }
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       dual = dual_formulation.DualFormulation(sess,
                                               dual_var,
                                               nn_params,
@@ -154,4 +154,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run(main)
+  tf.compat.v1.app.run(main)

@@ -44,16 +44,16 @@ def run_canary():
     # Try very hard not to let this Variable end up in any collections used
     # by the rest of the python process
     w = tf.Variable(v, trainable=False, collections=[])
-    loss = tf.reduce_sum(tf.square(w))
+    loss = tf.reduce_sum(input_tensor=tf.square(w))
 
     grads = []
     for device in devices:
       with tf.device(device):
-        grad, = tf.gradients(loss, w)
+        grad, = tf.gradients(ys=loss, xs=w)
         grads.append(grad)
 
-    sess = tf.Session()
-    sess.run(tf.variables_initializer([w]))
+    sess = tf.compat.v1.Session()
+    sess.run(tf.compat.v1.variables_initializer([w]))
     grads = sess.run(grads)
     first = grads[0]
     for grad in grads[1:]:

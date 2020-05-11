@@ -73,10 +73,10 @@ class SparseL1Descent(Attack):
 
     # Initialize loop variables
     if self.rand_init:
-      eta = random_lp_vector(tf.shape(x), ord=1,
+      eta = random_lp_vector(tf.shape(input=x), ord=1,
                              eps=tf.cast(self.eps, x.dtype), dtype=x.dtype)
     else:
-      eta = tf.zeros(tf.shape(x))
+      eta = tf.zeros(tf.shape(input=x))
 
     # Clip eta
     eta = clip_eta(eta, ord=1, eps=self.eps)
@@ -92,8 +92,8 @@ class SparseL1Descent(Attack):
       targeted = False
     else:
       model_preds = self.model.get_probs(x)
-      preds_max = tf.reduce_max(model_preds, 1, keepdims=True)
-      y = tf.to_float(tf.equal(model_preds, preds_max))
+      preds_max = tf.reduce_max(input_tensor=model_preds, axis=1, keepdims=True)
+      y = tf.cast(tf.equal(model_preds, preds_max), dtype=tf.float32)
       y = tf.stop_gradient(y)
       targeted = False
       del model_preds
@@ -133,7 +133,7 @@ class SparseL1Descent(Attack):
 
       return i + 1, adv_x
 
-    _, adv_x = tf.while_loop(cond, body, (tf.zeros([]), adv_x), back_prop=True,
+    _, adv_x = tf.while_loop(cond=cond, body=body, loop_vars=(tf.zeros([]), adv_x), back_prop=True,
                              maximum_iterations=self.nb_iter)
 
     # Asserts run only on CPU.
@@ -224,7 +224,7 @@ class SparseL1Descent(Attack):
       if not 0 < self.grad_sparsity < 100:
         raise ValueError("grad_sparsity should be in (0, 100)")
     else:
-      self.grad_sparsity = tf.convert_to_tensor(self.grad_sparsity)
+      self.grad_sparsity = tf.convert_to_tensor(value=self.grad_sparsity)
       if len(self.grad_sparsity.shape) > 1:
         raise ValueError("grad_sparsity should either be a scalar or a vector")
 
@@ -290,7 +290,7 @@ def sparse_l1_descent(x,
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
     preds_max = reduce_max(logits, 1, keepdims=True)
-    y = tf.to_float(tf.equal(logits, preds_max))
+    y = tf.cast(tf.equal(logits, preds_max), dtype=tf.float32)
     y = tf.stop_gradient(y)
   y = y / reduce_sum(y, 1, keepdims=True)
 
@@ -300,18 +300,18 @@ def sparse_l1_descent(x,
     loss = -loss
 
   # Define gradient of loss wrt input
-  grad, = tf.gradients(loss, x)
+  grad, = tf.gradients(ys=loss, xs=x)
 
   if clip_grad:
     grad = utils_tf.zero_out_clipped_grads(grad, x, clip_min, clip_max)
 
   red_ind = list(range(1, len(grad.get_shape())))
-  dim = tf.reduce_prod(tf.shape(x)[1:])
+  dim = tf.reduce_prod(input_tensor=tf.shape(input=x)[1:])
 
   abs_grad = tf.reshape(tf.abs(grad), (-1, dim))
 
   # if q is a scalar, broadcast it to a vector of same length as the batch dim
-  q = tf.cast(tf.broadcast_to(q, tf.shape(x)[0:1]), tf.float32)
+  q = tf.cast(tf.broadcast_to(q, tf.shape(input=x)[0:1]), tf.float32)
   k = tf.cast(tf.floor(q / 100 * tf.cast(dim, tf.float32)), tf.int32)
 
   # `tf.sort` is much faster than `tf.contrib.distributions.percentile`.
@@ -322,11 +322,11 @@ def sparse_l1_descent(x,
   else:
     sorted_grad = tf.sort(abs_grad, axis=-1)
 
-  idx = tf.stack((tf.range(tf.shape(abs_grad)[0]), k), -1)
+  idx = tf.stack((tf.range(tf.shape(input=abs_grad)[0]), k), -1)
   percentiles = tf.gather_nd(sorted_grad, idx)
   tied_for_max = tf.greater_equal(abs_grad, tf.expand_dims(percentiles, -1))
-  tied_for_max = tf.reshape(tf.cast(tied_for_max, x.dtype), tf.shape(grad))
-  num_ties = tf.reduce_sum(tied_for_max, red_ind, keepdims=True)
+  tied_for_max = tf.reshape(tf.cast(tied_for_max, x.dtype), tf.shape(input=grad))
+  num_ties = tf.reduce_sum(input_tensor=tied_for_max, axis=red_ind, keepdims=True)
 
   optimal_perturbation = tf.sign(grad) * tied_for_max / num_ties
 

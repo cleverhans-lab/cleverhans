@@ -68,7 +68,7 @@ class ResNetTF(MLPnGPU):
 
   def fprop(self, x):
     self.layer_idx = 0
-    with tf.variable_scope('Resnet'):
+    with tf.compat.v1.variable_scope('Resnet'):
       logits, probs = self._build_model(x)
     self.init_layers = False
     states = {'logits': logits, 'probs': probs}
@@ -80,7 +80,7 @@ class ResNetTF(MLPnGPU):
 
   def _build_model(self, x):
     """Build the core model within the graph."""
-    with tf.variable_scope('init'):
+    with tf.compat.v1.variable_scope('init'):
       x = self._conv('init_conv', x, 3, x.shape[3], 16,
                      self._stride_arr(1))
 
@@ -101,39 +101,39 @@ class ResNetTF(MLPnGPU):
       # filters = [16, 160, 320, 640]
       # Update hps.num_residual_units to 4
 
-    with tf.variable_scope('unit_1_0'):
+    with tf.compat.v1.variable_scope('unit_1_0'):
       x = res_func(x, filters[0], filters[1],
                    self._stride_arr(strides[0]),
                    activate_before_residual[0])
     for i in six.moves.range(1, self.hps.num_residual_units):
-      with tf.variable_scope('unit_1_%d' % i):
+      with tf.compat.v1.variable_scope('unit_1_%d' % i):
         x = res_func(x, filters[1], filters[1],
                      self._stride_arr(1), False)
 
-    with tf.variable_scope('unit_2_0'):
+    with tf.compat.v1.variable_scope('unit_2_0'):
       x = res_func(x, filters[1], filters[2],
                    self._stride_arr(strides[1]),
                    activate_before_residual[1])
     for i in six.moves.range(1, self.hps.num_residual_units):
-      with tf.variable_scope('unit_2_%d' % i):
+      with tf.compat.v1.variable_scope('unit_2_%d' % i):
         x = res_func(x, filters[2], filters[2],
                      self._stride_arr(1), False)
 
-    with tf.variable_scope('unit_3_0'):
+    with tf.compat.v1.variable_scope('unit_3_0'):
       x = res_func(x, filters[2], filters[3],
                    self._stride_arr(strides[2]),
                    activate_before_residual[2])
     for i in six.moves.range(1, self.hps.num_residual_units):
-      with tf.variable_scope('unit_3_%d' % i):
+      with tf.compat.v1.variable_scope('unit_3_%d' % i):
         x = res_func(x, filters[3], filters[3],
                      self._stride_arr(1), False)
 
-    with tf.variable_scope('unit_last'):
+    with tf.compat.v1.variable_scope('unit_last'):
       x = self._layer_norm('final_bn', x)
       x = self._relu(x, self.hps.relu_leakiness)
       x = self._global_avg_pool(x)
 
-    with tf.variable_scope('logit'):
+    with tf.compat.v1.variable_scope('logit'):
       logits = self._fully_connected(x, self.hps.nb_classes)
       predictions = tf.nn.softmax(logits)
 
@@ -148,10 +148,10 @@ class ResNetTF(MLPnGPU):
     if "softmax" in str(op).lower():
       logits, = op.inputs
 
-    with tf.variable_scope('costs'):
+    with tf.compat.v1.variable_scope('costs'):
       xent = tf.nn.softmax_cross_entropy_with_logits(
-          logits=logits, labels=labels)
-      cost = tf.reduce_mean(xent, name='xent')
+          logits=logits, labels=tf.stop_gradient(labels))
+      cost = tf.reduce_mean(input_tensor=xent, name='xent')
       cost += self._decay()
       cost = cost
 
@@ -164,13 +164,13 @@ class ResNetTF(MLPnGPU):
     self.momentum = tf.constant(self.hps.momentum, tf.float32,
                                 name='momentum')
 
-    trainable_variables = tf.trainable_variables()
-    grads = tf.gradients(cost, trainable_variables)
+    trainable_variables = tf.compat.v1.trainable_variables()
+    grads = tf.gradients(ys=cost, xs=trainable_variables)
     devs = {v.device for v in trainable_variables}
     assert len(devs) == 1, ('There should be no trainable variables'
                             ' on any device other than the last GPU.')
 
-    optimizer = tf.train.MomentumOptimizer(self.lrn_rate, self.momentum)
+    optimizer = tf.compat.v1.train.MomentumOptimizer(self.lrn_rate, self.momentum)
 
     gv_pairs = zip(grads, trainable_variables)
     gv_pairs = [gv for gv in gv_pairs if gv[0] is not None]
@@ -204,29 +204,29 @@ class ResNetTF(MLPnGPU):
                 activate_before_residual=False):
     """Residual unit with 2 sub layers."""
     if activate_before_residual:
-      with tf.variable_scope('shared_activation'):
+      with tf.compat.v1.variable_scope('shared_activation'):
         x = self._layer_norm('init_bn', x)
         x = self._relu(x, self.hps.relu_leakiness)
         orig_x = x
     else:
-      with tf.variable_scope('residual_only_activation'):
+      with tf.compat.v1.variable_scope('residual_only_activation'):
         orig_x = x
         x = self._layer_norm('init_bn', x)
         x = self._relu(x, self.hps.relu_leakiness)
 
-    with tf.variable_scope('sub1'):
+    with tf.compat.v1.variable_scope('sub1'):
       x = self._conv('conv1', x, 3, in_filter, out_filter, stride)
 
-    with tf.variable_scope('sub2'):
+    with tf.compat.v1.variable_scope('sub2'):
       x = self._layer_norm('bn2', x)
       x = self._relu(x, self.hps.relu_leakiness)
       x = self._conv('conv2', x, 3, out_filter, out_filter, [1, 1, 1, 1])
 
-    with tf.variable_scope('sub_add'):
+    with tf.compat.v1.variable_scope('sub_add'):
       if in_filter != out_filter:
-        orig_x = tf.nn.avg_pool(orig_x, stride, stride, 'VALID')
+        orig_x = tf.nn.avg_pool2d(input=orig_x, ksize=stride, strides=stride, padding='VALID')
         orig_x = tf.pad(
-            orig_x, [[0, 0], [0, 0], [0, 0],
+            tensor=orig_x, paddings=[[0, 0], [0, 0], [0, 0],
                      [(out_filter - in_filter) // 2,
                       (out_filter - in_filter) // 2]])
       x += orig_x
@@ -237,32 +237,32 @@ class ResNetTF(MLPnGPU):
                            activate_before_residual=False):
     """Bottleneck residual unit with 3 sub layers."""
     if activate_before_residual:
-      with tf.variable_scope('common_bn_relu'):
+      with tf.compat.v1.variable_scope('common_bn_relu'):
         x = self._layer_norm('init_bn', x)
         x = self._relu(x, self.hps.relu_leakiness)
         orig_x = x
     else:
-      with tf.variable_scope('residual_bn_relu'):
+      with tf.compat.v1.variable_scope('residual_bn_relu'):
         orig_x = x
         x = self._layer_norm('init_bn', x)
         x = self._relu(x, self.hps.relu_leakiness)
 
-    with tf.variable_scope('sub1'):
+    with tf.compat.v1.variable_scope('sub1'):
       x = self._conv('conv1', x, 1, in_filter, out_filter / 4, stride)
 
-    with tf.variable_scope('sub2'):
+    with tf.compat.v1.variable_scope('sub2'):
       x = self._layer_norm('bn2', x)
       x = self._relu(x, self.hps.relu_leakiness)
       x = self._conv('conv2', x, 3, out_filter / 4,
                      out_filter / 4, [1, 1, 1, 1])
 
-    with tf.variable_scope('sub3'):
+    with tf.compat.v1.variable_scope('sub3'):
       x = self._layer_norm('bn3', x)
       x = self._relu(x, self.hps.relu_leakiness)
       x = self._conv('conv3', x, 1, out_filter /
                      4, out_filter, [1, 1, 1, 1])
 
-    with tf.variable_scope('sub_add'):
+    with tf.compat.v1.variable_scope('sub_add'):
       if in_filter != out_filter:
         orig_x = self._conv('project', orig_x, 1,
                             in_filter, out_filter, stride)
@@ -277,7 +277,7 @@ class ResNetTF(MLPnGPU):
 
     costs = []
     if self.device_name is None:
-      for var in tf.trainable_variables():
+      for var in tf.compat.v1.trainable_variables():
         if var.op.name.find(r'DW') > 0:
           costs.append(tf.nn.l2_loss(var))
     else:
@@ -307,7 +307,7 @@ class ResNetTF(MLPnGPU):
 
   def _relu(self, x, leakiness=0.0):
     """Relu, with optional leaky support."""
-    return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
+    return tf.compat.v1.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
 
   def _fully_connected(self, x, out_dim):
     """FullyConnected layer for final output."""
@@ -324,4 +324,4 @@ class ResNetTF(MLPnGPU):
 
   def _global_avg_pool(self, x):
     assert x.get_shape().ndims == 4
-    return tf.reduce_mean(x, [1, 2])
+    return tf.reduce_mean(input_tensor=x, axis=[1, 2])

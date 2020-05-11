@@ -82,8 +82,8 @@ class TestUtils(unittest.TestCase):
     fgsm_params = {'eps': .5}
     img = np.ones(shape=(28, 28, 1))
     num_points = 21
-    with tf.Session() as sess:
-      tf.global_variables_initializer().run()
+    with tf.compat.v1.Session() as sess:
+      tf.compat.v1.global_variables_initializer().run()
       logits = utils.get_logits_over_interval(sess, wrap,
                                               img, fgsm_params,
                                               min_epsilon=-10,

@@ -26,7 +26,7 @@ def test_no_logits():
     def fprop(self, x, **kwargs):
       return {'probs': tf.ones((batch_size, nb_classes)) / nb_classes}
   model = NoLogitsModel()
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
   attack = ProjectedGradientDescent(model, sess=sess)
   x = tf.ones((batch_size, 3))
   assert_raises(NotImplementedError, attack.generate, x)
@@ -37,7 +37,7 @@ def test_rejects_callable():
   def model(x):
     """Mock model"""
     return x
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
   assert_raises(TypeError, ProjectedGradientDescent, model, sess)
 
 

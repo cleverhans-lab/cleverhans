@@ -84,7 +84,7 @@ class MomentumIterativeMethod(Attack):
         loss = -loss
 
       # Define gradient of loss wrt input
-      grad, = tf.gradients(loss, ax)
+      grad, = tf.gradients(ys=loss, xs=ax)
 
       # Normalize current gradient and add it to the accumulated gradient
       red_ind = list(range(1, len(grad.get_shape())))
@@ -113,7 +113,7 @@ class MomentumIterativeMethod(Attack):
       return i + 1, ax, m
 
     _, adv_x, _ = tf.while_loop(
-        cond, body, (tf.zeros([]), adv_x, momentum), back_prop=True,
+        cond=cond, body=body, loop_vars=(tf.zeros([]), adv_x, momentum), back_prop=True,
         maximum_iterations=self.nb_iter)
 
     if self.sanity_checks:

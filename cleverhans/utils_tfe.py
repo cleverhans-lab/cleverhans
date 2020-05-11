@@ -68,7 +68,7 @@ def train(model, X_train=None, Y_train=None, save=False,
 
   # Optimizer
   tfe = tf.contrib.eager
-  optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+  optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=args.learning_rate)
   batch_x = tfe.Variable(X_train[0:args.batch_size], dtype=tf.float32)
   batch_y = tfe.Variable(Y_train[0:args.batch_size], dtype=tf.float32)
 
@@ -90,8 +90,8 @@ def train(model, X_train=None, Y_train=None, save=False,
           batch, len(X_train), args.batch_size)
 
       # Perform one training step
-      tf.assign(batch_x, X_train[index_shuf[start:end]])
-      tf.assign(batch_y, Y_train[index_shuf[start:end]])
+      tf.compat.v1.assign(batch_x, X_train[index_shuf[start:end]])
+      tf.compat.v1.assign(batch_y, Y_train[index_shuf[start:end]])
       # Compute grads
       with tf.GradientTape() as tape:
         # Define loss
@@ -118,7 +118,7 @@ def train(model, X_train=None, Y_train=None, save=False,
 
   if save:
     save_path = os.path.join(args.train_dir, args.filename)
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
     saver.save(save_path, model_variables)
     _logger.info("Completed model training and saved at: " +
                  str(save_path))
@@ -182,15 +182,15 @@ def model_eval(model, X_test=None, Y_test=None, args=None,
     cur_batch_size = end - start
     X_cur[:cur_batch_size] = X_test[start:end]
     Y_cur[:cur_batch_size] = Y_test[start:end]
-    tf.assign(batch_x, X_cur)
-    tf.assign(batch_y, Y_cur)
+    tf.compat.v1.assign(batch_x, X_cur)
+    tf.compat.v1.assign(batch_y, Y_cur)
     if attack is not None:
       batch_adv_x = attack.generate(batch_x, **attack_args)
       predictions = model.get_probs(batch_adv_x)
     else:
       predictions = model.get_probs(batch_x)
-    cur_corr_preds = tf.equal(tf.argmax(batch_y, axis=-1),
-                              tf.argmax(predictions, axis=-1))
+    cur_corr_preds = tf.equal(tf.argmax(input=batch_y, axis=-1),
+                              tf.argmax(input=predictions, axis=-1))
 
     accuracy += cur_corr_preds.numpy()[:cur_batch_size].sum()
 
@@ -213,6 +213,6 @@ def model_argmax(model, samples):
   probabilities = model.get_probs(tf_samples)
 
   if samples.shape[0] == 1:
-    return tf.argmax(probabilities)
+    return tf.argmax(input=probabilities)
   else:
-    return tf.argmax(probabilities, axis=1)
+    return tf.argmax(input=probabilities, axis=1)

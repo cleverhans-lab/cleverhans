@@ -77,7 +77,7 @@ def load_images(input_dir, metadata_file_path, batch_shape):
     row = rows[idx]
     filepath = os.path.join(input_dir, row[row_idx_image_id] + '.png')
 
-    with tf.gfile.Open(filepath, 'rb') as f:
+    with tf.io.gfile.GFile(filepath, 'rb') as f:
       image = np.array(
           Image.open(f).convert('RGB')).astype(np.float) / 255.0
     images[idx, :, :, :] = image
@@ -120,7 +120,7 @@ class InceptionModel(Model):
 
 def _top_1_accuracy(logits, labels):
   return tf.reduce_mean(
-      tf.cast(tf.nn.in_top_k(logits, labels, 1), tf.float32))
+      input_tensor=tf.cast(tf.nn.in_top_k(predictions=logits, targets=labels, k=1), tf.float32))
 
 
 class TestInception(CleverHansTest):
@@ -134,26 +134,26 @@ class TestInception(CleverHansTest):
         input_dir, metadata_file_path, batch_shape)
     nb_classes = 1001
 
-    tf.logging.set_verbosity(tf.logging.INFO)
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     with tf.Graph().as_default():
       # Prepare graph
-      x_input = tf.placeholder(tf.float32, shape=batch_shape)
-      y_label = tf.placeholder(tf.int32, shape=(num_images,))
+      x_input = tf.compat.v1.placeholder(tf.float32, shape=batch_shape)
+      y_label = tf.compat.v1.placeholder(tf.int32, shape=(num_images,))
       model = InceptionModel(nb_classes)
       logits = model.get_logits(x_input)
       acc = _top_1_accuracy(logits, y_label)
 
       # Run computation
-      saver = tf.train.Saver(slim.get_model_variables())
+      saver = tf.compat.v1.train.Saver(slim.get_model_variables())
 
-      session_creator = tf.train.ChiefSessionCreator(
-          scaffold=tf.train.Scaffold(saver=saver),
+      session_creator = tf.compat.v1.train.ChiefSessionCreator(
+          scaffold=tf.compat.v1.train.Scaffold(saver=saver),
           checkpoint_filename_with_path=FLAGS.checkpoint_path,
           master=FLAGS.master)
 
-      with tf.train.MonitoredSession(session_creator=session_creator) as sess:
+      with tf.compat.v1.train.MonitoredSession(session_creator=session_creator) as sess:
         acc_val = sess.run(acc, feed_dict={x_input: images, y_label: labels})
-        tf.logging.info('Accuracy: %s', acc_val)
+        tf.compat.v1.logging.info('Accuracy: %s', acc_val)
         assert acc_val > 0.8
 
 
@@ -169,11 +169,11 @@ class TestSPSA(CleverHansTest):
         input_dir, metadata_file_path, batch_shape)
     nb_classes = 1001
 
-    tf.logging.set_verbosity(tf.logging.INFO)
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     with tf.Graph().as_default():
       # Prepare graph
-      x_input = tf.placeholder(tf.float32, shape=(1,) + batch_shape[1:])
-      y_label = tf.placeholder(tf.int32, shape=(1,))
+      x_input = tf.compat.v1.placeholder(tf.float32, shape=(1,) + batch_shape[1:])
+      y_label = tf.compat.v1.placeholder(tf.int32, shape=(1,))
       model = InceptionModel(nb_classes)
 
       attack = SPSA(model)
@@ -183,13 +183,13 @@ class TestSPSA(CleverHansTest):
           is_debug=True)
 
       # Run computation
-      saver = tf.train.Saver(slim.get_model_variables())
-      session_creator = tf.train.ChiefSessionCreator(
-          scaffold=tf.train.Scaffold(saver=saver),
+      saver = tf.compat.v1.train.Saver(slim.get_model_variables())
+      session_creator = tf.compat.v1.train.ChiefSessionCreator(
+          scaffold=tf.compat.v1.train.Scaffold(saver=saver),
           checkpoint_filename_with_path=FLAGS.checkpoint_path,
           master=FLAGS.master)
 
-      with tf.train.MonitoredSession(session_creator=session_creator) as sess:
+      with tf.compat.v1.train.MonitoredSession(session_creator=session_creator) as sess:
         for i in xrange(num_images):
           x_expanded = np.expand_dims(images[i], axis=0)
           y_expanded = np.expand_dims(labels[i], axis=0)
@@ -212,11 +212,11 @@ class TestSPSA(CleverHansTest):
         input_dir, metadata_file_path, batch_shape)
     nb_classes = 1001
 
-    tf.logging.set_verbosity(tf.logging.INFO)
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     with tf.Graph().as_default():
       # Prepare graph
-      x_input = tf.placeholder(tf.float32, shape=(1,) + batch_shape[1:])
-      y_label = tf.placeholder(tf.int32, shape=(1,))
+      x_input = tf.compat.v1.placeholder(tf.float32, shape=(1,) + batch_shape[1:])
+      y_label = tf.compat.v1.placeholder(tf.int32, shape=(1,))
       model = InceptionModel(nb_classes)
 
       attack = SPSA(model)
@@ -229,19 +229,19 @@ class TestSPSA(CleverHansTest):
       acc = _top_1_accuracy(logits, y_label)
 
       # Run computation
-      saver = tf.train.Saver(slim.get_model_variables())
-      session_creator = tf.train.ChiefSessionCreator(
-          scaffold=tf.train.Scaffold(saver=saver),
+      saver = tf.compat.v1.train.Saver(slim.get_model_variables())
+      session_creator = tf.compat.v1.train.ChiefSessionCreator(
+          scaffold=tf.compat.v1.train.Scaffold(saver=saver),
           checkpoint_filename_with_path=FLAGS.checkpoint_path,
           master=FLAGS.master)
 
       num_correct = 0.
-      with tf.train.MonitoredSession(session_creator=session_creator) as sess:
+      with tf.compat.v1.train.MonitoredSession(session_creator=session_creator) as sess:
         for i in xrange(num_images):
           feed_dict_i = {x_input: np.expand_dims(images[i], axis=0),
                          y_label: np.expand_dims(labels[i], axis=0)}
           acc_val = sess.run(acc, feed_dict=feed_dict_i)
-          tf.logging.info('Accuracy: %s', acc_val)
+          tf.compat.v1.logging.info('Accuracy: %s', acc_val)
           num_correct += acc_val
         assert (num_correct / num_images) < 0.1
 

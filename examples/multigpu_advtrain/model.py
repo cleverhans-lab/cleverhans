@@ -15,7 +15,7 @@ from cleverhans.model import Model
 
 
 def clone_variable(name, x, trainable=False):
-  return tf.get_variable(name, shape=x.shape, dtype=x.dtype,
+  return tf.compat.v1.get_variable(name, shape=x.shape, dtype=x.dtype,
                          trainable=trainable)
 
 
@@ -89,9 +89,9 @@ class Linear(Layer):
     batch_size, dim = input_shape
     self.input_shape = [batch_size, dim]
     self.output_shape = [batch_size, self.num_hid]
-    init = tf.random_normal([dim, self.num_hid], dtype=tf.float32)
-    init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
-                                               keep_dims=True))
+    init = tf.random.normal([dim, self.num_hid], dtype=tf.float32)
+    init = init / tf.sqrt(1e-7 + tf.reduce_sum(input_tensor=tf.square(init), axis=0,
+                                               keepdims=True))
     self.W = tf.Variable(init)
     self.b = tf.Variable(np.zeros((self.num_hid,)).astype('float32'))
 
@@ -114,8 +114,8 @@ class Conv2D(Layer):
                                                self.output_channels)
     assert len(kernel_shape) == 4
     assert all(isinstance(e, int) for e in kernel_shape), kernel_shape
-    init = tf.random_normal(kernel_shape, dtype=tf.float32)
-    init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init),
+    init = tf.random.normal(kernel_shape, dtype=tf.float32)
+    init = init / tf.sqrt(1e-7 + tf.reduce_sum(input_tensor=tf.square(init),
                                                axis=(0, 1, 2)))
     self.kernels = tf.Variable(init)
     self.b = tf.Variable(
@@ -129,8 +129,8 @@ class Conv2D(Layer):
     self.output_shape = tuple(output_shape)
 
   def fprop(self, x):
-    return tf.nn.conv2d(x, self.kernels, (1,) + tuple(self.strides) + (1,),
-                        self.padding) + self.b
+    return tf.nn.conv2d(input=x, filters=self.kernels, strides=(1,) + tuple(self.strides) + (1,),
+                        padding=self.padding) + self.b
 
   def get_params(self):
     return [self.kernels, self.b]
@@ -199,7 +199,7 @@ class MLPnGPU(MLP):
     self.scope = 'MLPnGPU'
 
   def fprop(self, x):
-    with tf.variable_scope(self.scope):
+    with tf.compat.v1.variable_scope(self.scope):
       states = super(MLPnGPU, self).fprop(x)
     return states
 
@@ -257,7 +257,7 @@ class LayernGPU(Layer):
     :param name: (required str) name of the variable
     :param initializer: a numpy array or a tensor
     """
-    v = tf.get_variable(name, shape=initializer.shape,
+    v = tf.compat.v1.get_variable(name, shape=initializer.shape,
                         initializer=(lambda shape, dtype, partition_info:
                                      initializer),
                         trainable=self.training)
@@ -307,7 +307,7 @@ class LayernGPU(Layer):
         continue
       for k in self.params_names:
         if isinstance(params[k], tf.Variable):
-          sync_ops += [tf.assign(params[k], host_params[k])]
+          sync_ops += [tf.compat.v1.assign(params[k], host_params[k])]
     return sync_ops
 
   def fprop(self, x):
@@ -315,7 +315,7 @@ class LayernGPU(Layer):
       self.set_input_shape_ngpu(x.shape[1:])
       return self.fprop_noscope(x)
     else:
-      with tf.variable_scope(self.name):
+      with tf.compat.v1.variable_scope(self.name):
         self.set_input_shape_ngpu(x.shape[1:])
         return self.fprop_noscope(x)
 
@@ -332,8 +332,8 @@ class LinearnGPU(LayernGPU):
     self.input_shape = [batch_size, dim]
     self.output_shape = [batch_size, self.num_hid]
     shape = [dim, self.num_hid]
-    with tf.variable_scope(self.name):
-      init = tf.truncated_normal(shape, stddev=0.1)
+    with tf.compat.v1.variable_scope(self.name):
+      init = tf.random.truncated_normal(shape, stddev=0.1)
       self.W = self.get_variable(self.w_name, init)
       self.b = self.get_variable('b', .1 + np.zeros(
           (self.num_hid,)).astype('float32'))
@@ -358,8 +358,8 @@ class Conv2DnGPU(LayernGPU):
                                                self.output_channels)
     assert len(kernel_shape) == 4
     assert all(isinstance(e, int) for e in kernel_shape), kernel_shape
-    with tf.variable_scope(self.name):
-      init = tf.truncated_normal(kernel_shape, stddev=0.1)
+    with tf.compat.v1.variable_scope(self.name):
+      init = tf.random.truncated_normal(kernel_shape, stddev=0.1)
       self.kernels = self.get_variable(self.w_name, init)
       self.b = self.get_variable(
           'b', .1 + np.zeros((self.output_channels,)).astype('float32'))
@@ -373,8 +373,8 @@ class Conv2DnGPU(LayernGPU):
     self.output_shape = tuple(output_shape)
 
   def fprop_noscope(self, x):
-    return tf.nn.conv2d(x, self.kernels, (1,) + tuple(self.strides) +
-                        (1,), self.padding) + self.b
+    return tf.nn.conv2d(input=x, filters=self.kernels, strides=(1,) + tuple(self.strides) +
+                        (1,), padding=self.padding) + self.b
 
 
 class MaxPool(LayernGPU):
@@ -393,7 +393,7 @@ class MaxPool(LayernGPU):
     self.output_shape = tuple(output_shape)
 
   def fprop_noscope(self, x):
-    return tf.nn.max_pool(x,
+    return tf.nn.max_pool2d(input=x,
                           ksize=(1,) + tuple(self.ksize) + (1,),
                           strides=(1,) + tuple(self.strides) + (1,),
                           padding=self.padding)
@@ -406,19 +406,19 @@ class LayerNorm(LayernGPU):
     params_shape = [input_shape[-1]]
     self.params_shape = params_shape
 
-    self.beta = tf.get_variable(
+    self.beta = tf.compat.v1.get_variable(
         'beta', params_shape, tf.float32,
-        initializer=tf.constant_initializer(0.0, tf.float32),
+        initializer=tf.compat.v1.constant_initializer(0.0, tf.float32),
         trainable=self.training)
-    self.gamma = tf.get_variable(
+    self.gamma = tf.compat.v1.get_variable(
         'gamma', params_shape, tf.float32,
-        initializer=tf.constant_initializer(1.0, tf.float32),
+        initializer=tf.compat.v1.constant_initializer(1.0, tf.float32),
         trainable=self.training)
 
   def fprop_noscope(self, x):
-    mean = tf.reduce_mean(x, (1, 2), keep_dims=True)
+    mean = tf.reduce_mean(input_tensor=x, axis=(1, 2), keepdims=True)
     x = x - mean
     std = tf.sqrt(1e-7 +
-                  tf.reduce_mean(tf.square(x), (1, 2), keep_dims=True))
+                  tf.reduce_mean(input_tensor=tf.square(x), axis=(1, 2), keepdims=True))
     x = x / std
     return x * self.gamma + self.beta

@@ -34,7 +34,7 @@ def test_make_confidence_report_bundled():
   A very simple test that just makes sure make_confidence_report_bundled can run without crashing
   """
 
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
   try:
     nb_classes = 3
     nb_features = 2
@@ -46,7 +46,7 @@ def test_make_confidence_report_bundled():
     model.dataset_factory = dataset.get_factory()
     filepath = ".test_model.joblib"
     with sess.as_default():
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
       serial.save(filepath, model)
     def recipe(sess, model, x, y, nb_classes, eps, clip_min,
                clip_max, eps_iter, nb_iter,

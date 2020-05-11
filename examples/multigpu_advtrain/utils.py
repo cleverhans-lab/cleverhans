@@ -14,7 +14,7 @@ def preprocess_batch(images_batch, preproc_func=None):
   if preproc_func is None:
     return images_batch
 
-  with tf.variable_scope('preprocess'):
+  with tf.compat.v1.variable_scope('preprocess'):
     images_list = tf.split(images_batch, int(images_batch.shape[0]))
     result_list = []
     for img in images_list:

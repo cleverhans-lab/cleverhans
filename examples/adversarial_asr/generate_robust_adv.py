@@ -109,7 +109,7 @@ class Attack:
         self.lr_stage1 = lr_stage1  
         self.lr_stage2 = lr_stage2       
         
-        tf.set_random_seed(1234)
+        tf.compat.v1.set_random_seed(1234)
         params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
         params.random_seed = 1234
         params.is_eval = True
@@ -120,17 +120,17 @@ class Attack:
             self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32), name='qq_delta')
             
             # placeholders
-            self.input_tf = tf.placeholder(tf.float32, shape=[batch_size, None], name='qq_input')
-            self.tgt_tf = tf.placeholder(tf.string)
-            self.rir = tf.placeholder(tf.float32)
+            self.input_tf = tf.compat.v1.placeholder(tf.float32, shape=[batch_size, None], name='qq_input')
+            self.tgt_tf = tf.compat.v1.placeholder(tf.string)
+            self.rir = tf.compat.v1.placeholder(tf.float32)
 
-            self.sample_rate_tf = tf.placeholder(tf.int32, name='qq_sample_rate')                
-            self.mask = tf.placeholder(dtype=np.float32, shape=[batch_size, None], name='qq_mask')   
-            self.mask_freq = tf.placeholder(dtype=np.float32, shape=[batch_size, None, 80])
-            self.noise = tf.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
-            self.maxlen = tf.placeholder(np.int32)
-            self.lr = tf.placeholder(np.float32)
-            self.lengths = tf.placeholder(np.int32, shape=[batch_size,])
+            self.sample_rate_tf = tf.compat.v1.placeholder(tf.int32, name='qq_sample_rate')                
+            self.mask = tf.compat.v1.placeholder(dtype=np.float32, shape=[batch_size, None], name='qq_mask')   
+            self.mask_freq = tf.compat.v1.placeholder(dtype=np.float32, shape=[batch_size, None, 80])
+            self.noise = tf.compat.v1.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
+            self.maxlen = tf.compat.v1.placeholder(np.int32)
+            self.lr = tf.compat.v1.placeholder(np.float32)
+            self.lengths = tf.compat.v1.placeholder(np.int32, shape=[batch_size,])
             
             # variable
             self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32) * FLAGS.initial_bound, name='qq_rescale')    
@@ -150,10 +150,10 @@ class Attack:
             metrics = task.FPropDefaultTheta(self.inputs)
 
             # self.celoss with the shape (batch_size)
-            self.celoss = tf.get_collection("per_loss")[0]         
+            self.celoss = tf.compat.v1.get_collection("per_loss")[0]         
             self.decoded = task.Decode(self.inputs)       
         
-        self.optimizer1 = tf.train.AdamOptimizer(self.lr)             
+        self.optimizer1 = tf.compat.v1.train.AdamOptimizer(self.lr)             
         grad1, var1 = self.optimizer1.compute_gradients(self.celoss, [self.delta_large])[0]             
         self.train1 = self.optimizer1.apply_gradients([(tf.sign(grad1), var1)])
              
@@ -165,13 +165,13 @@ class Attack:
         
         sess = self.sess       
         # initialize and load the pretrained model
-        sess.run(tf.initializers.global_variables())
-        saver = tf.train.Saver([x for x in tf.global_variables() if x.name.startswith("librispeech")])
+        sess.run(tf.compat.v1.initializers.global_variables())
+        saver = tf.compat.v1.train.Saver([x for x in tf.compat.v1.global_variables() if x.name.startswith("librispeech")])
         saver.restore(sess, FLAGS.checkpoint)
                      
         # reassign the variables 
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32) * FLAGS.initial_bound))        
-        sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
+        sess.run(tf.compat.v1.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32) * FLAGS.initial_bound))        
+        sess.run(tf.compat.v1.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
              
         noise = np.zeros(audios.shape)
         rir = Readrir()
@@ -241,7 +241,7 @@ class Attack:
                                 rescale[ii] = np.max(np.abs(d[ii]))                   
                             rescale[ii] *= .8
                             print("Iteration i=%d, worked ii=%d celoss=%f bound=%f"%(i, ii, cl[ii], rescale[ii]))   
-                            sess.run(tf.assign(self.rescale, rescale))    
+                            sess.run(tf.compat.v1.assign(self.rescale, rescale))    
 
                         # save the best adversarial example
                         final_adv[ii] = new_input[ii]
@@ -264,13 +264,13 @@ class Attack:
     def attack_stage2(self, audios, trans, adv, rescales, maxlen, sample_rate, masks, masks_freq, num_loop, data, lengths):       
         sess = self.sess       
         # initialize and load the pretrained model
-        sess.run(tf.initializers.global_variables())
-        saver = tf.train.Saver([x for x in tf.global_variables() if x.name.startswith("librispeech")])
+        sess.run(tf.compat.v1.initializers.global_variables())
+        saver = tf.compat.v1.train.Saver([x for x in tf.compat.v1.global_variables() if x.name.startswith("librispeech")])
         saver.restore(sess, FLAGS.checkpoint)
              
         # reassign the variables
-        sess.run(tf.assign(self.delta_large, adv))  
-        sess.run(tf.assign(self.rescale, rescales)) 
+        sess.run(tf.compat.v1.assign(self.delta_large, adv))  
+        sess.run(tf.compat.v1.assign(self.rescale, rescales)) 
          
         noise = np.zeros(audios.shape)
         rir = Readrir()
@@ -383,8 +383,8 @@ def main(argv):
     assert num % batch_size == 0
     
     with tf.device("/gpu:0"):
-        tfconf = tf.ConfigProto(allow_soft_placement=True)
-        with tf.Session(config=tfconf) as sess: 
+        tfconf = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+        with tf.compat.v1.Session(config=tfconf) as sess: 
             # set up the attack class
             attack = Attack(sess, 
                             batch_size=batch_size,

@@ -54,8 +54,8 @@ def load_images(input_dir, batch_shape):
   filenames = []
   idx = 0
   batch_size = batch_shape[0]
-  for filepath in tf.gfile.Glob(os.path.join(input_dir, '*.png')):
-    with tf.gfile.Open(filepath) as f:
+  for filepath in tf.io.gfile.glob(os.path.join(input_dir, '*.png')):
+    with tf.io.gfile.GFile(filepath) as f:
       images[idx, :, :, :] = imread(f, mode='RGB').astype(np.float) / 255.0
     filenames.append(os.path.basename(filepath))
     idx += 1
@@ -79,7 +79,7 @@ def save_images(images, filenames, output_dir):
     output_dir: directory where to save images
   """
   for i, filename in enumerate(filenames):
-    with tf.gfile.Open(os.path.join(output_dir, filename), 'w') as f:
+    with tf.io.gfile.GFile(os.path.join(output_dir, filename), 'w') as f:
       imsave(f, images[i, :, :, :], format='png')
 
 
@@ -89,15 +89,15 @@ def main(_):
   batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
 
   with tf.Graph().as_default():
-    x_input = tf.placeholder(tf.float32, shape=batch_shape)
-    noisy_images = x_input + eps * tf.sign(tf.random_normal(batch_shape))
+    x_input = tf.compat.v1.placeholder(tf.float32, shape=batch_shape)
+    noisy_images = x_input + eps * tf.sign(tf.random.normal(batch_shape))
     x_output = tf.clip_by_value(noisy_images, 0.0, 1.0)
 
-    with tf.Session(FLAGS.master) as sess:
+    with tf.compat.v1.Session(FLAGS.master) as sess:
       for filenames, images in load_images(FLAGS.input_dir, batch_shape):
         out_images = sess.run(x_output, feed_dict={x_input: images})
         save_images(out_images, filenames, FLAGS.output_dir)
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

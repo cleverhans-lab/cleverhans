@@ -32,20 +32,20 @@ class ModelBasicCNNTFE(Model):
     self.layer_acts = {}
 
     # layer definitions
-    self.layers['conv_1'] = tf.layers.Conv2D(filters=self.nb_filters,
+    self.layers['conv_1'] = tf.compat.v1.layers.Conv2D(filters=self.nb_filters,
                                              kernel_size=8, strides=2,
                                              padding='same',
                                              activation=tf.nn.relu)
-    self.layers['conv_2'] = tf.layers.Conv2D(filters=self.nb_filters * 2,
+    self.layers['conv_2'] = tf.compat.v1.layers.Conv2D(filters=self.nb_filters * 2,
                                              kernel_size=6, strides=2,
                                              padding='valid',
                                              activation=tf.nn.relu)
-    self.layers['conv_3'] = tf.layers.Conv2D(filters=self.nb_filters * 2,
+    self.layers['conv_3'] = tf.compat.v1.layers.Conv2D(filters=self.nb_filters * 2,
                                              kernel_size=5, strides=1,
                                              padding='valid',
                                              activation=tf.nn.relu)
-    self.layers['flatten'] = tf.layers.Flatten()
-    self.layers['logits'] = tf.layers.Dense(self.nb_classes,
+    self.layers['flatten'] = tf.compat.v1.layers.Flatten()
+    self.layers['logits'] = tf.compat.v1.layers.Dense(self.nb_classes,
                                             activation=None)
 
     # Dummy fprop to activate the network.

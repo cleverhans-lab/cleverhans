@@ -9,7 +9,7 @@ def _MakeLogMel(audio, sample_rate):
   static_sample_rate = 16000
   mel_frontend = _CreateAsrFrontend()
   with tf.control_dependencies(
-      [tf.assert_equal(sample_rate, static_sample_rate)]):
+      [tf.compat.v1.assert_equal(sample_rate, static_sample_rate)]):
     log_mel, _ = mel_frontend.FPropDefaultTheta(audio)
   return log_mel
 
@@ -41,7 +41,7 @@ def create_features(input_tf, sample_rate_tf, mask_freq):
     for i in range(len(input_unpack)):
         features = _MakeLogMel(input_unpack[i], sample_rate_tf)
         features = tf.reshape(features, shape=[-1, 80]) 
-        features = tf.expand_dims(features, dim=0)  
+        features = tf.expand_dims(features, axis=0)  
         features_list.append(features)
     features_tf = tf.concat(features_list, axis=0) 
     features_tf = features_tf * mask_freq
@@ -51,9 +51,9 @@ def create_inputs(model, features, tgt, batch_size, mask_freq):
     tgt_ids, tgt_labels, tgt_paddings = model.GetTask().input_generator.StringsToIds(tgt)
     
     # we expect src_inputs to be of shape [batch_size, num_frames, feature_dim, channels]
-    src_paddings = tf.zeros([tf.shape(features)[0], tf.shape(features)[1]], dtype=tf.float32)
+    src_paddings = tf.zeros([tf.shape(input=features)[0], tf.shape(input=features)[1]], dtype=tf.float32)
     src_paddings = 1. - mask_freq[:,:,0]
-    src_frames = tf.expand_dims(features, dim=-1)
+    src_frames = tf.expand_dims(features, axis=-1)
 
     inputs = py_utils.NestedMap()
     inputs.tgt = py_utils.NestedMap(
@@ -74,19 +74,19 @@ def create_speech_rir(audios, rir, lengths_audios, max_len, batch_size):
 
     for i in range(batch_size):
         s1 = lengths_audios[i]
-        s2 = tf.convert_to_tensor(tf.shape(rir))
+        s2 = tf.convert_to_tensor(value=tf.shape(input=rir))
         shape = s1 + s2 - 1 
         
         # Compute convolution in fourier space
-        sp1 = tf.spectral.rfft(rir, shape)
-        sp2 = tf.spectral.rfft(tf.slice(tf.reshape(audios[i], [-1,]), [0], [lengths_audios[i]]), shape)
-        ret = tf.spectral.irfft(sp1 * sp2, shape)
+        sp1 = tf.signal.rfft(rir, shape)
+        sp2 = tf.signal.rfft(tf.slice(tf.reshape(audios[i], [-1,]), [0], [lengths_audios[i]]), shape)
+        ret = tf.signal.irfft(sp1 * sp2, shape)
 
         # normalization
-        ret /= tf.reduce_max(tf.abs(ret))
+        ret /= tf.reduce_max(input_tensor=tf.abs(ret))
         ret *= 2 ** (16 - 1) -1
         ret = tf.clip_by_value(ret, -2 **(16 - 1), 2**(16-1) - 1)
-        ret = tf.pad(ret, tf.constant([[0, 100000]]))
+        ret = tf.pad(tensor=ret, paddings=tf.constant([[0, 100000]]))
         ret = ret[:max_len]
     
         speech_rir.append(tf.expand_dims(ret, axis=0))

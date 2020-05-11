@@ -108,7 +108,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   report = AccuracyReport()
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
+  tf.compat.v1.set_random_seed(1234)
 
   # Set logging level to see debug information
   set_log_level(logging.DEBUG)
@@ -244,4 +244,4 @@ if __name__ == '__main__':
                      'construction process during adversarial training'))
   flags.DEFINE_string('attack', 'fgsm',
                       'Adversarial attack crafted and used for training')
-  tf.app.run()
+  tf.compat.v1.app.run()

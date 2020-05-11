@@ -108,7 +108,7 @@ class SPSAAdam(tf.optimizers.Adam):
       loss_vals = tf.reshape(
         loss_fn(x + delta_x),
         [2 * self._num_samples] + [1] * (len(x_shape) - 1))
-      avg_grad = tf.reduce_mean(loss_vals * delta_x, axis=0) / delta
+      avg_grad = tf.reduce_mean(input_tensor=loss_vals * delta_x, axis=0) / delta
       avg_grad = tf.expand_dims(avg_grad, axis=0)
       new_grad_array = grad_array.write(i, avg_grad)
       return i + 1, new_grad_array
@@ -117,14 +117,14 @@ class SPSAAdam(tf.optimizers.Adam):
       return i < self._num_iters
 
     _, all_grads = tf.while_loop(
-      cond,
-      body,
+      cond=cond,
+      body=body,
       loop_vars=[
         0, tf.TensorArray(size=self._num_iters, dtype=tf_dtype)
       ],
       back_prop=False,
       parallel_iterations=1)
-    avg_grad = tf.reduce_sum(all_grads.stack(), axis=0)
+    avg_grad = tf.reduce_sum(input_tensor=all_grads.stack(), axis=0)
     return [avg_grad]
 
   def _apply_gradients(self, grads, x, optim_state):
@@ -195,14 +195,14 @@ def margin_logit_loss(model_logits, label, nb_classes=10):
   if 'int' in str(logit_mask.dtype):
     logit_mask = tf.cast(logit_mask, dtype=tf.float32)
   try:
-    label_logits = tf.reduce_sum(logit_mask * model_logits, axis=-1)
+    label_logits = tf.reduce_sum(input_tensor=logit_mask * model_logits, axis=-1)
   except TypeError:
     raise TypeError(
       "Could not take row-wise dot product between logit mask, of dtype " + str(logit_mask.dtype)
       + " and model_logits, of dtype " + str(model_logits.dtype)
     )
   logits_with_target_label_neg_inf = model_logits - logit_mask * 99999
-  highest_nonlabel_logits = tf.reduce_max(logits_with_target_label_neg_inf, axis=-1)
+  highest_nonlabel_logits = tf.reduce_max(input_tensor=logits_with_target_label_neg_inf, axis=-1)
   loss = highest_nonlabel_logits - label_logits
   return loss
 
@@ -218,8 +218,8 @@ def _project_perturbation(perturbation, epsilon, input_image, clip_min=None, cli
 
   # Ensure inputs are in the correct range
   with tf.control_dependencies([
-    tf.debugging.assert_less_equal(input_image, tf.cast(clip_max, input_image.dtype)),
-    tf.debugging.assert_greater_equal(input_image, tf.cast(clip_min, input_image.dtype))
+    tf.compat.v1.debugging.assert_less_equal(input_image, tf.cast(clip_max, input_image.dtype)),
+    tf.compat.v1.debugging.assert_greater_equal(input_image, tf.cast(clip_min, input_image.dtype))
   ]):
     clipped_perturbation = tf.clip_by_value(perturbation, -epsilon, epsilon)
     new_image = tf.clip_by_value(input_image + clipped_perturbation, clip_min, clip_max)
@@ -274,7 +274,7 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
     with tf.device("/cpu:0"):
       tf.print("Starting PGD attack with epsilon: %s" % epsilon)
 
-  init_perturbation = tf.random.uniform(tf.shape(input_image),
+  init_perturbation = tf.random.uniform(tf.shape(input=input_image),
                                         minval=tf.cast(-epsilon, input_image.dtype),
                                         maxval=tf.cast(epsilon, input_image.dtype),
                                         dtype=input_image.dtype)
@@ -303,14 +303,14 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
     if compute_loss:
       # NOTE: this step is not actually redundant with the optimizer step.
       # SPSA calculates the loss at randomly perturbed points but doesn't calculate the loss at the current point.
-      loss = tf.reduce_mean(wrapped_loss_fn(projected_perturbation), axis=0)
+      loss = tf.reduce_mean(input_tensor=wrapped_loss_fn(projected_perturbation), axis=0)
 
       if is_debug:
         with tf.device("/cpu:0"):
           tf.print(loss, "Total batch loss")
 
       if early_stop:
-        i = tf.cond(tf.less(loss, early_stop_loss_threshold), lambda: float(num_steps), lambda: i)
+        i = tf.cond(pred=tf.less(loss, early_stop_loss_threshold), true_fn=lambda: float(num_steps), false_fn=lambda: i)
 
     return i + 1, projected_perturbation, tf.nest.flatten(new_optim_state)
 
@@ -319,8 +319,8 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
 
   flat_init_optim_state = tf.nest.flatten(init_optim_state)
   _, final_perturbation, _ = tf.while_loop(
-    cond,
-    loop_body,
+    cond=cond,
+    body=loop_body,
     loop_vars=(tf.constant(0.), init_perturbation, flat_init_optim_state),
     parallel_iterations=1,
     back_prop=False,
@@ -334,7 +334,7 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
     #    and allow a tolerance of 1e-6 or something like that.
     # 2) I think it should probably check the *absolute value* of final_perturbation
     perturbation_max = epsilon * 1.1
-    check_diff = tf.debugging.assert_less_equal(
+    check_diff = tf.compat.v1.debugging.assert_less_equal(
       final_perturbation,
       tf.cast(perturbation_max, final_perturbation.dtype),
       message="final_perturbation must change no pixel by more than %s" % perturbation_max
@@ -347,8 +347,8 @@ def projected_optimization(loss_fn, input_image, label, epsilon, num_steps, opti
   if clip_min is None or clip_max is None:
     raise NotImplementedError("This function only supports clipping for now")
   check_range = [
-    tf.debugging.assert_less_equal(input_image, tf.cast(clip_max, input_image.dtype)),
-    tf.debugging.assert_greater_equal(input_image, tf.cast(clip_min, input_image.dtype))
+    tf.compat.v1.debugging.assert_less_equal(input_image, tf.cast(clip_max, input_image.dtype)),
+    tf.compat.v1.debugging.assert_greater_equal(input_image, tf.cast(clip_min, input_image.dtype))
   ]
 
   with tf.control_dependencies([check_diff] + check_range):

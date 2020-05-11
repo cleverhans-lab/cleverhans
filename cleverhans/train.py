@@ -114,9 +114,9 @@ def train(sess, loss, x_train, y_train,
     rng = np.random.RandomState()
 
   if optimizer is None:
-    optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+    optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=args.learning_rate)
   else:
-    if not isinstance(optimizer, tf.train.Optimizer):
+    if not isinstance(optimizer, tf.compat.v1.train.Optimizer):
       raise ValueError("optimizer object must be from a child class of "
                        "tf.train.Optimizer")
 
@@ -128,14 +128,14 @@ def train(sess, loss, x_train, y_train,
     assert x_train is None and y_train is None and x_batch_preprocessor is None
     if dataset_size is None:
       raise ValueError("You must provide a dataset size")
-    data_iterator = dataset_train.make_one_shot_iterator().get_next()
+    data_iterator = tf.compat.v1.data.make_one_shot_iterator(dataset_train).get_next()
     x_train, y_train = sess.run(data_iterator)
 
   devices = infer_devices(devices)
   for device in devices:
     with tf.device(device):
-      x = tf.placeholder(x_train.dtype, (None,) + x_train.shape[1:])
-      y = tf.placeholder(y_train.dtype, (None,) + y_train.shape[1:])
+      x = tf.compat.v1.placeholder(x_train.dtype, (None,) + x_train.shape[1:])
+      y = tf.compat.v1.placeholder(y_train.dtype, (None,) + y_train.shape[1:])
       xs.append(x)
       ys.append(y)
 
@@ -156,11 +156,11 @@ def train(sess, loss, x_train, y_train,
 
   grad = avg_grads(grads)
   # Trigger update operations within the default graph (such as batch_norm).
-  with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+  with tf.control_dependencies(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)):
     train_step = optimizer.apply_gradients(grad)
 
-  epoch_tf = tf.placeholder(tf.int32, [])
-  batch_tf = tf.placeholder(tf.int32, [])
+  epoch_tf = tf.compat.v1.placeholder(tf.int32, [])
+  batch_tf = tf.compat.v1.placeholder(tf.int32, [])
 
   if use_ema:
     if callable(ema_decay):
@@ -175,13 +175,13 @@ def train(sess, loss, x_train, y_train,
     tmp_params = [tf.Variable(param, trainable=False)
                   for param in var_list]
     # Define the swapping operation
-    param_to_tmp = [tf.assign(tmp, param)
+    param_to_tmp = [tf.compat.v1.assign(tmp, param)
                     for tmp, param in safe_zip(tmp_params, var_list)]
     with tf.control_dependencies(param_to_tmp):
-      avg_to_param = [tf.assign(param, avg)
+      avg_to_param = [tf.compat.v1.assign(param, avg)
                       for param, avg in safe_zip(var_list, avg_params)]
     with tf.control_dependencies(avg_to_param):
-      tmp_to_avg = [tf.assign(avg, tmp)
+      tmp_to_avg = [tf.compat.v1.assign(avg, tmp)
                     for avg, tmp in safe_zip(avg_params, tmp_params)]
     swap = tmp_to_avg
 
@@ -191,7 +191,7 @@ def train(sess, loss, x_train, y_train,
   device_batch_size = batch_size // num_devices
 
   if init_all:
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.compat.v1.global_variables_initializer())
   else:
     initialize_uninitialized_global_variables(sess)
 

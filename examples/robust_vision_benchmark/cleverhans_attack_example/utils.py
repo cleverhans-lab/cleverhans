@@ -5,7 +5,7 @@ import numpy as np
 
 def cleverhans_attack_wrapper(cleverhans_attack_fn, reset=True):
   def attack(a):
-    session = tf.Session()
+    session = tf.compat.v1.Session()
     with session.as_default():
       model = RVBCleverhansModel(a)
       adversarial_image = cleverhans_attack_fn(model, session, a)
@@ -30,10 +30,10 @@ def py_func_grad(func, inp, Tout, stateful=True, name=None, grad=None):
   rnd_name = 'PyFuncGrad' + str(np.random.randint(0, 1E+8))
 
   tf.RegisterGradient(rnd_name)(grad)
-  g = tf.get_default_graph()
+  g = tf.compat.v1.get_default_graph()
   with g.gradient_override_map({"PyFunc": rnd_name,
                                 "PyFuncStateless": rnd_name}):
-    return tf.py_func(func, inp, Tout, stateful=stateful, name=name)
+    return tf.compat.v1.py_func(func, inp, Tout, stateful=stateful, name=name)
 
 
 class RVBCleverhansModel(cleverhans.model.Model):
@@ -51,7 +51,7 @@ class RVBCleverhansModel(cleverhans.model.Model):
     return {self.O_LOGITS: self._logits_op(x)}
 
   def _logits_op(self, x, name=None):
-    with tf.name_scope(name, "logits", [x]) as name:
+    with tf.compat.v1.name_scope(name, "logits", [x]) as name:
 
       nb_classes = self.adversarial.nb_classes()
 
@@ -64,7 +64,7 @@ class RVBCleverhansModel(cleverhans.model.Model):
 
       def _backward_tf(op, grad):
         images = op.inputs[0]
-        gradient_x = tf.py_func(
+        gradient_x = tf.compat.v1.py_func(
             _backward_py, [grad, images], tf.float32)
         gradient_x.set_shape(images.shape)
         return gradient_x

@@ -34,7 +34,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
     device_name = '/gpu:0'
     self.model.set_device(device_name)
     with tf.device(device_name):
-      with tf.variable_scope('model_pred'):
+      with tf.compat.v1.variable_scope('model_pred'):
         ret = super(MadryEtAlMultiGPU, self).get_or_guess_labels(
             x, kwargs)
     return ret
@@ -58,9 +58,9 @@ class MadryEtAlMultiGPU(MadryEtAl):
     device_name = '/gpu:0'
     self.model.set_device(device_name)
     with tf.device(device_name):
-      with tf.variable_scope('init_rand'):
+      with tf.compat.v1.variable_scope('init_rand'):
         if self.rand_init:
-          eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps)
+          eta = tf.random.uniform(tf.shape(input=x), -self.eps, self.eps)
           eta = clip_eta(eta, self.ord, self.eps)
           eta = tf.stop_gradient(eta)
         else:
@@ -78,7 +78,7 @@ class MadryEtAlMultiGPU(MadryEtAl):
       device_name = x.device
       self.model.set_device(device_name)
       with tf.device(device_name):
-        with tf.variable_scope('step%d' % i):
+        with tf.compat.v1.variable_scope('step%d' % i):
           if i > 0:
             # Clone the variables to separate the graph of 2 GPUs
             x = clone_variable('x', x)
@@ -112,10 +112,10 @@ class MadryEtAlMultiGPU(MadryEtAl):
     _, feedable, _feedable_types, hash_key = self.construct_variables(kwargs)
 
     if hash_key not in self.graphs:
-      with tf.variable_scope(None, 'attack_%d' % len(self.graphs)):
+      with tf.compat.v1.variable_scope(None, 'attack_%d' % len(self.graphs)):
         # x is a special placeholder we always want to have
         with tf.device('/gpu:0'):
-          x = tf.placeholder(tf.float32, shape=x_val.shape, name='x')
+          x = tf.compat.v1.placeholder(tf.float32, shape=x_val.shape, name='x')
 
         inputs, outputs = self.generate(x, **kwargs)
 

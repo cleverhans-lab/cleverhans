@@ -363,7 +363,7 @@ class DkNNModel(Model):
     Performs a forward pass through the DkNN on a TF tensor by wrapping
     the fprop_np method.
     """
-    logits = tf.py_func(self.fprop_np, [x], tf.float32)
+    logits = tf.compat.v1.py_func(self.fprop_np, [x], tf.float32)
     return {self.O_LOGITS: logits}
 
   def calibrate(self, cali_data, cali_labels):
@@ -466,10 +466,10 @@ def plot_reliability_diagram(confidence, labels, filepath):
 
 
 def get_tensorflow_session():
-    gpu_options = tf.GPUOptions()
+    gpu_options = tf.compat.v1.GPUOptions()
     gpu_options.per_process_gpu_memory_fraction=FLAGS.tensorflow_gpu_memory_fraction
-    sess = tf.Session(
-        config=tf.ConfigProto(
+    sess = tf.compat.v1.Session(
+        config=tf.compat.v1.ConfigProto(
             gpu_options=gpu_options
         )
     )
@@ -488,11 +488,11 @@ def dknn_tutorial():
   nb_classes = y_train.shape[1]
 
   with get_tensorflow_session() as sess:
-    with tf.variable_scope('dknn'):
+    with tf.compat.v1.variable_scope('dknn'):
       # Define input TF placeholder.
-      x = tf.placeholder(tf.float32, shape=(
+      x = tf.compat.v1.placeholder(tf.float32, shape=(
           None, img_rows, img_cols, nchannels))
-      y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+      y = tf.compat.v1.placeholder(tf.float32, shape=(None, nb_classes))
 
       # Define a model.
       model = make_basic_picklable_cnn()
@@ -515,7 +515,7 @@ def dknn_tutorial():
       def get_activations(data):
         data_activations = {}
         for layer in layers:
-          layer_sym = tf.layers.flatten(model.get_layer(x, layer))
+          layer_sym = tf.compat.v1.layers.flatten(model.get_layer(x, layer))
           data_activations[layer] = batch_eval(sess, [x], [layer_sym], [data],
                                                args={'batch_size': FLAGS.batch_size})[0]
         return data_activations
@@ -592,4 +592,4 @@ if __name__ == '__main__':
   tf.flags.DEFINE_integer(
       'neighbors', 75, 'Number of neighbors per layer for the DkNN')
 
-  tf.app.run()
+  tf.compat.v1.app.run()

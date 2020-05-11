@@ -160,7 +160,7 @@ def make_confidence_report_bundled(filepath, train_start=TRAIN_START,
   set_log_level(logging.INFO)
 
   # Create TF session
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
 
   assert filepath.endswith('.joblib')
   if report_path is None:
@@ -305,13 +305,13 @@ def make_confidence_report(filepath, train_start=TRAIN_START,
   """
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
+  tf.compat.v1.set_random_seed(1234)
 
   # Set logging level to see debug information
   set_log_level(logging.INFO)
 
   # Create TF session
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
 
   if report_path is None:
     assert filepath.endswith('.joblib')

@@ -535,8 +535,8 @@ class _CorrectFactory(object):
       x_input = self.attack.generate(x_batch, y=y_batch, **attack_params)
 
     predictions = self.model.get_probs(x_input)
-    correct = tf.equal(tf.argmax(y_batch, axis=-1),
-                       tf.argmax(predictions, axis=-1))
+    correct = tf.equal(tf.argmax(input=y_batch, axis=-1),
+                       tf.argmax(input=predictions, axis=-1))
 
     return (x_batch, y_batch), (correct,)
 
@@ -589,8 +589,8 @@ class _ClassAndProbFactory(object):
       x_input = self.attack.generate(x_batch, y=y_batch, **attack_params)
 
     predictions = self.model.get_probs(x_input)
-    classes = tf.argmax(predictions, axis=-1)
-    max_probs = tf.reduce_max(predictions, axis=1)
+    classes = tf.argmax(input=predictions, axis=-1)
+    max_probs = tf.reduce_max(input_tensor=predictions, axis=1)
 
     return tuple(inputs), (classes, max_probs)
 
@@ -641,9 +641,9 @@ class _CorrectAndProbFactory(object):
       x_input = self.attack.generate(x_batch, y=y_batch, **attack_params)
 
     predictions = self.model.get_probs(x_input)
-    correct = tf.equal(tf.argmax(y_batch, axis=-1),
-                       tf.argmax(predictions, axis=-1))
-    max_probs = tf.reduce_max(predictions, axis=1)
+    correct = tf.equal(tf.argmax(input=y_batch, axis=-1),
+                       tf.argmax(input=predictions, axis=-1))
+    max_probs = tf.reduce_max(input_tensor=predictions, axis=1)
 
     return (x_batch, y_batch), (correct, max_probs)
 

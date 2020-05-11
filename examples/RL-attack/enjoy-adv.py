@@ -86,8 +86,8 @@ class DQNModel:
           num_actions=env.action_space.n,
           noisy=noisy
       )
-      self.saver = tf.train.Saver()
-    self.sess = tf.Session(graph=self.g)
+      self.saver = tf.compat.v1.train.Saver()
+    self.sess = tf.compat.v1.Session(graph=self.g)
 
     if fname is not None:
       print('Loading Model...')

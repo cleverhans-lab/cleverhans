@@ -91,7 +91,7 @@ def single_run_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     eps_iter_small = eps_iter / 25.
   for cls in range(nb_classes):
     cls_params = copy.copy(pgd_params)
-    cls_params['y_target'] = tf.to_float(tf.one_hot(ones * cls, nb_classes))
+    cls_params['y_target'] = tf.cast(tf.one_hot(ones * cls, nb_classes), dtype=tf.float32)
     cls_attack_config = AttackConfig(pgd_attack, cls_params, "pgd_" + str(cls))
     pgd_attack_configs.append(cls_attack_config)
     expensive_params = copy.copy(cls_params)
@@ -154,7 +154,7 @@ def basic_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
     eps_iter_small = eps_iter / 25.
   for cls in range(nb_classes):
     cls_params = copy.copy(pgd_params)
-    cls_params['y_target'] = tf.to_float(tf.one_hot(ones * cls, nb_classes))
+    cls_params['y_target'] = tf.cast(tf.one_hot(ones * cls, nb_classes), dtype=tf.float32)
     cls_attack_config = AttackConfig(pgd_attack, cls_params, "pgd_" + str(cls))
     pgd_attack_configs.append(cls_attack_config)
     expensive_params = copy.copy(cls_params)
@@ -227,7 +227,7 @@ def fixed_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   expensive_pgd = []
   for cls in range(nb_classes):
     cls_params = copy.copy(pgd_params)
-    cls_params['y_target'] = tf.to_float(tf.one_hot(ones * cls, nb_classes))
+    cls_params['y_target'] = tf.cast(tf.one_hot(ones * cls, nb_classes), dtype=tf.float32)
     cls_attack_config = AttackConfig(pgd_attack, cls_params, "pgd_" + str(cls))
     pgd_attack_configs.append(cls_attack_config)
     expensive_params = copy.copy(cls_params)
@@ -343,7 +343,7 @@ def bundle_attacks(sess, model, x, y, attack_configs, goals, report_path,
     run_counts: dict mapping each AttackConfig to a numpy array reporting
       how many times that AttackConfig was run on each example
   """
-  assert isinstance(sess, tf.Session)
+  assert isinstance(sess, tf.compat.v1.Session)
   assert isinstance(model, Model)
   assert all(isinstance(attack_config, AttackConfig) for attack_config
              in attack_configs)
@@ -997,9 +997,9 @@ class _CriteriaFactory(object):
     y_batch = self.model.make_label_placeholder()
 
     predictions = self.model.get_probs(x_batch)
-    correct = tf.equal(tf.argmax(y_batch, axis=-1),
-                       tf.argmax(predictions, axis=-1))
-    max_probs = tf.reduce_max(predictions, axis=1)
+    correct = tf.equal(tf.argmax(input=y_batch, axis=-1),
+                       tf.argmax(input=predictions, axis=-1))
+    max_probs = tf.reduce_max(input_tensor=predictions, axis=1)
 
     if self.extra_criteria_factory is not None:
       extra_criteria = self.extra_criteria_factory(x_batch, y_batch,
@@ -1037,7 +1037,7 @@ class _ExtraCriteriaFactory(object):
 
 class _WrongConfidenceFactory(_ExtraCriteriaFactory):
   def __call__(self, x_batch, y_batch, predictions, correct, max_probs):
-    max_wrong_probs = tf.reduce_max(predictions * (1. - y_batch), axis=1)
+    max_wrong_probs = tf.reduce_max(input_tensor=predictions * (1. - y_batch), axis=1)
     return tuple([max_wrong_probs])
 
 
@@ -1147,7 +1147,7 @@ def spsa_max_confidence_recipe(sess, model, x, y, nb_classes, eps,
   ones = tf.ones(dev_batch_size, tf.int32)
   for cls in range(nb_classes):
     cls_params = copy.copy(spsa_params)
-    cls_params['y_target'] = tf.to_float(tf.one_hot(ones * cls, nb_classes))
+    cls_params['y_target'] = tf.cast(tf.one_hot(ones * cls, nb_classes), dtype=tf.float32)
     cls_attack_config = AttackConfig(spsa, cls_params, "spsa_" + str(cls))
     attack_configs.append(cls_attack_config)
   new_work_goal = {config: 1 for config in attack_configs}

@@ -92,4 +92,4 @@ if __name__ == '__main__':
   flags.DEFINE_integer('save_advx', SAVE_ADVX,
                        'If True, saves the adversarial examples to the '
                        'filesystem.')
-  tf.app.run()
+  tf.compat.v1.app.run()

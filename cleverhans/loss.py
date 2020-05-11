@@ -165,7 +165,7 @@ class CrossEntropy(Loss):
 
     logits = [self.model.get_logits(x, **kwargs) for x in x]
     loss = sum(
-        coeff * tf.reduce_mean(softmax_cross_entropy_with_logits(labels=y,
+        coeff * tf.reduce_mean(input_tensor=softmax_cross_entropy_with_logits(labels=y,
                                                                  logits=logit))
         for coeff, logit in safe_zip(coeffs, logits))
     return loss
@@ -186,13 +186,13 @@ class MixUp(Loss):
     with tf.device('/CPU:0'):
       # Prevent error complaining GPU kernels unavailable for this.
       mix = tf_distributions.Beta(self.beta, self.beta)
-      mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
+      mix = mix.sample([tf.shape(input=x)[0]] + [1] * (len(x.shape) - 1))
     mix = tf.maximum(mix, 1 - mix)
     mix_label = tf.reshape(mix, [-1, 1])
     xm = x + mix * (x[::-1] - x)
     ym = y + mix_label * (y[::-1] - y)
     logits = self.model.get_logits(xm, **kwargs)
-    loss = tf.reduce_mean(softmax_cross_entropy_with_logits(labels=ym,
+    loss = tf.reduce_mean(input_tensor=softmax_cross_entropy_with_logits(labels=ym,
                                                             logits=logits))
     return loss
 
@@ -213,13 +213,13 @@ class FeaturePairing(Loss):
     x_adv = self.attack.generate(x)
     d1 = self.model.fprop(x, **kwargs)
     d2 = self.model.fprop(x_adv, **kwargs)
-    pairing_loss = [tf.reduce_mean(tf.square(a - b))
+    pairing_loss = [tf.reduce_mean(input_tensor=tf.square(a - b))
                     for a, b in
                     zip(d1[Model.O_FEATURES], d2[Model.O_FEATURES])]
-    pairing_loss = tf.reduce_mean(pairing_loss)
-    loss = tf.reduce_mean(softmax_cross_entropy_with_logits(
+    pairing_loss = tf.reduce_mean(input_tensor=pairing_loss)
+    loss = tf.reduce_mean(input_tensor=softmax_cross_entropy_with_logits(
         labels=y, logits=d1[Model.O_LOGITS]))
-    loss += tf.reduce_mean(softmax_cross_entropy_with_logits(
+    loss += tf.reduce_mean(input_tensor=softmax_cross_entropy_with_logits(
         labels=y, logits=d2[Model.O_LOGITS]))
     return loss + self.weight * pairing_loss
 
@@ -296,10 +296,10 @@ class LossFeaturePairing(Loss):
     x_adv = self.attack(x)
     d1 = self.model.fprop(x, **kwargs)
     d2 = self.model.fprop(x_adv, **kwargs)
-    pairing_loss = [tf.reduce_mean(tf.square(a - b))
+    pairing_loss = [tf.reduce_mean(input_tensor=tf.square(a - b))
                     for a, b in
                     zip(d1[Model.O_FEATURES], d2[Model.O_FEATURES])]
-    pairing_loss = tf.reduce_mean(pairing_loss)
+    pairing_loss = tf.reduce_mean(input_tensor=pairing_loss)
     loss = softmax_cross_entropy_with_logits(
         labels=y, logits=d1[Model.O_LOGITS])
     loss += softmax_cross_entropy_with_logits(
@@ -325,7 +325,7 @@ class LossMixUp(Loss):
 
   def fprop(self, x, y, **kwargs):
     mix = tf_distributions.Beta(self.beta, self.beta)
-    mix = mix.sample([tf.shape(x)[0]] + [1] * (len(x.shape) - 1))
+    mix = mix.sample([tf.shape(input=x)[0]] + [1] * (len(x.shape) - 1))
     xm = x + mix * (x[::-1] - x)
     ym = y + mix * (y[::-1] - y)
     logits = self.model.get_logits(xm, **kwargs)
@@ -380,11 +380,11 @@ class SNNLCrossEntropy(CrossEntropy):
 
     :returns: A tensor for the pairwise Euclidean between A and B.
     """
-    batchA = tf.shape(A)[0]
-    batchB = tf.shape(B)[0]
+    batchA = tf.shape(input=A)[0]
+    batchB = tf.shape(input=B)[0]
 
-    sqr_norm_A = tf.reshape(tf.reduce_sum(tf.pow(A, 2), 1), [1, batchA])
-    sqr_norm_B = tf.reshape(tf.reduce_sum(tf.pow(B, 2), 1), [batchB, 1])
+    sqr_norm_A = tf.reshape(tf.reduce_sum(input_tensor=tf.pow(A, 2), axis=1), [1, batchA])
+    sqr_norm_B = tf.reshape(tf.reduce_sum(input_tensor=tf.pow(B, 2), axis=1), [batchB, 1])
     inner_prod = tf.matmul(B, A, transpose_b=True)
 
     tile_1 = tf.tile(sqr_norm_A, [batchB, 1])
@@ -399,8 +399,8 @@ class SNNLCrossEntropy(CrossEntropy):
 
     :returns: A tensor for the pairwise cosine between A and B.
     """
-    normalized_A = tf.nn.l2_normalize(A, dim=1)
-    normalized_B = tf.nn.l2_normalize(B, dim=1)
+    normalized_A = tf.nn.l2_normalize(A, axis=1)
+    normalized_B = tf.nn.l2_normalize(B, axis=1)
     prod = tf.matmul(normalized_A, normalized_B, adjoint_b=True)
     return 1 - prod
 
@@ -435,9 +435,9 @@ class SNNLCrossEntropy(CrossEntropy):
               between all the elements of x.
     """
     f = SNNLCrossEntropy.fits(
-        x, x, temp, cos_distance) - tf.eye(tf.shape(x)[0])
+        x, x, temp, cos_distance) - tf.eye(tf.shape(input=x)[0])
     return f / (
-        SNNLCrossEntropy.STABILITY_EPS + tf.expand_dims(tf.reduce_sum(f, 1), 1))
+        SNNLCrossEntropy.STABILITY_EPS + tf.expand_dims(tf.reduce_sum(input_tensor=f, axis=1), 1))
 
   @staticmethod
   def same_label_mask(y, y2):
@@ -475,9 +475,9 @@ class SNNLCrossEntropy(CrossEntropy):
               in x with labels y.
     """
     summed_masked_pick_prob = tf.reduce_sum(
-        SNNLCrossEntropy.masked_pick_probability(x, y, temp, cos_distance), 1)
+        input_tensor=SNNLCrossEntropy.masked_pick_probability(x, y, temp, cos_distance), axis=1)
     return tf.reduce_mean(
-        -tf.log(SNNLCrossEntropy.STABILITY_EPS + summed_masked_pick_prob))
+        input_tensor=-tf.math.log(SNNLCrossEntropy.STABILITY_EPS + summed_masked_pick_prob))
 
   @staticmethod
   def optimized_temp_SNNL(x, y, initial_temp, cos_distance):
@@ -497,10 +497,10 @@ class SNNLCrossEntropy(CrossEntropy):
     def inverse_temp(t):
       # pylint: disable=missing-docstring
       # we use inverse_temp because it was observed to be more stable when optimizing.
-      return tf.div(initial_temp, t)
+      return tf.compat.v1.div(initial_temp, t)
 
     ent_loss = SNNLCrossEntropy.SNNL(x, y, inverse_temp(t), cos_distance)
-    updated_t = tf.assign(t, tf.subtract(t, 0.1*tf.gradients(ent_loss, t)[0]))
+    updated_t = tf.compat.v1.assign(t, tf.subtract(t, 0.1*tf.gradients(ys=ent_loss, xs=t)[0]))
     inverse_t = inverse_temp(updated_t)
     return SNNLCrossEntropy.SNNL(x, y, inverse_t, cos_distance)
 
@@ -510,8 +510,8 @@ class SNNLCrossEntropy(CrossEntropy):
     loss_fn = self.SNNL
     if self.optimize_temperature:
       loss_fn = self.optimized_temp_SNNL
-    layers_SNNL = [loss_fn(tf.layers.flatten(layer),
-                           tf.argmax(y, axis=1),
+    layers_SNNL = [loss_fn(tf.compat.v1.layers.flatten(layer),
+                           tf.argmax(input=y, axis=1),
                            self.temperature,
                            self.cos_distance)
                    for layer in self.layers]

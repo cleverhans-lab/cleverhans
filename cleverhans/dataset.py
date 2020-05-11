@@ -77,7 +77,7 @@ class Dataset(object):
 
     def lookup(p):
       return x[p], y[p]
-    d = d.map(lambda i: tf.py_func(lookup, [i], [tf.float32] * 2))
+    d = d.map(lambda i: tf.compat.v1.py_func(lookup, [i], [tf.float32] * 2))
     return d
 
 

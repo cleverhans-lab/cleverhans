@@ -13,19 +13,19 @@ class ModelImageNetCNN(Model):
 
   def fprop(self, x, **kwargs):
     del kwargs
-    my_conv = functools.partial(tf.layers.conv2d,
+    my_conv = functools.partial(tf.compat.v1.layers.conv2d,
                                 kernel_size=3,
                                 strides=2,
                                 padding='valid',
                                 activation=tf.nn.relu,
                                 kernel_initializer=HeReLuNormalInitializer)
     my_dense = functools.partial(
-        tf.layers.dense, kernel_initializer=HeReLuNormalInitializer)
+        tf.compat.v1.layers.dense, kernel_initializer=HeReLuNormalInitializer)
 
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
       for depth in [96, 256, 384, 384, 256]:
         x = my_conv(x, depth)
-      y = tf.layers.flatten(x)
+      y = tf.compat.v1.layers.flatten(x)
       y = my_dense(y, 4096, tf.nn.relu)
       y = fc7 = my_dense(y, 4096, tf.nn.relu)
       y = my_dense(y, 1000)

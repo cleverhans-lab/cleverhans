@@ -42,7 +42,7 @@ class PicklableVariable(object):
     self.var = tf.Variable(*args, **kwargs)
 
   def __getstate__(self):
-    sess = tf.get_default_session()
+    sess = tf.compat.v1.get_default_session()
     if sess is None:
       raise RuntimeError("PicklableVariable requires a default "
                          "TensorFlow session")
@@ -50,7 +50,7 @@ class PicklableVariable(object):
 
   def __setstate__(self, d):
     self.var = tf.Variable(d['var'])
-    sess = tf.get_default_session()
+    sess = tf.compat.v1.get_default_session()
     if sess is None:
       raise RuntimeError("PicklableVariable requires a default "
                          "TensorFlow session")
@@ -84,7 +84,7 @@ class NoRefModel(Model):
       del out["_dummy_input"]
 
     # Add the Variables
-    sess = tf.get_default_session()
+    sess = tf.compat.v1.get_default_session()
     if sess is None:
       raise RuntimeError("NoRefModel requires a default "
                          "TensorFlow session")
@@ -109,7 +109,7 @@ class NoRefModel(Model):
     # Deserialize everything except the Variables
     self.__dict__ = d
     # Deserialize the Variables
-    sess = tf.get_default_session()
+    sess = tf.compat.v1.get_default_session()
     if sess is None:
       raise RuntimeError("NoRefModel requires a default "
                          "TensorFlow session")
@@ -169,12 +169,12 @@ class NoRefModel(Model):
     while not done:
       # Most models in cleverhans use only trainable variables and do not
       # make sure the other collections are updated correctly.
-      trainable_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+      trainable_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                                          self.scope + "/")
       # When wrapping other code, such as the CIFAR 10 challenge models,
       # we need to make sure we get the batch norm running averages as well
       # as the trainable variables.
-      model_vars = tf.get_collection(tf.GraphKeys.MODEL_VARIABLES,
+      model_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.MODEL_VARIABLES,
                                      self.scope + "/")
       scope_vars = ordered_union(trainable_vars, model_vars)
 

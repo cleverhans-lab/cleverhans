@@ -34,11 +34,11 @@ def main(argv):
 
   set_log_level(logging.DEBUG)
 
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
   with sess.as_default():
 
     model = make_wresnet()
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
     # Restore the checkpoint
     saver.restore(sess, model_file)
     SCOPE = "cifar10_challenge"
@@ -52,7 +52,7 @@ def main(argv):
         if var2.name == var2_name:
           var1_found = True
           found[idx] = True
-          sess.run(tf.assign(var2, var1))
+          sess.run(tf.compat.v1.assign(var2, var1))
           break
       assert var1_found, var1.name
     assert all(found)

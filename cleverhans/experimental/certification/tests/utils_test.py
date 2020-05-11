@@ -27,7 +27,7 @@ class UtilsTest(tf.test.TestCase):
       return tf.matmul(matrix, x)
 
     min_eigen_fn = autograph.to_graph(utils.minimum_eigen_vector)
-    x = tf.placeholder(tf.float32, shape=(2, 1))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(2, 1))
     min_eig_vec = min_eigen_fn(x, 10, 0.1, _vector_prod_fn)
     with self.test_session() as sess:
       v = sess.run(min_eig_vec, feed_dict={x: initial_vec})
@@ -36,13 +36,13 @@ class UtilsTest(tf.test.TestCase):
     np.testing.assert_almost_equal(v, [[0.9239], [-0.3827]], decimal=4)
 
   def test_tf_lanczos_smallest_eigval(self):
-    tf_num_iter = tf.placeholder(dtype=tf.int32, shape=())
-    tf_matrix = tf.placeholder(dtype=tf.float32)
+    tf_num_iter = tf.compat.v1.placeholder(dtype=tf.int32, shape=())
+    tf_matrix = tf.compat.v1.placeholder(dtype=tf.float32)
     def _vector_prod_fn(x):
       return tf.matmul(tf_matrix, tf.reshape(x, [-1, 1]))
 
     min_eigen_fn = autograph.to_graph(utils.tf_lanczos_smallest_eigval)
-    init_vec_ph = tf.placeholder(shape=(MATRIX_DIMENTION, 1), dtype=tf.float32)
+    init_vec_ph = tf.compat.v1.placeholder(shape=(MATRIX_DIMENTION, 1), dtype=tf.float32)
     tf_eigval, tf_eigvec = min_eigen_fn(
         _vector_prod_fn, MATRIX_DIMENTION, init_vec_ph, tf_num_iter, dtype=tf.float32)
     eigvec = np.zeros((MATRIX_DIMENTION, 1), dtype=np.float32)

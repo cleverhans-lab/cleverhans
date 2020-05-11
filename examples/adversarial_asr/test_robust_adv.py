@@ -102,9 +102,9 @@ def main(argv):
     assert num % batch_size == 0
              
     with tf.device("/gpu:0"):
-        tf.set_random_seed(1234)
-        tfconf = tf.ConfigProto(allow_soft_placement=True)
-        with tf.Session(config=tfconf) as sess:           
+        tf.compat.v1.set_random_seed(1234)
+        tfconf = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+        with tf.compat.v1.Session(config=tfconf) as sess:           
             params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
             params.cluster.worker.gpus_per_replica = 1
             cluster = cluster_factory.Cluster(params.cluster)
@@ -114,28 +114,28 @@ def main(argv):
                 params.is_eval = True
                 model = params.cls(params)
                 task = model.GetTask()
-                saver = tf.train.Saver()
+                saver = tf.compat.v1.train.Saver()
                 saver.restore(sess, FLAGS.checkpoint)
                 
                 # define the placeholders
-                input_tf = tf.placeholder(tf.float32, shape=[batch_size, None])
-                tgt_tf = tf.placeholder(tf.string)
-                sample_rate_tf = tf.placeholder(tf.int32) 
-                mask_tf = tf.placeholder(tf.float32, shape=[batch_size, None, 80])
-                rir_tf = tf.placeholder(tf.float32)
-                lengths = tf.placeholder(np.int32, shape=[batch_size,])
-                maxlen = tf.placeholder(np.int32)
-                mask = tf.placeholder(dtype=np.float32, shape=[batch_size, None]) 
+                input_tf = tf.compat.v1.placeholder(tf.float32, shape=[batch_size, None])
+                tgt_tf = tf.compat.v1.placeholder(tf.string)
+                sample_rate_tf = tf.compat.v1.placeholder(tf.int32) 
+                mask_tf = tf.compat.v1.placeholder(tf.float32, shape=[batch_size, None, 80])
+                rir_tf = tf.compat.v1.placeholder(tf.float32)
+                lengths = tf.compat.v1.placeholder(np.int32, shape=[batch_size,])
+                maxlen = tf.compat.v1.placeholder(np.int32)
+                mask = tf.compat.v1.placeholder(dtype=np.float32, shape=[batch_size, None]) 
                 
                 # generate the features and inputs
                 new_input = create_speech_rir(input_tf, rir_tf, lengths, maxlen, batch_size) * mask
                 features = create_features(new_input, sample_rate_tf, mask_tf)
-                shape = tf.shape(features)
+                shape = tf.shape(input=features)
                 inputs = create_inputs(model, features, tgt_tf, batch_size, mask_tf)
                 
                 # loss
                 metrics = task.FPropDefaultTheta(inputs)              
-                loss = tf.get_collection("per_loss")[0]  
+                loss = tf.compat.v1.get_collection("per_loss")[0]  
                 
                 # prediction
                 decoded_outputs = task.Decode(inputs)

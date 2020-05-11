@@ -40,7 +40,7 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
 
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
-    y = tf.argmax(model_fn(x), 1)
+    y = tf.argmax(input=model_fn(x), axis=1)
 
   grad = compute_gradient(model_fn, x, y, targeted)
 
@@ -113,12 +113,12 @@ def optimize_linear(grad, eps, norm=np.inf):
   elif norm == 1:
     abs_grad = tf.abs(grad)
     sign = tf.sign(grad)
-    max_abs_grad = tf.reduce_max(abs_grad, axis, keepdims=True)
+    max_abs_grad = tf.reduce_max(input_tensor=abs_grad, axis=axis, keepdims=True)
     tied_for_max = tf.dtypes.cast(tf.equal(abs_grad, max_abs_grad), dtype=tf.float32)
-    num_ties = tf.reduce_sum(tied_for_max, axis, keepdims=True)
+    num_ties = tf.reduce_sum(input_tensor=tied_for_max, axis=axis, keepdims=True)
     optimal_perturbation = sign * tied_for_max / num_ties
   elif norm == 2:
-    square = tf.maximum(avoid_zero_div, tf.reduce_sum(tf.square(grad), axis, keepdims=True))
+    square = tf.maximum(avoid_zero_div, tf.reduce_sum(input_tensor=tf.square(grad), axis=axis, keepdims=True))
     optimal_perturbation = grad / tf.sqrt(square)
   else:
     raise NotImplementedError("Only L-inf, L1 and L2 norms are currently implemented.")

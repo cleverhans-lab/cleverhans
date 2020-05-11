@@ -69,12 +69,12 @@ class MaxConfidence(Attack):
     """
     adv_x_cls = []
     prob_cls = []
-    m = tf.shape(x)[0]
-    true_y_idx = tf.argmax(true_y, axis=1)
+    m = tf.shape(input=x)[0]
+    true_y_idx = tf.argmax(input=true_y, axis=1)
 
     expanded_x = tf.concat([x] * self.nb_classes, axis=0)
-    target_ys = [tf.to_float(tf.one_hot(tf.ones(m, dtype=tf.int32) * cls,
-                                        self.nb_classes))
+    target_ys = [tf.cast(tf.one_hot(tf.ones(m, dtype=tf.int32) * cls,
+                                        self.nb_classes), dtype=tf.float32)
                  for cls in range(self.nb_classes)]
     target_y = tf.concat(target_ys, axis=0)
     adv_x_cls = self.attack_class(expanded_x, target_y)
@@ -88,19 +88,19 @@ class MaxConfidence(Attack):
       all_probs = all_probs_list[cls]
       # We don't actually care whether we hit the target class.
       # We care about the probability of the most likely wrong class
-      cur_prob_cls = tf.reduce_max(all_probs - true_y, axis=1)
+      cur_prob_cls = tf.reduce_max(input_tensor=all_probs - true_y, axis=1)
       # Knock out examples that are correctly classified.
       # This is not needed to be optimal for t >= 0.5, but may as well do it
       # to get better failure rate at lower thresholds.
-      chosen_cls = tf.argmax(all_probs, axis=1)
-      eligible = tf.to_float(tf.not_equal(true_y_idx, chosen_cls))
+      chosen_cls = tf.argmax(input=all_probs, axis=1)
+      eligible = tf.cast(tf.not_equal(true_y_idx, chosen_cls), dtype=tf.float32)
       cur_prob_cls = cur_prob_cls * eligible
       prob_cls.append(cur_prob_cls)
 
     probs = tf.concat([tf.expand_dims(e, 1) for e in prob_cls], axis=1)
     # Don't need to censor here because we knocked out the true class above
     # probs = probs - true_y
-    most_confident = tf.argmax(probs, axis=1)
+    most_confident = tf.argmax(input=probs, axis=1)
     fused_mask = tf.one_hot(most_confident, self.nb_classes)
     masks = tf.split(fused_mask, num_or_size_splits=self.nb_classes, axis=1)
     shape = [m] + [1] * (len(x.get_shape()) - 1)

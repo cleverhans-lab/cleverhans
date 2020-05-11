@@ -39,4 +39,4 @@ def main(argv=None):
 
 if __name__ == '__main__':
   flags.DEFINE_string('fail_names', ','.join(DEFAULT_FAIL_NAMES), 'Names of adversarial datasets for failure rate')
-  tf.app.run()
+  tf.compat.v1.app.run()

@@ -130,13 +130,13 @@ def vatm(model,
   :param seed: the seed for random generator
   :return: a tensor for the adversarial example
   """
-  with tf.name_scope(scope, "virtual_adversarial_perturbation"):
-    d = tf.random_normal(tf.shape(x), dtype=tf_dtype)
+  with tf.compat.v1.name_scope(scope, "virtual_adversarial_perturbation"):
+    d = tf.random.normal(tf.shape(input=x), dtype=tf_dtype)
     for _ in range(num_iterations):
       d = xi * utils_tf.l2_batch_normalize(d)
       logits_d = model.get_logits(x + d)
       kl = utils_tf.kl_with_logits(logits, logits_d)
-      Hd = tf.gradients(kl, d)[0]
+      Hd = tf.gradients(ys=kl, xs=d)[0]
       d = tf.stop_gradient(Hd)
     d = eps * utils_tf.l2_batch_normalize(d)
     adv_x = x + d

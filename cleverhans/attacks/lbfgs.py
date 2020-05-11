@@ -68,7 +68,7 @@ class LBFGS(Attack):
       """
       return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
-    wrap = tf.py_func(lbfgs_wrap, [x, self.y_target], self.tf_dtype)
+    wrap = tf.compat.v1.py_func(lbfgs_wrap, [x, self.y_target], self.tf_dtype)
     wrap.set_shape(x.get_shape())
 
     return wrap
@@ -161,7 +161,7 @@ class LBFGS_impl(object):
       self.loss = reduce_sum(self.score * self.const) + self.l2dist
     else:
       self.loss = -reduce_sum(self.score * self.const) + self.l2dist
-    self.grad, = tf.gradients(self.loss, self.x)
+    self.grad, = tf.gradients(ys=self.loss, xs=self.x)
 
   def attack(self, x_val, targets):
     """

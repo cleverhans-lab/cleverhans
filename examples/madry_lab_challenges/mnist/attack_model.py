@@ -46,9 +46,9 @@ def main(argv):
   # change the automatic naming of the variables.
   model = MadryMNIST()
 
-  x_input = tf.placeholder(tf.float32, shape=[None, 784])
-  x_image = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-  y = tf.placeholder(tf.float32, shape=[None, 10])
+  x_input = tf.compat.v1.placeholder(tf.float32, shape=[None, 784])
+  x_image = tf.compat.v1.placeholder(tf.float32, shape=[None, 28, 28, 1])
+  y = tf.compat.v1.placeholder(tf.float32, shape=[None, 10])
 
   if FLAGS.attack_type == 'fgsm':
     fgsm = FastGradientMethod(model)
@@ -64,9 +64,9 @@ def main(argv):
     raise ValueError(FLAGS.attack_type)
   preds_adv = model.get_probs(adv_x)
 
-  saver = tf.train.Saver()
+  saver = tf.compat.v1.train.Saver()
 
-  with tf.Session() as sess:
+  with tf.compat.v1.Session() as sess:
     # Restore the checkpoint
     saver.restore(sess, checkpoint)
 

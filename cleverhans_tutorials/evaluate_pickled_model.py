@@ -38,7 +38,7 @@ def evaluate_model(filepath,
   """
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
+  tf.compat.v1.set_random_seed(1234)
 
   # Set logging level to see debug information
   set_log_level(logging.INFO)
@@ -48,7 +48,7 @@ def evaluate_model(filepath,
     config_args = dict(intra_op_parallelism_threads=1)
   else:
     config_args = {}
-  sess = tf.Session(config=tf.ConfigProto(**config_args))
+  sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(**config_args))
 
   # Get MNIST test data
   mnist = MNIST(train_start=train_start, train_end=train_end,
@@ -61,9 +61,9 @@ def evaluate_model(filepath,
   nb_classes = y_train.shape[1]
 
   # Define input TF placeholder
-  x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+  x = tf.compat.v1.placeholder(tf.float32, shape=(None, img_rows, img_cols,
                                         nchannels))
-  y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+  y = tf.compat.v1.placeholder(tf.float32, shape=(None, nb_classes))
 
   eval_params = {'batch_size': batch_size}
   fgsm_params = {
@@ -105,4 +105,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

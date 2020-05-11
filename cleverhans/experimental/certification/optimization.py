@@ -40,14 +40,14 @@ class Optimization(object):
     self.sess = sess
     self.dual_object = dual_formulation_object
     self.params = optimization_params
-    self.penalty_placeholder = tf.placeholder(tf.float32, shape=[])
+    self.penalty_placeholder = tf.compat.v1.placeholder(tf.float32, shape=[])
 
     # The dimensionality of matrix M is the sum of sizes of all layers + 1
     # The + 1 comes due to a row and column of M representing the linear terms
-    self.eig_init_vec_placeholder = tf.placeholder(
+    self.eig_init_vec_placeholder = tf.compat.v1.placeholder(
         tf.float32, shape=[1 + self.dual_object.dual_index[-1], 1])
-    self.smooth_placeholder = tf.placeholder(tf.float32, shape=[])
-    self.eig_num_iter_placeholder = tf.placeholder(tf.int32, shape=[])
+    self.smooth_placeholder = tf.compat.v1.placeholder(tf.float32, shape=[])
+    self.eig_num_iter_placeholder = tf.compat.v1.placeholder(tf.int32, shape=[])
     self.current_eig_val_estimate = None
 
     # Create graph for optimization
@@ -57,8 +57,8 @@ class Optimization(object):
     """Function for min eigen vector using tf's full eigen decomposition."""
     # Full eigen decomposition requires the explicit psd matrix M
     _, matrix_m = self.dual_object.get_full_psd_matrix()
-    [eig_vals, eig_vectors] = tf.self_adjoint_eig(matrix_m)
-    index = tf.argmin(eig_vals)
+    [eig_vals, eig_vectors] = tf.linalg.eigh(matrix_m)
+    index = tf.argmin(input=eig_vals)
     return tf.reshape(
         eig_vectors[:, index], shape=[eig_vectors.shape[0].value, 1])
 
@@ -66,16 +66,16 @@ class Optimization(object):
     """Function that returns smoothed version of min eigen vector."""
     _, matrix_m = self.dual_object.get_full_psd_matrix()
     # Easier to think in terms of max so negating the matrix
-    [eig_vals, eig_vectors] = tf.self_adjoint_eig(-matrix_m)
+    [eig_vals, eig_vectors] = tf.linalg.eigh(-matrix_m)
     exp_eig_vals = tf.exp(tf.divide(eig_vals, self.smooth_placeholder))
-    scaling_factor = tf.reduce_sum(exp_eig_vals)
+    scaling_factor = tf.reduce_sum(input_tensor=exp_eig_vals)
     # Multiplying each eig vector by exponential of corresponding eig value
     # Scaling factor normalizes the vector to be unit norm
     eig_vec_smooth = tf.divide(
-        tf.matmul(eig_vectors, tf.diag(tf.sqrt(exp_eig_vals))),
+        tf.matmul(eig_vectors, tf.linalg.tensor_diag(tf.sqrt(exp_eig_vals))),
         tf.sqrt(scaling_factor))
     return tf.reshape(
-        tf.reduce_sum(eig_vec_smooth, axis=1),
+        tf.reduce_sum(input_tensor=eig_vec_smooth, axis=1),
         shape=[eig_vec_smooth.shape[0].value, 1])
 
   def get_min_eig_vec_proxy(self, use_tf_eig=False):
@@ -90,9 +90,9 @@ class Optimization(object):
     if use_tf_eig:
       # If smoothness parameter is too small, essentially no smoothing
       # Just output the eigen vector corresponding to min
-      return tf.cond(self.smooth_placeholder < 1E-8,
-                     self.tf_min_eig_vec,
-                     self.tf_smooth_eig_vec)
+      return tf.cond(pred=self.smooth_placeholder < 1E-8,
+                     true_fn=self.tf_min_eig_vec,
+                     false_fn=self.tf_smooth_eig_vec)
 
     # Using autograph to automatically handle
     # the control flow of minimum_eigen_vector
@@ -123,7 +123,7 @@ class Optimization(object):
       return np.reshape(estimated_eigen_vector, [-1, 1]), min_eig_vec_val
     else:
       dim = self.dual_object.matrix_m_dimension
-      input_vector = tf.placeholder(tf.float32, shape=(dim, 1))
+      input_vector = tf.compat.v1.placeholder(tf.float32, shape=(dim, 1))
       output_vector = self.dual_object.get_psd_product(input_vector)
 
       def np_vector_prod_fn(np_vector):
@@ -144,11 +144,11 @@ class Optimization(object):
     elif self.params['eig_type'] == 'LZS':
       self.eig_vec_estimate = self.dual_object.m_min_vec
     else:
-      self.eig_vec_estimate = tf.placeholder(tf.float32, shape=(self.dual_object.matrix_m_dimension, 1))
+      self.eig_vec_estimate = tf.compat.v1.placeholder(tf.float32, shape=(self.dual_object.matrix_m_dimension, 1))
     self.stopped_eig_vec_estimate = tf.stop_gradient(self.eig_vec_estimate)
     # Eig value is v^\top M v, where v is eigen vector
     self.eig_val_estimate = tf.matmul(
-        tf.transpose(self.stopped_eig_vec_estimate),
+        tf.transpose(a=self.stopped_eig_vec_estimate),
         self.dual_object.get_psd_product(self.stopped_eig_vec_estimate))
     # Penalizing negative of min eigen value because we want min eig value
     # to be positive
@@ -158,27 +158,27 @@ class Optimization(object):
             tf.maximum(-self.penalty_placeholder * self.eig_val_estimate, 0)))
     global_step = tf.Variable(0, trainable=False)
     # Set up learning rate as a placeholder
-    self.learning_rate = tf.placeholder(tf.float32, shape=[])
+    self.learning_rate = tf.compat.v1.placeholder(tf.float32, shape=[])
 
     # Set up the optimizer
     if self.params['optimizer'] == 'adam':
-      self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+      self.optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.learning_rate)
     elif self.params['optimizer'] == 'adagrad':
-      self.optimizer = tf.train.AdagradOptimizer(learning_rate=self.learning_rate)
+      self.optimizer = tf.compat.v1.train.AdagradOptimizer(learning_rate=self.learning_rate)
     elif self.params['optimizer'] == 'momentum':
-      self.optimizer = tf.train.MomentumOptimizer(
+      self.optimizer = tf.compat.v1.train.MomentumOptimizer(
           learning_rate=self.learning_rate,
           momentum=self.params['momentum_parameter'],
           use_nesterov=True)
     else:
-      self.optimizer = tf.train.GradientDescentOptimizer(
+      self.optimizer = tf.compat.v1.train.GradientDescentOptimizer(
           learning_rate=self.learning_rate)
 
     # Write out the projection step
     self.train_step = self.optimizer.minimize(
         self.total_objective, global_step=global_step)
 
-    self.sess.run(tf.global_variables_initializer())
+    self.sess.run(tf.compat.v1.global_variables_initializer())
 
     # Projecting the dual variables
     proj_ops = []
@@ -208,8 +208,8 @@ class Optimization(object):
 
     # Create folder for saving stats if the folder is not None
     if (self.params.get('stats_folder') and
-        not tf.gfile.IsDirectory(self.params['stats_folder'])):
-      tf.gfile.MkDir(self.params['stats_folder'])
+        not tf.io.gfile.isdir(self.params['stats_folder'])):
+      tf.io.gfile.mkdir(self.params['stats_folder'])
 
   def run_one_step(self, eig_init_vec_val, eig_num_iter_val, smooth_val,
                    penalty_val, learning_rate_val):
@@ -270,13 +270,13 @@ class Optimization(object):
           'min_eig_val_estimate':
               float(self.current_eig_val_estimate)
       }
-      tf.logging.info('Current inner step: %d, optimization stats: %s',
+      tf.compat.v1.logging.info('Current inner step: %d, optimization stats: %s',
                       self.current_step, stats)
       if self.params['stats_folder'] is not None:
         stats = json.dumps(stats)
         filename = os.path.join(self.params['stats_folder'],
                                 str(self.current_step) + '.json')
-        with tf.gfile.Open(filename) as file_f:
+        with tf.io.gfile.GFile(filename) as file_f:
           file_f.write(stats)
 
     # Project onto feasible set of dual variables
@@ -311,7 +311,7 @@ class Optimization(object):
 
 
     while self.current_outer_step <= self.params['outer_num_steps']:
-      tf.logging.info('Running outer step %d with penalty %f',
+      tf.compat.v1.logging.info('Running outer step %d with penalty %f',
                       self.current_outer_step, penalty_val)
       # Running inner loop of optimization with current_smooth_val,
       # current_penalty as smoothness parameters and penalty respectively

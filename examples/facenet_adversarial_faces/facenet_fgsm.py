@@ -17,30 +17,30 @@ class InceptionResnetV1Model(Model):
     # Load Facenet CNN
     facenet.load_model(self.model_path)
     # Save input and output tensors references
-    graph = tf.get_default_graph()
+    graph = tf.compat.v1.get_default_graph()
     self.face_input = graph.get_tensor_by_name("input:0")
     self.embedding_output = graph.get_tensor_by_name("embeddings:0")
 
   def convert_to_classifier(self):
     # Create victim_embedding placeholder
-    self.victim_embedding_input = tf.placeholder(
+    self.victim_embedding_input = tf.compat.v1.placeholder(
         tf.float32,
         shape=(None, 512))
 
     # Squared Euclidean Distance between embeddings
     distance = tf.reduce_sum(
-        tf.square(self.embedding_output - self.victim_embedding_input),
+        input_tensor=tf.square(self.embedding_output - self.victim_embedding_input),
         axis=1)
 
     # Convert distance to a softmax vector
     # 0.99 out of 4 is the distance threshold for the Facenet CNN
     threshold = 0.99
-    score = tf.where(
+    score = tf.compat.v1.where(
         distance > threshold,
         0.5 + ((distance - threshold) * 0.5) / (4.0 - threshold),
         0.5 * distance / threshold)
     reverse_score = 1.0 - score
-    self.softmax_output = tf.transpose(tf.stack([reverse_score, score]))
+    self.softmax_output = tf.transpose(a=tf.stack([reverse_score, score]))
 
     # Save softmax layer
     self.layer_names = []
@@ -53,7 +53,7 @@ class InceptionResnetV1Model(Model):
 
 
 with tf.Graph().as_default():
-  with tf.Session() as sess:
+  with tf.compat.v1.Session() as sess:
     # Load model
     model = InceptionResnetV1Model()
     # Convert to classifier
@@ -64,7 +64,7 @@ with tf.Graph().as_default():
     faces1, faces2, labels = set_loader.load_testset(size)
 
     # Create victims' embeddings using Facenet itself
-    graph = tf.get_default_graph()
+    graph = tf.compat.v1.get_default_graph()
     phase_train_placeholder = graph.get_tensor_by_name("phase_train:0")
     feed_dict = {model.face_input: faces2,
                  phase_train_placeholder: False}

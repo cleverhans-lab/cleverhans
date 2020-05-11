@@ -132,7 +132,7 @@ class SPSA(Attack):
     is_targeted = y_target is not None
 
     if x.get_shape().as_list()[0] is None:
-      check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1)
+      check_batch = utils_tf.assert_equal(tf.shape(input=x)[0], 1)
       with tf.control_dependencies([check_batch]):
         x = tf.identity(x)
     elif x.get_shape().as_list()[0] != 1:
@@ -268,7 +268,7 @@ class TensorOptimizer(object):
         'x should be a list and contain only one image tensor'
     x = x[0]
     loss = reduce_mean(loss_fn(x), axis=0)
-    return tf.gradients(loss, x)
+    return tf.gradients(ys=loss, xs=x)
 
   def _apply_gradients(self, grads, x, optim_state):
     """
@@ -395,7 +395,7 @@ class SPSAAdam(TensorAdam):
   def _get_delta(self, x, delta):
     x_shape = x.get_shape().as_list()
     delta_x = delta * tf.sign(
-        tf.random_uniform(
+        tf.random.uniform(
             [self._num_samples] + x_shape[1:],
             minval=-1.,
             maxval=1.,
@@ -431,8 +431,8 @@ class SPSAAdam(TensorAdam):
       return i < self._num_iters
 
     _, all_grads = tf.while_loop(
-        cond,
-        body,
+        cond=cond,
+        body=body,
         loop_vars=[
             0, tf.TensorArray(size=self._num_iters, dtype=tf_dtype)
         ],
@@ -459,7 +459,7 @@ def margin_logit_loss(model_logits, label, nb_classes=10, num_classes=None):
   else:
     logit_mask = label
   if 'int' in str(logit_mask.dtype):
-    logit_mask = tf.to_float(logit_mask)
+    logit_mask = tf.cast(logit_mask, dtype=tf.float32)
   try:
     label_logits = reduce_sum(logit_mask * model_logits, axis=-1)
   except TypeError:
@@ -477,13 +477,13 @@ def margin_logit_loss(model_logits, label, nb_classes=10, num_classes=None):
 def _apply_black_border(x, border_size):
   orig_height = x.get_shape().as_list()[1]
   orig_width = x.get_shape().as_list()[2]
-  x = tf.image.resize_images(x, (orig_width - 2*border_size,
+  x = tf.image.resize(x, (orig_width - 2*border_size,
                                  orig_height - 2*border_size))
 
-  return tf.pad(x, [[0, 0],
+  return tf.pad(tensor=x, paddings=[[0, 0],
                     [border_size, border_size],
                     [border_size, border_size],
-                    [0, 0]], 'CONSTANT')
+                    [0, 0]], mode='CONSTANT')
 
 
 def _apply_transformation(inputs):
@@ -498,11 +498,11 @@ def _apply_transformation(inputs):
   min_edge_from_center = float(np.min([height, width])) / 2
   padding = np.ceil(max_dist_from_center -
                     min_edge_from_center).astype(np.int32)
-  x = tf.pad(x, [[0, 0],
+  x = tf.pad(tensor=x, paddings=[[0, 0],
                  [padding, padding],
                  [padding, padding],
                  [0, 0]],
-             'CONSTANT')
+             mode='CONSTANT')
 
   # Apply rotation
   angle *= np.pi / 180
@@ -511,7 +511,7 @@ def _apply_transformation(inputs):
   # Apply translation
   dx_in_px = -dx * height
   dy_in_px = -dy * width
-  translation = tf.convert_to_tensor([dx_in_px, dy_in_px])
+  translation = tf.convert_to_tensor(value=[dx_in_px, dy_in_px])
 
   try:
     x = tfa.image.translate(x, translation, interpolation='BILINEAR')
@@ -533,7 +533,7 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
     preds = model.get_probs(x)
     # Using model predictions as ground truth to avoid label leaking
     preds_max = reduce_max(preds, 1, keepdims=True)
-    y = tf.to_float(tf.equal(preds, preds_max))
+    y = tf.cast(tf.equal(preds, preds_max), dtype=tf.float32)
     y = tf.stop_gradient(y)
     del preds
   y = y / reduce_sum(y, 1, keepdims=True)
@@ -556,7 +556,7 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
 
   def _compute_xent(x):
     preds = model.get_logits(x)
-    return tf.nn.softmax_cross_entropy_with_logits_v2(
+    return tf.nn.softmax_cross_entropy_with_logits(
         labels=y, logits=preds)
 
   all_xents = tf.map_fn(
@@ -570,9 +570,9 @@ def spm(x, model, y=None, n_samples=None, dx_min=-0.1,
   all_xents = tf.stack(all_xents)  # SB
 
   # We want the worst case sample, with the largest xent_loss
-  worst_sample_idx = tf.argmax(all_xents, axis=0)  # B
+  worst_sample_idx = tf.argmax(input=all_xents, axis=0)  # B
 
-  batch_size = tf.shape(x)[0]
+  batch_size = tf.shape(input=x)[0]
   keys = tf.stack([
       tf.range(batch_size, dtype=tf.int32),
       tf.cast(worst_sample_idx, tf.int32)
@@ -590,7 +590,7 @@ def parallel_apply_transformations(x, transforms, black_border_size=0):
   Returns:
     Transformed images
   """
-  transforms = tf.convert_to_tensor(transforms, dtype=tf.float32)
+  transforms = tf.convert_to_tensor(value=transforms, dtype=tf.float32)
   x = _apply_black_border(x, black_border_size)
 
   num_transforms = transforms.get_shape().as_list()[0]
@@ -665,12 +665,12 @@ def projected_optimization(loss_fn,
   assert num_steps is not None
   if is_debug:
     with tf.device("/cpu:0"):
-      input_image = tf.Print(
+      input_image = tf.compat.v1.Print(
           input_image, [],
           "Starting PGD attack with epsilon: %s" % epsilon)
 
-  init_perturbation = tf.random_uniform(
-      tf.shape(input_image),
+  init_perturbation = tf.random.uniform(
+      tf.shape(input=input_image),
       minval=tf.cast(-epsilon, input_image.dtype),
       maxval=tf.cast(epsilon, input_image.dtype),
       dtype=input_image.dtype)
@@ -707,11 +707,11 @@ def projected_optimization(loss_fn,
 
       if is_debug:
         with tf.device("/cpu:0"):
-          loss = tf.Print(loss, [loss], "Total batch loss")
+          loss = tf.compat.v1.Print(loss, [loss], "Total batch loss")
 
       if early_stop:
-        i = tf.cond(tf.less(loss, early_stop_loss_threshold),
-                    lambda: float(num_steps), lambda: i)
+        i = tf.cond(pred=tf.less(loss, early_stop_loss_threshold),
+                    true_fn=lambda: float(num_steps), false_fn=lambda: i)
 
     return i + 1, projected_perturbation, nest.flatten(new_optim_state)
 
@@ -720,8 +720,8 @@ def projected_optimization(loss_fn,
 
   flat_init_optim_state = nest.flatten(init_optim_state)
   _, final_perturbation, _ = tf.while_loop(
-      cond,
-      loop_body,
+      cond=cond,
+      body=loop_body,
       loop_vars=(tf.constant(0.), init_perturbation, flat_init_optim_state),
       parallel_iterations=1,
       back_prop=False,

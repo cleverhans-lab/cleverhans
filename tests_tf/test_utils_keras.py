@@ -28,7 +28,7 @@ class TestKerasModelWrapper(unittest.TestCase):
                          Dense(10, name='l2'),
                          Activation('softmax', name='softmax')])
 
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.sess.as_default()
     self.model = dummy_model()
 
@@ -45,12 +45,12 @@ class TestKerasModelWrapper(unittest.TestCase):
   def test_get_logits(self):
     import tensorflow as tf
     model = KerasModelWrapper(self.model)
-    x = tf.placeholder(tf.float32, shape=(None, 100))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, 100))
     preds = model.get_probs(x)
     logits = model.get_logits(x)
 
     x_val = np.random.rand(2, 100)
-    tf.global_variables_initializer().run(session=self.sess)
+    tf.compat.v1.global_variables_initializer().run(session=self.sess)
     p_val, logits = self.sess.run([preds, logits], feed_dict={x: x_val})
     p_gt = np.exp(logits)/np.sum(np.exp(logits), axis=1, keepdims=True)
     self.assertTrue(np.allclose(p_val, p_gt, atol=1e-6))
@@ -58,11 +58,11 @@ class TestKerasModelWrapper(unittest.TestCase):
   def test_get_probs(self):
     import tensorflow as tf
     model = KerasModelWrapper(self.model)
-    x = tf.placeholder(tf.float32, shape=(None, 100))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, 100))
     preds = model.get_probs(x)
 
     x_val = np.random.rand(2, 100)
-    tf.global_variables_initializer().run(session=self.sess)
+    tf.compat.v1.global_variables_initializer().run(session=self.sess)
     p_val = self.sess.run(preds, feed_dict={x: x_val})
     self.assertTrue(np.allclose(np.sum(p_val, axis=1), 1, atol=1e-6))
     self.assertTrue(np.all(p_val >= 0))
@@ -76,7 +76,7 @@ class TestKerasModelWrapper(unittest.TestCase):
   def test_fprop(self):
     import tensorflow as tf
     model = KerasModelWrapper(self.model)
-    x = tf.placeholder(tf.float32, shape=(None, 100))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, 100))
     out_dict = model.fprop(x)
 
     self.assertEqual(set(out_dict.keys()), set(['l1', 'l2', 'softmax']))
@@ -85,7 +85,7 @@ class TestKerasModelWrapper(unittest.TestCase):
     self.assertEqual(int(out_dict['l2'].shape[1]), 10)
 
     # Test the caching
-    x2 = tf.placeholder(tf.float32, shape=(None, 100))
+    x2 = tf.compat.v1.placeholder(tf.float32, shape=(None, 100))
     out_dict2 = model.fprop(x2)
     self.assertEqual(set(out_dict2.keys()), set(['l1', 'l2', 'softmax']))
     self.assertEqual(int(out_dict2['l1'].shape[1]), 20)

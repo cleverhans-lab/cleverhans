@@ -42,15 +42,15 @@ class ResNet(NoRefModel):
     """
     super(ResNet, self).__init__(scope, 10, {}, scope is not None)
     if scope is None:
-      before = list(tf.trainable_variables())
-      before_vars = list(tf.global_variables())
+      before = list(tf.compat.v1.trainable_variables())
+      before_vars = list(tf.compat.v1.global_variables())
       self.build(layers, input_shape)
-      after = list(tf.trainable_variables())
-      after_vars = list(tf.global_variables())
+      after = list(tf.compat.v1.trainable_variables())
+      after_vars = list(tf.compat.v1.global_variables())
       self.params = [param for param in after if param not in before]
       self.vars = [var for var in after_vars if var not in before_vars]
     else:
-      with tf.variable_scope(self.scope):
+      with tf.compat.v1.variable_scope(self.scope):
         self.build(layers, input_shape)
 
   def get_vars(self):
@@ -79,14 +79,14 @@ class ResNet(NoRefModel):
         input_shape = layer.get_output_shape()
 
   def make_input_placeholder(self):
-    return tf.placeholder(tf.float32, (None, 32, 32, 3))
+    return tf.compat.v1.placeholder(tf.float32, (None, 32, 32, 3))
 
   def make_label_placeholder(self):
-    return tf.placeholder(tf.float32, (None, 10))
+    return tf.compat.v1.placeholder(tf.float32, (None, 10))
 
   def fprop(self, x, set_ref=False):
     if self.scope is not None:
-      with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+      with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
         return self._fprop(x, set_ref)
     return self._prop(x, set_ref)
 
@@ -128,7 +128,7 @@ class Input(Layer):
     self.output_shape = tuple(output_shape)
 
   def fprop(self, x):
-    with tf.variable_scope('input', reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope('input', reuse=tf.compat.v1.AUTO_REUSE):
       input_standardized = tf.map_fn(
           lambda img: tf.image.per_image_standardization(img), x)
       return _conv('init_conv', input_standardized,
@@ -162,31 +162,31 @@ class Conv2D(Layer):
     activate_before_residual = [True, False, False]
     filters = [16, 160, 320, 640]
     res_func = _residual
-    with tf.variable_scope('unit_1_0', reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope('unit_1_0', reuse=tf.compat.v1.AUTO_REUSE):
       x = res_func(x, filters[0], filters[1], _stride_arr(strides[0]),
                    activate_before_residual[0])
     for i in range(1, 5):
-      with tf.variable_scope(('unit_1_%d' % i), reuse=tf.AUTO_REUSE):
+      with tf.compat.v1.variable_scope(('unit_1_%d' % i), reuse=tf.compat.v1.AUTO_REUSE):
         x = res_func(x, filters[1], filters[1],
                      _stride_arr(1), False)
 
-    with tf.variable_scope(('unit_2_0'), reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(('unit_2_0'), reuse=tf.compat.v1.AUTO_REUSE):
       x = res_func(x, filters[1], filters[2], _stride_arr(strides[1]),
                    activate_before_residual[1])
     for i in range(1, 5):
-      with tf.variable_scope(('unit_2_%d' % i), reuse=tf.AUTO_REUSE):
+      with tf.compat.v1.variable_scope(('unit_2_%d' % i), reuse=tf.compat.v1.AUTO_REUSE):
         x = res_func(x, filters[2], filters[2],
                      _stride_arr(1), False)
 
-    with tf.variable_scope(('unit_3_0'), reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(('unit_3_0'), reuse=tf.compat.v1.AUTO_REUSE):
       x = res_func(x, filters[2], filters[3], _stride_arr(strides[2]),
                    activate_before_residual[2])
     for i in range(1, 5):
-      with tf.variable_scope(('unit_3_%d' % i), reuse=tf.AUTO_REUSE):
+      with tf.compat.v1.variable_scope(('unit_3_%d' % i), reuse=tf.compat.v1.AUTO_REUSE):
         x = res_func(x, filters[3], filters[3],
                      _stride_arr(1), False)
 
-    with tf.variable_scope(('unit_last'), reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(('unit_last'), reuse=tf.compat.v1.AUTO_REUSE):
       x = _batch_norm('final_bn', x)
       x = _relu(x, 0.1)
       x = _global_avg_pool(x)
@@ -207,23 +207,23 @@ class Linear(Layer):
     self.make_vars()
 
   def make_vars(self):
-    with tf.variable_scope('logit', reuse=tf.AUTO_REUSE):
-      w = tf.get_variable(
+    with tf.compat.v1.variable_scope('logit', reuse=tf.compat.v1.AUTO_REUSE):
+      w = tf.compat.v1.get_variable(
           'DW', [self.dim, self.num_hid],
-          initializer=tf.initializers.variance_scaling(
+          initializer=tf.compat.v1.initializers.variance_scaling(
               distribution='uniform'))
-      b = tf.get_variable('biases', [self.num_hid],
-                               initializer=tf.initializers.constant())
+      b = tf.compat.v1.get_variable('biases', [self.num_hid],
+                               initializer=tf.compat.v1.initializers.constant())
     return w, b
 
   def fprop(self, x):
     w, b = self.make_vars()
-    return tf.nn.xw_plus_b(x, w, b)
+    return tf.compat.v1.nn.xw_plus_b(x, w, b)
 
 
 def _batch_norm(name, x):
   """Batch normalization."""
-  with tf.name_scope(name):
+  with tf.compat.v1.name_scope(name):
     return tf.contrib.layers.batch_norm(
         inputs=x,
         decay=.9,
@@ -238,41 +238,41 @@ def _residual(x, in_filter, out_filter, stride,
               activate_before_residual=False):
   """Residual unit with 2 sub layers."""
   if activate_before_residual:
-    with tf.variable_scope('shared_activation'):
+    with tf.compat.v1.variable_scope('shared_activation'):
       x = _batch_norm('init_bn', x)
       x = _relu(x, 0.1)
       orig_x = x
   else:
-    with tf.variable_scope('residual_only_activation'):
+    with tf.compat.v1.variable_scope('residual_only_activation'):
       orig_x = x
       x = _batch_norm('init_bn', x)
       x = _relu(x, 0.1)
 
-  with tf.variable_scope('sub1'):
+  with tf.compat.v1.variable_scope('sub1'):
     x = _conv('conv1', x, 3, in_filter, out_filter, stride)
 
-  with tf.variable_scope('sub2'):
+  with tf.compat.v1.variable_scope('sub2'):
     x = _batch_norm('bn2', x)
     x = _relu(x, 0.1)
     x = _conv('conv2', x, 3, out_filter, out_filter, [1, 1, 1, 1])
 
-  with tf.variable_scope('sub_add'):
+  with tf.compat.v1.variable_scope('sub_add'):
     if in_filter != out_filter:
-      orig_x = tf.nn.avg_pool(orig_x, stride, stride, 'VALID')
+      orig_x = tf.nn.avg_pool2d(input=orig_x, ksize=stride, strides=stride, padding='VALID')
       orig_x = tf.pad(
-          orig_x, [[0, 0], [0, 0],
+          tensor=orig_x, paddings=[[0, 0], [0, 0],
                    [0, 0], [(out_filter - in_filter) // 2,
                             (out_filter - in_filter) // 2]])
     x += orig_x
 
-  tf.logging.debug('image after unit %s', x.get_shape())
+  tf.compat.v1.logging.debug('image after unit %s', x.get_shape())
   return x
 
 
 def _decay():
   """L2 weight decay loss."""
   costs = []
-  for var in tf.trainable_variables():
+  for var in tf.compat.v1.trainable_variables():
     if var.op.name.find('DW') > 0:
       costs.append(tf.nn.l2_loss(var))
   return tf.add_n(costs)
@@ -280,23 +280,23 @@ def _decay():
 
 def _conv(name, x, filter_size, in_filters, out_filters, strides):
   """Convolution."""
-  with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
+  with tf.compat.v1.variable_scope(name, reuse=tf.compat.v1.AUTO_REUSE):
     n = filter_size * filter_size * out_filters
-    kernel = tf.get_variable(
+    kernel = tf.compat.v1.get_variable(
         'DW', [filter_size, filter_size, in_filters, out_filters],
-        tf.float32, initializer=tf.random_normal_initializer(
+        tf.float32, initializer=tf.compat.v1.random_normal_initializer(
             stddev=np.sqrt(2.0 / n)))
-    return tf.nn.conv2d(x, kernel, strides, padding='SAME')
+    return tf.nn.conv2d(input=x, filters=kernel, strides=strides, padding='SAME')
 
 
 def _relu(x, leakiness=0.0):
   """Relu, with optional leaky support."""
-  return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
+  return tf.compat.v1.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
 
 
 def _global_avg_pool(x):
   assert x.get_shape().ndims == 4
-  return tf.reduce_mean(x, [1, 2])
+  return tf.reduce_mean(input_tensor=x, axis=[1, 2])
 
 
 class Softmax(Layer):

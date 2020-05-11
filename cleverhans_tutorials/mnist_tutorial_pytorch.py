@@ -141,8 +141,8 @@ def mnist_tutorial(nb_epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
   print('[%s] Clean accuracy: %.2f%%' % (step, acc * 100))
 
   # We use tf for evaluation on adversarial data
-  sess = tf.Session()
-  x_op = tf.placeholder(tf.float32, shape=(None, 1, 28, 28,))
+  sess = tf.compat.v1.Session()
+  x_op = tf.compat.v1.placeholder(tf.float32, shape=(None, 1, 28, 28,))
 
   # Convert pytorch model to a tf_model and wrap it in cleverhans
   tf_model_fn = convert_pytorch_model_to_tf(torch_model)
@@ -187,4 +187,4 @@ if __name__ == '__main__':
   flags.DEFINE_float('learning_rate', LEARNING_RATE,
                      'Learning rate for training')
 
-  tf.app.run()
+  tf.compat.v1.app.run()

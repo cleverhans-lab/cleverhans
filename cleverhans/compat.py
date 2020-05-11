@@ -71,7 +71,7 @@ def softmax_cross_entropy_with_logits(sentinel=None,
     raise ValueError("Both labels and logits must be provided.")
 
   try:
-    f = tf.nn.softmax_cross_entropy_with_logits_v2
+    f = tf.nn.softmax_cross_entropy_with_logits
   except AttributeError:
     raise RuntimeError("This version of TensorFlow is no longer supported. See cleverhans/README.md")
 

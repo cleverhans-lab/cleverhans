@@ -5,9 +5,9 @@ from rlattack.common.tf_util import noisy_dense
 
 def model(img_in, num_actions, scope, noisy=False, reuse=False,
           concat_softmax=False):
-  with tf.variable_scope(scope, reuse=reuse):
+  with tf.compat.v1.variable_scope(scope, reuse=reuse):
     out = img_in
-    with tf.variable_scope("convnet"):
+    with tf.compat.v1.variable_scope("convnet"):
       # original architecture
       out = layers.convolution2d(out, num_outputs=32, kernel_size=8,
                                  stride=4, activation_fn=tf.nn.relu)
@@ -17,7 +17,7 @@ def model(img_in, num_actions, scope, noisy=False, reuse=False,
                                  stride=1, activation_fn=tf.nn.relu)
     out = layers.flatten(out)
 
-    with tf.variable_scope("action_value"):
+    with tf.compat.v1.variable_scope("action_value"):
       if noisy:
         # Apply noisy network on fully connected layers
         # ref: https://arxiv.org/abs/1706.10295
@@ -38,9 +38,9 @@ def model(img_in, num_actions, scope, noisy=False, reuse=False,
 def dueling_model(img_in, num_actions, scope, noisy=False, reuse=False,
                   concat_softmax=False):
   """As described in https://arxiv.org/abs/1511.06581"""
-  with tf.variable_scope(scope, reuse=reuse):
+  with tf.compat.v1.variable_scope(scope, reuse=reuse):
     out = img_in
-    with tf.variable_scope("convnet"):
+    with tf.compat.v1.variable_scope("convnet"):
       # original architecture
       out = layers.convolution2d(out, num_outputs=32, kernel_size=8,
                                  stride=4, activation_fn=tf.nn.relu)
@@ -50,7 +50,7 @@ def dueling_model(img_in, num_actions, scope, noisy=False, reuse=False,
                                  stride=1, activation_fn=tf.nn.relu)
     out = layers.flatten(out)
 
-    with tf.variable_scope("state_value"):
+    with tf.compat.v1.variable_scope("state_value"):
       if noisy:
         # Apply noisy network on fully connected layers
         # ref: https://arxiv.org/abs/1706.10295
@@ -67,7 +67,7 @@ def dueling_model(img_in, num_actions, scope, noisy=False, reuse=False,
         state_score = layers.fully_connected(state_hidden,
                                              num_outputs=1,
                                              activation_fn=None)
-    with tf.variable_scope("action_value"):
+    with tf.compat.v1.variable_scope("action_value"):
       if noisy:
         # Apply noisy network on fully connected layers
         # ref: https://arxiv.org/abs/1706.10295
@@ -86,7 +86,7 @@ def dueling_model(img_in, num_actions, scope, noisy=False, reuse=False,
             num_outputs=num_actions,
             activation_fn=None
         )
-      action_scores_mean = tf.reduce_mean(action_scores, 1)
+      action_scores_mean = tf.reduce_mean(input_tensor=action_scores, axis=1)
       action_scores = action_scores - tf.expand_dims(
           action_scores_mean,
           1

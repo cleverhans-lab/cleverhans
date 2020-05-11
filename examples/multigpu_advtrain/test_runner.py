@@ -16,17 +16,17 @@ from runner import RunnerMultiGPU
 class TestRunnerMultiGPU(CleverHansTest):
   def setUp(self):
     super(TestRunnerMultiGPU, self).setUp()
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
 
     inputs = []
     outputs = []
     self.niter = 10
     niter = self.niter
     # A Simple graph with `niter` sub-graphs.
-    with tf.variable_scope(None, 'runner'):
+    with tf.compat.v1.variable_scope(None, 'runner'):
       for i in range(niter):
-        v = tf.get_variable('v%d' % i, shape=(100, 10))
-        w = tf.get_variable('w%d' % i, shape=(100, 1))
+        v = tf.compat.v1.get_variable('v%d' % i, shape=(100, 10))
+        w = tf.compat.v1.get_variable('w%d' % i, shape=(100, 1))
 
         inputs += [{'v': v, 'w': w}]
         outputs += [{'v': v, 'w': w}]

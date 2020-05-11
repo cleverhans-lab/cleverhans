@@ -29,9 +29,9 @@ class DualFormulationTest(unittest.TestCase):
     input_minval = 0
     input_maxval = 0
     epsilon = 0.1
-    three_dim_tensor = tf.random_uniform(shape=(3, 1), dtype=tf.float32)
-    two_dim_tensor = tf.random_uniform(shape=(2, 1), dtype=tf.float32)
-    scalar = tf.random_uniform(shape=(1, 1), dtype=tf.float32)
+    three_dim_tensor = tf.random.uniform(shape=(3, 1), dtype=tf.float32)
+    two_dim_tensor = tf.random.uniform(shape=(2, 1), dtype=tf.float32)
+    scalar = tf.random.uniform(shape=(1, 1), dtype=tf.float32)
     lambda_pos = [two_dim_tensor, three_dim_tensor]
     lambda_neg = lambda_pos
     lambda_quad = lambda_pos
@@ -44,7 +44,7 @@ class DualFormulationTest(unittest.TestCase):
         'lambda_lu': lambda_lu,
         'nu': nu
     }
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       dual_formulation_object = dual_formulation.DualFormulation(sess,
                                                                  dual_var,
                                                                  nn_params1,
@@ -72,9 +72,9 @@ class DualFormulationTest(unittest.TestCase):
     input_minval = 0
     input_maxval = 0
     epsilon = 0.1
-    three_dim_tensor = tf.random_uniform(shape=(3, 1), dtype=tf.float32)
-    two_dim_tensor = tf.random_uniform(shape=(2, 1), dtype=tf.float32)
-    scalar = tf.random_uniform(shape=(1, 1), dtype=tf.float32)
+    three_dim_tensor = tf.random.uniform(shape=(3, 1), dtype=tf.float32)
+    two_dim_tensor = tf.random.uniform(shape=(2, 1), dtype=tf.float32)
+    scalar = tf.random.uniform(shape=(1, 1), dtype=tf.float32)
     lambda_pos = [two_dim_tensor, three_dim_tensor]
     lambda_neg = lambda_pos
     lambda_quad = lambda_pos
@@ -87,7 +87,7 @@ class DualFormulationTest(unittest.TestCase):
         'lambda_lu': lambda_lu,
         'nu': nu
     }
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       dual_formulation_object = dual_formulation.DualFormulation(sess,
                                                                  dual_var,
                                                                  nn_params1,
@@ -119,9 +119,9 @@ class DualFormulationTest(unittest.TestCase):
     input_minval = 0
     input_maxval = 0
     epsilon = 0.1
-    three_dim_tensor = tf.random_uniform(shape=(3, 1), dtype=tf.float32)
-    two_dim_tensor = tf.random_uniform(shape=(2, 1), dtype=tf.float32)
-    scalar = tf.random_uniform(shape=(1, 1), dtype=tf.float32)
+    three_dim_tensor = tf.random.uniform(shape=(3, 1), dtype=tf.float32)
+    two_dim_tensor = tf.random.uniform(shape=(2, 1), dtype=tf.float32)
+    scalar = tf.random.uniform(shape=(1, 1), dtype=tf.float32)
     lambda_pos = [two_dim_tensor, three_dim_tensor]
     lambda_neg = lambda_pos
     lambda_quad = lambda_pos
@@ -134,7 +134,7 @@ class DualFormulationTest(unittest.TestCase):
         'lambda_lu': lambda_lu,
         'nu': nu
     }
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       dual_formulation_object = dual_formulation.DualFormulation(sess,
                                                                  dual_var,
                                                                  nn_params1,
@@ -164,9 +164,9 @@ class DualFormulationTest(unittest.TestCase):
     input_minval = 0
     input_maxval = 0
     epsilon = 0.1
-    three_dim_tensor = tf.random_uniform(shape=(3, 1), dtype=tf.float32)
-    two_dim_tensor = tf.random_uniform(shape=(2, 1), dtype=tf.float32)
-    scalar = tf.random_uniform(shape=(1, 1), dtype=tf.float32)
+    three_dim_tensor = tf.random.uniform(shape=(3, 1), dtype=tf.float32)
+    two_dim_tensor = tf.random.uniform(shape=(2, 1), dtype=tf.float32)
+    scalar = tf.random.uniform(shape=(1, 1), dtype=tf.float32)
     lambda_pos = [two_dim_tensor, three_dim_tensor]
     lambda_neg = lambda_pos
     lambda_quad = lambda_pos
@@ -179,7 +179,7 @@ class DualFormulationTest(unittest.TestCase):
         'lambda_lu': lambda_lu,
         'nu': nu
     }
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       dual_formulation_object = dual_formulation.DualFormulation(sess,
                                                                  dual_var,
                                                                  nn_params1,
@@ -192,7 +192,7 @@ class DualFormulationTest(unittest.TestCase):
       _, matrix_m = dual_formulation_object.get_full_psd_matrix()
 
       # Testing if the values match
-      six_dim_tensor = tf.random_uniform(shape=(6, 1), dtype=tf.float32)
+      six_dim_tensor = tf.random.uniform(shape=(6, 1), dtype=tf.float32)
       implicit_product = dual_formulation_object.get_psd_product(six_dim_tensor)
       explicit_product = tf.matmul(matrix_m, six_dim_tensor)
       [implicit_product_value,

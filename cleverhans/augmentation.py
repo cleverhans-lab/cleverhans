@@ -21,8 +21,8 @@ def random_shift(x, pad=(4, 4), mode='REFLECT'):
   offset."""
   assert mode in 'REFLECT SYMMETRIC CONSTANT'.split()
   assert x.get_shape().ndims == 3
-  xp = tf.pad(x, [[pad[0], pad[0]], [pad[1], pad[1]], [0, 0]], mode)
-  return tf.random_crop(xp, tf.shape(x))
+  xp = tf.pad(tensor=x, paddings=[[pad[0], pad[0]], [pad[1], pad[1]], [0, 0]], mode=mode)
+  return tf.image.random_crop(xp, tf.shape(input=x))
 
 
 def batch_augment(x, func, device='/CPU:0'):
@@ -39,19 +39,19 @@ def batch_augment(x, func, device='/CPU:0'):
 
 def random_crop_and_flip(x, pad_rows=4, pad_cols=4):
   """Augment a batch by randomly cropping and horizontally flipping it."""
-  rows = tf.shape(x)[1]
-  cols = tf.shape(x)[2]
+  rows = tf.shape(input=x)[1]
+  cols = tf.shape(input=x)[2]
   channels = x.get_shape()[3]
 
   def _rand_crop_img(img):
     """Randomly crop an individual image"""
-    return tf.random_crop(img, [rows, cols, channels])
+    return tf.image.random_crop(img, [rows, cols, channels])
 
   # Some of these ops are only on CPU.
   # This function will often be called with the device set to GPU.
   # We need to set it to CPU temporarily to avoid an exception.
   with tf.device('/CPU:0'):
-    x = tf.image.resize_image_with_crop_or_pad(x, rows + pad_rows,
+    x = tf.image.resize_with_crop_or_pad(x, rows + pad_rows,
                                                cols + pad_cols)
     x = tf.map_fn(_rand_crop_img, x)
     x = tf.image.random_flip_left_right(x)

@@ -89,7 +89,7 @@ class HopSkipJumpAttack(Attack):
       self.theta = self.gamma / (self.d * self.d)
 
     # Construct input placeholder and output for decision function.
-    self.input_ph = tf.placeholder(
+    self.input_ph = tf.compat.v1.placeholder(
         tf_dtype, [None] + list(self.shape), name='input_image')
     self.logits = self.model.get_logits(self.input_ph)
 
@@ -100,19 +100,19 @@ class HopSkipJumpAttack(Attack):
 
     if self.y_target is not None:
       # targeted attack that requires target label and image.
-      wrap = tf.py_func(hsja_wrap,
+      wrap = tf.compat.v1.py_func(hsja_wrap,
                         [x[0], self.y_target[0], self.image_target[0]],
                         self.tf_dtype)
     else:
       if self.image_target is not None:
         # untargeted attack with an initialized image.
-        wrap = tf.py_func(lambda x, target_image: hsja_wrap(x,
+        wrap = tf.compat.v1.py_func(lambda x, target_image: hsja_wrap(x,
                                                             None, target_image),
                           [x[0], self.image_target[0]],
                           self.tf_dtype)
       else:
         # untargeted attack without an initialized image.
-        wrap = tf.py_func(lambda x: hsja_wrap(x, None, None),
+        wrap = tf.compat.v1.py_func(lambda x: hsja_wrap(x, None, None),
                           [x[0]],
                           self.tf_dtype)
 
@@ -350,7 +350,7 @@ def BoundaryAttackPlusPlus(model, sess, dtypestr='float32', **kwargs):
 def _check_first_dimension(x, tensor_name):
   message = "Tensor {} should have batch_size of 1.".format(tensor_name)
   if x.get_shape().as_list()[0] is None:
-    check_batch = utils_tf.assert_equal(tf.shape(x)[0], 1, message=message)
+    check_batch = utils_tf.assert_equal(tf.shape(input=x)[0], 1, message=message)
     with tf.control_dependencies([check_batch]):
       x = tf.identity(x)
   elif x.get_shape().as_list()[0] != 1:

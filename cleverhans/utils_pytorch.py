@@ -30,12 +30,12 @@ def _py_func_with_gradient(func, inp, Tout, stateful=True, name=None,
   tf.RegisterGradient(rnd_name)(grad_func)
 
   # Get current graph
-  g = tf.get_default_graph()
+  g = tf.compat.v1.get_default_graph()
 
   # Add gradient override map
   with g.gradient_override_map({"PyFunc": rnd_name,
                                 "PyFuncStateless": rnd_name}):
-    return tf.py_func(func, inp, Tout, stateful=stateful, name=name)
+    return tf.compat.v1.py_func(func, inp, Tout, stateful=stateful, name=name)
 
 
 def convert_pytorch_model_to_tf(model, out_dims=None):
@@ -80,7 +80,7 @@ def convert_pytorch_model_to_tf(model, out_dims=None):
 
   def _tf_gradient_fn(op, grads_in):
     """TODO: write this"""
-    return tf.py_func(_bprop_fn, [op.inputs[0], grads_in],
+    return tf.compat.v1.py_func(_bprop_fn, [op.inputs[0], grads_in],
                       Tout=[tf.float32])
 
   def tf_model_fn(x_op):

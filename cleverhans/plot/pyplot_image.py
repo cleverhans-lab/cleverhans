@@ -112,7 +112,7 @@ def get_logits_over_interval(sess, model, x_data, fgsm_params,
   from cleverhans.attacks import FastGradientMethod
 
   # Define the data placeholder
-  x = tf.placeholder(dtype=tf.float32,
+  x = tf.compat.v1.placeholder(dtype=tf.float32,
                      shape=[1, height,
                             width,
                             channels],
@@ -124,8 +124,8 @@ def get_logits_over_interval(sess, model, x_data, fgsm_params,
   if min_epsilon > max_epsilon:
     raise ValueError('Minimum epsilon is less than maximum epsilon')
 
-  eta = tf.nn.l2_normalize(adv_x - x, dim=0)
-  epsilon = tf.reshape(tf.lin_space(float(min_epsilon),
+  eta = tf.nn.l2_normalize(adv_x - x, axis=0)
+  epsilon = tf.reshape(tf.linspace(float(min_epsilon),
                                     float(max_epsilon),
                                     num_points),
                        (num_points, 1, 1, 1))

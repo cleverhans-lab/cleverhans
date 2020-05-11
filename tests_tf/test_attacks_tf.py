@@ -26,7 +26,7 @@ class SimpleModel(Model):
 
   def fprop(self, x, **kwargs):
     del kwargs
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
       w1 = tf.constant(
           [[1.5, .3], [-2, 0.3]], dtype=tf.as_dtype(x.dtype))
       w2 = tf.constant(
@@ -39,7 +39,7 @@ class SimpleModel(Model):
 class TestAttackTF(CleverHansTest):
   def setUp(self):
     super(TestAttackTF, self).setUp()
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = SimpleModel()
 
   def test_fgm_gradient_max(self):
@@ -47,15 +47,15 @@ class TestAttackTF(CleverHansTest):
     nb_classes = 3
     batch_size = 4
     rng = np.random.RandomState([2017, 8, 23])
-    x = tf.placeholder(tf.float32, [batch_size, input_dim])
-    weights = tf.placeholder(tf.float32, [input_dim, nb_classes])
+    x = tf.compat.v1.placeholder(tf.float32, [batch_size, input_dim])
+    weights = tf.compat.v1.placeholder(tf.float32, [input_dim, nb_classes])
     logits = tf.matmul(x, weights)
     probs = tf.nn.softmax(logits)
     adv_x = fgm(x, probs)
     random_example = rng.randint(batch_size)
     random_feature = rng.randint(input_dim)
     output = tf.slice(adv_x, [random_example, random_feature], [1, 1])
-    dx, = tf.gradients(output, x)
+    dx, = tf.gradients(ys=output, xs=x)
     # The following line catches GitHub issue #243
     self.assertIsNotNone(dx)
     dx = self.sess.run(dx, feed_dict=random_feed_dict(rng, [x, weights]))
@@ -78,7 +78,7 @@ class TestAttackTF(CleverHansTest):
       return multiplier * tf.nn.sparse_softmax_cross_entropy_with_logits(
           labels=label, logits=logits)
 
-    x_val_ph = tf.placeholder(tf.float32, shape=[100, 2])
+    x_val_ph = tf.compat.v1.placeholder(tf.float32, shape=[100, 2])
     x_val = np.random.randn(100, 2).astype(np.float32)
     init_model_output = self.model.fprop(x_val_ph)
     init_model_logits = init_model_output[self.model.O_LOGITS]
@@ -86,7 +86,7 @@ class TestAttackTF(CleverHansTest):
       labels = np.random.random_integers(0, 1, size=(100, ))
     else:
 
-      labels = tf.stop_gradient(tf.argmax(init_model_logits, axis=1))
+      labels = tf.stop_gradient(tf.argmax(input=init_model_logits, axis=1))
 
     def _project_perturbation(perturbation, epsilon, input_image,
                               clip_min, clip_max):
@@ -242,8 +242,8 @@ class TestAttackTF(CleverHansTest):
     transformed_ims = parallel_apply_transformations(
         x, transforms, black_border_size=30)
 
-    worst_sample_idx = tf.convert_to_tensor([0, 1, 1])
-    batch_size = tf.shape(x)[0]
+    worst_sample_idx = tf.convert_to_tensor(value=[0, 1, 1])
+    batch_size = tf.shape(input=x)[0]
     keys = tf.stack([
         tf.range(batch_size, dtype=tf.int32),
         tf.cast(worst_sample_idx, tf.int32)
@@ -252,7 +252,7 @@ class TestAttackTF(CleverHansTest):
     transformed_ims_bshwc = tf.einsum('sbhwc->bshwc', transformed_ims)
     after_lookup = tf.gather_nd(transformed_ims_bshwc, keys)  # BHWC
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       img_batch_np = sess.run(after_lookup)[:, :, :, :]
 
     for i, img in enumerate(img_batch_np):

@@ -26,7 +26,7 @@ class SimpleModel(Model):
 
   def fprop(self, x, **kwargs):
     del kwargs
-    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(self.scope, reuse=tf.compat.v1.AUTO_REUSE):
       w1 = tf.constant([[1.5, .3], [-2, 0.3]],
                        dtype=tf.as_dtype(x.dtype))
       w2 = tf.constant([[-2.4, 1.2], [0.5, -2.3]],
@@ -44,13 +44,13 @@ class TestDefenses(CleverHansTest):
     self.model = SimpleModel()
     self.vx = np.array(((1, -1), (-1, 1)), 'f')
     self.vy = np.array(((1, 0), (0, 1)), 'f')
-    self.x = tf.placeholder(tf.float32, [None, 2], 'x')
-    self.y = tf.placeholder(tf.float32, [None, 2], 'y')
+    self.x = tf.compat.v1.placeholder(tf.float32, [None, 2], 'x')
+    self.y = tf.compat.v1.placeholder(tf.float32, [None, 2], 'y')
 
   def test_xe(self):
     loss = CrossEntropy(self.model, smoothing=0.)
     l = loss.fprop(self.x, self.y)
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
       vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
     self.assertClose(vl1, sum([2.210599660, 1.53666997]) / 2., atol=1e-6)
@@ -59,7 +59,7 @@ class TestDefenses(CleverHansTest):
   def test_xe_smoothing(self):
     loss = CrossEntropy(self.model, smoothing=0.1)
     l = loss.fprop(self.x, self.y)
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
       vl1 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
       vl2 = sess.run(l, feed_dict={self.x: self.vx, self.y: self.vy})
     self.assertClose(vl1, sum([2.10587597, 1.47194624]) / 2., atol=1e-6)
@@ -67,7 +67,7 @@ class TestDefenses(CleverHansTest):
 
   def test_mixup(self):
     def eval_loss(l, count=1000):
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         vl = np.zeros(2, 'f')
         for _ in range(count):
           vl += sess.run(l, feed_dict={self.x: self.vx,
@@ -83,7 +83,7 @@ class TestDefenses(CleverHansTest):
     self.assertClose(vl, [1.40, 1.40], atol=5e-2)
 
   def test_feature_pairing(self):
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     fgsm = FastGradientMethod(self.model, sess=sess)
 
     def attack(x):

@@ -72,11 +72,11 @@ class ProjectedGradientDescent(Attack):
 
     # Initialize loop variables
     if self.rand_init:
-      eta = random_lp_vector(tf.shape(x), self.ord,
+      eta = random_lp_vector(tf.shape(input=x), self.ord,
                              tf.cast(self.rand_init_eps, x.dtype),
                              dtype=x.dtype)
     else:
-      eta = tf.zeros(tf.shape(x))
+      eta = tf.zeros(tf.shape(input=x))
 
     # Clip eta
     eta = clip_eta(eta, self.ord, self.eps)
@@ -92,8 +92,8 @@ class ProjectedGradientDescent(Attack):
       targeted = False
     else:
       model_preds = self.model.get_probs(x)
-      preds_max = tf.reduce_max(model_preds, 1, keepdims=True)
-      y = tf.to_float(tf.equal(model_preds, preds_max))
+      preds_max = tf.reduce_max(input_tensor=model_preds, axis=1, keepdims=True)
+      y = tf.cast(tf.equal(model_preds, preds_max), dtype=tf.float32)
       y = tf.stop_gradient(y)
       targeted = False
       del model_preds
@@ -144,7 +144,7 @@ class ProjectedGradientDescent(Attack):
 
       return i + 1, adv_x
 
-    _, adv_x = tf.while_loop(cond, body, (tf.zeros([]), adv_x), back_prop=True,
+    _, adv_x = tf.while_loop(cond=cond, body=body, loop_vars=(tf.zeros([]), adv_x), back_prop=True,
                              maximum_iterations=self.nb_iter)
 
     # Asserts run only on CPU.

@@ -65,13 +65,13 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   report = AccuracyReport()
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
+  tf.compat.v1.set_random_seed(1234)
 
   if keras.backend.image_data_format() != 'channels_last':
     raise NotImplementedError("this tutorial requires keras to be configured to channels_last format")
 
   # Create TF session and set as Keras backend session
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
   keras.backend.set_session(sess)
 
   # Get MNIST test data
@@ -85,9 +85,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   nb_classes = y_train.shape[1]
 
   # Define input TF placeholder
-  x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+  x = tf.compat.v1.placeholder(tf.float32, shape=(None, img_rows, img_cols,
                                         nchannels))
-  y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+  y = tf.compat.v1.placeholder(tf.float32, shape=(None, nb_classes))
 
   # Define TF model graph
   model = cnn_model(img_rows=img_rows, img_cols=img_cols,
@@ -123,7 +123,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   wrap = KerasModelWrapper(model)
 
   if load_model and ckpt_path:
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
     print(ckpt_path)
     saver.restore(sess, ckpt_path)
     print("Model loaded from: {}".format(ckpt_path))
@@ -232,4 +232,4 @@ if __name__ == '__main__':
   flags.DEFINE_string('filename', FILENAME, 'Checkpoint filename.')
   flags.DEFINE_boolean('load_model', LOAD_MODEL,
                        'Load saved model or train.')
-  tf.app.run()
+  tf.compat.v1.app.run()

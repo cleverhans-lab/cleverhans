@@ -39,15 +39,15 @@ def main(argv):
 
   set_log_level(logging.DEBUG)
 
-  with tf.Session() as sess:
+  with tf.compat.v1.Session() as sess:
 
-    x = tf.placeholder(tf.float32, shape=(None, 32, 32, 3))
-    y = tf.placeholder(tf.float32, shape=(None, 10))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, 32, 32, 3))
+    y = tf.compat.v1.placeholder(tf.float32, shape=(None, 10))
 
     from cleverhans.model_zoo.madry_lab_challenges.cifar10_model import make_wresnet
     model = make_wresnet()
 
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
 
     # Restore the checkpoint
     saver.restore(sess, model_file)

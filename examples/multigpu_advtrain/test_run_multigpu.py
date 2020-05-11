@@ -50,8 +50,8 @@ class TestRunMultiGPU(CleverHansTest):
 
     hparams = HParams(**flags)
     np.random.seed(42)
-    tf.set_random_seed(42)
-    with tf.variable_scope(None, 'runner'):
+    tf.compat.v1.set_random_seed(42)
+    with tf.compat.v1.variable_scope(None, 'runner'):
       report_dict = run_trainer(hparams)
     report_m = AccuracyReport()
     report_m.train_adv_train_clean_eval = report_dict['train']
@@ -61,8 +61,8 @@ class TestRunMultiGPU(CleverHansTest):
     flags.update({'ngpu': 1, 'attack_type_train': 'MadryEtAl_y'})
     hparams = HParams(**flags)
     np.random.seed(42)
-    tf.set_random_seed(42)
-    with tf.variable_scope(None, 'runner'):
+    tf.compat.v1.set_random_seed(42)
+    with tf.compat.v1.variable_scope(None, 'runner'):
       report_dict = run_trainer(hparams)
     report_s = AccuracyReport()
     report_s.train_adv_train_clean_eval = report_dict['train']
@@ -109,8 +109,8 @@ class TestRunMultiGPU(CleverHansTest):
 
     hparams = HParams(**flags)
     np.random.seed(42)
-    tf.set_random_seed(42)
-    with tf.variable_scope(None, 'runner'):
+    tf.compat.v1.set_random_seed(42)
+    with tf.compat.v1.variable_scope(None, 'runner'):
       report_dict = run_trainer(hparams)
     report_2 = AccuracyReport()
     report_2.train_clean_train_clean_eval = report_dict['train']
@@ -123,8 +123,8 @@ class TestRunMultiGPU(CleverHansTest):
 
     hparams = HParams(**flags)
     np.random.seed(42)
-    tf.set_random_seed(42)
-    with tf.variable_scope(None, 'runner'):
+    tf.compat.v1.set_random_seed(42)
+    with tf.compat.v1.variable_scope(None, 'runner'):
       report_dict = run_trainer(hparams)
     report_2.train_adv_train_clean_eval = report_dict['train']
     report_2.adv_train_clean_eval = report_dict['test']

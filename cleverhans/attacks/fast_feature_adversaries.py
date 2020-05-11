@@ -108,7 +108,7 @@ class FastFeatureAdversaries(Attack):
     loss = -reduce_sum(tf.square(a_feat - g_feat), axis)
 
     # Define gradient of loss wrt input
-    grad, = tf.gradients(loss, adv_x)
+    grad, = tf.gradients(ys=loss, xs=adv_x)
 
     # Multiply by constant epsilon
     scaled_signed_grad = self.eps_iter * tf.sign(grad)
@@ -143,8 +143,8 @@ class FastFeatureAdversaries(Attack):
     g_feat = self.model.fprop(g)[self.layer]
 
     # Initialize loop variables
-    eta = tf.random_uniform(
-        tf.shape(x), -self.eps, self.eps, dtype=self.tf_dtype)
+    eta = tf.random.uniform(
+        tf.shape(input=x), -self.eps, self.eps, dtype=self.tf_dtype)
     eta = clip_eta(eta, self.ord, self.eps)
 
     def cond(i, _):
@@ -154,7 +154,7 @@ class FastFeatureAdversaries(Attack):
       new_eta = self.attack_single_step(x, e, g_feat)
       return i + 1, new_eta
 
-    _, eta = tf.while_loop(cond, body, (tf.zeros([]), eta), back_prop=True,
+    _, eta = tf.while_loop(cond=cond, body=body, loop_vars=(tf.zeros([]), eta), back_prop=True,
                            maximum_iterations=self.nb_iter)
 
     # Define adversarial example (and clip if necessary)

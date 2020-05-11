@@ -136,13 +136,13 @@ class MLP(PicklableModel):
     return out
 
   def make_input_placeholder(self):
-    return tf.placeholder(tf.float32, tuple(self.input_shape))
+    return tf.compat.v1.placeholder(tf.float32, tuple(self.input_shape))
 
   def make_label_placeholder(self):
     try:
       return self.layers[-1].make_label_placeholder()
     except NotImplementedError:
-      return tf.placeholder(tf.float32,
+      return tf.compat.v1.placeholder(tf.float32,
                             self.layers[-1].get_output_shape())
 
 
@@ -182,13 +182,13 @@ class Linear(Layer):
     self.input_shape = [batch_size, dim]
     self.output_shape = [batch_size, self.num_hid]
     if self.init_mode == "norm":
-      init = tf.random_normal([dim, self.num_hid], dtype=tf.float32)
-      init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init), axis=0,
-                                                 keep_dims=True))
+      init = tf.random.normal([dim, self.num_hid], dtype=tf.float32)
+      init = init / tf.sqrt(1e-7 + tf.reduce_sum(input_tensor=tf.square(init), axis=0,
+                                                 keepdims=True))
       init = init * self.init_scale
     elif self.init_mode == "uniform_unit_scaling":
       scale = np.sqrt(3. / dim)
-      init = tf.random_uniform([dim, self.num_hid], dtype=tf.float32,
+      init = tf.random.uniform([dim, self.num_hid], dtype=tf.float32,
                                minval=-scale, maxval=scale)
     else:
       raise ValueError(self.init_mode)
@@ -249,16 +249,16 @@ class Conv2D(Layer):
     fan_out = self.kernel_shape[0] * \
         self.kernel_shape[1] * self.output_channels
     if self.init_mode == "norm":
-      init = tf.random_normal(kernel_shape, dtype=tf.float32)
-      squared_norms = tf.reduce_sum(tf.square(init), axis=(0, 1, 2))
+      init = tf.random.normal(kernel_shape, dtype=tf.float32)
+      squared_norms = tf.reduce_sum(input_tensor=tf.square(init), axis=(0, 1, 2))
       denom = tf.sqrt(1e-7 + squared_norms)
       init = self.init_scale * init / denom
     elif self.init_mode == "inv_sqrt":
-      init = tf.random_normal(kernel_shape, dtype=tf.float32,
+      init = tf.random.normal(kernel_shape, dtype=tf.float32,
                               stddev=np.sqrt(2.0 / fan_out))
     elif self.init_mode == "glorot_uniform":
       scale = np.sqrt(6. / (fan_in + fan_out))
-      init = tf.random_uniform(kernel_shape, dtype=tf.float32,
+      init = tf.random.uniform(kernel_shape, dtype=tf.float32,
                                minval=-scale, maxval=scale)
     else:
       raise ValueError(self.init_mode)
@@ -276,8 +276,8 @@ class Conv2D(Layer):
 
   def fprop(self, x, **kwargs):
     assert len(self.strides) == 2
-    out = tf.nn.conv2d(x, self.kernels.var,
-                       (1,) + tuple(self.strides) + (1,), self.padding)
+    out = tf.nn.conv2d(input=x, filters=self.kernels.var,
+                       strides=(1,) + tuple(self.strides) + (1,), padding=self.padding)
     if self.use_bias:
       out = out + self.b.var
     return out
@@ -319,7 +319,7 @@ class ReLU(Layer):
       # out = out - self.leak * tf.nn.relu(-x)
       #
 
-      out = tf.where(tf.less(x, 0.0), self.leak * x, x)
+      out = tf.compat.v1.where(tf.less(x, 0.0), self.leak * x, x)
     return out
 
   def get_params(self):
@@ -398,7 +398,7 @@ class SELU(Layer):
   def fprop(self, x, **kwargs):
     alpha = 1.6732632423543772848170429916717
     scale = 1.0507009873554804934193349852946
-    mask = tf.to_float(x >= 0.)
+    mask = tf.cast(x >= 0., dtype=tf.float32)
     out = mask * x + (1. - mask) * \
         (alpha * tf.exp((1. - mask) * x) - alpha)
     return scale * out
@@ -434,7 +434,7 @@ class Softmax(Layer):
     return []
 
   def make_label_placeholder(self):
-    return tf.placeholder(tf.float32, self.output_shape)
+    return tf.compat.v1.placeholder(tf.float32, self.output_shape)
 
 
 class Flatten(Layer):
@@ -464,10 +464,10 @@ class Print(Layer):
     return []
 
   def fprop(self, x, **kwargs):
-    mean = tf.reduce_mean(x)
-    std = tf.sqrt(tf.reduce_mean(tf.square(x - mean)))
-    return tf.Print(x,
-                    [tf.reduce_min(x), mean, tf.reduce_max(x), std],
+    mean = tf.reduce_mean(input_tensor=x)
+    std = tf.sqrt(tf.reduce_mean(input_tensor=tf.square(x - mean)))
+    return tf.compat.v1.Print(x,
+                    [tf.reduce_min(input_tensor=x), mean, tf.reduce_max(input_tensor=x), std],
                     "Print layer")
 
 
@@ -564,14 +564,14 @@ class PerImageStandardize(Layer):
     variance = tf.nn.relu(variance)
     stddev = tf.sqrt(variance)
 
-    num_pixels = reduce_prod(tf.shape(x)[1:])
+    num_pixels = reduce_prod(tf.shape(input=x)[1:])
 
-    min_stddev = tf.rsqrt(tf.to_float(num_pixels))
+    min_stddev = tf.math.rsqrt(tf.cast(num_pixels, dtype=tf.float32))
     pixel_value_scale = tf.maximum(stddev, min_stddev)
     pixel_value_offset = mean
 
     x = tf.subtract(x, pixel_value_offset)
-    x = tf.div(x, pixel_value_scale)
+    x = tf.compat.v1.div(x, pixel_value_scale)
     return x
 
 
@@ -635,7 +635,7 @@ class Dropout(Layer):
       if self.name in dropout_dict:
         include_prob = dropout_dict[self.name]
     if dropout:
-      return tf.nn.dropout(x, include_prob)
+      return tf.nn.dropout(x, 1 - (include_prob))
     return x
 
 
@@ -694,11 +694,11 @@ class ResidualWithGroupNorm(Layer):
     x = self.conv2.fprop(x)
     if self.stride != 1:
       stride = [1, self.stride, self.stride, 1]
-      orig_x = tf.nn.avg_pool(orig_x, stride, stride, 'VALID')
+      orig_x = tf.nn.avg_pool2d(input=orig_x, ksize=stride, strides=stride, padding='VALID')
     out_filter = self.out_filter
     in_filter = self.in_filter
     if in_filter != out_filter:
-      orig_x = tf.pad(orig_x, [[0, 0], [0, 0], [0, 0],
+      orig_x = tf.pad(tensor=orig_x, paddings=[[0, 0], [0, 0], [0, 0],
                                [(out_filter - in_filter) // 2,
                                 (out_filter - in_filter) // 2]])
     x = x + orig_x
@@ -716,7 +716,7 @@ class GlobalAveragePool(Layer):
 
   def fprop(self, x, **kwargs):
     assert len(list(x.get_shape())) == 4
-    return tf.reduce_mean(x, [1, 2])
+    return tf.reduce_mean(input_tensor=x, axis=[1, 2])
 
 
 class GroupNorm(Layer):
@@ -748,11 +748,11 @@ class GroupNorm(Layer):
                    name=self.name + "_beta")
 
   def fprop(self, x, **kwargs):
-    shape = tf.shape(x)
+    shape = tf.shape(input=x)
     batch_size = shape[0]
     x = tf.reshape(x, (batch_size,) + self.expanded_shape)
-    mean, var = tf.nn.moments(x, [1, 2, 3], keep_dims=True)
-    x = (x - mean) * tf.rsqrt(var + self.eps)
+    mean, var = tf.nn.moments(x=x, axes=[1, 2, 3], keepdims=True)
+    x = (x - mean) * tf.math.rsqrt(var + self.eps)
     x = tf.reshape(x, shape)
     x = x * self.gamma.var + self.beta.var
     return x
@@ -782,8 +782,8 @@ class BatchNorm(Layer):
                    name=self.name + "_beta")
 
   def fprop(self, x, **kwargs):
-    mean, var = tf.nn.moments(x, [0, 1, 2], keep_dims=True)
-    x = (x - mean) * tf.rsqrt(var + self.eps)
+    mean, var = tf.nn.moments(x=x, axes=[0, 1, 2], keepdims=True)
+    x = (x - mean) * tf.math.rsqrt(var + self.eps)
     x = x * self.gamma.var + self.beta.var
     return x
 
@@ -846,11 +846,11 @@ class ResidualWithBatchNorm(Layer):
     x = self.conv2.fprop(x)
     if self.stride != 1:
       stride = [1, self.stride, self.stride, 1]
-      orig_x = tf.nn.avg_pool(orig_x, stride, stride, 'VALID')
+      orig_x = tf.nn.avg_pool2d(input=orig_x, ksize=stride, strides=stride, padding='VALID')
     out_filter = self.out_filter
     in_filter = self.in_filter
     if in_filter != out_filter:
-      orig_x = tf.pad(orig_x, [[0, 0], [0, 0], [0, 0],
+      orig_x = tf.pad(tensor=orig_x, paddings=[[0, 0], [0, 0], [0, 0],
                                [(out_filter - in_filter) // 2,
                                 (out_filter - in_filter) // 2]])
     x = x + orig_x

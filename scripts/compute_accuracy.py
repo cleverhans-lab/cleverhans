@@ -78,9 +78,9 @@ def print_accuracies(filepath, train_start=TRAIN_START, train_end=TRAIN_END,
   """
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(20181014)
+  tf.compat.v1.set_random_seed(20181014)
   set_log_level(logging.INFO)
-  sess = tf.Session()
+  sess = tf.compat.v1.Session()
 
   with sess.as_default():
     model = load(filepath)
@@ -188,4 +188,4 @@ if __name__ == '__main__':
                        'Batch size for most jobs')
   flags.DEFINE_float('base_eps_iter', BASE_EPS_ITER,
                      'epsilon per iteration, if data were in [0, 1]')
-  tf.app.run()
+  tf.compat.v1.app.run()

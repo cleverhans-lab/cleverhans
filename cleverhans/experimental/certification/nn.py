@@ -61,14 +61,14 @@ class NeuralNetwork(object):
     for i in range(self.num_hidden_layers):
       shape = np.shape(net_weights[i])
       self.weights.append(
-          tf.convert_to_tensor(net_weights[i], dtype=tf.float32))
+          tf.convert_to_tensor(value=net_weights[i], dtype=tf.float32))
       self.layer_types.append(net_layer_types[i])
 
       if(self.layer_types[i] in {'ff', 'ff_relu'}):
         self.sizes.append(int(shape[1]))
         # For feedforward networks, no unraveling the bias terms
 
-        small_bias = tf.convert_to_tensor(net_biases[i], dtype=tf.float32)
+        small_bias = tf.convert_to_tensor(value=net_biases[i], dtype=tf.float32)
         self.biases.append(tf.reshape(small_bias, [-1, 1]))
         # Assumes that x^{i+1} = W_i x^i
         self.input_shapes.append([int(shape[1]), 1])
@@ -89,7 +89,7 @@ class NeuralNetwork(object):
             [1, current_num_rows, current_num_columns, current_num_channels])
 
         # For conv networks, unraveling the bias terms
-        small_bias = tf.convert_to_tensor(net_biases[i], dtype=tf.float32)
+        small_bias = tf.convert_to_tensor(value=net_biases[i], dtype=tf.float32)
         large_bias = tf.tile(tf.reshape(small_bias, [-1, 1]),
                              [current_num_rows*current_num_columns, 1])
         self.biases.append(large_bias)
@@ -104,9 +104,9 @@ class NeuralNetwork(object):
 
     self.sizes.append(final_dim)
     self.final_weights = tf.convert_to_tensor(
-        net_weights[self.num_hidden_layers], dtype=tf.float32)
+        value=net_weights[self.num_hidden_layers], dtype=tf.float32)
     self.final_bias = tf.convert_to_tensor(
-        net_biases[self.num_hidden_layers], dtype=tf.float32)
+        value=net_biases[self.num_hidden_layers], dtype=tf.float32)
 
   def forward_pass(self, vector, layer_index, is_transpose=False, is_abs=False):
     """Performs forward pass through the layer weights at layer_index.
@@ -136,7 +136,7 @@ class NeuralNetwork(object):
 
     if layer_type in {'ff', 'ff_relu'}:
       if is_transpose:
-        weight = tf.transpose(weight)
+        weight = tf.transpose(a=weight)
       return_vector = tf.matmul(weight, vector)
     elif layer_type in {'conv', 'conv_relu'}:
       if is_transpose:
@@ -147,8 +147,8 @@ class NeuralNetwork(object):
                                                         self.cnn_params[layer_index]['stride'], 1],
                                                padding=self.cnn_params[layer_index]['padding'])
       else:
-        return_vector = tf.nn.conv2d(vector,
-                                     weight,
+        return_vector = tf.nn.conv2d(input=vector,
+                                     filters=weight,
                                      strides=[1, self.cnn_params[layer_index]['stride'],
                                               self.cnn_params[layer_index]['stride'], 1],
                                      padding=self.cnn_params[layer_index]['padding'])
@@ -192,7 +192,7 @@ def load_network_from_checkpoint(checkpoint, model_json, input_shape=None):
   variable_map = reader.get_variable_to_shape_map()
   checkpoint_variable_names = variable_map.keys()
   # Parse JSON file for names
-  with tf.gfile.Open(model_json) as f:
+  with tf.io.gfile.GFile(model_json) as f:
     list_model_var = json.load(f)
 
   net_layer_types = []

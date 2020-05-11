@@ -54,8 +54,8 @@ def load_images(input_dir, batch_shape):
   filenames = []
   idx = 0
   batch_size = batch_shape[0]
-  for filepath in tf.gfile.Glob(os.path.join(input_dir, '*.png')):
-    with tf.gfile.Open(filepath) as f:
+  for filepath in tf.io.gfile.glob(os.path.join(input_dir, '*.png')):
+    with tf.io.gfile.GFile(filepath) as f:
       images[idx, :, :, :] = imread(f, mode='RGB').astype(np.float) / 255.0
     filenames.append(os.path.basename(filepath))
     idx += 1
@@ -79,7 +79,7 @@ def save_images(images, filenames, output_dir):
     output_dir: directory where to save images
   """
   for i, filename in enumerate(filenames):
-    with tf.gfile.Open(os.path.join(output_dir, filename), 'w') as f:
+    with tf.io.gfile.GFile(os.path.join(output_dir, filename), 'w') as f:
       imsave(f, images[i, :, :, :], format='png')
 
 
@@ -91,4 +91,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

@@ -49,16 +49,16 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   report = AccuracyReport()
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
+  tf.compat.v1.set_random_seed(1234)
   # Force TensorFlow to use single thread to improve reproducibility
-  config = tf.ConfigProto(intra_op_parallelism_threads=1,
+  config = tf.compat.v1.ConfigProto(intra_op_parallelism_threads=1,
                           inter_op_parallelism_threads=1)
 
   if keras.backend.image_data_format() != 'channels_last':
     raise NotImplementedError("this tutorial requires keras to be configured to channels_last format")
 
   # Create TF session and set as Keras backend session
-  sess = tf.Session(config=config)
+  sess = tf.compat.v1.Session(config=config)
   keras.backend.set_session(sess)
 
   # Get MNIST test data
@@ -215,4 +215,4 @@ if __name__ == '__main__':
   flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Size of training batches')
   flags.DEFINE_float('learning_rate', LEARNING_RATE,
                      'Learning rate for training')
-  tf.app.run()
+  tf.compat.v1.app.run()

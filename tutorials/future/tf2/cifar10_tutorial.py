@@ -35,7 +35,7 @@ class CNN(Model):
   def call(self, x):
     for layer in self.layers_obj:
       x = layer(x)
-    return tf.reduce_mean(x, [1, 2])
+    return tf.reduce_mean(input_tensor=x, axis=[1, 2])
 
 
 def ld_cifar10():
@@ -55,8 +55,8 @@ def ld_cifar10():
     return tf.image.random_flip_left_right(x)
 
   def augment_shift(x, w=4):
-    y = tf.pad(x, [[w] * 2, [w] * 2, [0] * 2], mode='REFLECT')
-    return tf.image.random_crop(y, tf.shape(x))
+    y = tf.pad(tensor=x, paddings=[[w] * 2, [w] * 2, [0] * 2], mode='REFLECT')
+    return tf.image.random_crop(y, tf.shape(input=x))
 
   mnist_train, mnist_test = dataset['train'], dataset['test']
   # Augmentation helps a lot in CIFAR10

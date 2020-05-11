@@ -105,7 +105,7 @@ class Attack:
         self.batch_size = batch_size     
         self.lr_stage1 = lr_stage1
         
-        tf.set_random_seed(1234)
+        tf.compat.v1.set_random_seed(1234)
         params = model_registry.GetParams('asr.librispeech.Librispeech960Wpm', 'Test')
         params.random_seed = 1234
         params.is_eval = True
@@ -116,16 +116,16 @@ class Attack:
             self.delta_large = tf.Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32), name='qq_delta')
             
             # placeholders
-            self.input_tf = tf.placeholder(tf.float32, shape=[batch_size, None], name='qq_input')
-            self.tgt_tf = tf.placeholder(tf.string)
-            self.sample_rate_tf = tf.placeholder(tf.int32, name='qq_sample_rate')             
-            self.th = tf.placeholder(tf.float32, shape=[batch_size, None, None], name='qq_th')
-            self.psd_max_ori = tf.placeholder(tf.float32, shape=[batch_size], name='qq_psd')            
-            self.mask = tf.placeholder(dtype=np.float32, shape=[batch_size, None], name='qq_mask')   
-            self.mask_freq = tf.placeholder(dtype=np.float32, shape=[batch_size, None, 80])   
-            self.noise = tf.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
-            self.maxlen = tf.placeholder(np.int32)
-            self.lr_stage2 = tf.placeholder(np.float32)
+            self.input_tf = tf.compat.v1.placeholder(tf.float32, shape=[batch_size, None], name='qq_input')
+            self.tgt_tf = tf.compat.v1.placeholder(tf.string)
+            self.sample_rate_tf = tf.compat.v1.placeholder(tf.int32, name='qq_sample_rate')             
+            self.th = tf.compat.v1.placeholder(tf.float32, shape=[batch_size, None, None], name='qq_th')
+            self.psd_max_ori = tf.compat.v1.placeholder(tf.float32, shape=[batch_size], name='qq_psd')            
+            self.mask = tf.compat.v1.placeholder(dtype=np.float32, shape=[batch_size, None], name='qq_mask')   
+            self.mask_freq = tf.compat.v1.placeholder(dtype=np.float32, shape=[batch_size, None, 80])   
+            self.noise = tf.compat.v1.placeholder(np.float32, shape=[batch_size, None], name="qq_noise")
+            self.maxlen = tf.compat.v1.placeholder(np.int32)
+            self.lr_stage2 = tf.compat.v1.placeholder(np.float32)
             
             # variable
             self.rescale = tf.Variable(np.ones((batch_size,1), dtype=np.float32), name='qq_rescale')
@@ -144,7 +144,7 @@ class Attack:
             task = model.GetTask()
             metrics = task.FPropDefaultTheta(self.inputs)
             # self.celoss with the shape (batch_size)
-            self.celoss = tf.get_collection("per_loss")[0]         
+            self.celoss = tf.compat.v1.get_collection("per_loss")[0]         
             self.decoded = task.Decode(self.inputs)
         
         
@@ -153,14 +153,14 @@ class Attack:
         self.transform = Transform(FLAGS.window_size)
         for i in range(self.batch_size):
             logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
-            loss_th =  tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[i]))            
-            loss_th = tf.expand_dims(loss_th, dim=0) 
+            loss_th =  tf.reduce_mean(input_tensor=tf.nn.relu(logits_delta - (self.th)[i]))            
+            loss_th = tf.expand_dims(loss_th, axis=0) 
             self.loss_th_list.append(loss_th)
         self.loss_th = tf.concat(self.loss_th_list, axis=0)
         
         
-        self.optimizer1 = tf.train.AdamOptimizer(self.lr_stage1)
-        self.optimizer2 = tf.train.AdamOptimizer(self.lr_stage2)
+        self.optimizer1 = tf.compat.v1.train.AdamOptimizer(self.lr_stage1)
+        self.optimizer2 = tf.compat.v1.train.AdamOptimizer(self.lr_stage2)
              
         grad1, var1 = self.optimizer1.compute_gradients(self.celoss, [self.delta_large])[0]      
         grad21, var21 = self.optimizer2.compute_gradients(self.celoss, [self.delta_large])[0]
@@ -174,13 +174,13 @@ class Attack:
     def attack_stage1(self, audios, trans, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, num_loop, data, lr_stage2):
         sess = self.sess       
         # initialize and load the pretrained model
-        sess.run(tf.initializers.global_variables())
-        saver = tf.train.Saver([x for x in tf.global_variables() if x.name.startswith("librispeech")])
+        sess.run(tf.compat.v1.initializers.global_variables())
+        saver = tf.compat.v1.train.Saver([x for x in tf.compat.v1.global_variables() if x.name.startswith("librispeech")])
         saver.restore(sess, FLAGS.checkpoint)
                     
         # reassign the variables  
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
-        sess.run(tf.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
+        sess.run(tf.compat.v1.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))             
+        sess.run(tf.compat.v1.assign(self.delta_large, np.zeros((self.batch_size, FLAGS.max_length_dataset), dtype=np.float32)))
         
         #noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
@@ -242,7 +242,7 @@ class Attack:
                         final_deltas[ii] = new_input[ii]
                    
                         print("Iteration i=%d, worked ii=%d celoss=%f bound=%f"%(i, ii, cl[ii], FLAGS.initial_bound * rescale[ii]))                                   
-                        sess.run(tf.assign(self.rescale, rescale))
+                        sess.run(tf.compat.v1.assign(self.rescale, rescale))
                                                       
                 # in case no final_delta return        
                 if (i == MAX-1 and final_deltas[ii] is None):
@@ -259,15 +259,15 @@ class Attack:
     def attack_stage2(self, audios, trans, adv, th_batch, psd_max_batch, maxlen, sample_rate, masks, masks_freq, num_loop, data, lr_stage2):
         sess = self.sess       
         # initialize and load the pretrained model
-        sess.run(tf.initializers.global_variables())
-        saver = tf.train.Saver([x for x in tf.global_variables() if x.name.startswith("librispeech")])
+        sess.run(tf.compat.v1.initializers.global_variables())
+        saver = tf.compat.v1.train.Saver([x for x in tf.compat.v1.global_variables() if x.name.startswith("librispeech")])
         saver.restore(sess, FLAGS.checkpoint)
         
-        sess.run(tf.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
-        sess.run(tf.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.05))
+        sess.run(tf.compat.v1.assign(self.rescale, np.ones((self.batch_size, 1), dtype=np.float32)))
+        sess.run(tf.compat.v1.assign(self.alpha, np.ones((self.batch_size), dtype=np.float32) * 0.05))
              
         # reassign the variables
-        sess.run(tf.assign(self.delta_large, adv))        
+        sess.run(tf.compat.v1.assign(self.delta_large, adv))        
         
         #noise = np.random.normal(scale=2, size=audios.shape)
         noise = np.zeros(audios.shape)
@@ -347,13 +347,13 @@ class Attack:
                         # increase the alpha each 20 iterations    
                         if i % 20 == 0:                                
                             alpha[ii] *= 1.2
-                            sess.run(tf.assign(self.alpha, alpha))
+                            sess.run(tf.compat.v1.assign(self.alpha, alpha))
                                                 
                     # if the network fails to make the targeted prediction, reduce alpha each 50 iterations
                     if i % 50 == 0 and predictions['topk_decoded'][ii, 0] != trans[ii].lower():
                         alpha[ii] *= 0.8
                         alpha[ii] = max(alpha[ii], min_th)
-                        sess.run(tf.assign(self.alpha, alpha))
+                        sess.run(tf.compat.v1.assign(self.alpha, alpha))
            
                 # in case no final_delta return        
                 if (i == MAX-1 and final_deltas[ii] is None):
@@ -378,8 +378,8 @@ def main(argv):
     assert num % batch_size == 0
     
     with tf.device("/gpu:0"):
-        tfconf = tf.ConfigProto(allow_soft_placement=True)
-        with tf.Session(config=tfconf) as sess: 
+        tfconf = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+        with tf.compat.v1.Session(config=tfconf) as sess: 
             # set up the attack class
             attack = Attack(sess, 
                             batch_size=batch_size,

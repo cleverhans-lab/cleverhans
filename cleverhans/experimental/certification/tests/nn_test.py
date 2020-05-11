@@ -46,12 +46,12 @@ class NeuralNetworkTest(unittest.TestCase):
     net_layer_types = ['ff_relu', 'ff']
     nn_params = nn.NeuralNetwork(net_weights, net_biases, net_layer_types)
 
-    input_vector = tf.random_uniform(shape=(2, 1), dtype=tf.float32)
+    input_vector = tf.random.uniform(shape=(2, 1), dtype=tf.float32)
     output_vector = nn_params.forward_pass(input_vector, 0)
     self.assertEqual(output_vector.shape.as_list(), [3, 1])
     output_vector_2 = nn_params.forward_pass(input_vector, 0, is_abs=True)
     self.assertEqual(output_vector_2.shape.as_list(), [3, 1])
-    input_vector_trans = tf.random_uniform(shape=(3, 1), dtype=tf.float32)
+    input_vector_trans = tf.random.uniform(shape=(3, 1), dtype=tf.float32)
     output_vector_3 = nn_params.forward_pass(
         input_vector_trans, 0, is_transpose=True)
     self.assertEqual(output_vector_3.shape.as_list(), [2, 1])

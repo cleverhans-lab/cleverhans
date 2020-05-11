@@ -43,7 +43,7 @@ class Attack(object):
     self.tf_dtype = tf.as_dtype(dtypestr)
     self.np_dtype = np.dtype(dtypestr)
 
-    if sess is not None and not isinstance(sess, tf.Session):
+    if sess is not None and not isinstance(sess, tf.compat.v1.Session):
       raise TypeError("sess is not an instance of tf.Session")
 
     from cleverhans import attacks_tf
@@ -138,21 +138,21 @@ class Attack(object):
       if isinstance(value, np.ndarray):
         if value.ndim == 0:
           # This is pretty clearly not a batch of data
-          new_kwargs[name] = tf.placeholder(given_type, shape=[], name=name)
+          new_kwargs[name] = tf.compat.v1.placeholder(given_type, shape=[], name=name)
         else:
           # Assume that this is a batch of data, make the first axis variable
           # in size
           new_shape = [None] + list(value.shape[1:])
-          new_kwargs[name] = tf.placeholder(given_type, new_shape, name=name)
+          new_kwargs[name] = tf.compat.v1.placeholder(given_type, new_shape, name=name)
       elif isinstance(value, utils.known_number_types):
-        new_kwargs[name] = tf.placeholder(given_type, shape=[], name=name)
+        new_kwargs[name] = tf.compat.v1.placeholder(given_type, shape=[], name=name)
       else:
         raise ValueError("Could not identify type of argument " +
                          name + ": " + str(value))
 
     # x is a special placeholder we always want to have
     x_shape = [None] + list(x_val.shape)[1:]
-    x = tf.placeholder(self.tf_dtype, shape=x_shape)
+    x = tf.compat.v1.placeholder(self.tf_dtype, shape=x_shape)
 
     # now we generate the graph that we want
     x_adv = self.generate(x, **new_kwargs)
@@ -277,7 +277,7 @@ class Attack(object):
     else:
       preds = self.model.get_probs(x)
       preds_max = reduce_max(preds, 1, keepdims=True)
-      original_predictions = tf.to_float(tf.equal(preds, preds_max))
+      original_predictions = tf.cast(tf.equal(preds, preds_max), dtype=tf.float32)
       labels = tf.stop_gradient(original_predictions)
       del preds
     if isinstance(labels, np.ndarray):

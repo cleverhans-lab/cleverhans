@@ -16,7 +16,7 @@ def diag(diag_elements):
   Returns:
     tf matrix with diagonal entries as diag_elements
   """
-  return tf.diag(tf.reshape(diag_elements, [-1]))
+  return tf.linalg.tensor_diag(tf.reshape(diag_elements, [-1]))
 
 
 def initialize_dual(neural_net_params_object, init_dual_file=None,
@@ -48,46 +48,46 @@ def initialize_dual(neural_net_params_object, init_dual_file=None,
     for i in range(0, neural_net_params_object.num_hidden_layers + 1):
       initializer = (np.random.uniform(0, random_init_variance, size=(
           neural_net_params_object.sizes[i], 1))).astype(np.float32)
-      lambda_pos.append(tf.get_variable('lambda_pos_' + str(i),
+      lambda_pos.append(tf.compat.v1.get_variable('lambda_pos_' + str(i),
                                         initializer=initializer,
                                         dtype=tf.float32))
       initializer = (np.random.uniform(0, random_init_variance, size=(
           neural_net_params_object.sizes[i], 1))).astype(np.float32)
-      lambda_neg.append(tf.get_variable('lambda_neg_' + str(i),
+      lambda_neg.append(tf.compat.v1.get_variable('lambda_neg_' + str(i),
                                         initializer=initializer,
                                         dtype=tf.float32))
       initializer = (np.random.uniform(0, random_init_variance, size=(
           neural_net_params_object.sizes[i], 1))).astype(np.float32)
-      lambda_quad.append(tf.get_variable('lambda_quad_' + str(i),
+      lambda_quad.append(tf.compat.v1.get_variable('lambda_quad_' + str(i),
                                          initializer=initializer,
                                          dtype=tf.float32))
       initializer = (np.random.uniform(0, random_init_variance, size=(
           neural_net_params_object.sizes[i], 1))).astype(np.float32)
-      lambda_lu.append(tf.get_variable('lambda_lu_' + str(i),
+      lambda_lu.append(tf.compat.v1.get_variable('lambda_lu_' + str(i),
                                        initializer=initializer,
                                        dtype=tf.float32))
-    nu = tf.get_variable('nu', initializer=init_nu)
+    nu = tf.compat.v1.get_variable('nu', initializer=init_nu)
   else:
     # Loading from file
     dual_var_init_val = np.load(init_dual_file).item()
     for i in range(0, neural_net_params_object.num_hidden_layers + 1):
       lambda_pos.append(
-          tf.get_variable('lambda_pos_' + str(i),
+          tf.compat.v1.get_variable('lambda_pos_' + str(i),
                           initializer=dual_var_init_val['lambda_pos'][i],
                           dtype=tf.float32))
       lambda_neg.append(
-          tf.get_variable('lambda_neg_' + str(i),
+          tf.compat.v1.get_variable('lambda_neg_' + str(i),
                           initializer=dual_var_init_val['lambda_neg'][i],
                           dtype=tf.float32))
       lambda_quad.append(
-          tf.get_variable('lambda_quad_' + str(i),
+          tf.compat.v1.get_variable('lambda_quad_' + str(i),
                           initializer=dual_var_init_val['lambda_quad'][i],
                           dtype=tf.float32))
       lambda_lu.append(
-          tf.get_variable('lambda_lu_' + str(i),
+          tf.compat.v1.get_variable('lambda_lu_' + str(i),
                           initializer=dual_var_init_val['lambda_lu'][i],
                           dtype=tf.float32))
-    nu = tf.get_variable('nu', initializer=1.0*dual_var_init_val['nu'])
+    nu = tf.compat.v1.get_variable('nu', initializer=1.0*dual_var_init_val['nu'])
   dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
               'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
   return dual_var
@@ -108,14 +108,14 @@ def eig_one_step(current_vector, learning_rate, vector_prod_fn):
   grad = 2*vector_prod_fn(current_vector)
   # Current objective = (1/2)*v^T (2*M*v); v = current_vector
   # grad = 2*M*v
-  current_objective = tf.reshape(tf.matmul(tf.transpose(current_vector),
+  current_objective = tf.reshape(tf.matmul(tf.transpose(a=current_vector),
                                            grad) / 2., shape=())
 
   # Project the gradient into the tangent space of the constraint region.
   # This way we do not waste time taking steps that try to change the
   # norm of current_vector
-  grad = grad - current_vector*tf.matmul(tf.transpose(current_vector), grad)
-  grad_norm = tf.norm(grad)
+  grad = grad - current_vector*tf.matmul(tf.transpose(a=current_vector), grad)
+  grad_norm = tf.norm(tensor=grad)
   grad_norm_sq = tf.square(grad_norm)
 
   # Computing normalized gradient of unit norm
@@ -124,7 +124,7 @@ def eig_one_step(current_vector, learning_rate, vector_prod_fn):
   # Computing directional second derivative (dsd)
   # dsd = 2*g^T M g, where g is normalized gradient
   directional_second_derivative = (
-      tf.reshape(2*tf.matmul(tf.transpose(norm_grad),
+      tf.reshape(2*tf.matmul(tf.transpose(a=norm_grad),
                              vector_prod_fn(norm_grad)),
                  shape=()))
 
@@ -147,9 +147,9 @@ def eig_one_step(current_vector, learning_rate, vector_prod_fn):
       step = 0.0
     else:
       # Make a heuristic guess of the step size
-      step = -2. * tf.reduce_sum(current_vector*grad) / grad_norm_sq
+      step = -2. * tf.reduce_sum(input_tensor=current_vector*grad) / grad_norm_sq
       # Computing gain using the gradient and second derivative
-      gain = -(2 * tf.reduce_sum(current_vector*grad) +
+      gain = -(2 * tf.reduce_sum(input_tensor=current_vector*grad) +
                (step*step) * grad_m_grad)
 
       # Fall back to pre-determined learning rate if no gain
@@ -221,16 +221,16 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
       dtype, size=1, dynamic_size=True, element_shape=(matrix_dim, 1))
 
   # If start vector is all zeros, make it a random normal vector and run for max_iter
-  if tf.norm(initial_vector) < collapse_tol:
-    initial_vector = tf.random_normal(shape=(matrix_dim, 1), dtype=dtype)
+  if tf.norm(tensor=initial_vector) < collapse_tol:
+    initial_vector = tf.random.normal(shape=(matrix_dim, 1), dtype=dtype)
     num_iter = max_iter
 
-  w = initial_vector / tf.norm(initial_vector)
+  w = initial_vector / tf.norm(tensor=initial_vector)
 
   # Iteration 0 of Lanczos
   q_vectors = q_vectors.write(0, w)
   w_ = vector_prod_fn(w)
-  cur_alpha = tf.reduce_sum(w_ * w)
+  cur_alpha = tf.reduce_sum(input_tensor=w_ * w)
   alpha = alpha.write(0, cur_alpha)
   w_ = w_ - tf.scalar_mul(cur_alpha, w)
   w_prev = w
@@ -238,7 +238,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
 
   # Subsequent iterations of Lanczos
   for i in tf.range(1, num_iter):
-    cur_beta = tf.norm(w)
+    cur_beta = tf.norm(tensor=w)
     if cur_beta < collapse_tol:
       # return early if Krylov subspace collapsed
       break
@@ -248,7 +248,7 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
     w = w / cur_beta
 
     w_ = vector_prod_fn(w)
-    cur_alpha = tf.reduce_sum(w_ * w)
+    cur_alpha = tf.reduce_sum(input_tensor=w_ * w)
 
     q_vectors = q_vectors.write(i, w)
     alpha = alpha.write(i, cur_alpha)
@@ -264,15 +264,15 @@ def tf_lanczos_smallest_eigval(vector_prod_fn,
 
   offdiag_submatrix = tf.linalg.diag(beta)
   tridiag_matrix = (tf.linalg.diag(alpha)
-                    + tf.pad(offdiag_submatrix, [[0, 1], [1, 0]])
-                    + tf.pad(offdiag_submatrix, [[1, 0], [0, 1]]))
+                    + tf.pad(tensor=offdiag_submatrix, paddings=[[0, 1], [1, 0]])
+                    + tf.pad(tensor=offdiag_submatrix, paddings=[[1, 0], [0, 1]]))
 
   eigvals, eigvecs = tf.linalg.eigh(tridiag_matrix)
 
   smallest_eigval = eigvals[0]
   smallest_eigvec = tf.matmul(tf.reshape(eigvecs[:, 0], (1, -1)),
                               q_vectors)
-  smallest_eigvec = smallest_eigvec / tf.norm(smallest_eigvec)
+  smallest_eigvec = smallest_eigvec / tf.norm(tensor=smallest_eigvec)
   smallest_eigvec = tf.reshape(smallest_eigvec, (matrix_dim, 1))
 
   return smallest_eigval, smallest_eigvec

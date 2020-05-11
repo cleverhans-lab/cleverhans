@@ -33,35 +33,35 @@ class OptimizationTest(tf.test.TestCase):
     epsilon = 0.1
 
     # Creating dual variables to use for optimization
-    lambda_pos = [tf.get_variable('lambda_pos0',
+    lambda_pos = [tf.compat.v1.get_variable('lambda_pos0',
                                   initializer=np.random.uniform(
                                       0, 0.1, size=(2, 1)).astype(np.float32)),
-                  tf.get_variable('lambda_pos1',
+                  tf.compat.v1.get_variable('lambda_pos1',
                                   initializer=np.random.uniform(
                                       0, 0.1, size=(3, 1)).astype(np.float32))]
-    lambda_neg = [tf.get_variable('lambda_neg0',
+    lambda_neg = [tf.compat.v1.get_variable('lambda_neg0',
                                   initializer=np.random.uniform(
                                       0, 0.1, size=(2, 1)).astype(np.float32)),
-                  tf.get_variable('lambda_neg1',
+                  tf.compat.v1.get_variable('lambda_neg1',
                                   initializer=np.random.uniform(
                                       0, 0.1, size=(3, 1)).astype(np.float32))]
-    lambda_quad = [tf.get_variable('lambda_quad0',
+    lambda_quad = [tf.compat.v1.get_variable('lambda_quad0',
                                    initializer=np.random.uniform(
                                        0, 0.1, size=(2, 1)).astype(np.float32)),
-                   tf.get_variable('lambda_quad1',
+                   tf.compat.v1.get_variable('lambda_quad1',
                                    initializer=np.random.uniform(
                                        0, 0.1, size=(3, 1)).astype(np.float32))]
-    lambda_lu = [tf.get_variable('lambda_lu0',
+    lambda_lu = [tf.compat.v1.get_variable('lambda_lu0',
                                  initializer=np.random.uniform(
                                      0, 0.1, size=(2, 1)).astype(np.float32)),
-                 tf.get_variable('lambda_lu1',
+                 tf.compat.v1.get_variable('lambda_lu1',
                                  initializer=np.random.uniform(
                                      0, 0.1, size=(3, 1)).astype(np.float32))]
-    nu = tf.reshape(tf.get_variable('nu', initializer=200.0,
+    nu = tf.reshape(tf.compat.v1.get_variable('nu', initializer=200.0,
                                     dtype=tf.float32), shape=(1, 1))
     dual_var = {'lambda_pos': lambda_pos, 'lambda_neg': lambda_neg,
                 'lambda_quad': lambda_quad, 'lambda_lu': lambda_lu, 'nu': nu}
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     dual_formulation_object = dual_formulation.DualFormulation(sess,
                                                                dual_var,
                                                                nn_params1,
@@ -77,7 +77,7 @@ class OptimizationTest(tf.test.TestCase):
     """ Function to test initialization of OptimizationTest. """
     sess, dual_formulation_object = self.prepare_dual_object()
     dual_formulation_object.set_differentiable_objective()
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.compat.v1.global_variables_initializer())
     optimization_params = {
         'init_learning_rate': 0.1,
         'learning_rate_decay': 0.9,
@@ -110,7 +110,7 @@ class OptimizationTest(tf.test.TestCase):
         'momentum_parameter': 0.9,
         'eig_type': 'TF'
     }
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.compat.v1.global_variables_initializer())
     optimization_object = optimization.Optimization(dual_formulation_object,
                                                     sess, optimization_params)
     eig_vec = optimization_object.get_min_eig_vec_proxy()
@@ -189,7 +189,7 @@ class OptimizationTest(tf.test.TestCase):
         'projection_steps': 200,
         'eig_type': 'TF'
     }
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.compat.v1.global_variables_initializer())
     optimization_object = optimization.Optimization(dual_formulation_object,
                                                     sess, optimization_params)
     is_cert_found = optimization_object.run_optimization()

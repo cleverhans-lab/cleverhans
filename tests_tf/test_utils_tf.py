@@ -29,7 +29,7 @@ class TestUtilsTF(CleverHansTest):
 
   def setUp(self):
     super(TestUtilsTF, self).setUp()
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
 
   def test_clip_by_value_numpy_dtype(self):
     # Test that it's possible to use clip_by_value while mixing numpy and tf
@@ -40,13 +40,13 @@ class TestUtilsTF(CleverHansTest):
     utils_tf.clip_by_value(x, clip_min, clip_max)
 
   def test_l2_batch_normalize(self):
-    x = tf.random_normal((100, 1000))
+    x = tf.random.normal((100, 1000))
     x_norm = self.sess.run(utils_tf.l2_batch_normalize(x))
     self.assertClose(np.sum(x_norm**2, axis=1), 1, atol=1e-6)
 
   def test_kl_with_logits(self):
-    p_logits = tf.placeholder(tf.float32, shape=(100, 20))
-    q_logits = tf.placeholder(tf.float32, shape=(100, 20))
+    p_logits = tf.compat.v1.placeholder(tf.float32, shape=(100, 20))
+    q_logits = tf.compat.v1.placeholder(tf.float32, shape=(100, 20))
     p_logits_np = np.random.normal(0, 10, size=(100, 20))
     q_logits_np = np.random.normal(0, 10, size=(100, 20))
     kl_div_tf = self.sess.run(utils_tf.kl_with_logits(p_logits, q_logits),
@@ -88,7 +88,7 @@ class TestUtilsTF(CleverHansTest):
         clipped_value = self.sess.run(clipped)
         gold = sign * np.array([[2.], [3.], [3.]])
         self.assertClose(clipped_value, gold)
-        grad, = tf.gradients(clipped, eta)
+        grad, = tf.gradients(ys=clipped, xs=eta)
         grad_value = self.sess.run(grad)
         # Note: the second 1. is debatable (the left-sided derivative
         # and the right-sided derivative do not match, so formally

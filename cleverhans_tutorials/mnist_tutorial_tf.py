@@ -67,7 +67,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   report = AccuracyReport()
 
   # Set TF random seed to improve reproducibility
-  tf.set_random_seed(1234)
+  tf.compat.v1.set_random_seed(1234)
 
   # Set logging level to see debug information
   set_log_level(logging.DEBUG)
@@ -77,7 +77,7 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
     config_args = dict(intra_op_parallelism_threads=1)
   else:
     config_args = {}
-  sess = tf.Session(config=tf.ConfigProto(**config_args))
+  sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(**config_args))
 
   # Get MNIST data
   mnist = MNIST(train_start=train_start, train_end=train_end,
@@ -90,9 +90,9 @@ def mnist_tutorial(train_start=0, train_end=60000, test_start=0,
   nb_classes = y_train.shape[1]
 
   # Define input TF placeholder
-  x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols,
+  x = tf.compat.v1.placeholder(tf.float32, shape=(None, img_rows, img_cols,
                                         nchannels))
-  y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+  y = tf.compat.v1.placeholder(tf.float32, shape=(None, nb_classes))
 
   # Train an MNIST model
   train_params = {
@@ -217,4 +217,4 @@ if __name__ == '__main__':
                     ('If True, backprop through adversarial example '
                      'construction process during adversarial training'))
 
-  tf.app.run()
+  tf.compat.v1.app.run()

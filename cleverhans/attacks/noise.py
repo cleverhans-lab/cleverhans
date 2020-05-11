@@ -47,7 +47,7 @@ class Noise(Attack):
 
     if self.ord != np.inf:
       raise NotImplementedError(self.ord)
-    eta = tf.random_uniform(tf.shape(x), -self.eps, self.eps,
+    eta = tf.random.uniform(tf.shape(input=x), -self.eps, self.eps,
                             dtype=self.tf_dtype)
     adv_x = x + eta
     if self.clip_min is not None or self.clip_max is not None:

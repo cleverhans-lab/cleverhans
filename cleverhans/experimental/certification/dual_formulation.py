@@ -11,7 +11,7 @@ import numpy as np
 
 from cleverhans.experimental.certification import utils
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 FLAGS = flags.FLAGS
 
 # Tolerance value for eigenvalue computation
@@ -58,17 +58,17 @@ class DualFormulation(object):
     """
     self.sess = sess
     self.nn_params = neural_net_param_object
-    self.test_input = tf.convert_to_tensor(test_input, dtype=tf.float32)
+    self.test_input = tf.convert_to_tensor(value=test_input, dtype=tf.float32)
     self.true_class = true_class
     self.adv_class = adv_class
-    self.input_minval = tf.convert_to_tensor(input_minval, dtype=tf.float32)
-    self.input_maxval = tf.convert_to_tensor(input_maxval, dtype=tf.float32)
-    self.epsilon = tf.convert_to_tensor(epsilon, dtype=tf.float32)
+    self.input_minval = tf.convert_to_tensor(value=input_minval, dtype=tf.float32)
+    self.input_maxval = tf.convert_to_tensor(value=input_maxval, dtype=tf.float32)
+    self.epsilon = tf.convert_to_tensor(value=epsilon, dtype=tf.float32)
     self.lzs_params = lzs_params or DEFAULT_LZS_PARAMS.copy()
     self.final_linear = (self.nn_params.final_weights[adv_class, :]
                          - self.nn_params.final_weights[true_class, :])
     self.final_linear = tf.reshape(
-        self.final_linear, shape=[tf.size(self.final_linear), 1])
+        self.final_linear, shape=[tf.size(input=self.final_linear), 1])
     self.final_constant = (self.nn_params.final_bias[adv_class]
                            - self.nn_params.final_bias[true_class])
     self.lanczos_dtype = tf.float64
@@ -164,8 +164,8 @@ class DualFormulation(object):
     """
     # TODO: consider whether we can use shallow copy of the lists without
     # using tf.identity
-    projected_nu = tf.placeholder(tf.float32, shape=[])
-    min_eig_h = tf.placeholder(tf.float32, shape=[])
+    projected_nu = tf.compat.v1.placeholder(tf.float32, shape=[])
+    min_eig_h = tf.compat.v1.placeholder(tf.float32, shape=[])
     projected_lambda_pos = [tf.identity(x) for x in self.lambda_pos]
     projected_lambda_neg = [tf.identity(x) for x in self.lambda_neg]
     projected_lambda_quad = [
@@ -222,7 +222,7 @@ class DualFormulation(object):
     # Construct nodes for computing eigenvalue of M
     self.m_min_vec_estimate = np.zeros(shape=(self.matrix_m_dimension, 1), dtype=np.float64)
     zeros_m = tf.zeros(shape=(self.matrix_m_dimension, 1), dtype=tf.float64)
-    self.m_min_vec_ph = tf.placeholder_with_default(input=zeros_m,
+    self.m_min_vec_ph = tf.compat.v1.placeholder_with_default(input=zeros_m,
                                                     shape=(self.matrix_m_dimension, 1),
                                                     name='m_min_vec_ph')
     self.m_min_eig, self.m_min_vec = self.min_eigen_vec(_m_vector_prod_fn,
@@ -235,7 +235,7 @@ class DualFormulation(object):
 
     self.h_min_vec_estimate = np.zeros(shape=(self.matrix_m_dimension - 1, 1), dtype=np.float64)
     zeros_h = tf.zeros(shape=(self.matrix_m_dimension - 1, 1), dtype=tf.float64)
-    self.h_min_vec_ph = tf.placeholder_with_default(input=zeros_h,
+    self.h_min_vec_ph = tf.compat.v1.placeholder_with_default(input=zeros_h,
                                                     shape=(self.matrix_m_dimension - 1, 1),
                                                     name='h_min_vec_ph')
     self.h_min_eig, self.h_min_vec = self.min_eigen_vec(_h_vector_prod_fn,
@@ -256,11 +256,11 @@ class DualFormulation(object):
     bias_sum = 0
     for i in range(0, self.nn_params.num_hidden_layers):
       bias_sum = bias_sum + tf.reduce_sum(
-          tf.multiply(self.nn_params.biases[i], self.lambda_pos[i + 1]))
+          input_tensor=tf.multiply(self.nn_params.biases[i], self.lambda_pos[i + 1]))
     lu_sum = 0
     for i in range(0, self.nn_params.num_hidden_layers + 1):
       lu_sum = lu_sum + tf.reduce_sum(
-          tf.multiply(tf.multiply(self.lower[i], self.upper[i]),
+          input_tensor=tf.multiply(tf.multiply(self.lower[i], self.upper[i]),
                       self.lambda_lu[i]))
 
     self.scalar_f = -bias_sum - lu_sum + self.final_constant
@@ -371,7 +371,7 @@ class DualFormulation(object):
     # Constructing final result using vector_g
     result = tf.concat(
         [
-            alpha * self.nu + tf.reduce_sum(tf.multiply(beta, self.vector_g)),
+            alpha * self.nu + tf.reduce_sum(input_tensor=tf.multiply(beta, self.vector_g)),
             tf.multiply(alpha, self.vector_g) + h_beta
         ],
         axis=0)
@@ -412,11 +412,11 @@ class DualFormulation(object):
       h_columns.append(current_column)
 
     self.matrix_h = tf.concat(h_columns, 1)
-    self.matrix_h = (self.matrix_h + tf.transpose(self.matrix_h))
+    self.matrix_h = (self.matrix_h + tf.transpose(a=self.matrix_h))
 
     self.matrix_m = tf.concat(
         [
-            tf.concat([tf.reshape(self.nu, (1, 1)), tf.transpose(self.vector_g)], axis=1),
+            tf.concat([tf.reshape(self.nu, (1, 1)), tf.transpose(a=self.vector_g)], axis=1),
             tf.concat([self.vector_g, self.matrix_h], axis=1)
         ],
         axis=0)
@@ -486,19 +486,19 @@ class DualFormulation(object):
     feed_dict = feed_dictionary.copy()
     nu = feed_dict[self.nu]
     second_term = self.make_m_psd(nu, feed_dict)
-    tf.logging.info('Nu after modifying: ' + str(second_term))
+    tf.compat.v1.logging.info('Nu after modifying: ' + str(second_term))
     feed_dict.update({self.nu: second_term})
     computed_certificate = self.sess.run(self.unconstrained_objective, feed_dict=feed_dict)
 
-    tf.logging.info('Inner step: %d, current value of certificate: %f',
+    tf.compat.v1.logging.info('Inner step: %d, current value of certificate: %f',
                     current_step, computed_certificate)
 
     # Sometimes due to either overflow or instability in inverses,
     # the returned certificate is large and negative -- keeping a check
     if LOWER_CERT_BOUND < computed_certificate < 0:
       _, min_eig_val_m = self.get_lanczos_eig(feed_dict=feed_dict)
-      tf.logging.info('min eig val from lanczos: ' + str(min_eig_val_m))
-      input_vector_m = tf.placeholder(tf.float32, shape=(self.matrix_m_dimension, 1))
+      tf.compat.v1.logging.info('min eig val from lanczos: ' + str(min_eig_val_m))
+      input_vector_m = tf.compat.v1.placeholder(tf.float32, shape=(self.matrix_m_dimension, 1))
       output_vector_m = self.get_psd_product(input_vector_m)
 
       def np_vector_prod_fn_m(np_vector):
@@ -512,10 +512,10 @@ class DualFormulation(object):
       # Performing shift invert scipy operation when eig val estimate is available
       min_eig_val_m_scipy, _ = eigs(linear_operator_m, k=1, which='SR', tol=TOL)
 
-      tf.logging.info('min eig val m from scipy: ' + str(min_eig_val_m_scipy))
+      tf.compat.v1.logging.info('min eig val m from scipy: ' + str(min_eig_val_m_scipy))
 
       if min_eig_val_m - TOL > 0:
-        tf.logging.info('Found certificate of robustness!')
+        tf.compat.v1.logging.info('Found certificate of robustness!')
         return True
 
     return False

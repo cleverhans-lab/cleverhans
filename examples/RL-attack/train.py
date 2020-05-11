@@ -186,7 +186,7 @@ if __name__ == '__main__':
                                               name=name),
         q_func=dueling_model if args.dueling else model,
         num_actions=env.action_space.n,
-        optimizer=tf.train.AdamOptimizer(learning_rate=args.lr,
+        optimizer=tf.compat.v1.train.AdamOptimizer(learning_rate=args.lr,
                                          epsilon=1e-4),
         gamma=0.99,
         grad_norm_clipping=10,
@@ -228,7 +228,7 @@ if __name__ == '__main__':
     # Record the mean of the \sigma
     sigma_name_list = []
     sigma_list = []
-    for param in tf.trainable_variables():
+    for param in tf.compat.v1.trainable_variables():
       # only record the \sigma in the action network
       if 'sigma' in param.name \
               and 'deepq/q_func/action_value' in param.name:
@@ -237,10 +237,10 @@ if __name__ == '__main__':
                 'deepq/q_func/action_value/', '').replace(
                     '/', '.').split(':')[0]
         sigma_name_list.append(summary_name)
-        sigma_list.append(tf.reduce_mean(tf.abs(param)))
+        sigma_list.append(tf.reduce_mean(input_tensor=tf.abs(param)))
     f_mean_sigma = U.function(inputs=[], outputs=sigma_list)
     # Statistics
-    writer = tf.summary.FileWriter(savedir, sess.graph)
+    writer = tf.compat.v1.summary.FileWriter(savedir, sess.graph)
     im_stats = statistics(scalar_keys=['action', 'im_reward', 'td_errors',
                                        'huber_loss'] + sigma_name_list)
     ep_stats = statistics(scalar_keys=['ep_reward', 'ep_length'])

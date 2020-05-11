@@ -95,7 +95,7 @@ def svhn_tf_preprocess(inp, random_crop=True):
   image = inp
   if random_crop:
     print("Apply random cropping")
-    image = tf.image.resize_image_with_crop_or_pad(inp, image_size + 4,
+    image = tf.image.resize_with_crop_or_pad(inp, image_size + 4,
                                                    image_size + 4)
-    image = tf.random_crop(image, [image_size, image_size, 3])
+    image = tf.image.random_crop(image, [image_size, image_size, 3])
   return inp, image

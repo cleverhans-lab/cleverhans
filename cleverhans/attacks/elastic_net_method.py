@@ -83,7 +83,7 @@ class ElasticNetMethod(Attack):
     def ead_wrap(x_val, y_val):
       return np.array(attack.attack(x_val, y_val), dtype=self.np_dtype)
 
-    wrap = tf.py_func(ead_wrap, [x, labels], self.tf_dtype)
+    wrap = tf.compat.v1.py_func(ead_wrap, [x, labels], self.tf_dtype)
     wrap.set_shape(x.get_shape())
 
     return wrap
@@ -254,14 +254,14 @@ class EAD(object):
         np.zeros(batch_size), dtype=tf_dtype, name='const')
 
     # and here's what we use to assign them
-    self.assign_timg = tf.placeholder(tf_dtype, shape, name='assign_timg')
-    self.assign_newimg = tf.placeholder(
+    self.assign_timg = tf.compat.v1.placeholder(tf_dtype, shape, name='assign_timg')
+    self.assign_newimg = tf.compat.v1.placeholder(
         tf_dtype, shape, name='assign_newimg')
-    self.assign_slack = tf.placeholder(
+    self.assign_slack = tf.compat.v1.placeholder(
         tf_dtype, shape, name='assign_slack')
-    self.assign_tlab = tf.placeholder(
+    self.assign_tlab = tf.compat.v1.placeholder(
         tf_dtype, (batch_size, num_labels), name='assign_tlab')
-    self.assign_const = tf.placeholder(
+    self.assign_const = tf.compat.v1.placeholder(
         tf_dtype, [batch_size], name='assign_const')
 
     self.global_step = tf.Variable(0, trainable=False)
@@ -292,8 +292,8 @@ class EAD(object):
                                      self.assign_newimg - self.newimg)
 
     # --------------------------------
-    self.setter = tf.assign(self.newimg, self.assign_newimg)
-    self.setter_y = tf.assign(self.slack, self.assign_slack)
+    self.setter = tf.compat.v1.assign(self.newimg, self.assign_newimg)
+    self.setter_y = tf.compat.v1.assign(self.slack, self.assign_slack)
 
     # prediction BEFORE-SOFTMAX of the model
     self.output = model.get_logits(self.newimg)
@@ -346,7 +346,7 @@ class EAD(object):
     self.loss_opt = self.loss1_y + self.loss2_y
     self.loss = self.loss1+self.loss2+tf.multiply(self.beta_t, self.loss21)
 
-    self.learning_rate = tf.train.polynomial_decay(
+    self.learning_rate = tf.compat.v1.train.polynomial_decay(
         self.LEARNING_RATE,
         self.global_step,
         self.MAX_ITERATIONS,
@@ -354,12 +354,12 @@ class EAD(object):
         power=0.5)
 
     # Setup the optimizer and keep track of variables we're creating
-    start_vars = set(x.name for x in tf.global_variables())
-    optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
+    start_vars = set(x.name for x in tf.compat.v1.global_variables())
+    optimizer = tf.compat.v1.train.GradientDescentOptimizer(self.learning_rate)
     self.train = optimizer.minimize(self.loss_opt,
                                     var_list=[self.slack],
                                     global_step=self.global_step)
-    end_vars = tf.global_variables()
+    end_vars = tf.compat.v1.global_variables()
     new_vars = [x for x in end_vars if x.name not in start_vars]
 
     # these are the variables to initialize when we run
@@ -369,7 +369,7 @@ class EAD(object):
     self.setup.append(self.const.assign(self.assign_const))
 
     var_list = [self.global_step]+[self.slack]+[self.newimg]+new_vars
-    self.init = tf.variables_initializer(var_list=var_list)
+    self.init = tf.compat.v1.variables_initializer(var_list=var_list)
 
   def attack(self, imgs, targets):
     """

@@ -20,11 +20,11 @@ class TestPerImageStandardize(CleverHansTest):
     super(TestPerImageStandardize, self).setUp()
 
     self.input_shape = (128, 32, 32, 3)
-    self.sess = tf.Session()
+    self.sess = tf.compat.v1.Session()
     self.model = MLP(input_shape=self.input_shape,
                      layers=[PerImageStandardize(name='output')])
 
-    self.x = tf.placeholder(shape=self.input_shape,
+    self.x = tf.compat.v1.placeholder(shape=self.input_shape,
                             dtype=tf.float32)
     self.y = self.model.get_layer(self.x, 'output')
 
@@ -65,7 +65,7 @@ class TestDropout(CleverHansTest):
     model = MLP(input_shape=[1, 1], layers=[Dropout(name='output')])
     x = tf.constant([[1]], dtype=tf.float32)
     y = model.get_layer(x, 'output')
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     # Do multiple runs because dropout is stochastic
     for _ in range(10):
       y_value = sess.run(y)
@@ -84,7 +84,7 @@ class TestDropout(CleverHansTest):
                                                     include_prob=1e-8)])
     x = tf.constant([[1]], dtype=tf.float32)
     y = model.get_layer(x, 'output', dropout=True)
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     y_value = sess.run(y)
     # Subject to very rare random failure because include_prob is not exact 0
     self.assertClose(y_value, 0.)
@@ -105,6 +105,6 @@ class TestDropout(CleverHansTest):
     x = tf.constant([[1]], dtype=tf.float32)
     dropout_dict = {'output': 1.}
     y = model.get_layer(x, 'output', dropout=True, dropout_dict=dropout_dict)
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     y_value = sess.run(y)
     self.assertClose(y_value, 1.)

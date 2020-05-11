@@ -70,4 +70,4 @@ if __name__ == '__main__':
   flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
   flags.DEFINE_string('report_path', REPORT_PATH, 'Report path')
   flags.DEFINE_integer('batch_size', BATCH_SIZE, 'Batch size')
-  tf.app.run()
+  tf.compat.v1.app.run()
