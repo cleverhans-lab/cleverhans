@@ -157,7 +157,7 @@ on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com
 by TensorFlow) in your pull requests.
 In most cases this can be done by running `autopep8 -i --indent-size 2 <file>`
 on the files you have edited.
-You can check your code by running `nosestests cleverhans/devtools/tests/test_format.py` or check an individual file by running `pylint <file>` from inside the cleverhans repository root directory.
+You can check your code by running `nosetests cleverhans/devtools/tests/test_format.py` or check an individual file by running `pylint <file>` from inside the cleverhans repository root directory.
 * When making your first pull request, you [sign the Google CLA](https://cla.developers.google.com/clas)
 * We do not accept pull requests that add git submodules because of [the
   problems that arise when maintaining git

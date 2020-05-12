@@ -12,6 +12,9 @@ from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 from cleverhans.future.torch.attacks.carlini_wagner_l2 import carlini_wagner_l2
+from cleverhans.future.torch.attacks.spsa import spsa
+from cleverhans.future.torch.attacks.hop_skip_jump_attack import hop_skip_jump_attack
+
 
 class TrivialModel(torch.nn.Module):
 
@@ -21,6 +24,7 @@ class TrivialModel(torch.nn.Module):
 
   def forward(self, x, **kwargs):
     return torch.matmul(x, self.w1)
+
 
 class SimpleModel(torch.nn.Module):
 
@@ -34,6 +38,7 @@ class SimpleModel(torch.nn.Module):
     x = torch.sigmoid(x)
     x = torch.matmul(x, self.w2)
     return x
+
 
 class CommonAttackProperties(CleverHansTest):
 
@@ -67,6 +72,7 @@ class CommonAttackProperties(CleverHansTest):
         adv_label.eq(self.y_target).sum().to(torch.float)
         / x.size(0))
     self.assertGreater(adv_success, rate)
+
 
 class TestFastGradientMethod(CommonAttackProperties):
 
@@ -153,6 +159,7 @@ class TestFastGradientMethod(CommonAttackProperties):
   def test_targeted_adv_example_success_rate_l2(self):
     self.help_targeted_adv_examples_success_rate(x=self.normalized_x,
         model=self.model, norm=2, **self.attack_param)
+
 
 class TestProjectedGradientMethod(CommonAttackProperties):
 
@@ -362,6 +369,7 @@ class TestProjectedGradientMethod(CommonAttackProperties):
         / self.normalized_x.size(0))
     self.assertLess(failed_attack, .5)
 
+
 class TestCarliniWagnerL2(CommonAttackProperties):
 
   def setUp(self):
@@ -446,3 +454,201 @@ class TestCarliniWagnerL2(CommonAttackProperties):
         torch.argmax(logits, 1).eq(self.y_target).sum().to(torch.float) / len(logits),
         .9
         )
+
+
+class TestSPSA(CommonAttackProperties):
+
+  def setUp(self):
+    super(TestSPSA, self).setUp()
+    self.attack = spsa
+    self.attack_param = {
+        'eps': .5,
+        'clip_min': -5,
+        'clip_max': 5,
+        'nb_iter': 50,
+        'model': self.model,
+        'x': self.normalized_x
+    }
+
+  def test_invalid_input(self):
+    x = torch.tensor([[-20., 30.]])
+    self.assertRaises(AssertionError, self.attack, model_fn=self.model, x=x, eps=.1,
+                      nb_iter=1, clip_min=-1., clip_max=1., sanity_checks=True)
+
+  def test_invalid_eps(self):
+    self.assertRaises(
+        ValueError, self.attack, model_fn=self.model, x=self.x, eps=-.1, nb_iter=1)
+
+  def test_eps_equals_zero(self):
+    self.assertClose(
+        self.attack(model_fn=self.model, x=self.x, eps=0, nb_iter=10),
+        self.x)
+
+  def test_invalid_clips(self):
+    self.assertRaises(
+        ValueError, self.attack, model_fn=self.model, x=self.x, eps=.1,
+        clip_min=.5, clip_max=-.5, nb_iter=10)
+
+  def test_adv_example_success_rate_linf(self):
+    # use normalized_x to make sure the same eps gives uniformly high attack
+    # success rate across randomized tests
+    self.help_adv_examples_success_rate(**self.attack_param)
+
+  def test_targeted_adv_example_success_rate_linf(self):
+    self.help_targeted_adv_examples_success_rate(**self.attack_param)
+
+  def test_adv_example_success_rate_l1(self):
+    self.assertRaises(
+        NotImplementedError, self.help_adv_examples_success_rate, norm=1,
+        **self.attack_param)
+    # TODO uncomment the actual test below after we have implemented the L1 attack
+    # self.help_adv_examples_success_rate(
+    #     norm=1, **self.attack_param)
+
+  def test_targeted_adv_example_success_rate_l1(self):
+    self.assertRaises(
+        NotImplementedError, self.help_targeted_adv_examples_success_rate,
+        norm=1, **self.attack_param)
+    # TODO uncomment the actual test below after we have implemented the L1 attack
+    # self.help_targeted_adv_examples_success_rate(
+    #     norm=1, **self.attack_param)
+
+  def test_adv_example_success_rate_l2(self):
+    self.help_adv_examples_success_rate(
+        norm=2, **self.attack_param)
+
+  def test_targeted_adv_example_success_rate_l2(self):
+    self.help_targeted_adv_examples_success_rate(
+        norm=2, **self.attack_param)
+
+  def test_attack_strength(self):
+    x_adv = self.attack(
+        model_fn=self.model, x=self.normalized_x, eps=1.,
+        clip_min=.5, clip_max=.7, nb_iter=20,
+        sanity_checks=False)
+    _, ori_label = self.model(self.normalized_x).max(1)
+    _, adv_label = self.model(x_adv).max(1)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / self.normalized_x.size(0))
+    self.assertLess(adv_acc, .1)
+
+  def test_eps(self):
+    x_adv = self.attack(
+        model_fn=self.model, x=self.normalized_x, eps=.5, nb_iter=10)
+    delta, _ = torch.abs(x_adv - self.normalized_x).max(dim=1)
+    self.assertTrue(torch.all(delta <= .5 + 1e-6))
+
+  def test_clips(self):
+    clip_min = -1.
+    clip_max = 1.
+    x_adv = self.attack(
+        model_fn=self.model, x=self.normalized_x, eps=.3,
+        nb_iter=10, clip_min=clip_min, clip_max=clip_max)
+    self.assertTrue(torch.all(x_adv <= clip_max))
+    self.assertTrue(torch.all(x_adv >= clip_min))
+
+
+class TestHopSkipJumpAttack(CommonAttackProperties):
+
+  def setUp(self):
+    super(TestHopSkipJumpAttack, self).setUp()
+    self.attack = hop_skip_jump_attack
+
+  def test_generate_np_untargeted_l2(self):
+    x_val = torch.rand(50, 2)
+    bapp_params = {
+        'norm': 2,
+        'stepsize_search': 'geometric_progression',
+        'num_iterations': 10,
+        'verbose': True,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val, **bapp_params)
+
+    _, ori_label = self.model(x_val).max(1)
+    _, adv_label = self.model(x_adv).max(1)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / x_val.size(0))
+
+    self.assertLess(adv_acc, .1)
+
+  def test_generate_untargeted_linf(self):
+    x_val = torch.rand(50, 2)
+    bapp_params = {
+        'norm': np.inf,
+        'stepsize_search': 'grid_search',
+        'num_iterations': 10,
+        'verbose': True,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val, **bapp_params)
+
+    _, ori_label = self.model(x_val).max(1)
+    _, adv_label = self.model(x_adv).max(1)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / x_val.size(0))
+
+    self.assertLess(adv_acc, .1)
+
+  def test_generate_np_targeted_linf(self):
+    x_val = torch.rand(200, 2)
+
+    _, ori_label = self.model(x_val).max(1)
+    x_val_pos = x_val[ori_label == 1]
+    x_val_neg = x_val[ori_label == 0]
+
+    x_val_under_attack = torch.cat(
+        (x_val_pos[:25], x_val_neg[:25]), dim=0)
+    y_target = torch.cat([torch.zeros(25, dtype=torch.int64), torch.ones(25, dtype=torch.int64)])
+    image_target = torch.cat((x_val_neg[25:50], x_val_pos[25:50]), dim=0)
+
+    bapp_params = {
+        'norm': np.inf,
+        'stepsize_search': 'geometric_progression',
+        'num_iterations': 10,
+        'verbose': True,
+        'y_target': y_target,
+        'image_target': image_target,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val_under_attack, **bapp_params)
+
+    _, new_labs = self.model(x_adv).max(1)
+
+    adv_acc = (
+        new_labs.eq(y_target).sum().to(torch.float)
+        / y_target.size(0))
+
+    self.assertGreater(adv_acc, .9)
+
+  def test_generate_targeted_l2(self):
+    # Create data in numpy arrays.
+    x_val = torch.rand(200, 2)
+
+    _, ori_label = self.model(x_val).max(1)
+    x_val_pos = x_val[ori_label == 1]
+    x_val_neg = x_val[ori_label == 0]
+
+    x_val_under_attack = torch.cat(
+        (x_val_pos[:25], x_val_neg[:25]), dim=0)
+    y_target = torch.cat([torch.zeros(25, dtype=torch.int64), torch.ones(25, dtype=torch.int64)])
+    image_target = torch.cat((x_val_neg[25:50], x_val_pos[25:50]), dim=0)
+
+    # Create graph.
+    bapp_params = {
+        'norm': 'l2',
+        'stepsize_search': 'grid_search',
+        'num_iterations': 10,
+        'verbose': True,
+        'y_target': y_target,
+        'image_target': image_target,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val_under_attack, **bapp_params)
+
+    _, new_labs = self.model(x_adv).max(1)
+
+    adv_acc = (
+        new_labs.eq(y_target).sum().to(torch.float)
+        / y_target.size(0))
+
+    self.assertGreater(adv_acc, .9)
