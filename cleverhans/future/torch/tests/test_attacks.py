@@ -13,6 +13,8 @@ from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_m
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 from cleverhans.future.torch.attacks.spsa import spsa
 from cleverhans.future.torch.attacks.hop_skip_jump_attack import hop_skip_jump_attack
+from cleverhans.future.torch.attacks.carlini_wagner_l2 import carlini_wagner_l2
+
 
 class SimpleModel(torch.nn.Module):
 
@@ -27,13 +29,23 @@ class SimpleModel(torch.nn.Module):
     x = torch.matmul(x, self.w2)
     return x
 
+
+class TrivialModel(torch.nn.Module):
+  def __init__(self):
+    super(TrivialModel, self).__init__()
+    self.w1 = torch.tensor([[1.0, -1.0]])
+
+  def forward(self, x):
+    return torch.matmul(x, self.w1)
+
+
 class CommonAttackProperties(CleverHansTest):
 
   def setUp(self):
     super(CommonAttackProperties, self).setUp()
     self.model = SimpleModel()
     self.x = torch.randn(100, 2)
-    self.normalized_x = torch.rand(100, 2) # truncated between [0, 1)
+    self.normalized_x = torch.rand(100, 2)  # truncated between [0, 1)
     self.red_ind = list(range(1, len(self.x.size())))
     self.ord_list = [1, 2, np.inf]
 
@@ -58,6 +70,7 @@ class CommonAttackProperties(CleverHansTest):
         / self.normalized_x.size(0))
     self.assertGreater(adv_success, .7)
 
+
 class TestFastGradientMethod(CommonAttackProperties):
 
   def setUp(self):
@@ -65,10 +78,10 @@ class TestFastGradientMethod(CommonAttackProperties):
     self.attack = fast_gradient_method
     self.eps_list = [0, .1, .3, 1., 3]
     self.attack_param = {
-        'eps' : .5,
-        'clip_min' : -5,
-        'clip_max' : 5
-        }
+        'eps': .5,
+        'clip_min': -5,
+        'clip_max': 5
+    }
 
   def test_invalid_input(self):
     x = torch.tensor([[-2., 3.]])
@@ -76,7 +89,7 @@ class TestFastGradientMethod(CommonAttackProperties):
       self.assertRaises(
           AssertionError, self.attack, model_fn=self.model, x=x, eps=.1,
           norm=norm, clip_min=-1., clip_max=1., sanity_checks=True
-          )
+      )
 
   def test_invalid_eps(self):
     for norm in self.ord_list:
@@ -105,7 +118,7 @@ class TestFastGradientMethod(CommonAttackProperties):
       x_adv = self.attack(
           model_fn=self.model, x=self.normalized_x, eps=.3, norm=norm,
           clip_min=clip_min, clip_max=clip_max
-          )
+      )
       self.assertTrue(torch.all(x_adv <= clip_max))
       self.assertTrue(torch.all(x_adv >= clip_min))
 
@@ -116,7 +129,7 @@ class TestFastGradientMethod(CommonAttackProperties):
       self.assertRaises(
           ValueError, self.attack, model_fn=self.model, x=self.x, eps=.1,
           norm=norm, clip_min=clip_min, clip_max=clip_max
-          )
+      )
 
   def test_adv_example_success_rate_linf(self):
     # use normalized_x to make sure the same eps gives uniformly high attack
@@ -144,18 +157,19 @@ class TestFastGradientMethod(CommonAttackProperties):
     self.help_targeted_adv_examples_success_rate(
         norm=2, **self.attack_param)
 
+
 class TestProjectedGradientMethod(CommonAttackProperties):
 
   def setUp(self):
     super(TestProjectedGradientMethod, self).setUp()
     self.attack = projected_gradient_descent
     self.attack_param = {
-        'eps' : .5,
-        'clip_min' : -5,
-        'clip_max' : 5,
-        'eps_iter' : .05,
-        'nb_iter' : 20,
-        }
+        'eps': .5,
+        'clip_min': -5,
+        'clip_max': 5,
+        'eps_iter': .05,
+        'nb_iter': 20,
+    }
 
   def test_invalid_input(self):
     x = torch.tensor([[-2., 3.]])
@@ -495,7 +509,8 @@ class TestHopSkipJumpAttack(CommonAttackProperties):
 
     x_val_under_attack = torch.cat(
         (x_val_pos[:25], x_val_neg[:25]), dim=0)
-    y_target = torch.cat([torch.zeros(25, dtype=torch.int64), torch.ones(25, dtype=torch.int64)])
+    y_target = torch.cat(
+        [torch.zeros(25, dtype=torch.int64), torch.ones(25, dtype=torch.int64)])
     image_target = torch.cat((x_val_neg[25:50], x_val_pos[25:50]), dim=0)
 
     bapp_params = {
@@ -506,7 +521,8 @@ class TestHopSkipJumpAttack(CommonAttackProperties):
         'y_target': y_target,
         'image_target': image_target,
     }
-    x_adv = self.attack(model_fn=self.model, x=x_val_under_attack, **bapp_params)
+    x_adv = self.attack(model_fn=self.model,
+                        x=x_val_under_attack, **bapp_params)
 
     _, new_labs = self.model(x_adv).max(1)
 
@@ -526,7 +542,8 @@ class TestHopSkipJumpAttack(CommonAttackProperties):
 
     x_val_under_attack = torch.cat(
         (x_val_pos[:25], x_val_neg[:25]), dim=0)
-    y_target = torch.cat([torch.zeros(25, dtype=torch.int64), torch.ones(25, dtype=torch.int64)])
+    y_target = torch.cat(
+        [torch.zeros(25, dtype=torch.int64), torch.ones(25, dtype=torch.int64)])
     image_target = torch.cat((x_val_neg[25:50], x_val_pos[25:50]), dim=0)
 
     # Create graph.
@@ -538,7 +555,8 @@ class TestHopSkipJumpAttack(CommonAttackProperties):
         'y_target': y_target,
         'image_target': image_target,
     }
-    x_adv = self.attack(model_fn=self.model, x=x_val_under_attack, **bapp_params)
+    x_adv = self.attack(model_fn=self.model,
+                        x=x_val_under_attack, **bapp_params)
 
     _, new_labs = self.model(x_adv).max(1)
 
@@ -547,3 +565,149 @@ class TestHopSkipJumpAttack(CommonAttackProperties):
         / y_target.size(0))
 
     self.assertGreater(adv_acc, .9)
+
+
+class TestCarliniWagnerL2(CommonAttackProperties):
+
+  def setUp(self):
+    super(TestCarliniWagnerL2, self).setUp()
+    self.attack = carlini_wagner_l2
+
+  def test_generate_untargeted_gives_adversarial_example(self):
+    x_val = torch.rand(100, 2)
+    bapp_params = {
+        'max_iterations': 100,
+        'binary_search_steps': 3,
+        'initial_const': 1,
+        'clip_min': -5,
+        'clip_max': 5,
+    }
+
+    x_adv = self.attack(model_fn=self.model, x=x_val, **bapp_params)
+
+    _, ori_label = self.model(x_val).max(1)
+    _, adv_label = self.model(x_adv).max(1)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / x_val.size(0))
+
+    self.assertLess(adv_acc, .1)
+
+  def test_generate_targeted_gives_adversarial_example(self):
+    x_val = torch.rand(100, 2)
+    feed_labs = torch.randint(0, 2, (100,))
+    bapp_params = {
+        'max_iterations': 100,
+        'binary_search_steps': 3,
+        'initial_const': 1,
+        'clip_min': -5,
+        'clip_max': 5,
+        'y': feed_labs,
+        'targeted': True
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val, **bapp_params)
+
+    _, adv_label = self.model(x_adv).max(1)
+
+    adv_acc = (
+        adv_label.eq(feed_labs).sum().to(torch.float)
+        / x_val.size(0))
+
+    self.assertGreater(adv_acc, 0.9)
+
+  def test_generate_gives_adversarial_example(self):
+    x_val = torch.rand(100, 2)
+    _, ori_label = self.model(x_val).max(1)
+    bapp_params = {
+        'max_iterations': 100,
+        'binary_search_steps': 3,
+        'initial_const': 1,
+        'clip_min': -5,
+        'clip_max': 5,
+        'y': ori_label
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val, **bapp_params)
+
+    _, adv_label = self.model(x_adv).max(1)
+    adv_acc = (
+        adv_label.eq(ori_label).sum().to(torch.float)
+        / x_val.size(0))
+
+    self.assertLess(adv_acc, .1)
+
+  def test_generate_gives_clipped_adversarial_examples(self):
+    x_val = torch.rand(100, 2)
+    bapp_params = {
+        'max_iterations': 10,
+        'binary_search_steps': 1,
+        'learning_rate': 1e-3,
+        'initial_const': 1,
+        'clip_min': -0.2,
+        'clip_max': 0.3,
+    }
+    x_adv = self.attack(model_fn=self.model, x=x_val, **bapp_params)
+
+    self.assertGreater(torch.min(x_adv),  -.201)
+    self.assertLess(torch.max(x_adv), .301)
+
+  def test_generate_high_confidence_targeted_examples(self):
+    trivial_model = TrivialModel()
+
+    for c in [0, 2.3]:
+      x_val = torch.rand(10, 1) - .5
+      feed_labs = torch.randint(0, 2, (10,))
+      bapp_params = {
+          'max_iterations': 100,
+          'binary_search_steps': 2,
+          'learning_rate': 1e-2,
+          'initial_const': 1,
+          'clip_min': -10,
+          'clip_max': 10,
+          'confidence': c,
+          'y': feed_labs,
+          'targeted': True
+      }
+      x_adv = self.attack(model_fn=trivial_model, x=x_val, **bapp_params)
+      adv_logits = trivial_model(x_adv)
+      adv_label = torch.argmax(adv_logits, 1)
+
+      good_labs = adv_logits[torch.arange(10), feed_labs]
+      bad_labs = adv_logits[torch.arange(10), 1 - feed_labs]
+
+      adv_acc = (
+          adv_label.eq(feed_labs).sum().to(torch.float)
+          / x_val.size(0))
+
+      diff = torch.min(good_labs - bad_labs).detach()
+      self.assertClose(c, diff, atol=1e-1)
+      self.assertGreater(adv_acc, .9)
+
+  def test_generate_high_confidence_untargeted_examples(self):
+    trivial_model = TrivialModel()
+
+    for c in [0, 2.3]:
+      x_val = torch.rand(10, 1) - .5
+      _, ori_label = trivial_model(x_val).max(1)
+      bapp_params = {
+          'max_iterations': 100,
+          'binary_search_steps': 2,
+          'learning_rate': 1e-2,
+          'initial_const': 1,
+          'clip_min': -10,
+          'clip_max': 10,
+          'confidence': c
+      }
+      x_adv = self.attack(model_fn=trivial_model, x=x_val, **bapp_params)
+      adv_logits = trivial_model(x_adv)
+      adv_label = torch.argmax(adv_logits, 1)
+
+      good_labs = adv_logits[torch.arange(10), 1 - ori_label]
+      bad_labs = adv_logits[torch.arange(10), ori_label]
+
+      adv_acc = (
+          adv_label.eq(ori_label).sum().to(torch.float)
+          / x_val.size(0))
+
+      self.assertEqual(adv_acc, 0)
+      diff = torch.min(good_labs - (bad_labs + c)).detach()
+      self.assertClose(0, diff, atol=1e-1)

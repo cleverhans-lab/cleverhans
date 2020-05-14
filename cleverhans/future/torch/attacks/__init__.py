@@ -5,3 +5,4 @@ from cleverhans.future.torch.attacks.noise import noise
 from cleverhans.future.torch.attacks.semantic import semantic
 from cleverhans.future.torch.attacks.spsa import spsa
 from cleverhans.future.torch.attacks.hop_skip_jump_attack import hop_skip_jump_attack
+from cleverhans.future.torch.attacks.carlini_wagner_l2 import carlini_wagner_l2
