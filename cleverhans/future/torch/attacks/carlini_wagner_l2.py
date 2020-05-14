@@ -159,13 +159,18 @@ def carlini_wagner_l2(model_fn, x, n_classes,
       # Update best results
       for n, (l2_n, logits_n, new_x_n) in enumerate(zip(l2, logits, new_x)):
         y_n = y[n]
-        if l2_n < bestl2[n] and compare(logits_n, y_n, is_logits=True):
+        succeeded = compare(logits_n, y_n, is_logits=True)
+        if l2_n < o_bestl2[n] and succeeded:
+          pred_n = torch.argmax(logits_n)
+          o_bestl2[n] = l2_n
+          o_bestscore[n] = pred_n
+          o_bestattack[n] = new_x_n
+          # l2_n < o_bestl2[n] implies l2_n < bestl2[n] so we modify inner loop variables too
+          bestl2[n] = l2_n
+          bestscore[n] = pred_n
+        elif l2_n < bestl2[n] and succeeded:
           bestl2[n] = l2_n
           bestscore[n] = torch.argmax(logits_n)
-        if l2_n < o_bestl2[n] and compare(logits_n, y_n, is_logits=True):
-          o_bestl2[n] = l2_n
-          o_bestscore[n] = torch.argmax(logits_n)
-          o_bestattack[n] = new_x_n
 
     # Binary search step
     for n in range(len(x)):
