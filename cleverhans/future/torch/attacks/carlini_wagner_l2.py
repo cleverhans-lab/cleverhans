@@ -123,8 +123,7 @@ def carlini_wagner_l2(model_fn, x, n_classes,
 
   # Prepare some variables
   modifier = torch.zeros_like(x, requires_grad=True)
-  y_onehot = y.new_zeros((len(y), n_classes), dtype=torch.float)
-  y_onehot[range(len(y)), y] = 1.
+  y_onehot = torch.nn.functional.one_hot(y, n_classes).to(torch.float)
 
   # Define loss functions and optimizer
   f_fn = lambda real, other, targeted: torch.max(
