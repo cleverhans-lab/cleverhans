@@ -48,7 +48,8 @@ def sparse_l1_descent(model_fn, x, eps=10.0, eps_iter=1.0, nb_iter=20, y=None,
   if clip_grad and (clip_min is None or clip_max is None):
     raise ValueError("Must set clip_min and clip_max if clip_grad is set")
 
-  assert eps_iter <= eps, "eps_iter should be at most eps. Got {}, {} instead".format(eps_iter, eps)
+  assert eps_iter <= eps, "eps_iter should be at most eps. Got {}, {} instead".format(
+      eps_iter, eps)
 
   # The grad_sparsity argument governs the sparsity of the gradient
   # update. It indicates the percentile value above which gradient entries
@@ -61,16 +62,21 @@ def sparse_l1_descent(model_fn, x, eps=10.0, eps_iter=1.0, nb_iter=20, y=None,
     if len(grad_sparsity.shape) > 1:
       raise ValueError("grad_sparsity should either be a scalar or a tensor")
     grad_sparsity = grad_sparsity.to(x.device)
+    if grad_sparsity.shape[0] != x.shape[0]:
+      raise ValueError(
+          "grad_sparsity should have same length as input if it is a tensor")
 
   asserts = []
 
   # If a data range was specified, check that the input was in that range
   if clip_min is not None:
-    assert_ge = torch.all(torch.ge(x, torch.tensor(clip_min, device=x.device, dtype=x.dtype)))
+    assert_ge = torch.all(torch.ge(x, torch.tensor(
+        clip_min, device=x.device, dtype=x.dtype)))
     asserts.append(assert_ge)
 
   if clip_max is not None:
-    assert_le = torch.all(torch.le(x, torch.tensor(clip_max, device=x.device, dtype=x.dtype)))
+    assert_le = torch.all(torch.le(x, torch.tensor(
+        clip_max, device=x.device, dtype=x.dtype)))
     asserts.append(assert_le)
 
   if sanity_checks:
@@ -78,15 +84,16 @@ def sparse_l1_descent(model_fn, x, eps=10.0, eps_iter=1.0, nb_iter=20, y=None,
 
   # Initialize loop variables
   if rand_init:
-    dist = torch.distributions.laplace.Laplace(torch.tensor([0.0]), torch.tensor([1.0]))
-    eta  = dist.sample(x.shape).renorm(p=1, dim=1, maxnorm=eps)
+    dist = torch.distributions.laplace.Laplace(
+        torch.tensor([0.0]), torch.tensor([1.0]))
+    eta = dist.sample(x.shape).squeeze(-1)
   else:
     eta = torch.zeros_like(x)
 
   # Clip eta
   adv_x = x.clone().detach().requires_grad_(True)
-  eta    = eta.renorm(p=1, dim=0, maxnorm=eps)
-  adv_x  = adv_x + eta
+  eta = eta.renorm(p=1, dim=0, maxnorm=eps)
+  adv_x = adv_x + eta
 
   if clip_min is not None or clip_max is not None:
     adv_x = torch.clamp(x, clip_min, clip_max)
@@ -96,10 +103,11 @@ def sparse_l1_descent(model_fn, x, eps=10.0, eps_iter=1.0, nb_iter=20, y=None,
 
   criterion = torch.nn.CrossEntropyLoss(reduction='none')
   for i in range(nb_iter):
+    adv_x = adv_x.clone().detach().to(torch.float).requires_grad_(True)
     logits = model_fn(adv_x)
 
     # Compute loss
-    loss      =  criterion(logits, y)
+    loss = criterion(logits, y)
     if targeted:
       loss = -loss
 
@@ -110,22 +118,22 @@ def sparse_l1_descent(model_fn, x, eps=10.0, eps_iter=1.0, nb_iter=20, y=None,
       grad = zero_out_clipped_grads(grad, adv_x, clip_min, clip_max)
 
     grad_view = grad.view(grad.shape[0], -1)
-    abs_grad  = torch.abs(grad_view)
+    abs_grad = torch.abs(grad_view)
 
     if isinstance(grad_sparsity, int) or isinstance(grad_sparsity, float):
-      k                   = int(grad_sparsity/100.0 * abs_grad.shape[1])      
+      k = int(grad_sparsity/100.0 * abs_grad.shape[1])
       percentile_value, _ = torch.kthvalue(abs_grad, k, keepdim=True)
     else:
-      k   = (grad_sparsity/100.0 * abs_grad.shape[1]).long()
+      k = (grad_sparsity/100.0 * abs_grad.shape[1]).long()
       percentile_value, _ = torch.sort(abs_grad, dim=1)
-      percentile_value    = percentile_value.gather(1, k.view(-1, 1))
+      percentile_value = percentile_value.gather(1, k.view(-1, 1))
 
-    percentile_value    = percentile_value.repeat(1, grad_view.shape[1])
-    tied_for_max        = torch.ge(abs_grad, percentile_value).int().float()
-    num_ties            = torch.sum(tied_for_max, dim=1, keepdim=True)
+    percentile_value = percentile_value.repeat(1, grad_view.shape[1])
+    tied_for_max = torch.ge(abs_grad, percentile_value).int().float()
+    num_ties = torch.sum(tied_for_max, dim=1, keepdim=True)
 
-    optimal_perturbation  = (torch.sign(grad_view) * tied_for_max) / num_ties
-    optimal_perturbation  =  optimal_perturbation.view(grad.shape)
+    optimal_perturbation = (torch.sign(grad_view) * tied_for_max) / num_ties
+    optimal_perturbation = optimal_perturbation.view(grad.shape)
 
     # Add perturbation to original example to obtain adversarial example
     adv_x = adv_x + optimal_perturbation * eps_iter
@@ -144,4 +152,4 @@ def sparse_l1_descent(model_fn, x, eps=10.0, eps_iter=1.0, nb_iter=20, y=None,
     if clip_min is not None or clip_max is not None:
       adv_x = torch.clamp(adv_x, clip_min, clip_max)
 
-  return adv_x
+  return adv_x.detach()

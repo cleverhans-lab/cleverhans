@@ -35,9 +35,10 @@ def clip_eta(eta, norm, eps):
     factor = torch.min(
         torch.tensor(1., dtype=eta.dtype, device=eta.device),
         eps / norm
-        )
+    )
     eta *= factor
   return eta
+
 
 def get_or_guess_labels(model, x, **kwargs):
   """
@@ -105,11 +106,12 @@ def optimize_linear(grad, eps, norm=np.inf):
     square = torch.max(
         avoid_zero_div,
         torch.sum(grad ** 2, red_ind, keepdim=True)
-        )
+    )
     optimal_perturbation = grad / torch.sqrt(square)
     # TODO integrate below to a test file
     # check that the optimal perturbations have been correctly computed
-    opt_pert_norm = optimal_perturbation.pow(2).sum(dim=red_ind, keepdim=True).sqrt()
+    opt_pert_norm = optimal_perturbation.pow(
+        2).sum(dim=red_ind, keepdim=True).sqrt()
     one_mask = (
         (square <= avoid_zero_div).to(torch.float) * opt_pert_norm +
         (square > avoid_zero_div).to(torch.float))
@@ -137,9 +139,9 @@ def zero_out_clipped_grads(grad, x, clip_min, clip_max):
 
   # Find input components that lie at the boundary of the input range, and
   # where the gradient points in the wrong direction.
-  clip_low  = torch.logical_and(torch.le(x, clip_min), torch.lt(signed_grad, 0))
-  clip_high = torch.logical_and(torch.ge(x, clip_max), torch.gt(signed_grad, 0))
-  clip = torch.logical_or(clip_low, clip_high)
-  grad = torch.where(clip, 0, grad)
+  clip_low = torch.le(x, clip_min) & torch.lt(signed_grad, 0)
+  clip_high = torch.ge(x, clip_max) & torch.gt(signed_grad, 0)
+  clip = clip_low | clip_high
+  grad = torch.where(clip, torch.zeros_like(grad), grad)
 
   return grad
