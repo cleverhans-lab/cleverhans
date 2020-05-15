@@ -145,8 +145,8 @@ def jsma_symbolic(x, y_target, model, theta, gamma, clip_min, clip_max):
   :return: a tensor for the adversarial example
   """
 
-  nb_classes = int(y_target.shape[-1].value)
-  nb_features = int(np.product(x.shape[1:]).value)
+  nb_classes = int(y_target.shape[-1])
+  nb_features = int(np.product(x.shape[1:]))
 
   if x.dtype == tf.float32 and y_target.dtype == tf.int64:
     y_target = tf.cast(y_target, tf.int32)
