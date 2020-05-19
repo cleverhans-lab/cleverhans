@@ -128,7 +128,7 @@ def carlini_wagner_l2(model_fn, x, n_classes,
   # Define loss functions and optimizer
   f_fn = lambda real, other, targeted: torch.max(
     ((other - real) if targeted else (real - other)) + confidence,
-    torch.tensor(0.)
+    torch.tensor(0.).to(real.device)
   )
   l2dist_fn = lambda x, y: torch.pow(x - y, 2).sum(list(range(len(x.size())))[1:])
   optimizer = torch.optim.Adam([modifier], lr=lr)
@@ -190,7 +190,7 @@ def carlini_wagner_l2(model_fn, x, n_classes,
         else:
           const[n] *= 10
 
-  return o_bestattack
+  return o_bestattack.detach()
 
 
 if __name__ == '__main__':
