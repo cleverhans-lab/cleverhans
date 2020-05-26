@@ -169,7 +169,7 @@ def train_sub(sess, x, y, bbox_preds, x_sub, y_sub, nb_classes,
     if rho < data_aug - 1:
       print("Augmenting substitute training data.")
       # Perform the Jacobian augmentation
-      lmbda_coef = 2 * int(int(rho / 3) != 0) - 1
+      lmbda_coef = 2*int(int(rho/3)%2==0)-1
       x_sub = jacobian_augmentation(sess, x, x_sub, y_sub, grads,
                                     lmbda_coef * lmbda, aug_batch_size)
 
