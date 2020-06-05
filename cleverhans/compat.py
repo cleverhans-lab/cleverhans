@@ -76,6 +76,6 @@ def softmax_cross_entropy_with_logits(sentinel=None,
     raise RuntimeError("This version of TensorFlow is no longer supported. See cleverhans/README.md")
 
   labels = tf.stop_gradient(labels)
-  loss = f(labels=labels, logits=logits, dim=dim)
+  loss = f(labels=labels, logits=logits, axis=dim)
 
   return loss
