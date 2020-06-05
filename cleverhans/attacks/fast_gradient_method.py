@@ -252,7 +252,7 @@ def optimize_linear(grad, eps, ord=np.inf):
   elif ord == 2:
     square = tf.maximum(avoid_zero_div,
                         reduce_sum(tf.square(grad),
-                                   reduction_indices=red_ind,
+                                   axis=red_ind,
                                    keepdims=True))
     optimal_perturbation = grad / tf.sqrt(square)
   else:
