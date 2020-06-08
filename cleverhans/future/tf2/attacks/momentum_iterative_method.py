@@ -4,14 +4,14 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.compat import reduce_mean
-
-from cleverhans.future.tf2.attacks.fast_gradient_method import optimize_linear, compute_gradient
+from cleverhans.future.tf2.attacks.fast_gradient_method import (
+    compute_gradient, optimize_linear)
 from cleverhans.future.tf2.utils_tf import clip_eta
 
 
 def momentum_iterative_method(model_fn, x, eps=0.3, eps_iter=0.06, nb_iter=10, norm=np.inf,
-                               clip_min=None, clip_max=None, y=None, targeted=False,
-                               decay_factor=1.0, sanity_checks=True):
+                              clip_min=None, clip_max=None, y=None, targeted=False,
+                              decay_factor=1.0, sanity_checks=True, loss_fn=tf.nn.sparse_softmax_cross_entropy_with_logits):
   """
   Tensorflow 2.0 implementation of Momentum Iterative Method (Dong et al. 2017).
   This method won the first places in NIPS 2017 Non-targeted Adversarial Attacks
@@ -39,6 +39,7 @@ def momentum_iterative_method(model_fn, x, eps=0.3, eps_iter=0.06, nb_iter=10, n
   :param decay_factor: (optional) Decay factor for the momentum term.
   :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
             memory or for unit tests that intentionally pass strange input)
+  :param loss_fn: (optional) Loss function that takes (labels, logits) as arguments and returns loss. We use sparse crossentropy with logits as a default.
   :return: a tensor for the adversarial example
   """
 
@@ -59,7 +60,7 @@ def momentum_iterative_method(model_fn, x, eps=0.3, eps_iter=0.06, nb_iter=10, n
     asserts.append(tf.math.greater_equal(x, clip_min))
 
   if clip_max is not None:
-  	asserts.append(tf.math.less_equal(x, clip_max))
+    asserts.append(tf.math.less_equal(x, clip_max))
 
   if y is None:
     # Using model predictions as ground truth to avoid label leaking
@@ -68,18 +69,18 @@ def momentum_iterative_method(model_fn, x, eps=0.3, eps_iter=0.06, nb_iter=10, n
   # Initialize loop variables
   momentum = tf.zeros_like(x)
   adv_x = x
-  
+
   i = 0
   while i < nb_iter:
     # Define gradient of loss wrt input
-    grad = compute_gradient(model_fn, adv_x, y, targeted)
+    grad = compute_gradient(model_fn, adv_x, y, targeted, loss_fn=loss_fn)
 
     # Normalize current gradient and add it to the accumulated gradient
     red_ind = list(range(1, len(grad.shape)))
     avoid_zero_div = tf.cast(1e-12, grad.dtype)
     grad = grad / tf.math.maximum(
-    	avoid_zero_div,
-    	tf.math.reduce_mean(tf.math.abs(grad), red_ind, keepdims=True))
+        avoid_zero_div,
+        tf.math.reduce_mean(tf.math.abs(grad), red_ind, keepdims=True))
     momentum = decay_factor * momentum + grad
 
     optimal_perturbation = optimize_linear(momentum, eps_iter, norm)

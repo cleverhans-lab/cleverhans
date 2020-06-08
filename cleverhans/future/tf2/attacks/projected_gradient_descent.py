@@ -3,13 +3,14 @@
 import numpy as np
 import tensorflow as tf
 
-from cleverhans.future.tf2.attacks.fast_gradient_method import fast_gradient_method
+from cleverhans.future.tf2.attacks.fast_gradient_method import \
+    fast_gradient_method
 from cleverhans.future.tf2.utils_tf import clip_eta
 
 
 def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
                                clip_min=None, clip_max=None, y=None, targeted=False,
-                               rand_init=None, rand_minmax=0.3, sanity_checks=True):
+                               rand_init=None, rand_minmax=0.3, sanity_checks=True, loss_fn=tf.nn.sparse_softmax_cross_entropy_with_logits):
   """
   This class implements either the Basic Iterative Method
   (Kurakin et al. 2016) when rand_init is set to 0. or the
@@ -34,6 +35,7 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
             Targeted will instead try to move in the direction of being more like y.
   :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
             memory or for unit tests that intentionally pass strange input)
+  :param loss_fn: (optional) Loss function that takes (labels, logits) as arguments and returns loss. We use sparse crossentropy with logits as a default.
   :return: a tensor for the adversarial example
   """
 
@@ -76,7 +78,7 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
   i = 0
   while i < nb_iter:
     adv_x = fast_gradient_method(model_fn, adv_x, eps_iter, norm, clip_min=clip_min,
-                                 clip_max=clip_max, y=y, targeted=targeted)
+                                 clip_max=clip_max, y=y, targeted=targeted, loss_fn=loss_fn)
 
     # Clipping perturbation eta to norm norm ball
     eta = adv_x - x
