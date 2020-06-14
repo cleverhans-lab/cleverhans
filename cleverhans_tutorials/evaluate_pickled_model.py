@@ -12,7 +12,7 @@ import logging
 
 import tensorflow as tf
 
-from cleverhans.compat import flags
+from tensorflow.python.platform import flags
 from cleverhans.dataset import MNIST
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils import set_log_level

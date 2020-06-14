@@ -12,7 +12,7 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.compat import flags
+from tensorflow.python.platform import flags
 from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
 from cleverhans.serial import save

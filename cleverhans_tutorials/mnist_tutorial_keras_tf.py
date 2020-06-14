@@ -19,7 +19,7 @@ from tensorflow import keras
 import numpy as np
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.compat import flags
+from tensorflow.python.platform import flags
 from cleverhans.dataset import MNIST
 from cleverhans.loss import CrossEntropy
 from cleverhans.train import train

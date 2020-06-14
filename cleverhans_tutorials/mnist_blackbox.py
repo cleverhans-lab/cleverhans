@@ -18,7 +18,7 @@ import tensorflow as tf
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.utils_tf import jacobian_graph, jacobian_augmentation
-from cleverhans.compat import flags
+from tensorflow.python.platform import flags
 from cleverhans.dataset import MNIST
 from cleverhans.initializers import HeReLuNormalInitializer
 from cleverhans.loss import CrossEntropy

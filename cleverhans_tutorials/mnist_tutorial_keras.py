@@ -14,7 +14,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.compat import flags
+from tensorflow.python.platform import flags
 from cleverhans.dataset import MNIST
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_keras import cnn_model

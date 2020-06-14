@@ -23,7 +23,7 @@ from torch.autograd import Variable
 from torchvision import datasets, transforms
 
 from cleverhans.attacks import FastGradientMethod
-from cleverhans.compat import flags
+from tensorflow.python.platform import flags
 from cleverhans.model import CallableModelWrapper
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_pytorch import convert_pytorch_model_to_tf

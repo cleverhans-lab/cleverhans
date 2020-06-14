@@ -18,7 +18,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from cleverhans.compat import flags
+from tensorflow.python.platform import flags
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_tfe import train, model_eval
 from cleverhans.attacks_tfe import BasicIterativeMethod
