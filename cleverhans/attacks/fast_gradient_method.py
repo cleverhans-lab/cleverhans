@@ -250,11 +250,10 @@ def optimize_linear(grad, eps, ord=np.inf):
     num_ties = tf.reduce_sum(input_tensor=tied_for_max, axis=red_ind, keepdims=True)
     optimal_perturbation = sign * tied_for_max / num_ties
   elif ord == 2:
-    square = tf.maximum(avoid_zero_div,
-                        reduce_sum(tf.square(grad),
-                                   axis=red_ind,
-                                   keepdims=True))
-    optimal_perturbation = grad / tf.sqrt(square)
+    l2_norm = tf.sqrt(reduce_sum(tf.square(grad),
+                                 reduction_indices=red_ind,
+                                 keepdims=True))
+    optimal_perturbation = grad / tf.maximum(avoid_zero_div, l2_norm)
   else:
     raise NotImplementedError("Only L-inf, L1 and L2 norms are "
                               "currently implemented.")
