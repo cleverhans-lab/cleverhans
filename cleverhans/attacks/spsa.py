@@ -6,6 +6,7 @@ import warnings
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 from cleverhans.attacks.attack import Attack
 from cleverhans.compat import reduce_mean, reduce_sum, reduce_max
@@ -505,7 +506,7 @@ def _apply_transformation(inputs):
 
   # Apply rotation
   angle *= np.pi / 180
-  x = tf.contrib.image.rotate(x, angle, interpolation='BILINEAR')
+  x = tfa.image.rotate(x, angle, interpolation='BILINEAR')
 
   # Apply translation
   dx_in_px = -dx * height
@@ -513,11 +514,11 @@ def _apply_transformation(inputs):
   translation = tf.convert_to_tensor([dx_in_px, dy_in_px])
 
   try:
-    x = tf.contrib.image.translate(x, translation, interpolation='BILINEAR')
+    x = tfa.image.translate(x, translation, interpolation='BILINEAR')
   except AttributeError as e:
     print("WARNING: SpatialAttack requires tf 1.6 or higher")
     raise e
-  x = tf.contrib.image.translate(x, translation, interpolation='BILINEAR')
+  x = tfa.image.translate(x, translation, interpolation='BILINEAR')
   return tf.image.resize_image_with_crop_or_pad(x, height, width)
 
 
@@ -677,7 +678,7 @@ def projected_optimization(loss_fn,
                                            input_image, clip_min=clip_min,
                                            clip_max=clip_max)
   init_optim_state = optimizer.init_state([init_perturbation])
-  nest = tf.contrib.framework.nest
+  nest = tf.nest
 
   def loop_body(i, perturbation, flat_optim_state):
     """Update perturbation to input image."""
