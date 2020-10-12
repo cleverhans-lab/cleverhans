@@ -46,7 +46,7 @@ def spsa(model_fn, x, y, eps, nb_iter, clip_min=None, clip_max=None, targeted=Fa
     """
     logits = model_fn(x)
     loss_multiplier = 1 if targeted else -1
-    return loss_multiplier * margin_logit_loss(logits, label, nb_classes=logits.get_shape()[-1])
+    return loss_multiplier * margin_logit_loss(logits, label, nb_classes=logits.shape[-1])
 
   adv_x = projected_optimization(loss_fn, x, y, eps, nb_iter, optimizer, clip_min, clip_max,
                                  early_stop_loss_threshold, is_debug=is_debug)
