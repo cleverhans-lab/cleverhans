@@ -18,6 +18,7 @@ class CarliniWagnerL2(object):
   def __init__(self,
                model_fn,
                y=None,
+               targeted=False,
                batch_size=128,
                clip_min=0.,
                clip_max=1.,
@@ -39,6 +40,7 @@ class CarliniWagnerL2(object):
 
     :param model_fn: a callable that takes an input tensor and returns the model logits.
     :param y: (optional) Tensor with target labels. 
+    :param y: (optional) Targeted attack? 
     :param batch_size: Number of attacks to run simultaneously.
     :param clip_min: (optional) float. Minimum float values for adversarial example components.
     :param clip_max: (optional) float. Maximum float value for adversarial example components.
@@ -84,8 +86,6 @@ class CarliniWagnerL2(object):
 
     self.confidence = confidence
     self.initial_const = initial_const
-
-    self.optimizer = tf.keras.optimizers.Adam(self.learning_rate)
 
     super(CarliniWagnerL2, self).__init__()
 
@@ -148,10 +148,13 @@ class CarliniWagnerL2(object):
     modifier = tf.Variable(
         tf.zeros(shape, dtype=x.dtype), trainable=True)
 
+    # the optimizer
+    optimizer = tf.keras.optimizers.Adam(self.learning_rate)
+
     for outer_step in range(self.binary_search_steps):
       # at each iteration reset variable state
       modifier.assign(tf.zeros(shape, dtype=x.dtype))
-      for var in self.optimizer.variables():
+      for var in optimizer.variables():
         var.assign(tf.zeros(var.shape, dtype=var.dtype))
 
       # variables to keep track in the inner loop
@@ -168,7 +171,7 @@ class CarliniWagnerL2(object):
 
       for iteration in range(self.max_iterations):
         x_new, loss, preds, l2_dist = self.attack_step(
-            x, y, modifier, const)
+            x, y, modifier, const, optimizer, self.model_fn)
 
         # check if we made progress, abort otherwise
         if self.abort_early and iteration % ((self.max_iterations // 10) or 1) == 0:
@@ -303,15 +306,15 @@ class CarliniWagnerL2(object):
     return loss, l2_dist
 
   @tf.function
-  def attack_step(self, x, y, modifier, const):
+  def attack_step(self, x, y, modifier, const, optimizer, model_fn):
     # compute the actual attack
     with tf.GradientTape() as tape:
       adv_image = modifier + x
       x_new = self.clip_tanh(adv_image)
-      preds = self.model_fn(x_new)
+      preds = model_fn(x_new)
       loss, l2_dist = self.loss_fn(
           x=x, x_new=x_new, y_true=y, y_pred=preds, const=const)
 
     grads = tape.gradient(loss, adv_image)
-    self.optimizer.apply_gradients([(grads, modifier)])
+    optimizer.apply_gradients([(grads, modifier)])
     return x_new, loss, preds, l2_dist
