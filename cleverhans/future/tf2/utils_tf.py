@@ -53,13 +53,12 @@ def get_or_guess_labels(model_fn, x, y=None, targeted=False):
 
   # labels set by the user
   if y is not None:
+    # inefficient when y is a tensor, but this function only get called once
     y = np.asarray(y)
 
     if len(y.shape) == 1:
-      # the user provided a list/1D-array
-      idx = y.reshape([-1, 1])
-      y = np.zeros_like(preds)
-      y[:, idx] = 1
+      # the user provided categorical encoding
+      y = tf.one_hot(y, nb_classes)
 
     y = tf.cast(y, x.dtype)
     return y, nb_classes
