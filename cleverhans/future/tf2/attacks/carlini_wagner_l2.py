@@ -87,6 +87,9 @@ class CarliniWagnerL2(object):
     self.confidence = confidence
     self.initial_const = initial_const
 
+    # the optimizer
+    self.optimizer = tf.keras.optimizers.Adam(self.learning_rate)
+
     super(CarliniWagnerL2, self).__init__()
 
   def attack(self, x):
@@ -148,13 +151,10 @@ class CarliniWagnerL2(object):
     modifier = tf.Variable(
         tf.zeros(shape, dtype=x.dtype), trainable=True)
 
-    # the optimizer
-    optimizer = tf.keras.optimizers.Adam(self.learning_rate)
-
     for outer_step in range(self.binary_search_steps):
       # at each iteration reset variable state
       modifier.assign(tf.zeros(shape, dtype=x.dtype))
-      for var in optimizer.variables():
+      for var in self.optimizer.variables():
         var.assign(tf.zeros(var.shape, dtype=var.dtype))
 
       # variables to keep track in the inner loop
@@ -171,7 +171,7 @@ class CarliniWagnerL2(object):
 
       for iteration in range(self.max_iterations):
         x_new, loss, preds, l2_dist = self.attack_step(
-            x, y, modifier, const, optimizer, self.model_fn)
+            x, y, modifier, const)
 
         # check if we made progress, abort otherwise
         if self.abort_early and iteration % ((self.max_iterations // 10) or 1) == 0:
@@ -306,15 +306,21 @@ class CarliniWagnerL2(object):
     return loss, l2_dist
 
   @tf.function
-  def attack_step(self, x, y, modifier, const, optimizer, model_fn):
+  def gradient(self, x, y, modifier, const):
     # compute the actual attack
     with tf.GradientTape() as tape:
       adv_image = modifier + x
       x_new = self.clip_tanh(adv_image)
-      preds = model_fn(x_new)
+      preds = self.model_fn(x_new)
       loss, l2_dist = self.loss_fn(
           x=x, x_new=x_new, y_true=y, y_pred=preds, const=const)
 
     grads = tape.gradient(loss, adv_image)
-    optimizer.apply_gradients([(grads, modifier)])
+    return x_new, grads, loss, preds, l2_dist
+
+  def attack_step(self, x, y, modifier, const):
+    x_new, grads, loss, preds, l2_dist = self.gradient(
+        x, y, modifier, const)
+
+    self.optimizer.apply_gradients([(grads, modifier)])
     return x_new, loss, preds, l2_dist
