@@ -155,6 +155,7 @@ class SparseL1Descent(Attack):
                    eps_iter=1.0,
                    nb_iter=20,
                    y=None,
+                   loss_fn=softmax_cross_entropy_with_logits,
                    clip_min=None,
                    clip_max=None,
                    y_target=None,
@@ -199,6 +200,7 @@ class SparseL1Descent(Attack):
     self.nb_iter = nb_iter
     self.y = y
     self.y_target = y_target
+    self.loss_fn = loss_fn
     self.clip_min = clip_min
     self.clip_max = clip_max
     self.clip_grad = clip_grad
@@ -243,6 +245,7 @@ def sparse_l1_descent(x,
                       y=None,
                       eps=1.0,
                       q=99,
+                      loss_fn=softmax_cross_entropy_with_logits,
                       clip_min=None,
                       clip_max=None,
                       clip_grad=False,
@@ -262,6 +265,8 @@ def sparse_l1_descent(x,
   :param eps: the epsilon (input variation parameter)
   :param q: the percentile above which gradient values are retained. Either a
             scalar or a vector of same length as the input batch dimension.
+  :param loss_fn: Loss function that takes (labels, logits) as arguments and
+                  returns loss
   :param clip_min: Minimum float value for adversarial example components
   :param clip_max: Maximum float value for adversarial example components
   :param clip_grad: (optional bool) Ignore gradient components
@@ -295,7 +300,7 @@ def sparse_l1_descent(x,
   y = y / reduce_sum(y, 1, keepdims=True)
 
   # Compute loss
-  loss = softmax_cross_entropy_with_logits(labels=y, logits=logits)
+  loss = loss_fn(labels=y, logits=logits)
   if targeted:
     loss = -loss
 
