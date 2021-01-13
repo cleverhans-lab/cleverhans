@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.virtual_adversarial_method &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.virtual_adversarial_method</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The VirtualAdversarialMethod attack</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.attack</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">CallableModelWrapper</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">wrapper_warning_logits</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils_tf</span>
+
+<span class="n">tf_dtype</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">as_dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VirtualAdversarialMethod"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.VirtualAdversarialMethod">[docs]</a><span class="k">class</span> <span class="nc">VirtualAdversarialMethod</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  This attack was originally proposed by Miyato et al. (2016) and was used</span>
+<span class="sd">  for virtual adversarial training.</span>
+<span class="sd">  Paper link: https://arxiv.org/abs/1507.00677</span>
+
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: optional tf.Session</span>
+<span class="sd">  :param dtypestr: dtype of the data</span>
+<span class="sd">  :param kwargs: passed through to super constructor</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Note: the model parameter should be an instance of the</span>
+<span class="sd">    cleverhans.model.Model abstraction provided by CleverHans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+      <span class="n">wrapper_warning_logits</span><span class="p">()</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">CallableModelWrapper</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;logits&#39;</span><span class="p">)</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">VirtualAdversarialMethod</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="p">,</span>
+                                                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;eps&#39;</span><span class="p">,</span> <span class="s1">&#39;xi&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_min&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_max&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;num_iterations&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="VirtualAdversarialMethod.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.VirtualAdversarialMethod.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate symbolic graph for adversarial examples and return.</span>
+
+<span class="sd">    :param x: The model&#39;s symbolic inputs.</span>
+<span class="sd">    :param kwargs: See `parse_params`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Parse and save attack-specific parameters</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_params</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">vatm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+        <span class="n">eps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span>
+        <span class="n">num_iterations</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">,</span>
+        <span class="n">xi</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">xi</span><span class="p">,</span>
+        <span class="n">clip_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span>
+        <span class="n">clip_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VirtualAdversarialMethod.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.VirtualAdversarialMethod.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                   <span class="n">eps</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+                   <span class="n">nb_iter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">xi</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+                   <span class="n">clip_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">clip_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">num_iterations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take in a dictionary of parameters and applies attack-specific checks</span>
+<span class="sd">    before saving them as attributes.</span>
+
+<span class="sd">    Attack-specific parameters:</span>
+
+<span class="sd">    :param eps: (optional float )the epsilon (input variation parameter)</span>
+<span class="sd">    :param nb_iter: (optional) the number of iterations</span>
+<span class="sd">      Defaults to 1 if not specified</span>
+<span class="sd">    :param xi: (optional float) the finite difference parameter</span>
+<span class="sd">    :param clip_min: (optional float) Minimum input component value</span>
+<span class="sd">    :param clip_max: (optional float) Maximum input component value</span>
+<span class="sd">    :param num_iterations: Deprecated alias for `nb_iter`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Save attack-specific parameters</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+    <span class="k">if</span> <span class="n">num_iterations</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;`num_iterations` is deprecated. Switch to `nb_iter`.&quot;</span>
+                    <span class="s2">&quot; The old name will be removed on or after 2019-04-26.&quot;</span><span class="p">)</span>
+      <span class="c1"># Note: when we remove the deprecated alias, we can put the default</span>
+      <span class="c1"># value of 1 for nb_iter back in the method signature</span>
+      <span class="k">assert</span> <span class="n">nb_iter</span> <span class="ow">is</span> <span class="kc">None</span>
+      <span class="n">nb_iter</span> <span class="o">=</span> <span class="n">num_iterations</span>
+    <span class="k">del</span> <span class="n">num_iterations</span>
+    <span class="k">if</span> <span class="n">nb_iter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">nb_iter</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_iterations</span> <span class="o">=</span> <span class="n">nb_iter</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">xi</span> <span class="o">=</span> <span class="n">xi</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;kwargs is unused and will be removed on or after &quot;</span>
+                    <span class="s2">&quot;2019-04-26.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span></div></div>
+
+
+<div class="viewcode-block" id="vatm"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.vatm">[docs]</a><span class="k">def</span> <span class="nf">vatm</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+         <span class="n">x</span><span class="p">,</span>
+         <span class="n">logits</span><span class="p">,</span>
+         <span class="n">eps</span><span class="p">,</span>
+         <span class="n">num_iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+         <span class="n">xi</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+         <span class="n">clip_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+         <span class="n">clip_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+         <span class="n">scope</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Tensorflow implementation of the perturbation method used for virtual</span>
+<span class="sd">  adversarial training: https://arxiv.org/abs/1507.00677</span>
+<span class="sd">  :param model: the model which returns the network unnormalized logits</span>
+<span class="sd">  :param x: the input placeholder</span>
+<span class="sd">  :param logits: the model&#39;s unnormalized output tensor (the input to</span>
+<span class="sd">                 the softmax layer)</span>
+<span class="sd">  :param eps: the epsilon (input variation parameter)</span>
+<span class="sd">  :param num_iterations: the number of iterations</span>
+<span class="sd">  :param xi: the finite difference parameter</span>
+<span class="sd">  :param clip_min: optional parameter that can be used to set a minimum</span>
+<span class="sd">                  value for components of the example returned</span>
+<span class="sd">  :param clip_max: optional parameter that can be used to set a maximum</span>
+<span class="sd">                  value for components of the example returned</span>
+<span class="sd">  :param seed: the seed for random generator</span>
+<span class="sd">  :return: a tensor for the adversarial example</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="s2">&quot;virtual_adversarial_perturbation&quot;</span><span class="p">):</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">random_normal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf_dtype</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_iterations</span><span class="p">):</span>
+      <span class="n">d</span> <span class="o">=</span> <span class="n">xi</span> <span class="o">*</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">l2_batch_normalize</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+      <span class="n">logits_d</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">d</span><span class="p">)</span>
+      <span class="n">kl</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">kl_with_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">logits_d</span><span class="p">)</span>
+      <span class="n">Hd</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">kl</span><span class="p">,</span> <span class="n">d</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+      <span class="n">d</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">Hd</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">eps</span> <span class="o">*</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">l2_batch_normalize</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="n">adv_x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">d</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">clip_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">clip_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+      <span class="n">adv_x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">clip_by_value</span><span class="p">(</span><span class="n">adv_x</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adv_x</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>
