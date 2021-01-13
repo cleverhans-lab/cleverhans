@@ -1,0 +1,850 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.spsa &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.spsa</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The SPSA attack</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># pylint: disable=missing-docstring</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">xrange</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="c1"># import tensorflow_addons as tfa</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.attack</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">reduce_mean</span><span class="p">,</span> <span class="n">reduce_sum</span><span class="p">,</span> <span class="n">reduce_max</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils_tf</span>
+
+<span class="n">tf_dtype</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">as_dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SPSA"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.SPSA">[docs]</a><span class="k">class</span> <span class="nc">SPSA</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  This implements the SPSA adversary, as in https://arxiv.org/abs/1802.05666</span>
+<span class="sd">  (Uesato et al. 2018). SPSA is a gradient-free optimization method, which</span>
+<span class="sd">  is useful when the model is non-differentiable, or more generally, the</span>
+<span class="sd">  gradients do not point in useful directions.</span>
+
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: optional tf.Session</span>
+<span class="sd">  :param dtypestr: dtype of the data</span>
+<span class="sd">  :param kwargs: passed through to super constructor</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="n">DEFAULT_SPSA_SAMPLES</span> <span class="o">=</span> <span class="mi">128</span>
+  <span class="n">DEFAULT_SPSA_ITERS</span> <span class="o">=</span> <span class="mi">1</span>
+  <span class="n">DEFAULT_DELTA</span> <span class="o">=</span> <span class="mf">0.01</span>
+  <span class="n">DEFAULT_LEARNING_RATE</span> <span class="o">=</span> <span class="mf">0.01</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">SPSA</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;eps&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_min&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_max&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;y_target&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;nb_iter&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;spsa_samples&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;spsa_iters&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;early_stop_loss_threshold&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;is_debug&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;is_targeted&#39;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SPSA.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.SPSA.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+               <span class="n">x</span><span class="p">,</span>
+               <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">y_target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">eps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">clip_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">clip_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">nb_iter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">is_targeted</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">early_stop_loss_threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">learning_rate</span><span class="o">=</span><span class="n">DEFAULT_LEARNING_RATE</span><span class="p">,</span>
+               <span class="n">delta</span><span class="o">=</span><span class="n">DEFAULT_DELTA</span><span class="p">,</span>
+               <span class="n">spsa_samples</span><span class="o">=</span><span class="n">DEFAULT_SPSA_SAMPLES</span><span class="p">,</span>
+               <span class="n">batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">spsa_iters</span><span class="o">=</span><span class="n">DEFAULT_SPSA_ITERS</span><span class="p">,</span>
+               <span class="n">is_debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+               <span class="n">epsilon</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">num_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate symbolic graph for adversarial examples.</span>
+
+<span class="sd">    :param x: The model&#39;s symbolic inputs. Must be a batch of size 1.</span>
+<span class="sd">    :param y: A Tensor or None. The index of the correct label.</span>
+<span class="sd">    :param y_target: A Tensor or None. The index of the target label in a</span>
+<span class="sd">                     targeted attack.</span>
+<span class="sd">    :param eps: The size of the maximum perturbation, measured in the</span>
+<span class="sd">                L-infinity norm.</span>
+<span class="sd">    :param clip_min: If specified, the minimum input value</span>
+<span class="sd">    :param clip_max: If specified, the maximum input value</span>
+<span class="sd">    :param nb_iter: The number of optimization steps.</span>
+<span class="sd">    :param early_stop_loss_threshold: A float or None. If specified, the</span>
+<span class="sd">                                      attack will end as soon as the loss</span>
+<span class="sd">                                      is below `early_stop_loss_threshold`.</span>
+<span class="sd">    :param learning_rate: Learning rate of ADAM optimizer.</span>
+<span class="sd">    :param delta: Perturbation size used for SPSA approximation.</span>
+<span class="sd">    :param spsa_samples: Number of inputs to evaluate at a single time.</span>
+<span class="sd">                       The true batch size (the number of evaluated</span>
+<span class="sd">                       inputs for each update) is `spsa_samples *</span>
+<span class="sd">                       spsa_iters`</span>
+<span class="sd">    :param batch_size: Deprecated param that is an alias for spsa_samples</span>
+<span class="sd">    :param spsa_iters: Number of model evaluations before performing an</span>
+<span class="sd">                       update, where each evaluation is on `spsa_samples`</span>
+<span class="sd">                       different inputs.</span>
+<span class="sd">    :param is_debug: If True, print the adversarial loss after each update.</span>
+<span class="sd">    :param epsilon: Deprecated alias for `eps`</span>
+<span class="sd">    :param num_steps: Deprecated alias for `nb_iter`.</span>
+<span class="sd">    :param is_targeted: Deprecated argument. Ignored.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">epsilon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Should not specify both eps and its deprecated &quot;</span>
+                         <span class="s2">&quot;alias, epsilon&quot;</span><span class="p">)</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;`epsilon` is deprecated. Switch to `eps`. `epsilon` may &quot;</span>
+                    <span class="s2">&quot;be removed on or after 2019-04-15.&quot;</span><span class="p">)</span>
+      <span class="n">eps</span> <span class="o">=</span> <span class="n">epsilon</span>
+    <span class="k">del</span> <span class="n">epsilon</span>
+
+    <span class="k">if</span> <span class="n">num_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">nb_iter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Should not specify both nb_iter and its deprecated &quot;</span>
+                         <span class="s2">&quot;alias, num_steps&quot;</span><span class="p">)</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;`num_steps` is deprecated. Switch to `nb_iter`. &quot;</span>
+                    <span class="s2">&quot;`num_steps` may be removed on or after 2019-04-15.&quot;</span><span class="p">)</span>
+      <span class="n">nb_iter</span> <span class="o">=</span> <span class="n">num_steps</span>
+    <span class="k">del</span> <span class="n">num_steps</span>
+    <span class="k">assert</span> <span class="n">nb_iter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">y_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must specify exactly one of y (untargeted attack, &quot;</span>
+                       <span class="s2">&quot;cause the input not to be classified as this true &quot;</span>
+                       <span class="s2">&quot;label) and y_target (targeted attack, cause the &quot;</span>
+                       <span class="s2">&quot;input to be classified as this target label).&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_targeted</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;`is_targeted` is deprecated. Simply do not specify it.&quot;</span>
+                    <span class="s2">&quot; It may become an error to specify it on or after &quot;</span>
+                    <span class="s2">&quot;2019-04-15.&quot;</span><span class="p">)</span>
+      <span class="k">assert</span> <span class="n">is_targeted</span> <span class="o">==</span> <span class="n">y_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="n">is_targeted</span> <span class="o">=</span> <span class="n">y_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">check_batch</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+      <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">control_dependencies</span><span class="p">([</span><span class="n">check_batch</span><span class="p">]):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;For SPSA, input tensor x must have batch_size of 1.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+          <span class="s1">&#39;The &quot;batch_size&quot; argument to SPSA is deprecated, and will &#39;</span>
+          <span class="s1">&#39;be removed on 2019-03-17. &#39;</span>
+          <span class="s1">&#39;Please use spsa_samples instead.&#39;</span><span class="p">)</span>
+      <span class="n">spsa_samples</span> <span class="o">=</span> <span class="n">batch_size</span>
+
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">SPSAAdam</span><span class="p">(</span>
+        <span class="n">lr</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">,</span>
+        <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="o">=</span><span class="n">spsa_samples</span><span class="p">,</span>
+        <span class="n">num_iters</span><span class="o">=</span><span class="n">spsa_iters</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">loss_fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Margin logit loss, with correct sign for targeted vs untargeted loss.</span>
+<span class="sd">      &quot;&quot;&quot;</span>
+      <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+      <span class="n">loss_multiplier</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">is_targeted</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+      <span class="k">return</span> <span class="n">loss_multiplier</span> <span class="o">*</span> <span class="n">margin_logit_loss</span><span class="p">(</span>
+          <span class="n">logits</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span>
+          <span class="n">nb_classes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">nb_classes</span> <span class="ow">or</span> <span class="n">logits</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">y_attack</span> <span class="o">=</span> <span class="n">y_target</span> <span class="k">if</span> <span class="n">is_targeted</span> <span class="k">else</span> <span class="n">y</span>
+    <span class="n">adv_x</span> <span class="o">=</span> <span class="n">projected_optimization</span><span class="p">(</span>
+        <span class="n">loss_fn</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">,</span>
+        <span class="n">y_attack</span><span class="p">,</span>
+        <span class="n">eps</span><span class="p">,</span>
+        <span class="n">num_steps</span><span class="o">=</span><span class="n">nb_iter</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+        <span class="n">early_stop_loss_threshold</span><span class="o">=</span><span class="n">early_stop_loss_threshold</span><span class="p">,</span>
+        <span class="n">is_debug</span><span class="o">=</span><span class="n">is_debug</span><span class="p">,</span>
+        <span class="n">clip_min</span><span class="o">=</span><span class="n">clip_min</span><span class="p">,</span>
+        <span class="n">clip_max</span><span class="o">=</span><span class="n">clip_max</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">adv_x</span></div>
+
+<div class="viewcode-block" id="SPSA.generate_np"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.SPSA.generate_np">[docs]</a>  <span class="k">def</span> <span class="nf">generate_np</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_val</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s2">&quot;epsilon&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using deprecated argument: see `generate`&quot;</span><span class="p">)</span>
+      <span class="k">assert</span> <span class="s2">&quot;eps&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;eps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;epsilon&quot;</span><span class="p">]</span>
+      <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;epsilon&quot;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="s2">&quot;eps&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span>
+
+    <span class="k">if</span> <span class="s2">&quot;num_steps&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using deprecated argument: see `generate`&quot;</span><span class="p">)</span>
+      <span class="k">assert</span> <span class="s2">&quot;nb_iter&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span>
+      <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;nb_iter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span>
+      <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="s1">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">assert</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s1">&#39;y_target&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y_target&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">assert</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y_target&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]</span>
+
+    <span class="c1"># Call self.generate() sequentially for each image in the batch</span>
+    <span class="n">x_adv</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x_val</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">batch_size</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_val</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="s1">&#39;# of images and labels should match&#39;</span>
+    <span class="k">for</span> <span class="n">x_single</span><span class="p">,</span> <span class="n">y_single</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">x_single</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+      <span class="n">adv_img</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SPSA</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">generate_np</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_single</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+      <span class="n">x_adv</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">adv_img</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">x_adv</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_project_perturbation</span><span class="p">(</span><span class="n">perturbation</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span> <span class="n">clip_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">clip_max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Project `perturbation` onto L-infinity ball of radius `epsilon`.</span>
+<span class="sd">  Also project into hypercube such that the resulting adversarial example</span>
+<span class="sd">  is between clip_min and clip_max, if applicable.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">if</span> <span class="n">clip_min</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">clip_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;_project_perturbation currently has clipping &quot;</span>
+                              <span class="s2">&quot;hard-coded in.&quot;</span><span class="p">)</span>
+
+  <span class="c1"># Ensure inputs are in the correct range</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">control_dependencies</span><span class="p">([</span>
+      <span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_less_equal</span><span class="p">(</span><span class="n">input_image</span><span class="p">,</span>
+                                 <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">clip_max</span><span class="p">,</span> <span class="n">input_image</span><span class="o">.</span><span class="n">dtype</span><span class="p">)),</span>
+      <span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_greater_equal</span><span class="p">(</span><span class="n">input_image</span><span class="p">,</span>
+                                    <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">clip_min</span><span class="p">,</span> <span class="n">input_image</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+  <span class="p">]):</span>
+    <span class="n">clipped_perturbation</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">clip_by_value</span><span class="p">(</span>
+        <span class="n">perturbation</span><span class="p">,</span> <span class="o">-</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">)</span>
+    <span class="n">new_image</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">clip_by_value</span><span class="p">(</span>
+        <span class="n">input_image</span> <span class="o">+</span> <span class="n">clipped_perturbation</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_image</span> <span class="o">-</span> <span class="n">input_image</span>
+
+
+<span class="k">class</span> <span class="nc">TensorOptimizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Optimizer for Tensors rather than tf.Variables.</span>
+
+<span class="sd">  TensorOptimizers implement optimizers where the values being optimized</span>
+<span class="sd">  are ordinary Tensors, rather than Variables. TF Variables can have strange</span>
+<span class="sd">  behaviors when being assigned multiple times within a single sess.run()</span>
+<span class="sd">  call, particularly in Distributed TF, so this avoids thinking about those</span>
+<span class="sd">  issues. These are helper classes for the `projected_optimization`</span>
+<span class="sd">  method. Apart from not using Variables, they follow an interface very</span>
+<span class="sd">  similar to tf.Optimizer.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="nf">_compute_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">unused_optim_state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute a new value of `x` to minimize `loss_fn`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        loss_fn: a callable that takes `x`, a batch of images, and returns</span>
+<span class="sd">            a batch of loss values. `x` will be optimized to minimize</span>
+<span class="sd">            `loss_fn(x)`.</span>
+<span class="sd">        x: A list of Tensors, the values to be updated. This is analogous</span>
+<span class="sd">            to the `var_list` argument in standard TF Optimizer.</span>
+<span class="sd">        unused_optim_state: A (possibly nested) dict, containing any state</span>
+<span class="sd">            info needed for the optimizer.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        new_x: A list of Tensors, the same length as `x`, which are updated</span>
+<span class="sd">        new_optim_state: A dict, with the same structure as `optim_state`,</span>
+<span class="sd">            which have been updated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Assumes `x` is a list,</span>
+    <span class="c1"># and contains a tensor representing a batch of images</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span> \
+        <span class="s1">&#39;x should be a list and contain only one image tensor&#39;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">reduce_mean</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">_apply_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">optim_state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a gradient, make one optimization step.</span>
+
+<span class="sd">    :param grads: list of tensors, same length as `x`, containing the corresponding gradients</span>
+<span class="sd">    :param x: list of tensors to update</span>
+<span class="sd">    :param optim_state: dict</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      new_x: list of tensors, updated version of `x`</span>
+<span class="sd">      new_optim_state: dict, updated version of `optim_state`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+        <span class="s2">&quot;_apply_gradients should be defined in each subclass&quot;</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">minimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">optim_state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Analogous to tf.Optimizer.minimize</span>
+
+<span class="sd">    :param loss_fn: tf Tensor, representing the loss to minimize</span>
+<span class="sd">    :param x: list of Tensor, analogous to tf.Optimizer&#39;s var_list</span>
+<span class="sd">    :param optim_state: A possibly nested dict, containing any optimizer state.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      new_x: list of Tensor, updated version of `x`</span>
+<span class="sd">      new_optim_state: dict, updated version of `optim_state`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">grads</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_gradients</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">optim_state</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_gradients</span><span class="p">(</span><span class="n">grads</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">optim_state</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">init_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the initial state of the optimizer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x: A list of Tensors, which will be optimized.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary, representing the initial state of the optimizer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+        <span class="s2">&quot;init_state should be defined in each subclass&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">TensorGradientDescent</span><span class="p">(</span><span class="n">TensorOptimizer</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Vanilla Gradient Descent TensorOptimizer.&quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_lr</span> <span class="o">=</span> <span class="n">lr</span>
+
+  <span class="k">def</span> <span class="nf">init_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{}</span>
+
+  <span class="k">def</span> <span class="nf">_apply_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">optim_state</span><span class="p">):</span>
+    <span class="n">new_x</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+      <span class="n">new_x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lr</span> <span class="o">*</span> <span class="n">grads</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">new_x</span><span class="p">,</span> <span class="n">optim_state</span>
+
+
+<span class="k">class</span> <span class="nc">TensorAdam</span><span class="p">(</span><span class="n">TensorOptimizer</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;The Adam optimizer defined in https://arxiv.org/abs/1412.6980.&quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">beta1</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">beta2</span><span class="o">=</span><span class="mf">0.999</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_lr</span> <span class="o">=</span> <span class="n">lr</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_beta1</span> <span class="o">=</span> <span class="n">beta1</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_beta2</span> <span class="o">=</span> <span class="n">beta2</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_epsilon</span> <span class="o">=</span> <span class="n">epsilon</span>
+
+  <span class="k">def</span> <span class="nf">init_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize t, m, and u</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">optim_state</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">optim_state</span><span class="p">[</span><span class="s2">&quot;t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">optim_state</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">optim_state</span><span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">optim_state</span>
+
+  <span class="k">def</span> <span class="nf">_apply_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">optim_state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Refer to parent class documentation.&quot;&quot;&quot;</span>
+    <span class="n">new_x</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">new_optim_state</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">optim_state</span><span class="p">[</span><span class="s2">&quot;t&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1.</span><span class="p">,</span>
+        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+        <span class="s2">&quot;u&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">new_optim_state</span><span class="p">[</span><span class="s2">&quot;t&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+      <span class="n">g</span> <span class="o">=</span> <span class="n">grads</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+      <span class="n">m_old</span> <span class="o">=</span> <span class="n">optim_state</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+      <span class="n">u_old</span> <span class="o">=</span> <span class="n">optim_state</span><span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+      <span class="n">new_optim_state</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">_beta1</span> <span class="o">*</span> <span class="n">m_old</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_beta1</span><span class="p">)</span> <span class="o">*</span> <span class="n">g</span><span class="p">)</span>
+      <span class="n">new_optim_state</span><span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">_beta2</span> <span class="o">*</span> <span class="n">u_old</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_beta2</span><span class="p">)</span> <span class="o">*</span> <span class="n">g</span> <span class="o">*</span> <span class="n">g</span><span class="p">)</span>
+      <span class="n">m_hat</span> <span class="o">=</span> <span class="n">new_optim_state</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_beta1</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+      <span class="n">u_hat</span> <span class="o">=</span> <span class="n">new_optim_state</span><span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_beta2</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+      <span class="n">new_x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+          <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lr</span> <span class="o">*</span> <span class="n">m_hat</span> <span class="o">/</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">u_hat</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epsilon</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">new_x</span><span class="p">,</span> <span class="n">new_optim_state</span>
+
+
+<span class="k">class</span> <span class="nc">SPSAAdam</span><span class="p">(</span><span class="n">TensorAdam</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Optimizer for gradient-free attacks in https://arxiv.org/abs/1802.05666.</span>
+
+<span class="sd">  Gradients estimates are computed using Simultaneous Perturbation Stochastic</span>
+<span class="sd">  Approximation (SPSA), combined with the ADAM update rule.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+               <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+               <span class="n">delta</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+               <span class="n">num_samples</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+               <span class="n">num_iters</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+               <span class="n">compare_to_analytic_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">SPSAAdam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">num_samples</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;number of samples must be even&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_delta</span> <span class="o">=</span> <span class="n">delta</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_num_samples</span> <span class="o">=</span> <span class="n">num_samples</span> <span class="o">//</span> <span class="mi">2</span>  <span class="c1"># Since we mirror +/- delta later</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_num_iters</span> <span class="o">=</span> <span class="n">num_iters</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_compare_to_analytic_grad</span> <span class="o">=</span> <span class="n">compare_to_analytic_grad</span>
+
+  <span class="k">def</span> <span class="nf">_get_delta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+    <span class="n">x_shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()</span>
+    <span class="n">delta_x</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">random_uniform</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_samples</span><span class="p">]</span> <span class="o">+</span> <span class="n">x_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+            <span class="n">minval</span><span class="o">=-</span><span class="mf">1.</span><span class="p">,</span>
+            <span class="n">maxval</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">tf_dtype</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">delta_x</span>
+
+  <span class="k">def</span> <span class="nf">_compute_gradients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">unused_optim_state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute gradient estimates using SPSA.&quot;&quot;&quot;</span>
+    <span class="c1"># Assumes `x` is a list, containing a [1, H, W, C] image</span>
+    <span class="c1"># If static batch dimension is None, tf.reshape to batch size 1</span>
+    <span class="c1"># so that static shape can be inferred</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">static_x_shape</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">static_x_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">static_x_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="k">assert</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x_shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">body</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">grad_array</span><span class="p">):</span>
+      <span class="n">delta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delta</span>
+      <span class="n">delta_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_delta</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span>
+      <span class="n">delta_x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">delta_x</span><span class="p">,</span> <span class="o">-</span><span class="n">delta_x</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+      <span class="n">loss_vals</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+          <span class="n">loss_fn</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">delta_x</span><span class="p">),</span>
+          <span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_samples</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+      <span class="n">avg_grad</span> <span class="o">=</span> <span class="n">reduce_mean</span><span class="p">(</span><span class="n">loss_vals</span> <span class="o">*</span> <span class="n">delta_x</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">delta</span>
+      <span class="n">avg_grad</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">avg_grad</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+      <span class="n">new_grad_array</span> <span class="o">=</span> <span class="n">grad_array</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">avg_grad</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">new_grad_array</span>
+
+    <span class="k">def</span> <span class="nf">cond</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_iters</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">all_grads</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">while_loop</span><span class="p">(</span>
+        <span class="n">cond</span><span class="p">,</span>
+        <span class="n">body</span><span class="p">,</span>
+        <span class="n">loop_vars</span><span class="o">=</span><span class="p">[</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">TensorArray</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_iters</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf_dtype</span><span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">back_prop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">parallel_iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">avg_grad</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="n">all_grads</span><span class="o">.</span><span class="n">stack</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">avg_grad</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">margin_logit_loss</span><span class="p">(</span><span class="n">model_logits</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">nb_classes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">num_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Computes difference between logit for `label` and next highest logit.</span>
+
+<span class="sd">  The loss is high when `label` is unlikely (targeted by default).</span>
+<span class="sd">  This follows the same interface as `loss_fn` for TensorOptimizer and</span>
+<span class="sd">  projected_optimization, i.e. it returns a batch of loss values.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">num_classes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;`num_classes` is depreciated. Switch to `nb_classes`.&quot;</span>
+                  <span class="s2">&quot; `num_classes` may be removed on or after 2019-04-23.&quot;</span><span class="p">)</span>
+    <span class="n">nb_classes</span> <span class="o">=</span> <span class="n">num_classes</span>
+    <span class="k">del</span> <span class="n">num_classes</span>
+  <span class="k">if</span> <span class="s1">&#39;int&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
+    <span class="n">logit_mask</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">nb_classes</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">logit_mask</span> <span class="o">=</span> <span class="n">label</span>
+  <span class="k">if</span> <span class="s1">&#39;int&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">logit_mask</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
+    <span class="n">logit_mask</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">to_float</span><span class="p">(</span><span class="n">logit_mask</span><span class="p">)</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="n">label_logits</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="n">logit_mask</span> <span class="o">*</span> <span class="n">model_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+  <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Could not take row-wise dot product between &quot;</span>
+                    <span class="s2">&quot;logit mask, of dtype &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">logit_mask</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="s2">&quot; and model_logits, of dtype &quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">model_logits</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+  <span class="n">logits_with_target_label_neg_inf</span> <span class="o">=</span> <span class="n">model_logits</span> <span class="o">-</span> <span class="n">logit_mask</span> <span class="o">*</span> <span class="mi">99999</span>
+  <span class="n">highest_nonlabel_logits</span> <span class="o">=</span> <span class="n">reduce_max</span><span class="p">(</span>
+      <span class="n">logits_with_target_label_neg_inf</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">loss</span> <span class="o">=</span> <span class="n">highest_nonlabel_logits</span> <span class="o">-</span> <span class="n">label_logits</span>
+  <span class="k">return</span> <span class="n">loss</span>
+
+
+<span class="k">def</span> <span class="nf">_apply_black_border</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">border_size</span><span class="p">):</span>
+  <span class="n">orig_height</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+  <span class="n">orig_width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">resize_images</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">orig_width</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">border_size</span><span class="p">,</span>
+                                 <span class="n">orig_height</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">border_size</span><span class="p">))</span>
+
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                    <span class="p">[</span><span class="n">border_size</span><span class="p">,</span> <span class="n">border_size</span><span class="p">],</span>
+                    <span class="p">[</span><span class="n">border_size</span><span class="p">,</span> <span class="n">border_size</span><span class="p">],</span>
+                    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="s1">&#39;CONSTANT&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_apply_transformation</span><span class="p">(</span><span class="n">inputs</span><span class="p">):</span>
+  <span class="n">x</span><span class="p">,</span> <span class="n">trans</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+  <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">angle</span> <span class="o">=</span> <span class="n">trans</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">trans</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">trans</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+  <span class="n">height</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+  <span class="n">width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span>
+
+  <span class="c1"># Pad the image to prevent two-step rotation / translation from truncating</span>
+  <span class="c1"># corners</span>
+  <span class="n">max_dist_from_center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">height</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">width</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+  <span class="n">min_edge_from_center</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">([</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">]))</span> <span class="o">/</span> <span class="mi">2</span>
+  <span class="n">padding</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">max_dist_from_center</span> <span class="o">-</span>
+                    <span class="n">min_edge_from_center</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                 <span class="p">[</span><span class="n">padding</span><span class="p">,</span> <span class="n">padding</span><span class="p">],</span>
+                 <span class="p">[</span><span class="n">padding</span><span class="p">,</span> <span class="n">padding</span><span class="p">],</span>
+                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span>
+             <span class="s1">&#39;CONSTANT&#39;</span><span class="p">)</span>
+
+  <span class="c1"># Apply rotation</span>
+  <span class="n">angle</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">tfa</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;BILINEAR&#39;</span><span class="p">)</span>
+
+  <span class="c1"># Apply translation</span>
+  <span class="n">dx_in_px</span> <span class="o">=</span> <span class="o">-</span><span class="n">dx</span> <span class="o">*</span> <span class="n">height</span>
+  <span class="n">dy_in_px</span> <span class="o">=</span> <span class="o">-</span><span class="n">dy</span> <span class="o">*</span> <span class="n">width</span>
+  <span class="n">translation</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">([</span><span class="n">dx_in_px</span><span class="p">,</span> <span class="n">dy_in_px</span><span class="p">])</span>
+
+  <span class="k">try</span><span class="p">:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">tfa</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">translation</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;BILINEAR&#39;</span><span class="p">)</span>
+  <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: SpatialAttack requires tf 1.6 or higher&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">e</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">tfa</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">translation</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;BILINEAR&#39;</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">resize_image_with_crop_or_pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">spm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dx_min</span><span class="o">=-</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">dx_max</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">n_dxs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">dy_min</span><span class="o">=-</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">dy_max</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">n_dys</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">angle_min</span><span class="o">=-</span><span class="mi">30</span><span class="p">,</span> <span class="n">angle_max</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">n_angles</span><span class="o">=</span><span class="mi">31</span><span class="p">,</span> <span class="n">black_border_size</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  TensorFlow implementation of the Spatial Transformation Method.</span>
+<span class="sd">  :return: a tensor for the adversarial example</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_probs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="c1"># Using model predictions as ground truth to avoid label leaking</span>
+    <span class="n">preds_max</span> <span class="o">=</span> <span class="n">reduce_max</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">to_float</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">preds_max</span><span class="p">))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">preds</span>
+  <span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">/</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+  <span class="c1"># Define the range of transformations</span>
+  <span class="n">dxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">dx_min</span><span class="p">,</span> <span class="n">dx_max</span><span class="p">,</span> <span class="n">n_dxs</span><span class="p">)</span>
+  <span class="n">dys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">dy_min</span><span class="p">,</span> <span class="n">dy_max</span><span class="p">,</span> <span class="n">n_dys</span><span class="p">)</span>
+  <span class="n">angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">angle_min</span><span class="p">,</span> <span class="n">angle_max</span><span class="p">,</span> <span class="n">n_angles</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">n_samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">itertools</span>
+    <span class="n">transforms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">dxs</span><span class="p">,</span> <span class="n">dys</span><span class="p">,</span> <span class="n">angles</span><span class="p">]))</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">sampled_dxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">dxs</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+    <span class="n">sampled_dys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">dys</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+    <span class="n">sampled_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">angles</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+    <span class="n">transforms</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sampled_dxs</span><span class="p">,</span> <span class="n">sampled_dys</span><span class="p">,</span> <span class="n">sampled_angles</span><span class="p">)</span>
+  <span class="n">transformed_ims</span> <span class="o">=</span> <span class="n">parallel_apply_transformations</span><span class="p">(</span>
+      <span class="n">x</span><span class="p">,</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">black_border_size</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">_compute_xent</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax_cross_entropy_with_logits_v2</span><span class="p">(</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">logits</span><span class="o">=</span><span class="n">preds</span><span class="p">)</span>
+
+  <span class="n">all_xents</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">map_fn</span><span class="p">(</span>
+      <span class="n">_compute_xent</span><span class="p">,</span>
+      <span class="n">transformed_ims</span><span class="p">,</span>
+      <span class="n">parallel_iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Must be 1 to avoid keras race conditions</span>
+
+  <span class="c1"># Return the adv_x with worst accuracy</span>
+
+  <span class="c1"># all_xents is n_total_samples x batch_size (SB)</span>
+  <span class="n">all_xents</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">all_xents</span><span class="p">)</span>  <span class="c1"># SB</span>
+
+  <span class="c1"># We want the worst case sample, with the largest xent_loss</span>
+  <span class="n">worst_sample_idx</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">all_xents</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># B</span>
+
+  <span class="n">batch_size</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="n">keys</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span>
+      <span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span>
+      <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">worst_sample_idx</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+  <span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">transformed_ims_bshwc</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;sbhwc-&gt;bshwc&#39;</span><span class="p">,</span> <span class="n">transformed_ims</span><span class="p">)</span>
+  <span class="n">after_lookup</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gather_nd</span><span class="p">(</span><span class="n">transformed_ims_bshwc</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>  <span class="c1"># BHWC</span>
+  <span class="k">return</span> <span class="n">after_lookup</span>
+
+
+<span class="k">def</span> <span class="nf">parallel_apply_transformations</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">black_border_size</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Apply image transformations in parallel.</span>
+<span class="sd">  :param transforms: TODO</span>
+<span class="sd">  :param black_border_size: int, size of black border to apply</span>
+<span class="sd">  Returns:</span>
+<span class="sd">    Transformed images</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">transforms</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">transforms</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+  <span class="n">x</span> <span class="o">=</span> <span class="n">_apply_black_border</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">black_border_size</span><span class="p">)</span>
+
+  <span class="n">num_transforms</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="n">im_shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">:]</span>
+
+  <span class="c1"># Pass a copy of x and a transformation to each iteration of the map_fn</span>
+  <span class="c1"># callable</span>
+  <span class="n">tiled_x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+      <span class="n">tf</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="n">num_transforms</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+      <span class="p">[</span><span class="n">num_transforms</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">im_shape</span><span class="p">)</span>
+  <span class="n">elems</span> <span class="o">=</span> <span class="p">[</span><span class="n">tiled_x</span><span class="p">,</span> <span class="n">transforms</span><span class="p">]</span>
+  <span class="n">transformed_ims</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">map_fn</span><span class="p">(</span>
+      <span class="n">_apply_transformation</span><span class="p">,</span>
+      <span class="n">elems</span><span class="p">,</span>
+      <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+      <span class="n">parallel_iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Must be 1 to avoid keras race conditions</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="n">transformed_ims</span>
+
+
+<div class="viewcode-block" id="projected_optimization"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.projected_optimization">[docs]</a><span class="k">def</span> <span class="nf">projected_optimization</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">,</span>
+                           <span class="n">input_image</span><span class="p">,</span>
+                           <span class="n">label</span><span class="p">,</span>
+                           <span class="n">epsilon</span><span class="p">,</span>
+                           <span class="n">num_steps</span><span class="p">,</span>
+                           <span class="n">clip_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">clip_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">optimizer</span><span class="o">=</span><span class="n">TensorAdam</span><span class="p">(),</span>
+                           <span class="n">project_perturbation</span><span class="o">=</span><span class="n">_project_perturbation</span><span class="p">,</span>
+                           <span class="n">early_stop_loss_threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">is_debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Generic projected optimization, generalized to work with approximate</span>
+<span class="sd">  gradients. Used for e.g. the SPSA attack.</span>
+
+<span class="sd">  Args:</span>
+<span class="sd">    :param loss_fn: A callable which takes `input_image` and `label` as</span>
+<span class="sd">                    arguments, and returns a batch of loss values. Same</span>
+<span class="sd">                    interface as TensorOptimizer.</span>
+<span class="sd">    :param input_image: Tensor, a batch of images</span>
+<span class="sd">    :param label: Tensor, a batch of labels</span>
+<span class="sd">    :param epsilon: float, the L-infinity norm of the maximum allowable</span>
+<span class="sd">                    perturbation</span>
+<span class="sd">    :param num_steps: int, the number of steps of gradient descent</span>
+<span class="sd">    :param clip_min: float, minimum pixel value</span>
+<span class="sd">    :param clip_max: float, maximum pixel value</span>
+<span class="sd">    :param optimizer: A `TensorOptimizer` object</span>
+<span class="sd">    :param project_perturbation: A function, which will be used to enforce</span>
+<span class="sd">                                 some constraint. It should have the same</span>
+<span class="sd">                                 signature as `_project_perturbation`.</span>
+<span class="sd">    :param early_stop_loss_threshold: A float or None. If specified, the attack will end if the loss is below</span>
+<span class="sd">       `early_stop_loss_threshold`.</span>
+<span class="sd">        Enabling this option can have several different effects:</span>
+<span class="sd">          - Setting the threshold to 0. guarantees that if a successful attack is found, it is returned.</span>
+<span class="sd">            This increases the attack success rate, because without early stopping the optimizer can accidentally</span>
+<span class="sd">            bounce back to a point where the attack fails.</span>
+<span class="sd">          - Early stopping can make the attack run faster because it may run for fewer steps.</span>
+<span class="sd">          - Early stopping can make the attack run slower because the loss must be calculated at each step.</span>
+<span class="sd">            The loss is not calculated as part of the normal SPSA optimization procedure.</span>
+<span class="sd">            For most reasonable choices of hyperparameters, early stopping makes the attack much faster because</span>
+<span class="sd">            it decreases the number of steps dramatically.</span>
+<span class="sd">    :param is_debug: A bool. If True, print debug info for attack progress.</span>
+
+<span class="sd">  Returns:</span>
+<span class="sd">    adversarial version of `input_image`, with L-infinity difference less than</span>
+<span class="sd">      epsilon, which tries to minimize loss_fn.</span>
+
+<span class="sd">  Note that this function is not intended as an Attack by itself. Rather, it</span>
+<span class="sd">  is designed as a helper function which you can use to write your own attack</span>
+<span class="sd">  methods. The method uses a tf.while_loop to optimize a loss function in</span>
+<span class="sd">  a single sess.run() call.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">assert</span> <span class="n">num_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+  <span class="k">if</span> <span class="n">is_debug</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;/cpu:0&quot;</span><span class="p">):</span>
+      <span class="n">input_image</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Print</span><span class="p">(</span>
+          <span class="n">input_image</span><span class="p">,</span> <span class="p">[],</span>
+          <span class="s2">&quot;Starting PGD attack with epsilon: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">epsilon</span><span class="p">)</span>
+
+  <span class="n">init_perturbation</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">random_uniform</span><span class="p">(</span>
+      <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">input_image</span><span class="p">),</span>
+      <span class="n">minval</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="o">-</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">input_image</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+      <span class="n">maxval</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">input_image</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+      <span class="n">dtype</span><span class="o">=</span><span class="n">input_image</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+  <span class="n">init_perturbation</span> <span class="o">=</span> <span class="n">project_perturbation</span><span class="p">(</span><span class="n">init_perturbation</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">,</span>
+                                           <span class="n">input_image</span><span class="p">,</span> <span class="n">clip_min</span><span class="o">=</span><span class="n">clip_min</span><span class="p">,</span>
+                                           <span class="n">clip_max</span><span class="o">=</span><span class="n">clip_max</span><span class="p">)</span>
+  <span class="n">init_optim_state</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">init_state</span><span class="p">([</span><span class="n">init_perturbation</span><span class="p">])</span>
+  <span class="n">nest</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nest</span>
+
+  <span class="k">def</span> <span class="nf">loop_body</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">perturbation</span><span class="p">,</span> <span class="n">flat_optim_state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Update perturbation to input image.&quot;&quot;&quot;</span>
+    <span class="n">optim_state</span> <span class="o">=</span> <span class="n">nest</span><span class="o">.</span><span class="n">pack_sequence_as</span><span class="p">(</span>
+        <span class="n">structure</span><span class="o">=</span><span class="n">init_optim_state</span><span class="p">,</span> <span class="n">flat_sequence</span><span class="o">=</span><span class="n">flat_optim_state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">wrapped_loss_fn</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">input_image</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+
+    <span class="n">new_perturbation_list</span><span class="p">,</span> <span class="n">new_optim_state</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span>
+        <span class="n">wrapped_loss_fn</span><span class="p">,</span> <span class="p">[</span><span class="n">perturbation</span><span class="p">],</span> <span class="n">optim_state</span><span class="p">)</span>
+    <span class="n">projected_perturbation</span> <span class="o">=</span> <span class="n">project_perturbation</span><span class="p">(</span><span class="n">new_perturbation_list</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                  <span class="n">epsilon</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span>
+                                                  <span class="n">clip_min</span><span class="o">=</span><span class="n">clip_min</span><span class="p">,</span>
+                                                  <span class="n">clip_max</span><span class="o">=</span><span class="n">clip_max</span><span class="p">)</span>
+
+    <span class="c1"># Be careful with this bool. A value of 0. is a valid threshold but evaluates to False, so we must explicitly</span>
+    <span class="c1"># check whether the value is None.</span>
+    <span class="n">early_stop</span> <span class="o">=</span> <span class="n">early_stop_loss_threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="n">compute_loss</span> <span class="o">=</span> <span class="n">is_debug</span> <span class="ow">or</span> <span class="n">early_stop</span>
+    <span class="c1"># Don&#39;t waste time building the loss graph if we&#39;re not going to use it</span>
+    <span class="k">if</span> <span class="n">compute_loss</span><span class="p">:</span>
+      <span class="c1"># NOTE: this step is not actually redundant with the optimizer step.</span>
+      <span class="c1"># SPSA calculates the loss at randomly perturbed points but doesn&#39;t calculate the loss at the current point.</span>
+      <span class="n">loss</span> <span class="o">=</span> <span class="n">reduce_mean</span><span class="p">(</span><span class="n">wrapped_loss_fn</span><span class="p">(</span><span class="n">projected_perturbation</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">is_debug</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;/cpu:0&quot;</span><span class="p">):</span>
+          <span class="n">loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Print</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="p">[</span><span class="n">loss</span><span class="p">],</span> <span class="s2">&quot;Total batch loss&quot;</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">early_stop</span><span class="p">:</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">less</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">early_stop_loss_threshold</span><span class="p">),</span>
+                    <span class="k">lambda</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">num_steps</span><span class="p">),</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">i</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">projected_perturbation</span><span class="p">,</span> <span class="n">nest</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">new_optim_state</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">cond</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">less</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">num_steps</span><span class="p">)</span>
+
+  <span class="n">flat_init_optim_state</span> <span class="o">=</span> <span class="n">nest</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">init_optim_state</span><span class="p">)</span>
+  <span class="n">_</span><span class="p">,</span> <span class="n">final_perturbation</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">while_loop</span><span class="p">(</span>
+      <span class="n">cond</span><span class="p">,</span>
+      <span class="n">loop_body</span><span class="p">,</span>
+      <span class="n">loop_vars</span><span class="o">=</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">0.</span><span class="p">),</span> <span class="n">init_perturbation</span><span class="p">,</span> <span class="n">flat_init_optim_state</span><span class="p">),</span>
+      <span class="n">parallel_iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+      <span class="n">back_prop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+      <span class="n">maximum_iterations</span><span class="o">=</span><span class="n">num_steps</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">project_perturbation</span> <span class="ow">is</span> <span class="n">_project_perturbation</span><span class="p">:</span>
+    <span class="c1"># TODO: this assert looks totally wrong.</span>
+    <span class="c1"># Not bothering to fix it now because it&#39;s only an assert.</span>
+    <span class="c1"># 1) Multiplying by 1.1 gives a huge margin of error. This should probably</span>
+    <span class="c1">#    take the difference and allow a tolerance of 1e-6 or something like</span>
+    <span class="c1">#    that.</span>
+    <span class="c1"># 2) I think it should probably check the *absolute value* of</span>
+    <span class="c1"># final_perturbation</span>
+    <span class="n">perturbation_max</span> <span class="o">=</span> <span class="n">epsilon</span> <span class="o">*</span> <span class="mf">1.1</span>
+    <span class="n">check_diff</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_less_equal</span><span class="p">(</span>
+        <span class="n">final_perturbation</span><span class="p">,</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">perturbation_max</span><span class="p">,</span> <span class="n">final_perturbation</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;final_perturbation must change no pixel by more than &quot;</span>
+                <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">perturbation_max</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="c1"># TODO: let caller pass in a check_diff function as well as</span>
+    <span class="c1"># project_perturbation</span>
+    <span class="n">check_diff</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">no_op</span><span class="p">()</span>
+
+  <span class="k">if</span> <span class="n">clip_min</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">clip_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This function only supports clipping for now&quot;</span><span class="p">)</span>
+  <span class="n">check_range</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_less_equal</span><span class="p">(</span><span class="n">input_image</span><span class="p">,</span>
+                                            <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">clip_max</span><span class="p">,</span>
+                                                    <span class="n">input_image</span><span class="o">.</span><span class="n">dtype</span><span class="p">)),</span>
+                 <span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_greater_equal</span><span class="p">(</span><span class="n">input_image</span><span class="p">,</span>
+                                               <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">clip_min</span><span class="p">,</span>
+                                                       <span class="n">input_image</span><span class="o">.</span><span class="n">dtype</span><span class="p">))]</span>
+
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">control_dependencies</span><span class="p">([</span><span class="n">check_diff</span><span class="p">]</span> <span class="o">+</span> <span class="n">check_range</span><span class="p">):</span>
+    <span class="n">adversarial_image</span> <span class="o">=</span> <span class="n">input_image</span> <span class="o">+</span> <span class="n">final_perturbation</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">adversarial_image</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>
