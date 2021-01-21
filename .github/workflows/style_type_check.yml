@@ -24,7 +24,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Style checks
       run: |
-        black cleverhans/future/
+        black --check cleverhans/future/
     - name: Type checks
       run: |
         mypy cleverhans/future/
