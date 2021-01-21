@@ -22,11 +22,12 @@ jobs:
         pip install -e "."
         pip install -r requirements/requirements.txt
         pip install -r requirements/requirements-dev.txt
-    - name: Style checks
+    - name: Code reformat check
       run: |
         black --check cleverhans/future/
-    - name: Type checks
+    - name: flake8 linting check
+      run: |
+        flake8 cleverhans/future/
+    - name: Type check
       run: |
         mypy cleverhans/future/
-    - name: Check license headers
-      run: python .devtools/license check src test
