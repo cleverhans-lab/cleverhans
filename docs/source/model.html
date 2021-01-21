@@ -1,0 +1,282 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>model module &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="attacks module" href="attacks.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-cleverhans.model">
+<span id="model-module"></span><h1><cite>model</cite> module<a class="headerlink" href="#module-cleverhans.model" title="Permalink to this headline">¶</a></h1>
+<p>The Model class and related functionality.</p>
+<dl class="py class">
+<dt id="cleverhans.model.CallableModelWrapper">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.model.</code><code class="sig-name descname">CallableModelWrapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">callable_fn</span></em>, <em class="sig-param"><span class="n">output_layer</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#CallableModelWrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.CallableModelWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cleverhans.model.Model" title="cleverhans.model.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.model.Model</span></code></a></p>
+<p>A wrapper that turns a callable into a valid Model</p>
+<dl class="py method">
+<dt id="cleverhans.model.CallableModelWrapper.fprop">
+<code class="sig-name descname">fprop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#CallableModelWrapper.fprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.CallableModelWrapper.fprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward propagation to compute the model outputs.
+:param x: A symbolic representation of the network input
+:return: A dictionary mapping layer names to the symbolic</p>
+<blockquote>
+<div><p>representation of their output.</p>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.model.Model">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.model.</code><code class="sig-name descname">Model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scope</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nb_classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hparams</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">needs_dummy_fprop</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An abstract interface for model wrappers that exposes model symbols
+needed for making an attack. This abstraction removes the dependency on
+any specific neural network package (e.g. Keras) from the core
+code of CleverHans. It can also simplify exposing the hidden features of a
+model when a specific package does not directly expose them.</p>
+<dl class="py attribute">
+<dt id="cleverhans.model.Model.O_FEATURES">
+<code class="sig-name descname">O_FEATURES</code><em class="property"> = 'features'</em><a class="headerlink" href="#cleverhans.model.Model.O_FEATURES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="cleverhans.model.Model.O_LOGITS">
+<code class="sig-name descname">O_LOGITS</code><em class="property"> = 'logits'</em><a class="headerlink" href="#cleverhans.model.Model.O_LOGITS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="cleverhans.model.Model.O_PROBS">
+<code class="sig-name descname">O_PROBS</code><em class="property"> = 'probs'</em><a class="headerlink" href="#cleverhans.model.Model.O_PROBS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.fprop">
+<code class="sig-name descname">fprop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.fprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.fprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward propagation to compute the model outputs.
+:param x: A symbolic representation of the network input
+:return: A dictionary mapping layer names to the symbolic</p>
+<blockquote>
+<div><p>representation of their output.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.get_layer">
+<code class="sig-name descname">get_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">layer</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_layer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.get_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a layer output.
+:param x: tensor, the input to the network.
+:param layer: str, the name of the layer to compute.
+:param <a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs: dict, extra optional params to pass to self.fprop.
+:return: the content of layer <cite>layer</cite></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.get_layer_names">
+<code class="sig-name descname">get_layer_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_layer_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.get_layer_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the list of exposed layers for this model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.get_logits">
+<code class="sig-name descname">get_logits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_logits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.get_logits" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – A symbolic representation (Tensor) of the network input</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A symbolic representation (Tensor) of the output logits</p>
+</dd>
+</dl>
+<p>(i.e., the values fed as inputs to the softmax layer).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.get_params">
+<code class="sig-name descname">get_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.get_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides access to the model’s parameters.
+:return: A list of all Variables defining the model parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.get_predicted_class">
+<code class="sig-name descname">get_predicted_class</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_predicted_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.get_predicted_class" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – A symbolic representation (Tensor) of the network input</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A symbolic representation (Tensor) of the predicted label</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.get_probs">
+<code class="sig-name descname">get_probs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_probs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.get_probs" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – A symbolic representation (Tensor) of the network input</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A symbolic representation (Tensor) of the output</p>
+</dd>
+</dl>
+<p>probabilities (i.e., the output values produced by the softmax layer).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.make_input_placeholder">
+<code class="sig-name descname">make_input_placeholder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.make_input_placeholder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.make_input_placeholder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and return a placeholder representing an input to the model.</p>
+<p>This method should respect context managers (e.g. “with tf.device”)
+and should not just return a reference to a single pre-created
+placeholder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.make_label_placeholder">
+<code class="sig-name descname">make_label_placeholder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.make_label_placeholder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.make_label_placeholder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and return a placeholder representing class labels.</p>
+<p>This method should respect context managers (e.g. “with tf.device”)
+and should not just return a reference to a single pre-created
+placeholder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.model.Model.make_params">
+<code class="sig-name descname">make_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.make_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.Model.make_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create all Variables to be returned later by get_params.
+By default this is a no-op.
+Models that need their fprop to be called for their params to be
+created can set <cite>needs_dummy_fprop=True</cite> in the constructor.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="cleverhans.model.NoSuchLayerError">
+<em class="property">exception </em><code class="sig-prename descclassname">cleverhans.model.</code><code class="sig-name descname">NoSuchLayerError</code><a class="reference internal" href="../_modules/cleverhans/model.html#NoSuchLayerError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.NoSuchLayerError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></p>
+<p>Raised when a layer that does not exist is requested.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.model.wrapper_warning">
+<code class="sig-prename descclassname">cleverhans.model.</code><code class="sig-name descname">wrapper_warning</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#wrapper_warning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.wrapper_warning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issue a deprecation warning. Used in multiple places that implemented
+attacks by automatically wrapping a user-supplied callable with a
+CallableModelWrapper with output_layer=”probs”.
+Using “probs” as any part of the attack interface is dangerous.
+We can’t just change output_layer to logits because:
+- that would be a silent interface change. We’d have no way of detecting</p>
+<blockquote>
+<div><p>code that still means to use probs. Note that we can’t just check whether
+the final output op is a softmax—for example, Inception puts a reshape
+after the softmax.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>automatically wrapping user-supplied callables with output_layer=’logits’
+is even worse, see <cite>wrapper_warning_logits</cite></p></li>
+</ul>
+<p>Note: this function will be removed at the same time as the code that
+calls it.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.model.wrapper_warning_logits">
+<code class="sig-prename descclassname">cleverhans.model.</code><code class="sig-name descname">wrapper_warning_logits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#wrapper_warning_logits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.model.wrapper_warning_logits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issue a deprecation warning. Used in multiple places that implemented
+attacks by automatically wrapping a user-supplied callable with a
+CallableModelWrapper with output_layer=”logits”.
+This is dangerous because it is under-the-hood automagic that the user
+may not realize has been invoked for them. If they pass a callable
+that actually outputs probs, the probs will be treated as logits,
+resulting in an incorrect cross-entropy loss and severe gradient
+masking.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="attacks.html" title="previous chapter"><cite>attacks</cite> module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

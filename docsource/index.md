@@ -9,17 +9,19 @@ CleverHans Documentation
 ======================================
 
 
-This documentation is auto-generated from the docstrings of modules of the current `master` branch of `tensorflow/cleverhans
-<http://github.com/tensorflow/cleverhans/>`_.
+This documentation is auto-generated from the docstrings of modules of the current `master` branch of `cleverhans
+<http://github.com/cleverhans-lab/cleverhans/>`_.
 
 To get started, we recommend reading the `github readme
-<https://github.com/tensorflow/cleverhans#setting-up-cleverhans>`_. Afterwards, you can learn more by looking at the following modules:
+<https://github.com/cleverhans-lab/cleverhans#setting-up-cleverhans>`_. Afterwards, you can learn more by looking at the following modules:
 
 
 .. toctree::
    :maxdepth: 4
 
    source/attacks
+   <!-- source/devtools -->
+   <!-- source/future -->
    source/model
 
 

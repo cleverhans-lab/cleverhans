@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.max_confidence &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.max_confidence</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The MaxConfidence attack.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.attack</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.projected_gradient_descent</span> <span class="kn">import</span> <span class="n">ProjectedGradientDescent</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">Model</span>
+
+
+<div class="viewcode-block" id="MaxConfidence"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.MaxConfidence">[docs]</a><span class="k">class</span> <span class="nc">MaxConfidence</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  The MaxConfidence attack.</span>
+
+<span class="sd">  An attack designed for use against models that use confidence thresholding</span>
+<span class="sd">  as a defense.</span>
+<span class="sd">  If the underlying optimizer is optimal, this attack procedure gives the</span>
+<span class="sd">  optimal failure rate for every confidence threshold t &gt; 0.5.</span>
+
+<span class="sd">  Publication: https://openreview.net/forum?id=H1g0piA9tQ</span>
+
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: optional tf.session.Session</span>
+<span class="sd">  :param base_attacker: cleverhans.attacks.Attack</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_attacker</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Model must be cleverhans.model.Model, got &quot;</span> <span class="o">+</span>
+                      <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">model</span><span class="p">)))</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">MaxConfidence</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">base_attacker</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">base_attacker</span> <span class="o">=</span> <span class="n">ProjectedGradientDescent</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="o">=</span><span class="n">sess</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">base_attacker</span> <span class="o">=</span> <span class="n">base_attacker</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_attacker</span><span class="o">.</span><span class="n">structural_kwargs</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_attacker</span><span class="o">.</span><span class="n">feedable_kwargs</span>
+
+<div class="viewcode-block" id="MaxConfidence.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.MaxConfidence.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate symbolic graph for adversarial examples and return.</span>
+
+<span class="sd">    :param x: The model&#39;s symbolic inputs.</span>
+<span class="sd">    :param kwargs: Keyword arguments for the base attacker</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_params</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">labels</span><span class="p">,</span> <span class="n">_nb_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_or_guess_labels</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">adv_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attack</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">adv_x</span></div>
+
+<div class="viewcode-block" id="MaxConfidence.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.MaxConfidence.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nb_classes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span> <span class="o">=</span> <span class="n">nb_classes</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">kwargs</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;kwargs is unused and will be removed on or after &quot;</span>
+                    <span class="s2">&quot;2019-04-26.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="MaxConfidence.attack"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.MaxConfidence.attack">[docs]</a>  <span class="k">def</span> <span class="nf">attack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">true_y</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Runs the untargeted attack.</span>
+<span class="sd">    :param x: The input</span>
+<span class="sd">    :param true_y: The correct label for `x`. This attack aims to produce misclassification.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">adv_x_cls</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">prob_cls</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">true_y_idx</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">true_y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">expanded_x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">target_ys</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">to_float</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span> <span class="o">*</span> <span class="bp">cls</span><span class="p">,</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">))</span>
+                 <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">)]</span>
+    <span class="n">target_y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">target_ys</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">adv_x_cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attack_class</span><span class="p">(</span><span class="n">expanded_x</span><span class="p">,</span> <span class="n">target_y</span><span class="p">)</span>
+    <span class="n">expanded_all_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_probs</span><span class="p">(</span><span class="n">adv_x_cls</span><span class="p">)</span>
+
+    <span class="n">adv_x_list</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">adv_x_cls</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">)</span>
+    <span class="n">all_probs_list</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">expanded_all_probs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">):</span>
+      <span class="n">target_y</span> <span class="o">=</span> <span class="n">target_ys</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span>
+      <span class="n">all_probs</span> <span class="o">=</span> <span class="n">all_probs_list</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span>
+      <span class="c1"># We don&#39;t actually care whether we hit the target class.</span>
+      <span class="c1"># We care about the probability of the most likely wrong class</span>
+      <span class="n">cur_prob_cls</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">all_probs</span> <span class="o">-</span> <span class="n">true_y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+      <span class="c1"># Knock out examples that are correctly classified.</span>
+      <span class="c1"># This is not needed to be optimal for t &gt;= 0.5, but may as well do it</span>
+      <span class="c1"># to get better failure rate at lower thresholds.</span>
+      <span class="n">chosen_cls</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">all_probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+      <span class="n">eligible</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">to_float</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">not_equal</span><span class="p">(</span><span class="n">true_y_idx</span><span class="p">,</span> <span class="n">chosen_cls</span><span class="p">))</span>
+      <span class="n">cur_prob_cls</span> <span class="o">=</span> <span class="n">cur_prob_cls</span> <span class="o">*</span> <span class="n">eligible</span>
+      <span class="n">prob_cls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur_prob_cls</span><span class="p">)</span>
+
+    <span class="n">probs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">prob_cls</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Don&#39;t need to censor here because we knocked out the true class above</span>
+    <span class="c1"># probs = probs - true_y</span>
+    <span class="n">most_confident</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">fused_mask</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">most_confident</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">)</span>
+    <span class="n">masks</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">fused_mask</span><span class="p">,</span> <span class="n">num_or_size_splits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">reshaped_masks</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span> <span class="k">for</span> <span class="n">mask</span> <span class="ow">in</span> <span class="n">masks</span><span class="p">]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">adv_x</span> <span class="o">*</span> <span class="n">rmask</span> <span class="k">for</span> <span class="n">adv_x</span><span class="p">,</span>
+              <span class="n">rmask</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">adv_x_list</span><span class="p">,</span> <span class="n">reshaped_masks</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+<div class="viewcode-block" id="MaxConfidence.attack_class"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.MaxConfidence.attack_class">[docs]</a>  <span class="k">def</span> <span class="nf">attack_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">target_y</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run the attack on a specific target class.</span>
+<span class="sd">    :param x: tf Tensor. The input example.</span>
+<span class="sd">    :param target_y: tf Tensor. The attacker&#39;s desired target class.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">      A targeted adversarial example, intended to be classified as the target class.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">adv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_attacker</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y_target</span><span class="o">=</span><span class="n">target_y</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adv</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

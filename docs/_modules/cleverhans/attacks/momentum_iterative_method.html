@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.momentum_iterative_method &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.momentum_iterative_method</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The MomentumIterativeMethod attack.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.attack</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.fast_gradient_method</span> <span class="kn">import</span> <span class="n">optimize_linear</span>
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">reduce_sum</span><span class="p">,</span> <span class="n">reduce_mean</span><span class="p">,</span> <span class="n">softmax_cross_entropy_with_logits</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils_tf</span>
+
+
+<div class="viewcode-block" id="MomentumIterativeMethod"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.MomentumIterativeMethod">[docs]</a><span class="k">class</span> <span class="nc">MomentumIterativeMethod</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  The Momentum Iterative Method (Dong et al. 2017). This method won</span>
+<span class="sd">  the first places in NIPS 2017 Non-targeted Adversarial Attacks and</span>
+<span class="sd">  Targeted Adversarial Attacks. The original paper used hard labels</span>
+<span class="sd">  for this attack; no label smoothing.</span>
+<span class="sd">  Paper link: https://arxiv.org/pdf/1710.06081.pdf</span>
+
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: optional tf.Session</span>
+<span class="sd">  :param dtypestr: dtype of the data</span>
+<span class="sd">  :param kwargs: passed through to super constructor</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a MomentumIterativeMethod instance.</span>
+<span class="sd">    Note: the model parameter should be an instance of the</span>
+<span class="sd">    cleverhans.model.Model abstraction provided by CleverHans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">MomentumIterativeMethod</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="p">,</span>
+                                                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;eps&#39;</span><span class="p">,</span> <span class="s1">&#39;eps_iter&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;y_target&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_min&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;clip_max&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;ord&#39;</span><span class="p">,</span> <span class="s1">&#39;nb_iter&#39;</span><span class="p">,</span> <span class="s1">&#39;decay_factor&#39;</span><span class="p">,</span> <span class="s1">&#39;sanity_checks&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_grad&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="MomentumIterativeMethod.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.MomentumIterativeMethod.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate symbolic graph for adversarial examples and return.</span>
+
+<span class="sd">    :param x: The model&#39;s symbolic inputs.</span>
+<span class="sd">    :param kwargs: Keyword arguments. See `parse_params` for documentation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Parse and save attack-specific parameters</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_params</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">asserts</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># If a data range was specified, check that the input was in that range</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">asserts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_greater_equal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+                                                   <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span>
+                                                           <span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)))</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">asserts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_less_equal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+                                                <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">,</span>
+                                                        <span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)))</span>
+
+    <span class="c1"># Initialize loop variables</span>
+    <span class="n">momentum</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">adv_x</span> <span class="o">=</span> <span class="n">x</span>
+
+    <span class="c1"># Fix labels to the first model predictions for loss computation</span>
+    <span class="n">y</span><span class="p">,</span> <span class="n">_nb_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_or_guess_labels</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">/</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">targeted</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">cond</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">__</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;Iterate until number of iterations completed&quot;&quot;&quot;</span>
+      <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">less</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_iter</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">body</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;Do a momentum step&quot;&quot;&quot;</span>
+      <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+      <span class="n">loss</span> <span class="o">=</span> <span class="n">softmax_cross_entropy_with_logits</span><span class="p">(</span><span class="n">labels</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">logits</span><span class="o">=</span><span class="n">logits</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">targeted</span><span class="p">:</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">loss</span>
+
+      <span class="c1"># Define gradient of loss wrt input</span>
+      <span class="n">grad</span><span class="p">,</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">ax</span><span class="p">)</span>
+
+      <span class="c1"># Normalize current gradient and add it to the accumulated gradient</span>
+      <span class="n">red_ind</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">grad</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())))</span>
+      <span class="n">avoid_zero_div</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">grad</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+      <span class="n">grad</span> <span class="o">=</span> <span class="n">grad</span> <span class="o">/</span> <span class="n">tf</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span>
+          <span class="n">avoid_zero_div</span><span class="p">,</span>
+          <span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">grad</span><span class="p">),</span> <span class="n">red_ind</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decay_factor</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">grad</span>
+
+      <span class="n">optimal_perturbation</span> <span class="o">=</span> <span class="n">optimize_linear</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps_iter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ord</span><span class="p">)</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ord</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This attack hasn&#39;t been tested for ord=1.&quot;</span>
+                                  <span class="s2">&quot;It&#39;s not clear that FGM makes a good inner &quot;</span>
+                                  <span class="s2">&quot;loop step for iterative optimization since &quot;</span>
+                                  <span class="s2">&quot;it updates just one coordinate at a time.&quot;</span><span class="p">)</span>
+
+      <span class="c1"># Update and clip adversarial example in current iteration</span>
+      <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span> <span class="o">+</span> <span class="n">optimal_perturbation</span>
+      <span class="n">ax</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">clip_eta</span><span class="p">(</span><span class="n">ax</span> <span class="o">-</span> <span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ord</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">clip_by_value</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+
+      <span class="n">ax</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+
+      <span class="k">return</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">m</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">adv_x</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">while_loop</span><span class="p">(</span>
+        <span class="n">cond</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">([]),</span> <span class="n">adv_x</span><span class="p">,</span> <span class="n">momentum</span><span class="p">),</span> <span class="n">back_prop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">maximum_iterations</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_iter</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sanity_checks</span><span class="p">:</span>
+      <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">control_dependencies</span><span class="p">(</span><span class="n">asserts</span><span class="p">):</span>
+        <span class="n">adv_x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">adv_x</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">adv_x</span></div>
+
+<div class="viewcode-block" id="MomentumIterativeMethod.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.MomentumIterativeMethod.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                   <span class="n">eps</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+                   <span class="n">eps_iter</span><span class="o">=</span><span class="mf">0.06</span><span class="p">,</span>
+                   <span class="n">nb_iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                   <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="nb">ord</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
+                   <span class="n">decay_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                   <span class="n">clip_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">clip_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">y_target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">sanity_checks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                   <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take in a dictionary of parameters and applies attack-specific checks</span>
+<span class="sd">    before saving them as attributes.</span>
+
+<span class="sd">    Attack-specific parameters:</span>
+
+<span class="sd">    :param eps: (optional float) maximum distortion of adversarial example</span>
+<span class="sd">                compared to original input</span>
+<span class="sd">    :param eps_iter: (optional float) step size for each attack iteration</span>
+<span class="sd">    :param nb_iter: (optional int) Number of attack iterations.</span>
+<span class="sd">    :param y: (optional) A tensor with the true labels.</span>
+<span class="sd">    :param y_target: (optional) A tensor with the labels to target. Leave</span>
+<span class="sd">                     y_target=None if y is also set. Labels should be</span>
+<span class="sd">                     one-hot-encoded.</span>
+<span class="sd">    :param ord: (optional) Order of the norm (mimics Numpy).</span>
+<span class="sd">                Possible values: np.inf, 1 or 2.</span>
+<span class="sd">    :param decay_factor: (optional) Decay factor for the momentum term.</span>
+<span class="sd">    :param clip_min: (optional float) Minimum input component value</span>
+<span class="sd">    :param clip_max: (optional float) Maximum input component value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Save attack-specific parameters</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">eps_iter</span> <span class="o">=</span> <span class="n">eps_iter</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_iter</span> <span class="o">=</span> <span class="n">nb_iter</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="o">=</span> <span class="n">y_target</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ord</span> <span class="o">=</span> <span class="nb">ord</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">decay_factor</span> <span class="o">=</span> <span class="n">decay_factor</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">sanity_checks</span> <span class="o">=</span> <span class="n">sanity_checks</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must not set both y and y_target&quot;</span><span class="p">)</span>
+    <span class="c1"># Check if order of the norm is acceptable given current implementation</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ord</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Norm order must be either np.inf, 1, or 2.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;kwargs is unused and will be removed on or after &quot;</span>
+                    <span class="s2">&quot;2019-04-26.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">True</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>
