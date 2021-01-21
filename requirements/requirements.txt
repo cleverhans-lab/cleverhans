@@ -1,0 +1,5 @@
+numpy==1.18.5
+scipy==1.5.4
+jax==0.2.8
+torch==1.7.1
+torchvision==0.8.2
