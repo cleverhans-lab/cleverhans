@@ -57,8 +57,8 @@ def random_laplace(shape, loc=0.0, scale=1.0, dtype=tf.float32, seed=None):
   :dtype: (optional) data type of the sempled tensor, defaults to tf.float32.
   :seed: (optional) custom seed to be used for sampling.
   """
-  z1 = random_exponential(shape, scale, dtype=dtype, seed=seed)
-  z2 = random_exponential(shape, scale, dtype=dtype, seed=seed)
+  z1 = random_exponential(shape, 1. / scale, dtype=dtype, seed=seed)
+  z2 = random_exponential(shape, 1. / scale, dtype=dtype, seed=seed)
   return z1 - z2 + loc
 
 def random_lp_vector(shape, ord, eps, dtype=tf.float32, seed=None):
