@@ -34,10 +34,10 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm, loss_f
   :param targeted: (optional) bool. Is the attack targeted or untargeted?
             Untargeted, the default, will try to make the label incorrect.
             Targeted will instead try to move in the direction of being more like y.
-  :param rand_init: (optional) Start the gradient descent from a point chosen
+  :param rand_init: (optional) float. Start the gradient descent from a point chosen
                       uniformly at random in the norm ball of radius
                       rand_init_eps
-  :param rand_minmax: (optional float) size of the norm ball from which
+  :param rand_minmax: (optional) float. Size of the norm ball from which
                       the initial starting point is chosen. Defaults to eps
   :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
             memory or for unit tests that intentionally pass strange input)
