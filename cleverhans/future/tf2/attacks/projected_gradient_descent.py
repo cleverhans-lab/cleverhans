@@ -22,7 +22,7 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm, loss_f
   :param eps_iter: step size for each attack iteration
   :param nb_iter: Number of attack iterations.
   :param norm: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
-  :param loss_fn: loss function that takes (labels, logits) as arguments and returns loss.
+  :param loss_fn: (optional) callable. loss function that takes (labels, logits) as arguments and returns loss.
                   default function is 'tf.nn.sparse_softmax_cross_entropy_with_logits'
   :param clip_min: (optional) float. Minimum float value for adversarial example components.
   :param clip_max: (optional) float. Maximum float value for adversarial example components.
