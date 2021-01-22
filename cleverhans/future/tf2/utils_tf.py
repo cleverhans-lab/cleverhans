@@ -62,6 +62,8 @@ def random_lp_vector(shape, ord, eps, dtype=tf.float32, seed=None):
   :param ord: Order of the norm (mimics Numpy).
               Possible values: np.inf, 1 or 2.
   :param eps: Epsilon, radius of the norm ball.
+  :param dtype: (optional) type of the tensor.
+  :param seed: (optional) integer.
   """
   if ord not in [np.inf, 1, 2]:
     raise ValueError('ord must be np.inf, 1, or 2.')
