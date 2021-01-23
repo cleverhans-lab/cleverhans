@@ -5,7 +5,7 @@ import tensorflow as tf
 
 
 def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y=None,
-                         targeted=False, sanity_checks=False):
+                         targeted=False, sanity_checks=False, loss_fn=tf.nn.sparse_softmax_cross_entropy_with_logits):
   """
   Tensorflow 2.0 implementation of the Fast Gradient Method.
   :param model_fn: a callable that takes an input tensor and returns the model logits.
@@ -24,6 +24,7 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
             Targeted will instead try to move in the direction of being more like y.
   :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
             memory or for unit tests that intentionally pass strange input)
+  :param loss_fn: (optional) Loss function that takes (labels, logits) as arguments and returns loss. We use sparse crossentropy with logits as a default.
   :return: a tensor for the adversarial example
   """
   if norm not in [np.inf, 1, 2]:
@@ -42,7 +43,7 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
     # Using model predictions as ground truth to avoid label leaking
     y = tf.argmax(model_fn(x), 1)
 
-  grad = compute_gradient(model_fn, x, y, targeted)
+  grad = compute_gradient(model_fn, x, y, targeted, loss_fn=loss_fn)
 
   optimal_perturbation = optimize_linear(grad, eps, norm)
   # Add perturbation to original example to obtain adversarial example
@@ -63,7 +64,7 @@ def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y
 # Not using the decorator here, or letting the user wrap the attack in tf.function is way
 # slower on Tensorflow 2.0.0-alpha0.
 @tf.function
-def compute_gradient(model_fn, x, y, targeted):
+def compute_gradient(model_fn, x, y, targeted, loss_fn=tf.nn.sparse_softmax_cross_entropy_with_logits):
   """
   Computes the gradient of the loss with respect to the input tensor.
   :param model_fn: a callable that takes an input tensor and returns the model logits.
@@ -72,9 +73,9 @@ def compute_gradient(model_fn, x, y, targeted):
   :param targeted:  bool. Is the attack targeted or untargeted? Untargeted, the default, will
                     try to make the label incorrect. Targeted will instead try to move in the
                     direction of being more like y.
+  :param loss_fn: (optional) Loss function that takes (labels, logits) as arguments and returns loss. We use sparse crossentropy with logits as a default.
   :return: A tensor containing the gradient of the loss with respect to the input tensor.
   """
-  loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
   with tf.GradientTape() as g:
     g.watch(x)
     # Compute loss
@@ -114,14 +115,17 @@ def optimize_linear(grad, eps, norm=np.inf):
     abs_grad = tf.abs(grad)
     sign = tf.sign(grad)
     max_abs_grad = tf.reduce_max(abs_grad, axis, keepdims=True)
-    tied_for_max = tf.dtypes.cast(tf.equal(abs_grad, max_abs_grad), dtype=tf.float32)
+    tied_for_max = tf.dtypes.cast(
+        tf.equal(abs_grad, max_abs_grad), dtype=tf.float32)
     num_ties = tf.reduce_sum(tied_for_max, axis, keepdims=True)
     optimal_perturbation = sign * tied_for_max / num_ties
   elif norm == 2:
-    square = tf.maximum(avoid_zero_div, tf.reduce_sum(tf.square(grad), axis, keepdims=True))
+    square = tf.maximum(avoid_zero_div, tf.reduce_sum(
+        tf.square(grad), axis, keepdims=True))
     optimal_perturbation = grad / tf.sqrt(square)
   else:
-    raise NotImplementedError("Only L-inf, L1 and L2 norms are currently implemented.")
+    raise NotImplementedError(
+        "Only L-inf, L1 and L2 norms are currently implemented.")
 
   # Scale perturbation to be the solution for the norm=eps rather than norm=1 problem
   scaled_perturbation = tf.multiply(eps, optimal_perturbation)
