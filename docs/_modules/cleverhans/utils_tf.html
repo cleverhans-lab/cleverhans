@@ -1,0 +1,926 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.utils_tf &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.utils_tf</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Utility functions for writing TensorFlow code&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">xrange</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">device_lib</span>
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">reduce_sum</span><span class="p">,</span> <span class="n">reduce_mean</span>
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">reduce_max</span>
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">softmax_cross_entropy_with_logits</span>
+<span class="kn">from</span> <span class="nn">cleverhans.utils</span> <span class="kn">import</span> <span class="n">batch_indices</span><span class="p">,</span> <span class="n">_ArgsWrapper</span><span class="p">,</span> <span class="n">create_logger</span>
+
+<span class="n">_logger</span> <span class="o">=</span> <span class="n">create_logger</span><span class="p">(</span><span class="s2">&quot;cleverhans.utils.tf&quot;</span><span class="p">)</span>
+<span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">model_loss</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Define loss of TF graph</span>
+<span class="sd">  :param y: correct labels</span>
+<span class="sd">  :param model: output of the model</span>
+<span class="sd">  :param mean: boolean indicating whether should return mean of loss</span>
+<span class="sd">               or vector of losses for each input of the batch</span>
+<span class="sd">  :return: return mean of loss if True, otherwise return vector with per</span>
+<span class="sd">           sample loss</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;This function is deprecated and will be removed on or after&quot;</span>
+                <span class="s2">&quot; 2019-04-05. Switch to cleverhans.train.train.&quot;</span><span class="p">)</span>
+  <span class="n">op</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">op</span>
+  <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;Softmax&quot;</span><span class="p">:</span>
+    <span class="n">logits</span><span class="p">,</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">inputs</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span>
+
+  <span class="n">out</span> <span class="o">=</span> <span class="n">softmax_cross_entropy_with_logits</span><span class="p">(</span><span class="n">logits</span><span class="o">=</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">mean</span><span class="p">:</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">reduce_mean</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span> <span class="nf">initialize_uninitialized_global_variables</span><span class="p">(</span><span class="n">sess</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Only initializes the variables of a TensorFlow session that were not</span>
+<span class="sd">  already initialized.</span>
+<span class="sd">  :param sess: the TensorFlow session</span>
+<span class="sd">  :return:</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1"># List all global variables</span>
+  <span class="n">global_vars</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">global_variables</span><span class="p">()</span>
+
+  <span class="c1"># Find initialized status for all variables</span>
+  <span class="n">is_var_init</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">is_variable_initialized</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">global_vars</span><span class="p">]</span>
+  <span class="n">is_initialized</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">is_var_init</span><span class="p">)</span>
+
+  <span class="c1"># List all variables that were not initialized previously</span>
+  <span class="n">not_initialized_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span> <span class="k">for</span> <span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span> <span class="ow">in</span>
+                          <span class="nb">zip</span><span class="p">(</span><span class="n">global_vars</span><span class="p">,</span> <span class="n">is_initialized</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">init</span><span class="p">]</span>
+
+  <span class="c1"># Initialize all uninitialized variables found, if any</span>
+  <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">not_initialized_vars</span><span class="p">):</span>
+    <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">variables_initializer</span><span class="p">(</span><span class="n">not_initialized_vars</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+          <span class="n">init_all</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">feed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+          <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fprop_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Train a TF graph.</span>
+<span class="sd">  This function is deprecated. Prefer cleverhans.train.train when possible.</span>
+<span class="sd">  cleverhans.train.train supports multiple GPUs but this function is still</span>
+<span class="sd">  needed to support legacy models that do not support calling fprop more</span>
+<span class="sd">  than once.</span>
+
+<span class="sd">  :param sess: TF session to use when training the graph</span>
+<span class="sd">  :param loss: tensor, the model training loss.</span>
+<span class="sd">  :param x: input placeholder</span>
+<span class="sd">  :param y: output placeholder (for labels)</span>
+<span class="sd">  :param X_train: numpy array with training inputs</span>
+<span class="sd">  :param Y_train: numpy array with training outputs</span>
+<span class="sd">  :param save: boolean controlling the save operation</span>
+<span class="sd">  :param init_all: (boolean) If set to true, all TF variables in the session</span>
+<span class="sd">                   are (re)initialized, otherwise only previously</span>
+<span class="sd">                   uninitialized variables are initialized before training.</span>
+<span class="sd">  :param evaluate: function that is run after each training iteration</span>
+<span class="sd">                   (typically to display the test/validation accuracy).</span>
+<span class="sd">  :param feed: An optional dictionary that is appended to the feeding</span>
+<span class="sd">               dictionary before the session runs. Can be used to feed</span>
+<span class="sd">               the learning phase of a Keras model for instance.</span>
+<span class="sd">  :param args: dict or argparse `Namespace` object.</span>
+<span class="sd">               Should contain `nb_epochs`, `learning_rate`,</span>
+<span class="sd">               `batch_size`</span>
+<span class="sd">               If save is True, should also contain &#39;train_dir&#39;</span>
+<span class="sd">               and &#39;filename&#39;</span>
+<span class="sd">  :param rng: Instance of numpy.random.RandomState</span>
+<span class="sd">  :param var_list: Optional list of parameters to train.</span>
+<span class="sd">  :param fprop_args: dict, extra arguments to pass to fprop (loss and model).</span>
+<span class="sd">  :param optimizer: Optimizer to be used for training</span>
+<span class="sd">  :return: True if model trained</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;This function is deprecated and will be removed on or after&quot;</span>
+                <span class="s2">&quot; 2019-04-05. Switch to cleverhans.train.train.&quot;</span><span class="p">)</span>
+
+  <span class="n">args</span> <span class="o">=</span> <span class="n">_ArgsWrapper</span><span class="p">(</span><span class="n">args</span> <span class="ow">or</span> <span class="p">{})</span>
+  <span class="n">fprop_args</span> <span class="o">=</span> <span class="n">fprop_args</span> <span class="ow">or</span> <span class="p">{}</span>
+
+  <span class="c1"># Check that necessary arguments were given (see doc above)</span>
+  <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">nb_epochs</span><span class="p">,</span> <span class="s2">&quot;Number of epochs was not given in args dict&quot;</span>
+  <span class="k">if</span> <span class="n">optimizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">learning_rate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Learning rate was not given &quot;</span>
+                                            <span class="s2">&quot;in args dict&quot;</span><span class="p">)</span>
+  <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="s2">&quot;Batch size was not given in args dict&quot;</span>
+
+  <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">train_dir</span><span class="p">,</span> <span class="s2">&quot;Directory for save was not given in args dict&quot;</span>
+    <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;Filename for save was not given in args dict&quot;</span>
+
+  <span class="k">if</span> <span class="n">rng</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">()</span>
+
+  <span class="c1"># Define optimizer</span>
+  <span class="n">loss_value</span> <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">fprop</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">fprop_args</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">optimizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">AdamOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;optimizer object must be from a child class of &quot;</span>
+                       <span class="s2">&quot;tf.train.Optimizer&quot;</span><span class="p">)</span>
+  <span class="c1"># Trigger update operations within the default graph (such as batch_norm).</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">control_dependencies</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">GraphKeys</span><span class="o">.</span><span class="n">UPDATE_OPS</span><span class="p">)):</span>
+    <span class="n">train_step</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">loss_value</span><span class="p">,</span> <span class="n">var_list</span><span class="o">=</span><span class="n">var_list</span><span class="p">)</span>
+
+  <span class="k">with</span> <span class="n">sess</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tf</span><span class="p">,</span> <span class="s2">&quot;global_variables_initializer&quot;</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">init_all</span><span class="p">:</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">global_variables_initializer</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">initialize_uninitialized_global_variables</span><span class="p">(</span><span class="n">sess</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Update your copy of tensorflow; future versions of &quot;</span>
+                    <span class="s2">&quot;CleverHans may drop support for this version.&quot;</span><span class="p">)</span>
+      <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">())</span>
+
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nb_epochs</span><span class="p">):</span>
+      <span class="c1"># Compute number of batches</span>
+      <span class="n">nb_batches</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">))</span> <span class="o">/</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
+      <span class="k">assert</span> <span class="n">nb_batches</span> <span class="o">*</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+
+      <span class="c1"># Indices to shuffle training set</span>
+      <span class="n">index_shuf</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">)))</span>
+      <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">index_shuf</span><span class="p">)</span>
+
+      <span class="n">prev</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_batches</span><span class="p">):</span>
+
+        <span class="c1"># Compute batch start and end indices</span>
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">batch_indices</span><span class="p">(</span>
+            <span class="n">batch</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">),</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+
+        <span class="c1"># Perform one training step</span>
+        <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">X_train</span><span class="p">[</span><span class="n">index_shuf</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]],</span>
+                     <span class="n">y</span><span class="p">:</span> <span class="n">Y_train</span><span class="p">[</span><span class="n">index_shuf</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]]}</span>
+        <span class="k">if</span> <span class="n">feed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+          <span class="n">feed_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">feed</span><span class="p">)</span>
+        <span class="n">train_step</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
+      <span class="k">assert</span> <span class="n">end</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>  <span class="c1"># Check that all examples were used</span>
+      <span class="n">cur</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Epoch &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; took &quot;</span> <span class="o">+</span>
+                   <span class="nb">str</span><span class="p">(</span><span class="n">cur</span> <span class="o">-</span> <span class="n">prev</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; seconds&quot;</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">evaluate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">evaluate</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+      <span class="n">save_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">train_dir</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+      <span class="n">saver</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Saver</span><span class="p">()</span>
+      <span class="n">saver</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">save_path</span><span class="p">)</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Completed model training and saved at: &quot;</span> <span class="o">+</span>
+                   <span class="nb">str</span><span class="p">(</span><span class="n">save_path</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Completed model training.&quot;</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span> <span class="nf">model_eval</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">X_test</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Y_test</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">feed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Compute the accuracy of a TF model on some data</span>
+<span class="sd">  :param sess: TF session to use</span>
+<span class="sd">  :param x: input placeholder</span>
+<span class="sd">  :param y: output placeholder (for labels)</span>
+<span class="sd">  :param predictions: model output predictions</span>
+<span class="sd">  :param X_test: numpy array with training inputs</span>
+<span class="sd">  :param Y_test: numpy array with training outputs</span>
+<span class="sd">  :param feed: An optional dictionary that is appended to the feeding</span>
+<span class="sd">           dictionary before the session runs. Can be used to feed</span>
+<span class="sd">           the learning phase of a Keras model for instance.</span>
+<span class="sd">  :param args: dict or argparse `Namespace` object.</span>
+<span class="sd">               Should contain `batch_size`</span>
+<span class="sd">  :return: a float with the accuracy value</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">global</span> <span class="n">_model_eval_cache</span>
+  <span class="n">args</span> <span class="o">=</span> <span class="n">_ArgsWrapper</span><span class="p">(</span><span class="n">args</span> <span class="ow">or</span> <span class="p">{})</span>
+
+  <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="s2">&quot;Batch size was not given in args dict&quot;</span>
+  <span class="k">if</span> <span class="n">X_test</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">Y_test</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;X_test argument and Y_test argument &quot;</span>
+                     <span class="s2">&quot;must be supplied.&quot;</span><span class="p">)</span>
+
+  <span class="c1"># Define accuracy symbolically</span>
+  <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_model_eval_cache</span><span class="p">:</span>
+    <span class="n">correct_preds</span> <span class="o">=</span> <span class="n">_model_eval_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">correct_preds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span>
+                             <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">_model_eval_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">correct_preds</span>
+
+  <span class="c1"># Init result var</span>
+  <span class="n">accuracy</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+  <span class="k">with</span> <span class="n">sess</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+    <span class="c1"># Compute number of batches</span>
+    <span class="n">nb_batches</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span> <span class="o">/</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">nb_batches</span> <span class="o">*</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+    <span class="n">X_cur</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,)</span> <span class="o">+</span> <span class="n">X_test</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                     <span class="n">dtype</span><span class="o">=</span><span class="n">X_test</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">Y_cur</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,)</span> <span class="o">+</span> <span class="n">Y_test</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                     <span class="n">dtype</span><span class="o">=</span><span class="n">Y_test</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_batches</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">batch</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">batch</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Batch &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">batch</span><span class="p">))</span>
+
+      <span class="c1"># Must not use the `batch_indices` function here, because it</span>
+      <span class="c1"># repeats some examples.</span>
+      <span class="c1"># It&#39;s acceptable to repeat during training, but not eval.</span>
+      <span class="n">start</span> <span class="o">=</span> <span class="n">batch</span> <span class="o">*</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span>
+      <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">),</span> <span class="n">start</span> <span class="o">+</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+
+      <span class="c1"># The last batch may be smaller than all others. This should not</span>
+      <span class="c1"># affect the accuarcy disproportionately.</span>
+      <span class="n">cur_batch_size</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
+      <span class="n">X_cur</span><span class="p">[:</span><span class="n">cur_batch_size</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+      <span class="n">Y_cur</span><span class="p">[:</span><span class="n">cur_batch_size</span><span class="p">]</span> <span class="o">=</span> <span class="n">Y_test</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+      <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">X_cur</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Y_cur</span><span class="p">}</span>
+      <span class="k">if</span> <span class="n">feed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">feed_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">feed</span><span class="p">)</span>
+      <span class="n">cur_corr_preds</span> <span class="o">=</span> <span class="n">correct_preds</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
+
+      <span class="n">accuracy</span> <span class="o">+=</span> <span class="n">cur_corr_preds</span><span class="p">[:</span><span class="n">cur_batch_size</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="k">assert</span> <span class="n">end</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+    <span class="c1"># Divide by number of examples to get final value</span>
+    <span class="n">accuracy</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">accuracy</span>
+
+<span class="n">_model_eval_cache</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<span class="k">def</span> <span class="nf">tf_model_load</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">file_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">  :param sess: the session object to restore</span>
+<span class="sd">  :param file_path: path to the restored session, if None is</span>
+<span class="sd">                    taken from FLAGS.train_dir and FLAGS.filename</span>
+<span class="sd">  :return:</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">sess</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+    <span class="n">saver</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Saver</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">file_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">error</span> <span class="o">=</span> <span class="s1">&#39;file_path argument is missing.&#39;</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+    <span class="n">saver</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span> <span class="nf">batch_eval</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Wrapper around deprecated function.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1"># Inside function to avoid circular import</span>
+  <span class="kn">from</span> <span class="nn">cleverhans.evaluation</span> <span class="kn">import</span> <span class="n">batch_eval</span> <span class="k">as</span> <span class="n">new_batch_eval</span>
+  <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;batch_eval has moved to cleverhans.evaluation. &quot;</span>
+                <span class="s2">&quot;batch_eval will be removed from utils_tf on or after &quot;</span>
+                <span class="s2">&quot;2019-03-09.&quot;</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">new_batch_eval</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">model_argmax</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">feed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Helper function that computes the current class prediction</span>
+<span class="sd">  :param sess: TF session</span>
+<span class="sd">  :param x: the input placeholder</span>
+<span class="sd">  :param predictions: the model&#39;s symbolic output</span>
+<span class="sd">  :param samples: numpy array with input samples (dims must match x)</span>
+<span class="sd">  :param feed: An optional dictionary that is appended to the feeding</span>
+<span class="sd">           dictionary before the session runs. Can be used to feed</span>
+<span class="sd">           the learning phase of a Keras model for instance.</span>
+<span class="sd">  :return: the argmax output of predictions, i.e. the current predicted class</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">samples</span><span class="p">}</span>
+  <span class="k">if</span> <span class="n">feed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">feed_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">feed</span><span class="p">)</span>
+  <span class="n">probabilities</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">feed_dict</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probabilities</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probabilities</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">l2_batch_normalize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Helper function to normalize a batch of vectors.</span>
+<span class="sd">  :param x: the input placeholder</span>
+<span class="sd">  :param epsilon: stabilizes division</span>
+<span class="sd">  :return: the batch of l2 normalized vector</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="s2">&quot;l2_batch_normalize&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">name_scope</span><span class="p">:</span>
+    <span class="n">x_shape</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">contrib</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">/=</span> <span class="p">(</span><span class="n">epsilon</span> <span class="o">+</span> <span class="n">reduce_max</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">square_sum</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">x_inv_norm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">rsqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">epsilon</span><span class="p">)</span> <span class="o">+</span> <span class="n">square_sum</span><span class="p">)</span>
+    <span class="n">x_norm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x_inv_norm</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x_norm</span><span class="p">,</span> <span class="n">x_shape</span><span class="p">,</span> <span class="n">name_scope</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">kl_with_logits</span><span class="p">(</span><span class="n">p_logits</span><span class="p">,</span> <span class="n">q_logits</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">loss_collection</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">GraphKeys</span><span class="o">.</span><span class="n">REGULARIZATION_LOSSES</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Helper function to compute kl-divergence KL(p || q)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="s2">&quot;kl_divergence&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">name</span><span class="p">:</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">p_logits</span><span class="p">)</span>
+    <span class="n">p_log</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">p_logits</span><span class="p">)</span>
+    <span class="n">q_log</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">q_logits</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">reduce_mean</span><span class="p">(</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="n">p_log</span> <span class="o">-</span> <span class="n">q_log</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                       <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">add_loss</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">loss_collection</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">loss</span>
+
+
+<div class="viewcode-block" id="clip_eta"><a class="viewcode-back" href="../../source/attacks.html#cleverhans.attacks.clip_eta">[docs]</a><span class="k">def</span> <span class="nf">clip_eta</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="nb">ord</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Helper function to clip the perturbation to epsilon norm ball.</span>
+<span class="sd">  :param eta: A tensor with the current perturbation.</span>
+<span class="sd">  :param ord: Order of the norm (mimics Numpy).</span>
+<span class="sd">              Possible values: np.inf, 1 or 2.</span>
+<span class="sd">  :param eps: Epsilon, bound of the perturbation.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="c1"># Clipping perturbation eta to self.ord norm ball</span>
+  <span class="k">if</span> <span class="nb">ord</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ord must be np.inf, 1, or 2.&#39;</span><span class="p">)</span>
+  <span class="n">reduc_ind</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">eta</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())))</span>
+  <span class="n">avoid_zero_div</span> <span class="o">=</span> <span class="mf">1e-12</span>
+  <span class="k">if</span> <span class="nb">ord</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">:</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">clip_by_value</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="o">-</span><span class="n">eps</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+  <span class="k">elif</span> <span class="nb">ord</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="c1"># Implements a projection algorithm onto the l1-ball from</span>
+    <span class="c1"># (Duchi et al. 2008) that runs in time O(d*log(d)) where d is the</span>
+    <span class="c1"># input dimension.</span>
+    <span class="c1"># Paper link (Duchi et al. 2008): https://dl.acm.org/citation.cfm?id=1390191</span>
+
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">eta</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_prod</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">eta</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="n">eta_flat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="p">))</span>
+    <span class="n">abs_eta</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eta_flat</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s1">&#39;sort&#39;</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">tf</span><span class="p">):</span>
+      <span class="n">mu</span> <span class="o">=</span> <span class="o">-</span><span class="n">tf</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="o">-</span><span class="n">abs_eta</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="c1"># `tf.sort` is only available in TF 1.13 onwards</span>
+      <span class="n">mu</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">abs_eta</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="nb">sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">cumsums</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">js</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">eta</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="n">mu</span> <span class="o">-</span> <span class="n">js</span> <span class="o">*</span> <span class="p">(</span><span class="n">cumsums</span> <span class="o">-</span> <span class="n">eps</span><span class="p">),</span> <span class="mi">0</span><span class="p">),</span> <span class="n">eta</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">cumsums</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">rho_val</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">cumsums</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">rho_val</span> <span class="o">-</span> <span class="n">eps</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rho</span><span class="p">,</span> <span class="n">eta</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+    <span class="n">eta_sgn</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">eta_flat</span><span class="p">)</span>
+    <span class="n">eta_proj</span> <span class="o">=</span> <span class="n">eta_sgn</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">abs_eta</span> <span class="o">-</span> <span class="n">theta</span><span class="p">[:,</span> <span class="n">tf</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">eta_proj</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">eta_proj</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">eta</span><span class="p">))</span>
+
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eta</span><span class="p">),</span> <span class="n">reduc_ind</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="n">norm</span><span class="p">,</span> <span class="n">eps</span><span class="p">),</span> <span class="n">eta_proj</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+
+  <span class="k">elif</span> <span class="nb">ord</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+    <span class="c1"># avoid_zero_div must go inside sqrt to avoid a divide by zero</span>
+    <span class="c1"># in the gradient through this operation</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">avoid_zero_div</span><span class="p">,</span>
+                              <span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">eta</span><span class="p">),</span>
+                                         <span class="n">reduc_ind</span><span class="p">,</span>
+                                         <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
+    <span class="c1"># We must *clip* to within the norm ball, not *normalize* onto the</span>
+    <span class="c1"># surface of the ball</span>
+    <span class="n">factor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">norm</span><span class="p">))</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">eta</span> <span class="o">*</span> <span class="n">factor</span>
+  <span class="k">return</span> <span class="n">eta</span></div>
+
+
+<span class="k">def</span> <span class="nf">zero_out_clipped_grads</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Helper function to erase entries in the gradient where the update would be</span>
+<span class="sd">  clipped.</span>
+<span class="sd">  :param grad: The gradient</span>
+<span class="sd">  :param x: The current input</span>
+<span class="sd">  :param clip_min: Minimum input component value</span>
+<span class="sd">  :param clip_max: Maximum input component value</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">signed_grad</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+
+  <span class="c1"># Find input components that lie at the boundary of the input range, and</span>
+  <span class="c1"># where the gradient points in the wrong direction.</span>
+  <span class="n">clip_low</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">less_equal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">clip_min</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)),</span>
+                            <span class="n">tf</span><span class="o">.</span><span class="n">less</span><span class="p">(</span><span class="n">signed_grad</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+  <span class="n">clip_high</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">clip_max</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)),</span>
+                             <span class="n">tf</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="n">signed_grad</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+  <span class="n">clip</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">clip_low</span><span class="p">,</span> <span class="n">clip_high</span><span class="p">)</span>
+  <span class="n">grad</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">mul</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">grad</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">grad</span>
+
+
+<span class="k">def</span> <span class="nf">random_exponential</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Helper function to sample from the exponential distribution, which is not</span>
+<span class="sd">  included in core TensorFlow.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">random_gamma</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">rate</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">random_laplace</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Helper function to sample from the Laplace distribution, which is not</span>
+<span class="sd">  included in core TensorFlow.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">z1</span> <span class="o">=</span> <span class="n">random_exponential</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+  <span class="n">z2</span> <span class="o">=</span> <span class="n">random_exponential</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">z2</span>
+
+
+<span class="k">def</span> <span class="nf">random_lp_vector</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="nb">ord</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Helper function to generate uniformly random vectors from a norm ball of</span>
+<span class="sd">  radius epsilon.</span>
+<span class="sd">  :param shape: Output shape of the random sample. The shape is expected to be</span>
+<span class="sd">                of the form `(n, d1, d2, ..., dn)` where `n` is the number of</span>
+<span class="sd">                i.i.d. samples that will be drawn from a norm ball of dimension</span>
+<span class="sd">                `d1*d1*...*dn`.</span>
+<span class="sd">  :param ord: Order of the norm (mimics Numpy).</span>
+<span class="sd">              Possible values: np.inf, 1 or 2.</span>
+<span class="sd">  :param eps: Epsilon, radius of the norm ball.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="nb">ord</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ord must be np.inf, 1, or 2.&#39;</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="nb">ord</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">:</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">random_uniform</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="o">-</span><span class="n">eps</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+
+    <span class="c1"># For ord=1 and ord=2, we use the generic technique from</span>
+    <span class="c1"># (Calafiore et al. 1998) to sample uniformly from a norm ball.</span>
+    <span class="c1"># Paper link (Calafiore et al. 1998):</span>
+    <span class="c1"># https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=758215&amp;tag=1</span>
+    <span class="c1"># We first sample from the surface of the norm ball, and then scale by</span>
+    <span class="c1"># a factor `w^(1/d)` where `w~U[0,1]` is a standard uniform random variable</span>
+    <span class="c1"># and `d` is the dimension of the ball. In high dimensions, this is roughly</span>
+    <span class="c1"># equivalent to sampling from the surface of the ball.</span>
+
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_prod</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+    <span class="k">if</span> <span class="nb">ord</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">random_laplace</span><span class="p">((</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dim</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                         <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+      <span class="n">norm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">ord</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">random_normal</span><span class="p">((</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+      <span class="n">norm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ord must be np.inf, 1, or 2.&#39;</span><span class="p">)</span>
+
+    <span class="n">w</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">((</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">),</span>
+               <span class="mf">1.0</span> <span class="o">/</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dtype</span><span class="p">))</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">eps</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="n">x</span> <span class="o">/</span> <span class="n">norm</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">r</span>
+
+
+<span class="k">def</span> <span class="nf">model_train</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">predictions_adv</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init_all</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">feed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">var_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Train a TF graph</span>
+<span class="sd">  :param sess: TF session to use when training the graph</span>
+<span class="sd">  :param x: input placeholder</span>
+<span class="sd">  :param y: output placeholder (for labels)</span>
+<span class="sd">  :param predictions: model output predictions</span>
+<span class="sd">  :param X_train: numpy array with training inputs</span>
+<span class="sd">  :param Y_train: numpy array with training outputs</span>
+<span class="sd">  :param save: boolean controlling the save operation</span>
+<span class="sd">  :param predictions_adv: if set with the adversarial example tensor,</span>
+<span class="sd">                          will run adversarial training</span>
+<span class="sd">  :param init_all: (boolean) If set to true, all TF variables in the session</span>
+<span class="sd">                   are (re)initialized, otherwise only previously</span>
+<span class="sd">                   uninitialized variables are initialized before training.</span>
+<span class="sd">  :param evaluate: function that is run after each training iteration</span>
+<span class="sd">                   (typically to display the test/validation accuracy).</span>
+<span class="sd">  :param feed: An optional dictionary that is appended to the feeding</span>
+<span class="sd">               dictionary before the session runs. Can be used to feed</span>
+<span class="sd">               the learning phase of a Keras model for instance.</span>
+<span class="sd">  :param args: dict or argparse `Namespace` object.</span>
+<span class="sd">               Should contain `nb_epochs`, `learning_rate`,</span>
+<span class="sd">               `batch_size`</span>
+<span class="sd">               If save is True, should also contain &#39;train_dir&#39;</span>
+<span class="sd">               and &#39;filename&#39;</span>
+<span class="sd">  :param rng: Instance of numpy.random.RandomState</span>
+<span class="sd">  :param var_list: Optional list of parameters to train.</span>
+<span class="sd">  :return: True if model trained</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;This function is deprecated and will be removed on or after&quot;</span>
+                <span class="s2">&quot; 2019-04-05. Switch to cleverhans.train.train.&quot;</span><span class="p">)</span>
+  <span class="n">args</span> <span class="o">=</span> <span class="n">_ArgsWrapper</span><span class="p">(</span><span class="n">args</span> <span class="ow">or</span> <span class="p">{})</span>
+
+  <span class="c1"># Check that necessary arguments were given (see doc above)</span>
+  <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">nb_epochs</span><span class="p">,</span> <span class="s2">&quot;Number of epochs was not given in args dict&quot;</span>
+  <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span> <span class="s2">&quot;Learning rate was not given in args dict&quot;</span>
+  <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="s2">&quot;Batch size was not given in args dict&quot;</span>
+
+  <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">train_dir</span><span class="p">,</span> <span class="s2">&quot;Directory for save was not given in args dict&quot;</span>
+    <span class="k">assert</span> <span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;Filename for save was not given in args dict&quot;</span>
+
+  <span class="k">if</span> <span class="n">rng</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">()</span>
+
+  <span class="c1"># Define loss</span>
+  <span class="n">loss</span> <span class="o">=</span> <span class="n">model_loss</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">predictions_adv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">loss</span> <span class="o">+</span> <span class="n">model_loss</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">predictions_adv</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+  <span class="n">train_step</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">AdamOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">)</span>
+  <span class="n">train_step</span> <span class="o">=</span> <span class="n">train_step</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">var_list</span><span class="o">=</span><span class="n">var_list</span><span class="p">)</span>
+
+  <span class="k">with</span> <span class="n">sess</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tf</span><span class="p">,</span> <span class="s2">&quot;global_variables_initializer&quot;</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">init_all</span><span class="p">:</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">global_variables_initializer</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">initialize_uninitialized_global_variables</span><span class="p">(</span><span class="n">sess</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Update your copy of tensorflow; future versions of &quot;</span>
+                    <span class="s2">&quot;CleverHans may drop support for this version.&quot;</span><span class="p">)</span>
+      <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">())</span>
+
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nb_epochs</span><span class="p">):</span>
+      <span class="c1"># Compute number of batches</span>
+      <span class="n">nb_batches</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">))</span> <span class="o">/</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">))</span>
+      <span class="k">assert</span> <span class="n">nb_batches</span> <span class="o">*</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+
+      <span class="c1"># Indices to shuffle training set</span>
+      <span class="n">index_shuf</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">)))</span>
+      <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">index_shuf</span><span class="p">)</span>
+
+      <span class="n">prev</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_batches</span><span class="p">):</span>
+
+        <span class="c1"># Compute batch start and end indices</span>
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">batch_indices</span><span class="p">(</span>
+            <span class="n">batch</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">),</span> <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+
+        <span class="c1"># Perform one training step</span>
+        <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">X_train</span><span class="p">[</span><span class="n">index_shuf</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]],</span>
+                     <span class="n">y</span><span class="p">:</span> <span class="n">Y_train</span><span class="p">[</span><span class="n">index_shuf</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]]}</span>
+        <span class="k">if</span> <span class="n">feed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+          <span class="n">feed_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">feed</span><span class="p">)</span>
+        <span class="n">train_step</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)</span>
+      <span class="k">assert</span> <span class="n">end</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>  <span class="c1"># Check that all examples were used</span>
+      <span class="n">cur</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Epoch &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; took &quot;</span> <span class="o">+</span>
+                   <span class="nb">str</span><span class="p">(</span><span class="n">cur</span> <span class="o">-</span> <span class="n">prev</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; seconds&quot;</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">evaluate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">evaluate</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+      <span class="n">save_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">train_dir</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+      <span class="n">saver</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Saver</span><span class="p">()</span>
+      <span class="n">saver</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">save_path</span><span class="p">)</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Completed model training and saved at: &quot;</span> <span class="o">+</span>
+                   <span class="nb">str</span><span class="p">(</span><span class="n">save_path</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Completed model training.&quot;</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span> <span class="nf">infer_devices</span><span class="p">(</span><span class="n">devices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Returns the list of devices that multi-replica code should use.</span>
+<span class="sd">  :param devices: list of string device names, e.g. [&quot;/GPU:0&quot;]</span>
+<span class="sd">      If the user specifies this, `infer_devices` checks that it is</span>
+<span class="sd">      valid, and then uses this user-specified list.</span>
+<span class="sd">      If the user does not specify this, infer_devices uses:</span>
+<span class="sd">          - All available GPUs, if there are any</span>
+<span class="sd">          - CPU otherwise</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">devices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">devices</span> <span class="o">=</span> <span class="n">get_available_gpus</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No GPUS, running on CPU&quot;</span><span class="p">)</span>
+      <span class="c1"># Set device to empy string, tf will figure out whether to use</span>
+      <span class="c1"># XLA or not, etc., automatically</span>
+      <span class="n">devices</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">:</span>
+      <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">device</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">devices</span>
+
+
+<span class="k">def</span> <span class="nf">get_available_gpus</span><span class="p">():</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Returns a list of string names of all available GPUs</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">local_device_protos</span> <span class="o">=</span> <span class="n">device_lib</span><span class="o">.</span><span class="n">list_local_devices</span><span class="p">()</span>
+  <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">local_device_protos</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">device_type</span> <span class="o">==</span> <span class="s1">&#39;GPU&#39;</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">silence</span><span class="p">():</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Silences tensorflaw&#39;s default printed messages</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;TF_CPP_MIN_LOG_LEVEL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;3&#39;</span>
+
+<span class="k">def</span> <span class="nf">clip_by_value</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">clip_value_min</span><span class="p">,</span> <span class="n">clip_value_max</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  A wrapper for clip_by_value that casts the clipping range if needed.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">cast_clip</span><span class="p">(</span><span class="n">clip</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cast clipping range argument if needed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
+      <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">):</span>
+        <span class="c1"># Convert to tf dtype in case this is a numpy dtype</span>
+        <span class="n">clip_dtype</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">as_dtype</span><span class="p">(</span><span class="n">clip</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">clip_dtype</span> <span class="o">!=</span> <span class="n">t</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
+          <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">clip</span>
+
+  <span class="n">clip_value_min</span> <span class="o">=</span> <span class="n">cast_clip</span><span class="p">(</span><span class="n">clip_value_min</span><span class="p">)</span>
+  <span class="n">clip_value_max</span> <span class="o">=</span> <span class="n">cast_clip</span><span class="p">(</span><span class="n">clip_value_max</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">clip_by_value</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">clip_value_min</span><span class="p">,</span> <span class="n">clip_value_max</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">mul</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  A wrapper around tf multiplication that does more automatic casting of</span>
+<span class="sd">  the input.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">multiply</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Multiplication&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+  <span class="k">return</span> <span class="n">op_with_scalar_cast</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">multiply</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">div</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  A wrapper around tf division that does more automatic casting of</span>
+<span class="sd">  the input.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">divide</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Division&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="n">b</span>
+  <span class="k">return</span> <span class="n">op_with_scalar_cast</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">divide</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">op_with_scalar_cast</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Builds the graph to compute f(a, b).</span>
+<span class="sd">  If only one of the two arguments is a scalar and the operation would</span>
+<span class="sd">  cause a type error without casting, casts the scalar to match the</span>
+<span class="sd">  tensor.</span>
+<span class="sd">  :param a: a tf-compatible array or scalar</span>
+<span class="sd">  :param b: a tf-compatible array or scalar</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">try</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+  <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+  <span class="k">def</span> <span class="nf">is_scalar</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return True if `x` is a scalar&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;get_shape&quot;</span><span class="p">):</span>
+      <span class="n">shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span>
+      <span class="k">return</span> <span class="n">shape</span><span class="o">.</span><span class="n">ndims</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;ndim&quot;</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+  <span class="n">a_scalar</span> <span class="o">=</span> <span class="n">is_scalar</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+  <span class="n">b_scalar</span> <span class="o">=</span> <span class="n">is_scalar</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">a_scalar</span> <span class="ow">and</span> <span class="n">b_scalar</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Trying to apply &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; with mixed types&quot;</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">a_scalar</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">b_scalar</span><span class="p">:</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">b_scalar</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">a_scalar</span><span class="p">:</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">assert_less_equal</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Wrapper for tf.assert_less_equal</span>
+<span class="sd">  Overrides tf.device so that the assert always goes on CPU.</span>
+<span class="sd">  The unwrapped version raises an exception if used with tf.device(&quot;/GPU:x&quot;).</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;/CPU:0&quot;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">assert_less_equal</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">assert_greater_equal</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Wrapper for tf.assert_greater_equal.</span>
+<span class="sd">  Overrides tf.device so that the assert always goes on CPU.</span>
+<span class="sd">  The unwrapped version raises an exception if used with tf.device(&quot;/GPU:x&quot;).</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;/CPU:0&quot;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">assert_greater_equal</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">assert_equal</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Wrapper for tf.assert_equal.</span>
+<span class="sd">  Overrides tf.device so that the assert always goes on CPU.</span>
+<span class="sd">  The unwrapped version raises an exception if used with tf.device(&quot;/GPU:x&quot;).</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;/CPU:0&quot;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">assert_equal</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">jacobian_graph</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Create the Jacobian graph to be ran later in a TF session</span>
+<span class="sd">  :param predictions: the model&#39;s symbolic output (linear output,</span>
+<span class="sd">      pre-softmax)</span>
+<span class="sd">  :param x: the input placeholder</span>
+<span class="sd">  :param nb_classes: the number of classes the model has</span>
+<span class="sd">  :return:</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="c1"># This function will return a list of TF gradients</span>
+  <span class="n">list_derivatives</span> <span class="o">=</span> <span class="p">[]</span>
+
+  <span class="c1"># Define the TF graph elements to compute our derivatives for each class</span>
+  <span class="k">for</span> <span class="n">class_ind</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">nb_classes</span><span class="p">):</span>
+    <span class="n">derivatives</span><span class="p">,</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">predictions</span><span class="p">[:,</span> <span class="n">class_ind</span><span class="p">],</span> <span class="n">x</span><span class="p">)</span>
+    <span class="n">list_derivatives</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">derivatives</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">list_derivatives</span>
+
+<span class="k">def</span> <span class="nf">jacobian_augmentation</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span>
+                          <span class="n">x</span><span class="p">,</span>
+                          <span class="n">X_sub_prev</span><span class="p">,</span>
+                          <span class="n">Y_sub</span><span class="p">,</span>
+                          <span class="n">grads</span><span class="p">,</span>
+                          <span class="n">lmbda</span><span class="p">,</span>
+                          <span class="n">aug_batch_size</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+                          <span class="n">feed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Augment an adversary&#39;s substitute training set using the Jacobian</span>
+<span class="sd">  of a substitute model to generate new synthetic inputs.</span>
+<span class="sd">  See https://arxiv.org/abs/1602.02697 for more details.</span>
+<span class="sd">  See cleverhans_tutorials/mnist_blackbox.py for example use case</span>
+<span class="sd">  :param sess: TF session in which the substitute model is defined</span>
+<span class="sd">  :param x: input TF placeholder for the substitute model</span>
+<span class="sd">  :param X_sub_prev: substitute training data available to the adversary</span>
+<span class="sd">                     at the previous iteration</span>
+<span class="sd">  :param Y_sub: substitute training labels available to the adversary</span>
+<span class="sd">                at the previous iteration</span>
+<span class="sd">  :param grads: Jacobian symbolic graph for the substitute</span>
+<span class="sd">                (should be generated using utils_tf.jacobian_graph)</span>
+<span class="sd">  :return: augmented substitute data (will need to be labeled by oracle)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">X_sub_prev</span><span class="p">))</span>
+  <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">grads</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">Y_sub</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+  <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_sub_prev</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">Y_sub</span><span class="p">)</span>
+
+  <span class="n">aug_batch_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">aug_batch_size</span><span class="p">,</span> <span class="n">X_sub_prev</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+  <span class="c1"># Prepare input_shape (outside loop) for feeding dictionary below</span>
+  <span class="n">input_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())</span>
+  <span class="n">input_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+  <span class="c1"># Create new numpy array for adversary training data</span>
+  <span class="c1"># with twice as many components on the first dimension.</span>
+  <span class="n">X_sub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">X_sub_prev</span><span class="p">,</span> <span class="n">X_sub_prev</span><span class="p">])</span>
+  <span class="n">num_samples</span> <span class="o">=</span> <span class="n">X_sub_prev</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+  <span class="c1"># Creating and processing as batch</span>
+  <span class="k">for</span> <span class="n">p_idxs</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">aug_batch_size</span><span class="p">):</span>
+    <span class="n">X_batch</span> <span class="o">=</span> <span class="n">X_sub_prev</span><span class="p">[</span><span class="n">p_idxs</span><span class="p">:</span><span class="n">p_idxs</span> <span class="o">+</span> <span class="n">aug_batch_size</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">X_batch</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">feed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">feed_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">feed</span><span class="p">)</span>
+
+    <span class="c1"># Compute sign matrix</span>
+    <span class="n">grad_val</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">tf</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">grads</span><span class="p">)],</span> <span class="n">feed_dict</span><span class="o">=</span><span class="n">feed_dict</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Create new synthetic point in adversary substitute training set</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">indx</span><span class="p">,</span> <span class="n">ind</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">p_idxs</span><span class="p">,</span> <span class="n">p_idxs</span> <span class="o">+</span> <span class="n">X_batch</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                           <span class="nb">range</span><span class="p">(</span><span class="n">X_batch</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+      <span class="n">X_sub</span><span class="p">[</span><span class="n">num_samples</span> <span class="o">+</span> <span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+          <span class="n">X_batch</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">+</span> <span class="n">lmbda</span> <span class="o">*</span> <span class="n">grad_val</span><span class="p">[</span><span class="n">Y_sub</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">ind</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span>
+
+  <span class="c1"># Return augmented training data (needs to be labeled afterwards)</span>
+  <span class="k">return</span> <span class="n">X_sub</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

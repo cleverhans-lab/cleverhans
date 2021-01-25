@@ -1,0 +1,438 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.attack &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.attack</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The Attack interface.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">reduce_max</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils</span>
+
+<span class="n">_logger</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">create_logger</span><span class="p">(</span><span class="s2">&quot;cleverhans.attacks.attack&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Attack"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.Attack">[docs]</a><span class="k">class</span> <span class="nc">Attack</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Abstract base class for all attack classes.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">ABCMeta</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param model: An instance of the cleverhans.model.Model class.</span>
+<span class="sd">    :param sess: The (possibly optional) tf.Session to run graphs in.</span>
+<span class="sd">    :param dtypestr: Floating point precision to use (change to float64</span>
+<span class="sd">                     to avoid numerical instabilities).</span>
+<span class="sd">    :param back: (deprecated and will be removed on or after 2019-03-26).</span>
+<span class="sd">                 The backend to use. Currently &#39;tf&#39; is the only option.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s1">&#39;back&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;back&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;tf&#39;</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Argument back to attack constructors is not needed&quot;</span>
+                      <span class="s2">&quot; anymore and will be removed on or after 2019-03-26.&quot;</span>
+                      <span class="s2">&quot; All attacks are implemented using TensorFlow.&quot;</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Backend argument must be &#39;tf&#39; and is now deprecated&quot;</span>
+                         <span class="s2">&quot;It will be removed on or after 2019-03-26.&quot;</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">as_dtype</span><span class="p">(</span><span class="n">dtypestr</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">np_dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtypestr</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">sess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;sess is not an instance of tf.Session&quot;</span><span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">attacks_tf</span>
+    <span class="n">attacks_tf</span><span class="o">.</span><span class="n">np_dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">np_dtype</span>
+    <span class="n">attacks_tf</span><span class="o">.</span><span class="n">tf_dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;The model argument should be an instance of&quot;</span>
+                      <span class="s2">&quot; the cleverhans.model.Model class.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Prepare attributes</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="o">=</span> <span class="n">sess</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">dtypestr</span> <span class="o">=</span> <span class="n">dtypestr</span>
+
+    <span class="c1"># We are going to keep track of old graphs and cache them.</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">graphs</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># When calling generate_np, arguments in the following set should be</span>
+    <span class="c1"># fed into the graph, as they are not structural items that require</span>
+    <span class="c1"># generating a new graph.</span>
+    <span class="c1"># This dict should map names of arguments to the types they should</span>
+    <span class="c1"># have.</span>
+    <span class="c1"># (Usually, the target class will be a feedable keyword argument.)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+
+    <span class="c1"># When calling generate_np, arguments in the following set should NOT</span>
+    <span class="c1"># be fed into the graph, as they ARE structural items that require</span>
+    <span class="c1"># generating a new graph.</span>
+    <span class="c1"># This list should contain the names of the structural arguments.</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Attack.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.Attack.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate the attack&#39;s symbolic graph for adversarial examples. This</span>
+<span class="sd">    method should be overriden in any child class that implements an</span>
+<span class="sd">    attack that is expressable symbolically. Otherwise, it will wrap the</span>
+<span class="sd">    numerical implementation as a symbolic operator.</span>
+
+<span class="sd">    :param x: The model&#39;s symbolic inputs.</span>
+<span class="sd">    :param **kwargs: optional parameters used by child classes.</span>
+<span class="sd">      Each child class defines additional parameters as needed.</span>
+<span class="sd">      Child classes that use the following concepts should use the following</span>
+<span class="sd">      names:</span>
+<span class="sd">        clip_min: minimum feature value</span>
+<span class="sd">        clip_max: maximum feature value</span>
+<span class="sd">        eps: size of norm constraint on adversarial perturbation</span>
+<span class="sd">        ord: order of norm constraint</span>
+<span class="sd">        nb_iter: number of iterations</span>
+<span class="sd">        eps_iter: size of norm constraint on iteration</span>
+<span class="sd">        y_target: if specified, the attack is targeted.</span>
+<span class="sd">        y: Do not specify if y_target is specified.</span>
+<span class="sd">           If specified, the attack is untargeted, aims to make the output</span>
+<span class="sd">           class not be y.</span>
+<span class="sd">           If neither y_target nor y is specified, y is inferred by having</span>
+<span class="sd">           the model classify the input.</span>
+<span class="sd">      For other concepts, it&#39;s generally a good idea to read other classes</span>
+<span class="sd">      and check for name consistency.</span>
+<span class="sd">    :return: A symbolic representation of the adversarial examples.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;Sub-classes must implement generate.&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+    <span class="c1"># Include an unused return so pylint understands the method signature</span>
+    <span class="k">return</span> <span class="n">x</span></div>
+
+<div class="viewcode-block" id="Attack.construct_graph"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.Attack.construct_graph">[docs]</a>  <span class="k">def</span> <span class="nf">construct_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fixed</span><span class="p">,</span> <span class="n">feedable</span><span class="p">,</span> <span class="n">x_val</span><span class="p">,</span> <span class="n">hash_key</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct the graph required to run the attack through generate_np.</span>
+
+<span class="sd">    :param fixed: Structural elements that require defining a new graph.</span>
+<span class="sd">    :param feedable: Arguments that can be fed to the same graph when</span>
+<span class="sd">                     they take different values.</span>
+<span class="sd">    :param x_val: symbolic adversarial example</span>
+<span class="sd">    :param hash_key: the key used to store this graph in our cache</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># try our very best to create a TF placeholder for each of the</span>
+    <span class="c1"># feedable keyword arguments, and check the types are one of</span>
+    <span class="c1"># the allowed types</span>
+    <span class="n">class_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Constructing new graph for attack &quot;</span> <span class="o">+</span> <span class="n">class_name</span><span class="p">)</span>
+
+    <span class="c1"># remove the None arguments, they are just left blank</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">feedable</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+      <span class="k">if</span> <span class="n">feedable</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">feedable</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="c1"># process all of the rest and create placeholders for them</span>
+    <span class="n">new_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">fixed</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">feedable</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+      <span class="n">given_type</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">dtype</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+          <span class="c1"># This is pretty clearly not a batch of data</span>
+          <span class="n">new_kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">given_type</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="c1"># Assume that this is a batch of data, make the first axis variable</span>
+          <span class="c1"># in size</span>
+          <span class="n">new_shape</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+          <span class="n">new_kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">given_type</span><span class="p">,</span> <span class="n">new_shape</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">known_number_types</span><span class="p">):</span>
+        <span class="n">new_kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">given_type</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Could not identify type of argument &quot;</span> <span class="o">+</span>
+                         <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+    <span class="c1"># x is a special placeholder we always want to have</span>
+    <span class="n">x_shape</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">x_val</span><span class="o">.</span><span class="n">shape</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">x_shape</span><span class="p">)</span>
+
+    <span class="c1"># now we generate the graph that we want</span>
+    <span class="n">x_adv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">new_kwargs</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">graphs</span><span class="p">[</span><span class="n">hash_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">new_kwargs</span><span class="p">,</span> <span class="n">x_adv</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graphs</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">10</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Calling generate_np() with multiple different &quot;</span>
+                    <span class="s2">&quot;structural parameters is inefficient and should&quot;</span>
+                    <span class="s2">&quot; be avoided. Calling generate() is preferred.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Attack.generate_np"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.Attack.generate_np">[docs]</a>  <span class="k">def</span> <span class="nf">generate_np</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_val</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate adversarial examples and return them as a NumPy array.</span>
+<span class="sd">    Sub-classes *should not* implement this method unless they must</span>
+<span class="sd">    perform special handling of arguments.</span>
+
+<span class="sd">    :param x_val: A NumPy array with the original inputs.</span>
+<span class="sd">    :param **kwargs: optional parameters used by child classes.</span>
+<span class="sd">    :return: A NumPy array holding the adversarial examples.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot use `generate_np` when no `sess` was&quot;</span>
+                       <span class="s2">&quot; provided&quot;</span><span class="p">)</span>
+
+    <span class="n">packed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">construct_variables</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">fixed</span><span class="p">,</span> <span class="n">feedable</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">hash_key</span> <span class="o">=</span> <span class="n">packed</span>
+
+    <span class="k">if</span> <span class="n">hash_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">graphs</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">construct_graph</span><span class="p">(</span><span class="n">fixed</span><span class="p">,</span> <span class="n">feedable</span><span class="p">,</span> <span class="n">x_val</span><span class="p">,</span> <span class="n">hash_key</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="c1"># remove the None arguments, they are just left blank</span>
+      <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">feedable</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="n">feedable</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+          <span class="k">del</span> <span class="n">feedable</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="n">x</span><span class="p">,</span> <span class="n">new_kwargs</span><span class="p">,</span> <span class="n">x_adv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">graphs</span><span class="p">[</span><span class="n">hash_key</span><span class="p">]</span>
+
+    <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x_val</span><span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">feedable</span><span class="p">:</span>
+      <span class="n">feed_dict</span><span class="p">[</span><span class="n">new_kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]]</span> <span class="o">=</span> <span class="n">feedable</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">x_adv</span><span class="p">,</span> <span class="n">feed_dict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Attack.construct_variables"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.Attack.construct_variables">[docs]</a>  <span class="k">def</span> <span class="nf">construct_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct the inputs to the attack graph to be used by generate_np.</span>
+
+<span class="sd">    :param kwargs: Keyword arguments to generate_np.</span>
+<span class="sd">    :return:</span>
+<span class="sd">      Structural arguments</span>
+<span class="sd">      Feedable arguments</span>
+<span class="sd">      Output of `arg_type` describing feedable arguments</span>
+<span class="sd">      A unique key</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using a dict for `feedable_kwargs is deprecated.&quot;</span>
+                    <span class="s2">&quot;Switch to using a tuple.&quot;</span>
+                    <span class="s2">&quot;It is not longer necessary to specify the types &quot;</span>
+                    <span class="s2">&quot;of the arguments---we build a different graph &quot;</span>
+                    <span class="s2">&quot;for each received type.&quot;</span>
+                    <span class="s2">&quot;Using a dict may become an error on or after &quot;</span>
+                    <span class="s2">&quot;2019-04-18.&quot;</span><span class="p">)</span>
+      <span class="n">feedable_names</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">feedable_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span>
+      <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feedable_names</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Attack.feedable_kwargs should be a tuple, but &quot;</span>
+                        <span class="s2">&quot;for subclass &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; it is &quot;</span>
+                        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; of type &quot;</span>
+                        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span><span class="p">)))</span>
+
+    <span class="c1"># the set of arguments that are structural properties of the attack</span>
+    <span class="c1"># if these arguments are different, we must construct a new graph</span>
+    <span class="n">fixed</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span><span class="p">)</span>
+
+    <span class="c1"># the set of arguments that are passed as placeholders to the graph</span>
+    <span class="c1"># on each call, and can change without constructing a new graph</span>
+    <span class="n">feedable</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">feedable_names</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">feedable</span><span class="p">:</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feedable</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="n">feedable</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">feedable</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fixed</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">feedable</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;: Undeclared argument: &quot;</span> <span class="o">+</span> <span class="n">key</span><span class="p">)</span>
+
+    <span class="n">feed_arg_type</span> <span class="o">=</span> <span class="n">arg_type</span><span class="p">(</span><span class="n">feedable_names</span><span class="p">,</span> <span class="n">feedable</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Hashable</span><span class="p">)</span>
+               <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">fixed</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+      <span class="c1"># we have received a fixed value that isn&#39;t hashable</span>
+      <span class="c1"># this means we can&#39;t cache this graph for later use,</span>
+      <span class="c1"># and it will have to be discarded later</span>
+      <span class="n">hash_key</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="c1"># create a unique key for this set of fixed paramaters</span>
+      <span class="n">hash_key</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">fixed</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">feed_arg_type</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">fixed</span><span class="p">,</span> <span class="n">feedable</span><span class="p">,</span> <span class="n">feed_arg_type</span><span class="p">,</span> <span class="n">hash_key</span></div>
+
+<div class="viewcode-block" id="Attack.get_or_guess_labels"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.Attack.get_or_guess_labels">[docs]</a>  <span class="k">def</span> <span class="nf">get_or_guess_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the label to use in generating an adversarial example for x.</span>
+<span class="sd">    The kwargs are fed directly from the kwargs of the attack.</span>
+<span class="sd">    If &#39;y&#39; is in kwargs, then assume it&#39;s an untargeted attack and</span>
+<span class="sd">    use that as the label.</span>
+<span class="sd">    If &#39;y_target&#39; is in kwargs and is not none, then assume it&#39;s a</span>
+<span class="sd">    targeted attack and use that as the label.</span>
+<span class="sd">    Otherwise, use the model&#39;s prediction as the label and perform an</span>
+<span class="sd">    untargeted attack.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s1">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="s1">&#39;y_target&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can not set both &#39;y&#39; and &#39;y_target&#39;.&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="s1">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+      <span class="n">labels</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="s1">&#39;y_target&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y_target&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">labels</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y_target&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_probs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+      <span class="n">preds_max</span> <span class="o">=</span> <span class="n">reduce_max</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+      <span class="n">original_predictions</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">to_float</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">preds_max</span><span class="p">))</span>
+      <span class="n">labels</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">original_predictions</span><span class="p">)</span>
+      <span class="k">del</span> <span class="n">preds</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+      <span class="n">nb_classes</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">nb_classes</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">labels</span><span class="p">,</span> <span class="n">nb_classes</span></div>
+
+<div class="viewcode-block" id="Attack.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.Attack.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take in a dictionary of parameters and applies attack-specific checks</span>
+<span class="sd">    before saving them as attributes.</span>
+
+<span class="sd">    :param params: a dictionary of attack-specific parameters</span>
+<span class="sd">    :return: True when parsing was successful</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;`params` is unused and will be removed &quot;</span>
+                    <span class="s2">&quot; on or after 2019-04-26.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">arg_type</span><span class="p">(</span><span class="n">arg_names</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Returns a hashable summary of the types of arg_names within kwargs.</span>
+<span class="sd">  :param arg_names: tuple containing names of relevant arguments</span>
+<span class="sd">  :param kwargs: dict mapping string argument names to values.</span>
+<span class="sd">    These must be values for which we can create a tf placeholder.</span>
+<span class="sd">    Currently supported: numpy darray or something that can ducktype it</span>
+<span class="sd">  returns:</span>
+<span class="sd">    API contract is to return a hashable object describing all</span>
+<span class="sd">    structural consequences of argument values that can otherwise</span>
+<span class="sd">    be fed into a graph of fixed structure.</span>
+<span class="sd">    Currently this is implemented as a tuple of tuples that track:</span>
+<span class="sd">      - whether each argument was passed</span>
+<span class="sd">      - whether each argument was passed and not None</span>
+<span class="sd">      - the dtype of each argument</span>
+<span class="sd">    Callers shouldn&#39;t rely on the exact structure of this object,</span>
+<span class="sd">    just its hashability and one-to-one mapping between graph structures.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg_names</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+  <span class="n">passed</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">name</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">arg_names</span><span class="p">)</span>
+  <span class="n">passed_and_not_none</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">arg_names</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+      <span class="n">passed_and_not_none</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">passed_and_not_none</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+  <span class="n">passed_and_not_none</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">passed_and_not_none</span><span class="p">)</span>
+  <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">arg_names</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+      <span class="n">dtypes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+      <span class="k">continue</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">dtypes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+      <span class="k">continue</span>
+    <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
+      <span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span><span class="o">.</span><span class="n">as_np_dtype</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">dtypes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+  <span class="n">dtypes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dtypes</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span><span class="n">passed</span><span class="p">,</span> <span class="n">passed_and_not_none</span><span class="p">,</span> <span class="n">dtypes</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

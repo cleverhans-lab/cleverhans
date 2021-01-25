@@ -1,0 +1,372 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.lbfgs &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.lbfgs</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The LBFGS attack</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.attack</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">reduce_sum</span><span class="p">,</span> <span class="n">softmax_cross_entropy_with_logits</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">CallableModelWrapper</span><span class="p">,</span> <span class="n">Model</span><span class="p">,</span> <span class="n">wrapper_warning</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils_tf</span>
+
+<span class="n">_logger</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">create_logger</span><span class="p">(</span><span class="s2">&quot;cleverhans.attacks.lbfgs&quot;</span><span class="p">)</span>
+<span class="n">tf_dtype</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">as_dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="LBFGS"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.LBFGS">[docs]</a><span class="k">class</span> <span class="nc">LBFGS</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  LBFGS is the first adversarial attack for convolutional neural networks,</span>
+<span class="sd">  and is a target &amp; iterative attack.</span>
+<span class="sd">  Paper link: &quot;https://arxiv.org/pdf/1312.6199.pdf&quot;</span>
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: tf.Session</span>
+<span class="sd">  :param dtypestr: dtype of the data</span>
+<span class="sd">  :param kwargs: passed through to super constructor</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+      <span class="n">wrapper_warning</span><span class="p">()</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">CallableModelWrapper</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;probs&#39;</span><span class="p">)</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">LBFGS</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;y_target&#39;</span><span class="p">,)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;batch_size&#39;</span><span class="p">,</span> <span class="s1">&#39;binary_search_steps&#39;</span><span class="p">,</span> <span class="s1">&#39;max_iterations&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;initial_const&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_min&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_max&#39;</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="LBFGS.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.LBFGS.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a tensor that constructs adversarial examples for the given</span>
+<span class="sd">    input. Generate uses tf.py_func in order to operate over tensors.</span>
+<span class="sd">    :param x: (required) A tensor with the inputs.</span>
+<span class="sd">    :param kwargs: See `parse_params`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+        <span class="s1">&#39;Cannot use `generate` when no `sess` was provided&#39;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">parse_params</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span><span class="p">,</span> <span class="n">nb_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_or_guess_labels</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">targeted_attack</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">_</span><span class="p">,</span> <span class="n">nb_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_or_guess_labels</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">targeted_attack</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">attack</span> <span class="o">=</span> <span class="n">LBFGS_impl</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">targeted_attack</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_const</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">lbfgs_wrap</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_val</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Wrapper creating TensorFlow interface for use with py_func</span>
+<span class="sd">      &quot;&quot;&quot;</span>
+      <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">attack</span><span class="o">.</span><span class="n">attack</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_val</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">np_dtype</span><span class="p">)</span>
+
+    <span class="n">wrap</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">py_func</span><span class="p">(</span><span class="n">lbfgs_wrap</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span><span class="p">)</span>
+    <span class="n">wrap</span><span class="o">.</span><span class="n">set_shape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">wrap</span></div>
+
+<div class="viewcode-block" id="LBFGS.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.LBFGS.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                   <span class="n">y_target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="n">binary_search_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                   <span class="n">max_iterations</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                   <span class="n">initial_const</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span>
+                   <span class="n">clip_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                   <span class="n">clip_max</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param y_target: (optional) A tensor with the one-hot target labels.</span>
+<span class="sd">    :param batch_size: The number of inputs to include in a batch and</span>
+<span class="sd">                       process simultaneously.</span>
+<span class="sd">    :param binary_search_steps: The number of times we perform binary</span>
+<span class="sd">                                search to find the optimal tradeoff-</span>
+<span class="sd">                                constant between norm of the purturbation</span>
+<span class="sd">                                and cross-entropy loss of classification.</span>
+<span class="sd">    :param max_iterations: The maximum number of iterations.</span>
+<span class="sd">    :param initial_const: The initial tradeoff-constant to use to tune the</span>
+<span class="sd">                          relative importance of size of the perturbation</span>
+<span class="sd">                          and cross-entropy loss of the classification.</span>
+<span class="sd">    :param clip_min: (optional float) Minimum input component value</span>
+<span class="sd">    :param clip_max: (optional float) Maximum input component value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="o">=</span> <span class="n">y_target</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span> <span class="o">=</span> <span class="n">binary_search_steps</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span> <span class="o">=</span> <span class="n">max_iterations</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_const</span> <span class="o">=</span> <span class="n">initial_const</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">LBFGS_impl</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Return a tensor that constructs adversarial examples for the given</span>
+<span class="sd">  input. Generate uses tf.py_func in order to operate over tensors.</span>
+<span class="sd">  :param sess: a TF session.</span>
+<span class="sd">  :param x: A tensor with the inputs.</span>
+<span class="sd">  :param logits: A tensor with model&#39;s output logits.</span>
+<span class="sd">  :param targeted_label: A tensor with the target labels.</span>
+<span class="sd">  :param binary_search_steps: The number of times we perform binary</span>
+<span class="sd">                              search to find the optimal tradeoff-</span>
+<span class="sd">                              constant between norm of the purturbation</span>
+<span class="sd">                              and cross-entropy loss of classification.</span>
+<span class="sd">  :param max_iterations: The maximum number of iterations.</span>
+<span class="sd">  :param initial_const: The initial tradeoff-constant to use to tune the</span>
+<span class="sd">                        relative importance of size of the purturbation</span>
+<span class="sd">                        and cross-entropy loss of the classification.</span>
+<span class="sd">  :param clip_min: Minimum input component value</span>
+<span class="sd">  :param clip_max: Maximum input component value</span>
+<span class="sd">  :param num_labels: The number of classes in the model&#39;s output.</span>
+<span class="sd">  :param batch_size: Number of attacks to run simultaneously.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targeted_label</span><span class="p">,</span> <span class="n">targeted_attack</span><span class="p">,</span>
+               <span class="n">binary_search_steps</span><span class="p">,</span> <span class="n">max_iterations</span><span class="p">,</span> <span class="n">initial_const</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span>
+               <span class="n">clip_max</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="o">=</span> <span class="n">sess</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">logits</span> <span class="o">=</span> <span class="n">logits</span>
+    <span class="k">assert</span> <span class="n">logits</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s1">&#39;Softmax&#39;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">targeted_label</span> <span class="o">=</span> <span class="n">targeted_label</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">targeted_attack</span> <span class="o">=</span> <span class="n">targeted_attack</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span> <span class="o">=</span> <span class="n">binary_search_steps</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span> <span class="o">=</span> <span class="n">max_iterations</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_const</span> <span class="o">=</span> <span class="n">initial_const</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">repeat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span> <span class="o">&gt;=</span> <span class="mi">10</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">]</span> <span class="o">+</span>
+                       <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">:]))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ori_img</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf_dtype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;ori_img&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">const</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf_dtype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;const&#39;</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">softmax_cross_entropy_with_logits</span><span class="p">(</span>
+        <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">targeted_label</span><span class="p">,</span> <span class="n">logits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logits</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">l2dist</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ori_img</span><span class="p">))</span>
+    <span class="c1"># small self.const will result small adversarial perturbation</span>
+    <span class="c1"># targeted attack aims at minimize loss against target label</span>
+    <span class="c1"># untargeted attack aims at maximize loss against True label</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">targeted_attack</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">loss</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">l2dist</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">reduce_sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">l2dist</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">attack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_val</span><span class="p">,</span> <span class="n">targets</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform the attack on the given instance for the given targets.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">lbfgs_objective</span><span class="p">(</span><span class="n">adv_x</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">oimgs</span><span class="p">,</span> <span class="n">CONST</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot; returns the function value and the gradient for fmin_l_bfgs_b &quot;&quot;&quot;</span>
+      <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span>
+          <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">:</span> <span class="n">adv_x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">oimgs</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">targeted_label</span><span class="p">:</span> <span class="n">targets</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">ori_img</span><span class="p">:</span> <span class="n">oimgs</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">:</span> <span class="n">CONST</span>
+          <span class="p">})</span>
+      <span class="n">grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span>
+          <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">:</span> <span class="n">adv_x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">oimgs</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">targeted_label</span><span class="p">:</span> <span class="n">targets</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">ori_img</span><span class="p">:</span> <span class="n">oimgs</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">:</span> <span class="n">CONST</span>
+          <span class="p">})</span>
+      <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="n">grad</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">attack_success</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">targeted_attack</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot; returns attack result &quot;&quot;&quot;</span>
+      <span class="k">if</span> <span class="n">targeted_attack</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out</span> <span class="o">==</span> <span class="n">target</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out</span> <span class="o">!=</span> <span class="n">target</span>
+
+    <span class="c1"># begin the main part for the attack</span>
+    <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">fmin_l_bfgs_b</span>
+    <span class="n">oimgs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+    <span class="n">CONST</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_const</span>
+
+    <span class="c1"># set the lower and upper bounds accordingly</span>
+    <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+    <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e10</span>
+
+    <span class="c1"># set the box constraints for the optimization function</span>
+    <span class="n">clip_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">oimgs</span><span class="o">.</span><span class="n">shape</span><span class="p">[:])</span>
+    <span class="n">clip_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">oimgs</span><span class="o">.</span><span class="n">shape</span><span class="p">[:])</span>
+    <span class="n">clip_bound</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">clip_min</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">clip_max</span><span class="o">.</span><span class="n">flatten</span><span class="p">()))</span>
+
+    <span class="c1"># placeholders for the best l2 and instance attack found so far</span>
+    <span class="n">o_bestl2</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e10</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span>
+    <span class="n">o_bestattack</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">oimgs</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">outer_step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span><span class="p">):</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;  Binary search step </span><span class="si">%s</span><span class="s2"> of </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">outer_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span><span class="p">)</span>
+
+      <span class="c1"># The last iteration (if we run many steps) repeat the search once.</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">repeat</span> <span class="ow">and</span> <span class="n">outer_step</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">CONST</span> <span class="o">=</span> <span class="n">upper_bound</span>
+
+      <span class="c1"># optimization function</span>
+      <span class="n">adv_x</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">fmin_l_bfgs_b</span><span class="p">(</span>
+          <span class="n">lbfgs_objective</span><span class="p">,</span>
+          <span class="n">oimgs</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
+          <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">oimgs</span><span class="p">,</span> <span class="n">CONST</span><span class="p">),</span>
+          <span class="n">bounds</span><span class="o">=</span><span class="n">clip_bound</span><span class="p">,</span>
+          <span class="n">maxiter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="p">,</span>
+          <span class="n">iprint</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+      <span class="n">adv_x</span> <span class="o">=</span> <span class="n">adv_x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">oimgs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+      <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">adv_x</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="ow">and</span> \
+          <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">adv_x</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> \
+          <span class="s1">&#39;fmin_l_bfgs_b returns are invalid&#39;</span>
+
+      <span class="c1"># adjust the best result (i.e., the adversarial example with the</span>
+      <span class="c1"># smallest perturbation in terms of L_2 norm) found so far</span>
+      <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span>
+          <span class="n">utils_tf</span><span class="o">.</span><span class="n">model_argmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">logits</span><span class="p">,</span>
+                                <span class="n">adv_x</span><span class="p">))</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;predicted labels are </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+
+      <span class="n">l2s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">l2s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">adv_x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">oimgs</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+      <span class="k">for</span> <span class="n">e</span><span class="p">,</span> <span class="p">(</span><span class="n">l2</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">l2s</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">adv_x</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">l2</span> <span class="o">&lt;</span> <span class="n">o_bestl2</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="ow">and</span> <span class="n">attack_success</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">targets</span><span class="p">[</span><span class="n">e</span><span class="p">]),</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">targeted_attack</span><span class="p">):</span>
+          <span class="n">o_bestl2</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">l2</span>
+          <span class="n">o_bestattack</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">ii</span>
+
+      <span class="c1"># adjust the constant as needed</span>
+      <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">attack_success</span><span class="p">(</span><span class="n">preds</span><span class="p">[</span><span class="n">e</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">targets</span><span class="p">[</span><span class="n">e</span><span class="p">]),</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">targeted_attack</span><span class="p">):</span>
+          <span class="c1"># success, divide const by two</span>
+          <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">],</span> <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+          <span class="k">if</span> <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">:</span>
+            <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">lower_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+</span> <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="c1"># failure, either multiply by 10 if no solution found yet</span>
+          <span class="c1">#          or do binary search with the known upper bound</span>
+          <span class="n">lower_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lower_bound</span><span class="p">[</span><span class="n">e</span><span class="p">],</span> <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+          <span class="k">if</span> <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">:</span>
+            <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">lower_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+</span> <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+          <span class="k">else</span><span class="p">:</span>
+            <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">10</span>
+
+      <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;  Successfully generated adversarial examples &quot;</span>
+                    <span class="s2">&quot;on </span><span class="si">%s</span><span class="s2"> of </span><span class="si">%s</span><span class="s2"> instances.&quot;</span><span class="p">,</span>
+                    <span class="nb">sum</span><span class="p">(</span><span class="n">upper_bound</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+      <span class="n">o_bestl2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">o_bestl2</span><span class="p">)</span>
+      <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">o_bestl2</span><span class="p">[</span><span class="n">o_bestl2</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">]))</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;   Mean successful distortion: </span><span class="si">{:.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mean</span><span class="p">))</span>
+
+    <span class="c1"># return the best solution found</span>
+    <span class="n">o_bestl2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">o_bestl2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">o_bestattack</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

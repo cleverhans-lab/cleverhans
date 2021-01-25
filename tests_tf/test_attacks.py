@@ -851,7 +851,7 @@ class TestSparseL1Descent(CleverHansTest):
 
     orig_labs = np.argmax(self.sess.run(self.model.get_logits(x_val)), axis=1)
     new_labs = np.argmax(self.sess.run(self.model.get_logits(x_adv)), axis=1)
-    self.assertLess(np.mean(orig_labs == new_labs), 0.4)
+    self.assertLess(np.mean(orig_labs == new_labs), 0.5)
     self.assertGreater(np.mean(orig_labs == new_labs), 0.2)
 
   def test_grad_clip(self):
