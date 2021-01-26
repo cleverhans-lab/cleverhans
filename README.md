@@ -1,4 +1,8 @@
-# CleverHans (latest release: v3.0.1)
+# CleverHans (latest release: v3.1.0)
+
+Note: This is the final version of CleverHans v3, which supports TensorFlow 1, Python 3 and Python 2. In our version 4 update, we’re dropping support for TF1 and Python 2, and transitioning to JAX, PyTorch and TF2 on Python 3.
+
+This version was last tested with Python 3.5 and Tensorflow {1.8, 1.12} on Ubuntu 14.04.5 LTS (Trusty Tahr). You’re welcome to continue using it, but it’s no longer maintained.
 
 <img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
