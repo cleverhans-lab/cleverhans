@@ -3,3 +3,4 @@ flake8==3.8.4
 mypy==0.790
 mypy-extensions==0.4.3
 pytest==6.2.1
+pre-commit==2.9.3
