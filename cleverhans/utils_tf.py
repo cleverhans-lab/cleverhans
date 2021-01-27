@@ -444,6 +444,11 @@ def random_exponential(shape, rate=1.0, dtype=tf.float32, seed=None):
   """
   Helper function to sample from the exponential distribution, which is not
   included in core TensorFlow.
+  
+  :shape: shape of the sampled tensor.
+  :rate: (optional) rate parameter of the exponential distribution, defaults to 1.0.
+  :dtype: (optional) data type of the sempled tensor, defaults to tf.float32.
+  :seed: (optional) custom seed to be used for sampling.
   """
   return tf.random_gamma(shape, alpha=1, beta=1. / rate, dtype=dtype, seed=seed)
 
@@ -452,10 +457,16 @@ def random_laplace(shape, loc=0.0, scale=1.0, dtype=tf.float32, seed=None):
   """
   Helper function to sample from the Laplace distribution, which is not
   included in core TensorFlow.
+  
+  :shape: shape of the sampled tensor.
+  :loc: (optional) mean of the laplace distribution, defaults to 0.0.
+  :scale: (optional) scale parameter of the laplace diustribution, defaults to 1.0.
+  :dtype: (optional) data type of the sempled tensor, defaults to tf.float32.
+  :seed: (optional) custom seed to be used for sampling.
   """
-  z1 = random_exponential(shape, loc, dtype=dtype, seed=seed)
-  z2 = random_exponential(shape, scale, dtype=dtype, seed=seed)
-  return z1 - z2
+  z1 = random_exponential(shape, 1. / scale, dtype=dtype, seed=seed)
+  z2 = random_exponential(shape, 1. / scale, dtype=dtype, seed=seed)
+  return z1 - z2 + loc
 
 
 def random_lp_vector(shape, ord, eps, dtype=tf.float32, seed=None):

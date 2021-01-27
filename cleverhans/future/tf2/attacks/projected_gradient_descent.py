@@ -4,12 +4,12 @@ import numpy as np
 import tensorflow as tf
 
 from cleverhans.future.tf2.attacks.fast_gradient_method import fast_gradient_method
-from cleverhans.future.tf2.utils_tf import clip_eta
+from cleverhans.future.tf2.utils_tf import clip_eta, random_lp_vector
 
 
-def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
+def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm, loss_fn=None,
                                clip_min=None, clip_max=None, y=None, targeted=False,
-                               rand_init=None, rand_minmax=0.3, sanity_checks=True):
+                               rand_init=None, rand_minmax=None, sanity_checks=False):
   """
   This class implements either the Basic Iterative Method
   (Kurakin et al. 2016) when rand_init is set to 0. or the
@@ -22,6 +22,8 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
   :param eps_iter: step size for each attack iteration
   :param nb_iter: Number of attack iterations.
   :param norm: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
+  :param loss_fn: (optional) callable. loss function that takes (labels, logits) as arguments and returns loss.
+                  default function is 'tf.nn.sparse_softmax_cross_entropy_with_logits'
   :param clip_min: (optional) float. Minimum float value for adversarial example components.
   :param clip_max: (optional) float. Maximum float value for adversarial example components.
   :param y: (optional) Tensor with true labels. If targeted is true, then provide the
@@ -32,6 +34,11 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
   :param targeted: (optional) bool. Is the attack targeted or untargeted?
             Untargeted, the default, will try to make the label incorrect.
             Targeted will instead try to move in the direction of being more like y.
+  :param rand_init: (optional) float. Start the gradient descent from a point chosen
+                      uniformly at random in the norm ball of radius
+                      rand_init_eps
+  :param rand_minmax: (optional) float. Size of the norm ball from which
+                      the initial starting point is chosen. Defaults to eps
   :param sanity_checks: bool, if True, include asserts (Turn them off to use less runtime /
             memory or for unit tests that intentionally pass strange input)
   :return: a tensor for the adversarial example
@@ -47,6 +54,9 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
   if norm not in [np.inf, 2]:
     raise ValueError("Norm order must be either np.inf or 2.")
 
+  if loss_fn is None:
+    loss_fn = tf.nn.sparse_softmax_cross_entropy_with_logits
+
   asserts = []
 
   # If a data range was specified, check that the input was in that range
@@ -57,9 +67,11 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
     asserts.append(tf.math.less_equal(x, clip_max))
 
   # Initialize loop variables
+  if rand_minmax is None:
+      rand_minmax = eps
+
   if rand_init:
-    rand_minmax = eps
-    eta = tf.random.uniform(x.shape, -rand_minmax, rand_minmax)
+    eta = random_lp_vector(tf.shape(x), norm, tf.cast(rand_minmax, x.dtype), dtype=x.dtype)
   else:
     eta = tf.zeros_like(x)
 
@@ -75,7 +87,7 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
 
   i = 0
   while i < nb_iter:
-    adv_x = fast_gradient_method(model_fn, adv_x, eps_iter, norm, clip_min=clip_min,
+    adv_x = fast_gradient_method(model_fn, adv_x, eps_iter, norm, loss_fn, clip_min=clip_min,
                                  clip_max=clip_max, y=y, targeted=targeted)
 
     # Clipping perturbation eta to norm norm ball
