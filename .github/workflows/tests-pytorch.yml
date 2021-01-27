@@ -1,4 +1,4 @@
-name: Tests
+name: PyTorch Tests
 
 on: [push, pull_request]
 
@@ -21,6 +21,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e "."
         pip install -r requirements/requirements.txt
+        pip install -r requirements/requirements-pytorch.txt
         pip install -r requirements/requirements-dev.txt
     - name: Test with pytest
       run: |

@@ -1,4 +1,4 @@
-name: Tutorials
+name: PyTorch Tutorials
 
 on: [push, pull_request]
 
@@ -21,10 +21,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e "."
         pip install -r requirements/requirements.txt
+        pip install -r requirements/requirements-pytorch.txt
         pip install -r requirements/requirements-dev.txt
     - name: Run tutorials
       run: |
-        find tutorials/future/ -name '*.py' | while read f
+        find tutorials/future/torch/ -name '*.py' | while read f
         do
             python $f
             if [ $? -ne 0 ]
