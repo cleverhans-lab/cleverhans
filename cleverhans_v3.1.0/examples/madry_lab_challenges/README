@@ -1,0 +1,33 @@
+This example provides a CleverHans wrapper for the Madry Lab challenges.
+
+To run the attack on MNIST:
+
+1. Clone the MNIST challenge repository from:
+https://github.com/MadryLab/mnist_challenge
+
+2. Obtain some weights for the Madry Lab model, following the readme
+from their project (either download their presupplied weights or train
+your own).
+
+3. Set your MNIST_CHALLENGE_DIR environment variable to point to
+the repository you cloned in step 1
+
+4. Run
+
+`python mnist/attack_model.py`
+
+To run the attack on CIFAR-10
+
+1. Clone the CIFAR-10 challenge repository from:
+https://github.com/MadryLab/cifar10_challenge
+
+2. Same as for MNIST
+
+3. Set your CIFAR10_CHALLENGE_DIR environment variable to point to 
+repository from step 1. 
+
+4. Run
+
+`python cifar10/attack_model.py`
+
+

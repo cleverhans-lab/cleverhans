@@ -1,0 +1,634 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.hop_skip_jump_attack &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.hop_skip_jump_attack</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Boundary Attack++</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
+<span class="kn">from</span> <span class="nn">cleverhans.attacks</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">CallableModelWrapper</span><span class="p">,</span> <span class="n">Model</span><span class="p">,</span> <span class="n">wrapper_warning_logits</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils</span><span class="p">,</span> <span class="n">utils_tf</span>
+
+<span class="n">np_dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+<span class="n">tf_dtype</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">as_dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+
+<span class="n">_logger</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">create_logger</span><span class="p">(</span><span class="s2">&quot;cleverhans.attacks.hop_skip_jump_attack&quot;</span><span class="p">)</span>
+<span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="HopSkipJumpAttack"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.HopSkipJumpAttack">[docs]</a><span class="k">class</span> <span class="nc">HopSkipJumpAttack</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  HopSkipJumpAttack was originally proposed by Chen, Jordan and Wainwright.</span>
+<span class="sd">  It is a decision-based attack that requires access to output</span>
+<span class="sd">  labels of a model alone.</span>
+<span class="sd">  Paper link: https://arxiv.org/abs/1904.02144</span>
+<span class="sd">  At a high level, this attack is an iterative attack composed of three</span>
+<span class="sd">  steps: Binary search to approach the boundary; gradient estimation;</span>
+<span class="sd">  stepsize search. HopSkipJumpAttack requires fewer model queries than</span>
+<span class="sd">  Boundary Attack which was based on rejective sampling.</span>
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: tf.Session</span>
+<span class="sd">  :param dtypestr: dtype of the data</span>
+<span class="sd">  :param kwargs: passed through to super constructor.</span>
+<span class="sd">  see parse_params for details.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Note: the model parameter should be an instance of the</span>
+<span class="sd">    cleverhans.model.Model abstraction provided by CleverHans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+      <span class="n">wrapper_warning_logits</span><span class="p">()</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">CallableModelWrapper</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;logits&#39;</span><span class="p">)</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">HopSkipJumpAttack</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span>
+                                                 <span class="n">dtypestr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;y_target&#39;</span><span class="p">,</span> <span class="s1">&#39;image_target&#39;</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;stepsize_search&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;clip_min&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;clip_max&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;constraint&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;num_iterations&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;initial_num_evals&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;max_num_evals&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;batch_size&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;verbose&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;gamma&#39;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="HopSkipJumpAttack.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.HopSkipJumpAttack.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a tensor that constructs adversarial examples for the given</span>
+<span class="sd">    input. Generate uses tf.py_func in order to operate over tensors.</span>
+<span class="sd">    :param x: A tensor with the inputs.</span>
+<span class="sd">    :param kwargs: See `parse_params`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">parse_params</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">:]]</span>
+
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+        <span class="s1">&#39;Cannot use `generate` when no `sess` was provided&#39;</span>
+    <span class="n">_check_first_dimension</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;input&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">_check_first_dimension</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_target</span><span class="p">,</span> <span class="s1">&#39;y_target&#39;</span><span class="p">)</span>
+      <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+          <span class="s1">&#39;Require a target image for targeted attack.&#39;</span>
+      <span class="n">_check_first_dimension</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image_target</span><span class="p">,</span> <span class="s1">&#39;image_target&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Set shape and d.</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">shape</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">d</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="c1"># Set binary search threshold.</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;l2&#39;</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">)</span>
+
+    <span class="c1"># Construct input placeholder and output for decision function.</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">input_ph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span>
+        <span class="n">tf_dtype</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;input_image&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_ph</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">hsja_wrap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">target_label</span><span class="p">,</span> <span class="n">target_image</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot; Wrapper to use tensors as input and output. &quot;&quot;&quot;</span>
+      <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hsja</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">target_label</span><span class="p">,</span> <span class="n">target_image</span><span class="p">),</span>
+                      <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">np_dtype</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="c1"># targeted attack that requires target label and image.</span>
+      <span class="n">wrap</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">py_func</span><span class="p">(</span><span class="n">hsja_wrap</span><span class="p">,</span>
+                        <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_target</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># untargeted attack with an initialized image.</span>
+        <span class="n">wrap</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">py_func</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">target_image</span><span class="p">:</span> <span class="n">hsja_wrap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+                                                            <span class="kc">None</span><span class="p">,</span> <span class="n">target_image</span><span class="p">),</span>
+                          <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_target</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># untargeted attack without an initialized image.</span>
+        <span class="n">wrap</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">py_func</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">hsja_wrap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                          <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span><span class="p">)</span>
+
+    <span class="n">wrap</span><span class="o">.</span><span class="n">set_shape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">wrap</span></div>
+
+<div class="viewcode-block" id="HopSkipJumpAttack.generate_np"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.HopSkipJumpAttack.generate_np">[docs]</a>  <span class="k">def</span> <span class="nf">generate_np</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate adversarial images in a for loop.</span>
+<span class="sd">    :param y: An array of shape (n, nb_classes) for true labels.</span>
+<span class="sd">    :param y_target:  An array of shape (n, nb_classes) for target labels.</span>
+<span class="sd">    Required for targeted attack.</span>
+<span class="sd">    :param image_target: An array of shape (n, **image shape) for initial</span>
+<span class="sd">    target images. Required for targeted attack.</span>
+
+<span class="sd">    See parse_params for other kwargs.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">x_adv</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="s1">&#39;image_target&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;image_target&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">image_target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;image_target&#39;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">image_target</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="s1">&#39;y_target&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y_target&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">y_target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y_target&#39;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">y_target</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x_single</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+      <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">x_single</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">image_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">single_img_target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">image_target</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;image_target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">single_img_target</span>
+      <span class="k">if</span> <span class="n">y_target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">single_y_target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">y_target</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;y_target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">single_y_target</span>
+
+      <span class="n">adv_img</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">HopSkipJumpAttack</span><span class="p">,</span>
+                      <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">generate_np</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+      <span class="n">x_adv</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">adv_img</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">x_adv</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="HopSkipJumpAttack.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.HopSkipJumpAttack.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                   <span class="n">y_target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">image_target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">initial_num_evals</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                   <span class="n">max_num_evals</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+                   <span class="n">stepsize_search</span><span class="o">=</span><span class="s1">&#39;geometric_progression&#39;</span><span class="p">,</span>
+                   <span class="n">num_iterations</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+                   <span class="n">gamma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                   <span class="n">constraint</span><span class="o">=</span><span class="s1">&#39;l2&#39;</span><span class="p">,</span>
+                   <span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                   <span class="n">clip_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                   <span class="n">clip_max</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param y: A tensor of shape (1, nb_classes) for true labels.</span>
+<span class="sd">    :param y_target:  A tensor of shape (1, nb_classes) for target labels.</span>
+<span class="sd">    Required for targeted attack.</span>
+<span class="sd">    :param image_target: A tensor of shape (1, **image shape) for initial</span>
+<span class="sd">    target images. Required for targeted attack.</span>
+<span class="sd">    :param initial_num_evals: initial number of evaluations for</span>
+<span class="sd">                              gradient estimation.</span>
+<span class="sd">    :param max_num_evals: maximum number of evaluations for gradient estimation.</span>
+<span class="sd">    :param stepsize_search: How to search for stepsize; choices are</span>
+<span class="sd">                            &#39;geometric_progression&#39;, &#39;grid_search&#39;.</span>
+<span class="sd">                            &#39;geometric progression&#39; initializes the stepsize</span>
+<span class="sd">                             by ||x_t - x||_p / sqrt(iteration), and keep</span>
+<span class="sd">                             decreasing by half until reaching the target</span>
+<span class="sd">                             side of the boundary. &#39;grid_search&#39; chooses the</span>
+<span class="sd">                             optimal epsilon over a grid, in the scale of</span>
+<span class="sd">                             ||x_t - x||_p.</span>
+<span class="sd">    :param num_iterations: The number of iterations.</span>
+<span class="sd">    :param gamma: The binary search threshold theta is gamma / d^{3/2} for</span>
+<span class="sd">                   l2 attack and gamma / d^2 for linf attack.</span>
+<span class="sd">    :param constraint: The distance to optimize; choices are &#39;l2&#39;, &#39;linf&#39;.</span>
+<span class="sd">    :param batch_size: batch_size for model prediction.</span>
+<span class="sd">    :param verbose: (boolean) Whether distance at each step is printed.</span>
+<span class="sd">    :param clip_min: (optional float) Minimum input component value</span>
+<span class="sd">    :param clip_max: (optional float) Maximum input component value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># ignore the y and y_target argument</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="o">=</span> <span class="n">y_target</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">image_target</span> <span class="o">=</span> <span class="n">image_target</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_num_evals</span> <span class="o">=</span> <span class="n">initial_num_evals</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">max_num_evals</span> <span class="o">=</span> <span class="n">max_num_evals</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">stepsize_search</span> <span class="o">=</span> <span class="n">stepsize_search</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_iterations</span> <span class="o">=</span> <span class="n">num_iterations</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span> <span class="o">=</span> <span class="n">constraint</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span></div>
+
+  <span class="k">def</span> <span class="nf">_hsja</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">target_label</span><span class="p">,</span> <span class="n">target_image</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main algorithm for HopSkipJumpAttack.</span>
+
+<span class="sd">    Return a tensor that constructs adversarial examples for the given</span>
+<span class="sd">    input. Generate uses tf.py_func in order to operate over tensors.</span>
+
+<span class="sd">    :param sample: input image. Without the batchsize dimension.</span>
+<span class="sd">    :param target_label: integer for targeted attack,</span>
+<span class="sd">      None for nontargeted attack. Without the batchsize dimension.</span>
+<span class="sd">    :param target_image: an array with the same size as sample, or None.</span>
+<span class="sd">      Without the batchsize dimension.</span>
+
+
+<span class="sd">    Output:</span>
+<span class="sd">    perturbed image.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Original label required for untargeted attack.</span>
+    <span class="k">if</span> <span class="n">target_label</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">original_label</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logits</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_ph</span><span class="p">:</span> <span class="n">sample</span><span class="p">[</span><span class="kc">None</span><span class="p">]})</span>
+          <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">target_label</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">target_label</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">decision_function</span><span class="p">(</span><span class="n">images</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Decision function output 1 on the desired side of the boundary,</span>
+<span class="sd">      0 otherwise.</span>
+<span class="sd">      &quot;&quot;&quot;</span>
+      <span class="n">images</span> <span class="o">=</span> <span class="n">clip_image</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+      <span class="n">prob</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">]</span>
+        <span class="n">prob_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logits</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_ph</span><span class="p">:</span> <span class="n">batch</span><span class="p">})</span>
+        <span class="n">prob</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prob_i</span><span class="p">)</span>
+      <span class="n">prob</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">target_label</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">original_label</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">target_label</span>
+
+    <span class="c1"># Initialize.</span>
+    <span class="k">if</span> <span class="n">target_image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">perturbed</span> <span class="o">=</span> <span class="n">initialize</span><span class="p">(</span><span class="n">decision_function</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">perturbed</span> <span class="o">=</span> <span class="n">target_image</span>
+
+    <span class="c1"># Project the initialization to the boundary.</span>
+    <span class="n">perturbed</span><span class="p">,</span> <span class="n">dist_post_update</span> <span class="o">=</span> <span class="n">binary_search_batch</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span>
+                                                      <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">perturbed</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                                                      <span class="n">decision_function</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">compute_distance</span><span class="p">(</span><span class="n">perturbed</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">):</span>
+      <span class="n">current_iteration</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span>
+
+      <span class="c1"># Choose delta.</span>
+      <span class="n">delta</span> <span class="o">=</span> <span class="n">select_delta</span><span class="p">(</span><span class="n">dist_post_update</span><span class="p">,</span> <span class="n">current_iteration</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">)</span>
+
+      <span class="c1"># Choose number of evaluations.</span>
+      <span class="n">num_evals</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">min</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_num_evals</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">max_num_evals</span><span class="p">]))</span>
+
+      <span class="c1"># approximate gradient.</span>
+      <span class="n">gradf</span> <span class="o">=</span> <span class="n">approximate_gradient</span><span class="p">(</span><span class="n">decision_function</span><span class="p">,</span> <span class="n">perturbed</span><span class="p">,</span> <span class="n">num_evals</span><span class="p">,</span>
+                                   <span class="n">delta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;linf&#39;</span><span class="p">:</span>
+        <span class="n">update</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">gradf</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">update</span> <span class="o">=</span> <span class="n">gradf</span>
+
+      <span class="c1"># search step size.</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stepsize_search</span> <span class="o">==</span> <span class="s1">&#39;geometric_progression&#39;</span><span class="p">:</span>
+        <span class="c1"># find step size.</span>
+        <span class="n">epsilon</span> <span class="o">=</span> <span class="n">geometric_progression_for_stepsize</span><span class="p">(</span><span class="n">perturbed</span><span class="p">,</span>
+                                                     <span class="n">update</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">decision_function</span><span class="p">,</span> <span class="n">current_iteration</span><span class="p">)</span>
+
+        <span class="c1"># Update the sample.</span>
+        <span class="n">perturbed</span> <span class="o">=</span> <span class="n">clip_image</span><span class="p">(</span><span class="n">perturbed</span> <span class="o">+</span> <span class="n">epsilon</span> <span class="o">*</span> <span class="n">update</span><span class="p">,</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+
+        <span class="c1"># Binary search to return to the boundary.</span>
+        <span class="n">perturbed</span><span class="p">,</span> <span class="n">dist_post_update</span> <span class="o">=</span> <span class="n">binary_search_batch</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span>
+                                                          <span class="n">perturbed</span><span class="p">[</span><span class="kc">None</span><span class="p">],</span>
+                                                          <span class="n">decision_function</span><span class="p">,</span>
+                                                          <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                                          <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">,</span>
+                                                          <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+
+      <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">stepsize_search</span> <span class="o">==</span> <span class="s1">&#39;grid_search&#39;</span><span class="p">:</span>
+        <span class="c1"># Grid search for stepsize.</span>
+        <span class="n">epsilons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">*</span> <span class="n">dist</span>
+        <span class="n">epsilons_shape</span> <span class="o">=</span> <span class="p">[</span><span class="mi">20</span><span class="p">]</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">perturbeds</span> <span class="o">=</span> <span class="n">perturbed</span> <span class="o">+</span> <span class="n">epsilons</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">epsilons_shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">update</span>
+        <span class="n">perturbeds</span> <span class="o">=</span> <span class="n">clip_image</span><span class="p">(</span><span class="n">perturbeds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+        <span class="n">idx_perturbed</span> <span class="o">=</span> <span class="n">decision_function</span><span class="p">(</span><span class="n">perturbeds</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">idx_perturbed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+          <span class="c1"># Select the perturbation that yields the minimum distance # after binary search.</span>
+          <span class="n">perturbed</span><span class="p">,</span> <span class="n">dist_post_update</span> <span class="o">=</span> <span class="n">binary_search_batch</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span>
+                                                            <span class="n">perturbeds</span><span class="p">[</span><span class="n">idx_perturbed</span><span class="p">],</span>
+                                                            <span class="n">decision_function</span><span class="p">,</span>
+                                                            <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                                                            <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">,</span>
+                                                            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+
+      <span class="c1"># compute new distance.</span>
+      <span class="n">dist</span> <span class="o">=</span> <span class="n">compute_distance</span><span class="p">(</span><span class="n">perturbed</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">)</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;iteration: </span><span class="si">{:d}</span><span class="s1">, </span><span class="si">{:s}</span><span class="s1"> distance </span><span class="si">{:.4E}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">,</span> <span class="n">dist</span><span class="p">))</span>
+
+    <span class="n">perturbed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">perturbed</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">perturbed</span></div>
+
+
+<div class="viewcode-block" id="BoundaryAttackPlusPlus"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.BoundaryAttackPlusPlus">[docs]</a><span class="k">def</span> <span class="nf">BoundaryAttackPlusPlus</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  A previous name used for HopSkipJumpAttack.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;BoundaryAttackPlusPlus will be removed after 2019-12-08; use HopSkipJumpAttack.&quot;</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">HopSkipJumpAttack</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">_check_first_dimension</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">tensor_name</span><span class="p">):</span>
+  <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Tensor </span><span class="si">{}</span><span class="s2"> should have batch_size of 1.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tensor_name</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">check_batch</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">control_dependencies</span><span class="p">([</span><span class="n">check_batch</span><span class="p">]):</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+  <span class="k">elif</span> <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">clip_image</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; Clip an image, or an image batch, with upper and lower threshold. &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">clip_min</span><span class="p">,</span> <span class="n">image</span><span class="p">),</span> <span class="n">clip_max</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">compute_distance</span><span class="p">(</span><span class="n">x_ori</span><span class="p">,</span> <span class="n">x_pert</span><span class="p">,</span> <span class="n">constraint</span><span class="o">=</span><span class="s1">&#39;l2&#39;</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; Compute the distance between two images. &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;l2&#39;</span><span class="p">:</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x_ori</span> <span class="o">-</span> <span class="n">x_pert</span><span class="p">)</span>
+  <span class="k">elif</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;linf&#39;</span><span class="p">:</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">x_ori</span> <span class="o">-</span> <span class="n">x_pert</span><span class="p">))</span>
+  <span class="k">return</span> <span class="n">dist</span>
+
+<span class="k">def</span> <span class="nf">approximate_gradient</span><span class="p">(</span><span class="n">decision_function</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">num_evals</span><span class="p">,</span>
+                         <span class="n">delta</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; Gradient direction estimation &quot;&quot;&quot;</span>
+  <span class="c1"># Generate random vectors.</span>
+  <span class="n">noise_shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">num_evals</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;l2&#39;</span><span class="p">:</span>
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">noise_shape</span><span class="p">)</span>
+  <span class="k">elif</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;linf&#39;</span><span class="p">:</span>
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">noise_shape</span><span class="p">)</span>
+
+  <span class="n">axis</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)))</span>
+  <span class="n">rv</span> <span class="o">=</span> <span class="n">rv</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">rv</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+  <span class="n">perturbed</span> <span class="o">=</span> <span class="n">sample</span> <span class="o">+</span> <span class="n">delta</span> <span class="o">*</span> <span class="n">rv</span>
+  <span class="n">perturbed</span> <span class="o">=</span> <span class="n">clip_image</span><span class="p">(</span><span class="n">perturbed</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">)</span>
+  <span class="n">rv</span> <span class="o">=</span> <span class="p">(</span><span class="n">perturbed</span> <span class="o">-</span> <span class="n">sample</span><span class="p">)</span> <span class="o">/</span> <span class="n">delta</span>
+
+  <span class="c1"># query the model.</span>
+  <span class="n">decisions</span> <span class="o">=</span> <span class="n">decision_function</span><span class="p">(</span><span class="n">perturbed</span><span class="p">)</span>
+  <span class="n">decision_shape</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">decisions</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+  <span class="n">fval</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">decisions</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np_dtype</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">decision_shape</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
+
+  <span class="c1"># Baseline subtraction (when fval differs)</span>
+  <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fval</span><span class="p">)</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>  <span class="c1"># label changes.</span>
+    <span class="n">gradf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rv</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+  <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fval</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">:</span>  <span class="c1"># label not change.</span>
+    <span class="n">gradf</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rv</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">fval</span> <span class="o">=</span> <span class="n">fval</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fval</span><span class="p">)</span>
+    <span class="n">gradf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fval</span> <span class="o">*</span> <span class="n">rv</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+  <span class="c1"># Get the gradient direction.</span>
+  <span class="n">gradf</span> <span class="o">=</span> <span class="n">gradf</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">gradf</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">gradf</span>
+
+
+<span class="k">def</span> <span class="nf">project</span><span class="p">(</span><span class="n">original_image</span><span class="p">,</span> <span class="n">perturbed_images</span><span class="p">,</span> <span class="n">alphas</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">constraint</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; Projection onto given l2 / linf balls in a batch. &quot;&quot;&quot;</span>
+  <span class="n">alphas_shape</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">alphas</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+  <span class="n">alphas</span> <span class="o">=</span> <span class="n">alphas</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">alphas_shape</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;l2&#39;</span><span class="p">:</span>
+    <span class="n">projected</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alphas</span><span class="p">)</span> <span class="o">*</span> <span class="n">original_image</span> <span class="o">+</span> <span class="n">alphas</span> <span class="o">*</span> <span class="n">perturbed_images</span>
+  <span class="k">elif</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;linf&#39;</span><span class="p">:</span>
+    <span class="n">projected</span> <span class="o">=</span> <span class="n">clip_image</span><span class="p">(</span>
+        <span class="n">perturbed_images</span><span class="p">,</span>
+        <span class="n">original_image</span> <span class="o">-</span> <span class="n">alphas</span><span class="p">,</span>
+        <span class="n">original_image</span> <span class="o">+</span> <span class="n">alphas</span>
+    <span class="p">)</span>
+  <span class="k">return</span> <span class="n">projected</span>
+
+
+<span class="k">def</span> <span class="nf">binary_search_batch</span><span class="p">(</span><span class="n">original_image</span><span class="p">,</span> <span class="n">perturbed_images</span><span class="p">,</span> <span class="n">decision_function</span><span class="p">,</span>
+                        <span class="n">shape</span><span class="p">,</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; Binary search to approach the boundary. &quot;&quot;&quot;</span>
+
+  <span class="c1"># Compute distance between each of perturbed image and original image.</span>
+  <span class="n">dists_post_update</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+      <span class="n">compute_distance</span><span class="p">(</span>
+          <span class="n">original_image</span><span class="p">,</span>
+          <span class="n">perturbed_image</span><span class="p">,</span>
+          <span class="n">constraint</span>
+      <span class="p">)</span>
+      <span class="k">for</span> <span class="n">perturbed_image</span> <span class="ow">in</span> <span class="n">perturbed_images</span><span class="p">])</span>
+
+  <span class="c1"># Choose upper thresholds in binary searchs based on constraint.</span>
+  <span class="k">if</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;linf&#39;</span><span class="p">:</span>
+    <span class="n">highs</span> <span class="o">=</span> <span class="n">dists_post_update</span>
+    <span class="c1"># Stopping criteria.</span>
+    <span class="n">thresholds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">dists_post_update</span> <span class="o">*</span> <span class="n">theta</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">highs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">perturbed_images</span><span class="p">))</span>
+    <span class="n">thresholds</span> <span class="o">=</span> <span class="n">theta</span>
+
+  <span class="n">lows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">perturbed_images</span><span class="p">))</span>
+
+  <span class="k">while</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">highs</span> <span class="o">-</span> <span class="n">lows</span><span class="p">)</span> <span class="o">/</span> <span class="n">thresholds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="c1"># projection to mids.</span>
+    <span class="n">mids</span> <span class="o">=</span> <span class="p">(</span><span class="n">highs</span> <span class="o">+</span> <span class="n">lows</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="n">mid_images</span> <span class="o">=</span> <span class="n">project</span><span class="p">(</span><span class="n">original_image</span><span class="p">,</span> <span class="n">perturbed_images</span><span class="p">,</span>
+                         <span class="n">mids</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">constraint</span><span class="p">)</span>
+
+    <span class="c1"># Update highs and lows based on model decisions.</span>
+    <span class="n">decisions</span> <span class="o">=</span> <span class="n">decision_function</span><span class="p">(</span><span class="n">mid_images</span><span class="p">)</span>
+    <span class="n">lows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">decisions</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">mids</span><span class="p">,</span> <span class="n">lows</span><span class="p">)</span>
+    <span class="n">highs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">decisions</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mids</span><span class="p">,</span> <span class="n">highs</span><span class="p">)</span>
+
+  <span class="n">out_images</span> <span class="o">=</span> <span class="n">project</span><span class="p">(</span><span class="n">original_image</span><span class="p">,</span> <span class="n">perturbed_images</span><span class="p">,</span>
+                       <span class="n">highs</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">constraint</span><span class="p">)</span>
+
+  <span class="c1"># Compute distance of the output image to select the best choice.</span>
+  <span class="c1"># (only used when stepsize_search is grid_search.)</span>
+  <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+      <span class="n">compute_distance</span><span class="p">(</span>
+          <span class="n">original_image</span><span class="p">,</span>
+          <span class="n">out_image</span><span class="p">,</span>
+          <span class="n">constraint</span>
+      <span class="p">)</span>
+      <span class="k">for</span> <span class="n">out_image</span> <span class="ow">in</span> <span class="n">out_images</span><span class="p">])</span>
+  <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dists</span><span class="p">)</span>
+
+  <span class="n">dist</span> <span class="o">=</span> <span class="n">dists_post_update</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+  <span class="n">out_image</span> <span class="o">=</span> <span class="n">out_images</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+  <span class="k">return</span> <span class="n">out_image</span><span class="p">,</span> <span class="n">dist</span>
+
+
+<span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">decision_function</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Efficient Implementation of BlendedUniformNoiseAttack in Foolbox.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">success</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">num_evals</span> <span class="o">=</span> <span class="mi">0</span>
+
+  <span class="c1"># Find a misclassified random noise.</span>
+  <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">random_noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="n">decision_function</span><span class="p">(</span><span class="n">random_noise</span><span class="p">[</span><span class="kc">None</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+      <span class="k">break</span>
+    <span class="n">num_evals</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Initialization failed! Try to use a misclassified image as `target_image`&quot;</span>
+    <span class="k">assert</span> <span class="n">num_evals</span> <span class="o">&lt;</span> <span class="mf">1e4</span><span class="p">,</span> <span class="n">message</span>
+
+  <span class="c1"># Binary search to minimize l2 distance to original image.</span>
+  <span class="n">low</span> <span class="o">=</span> <span class="mf">0.0</span>
+  <span class="n">high</span> <span class="o">=</span> <span class="mf">1.0</span>
+  <span class="k">while</span> <span class="n">high</span> <span class="o">-</span> <span class="n">low</span> <span class="o">&gt;</span> <span class="mf">0.001</span><span class="p">:</span>
+    <span class="n">mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">high</span> <span class="o">+</span> <span class="n">low</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="n">blended</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mid</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample</span> <span class="o">+</span> <span class="n">mid</span> <span class="o">*</span> <span class="n">random_noise</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="n">decision_function</span><span class="p">(</span><span class="n">blended</span><span class="p">[</span><span class="kc">None</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+      <span class="n">high</span> <span class="o">=</span> <span class="n">mid</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">low</span> <span class="o">=</span> <span class="n">mid</span>
+
+  <span class="n">initialization</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">high</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample</span> <span class="o">+</span> <span class="n">high</span> <span class="o">*</span> <span class="n">random_noise</span>
+  <span class="k">return</span> <span class="n">initialization</span>
+
+
+<span class="k">def</span> <span class="nf">geometric_progression_for_stepsize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">update</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">decision_function</span><span class="p">,</span>
+                                       <span class="n">current_iteration</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; Geometric progression to search for stepsize.</span>
+<span class="sd">      Keep decreasing stepsize by half until reaching</span>
+<span class="sd">      the desired side of the boundary.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">epsilon</span> <span class="o">=</span> <span class="n">dist</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">current_iteration</span><span class="p">)</span>
+  <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">updated</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">epsilon</span> <span class="o">*</span> <span class="n">update</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="n">decision_function</span><span class="p">(</span><span class="n">updated</span><span class="p">[</span><span class="kc">None</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+      <span class="k">break</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">epsilon</span> <span class="o">=</span> <span class="n">epsilon</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+  <span class="k">return</span> <span class="n">epsilon</span>
+
+
+<span class="k">def</span> <span class="nf">select_delta</span><span class="p">(</span><span class="n">dist_post_update</span><span class="p">,</span> <span class="n">current_iteration</span><span class="p">,</span>
+                 <span class="n">clip_max</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">constraint</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Choose the delta at the scale of distance</span>
+<span class="sd">   between x and perturbed sample.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">current_iteration</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="p">(</span><span class="n">clip_max</span> <span class="o">-</span> <span class="n">clip_min</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;l2&#39;</span><span class="p">:</span>
+      <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">*</span> <span class="n">theta</span> <span class="o">*</span> <span class="n">dist_post_update</span>
+    <span class="k">elif</span> <span class="n">constraint</span> <span class="o">==</span> <span class="s1">&#39;linf&#39;</span><span class="p">:</span>
+      <span class="n">delta</span> <span class="o">=</span> <span class="n">d</span> <span class="o">*</span> <span class="n">theta</span> <span class="o">*</span> <span class="n">dist_post_update</span>
+
+  <span class="k">return</span> <span class="n">delta</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>
