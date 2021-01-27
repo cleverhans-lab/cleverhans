@@ -4,12 +4,12 @@ on:
   push:
     paths:
       - 'cleverhans/future/jax/**/*'
-      - 'tutorials/future/jax/**/'
+      - 'tutorials/future/jax/**/*'
 
   pull_request:
     paths:
       - 'cleverhans/future/jax/**/*'
-      - 'tutorials/future/jax/**/'
+      - 'tutorials/future/jax/**/*'
 
 jobs:
   build:

@@ -1,6 +1,15 @@
 name: Style and type checks
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'cleverhans/future/**/*'
+      - 'tutorials/future/**/*'
+
+  pull_request:
+    paths:
+      - 'cleverhans/future/**/*'
+      - 'tutorials/future/**/'
 
 jobs:
   build:
@@ -21,13 +30,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e "."
         pip install -r requirements/requirements.txt
+        pip install -r requirements/requirements-pytorch.txt
+        pip install -r requirements/requirements-tf2.txt
+        pip install -r requirements/requirements-jax.txt
         pip install -r requirements/requirements-dev.txt
     - name: Code reformat check
       run: |
         black --check cleverhans/future/
+        black --check tutorials/future/
     - name: flake8 linting check
       run: |
         flake8 cleverhans/future/
-    - name: Type check
-      run: |
-        mypy cleverhans/future/
+        flake8 tutorials/future/
+#    - name: Type check
+#      run: |
+#        mypy cleverhans/future/
