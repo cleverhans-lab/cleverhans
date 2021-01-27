@@ -1,6 +1,15 @@
 name: TensorFlow 2 Tutorials
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'cleverhans/future/tf2/**/*'
+      - 'tutorials/future/tf2/**/'
+
+  pull_request:
+    paths:
+      - 'cleverhans/future/tf2/**/*'
+      - 'tutorials/future/tf2/**/'
 
 jobs:
   build:

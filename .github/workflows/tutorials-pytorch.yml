@@ -1,6 +1,15 @@
 name: PyTorch Tutorials
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'cleverhans/future/torch/**/*'
+      - 'tutorials/future/torch/**/'
+
+  pull_request:
+    paths:
+      - 'cleverhans/future/torch/**/*'
+      - 'tutorials/future/torch/**/'
 
 jobs:
   build:
