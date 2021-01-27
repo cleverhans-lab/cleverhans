@@ -2,7 +2,7 @@ name: PyTorch Tests
 
 on: [push, pull_request]
   paths:
-    - 'cleverhans/future/torch/**/*'
+  - 'cleverhans/future/torch/**/*'
 
 jobs:
   build:
