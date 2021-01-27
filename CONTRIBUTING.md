@@ -18,9 +18,8 @@ To speed the code review process, we ask that:
 
 * New efforts and features be coordinated
 on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
-* When making code contributions to CleverHans, you follow the
-`PEP8` coding style in your pull requests.
-* When making your first pull request, you [sign the Google CLA](https://cla.developers.google.com/clas)
+* When making code contributions to CleverHans, you should follow the
+[`Black`](https://black.readthedocs.io/en/stable/index.html) coding style in your pull requests.
 * We do not accept pull requests that add git submodules because of [the
   problems that arise when maintaining git
   submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407)
