@@ -19,6 +19,7 @@ jobs:
               --azure-ssh-user azureuser \
               --azure-location "eastus" \
               --azure-size "Standard_NC6" \
+              --azure-image "microsoft-dsvm:ubuntu-1804:1804:latest" \
               $MACHINE
 
           eval "$(docker-machine env --shell sh $MACHINE)"
