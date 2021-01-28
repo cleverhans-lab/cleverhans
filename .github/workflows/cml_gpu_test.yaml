@@ -17,7 +17,6 @@ jobs:
               --driver azure \
               --azure-subscription-id $sub \
               --azure-ssh-user azureuser \
-              --azure-size "Standard_DS2_v2" \
               $MACHINE
 
           eval "$(docker-machine env --shell sh $MACHINE)"
