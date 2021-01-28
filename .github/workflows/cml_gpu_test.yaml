@@ -17,6 +17,7 @@ jobs:
               --driver azure \
               --azure-subscription-id $AZURE_SUBSCRIPTION_ID \
               --azure-ssh-user azureuser \
+              --azure-location "eastus" \
               --azure-size "Standard_NC6" \
               $MACHINE
 
