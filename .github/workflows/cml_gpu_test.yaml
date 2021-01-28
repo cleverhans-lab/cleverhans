@@ -1,48 +1,8 @@
-name: cml_gpu_test
+name: CML Single GPU Test
 on: [push]
 jobs:
-  deploy-cloud-runner:
-    runs-on: [ubuntu-latest]
-    container: docker://dvcorg/cml:latest
-    steps:
-      - name: deploy
-        env:
-          repo_token: ${{ secrets.REPO_TOKEN }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        run: |
-          echo "Deploying..."
-
-          MACHINE="cml$(date +%s)"
-          docker-machine create \
-              --driver azure \
-              --azure-subscription-id $AZURE_SUBSCRIPTION_ID \
-              --azure-ssh-user azureuser \
-              --azure-location "eastus" \
-              --azure-size "Standard_NC6" \
-              --azure-image "microsoft-dsvm:ubuntu-1804:1804:latest" \
-              $MACHINE
-
-          eval "$(docker-machine env --shell sh $MACHINE)"
-
-          (
-          docker-machine ssh $MACHINE "sudo mkdir -p /docker_machine && sudo chmod 777 /docker_machine" && \
-          docker-machine scp -r -q ~/.docker/machine/ $MACHINE:/docker_machine && \
-
-          docker run --name runner -d \
-            -v /docker_machine/machine:/root/.docker/machine \
-            -e RUNNER_IDLE_TIMEOUT=120 \
-            -e DOCKER_MACHINE=${MACHINE} \
-            -e RUNNER_LABELS=cml \
-            -e repo_token=$repo_token \
-            -e RUNNER_REPO="https://github.com/${GITHUB_REPOSITORY}" \
-           dvcorg/cml-py3 && \
-
-          sleep 20 && echo "Deployed $MACHINE"
-          ) || (docker-machine rm -f $MACHINE && exit 1)
-  train:
-    needs: deploy-cloud-runner
-    runs-on: [self-hosted, cml]
-
+  run:
+    runs-on: [self-hosted,cml,gpu]
     steps:
       - uses: actions/checkout@v2
       - name: cml_run
