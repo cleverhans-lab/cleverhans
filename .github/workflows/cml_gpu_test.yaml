@@ -8,15 +8,16 @@ jobs:
       - name: deploy
         env:
           repo_token: ${{ secrets.REPO_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           echo "Deploying..."
 
           MACHINE="cml$(date +%s)"
           docker-machine create \
               --driver azure \
-              --azure-subscription-id $sub \
+              --azure-subscription-id $AZURE_SUBSCRIPTION_ID \
               --azure-ssh-user azureuser \
+              --azure-size "Standard_DS2_v2" \
               $MACHINE
 
           eval "$(docker-machine env --shell sh $MACHINE)"
