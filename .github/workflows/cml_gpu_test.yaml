@@ -17,7 +17,7 @@ jobs:
               --driver azure \
               --azure-subscription-id $AZURE_SUBSCRIPTION_ID \
               --azure-ssh-user azureuser \
-              --azure-size "Standard_DS2_v2" \
+              --azure-size "Standard_NC6" \
               $MACHINE
 
           eval "$(docker-machine env --shell sh $MACHINE)"
@@ -36,7 +36,7 @@ jobs:
            dvcorg/cml-py3 && \
 
           sleep 20 && echo "Deployed $MACHINE"
-          ) || (echo y | docker-machine rm $MACHINE && exit 1)
+          ) || (docker-machine rm -f $MACHINE && exit 1)
   train:
     needs: deploy-cloud-runner
     runs-on: [self-hosted, cml]
@@ -47,6 +47,7 @@ jobs:
         env:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          nvidia-smi
           python -m pip install --upgrade pip
           pip install -e "."
           pip install -r requirements/requirements.txt
