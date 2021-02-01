@@ -133,8 +133,7 @@ Although CleverHans is likely to work on many other machine configurations, we
 currently [test it](https://travis-ci.org/tensorflow/cleverhans) it with Python
 3.5 and TensorFlow {1.8, 1.12} on Ubuntu 14.04.5 LTS (Trusty Tahr).
 Support for Python 2.7 is deprecated.
-CleverHans 3.0.1 supports Python 2.7 and the master branch is likely to
-continue to work in Python 2.7 for some time, but we no longer run the tests
+CleverHans 3.1.0 supports Python 2.7, but we no longer run the tests
 in Python 2.7 and we do not plan to fix bugs affecting only Python 2.7 after
 2019-07-04.
 Support for TensorFlow prior to 1.12 is deprecated.
@@ -236,7 +235,7 @@ When reporting benchmarks, please:
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v3.0.1 of CleverHans. On a test set modified by the
+adversarial attack using v3.1.0 of CleverHans. On a test set modified by the
 `FastGradientMethod` with a max-norm `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Citing this work
