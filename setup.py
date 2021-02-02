@@ -16,8 +16,8 @@ setup(name='cleverhans',
           "joblib",
       ],
       extras_require={
-          "jax": ["jax>=0.2.9"],
-          "tf": ["tensorflow>=2.4.0"],
+          "jax": ["jax>=0.2.9", "jaxlib"],
+          "tf": ["tensorflow>=2.4.0", "tensorflow-probability"],
           "pytorch": ["torch>=1.7.0", "torchvision>=0.8.0"],
       },
       packages=find_packages())
