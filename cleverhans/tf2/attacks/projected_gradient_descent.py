@@ -3,8 +3,8 @@
 import numpy as np
 import tensorflow as tf
 
-from cleverhans.tf2 import fast_gradient_method
-from cleverhans.tf2 import clip_eta, random_lp_vector
+from cleverhans.tf2.attacks.fast_gradient_method import fast_gradient_method
+from cleverhans.tf2.utils import clip_eta, random_lp_vector
 
 
 def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm, loss_fn=None,

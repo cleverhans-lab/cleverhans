@@ -3,6 +3,7 @@
 import numpy as np
 import tensorflow as tf
 
+from cleverhans.tf2.utils import optimize_linear, compute_gradient
 
 def fast_gradient_method(model_fn, x, eps, norm, loss_fn=None, clip_min=None, clip_max=None, y=None,
                          targeted=False, sanity_checks=False):
@@ -62,73 +63,3 @@ def fast_gradient_method(model_fn, x, eps, norm, loss_fn=None, clip_min=None, cl
   if sanity_checks:
     assert np.all(asserts)
   return adv_x
-
-
-# Due to performance reasons, this function is wrapped inside of tf.function decorator.
-# Not using the decorator here, or letting the user wrap the attack in tf.function is way
-# slower on Tensorflow 2.0.0-alpha0.
-@tf.function
-def compute_gradient(model_fn, loss_fn, x, y, targeted):
-  """
-  Computes the gradient of the loss with respect to the input tensor.
-  :param model_fn: a callable that takes an input tensor and returns the model logits.
-  :param loss_fn: loss function that takes (labels, logits) as arguments and returns loss.
-  :param x: input tensor
-  :param y: Tensor with true labels. If targeted is true, then provide the target label.
-  :param targeted:  bool. Is the attack targeted or untargeted? Untargeted, the default, will
-                    try to make the label incorrect. Targeted will instead try to move in the
-                    direction of being more like y.
-  :return: A tensor containing the gradient of the loss with respect to the input tensor.
-  """
-
-  with tf.GradientTape() as g:
-    g.watch(x)
-    # Compute loss
-    loss = loss_fn(labels=y, logits=model_fn(x))
-    if targeted:  # attack is targeted, minimize loss of target label rather than maximize loss of correct label
-      loss = -loss
-
-  # Define gradient of loss wrt input
-  grad = g.gradient(loss, x)
-  return grad
-
-
-def optimize_linear(grad, eps, norm=np.inf):
-  """
-  Solves for the optimal input to a linear function under a norm constraint.
-
-  Optimal_perturbation = argmax_{eta, ||eta||_{norm} < eps} dot(eta, grad)
-
-  :param grad: tf tensor containing a batch of gradients
-  :param eps: float scalar specifying size of constraint region
-  :param norm: int specifying order of norm
-  :returns:
-    tf tensor containing optimal perturbation
-  """
-
-  # Convert the iterator returned by `range` into a list.
-  axis = list(range(1, len(grad.get_shape())))
-  avoid_zero_div = 1e-12
-  if norm == np.inf:
-    # Take sign of gradient
-    optimal_perturbation = tf.sign(grad)
-    # The following line should not change the numerical results. It applies only because
-    # `optimal_perturbation` is the output of a `sign` op, which has zero derivative anyway.
-    # It should not be applied for the other norms, where the perturbation has a non-zero derivative.
-    optimal_perturbation = tf.stop_gradient(optimal_perturbation)
-  elif norm == 1:
-    abs_grad = tf.abs(grad)
-    sign = tf.sign(grad)
-    max_abs_grad = tf.reduce_max(abs_grad, axis, keepdims=True)
-    tied_for_max = tf.dtypes.cast(tf.equal(abs_grad, max_abs_grad), dtype=tf.float32)
-    num_ties = tf.reduce_sum(tied_for_max, axis, keepdims=True)
-    optimal_perturbation = sign * tied_for_max / num_ties
-  elif norm == 2:
-    square = tf.maximum(avoid_zero_div, tf.reduce_sum(tf.square(grad), axis, keepdims=True))
-    optimal_perturbation = grad / tf.sqrt(square)
-  else:
-    raise NotImplementedError("Only L-inf, L1 and L2 norms are currently implemented.")
-
-  # Scale perturbation to be the solution for the norm=eps rather than norm=1 problem
-  scaled_perturbation = tf.multiply(eps, optimal_perturbation)
-  return scaled_perturbation

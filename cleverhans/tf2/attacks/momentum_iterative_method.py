@@ -3,8 +3,8 @@
 import numpy as np
 import tensorflow as tf
 
-from cleverhans.tf2 import optimize_linear, compute_gradient
-from cleverhans.tf2 import clip_eta
+from cleverhans.tf2.utils import optimize_linear, compute_gradient
+from cleverhans.tf2.utils import clip_eta
 
 
 def momentum_iterative_method(model_fn, x, eps=0.3, eps_iter=0.06, nb_iter=10, norm=np.inf,
