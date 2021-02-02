@@ -113,7 +113,6 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm,
 
   asserts.append(eps_iter <= eps)
   if norm == np.inf and clip_min is not None:
-    # TODO necessary to cast clip_min and clip_max to x.dtype?
     asserts.append(eps + clip_min <= clip_max)
 
   if sanity_checks:

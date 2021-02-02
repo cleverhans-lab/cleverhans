@@ -36,8 +36,9 @@ def clip_eta(eta, norm, eps):
         torch.tensor(1., dtype=eta.dtype, device=eta.device),
         eps / norm
         )
-    eta *= factor
+    eta = eta * factor
   return eta
+
 
 def get_or_guess_labels(model, x, **kwargs):
   """
@@ -84,7 +85,6 @@ def optimize_linear(grad, eps, norm=np.inf):
     # Take sign of gradient
     optimal_perturbation = torch.sign(grad)
   elif norm == 1:
-    abs_grad = torch.abs(grad)
     sign = torch.sign(grad)
     red_ind = list(range(1, len(grad.size())))
     abs_grad = torch.abs(grad)
@@ -97,23 +97,12 @@ def optimize_linear(grad, eps, norm=np.inf):
     for red_scalar in red_ind:
       num_ties = torch.sum(num_ties, red_scalar, keepdim=True)
     optimal_perturbation = sign * max_mask / num_ties
-    # TODO integrate below to a test file
-    # check that the optimal perturbations have been correctly computed
-    opt_pert_norm = optimal_perturbation.abs().sum(dim=red_ind)
-    assert torch.all(opt_pert_norm == torch.ones_like(opt_pert_norm))
   elif norm == 2:
     square = torch.max(
         avoid_zero_div,
         torch.sum(grad ** 2, red_ind, keepdim=True)
         )
     optimal_perturbation = grad / torch.sqrt(square)
-    # TODO integrate below to a test file
-    # check that the optimal perturbations have been correctly computed
-    opt_pert_norm = optimal_perturbation.pow(2).sum(dim=red_ind, keepdim=True).sqrt()
-    one_mask = (
-        (square <= avoid_zero_div).to(torch.float) * opt_pert_norm +
-        (square > avoid_zero_div).to(torch.float))
-    assert torch.allclose(opt_pert_norm, one_mask, rtol=1e-05, atol=1e-08)
   else:
     raise NotImplementedError("Only L-inf, L1 and L2 norms are "
                               "currently implemented.")

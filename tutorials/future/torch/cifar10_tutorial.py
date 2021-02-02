@@ -62,6 +62,8 @@ def main(_):
       if FLAGS.adv_train:
         # Replace clean example with adversarial example for adversarial training
         x = projected_gradient_descent(net, x, FLAGS.eps, 0.01, 40, np.inf)
+        # Stop backward from entering the graph that created the adv example
+        x = x.clone().detach() 
       optimizer.zero_grad()
       loss = loss_fn(net(x), y)
       loss.backward()
