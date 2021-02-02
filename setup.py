@@ -15,7 +15,8 @@ setup(name='cleverhans',
           'tensorflow-probability',
           'joblib',
           'easydict',
-          'absl'
+          'absl',
+          'six'
       ],
       extras_require={
           'jax': ['jax>=0.2.9', 'jaxlib'],
