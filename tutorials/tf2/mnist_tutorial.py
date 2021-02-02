@@ -6,7 +6,7 @@ from easydict import EasyDict
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D
 
-from cleverhans.future.tf2.attacks import projected_gradient_descent, fast_gradient_method
+from cleverhans.tf2 import projected_gradient_descent, fast_gradient_method
 
 FLAGS = flags.FLAGS
 

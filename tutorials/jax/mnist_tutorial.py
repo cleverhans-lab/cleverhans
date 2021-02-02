@@ -5,13 +5,12 @@ import itertools
 import time
 import jax.numpy as np
 import numpy.random as npr
-from jax.config import config
 from jax import jit, grad, random
 from jax.experimental import optimizers
 from jax.experimental import stax
-from jax.experimental.stax import Dense, Relu, logsoftmax
+from jax.experimental.stax import logsoftmax
 
-from cleverhans.future.jax.attacks import fast_gradient_method, projected_gradient_descent
+from cleverhans.jax.attacks import fast_gradient_method, projected_gradient_descent
 
 FLAGS = flags.FLAGS
 

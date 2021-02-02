@@ -2,7 +2,7 @@
 The BasicIterativeMethod attack.
 """
 
-from cleverhans.future.tf2.attacks.projected_gradient_descent import projected_gradient_descent
+from cleverhans.tf2 import projected_gradient_descent
 
 
 def basic_iterative_method(model_fn, x, eps, eps_iter, nb_iter, norm,

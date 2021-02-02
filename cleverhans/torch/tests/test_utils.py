@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 
-import cleverhans.future.torch.utils as utils
+import cleverhans.torch.utils as utils
 from cleverhans.devtools.checks import CleverHansTest
 
 class TestOptimizeLinear(CleverHansTest):

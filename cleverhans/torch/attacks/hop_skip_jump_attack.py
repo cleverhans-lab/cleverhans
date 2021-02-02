@@ -4,8 +4,6 @@ Boundary Attack++
 import numpy as np
 import torch
 
-from cleverhans.future.torch.utils import get_or_guess_labels
-
 
 def hop_skip_jump_attack(model_fn, x, norm,
                          y_target=None, image_target=None, initial_num_evals=100,

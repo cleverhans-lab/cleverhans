@@ -27,7 +27,7 @@ from six.moves.urllib.request import urlretrieve
 
 import numpy as np
 
-from cleverhans.future.jax.utils import one_hot, partial_flatten
+from cleverhans.jax.utils import one_hot, partial_flatten
 
 
 _DATA = "/tmp/jax_example_data/"

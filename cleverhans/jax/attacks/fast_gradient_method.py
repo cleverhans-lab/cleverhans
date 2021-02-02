@@ -2,7 +2,7 @@ import jax.numpy as np
 from jax import grad, vmap
 from jax.experimental.stax import logsoftmax
 
-from cleverhans.future.jax.utils import one_hot
+from cleverhans.jax.utils import one_hot
 
 
 def fast_gradient_method(model_fn, x, eps, norm, clip_min=None, clip_max=None, y=None,

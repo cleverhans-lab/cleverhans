@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 from torch import optim
-from cleverhans.future.torch.utils import clip_eta
+from cleverhans.torch.utils import clip_eta
 
 
 def spsa(model_fn, x, eps, nb_iter, norm=np.inf, clip_min=-np.inf, clip_max=np.inf, y=None,

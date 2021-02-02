@@ -1,4 +1,3 @@
-import numpy as np
 import math
 import numpy as np
 import tensorflow as tf
@@ -6,9 +5,9 @@ import tensorflow_datasets as tfds
 from absl import app, flags
 from easydict import EasyDict
 from tensorflow.keras import Model
-from tensorflow.keras.layers import AveragePooling2D, Dense, Flatten, Conv2D, MaxPool2D
+from tensorflow.keras.layers import AveragePooling2D, Conv2D
 
-from cleverhans.future.tf2.attacks import projected_gradient_descent, fast_gradient_method
+from cleverhans.tf2 import projected_gradient_descent, fast_gradient_method
 
 FLAGS = flags.FLAGS
 
