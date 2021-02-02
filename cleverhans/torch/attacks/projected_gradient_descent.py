@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 
-from cleverhans.torch import fast_gradient_method
+from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.torch.utils import clip_eta
 
 

@@ -1,6 +1,6 @@
 import jax.numpy as np
 
-from cleverhans.jax.attacks import fast_gradient_method
+from cleverhans.jax.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.jax.utils import clip_eta, one_hot
 
 
