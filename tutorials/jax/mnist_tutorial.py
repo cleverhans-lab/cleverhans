@@ -10,7 +10,8 @@ from jax.experimental import optimizers
 from jax.experimental import stax
 from jax.experimental.stax import logsoftmax
 
-from cleverhans.jax.attacks import fast_gradient_method, projected_gradient_descent
+from cleverhans.jax.attacks.fast_gradient_method import *
+from cleverhans.jax.attacks.projected_gradient_descent import *
 
 FLAGS = flags.FLAGS
 

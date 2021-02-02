@@ -6,7 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 
-from cleverhans.torch import fast_gradient_method, projected_gradient_descent
+from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method
+from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
 FLAGS = flags.FLAGS
 
