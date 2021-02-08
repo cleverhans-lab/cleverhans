@@ -15,12 +15,12 @@ setup(name='cleverhans',
           'tensorflow-probability',
           'joblib',
           'easydict',
-          'absl',
+          'absl-py',
           'six'
       ],
       extras_require={
           'jax': ['jax>=0.2.9', 'jaxlib'],
-          'tf': ['tensorflow>=2.4.0', 'tensorflow-probability'],
+          'tf': ['tensorflow>=2.4.0', 'tensorflow-probability', 'tensorflow-datasets'],
           'pytorch': ['torch>=1.7.0', 'torchvision>=0.8.0'],
       },
       packages=find_packages())
