@@ -2,8 +2,8 @@ from setuptools import find_packages
 from setuptools import setup
 
 setup(name='cleverhans',
-      version='3.0.1',
-      url='https://github.com/tensorflow/cleverhans',
+      version='3.1.0',
+      url='https://github.com/cleverhans-lab/cleverhans/',
       license='MIT',
       install_requires=[
           'nose',
@@ -20,6 +20,6 @@ setup(name='cleverhans',
       extras_require={
           "tf": ["tensorflow>=1.0.0"],
           "tf_gpu": ["tensorflow-gpu>=1.0.0"],
-          "pytorch": ["torch==0.4.0", "torchvision==0.2.1"],
+          "pytorch": ["torch>=1.1.0", "torchvision==0.3.0"],
       },
       packages=find_packages())

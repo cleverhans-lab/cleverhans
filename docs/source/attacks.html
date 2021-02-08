@@ -1,0 +1,1856 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>attacks module &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="model module" href="model.html" />
+    <link rel="prev" title="CleverHans Documentation" href="../index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-cleverhans.attacks">
+<span id="attacks-module"></span><h1><cite>attacks</cite> module<a class="headerlink" href="#module-cleverhans.attacks" title="Permalink to this headline">¶</a></h1>
+<p>The Attack class, providing a universal abstract interface describing attacks, and many implementations of it.</p>
+<dl class="py class">
+<dt id="cleverhans.attacks.ABCMeta">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">ABCMeta</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">bases</span></em>, <em class="sig-param"><span class="n">namespace</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/abc.html#ABCMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.ABCMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>Metaclass for defining Abstract Base Classes (ABCs).</p>
+<p>Use this metaclass to create an ABC.  An ABC can be subclassed
+directly, and then acts as a mix-in class.  You can also register
+unrelated concrete classes (even built-in classes) and unrelated
+ABCs as ‘virtual subclasses’ – these and their descendants will
+be considered subclasses of the registering ABC by the built-in
+issubclass() function, but the registering ABC won’t show up in
+their MRO (Method Resolution Order) nor will method
+implementations defined by the registering ABC be callable (not
+even via super()).</p>
+<dl class="py method">
+<dt id="cleverhans.attacks.ABCMeta.register">
+<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/abc.html#ABCMeta.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.ABCMeta.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a virtual subclass of an ABC.</p>
+<p>Returns the subclass, to allow usage as a class decorator.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.Attack">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">Attack</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/attack.html#Attack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Attack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Abstract base class for all attack classes.</p>
+<dl class="py method">
+<dt id="cleverhans.attacks.Attack.construct_graph">
+<code class="sig-name descname">construct_graph</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fixed</span></em>, <em class="sig-param"><span class="n">feedable</span></em>, <em class="sig-param"><span class="n">x_val</span></em>, <em class="sig-param"><span class="n">hash_key</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/attack.html#Attack.construct_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Attack.construct_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the graph required to run the attack through generate_np.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fixed</strong> – Structural elements that require defining a new graph.</p></li>
+<li><p><strong>feedable</strong> – Arguments that can be fed to the same graph when
+they take different values.</p></li>
+<li><p><strong>x_val</strong> – symbolic adversarial example</p></li>
+<li><p><strong>hash_key</strong> – the key used to store this graph in our cache</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Attack.construct_variables">
+<code class="sig-name descname">construct_variables</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/attack.html#Attack.construct_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Attack.construct_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the inputs to the attack graph to be used by generate_np.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – Keyword arguments to generate_np.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Structural arguments
+Feedable arguments
+Output of <cite>arg_type</cite> describing feedable arguments
+A unique key</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Attack.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/attack.html#Attack.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Attack.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the attack’s symbolic graph for adversarial examples. This
+method should be overriden in any child class that implements an
+attack that is expressable symbolically. Otherwise, it will wrap the
+numerical implementation as a symbolic operator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>**kwargs</strong> – <p>optional parameters used by child classes.
+Each child class defines additional parameters as needed.
+Child classes that use the following concepts should use the following
+names:</p>
+<blockquote>
+<div><p>clip_min: minimum feature value
+clip_max: maximum feature value
+eps: size of norm constraint on adversarial perturbation
+ord: order of norm constraint
+nb_iter: number of iterations
+eps_iter: size of norm constraint on iteration
+y_target: if specified, the attack is targeted.
+y: Do not specify if y_target is specified.</p>
+<blockquote>
+<div><p>If specified, the attack is untargeted, aims to make the output
+class not be y.
+If neither y_target nor y is specified, y is inferred by having
+the model classify the input.</p>
+</div></blockquote>
+</div></blockquote>
+<p>For other concepts, it’s generally a good idea to read other classes
+and check for name consistency.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A symbolic representation of the adversarial examples.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Attack.generate_np">
+<code class="sig-name descname">generate_np</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x_val</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/attack.html#Attack.generate_np"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Attack.generate_np" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate adversarial examples and return them as a NumPy array.
+Sub-classes <em>should not</em> implement this method unless they must
+perform special handling of arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_val</strong> – A NumPy array with the original inputs.</p></li>
+<li><p><strong>**kwargs</strong> – <p>optional parameters used by child classes.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A NumPy array holding the adversarial examples.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Attack.get_or_guess_labels">
+<code class="sig-name descname">get_or_guess_labels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/attack.html#Attack.get_or_guess_labels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Attack.get_or_guess_labels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the label to use in generating an adversarial example for x.
+The kwargs are fed directly from the kwargs of the attack.
+If ‘y’ is in kwargs, then assume it’s an untargeted attack and
+use that as the label.
+If ‘y_target’ is in kwargs and is not none, then assume it’s a
+targeted attack and use that as the label.
+Otherwise, use the model’s prediction as the label and perform an
+untargeted attack.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Attack.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/attack.html#Attack.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Attack.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> – a dictionary of attack-specific parameters</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True when parsing was successful</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.BasicIterativeMethod">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">BasicIterativeMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/basic_iterative_method.html#BasicIterativeMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.BasicIterativeMethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.projected_gradient_descent.ProjectedGradientDescent</span></code></p>
+<p>The BasicIterativeMethod attack.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.BoundaryAttackPlusPlus">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">BoundaryAttackPlusPlus</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/hop_skip_jump_attack.html#BoundaryAttackPlusPlus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.BoundaryAttackPlusPlus" title="Permalink to this definition">¶</a></dt>
+<dd><p>A previous name used for HopSkipJumpAttack.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.CallableModelWrapper">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">CallableModelWrapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">callable_fn</span></em>, <em class="sig-param"><span class="n">output_layer</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#CallableModelWrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.CallableModelWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="model.html#cleverhans.model.Model" title="cleverhans.model.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.model.Model</span></code></a></p>
+<p>A wrapper that turns a callable into a valid Model</p>
+<dl class="py method">
+<dt id="cleverhans.attacks.CallableModelWrapper.fprop">
+<code class="sig-name descname">fprop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#CallableModelWrapper.fprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.CallableModelWrapper.fprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward propagation to compute the model outputs.
+:param x: A symbolic representation of the network input
+:return: A dictionary mapping layer names to the symbolic</p>
+<blockquote>
+<div><p>representation of their output.</p>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.CarliniWagnerL2">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">CarliniWagnerL2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/carlini_wagner_l2.html#CarliniWagnerL2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.CarliniWagnerL2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>This attack was originally proposed by Carlini and Wagner. It is an
+iterative attack that finds adversarial examples on many defenses that
+are robust to other attacks.
+Paper link: <a class="reference external" href="https://arxiv.org/abs/1608.04644">https://arxiv.org/abs/1608.04644</a></p>
+<p>At a high level, this attack is an iterative attack using Adam and
+a specially-chosen loss function to find adversarial examples with
+lower distortion than other attacks. This comes at the cost of speed,
+as this attack is often much slower than others.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.CarliniWagnerL2.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/carlini_wagner_l2.html#CarliniWagnerL2.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.CarliniWagnerL2.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tensor that constructs adversarial examples for the given
+input. Generate uses tf.py_func in order to operate over tensors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – A tensor with the inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.CarliniWagnerL2.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">y_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">confidence</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">learning_rate</span><span class="o">=</span><span class="default_value">0.005</span></em>, <em class="sig-param"><span class="n">binary_search_steps</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">max_iterations</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">abort_early</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">initial_const</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/carlini_wagner_l2.html#CarliniWagnerL2.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.CarliniWagnerL2.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> – (optional) A tensor with the true labels for an untargeted
+attack. If None (and y_target is None) then use the
+original labels the classifier assigns.</p></li>
+<li><p><strong>y_target</strong> – (optional) A tensor with the target labels for a
+targeted attack.</p></li>
+<li><p><strong>confidence</strong> – Confidence of adversarial examples: higher produces
+examples with larger l2 distortion, but more
+strongly classified as adversarial.</p></li>
+<li><p><strong>batch_size</strong> – Number of attacks to run simultaneously.</p></li>
+<li><p><strong>learning_rate</strong> – The learning rate for the attack algorithm.
+Smaller values produce better results but are
+slower to converge.</p></li>
+<li><p><strong>binary_search_steps</strong> – The number of times we perform binary
+search to find the optimal tradeoff-
+constant between norm of the purturbation
+and confidence of the classification.</p></li>
+<li><p><strong>max_iterations</strong> – The maximum number of iterations. Setting this
+to a larger value will produce lower distortion
+results. Using only a few iterations requires
+a larger learning rate, and will produce larger
+distortion results.</p></li>
+<li><p><strong>abort_early</strong> – If true, allows early aborts if gradient descent
+is unable to make progress (i.e., gets stuck in
+a local minimum).</p></li>
+<li><p><strong>initial_const</strong> – The initial tradeoff-constant to use to tune the
+relative importance of size of the perturbation
+and confidence of classification.
+If binary_search_steps is large, the initial
+constant is not important. A smaller value of
+this constant gives lower distortion results.</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.DeepFool">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">DeepFool</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/deep_fool.html#DeepFool"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.DeepFool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>DeepFool is an untargeted &amp; iterative attack which is based on an
+iterative linearization of the classifier. The implementation here
+is w.r.t. the L2 norm.
+Paper link: “<a class="reference external" href="https://arxiv.org/pdf/1511.04599.pdf">https://arxiv.org/pdf/1511.04599.pdf</a>”</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.DeepFool.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/deep_fool.html#DeepFool.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.DeepFool.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.DeepFool.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nb_candidate</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">overshoot</span><span class="o">=</span><span class="default_value">0.02</span></em>, <em class="sig-param"><span class="n">max_iter</span><span class="o">=</span><span class="default_value">50</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/deep_fool.html#DeepFool.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.DeepFool.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nb_candidate</strong> – The number of classes to test against, i.e.,
+deepfool only consider nb_candidate classes when
+attacking(thus accelerate speed). The nb_candidate
+classes are chosen according to the prediction
+confidence during implementation.</p></li>
+<li><p><strong>overshoot</strong> – A termination criterion to prevent vanishing updates</p></li>
+<li><p><strong>max_iter</strong> – Maximum number of iteration for deepfool</p></li>
+<li><p><strong>clip_min</strong> – Minimum component value for clipping</p></li>
+<li><p><strong>clip_max</strong> – Maximum component value for clipping</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.ElasticNetMethod">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">ElasticNetMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/elastic_net_method.html#ElasticNetMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.ElasticNetMethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>This attack features L1-oriented adversarial examples and includes
+the C&amp;W L2 attack as a special case (when beta is set to 0).
+Adversarial examples attain similar performance to those
+generated by the C&amp;W L2 attack in the white-box case,
+and more importantly, have improved transferability properties
+and complement adversarial training.
+Paper link: <a class="reference external" href="https://arxiv.org/abs/1709.04114">https://arxiv.org/abs/1709.04114</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.ElasticNetMethod.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/elastic_net_method.html#ElasticNetMethod.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.ElasticNetMethod.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tensor that constructs adversarial examples for the given
+input. Generate uses tf.py_func in order to operate over tensors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – (required) A tensor with the inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.ElasticNetMethod.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">y_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">beta</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">decision_rule</span><span class="o">=</span><span class="default_value">'EN'</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">confidence</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">learning_rate</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">binary_search_steps</span><span class="o">=</span><span class="default_value">9</span></em>, <em class="sig-param"><span class="n">max_iterations</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">abort_early</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">initial_const</span><span class="o">=</span><span class="default_value">0.001</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/elastic_net_method.html#ElasticNetMethod.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.ElasticNetMethod.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> – (optional) A tensor with the true labels for an untargeted
+attack. If None (and y_target is None) then use the
+original labels the classifier assigns.</p></li>
+<li><p><strong>y_target</strong> – (optional) A tensor with the target labels for a
+targeted attack.</p></li>
+<li><p><strong>beta</strong> – Trades off L2 distortion with L1 distortion: higher
+produces examples with lower L1 distortion, at the
+cost of higher L2 (and typically Linf) distortion</p></li>
+<li><p><strong>decision_rule</strong> – EN or L1. Select final adversarial example from
+all successful examples based on the least
+elastic-net or L1 distortion criterion.</p></li>
+<li><p><strong>confidence</strong> – Confidence of adversarial examples: higher produces
+examples with larger l2 distortion, but more
+strongly classified as adversarial.</p></li>
+<li><p><strong>batch_size</strong> – Number of attacks to run simultaneously.</p></li>
+<li><p><strong>learning_rate</strong> – The learning rate for the attack algorithm.
+Smaller values produce better results but are
+slower to converge.</p></li>
+<li><p><strong>binary_search_steps</strong> – The number of times we perform binary
+search to find the optimal tradeoff-
+constant between norm of the perturbation
+and confidence of the classification. Set
+‘initial_const’ to a large value and fix
+this param to 1 for speed.</p></li>
+<li><p><strong>max_iterations</strong> – The maximum number of iterations. Setting this
+to a larger value will produce lower distortion
+results. Using only a few iterations requires
+a larger learning rate, and will produce larger
+distortion results.</p></li>
+<li><p><strong>abort_early</strong> – If true, allows early abort when the total
+loss starts to increase (greatly speeds up attack,
+but hurts performance, particularly on ImageNet)</p></li>
+<li><p><strong>initial_const</strong> – The initial tradeoff-constant to use to tune the
+relative importance of size of the perturbation
+and confidence of classification.
+If binary_search_steps is large, the initial
+constant is not important. A smaller value of
+this constant gives lower distortion results.
+For computational efficiency, fix
+binary_search_steps to 1 and set this param
+to a large value.</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.FastFeatureAdversaries">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">FastFeatureAdversaries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_feature_adversaries.html#FastFeatureAdversaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.FastFeatureAdversaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>This is a fast implementation of “Feature Adversaries”, an attack
+against a target internal representation of a model.
+“Feature adversaries” were originally introduced in (Sabour et al. 2016),
+where the optimization was done using LBFGS.
+Paper link: <a class="reference external" href="https://arxiv.org/abs/1511.05122">https://arxiv.org/abs/1511.05122</a></p>
+<p>This implementation is similar to “Basic Iterative Method”
+(Kurakin et al. 2016) but applied to the internal representations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.FastFeatureAdversaries.attack_single_step">
+<code class="sig-name descname">attack_single_step</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">eta</span></em>, <em class="sig-param"><span class="n">g_feat</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_feature_adversaries.html#FastFeatureAdversaries.attack_single_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.FastFeatureAdversaries.attack_single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>TensorFlow implementation of the Fast Feature Gradient. This is a
+single step attack similar to Fast Gradient Method that attacks an
+internal representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – the input placeholder</p></li>
+<li><p><strong>eta</strong> – A tensor the same shape as x that holds the perturbation.</p></li>
+<li><p><strong>g_feat</strong> – model’s internal tensor for guide</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tensor for the adversarial example</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.FastFeatureAdversaries.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">g</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_feature_adversaries.html#FastFeatureAdversaries.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.FastFeatureAdversaries.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>g</strong> – The target value of the symbolic representation</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.FastFeatureAdversaries.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">eps</span><span class="o">=</span><span class="default_value">0.3</span></em>, <em class="sig-param"><span class="n">eps_iter</span><span class="o">=</span><span class="default_value">0.05</span></em>, <em class="sig-param"><span class="n">nb_iter</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">ord</span><span class="o">=</span><span class="default_value">inf</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_feature_adversaries.html#FastFeatureAdversaries.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.FastFeatureAdversaries.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<p>Attack-specific parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>layer</strong> – (required str) name of the layer to target.</p></li>
+<li><p><strong>eps</strong> – (optional float) maximum distortion of adversarial example
+compared to original input</p></li>
+<li><p><strong>eps_iter</strong> – (optional float) step size for each attack iteration</p></li>
+<li><p><strong>nb_iter</strong> – (optional int) Number of attack iterations.</p></li>
+<li><p><strong>ord</strong> – (optional) Order of the norm (mimics Numpy).
+Possible values: np.inf, 1 or 2.</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.FastGradientMethod">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">FastGradientMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_gradient_method.html#FastGradientMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.FastGradientMethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>This attack was originally implemented by Goodfellow et al. (2014) with the
+infinity norm (and is known as the “Fast Gradient Sign Method”). This
+implementation extends the attack to other norms, and is therefore called
+the Fast Gradient Method.
+Paper link: <a class="reference external" href="https://arxiv.org/abs/1412.6572">https://arxiv.org/abs/1412.6572</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.FastGradientMethod.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_gradient_method.html#FastGradientMethod.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.FastGradientMethod.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the graph for Fast Gradient Method adversarial examples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.FastGradientMethod.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param">eps=0.3</em>, <em class="sig-param">ord=inf</em>, <em class="sig-param">loss_fn=&lt;function softmax_cross_entropy_with_logits&gt;</em>, <em class="sig-param">y=None</em>, <em class="sig-param">y_target=None</em>, <em class="sig-param">clip_min=None</em>, <em class="sig-param">clip_max=None</em>, <em class="sig-param">clip_grad=False</em>, <em class="sig-param">sanity_checks=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_gradient_method.html#FastGradientMethod.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.FastGradientMethod.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<p>Attack-specific parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eps</strong> – (optional float) attack step size (input variation)</p></li>
+<li><p><strong>ord</strong> – (optional) Order of the norm (mimics NumPy).
+Possible values: np.inf, 1 or 2.</p></li>
+<li><p><strong>loss_fn</strong> – Loss function that takes (labels, logits) as arguments and returns loss</p></li>
+<li><p><strong>y</strong> – (optional) A tensor with the true labels. Only provide
+this parameter if you’d like to use true labels when crafting
+adversarial samples. Otherwise, model predictions are used as
+labels to avoid the “label leaking” effect (explained in this
+paper: <a class="reference external" href="https://arxiv.org/abs/1611.01236">https://arxiv.org/abs/1611.01236</a>). Default is None.
+Labels should be one-hot-encoded.</p></li>
+<li><p><strong>y_target</strong> – (optional) A tensor with the labels to target. Leave
+y_target=None if y is also set. Labels should be
+one-hot-encoded.</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+<li><p><strong>clip_grad</strong> – (optional bool) Ignore gradient components
+at positions where the input is already at the boundary
+of the domain, and the update step will get clipped out.</p></li>
+<li><p><strong>sanity_checks</strong> – bool, if True, include asserts
+(Turn them off to use less runtime / memory or for unit tests that
+intentionally pass strange input)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.HopSkipJumpAttack">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">HopSkipJumpAttack</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/hop_skip_jump_attack.html#HopSkipJumpAttack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.HopSkipJumpAttack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>HopSkipJumpAttack was originally proposed by Chen, Jordan and Wainwright.
+It is a decision-based attack that requires access to output
+labels of a model alone.
+Paper link: <a class="reference external" href="https://arxiv.org/abs/1904.02144">https://arxiv.org/abs/1904.02144</a>
+At a high level, this attack is an iterative attack composed of three
+steps: Binary search to approach the boundary; gradient estimation;
+stepsize search. HopSkipJumpAttack requires fewer model queries than
+Boundary Attack which was based on rejective sampling.
+:param model: cleverhans.model.Model
+:param sess: tf.Session
+:param dtypestr: dtype of the data
+:param kwargs: passed through to super constructor.
+see parse_params for details.</p>
+<dl class="py method">
+<dt id="cleverhans.attacks.HopSkipJumpAttack.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/hop_skip_jump_attack.html#HopSkipJumpAttack.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.HopSkipJumpAttack.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tensor that constructs adversarial examples for the given
+input. Generate uses tf.py_func in order to operate over tensors.
+:param x: A tensor with the inputs.
+:param kwargs: See <cite>parse_params</cite></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.HopSkipJumpAttack.generate_np">
+<code class="sig-name descname">generate_np</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/hop_skip_jump_attack.html#HopSkipJumpAttack.generate_np"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.HopSkipJumpAttack.generate_np" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate adversarial images in a for loop.
+:param y: An array of shape (n, nb_classes) for true labels.
+:param y_target:  An array of shape (n, nb_classes) for target labels.
+Required for targeted attack.
+:param image_target: An array of shape (n, <a href="#id5"><span class="problematic" id="id6">**</span></a>image shape) for initial
+target images. Required for targeted attack.</p>
+<p>See parse_params for other kwargs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.HopSkipJumpAttack.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">image_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">initial_num_evals</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">max_num_evals</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">stepsize_search</span><span class="o">=</span><span class="default_value">'geometric_progression'</span></em>, <em class="sig-param"><span class="n">num_iterations</span><span class="o">=</span><span class="default_value">64</span></em>, <em class="sig-param"><span class="n">gamma</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">constraint</span><span class="o">=</span><span class="default_value">'l2'</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/hop_skip_jump_attack.html#HopSkipJumpAttack.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.HopSkipJumpAttack.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> – A tensor of shape (1, nb_classes) for true labels.</p></li>
+<li><p><strong>y_target</strong> – A tensor of shape (1, nb_classes) for target labels.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Required for targeted attack.
+:param image_target: A tensor of shape (1, <a href="#id7"><span class="problematic" id="id8">**</span></a>image shape) for initial
+target images. Required for targeted attack.
+:param initial_num_evals: initial number of evaluations for</p>
+<blockquote>
+<div><p>gradient estimation.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_num_evals</strong> – maximum number of evaluations for gradient estimation.</p></li>
+<li><p><strong>stepsize_search</strong> – <p>How to search for stepsize; choices are
+‘geometric_progression’, ‘grid_search’.
+‘geometric progression’ initializes the stepsize</p>
+<blockquote>
+<div><p>by ||x_t - x||_p / sqrt(iteration), and keep
+decreasing by half until reaching the target
+side of the boundary. ‘grid_search’ chooses the
+optimal epsilon over a grid, in the scale of
+||x_t - x||_p.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>num_iterations</strong> – The number of iterations.</p></li>
+<li><p><strong>gamma</strong> – The binary search threshold theta is gamma / d^{3/2} for
+l2 attack and gamma / d^2 for linf attack.</p></li>
+<li><p><strong>constraint</strong> – The distance to optimize; choices are ‘l2’, ‘linf’.</p></li>
+<li><p><strong>batch_size</strong> – batch_size for model prediction.</p></li>
+<li><p><strong>verbose</strong> – (boolean) Whether distance at each step is printed.</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.LBFGS">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">LBFGS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/lbfgs.html#LBFGS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.LBFGS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>LBFGS is the first adversarial attack for convolutional neural networks,
+and is a target &amp; iterative attack.
+Paper link: “<a class="reference external" href="https://arxiv.org/pdf/1312.6199.pdf">https://arxiv.org/pdf/1312.6199.pdf</a>”
+:param model: cleverhans.model.Model
+:param sess: tf.Session
+:param dtypestr: dtype of the data
+:param kwargs: passed through to super constructor</p>
+<dl class="py method">
+<dt id="cleverhans.attacks.LBFGS.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/lbfgs.html#LBFGS.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.LBFGS.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tensor that constructs adversarial examples for the given
+input. Generate uses tf.py_func in order to operate over tensors.
+:param x: (required) A tensor with the inputs.
+:param kwargs: See <cite>parse_params</cite></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.LBFGS.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">binary_search_steps</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">max_iterations</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">initial_const</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/lbfgs.html#LBFGS.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.LBFGS.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y_target</strong> – (optional) A tensor with the one-hot target labels.</p></li>
+<li><p><strong>batch_size</strong> – The number of inputs to include in a batch and
+process simultaneously.</p></li>
+<li><p><strong>binary_search_steps</strong> – The number of times we perform binary
+search to find the optimal tradeoff-
+constant between norm of the purturbation
+and cross-entropy loss of classification.</p></li>
+<li><p><strong>max_iterations</strong> – The maximum number of iterations.</p></li>
+<li><p><strong>initial_const</strong> – The initial tradeoff-constant to use to tune the
+relative importance of size of the perturbation
+and cross-entropy loss of the classification.</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.MadryEtAl">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">MadryEtAl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/madry_et_al.html#MadryEtAl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MadryEtAl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.projected_gradient_descent.ProjectedGradientDescent</span></code></p>
+<p>The attack from Madry et al 2017</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.MaxConfidence">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">MaxConfidence</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">base_attacker</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/max_confidence.html#MaxConfidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MaxConfidence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>The MaxConfidence attack.</p>
+<p>An attack designed for use against models that use confidence thresholding
+as a defense.
+If the underlying optimizer is optimal, this attack procedure gives the
+optimal failure rate for every confidence threshold t &gt; 0.5.</p>
+<p>Publication: <a class="reference external" href="https://openreview.net/forum?id=H1g0piA9tQ">https://openreview.net/forum?id=H1g0piA9tQ</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.session.Session</p></li>
+<li><p><strong>base_attacker</strong> – cleverhans.attacks.Attack</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.MaxConfidence.attack">
+<code class="sig-name descname">attack</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">true_y</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/max_confidence.html#MaxConfidence.attack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MaxConfidence.attack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the untargeted attack.
+:param x: The input
+:param true_y: The correct label for <cite>x</cite>. This attack aims to produce misclassification.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.MaxConfidence.attack_class">
+<code class="sig-name descname">attack_class</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">target_y</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/max_confidence.html#MaxConfidence.attack_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MaxConfidence.attack_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the attack on a specific target class.
+:param x: tf Tensor. The input example.
+:param target_y: tf Tensor. The attacker’s desired target class.
+Returns:</p>
+<blockquote>
+<div><p>A targeted adversarial example, intended to be classified as the target class.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.MaxConfidence.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/max_confidence.html#MaxConfidence.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MaxConfidence.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments for the base attacker</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.MaxConfidence.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nb_classes</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/max_confidence.html#MaxConfidence.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MaxConfidence.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> – a dictionary of attack-specific parameters</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True when parsing was successful</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.Model">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">Model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scope</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nb_classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hparams</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">needs_dummy_fprop</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An abstract interface for model wrappers that exposes model symbols
+needed for making an attack. This abstraction removes the dependency on
+any specific neural network package (e.g. Keras) from the core
+code of CleverHans. It can also simplify exposing the hidden features of a
+model when a specific package does not directly expose them.</p>
+<dl class="py attribute">
+<dt id="cleverhans.attacks.Model.O_FEATURES">
+<code class="sig-name descname">O_FEATURES</code><em class="property"> = 'features'</em><a class="headerlink" href="#cleverhans.attacks.Model.O_FEATURES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="cleverhans.attacks.Model.O_LOGITS">
+<code class="sig-name descname">O_LOGITS</code><em class="property"> = 'logits'</em><a class="headerlink" href="#cleverhans.attacks.Model.O_LOGITS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="cleverhans.attacks.Model.O_PROBS">
+<code class="sig-name descname">O_PROBS</code><em class="property"> = 'probs'</em><a class="headerlink" href="#cleverhans.attacks.Model.O_PROBS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.fprop">
+<code class="sig-name descname">fprop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.fprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.fprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward propagation to compute the model outputs.
+:param x: A symbolic representation of the network input
+:return: A dictionary mapping layer names to the symbolic</p>
+<blockquote>
+<div><p>representation of their output.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.get_layer">
+<code class="sig-name descname">get_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">layer</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_layer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.get_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a layer output.
+:param x: tensor, the input to the network.
+:param layer: str, the name of the layer to compute.
+:param <a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs: dict, extra optional params to pass to self.fprop.
+:return: the content of layer <cite>layer</cite></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.get_layer_names">
+<code class="sig-name descname">get_layer_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_layer_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.get_layer_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the list of exposed layers for this model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.get_logits">
+<code class="sig-name descname">get_logits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_logits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.get_logits" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – A symbolic representation (Tensor) of the network input</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A symbolic representation (Tensor) of the output logits</p>
+</dd>
+</dl>
+<p>(i.e., the values fed as inputs to the softmax layer).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.get_params">
+<code class="sig-name descname">get_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.get_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides access to the model’s parameters.
+:return: A list of all Variables defining the model parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.get_predicted_class">
+<code class="sig-name descname">get_predicted_class</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_predicted_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.get_predicted_class" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – A symbolic representation (Tensor) of the network input</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A symbolic representation (Tensor) of the predicted label</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.get_probs">
+<code class="sig-name descname">get_probs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.get_probs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.get_probs" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – A symbolic representation (Tensor) of the network input</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A symbolic representation (Tensor) of the output</p>
+</dd>
+</dl>
+<p>probabilities (i.e., the output values produced by the softmax layer).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.make_input_placeholder">
+<code class="sig-name descname">make_input_placeholder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.make_input_placeholder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.make_input_placeholder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and return a placeholder representing an input to the model.</p>
+<p>This method should respect context managers (e.g. “with tf.device”)
+and should not just return a reference to a single pre-created
+placeholder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.make_label_placeholder">
+<code class="sig-name descname">make_label_placeholder</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.make_label_placeholder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.make_label_placeholder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and return a placeholder representing class labels.</p>
+<p>This method should respect context managers (e.g. “with tf.device”)
+and should not just return a reference to a single pre-created
+placeholder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Model.make_params">
+<code class="sig-name descname">make_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#Model.make_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Model.make_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create all Variables to be returned later by get_params.
+By default this is a no-op.
+Models that need their fprop to be called for their params to be
+created can set <cite>needs_dummy_fprop=True</cite> in the constructor.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.MomentumIterativeMethod">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">MomentumIterativeMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/momentum_iterative_method.html#MomentumIterativeMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MomentumIterativeMethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>The Momentum Iterative Method (Dong et al. 2017). This method won
+the first places in NIPS 2017 Non-targeted Adversarial Attacks and
+Targeted Adversarial Attacks. The original paper used hard labels
+for this attack; no label smoothing.
+Paper link: <a class="reference external" href="https://arxiv.org/pdf/1710.06081.pdf">https://arxiv.org/pdf/1710.06081.pdf</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.MomentumIterativeMethod.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/momentum_iterative_method.html#MomentumIterativeMethod.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MomentumIterativeMethod.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments. See <cite>parse_params</cite> for documentation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.MomentumIterativeMethod.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eps</span><span class="o">=</span><span class="default_value">0.3</span></em>, <em class="sig-param"><span class="n">eps_iter</span><span class="o">=</span><span class="default_value">0.06</span></em>, <em class="sig-param"><span class="n">nb_iter</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ord</span><span class="o">=</span><span class="default_value">inf</span></em>, <em class="sig-param"><span class="n">decay_factor</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">y_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sanity_checks</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/momentum_iterative_method.html#MomentumIterativeMethod.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.MomentumIterativeMethod.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<p>Attack-specific parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eps</strong> – (optional float) maximum distortion of adversarial example
+compared to original input</p></li>
+<li><p><strong>eps_iter</strong> – (optional float) step size for each attack iteration</p></li>
+<li><p><strong>nb_iter</strong> – (optional int) Number of attack iterations.</p></li>
+<li><p><strong>y</strong> – (optional) A tensor with the true labels.</p></li>
+<li><p><strong>y_target</strong> – (optional) A tensor with the labels to target. Leave
+y_target=None if y is also set. Labels should be
+one-hot-encoded.</p></li>
+<li><p><strong>ord</strong> – (optional) Order of the norm (mimics Numpy).
+Possible values: np.inf, 1 or 2.</p></li>
+<li><p><strong>decay_factor</strong> – (optional) Decay factor for the momentum term.</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.Noise">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">Noise</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/noise.html#Noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>A weak attack that just picks a random point in the attacker’s action space.
+When combined with an attack bundling function, this can be used to implement
+random search.</p>
+<p>References:
+<a class="reference external" href="https://arxiv.org/abs/1802.00420">https://arxiv.org/abs/1802.00420</a> recommends random search to help identify</p>
+<blockquote>
+<div><p>gradient masking.</p>
+</div></blockquote>
+<dl class="simple">
+<dt><a class="reference external" href="https://openreview.net/forum?id=H1g0piA9tQ">https://openreview.net/forum?id=H1g0piA9tQ</a> recommends using noise as part</dt><dd><p>of an attack bundling recipe combining many different optimizers to yield
+a stronger optimizer.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.Noise.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/noise.html#Noise.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Noise.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.Noise.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eps</span><span class="o">=</span><span class="default_value">0.3</span></em>, <em class="sig-param"><span class="n">ord</span><span class="o">=</span><span class="default_value">inf</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/noise.html#Noise.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Noise.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<p>Attack-specific parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eps</strong> – (optional float) maximum distortion of adversarial example
+compared to original input</p></li>
+<li><p><strong>ord</strong> – (optional) Order of the norm (mimics Numpy).
+Possible values: np.inf</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.ProjectedGradientDescent">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">ProjectedGradientDescent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="n">default_rand_init</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/projected_gradient_descent.html#ProjectedGradientDescent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.ProjectedGradientDescent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>This class implements either the Basic Iterative Method
+(Kurakin et al. 2016) when rand_init is set to 0. or the
+Madry et al. (2017) method when rand_minmax is larger than 0.
+Paper link (Kurakin et al. 2016): <a class="reference external" href="https://arxiv.org/pdf/1607.02533.pdf">https://arxiv.org/pdf/1607.02533.pdf</a>
+Paper link (Madry et al. 2017): <a class="reference external" href="https://arxiv.org/pdf/1706.06083.pdf">https://arxiv.org/pdf/1706.06083.pdf</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>default_rand_init</strong> – whether to use random initialization by default</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="cleverhans.attacks.ProjectedGradientDescent.FGM_CLASS">
+<code class="sig-name descname">FGM_CLASS</code><a class="headerlink" href="#cleverhans.attacks.ProjectedGradientDescent.FGM_CLASS" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.fast_gradient_method.FastGradientMethod</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.ProjectedGradientDescent.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/projected_gradient_descent.html#ProjectedGradientDescent.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.ProjectedGradientDescent.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.ProjectedGradientDescent.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param">eps=0.3</em>, <em class="sig-param">eps_iter=0.05</em>, <em class="sig-param">nb_iter=10</em>, <em class="sig-param">y=None</em>, <em class="sig-param">ord=inf</em>, <em class="sig-param">loss_fn=&lt;function softmax_cross_entropy_with_logits&gt;</em>, <em class="sig-param">clip_min=None</em>, <em class="sig-param">clip_max=None</em>, <em class="sig-param">y_target=None</em>, <em class="sig-param">rand_init=None</em>, <em class="sig-param">rand_init_eps=None</em>, <em class="sig-param">clip_grad=False</em>, <em class="sig-param">sanity_checks=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/projected_gradient_descent.html#ProjectedGradientDescent.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.ProjectedGradientDescent.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<p>Attack-specific parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eps</strong> – (optional float) maximum distortion of adversarial example
+compared to original input</p></li>
+<li><p><strong>eps_iter</strong> – (optional float) step size for each attack iteration</p></li>
+<li><p><strong>nb_iter</strong> – (optional int) Number of attack iterations.</p></li>
+<li><p><strong>y</strong> – (optional) A tensor with the true labels.</p></li>
+<li><p><strong>y_target</strong> – (optional) A tensor with the labels to target. Leave
+y_target=None if y is also set. Labels should be
+one-hot-encoded.</p></li>
+<li><p><strong>ord</strong> – (optional) Order of the norm (mimics Numpy).
+Possible values: np.inf, 1 or 2.</p></li>
+<li><p><strong>loss_fn</strong> – Loss function that takes (labels, logits) as arguments and returns loss</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+<li><p><strong>rand_init</strong> – (optional) Start the gradient descent from a point chosen
+uniformly at random in the norm ball of radius
+rand_init_eps</p></li>
+<li><p><strong>rand_init_eps</strong> – (optional float) size of the norm ball from which
+the initial starting point is chosen. Defaults to eps</p></li>
+<li><p><strong>clip_grad</strong> – (optional bool) Ignore gradient components at positions
+where the input is already at the boundary of the domain,
+and the update step will get clipped out.</p></li>
+<li><p><strong>sanity_checks</strong> – <p>bool Insert tf asserts checking values
+(Some tests need to run with no sanity checks because the</p>
+<blockquote>
+<div><p>tests intentionally configure the attack strangely)</p>
+</div></blockquote>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.SPSA">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">SPSA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/spsa.html#SPSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SPSA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>This implements the SPSA adversary, as in <a class="reference external" href="https://arxiv.org/abs/1802.05666">https://arxiv.org/abs/1802.05666</a>
+(Uesato et al. 2018). SPSA is a gradient-free optimization method, which
+is useful when the model is non-differentiable, or more generally, the
+gradients do not point in useful directions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="cleverhans.attacks.SPSA.DEFAULT_DELTA">
+<code class="sig-name descname">DEFAULT_DELTA</code><em class="property"> = 0.01</em><a class="headerlink" href="#cleverhans.attacks.SPSA.DEFAULT_DELTA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="cleverhans.attacks.SPSA.DEFAULT_LEARNING_RATE">
+<code class="sig-name descname">DEFAULT_LEARNING_RATE</code><em class="property"> = 0.01</em><a class="headerlink" href="#cleverhans.attacks.SPSA.DEFAULT_LEARNING_RATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="cleverhans.attacks.SPSA.DEFAULT_SPSA_ITERS">
+<code class="sig-name descname">DEFAULT_SPSA_ITERS</code><em class="property"> = 1</em><a class="headerlink" href="#cleverhans.attacks.SPSA.DEFAULT_SPSA_ITERS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="cleverhans.attacks.SPSA.DEFAULT_SPSA_SAMPLES">
+<code class="sig-name descname">DEFAULT_SPSA_SAMPLES</code><em class="property"> = 128</em><a class="headerlink" href="#cleverhans.attacks.SPSA.DEFAULT_SPSA_SAMPLES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.SPSA.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">y_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">eps</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nb_iter</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">is_targeted</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">early_stop_loss_threshold</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">learning_rate</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">delta</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">spsa_samples</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">spsa_iters</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">is_debug</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">epsilon</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_steps</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/spsa.html#SPSA.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SPSA.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs. Must be a batch of size 1.</p></li>
+<li><p><strong>y</strong> – A Tensor or None. The index of the correct label.</p></li>
+<li><p><strong>y_target</strong> – A Tensor or None. The index of the target label in a
+targeted attack.</p></li>
+<li><p><strong>eps</strong> – The size of the maximum perturbation, measured in the
+L-infinity norm.</p></li>
+<li><p><strong>clip_min</strong> – If specified, the minimum input value</p></li>
+<li><p><strong>clip_max</strong> – If specified, the maximum input value</p></li>
+<li><p><strong>nb_iter</strong> – The number of optimization steps.</p></li>
+<li><p><strong>early_stop_loss_threshold</strong> – A float or None. If specified, the
+attack will end as soon as the loss
+is below <cite>early_stop_loss_threshold</cite>.</p></li>
+<li><p><strong>learning_rate</strong> – Learning rate of ADAM optimizer.</p></li>
+<li><p><strong>delta</strong> – Perturbation size used for SPSA approximation.</p></li>
+<li><p><strong>spsa_samples</strong> – Number of inputs to evaluate at a single time.
+The true batch size (the number of evaluated
+inputs for each update) is <cite>spsa_samples *
+spsa_iters</cite></p></li>
+<li><p><strong>batch_size</strong> – Deprecated param that is an alias for spsa_samples</p></li>
+<li><p><strong>spsa_iters</strong> – Number of model evaluations before performing an
+update, where each evaluation is on <cite>spsa_samples</cite>
+different inputs.</p></li>
+<li><p><strong>is_debug</strong> – If True, print the adversarial loss after each update.</p></li>
+<li><p><strong>epsilon</strong> – Deprecated alias for <cite>eps</cite></p></li>
+<li><p><strong>num_steps</strong> – Deprecated alias for <cite>nb_iter</cite>.</p></li>
+<li><p><strong>is_targeted</strong> – Deprecated argument. Ignored.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.SPSA.generate_np">
+<code class="sig-name descname">generate_np</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x_val</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/spsa.html#SPSA.generate_np"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SPSA.generate_np" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate adversarial examples and return them as a NumPy array.
+Sub-classes <em>should not</em> implement this method unless they must
+perform special handling of arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_val</strong> – A NumPy array with the original inputs.</p></li>
+<li><p><strong>**kwargs</strong> – <p>optional parameters used by child classes.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A NumPy array holding the adversarial examples.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.SaliencyMapMethod">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">SaliencyMapMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/saliency_map_method.html#SaliencyMapMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SaliencyMapMethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>The Jacobian-based Saliency Map Method (Papernot et al. 2016).
+Paper link: <a class="reference external" href="https://arxiv.org/pdf/1511.07528.pdf">https://arxiv.org/pdf/1511.07528.pdf</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+<dt class="field-even">Note</dt>
+<dd class="field-even"><p>When not using symbolic implementation in <cite>generate</cite>, <cite>sess</cite> should
+be provided</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.SaliencyMapMethod.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/saliency_map_method.html#SaliencyMapMethod.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SaliencyMapMethod.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.SaliencyMapMethod.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">theta</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">gamma</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">y_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">symbolic_impl</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/saliency_map_method.html#SaliencyMapMethod.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SaliencyMapMethod.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<p>Attack-specific parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta</strong> – (optional float) Perturbation introduced to modified
+components (can be positive or negative)</p></li>
+<li><p><strong>gamma</strong> – (optional float) Maximum percentage of perturbed features</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum component value for clipping</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum component value for clipping</p></li>
+<li><p><strong>y_target</strong> – (optional) Target tensor if the attack is targeted</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.Semantic">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">Semantic</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">center</span></em>, <em class="sig-param"><span class="n">max_val</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/semantic.html#Semantic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Semantic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>Semantic adversarial examples</p>
+<p><a class="reference external" href="https://arxiv.org/abs/1703.06857">https://arxiv.org/abs/1703.06857</a></p>
+<p>Note: data must either be centered (so that the negative image can be
+made by simple negation) or must be in the interval [-1, 1]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>center</strong> – bool
+If True, assumes data has 0 mean so the negative image is just negation.
+If False, assumes data is in the interval [0, max_val]</p></li>
+<li><p><strong>max_val</strong> – float
+Maximum value allowed in the input data</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of data</p></li>
+<li><p><strong>kwargs</strong> – passed through to the super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.Semantic.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/semantic.html#Semantic.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.Semantic.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the attack’s symbolic graph for adversarial examples. This
+method should be overriden in any child class that implements an
+attack that is expressable symbolically. Otherwise, it will wrap the
+numerical implementation as a symbolic operator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>**kwargs</strong> – <p>optional parameters used by child classes.
+Each child class defines additional parameters as needed.
+Child classes that use the following concepts should use the following
+names:</p>
+<blockquote>
+<div><p>clip_min: minimum feature value
+clip_max: maximum feature value
+eps: size of norm constraint on adversarial perturbation
+ord: order of norm constraint
+nb_iter: number of iterations
+eps_iter: size of norm constraint on iteration
+y_target: if specified, the attack is targeted.
+y: Do not specify if y_target is specified.</p>
+<blockquote>
+<div><p>If specified, the attack is untargeted, aims to make the output
+class not be y.
+If neither y_target nor y is specified, y is inferred by having
+the model classify the input.</p>
+</div></blockquote>
+</div></blockquote>
+<p>For other concepts, it’s generally a good idea to read other classes
+and check for name consistency.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A symbolic representation of the adversarial examples.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.SparseL1Descent">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">SparseL1Descent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/sparse_l1_descent.html#SparseL1Descent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SparseL1Descent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>This class implements a variant of Projected Gradient Descent for the l1-norm
+(Tramer and Boneh 2019). The l1-norm case is more tricky than the l-inf and l2
+cases covered by the ProjectedGradientDescent class, because the steepest
+descent direction for the l1-norm is too sparse (it updates a single
+coordinate in the adversarial perturbation in each step). This attack has an
+additional parameter that controls the sparsity of the update step. For
+moderately sparse update steps, the attack vastly outperforms Projected
+Steepest Descent and is competitive with other attacks targeted at the l1-norm
+such as the ElasticNetMethod attack (which is much more computationally
+expensive).
+Paper link (Tramer and Boneh 2019): <a class="reference external" href="https://arxiv.org/pdf/1904.13000.pdf">https://arxiv.org/pdf/1904.13000.pdf</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.SparseL1Descent.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/sparse_l1_descent.html#SparseL1Descent.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SparseL1Descent.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.SparseL1Descent.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eps</span><span class="o">=</span><span class="default_value">10.0</span></em>, <em class="sig-param"><span class="n">eps_iter</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">nb_iter</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">y_target</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rand_init</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">clip_grad</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">grad_sparsity</span><span class="o">=</span><span class="default_value">99</span></em>, <em class="sig-param"><span class="n">sanity_checks</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/sparse_l1_descent.html#SparseL1Descent.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SparseL1Descent.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<p>Attack-specific parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eps</strong> – (optional float) maximum distortion of adversarial example
+compared to original input</p></li>
+<li><p><strong>eps_iter</strong> – (optional float) step size for each attack iteration</p></li>
+<li><p><strong>nb_iter</strong> – (optional int) Number of attack iterations.</p></li>
+<li><p><strong>y</strong> – (optional) A tensor with the true labels.</p></li>
+<li><p><strong>y_target</strong> – (optional) A tensor with the labels to target. Leave
+y_target=None if y is also set. Labels should be
+one-hot-encoded.</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+<li><p><strong>clip_grad</strong> – (optional bool) Ignore gradient components
+at positions where the input is already at the boundary
+of the domain, and the update step will get clipped out.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>:param grad_sparsity (optional) Relative sparsity of the gradient update</dt><dd><p>step, in percent. Only gradient values larger
+than this percentile are retained. This parameter can
+be a scalar, or a vector of the same length as the
+input batch dimension.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sanity_checks</strong> – <p>bool Insert tf asserts checking values
+(Some tests need to run with no sanity checks because the</p>
+<blockquote>
+<div><p>tests intentionally configure the attack strangely)</p>
+</div></blockquote>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.SpatialTransformationMethod">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">SpatialTransformationMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/spatial_transformation_method.html#SpatialTransformationMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SpatialTransformationMethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>Spatial transformation attack</p>
+<dl class="py method">
+<dt id="cleverhans.attacks.SpatialTransformationMethod.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/spatial_transformation_method.html#SpatialTransformationMethod.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SpatialTransformationMethod.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.
+:param x: The model’s symbolic inputs.
+:param kwargs: See <cite>parse_params</cite></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.SpatialTransformationMethod.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_samples</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dx_min</span><span class="o">=</span><span class="default_value">- 0.1</span></em>, <em class="sig-param"><span class="n">dx_max</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">n_dxs</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">dy_min</span><span class="o">=</span><span class="default_value">- 0.1</span></em>, <em class="sig-param"><span class="n">dy_max</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">n_dys</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">angle_min</span><span class="o">=</span><span class="default_value">- 30</span></em>, <em class="sig-param"><span class="n">angle_max</span><span class="o">=</span><span class="default_value">30</span></em>, <em class="sig-param"><span class="n">n_angles</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">black_border_size</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/spatial_transformation_method.html#SpatialTransformationMethod.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.SpatialTransformationMethod.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.
+:param n_samples: (optional) The number of transformations sampled to</p>
+<blockquote>
+<div><p>construct the attack. Set it to None to run
+full grid attack.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dx_min</strong> – (optional float) Minimum translation ratio along x-axis.</p></li>
+<li><p><strong>dx_max</strong> – (optional float) Maximum translation ratio along x-axis.</p></li>
+<li><p><strong>n_dxs</strong> – (optional int) Number of discretized translation ratios
+along x-axis.</p></li>
+<li><p><strong>dy_min</strong> – (optional float) Minimum translation ratio along y-axis.</p></li>
+<li><p><strong>dy_max</strong> – (optional float) Maximum translation ratio along y-axis.</p></li>
+<li><p><strong>n_dys</strong> – (optional int) Number of discretized translation ratios
+along y-axis.</p></li>
+<li><p><strong>angle_min</strong> – (optional float) Largest counter-clockwise rotation
+angle.</p></li>
+<li><p><strong>angle_max</strong> – (optional float) Largest clockwise rotation angle.</p></li>
+<li><p><strong>n_angles</strong> – (optional int) Number of discretized angles.</p></li>
+<li><p><strong>black_border_size</strong> – (optional int) size of the black border in pixels.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cleverhans.attacks.VirtualAdversarialMethod">
+<em class="property">class </em><code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">VirtualAdversarialMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">sess</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypestr</span><span class="o">=</span><span class="default_value">'float32'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/virtual_adversarial_method.html#VirtualAdversarialMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.VirtualAdversarialMethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">cleverhans.attacks.attack.Attack</span></code></p>
+<p>This attack was originally proposed by Miyato et al. (2016) and was used
+for virtual adversarial training.
+Paper link: <a class="reference external" href="https://arxiv.org/abs/1507.00677">https://arxiv.org/abs/1507.00677</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – cleverhans.model.Model</p></li>
+<li><p><strong>sess</strong> – optional tf.Session</p></li>
+<li><p><strong>dtypestr</strong> – dtype of the data</p></li>
+<li><p><strong>kwargs</strong> – passed through to super constructor</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cleverhans.attacks.VirtualAdversarialMethod.generate">
+<code class="sig-name descname">generate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/virtual_adversarial_method.html#VirtualAdversarialMethod.generate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.VirtualAdversarialMethod.generate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate symbolic graph for adversarial examples and return.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – The model’s symbolic inputs.</p></li>
+<li><p><strong>kwargs</strong> – See <cite>parse_params</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cleverhans.attacks.VirtualAdversarialMethod.parse_params">
+<code class="sig-name descname">parse_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eps</span><span class="o">=</span><span class="default_value">2.0</span></em>, <em class="sig-param"><span class="n">nb_iter</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xi</span><span class="o">=</span><span class="default_value">1e-06</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_iterations</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/virtual_adversarial_method.html#VirtualAdversarialMethod.parse_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.VirtualAdversarialMethod.parse_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take in a dictionary of parameters and applies attack-specific checks
+before saving them as attributes.</p>
+<p>Attack-specific parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eps</strong> – (optional float )the epsilon (input variation parameter)</p></li>
+<li><p><strong>nb_iter</strong> – (optional) the number of iterations
+Defaults to 1 if not specified</p></li>
+<li><p><strong>xi</strong> – (optional float) the finite difference parameter</p></li>
+<li><p><strong>clip_min</strong> – (optional float) Minimum input component value</p></li>
+<li><p><strong>clip_max</strong> – (optional float) Maximum input component value</p></li>
+<li><p><strong>num_iterations</strong> – Deprecated alias for <cite>nb_iter</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.clip_eta">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">clip_eta</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eta</span></em>, <em class="sig-param"><span class="n">ord</span></em>, <em class="sig-param"><span class="n">eps</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/utils_tf.html#clip_eta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.clip_eta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to clip the perturbation to epsilon norm ball.
+:param eta: A tensor with the current perturbation.
+:param ord: Order of the norm (mimics Numpy).</p>
+<blockquote>
+<div><p>Possible values: np.inf, 1 or 2.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>eps</strong> – Epsilon, bound of the perturbation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.fgm">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">fgm</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">logits</em>, <em class="sig-param">y=None</em>, <em class="sig-param">eps=0.3</em>, <em class="sig-param">ord=inf</em>, <em class="sig-param">loss_fn=&lt;function softmax_cross_entropy_with_logits&gt;</em>, <em class="sig-param">clip_min=None</em>, <em class="sig-param">clip_max=None</em>, <em class="sig-param">clip_grad=False</em>, <em class="sig-param">targeted=False</em>, <em class="sig-param">sanity_checks=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_gradient_method.html#fgm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.fgm" title="Permalink to this definition">¶</a></dt>
+<dd><p>TensorFlow implementation of the Fast Gradient Method.
+:param x: the input placeholder
+:param logits: output of model.get_logits
+:param y: (optional) A placeholder for the true labels. If targeted</p>
+<blockquote>
+<div><p>is true, then provide the target label. Otherwise, only provide
+this parameter if you’d like to use true labels when crafting
+adversarial samples. Otherwise, model predictions are used as
+labels to avoid the “label leaking” effect (explained in this
+paper: <a class="reference external" href="https://arxiv.org/abs/1611.01236">https://arxiv.org/abs/1611.01236</a>). Default is None.
+Labels should be one-hot-encoded.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eps</strong> – the epsilon (input variation parameter)</p></li>
+<li><p><strong>ord</strong> – (optional) Order of the norm (mimics NumPy).
+Possible values: np.inf, 1 or 2.</p></li>
+<li><p><strong>loss_fn</strong> – Loss function that takes (labels, logits) as arguments and returns loss</p></li>
+<li><p><strong>clip_min</strong> – Minimum float value for adversarial example components</p></li>
+<li><p><strong>clip_max</strong> – Maximum float value for adversarial example components</p></li>
+<li><p><strong>clip_grad</strong> – (optional bool) Ignore gradient components
+at positions where the input is already at the boundary
+of the domain, and the update step will get clipped out.</p></li>
+<li><p><strong>targeted</strong> – Is the attack targeted or untargeted? Untargeted, the
+default, will try to make the label incorrect. Targeted
+will instead try to move in the direction of being more
+like y.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tensor for the adversarial example</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.optimize_linear">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">optimize_linear</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grad</span></em>, <em class="sig-param"><span class="n">eps</span></em>, <em class="sig-param"><span class="n">ord</span><span class="o">=</span><span class="default_value">inf</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/fast_gradient_method.html#optimize_linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.optimize_linear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves for the optimal input to a linear function under a norm constraint.</p>
+<p>Optimal_perturbation = argmax_{eta, ||eta||_{ord} &lt; eps} dot(eta, grad)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>grad</strong> – tf tensor containing a batch of gradients</p></li>
+<li><p><strong>eps</strong> – float scalar specifying size of constraint region</p></li>
+<li><p><strong>ord</strong> – int specifying order of norm</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tf tensor containing optimal perturbation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.projected_optimization">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">projected_optimization</code><span class="sig-paren">(</span><em class="sig-param">loss_fn</em>, <em class="sig-param">input_image</em>, <em class="sig-param">label</em>, <em class="sig-param">epsilon</em>, <em class="sig-param">num_steps</em>, <em class="sig-param">clip_min=None</em>, <em class="sig-param">clip_max=None</em>, <em class="sig-param">optimizer=&lt;cleverhans.attacks.spsa.TensorAdam object&gt;</em>, <em class="sig-param">project_perturbation=&lt;function _project_perturbation&gt;</em>, <em class="sig-param">early_stop_loss_threshold=None</em>, <em class="sig-param">is_debug=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/spsa.html#projected_optimization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.projected_optimization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic projected optimization, generalized to work with approximate
+gradients. Used for e.g. the SPSA attack.</p>
+<dl>
+<dt>Args:</dt><dd><dl class="field-list">
+<dt class="field-odd">param loss_fn</dt>
+<dd class="field-odd"><p>A callable which takes <cite>input_image</cite> and <cite>label</cite> as
+arguments, and returns a batch of loss values. Same
+interface as TensorOptimizer.</p>
+</dd>
+<dt class="field-even">param input_image</dt>
+<dd class="field-even"><p>Tensor, a batch of images</p>
+</dd>
+<dt class="field-odd">param label</dt>
+<dd class="field-odd"><p>Tensor, a batch of labels</p>
+</dd>
+<dt class="field-even">param epsilon</dt>
+<dd class="field-even"><p>float, the L-infinity norm of the maximum allowable
+perturbation</p>
+</dd>
+<dt class="field-odd">param num_steps</dt>
+<dd class="field-odd"><p>int, the number of steps of gradient descent</p>
+</dd>
+<dt class="field-even">param clip_min</dt>
+<dd class="field-even"><p>float, minimum pixel value</p>
+</dd>
+<dt class="field-odd">param clip_max</dt>
+<dd class="field-odd"><p>float, maximum pixel value</p>
+</dd>
+<dt class="field-even">param optimizer</dt>
+<dd class="field-even"><p>A <cite>TensorOptimizer</cite> object</p>
+</dd>
+<dt class="field-odd">param project_perturbation</dt>
+<dd class="field-odd"><p>A function, which will be used to enforce
+some constraint. It should have the same
+signature as <cite>_project_perturbation</cite>.</p>
+</dd>
+<dt class="field-even">param early_stop_loss_threshold</dt>
+<dd class="field-even"><p>A float or None. If specified, the attack will end if the loss is below
+<cite>early_stop_loss_threshold</cite>.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>Enabling this option can have several different effects:</dt><dd><ul class="simple">
+<li><p>Setting the threshold to 0. guarantees that if a successful attack is found, it is returned.
+This increases the attack success rate, because without early stopping the optimizer can accidentally
+bounce back to a point where the attack fails.</p></li>
+<li><p>Early stopping can make the attack run faster because it may run for fewer steps.</p></li>
+<li><p>Early stopping can make the attack run slower because the loss must be calculated at each step.
+The loss is not calculated as part of the normal SPSA optimization procedure.
+For most reasonable choices of hyperparameters, early stopping makes the attack much faster because
+it decreases the number of steps dramatically.</p></li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</dd>
+<dt class="field-odd">param is_debug</dt>
+<dd class="field-odd"><p>A bool. If True, print debug info for attack progress.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>adversarial version of <cite>input_image</cite>, with L-infinity difference less than</dt><dd><p>epsilon, which tries to minimize loss_fn.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>Note that this function is not intended as an Attack by itself. Rather, it
+is designed as a helper function which you can use to write your own attack
+methods. The method uses a tf.while_loop to optimize a loss function in
+a single sess.run() call.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.reduce_max">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">reduce_max</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cleverhans.attacks.reduce_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issues a deprecation warning and passes through the arguments.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.reduce_mean">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">reduce_mean</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cleverhans.attacks.reduce_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issues a deprecation warning and passes through the arguments.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.reduce_sum">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">reduce_sum</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cleverhans.attacks.reduce_sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issues a deprecation warning and passes through the arguments.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.softmax_cross_entropy_with_logits">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">softmax_cross_entropy_with_logits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sentinel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">logits</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dim</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/compat.html#softmax_cross_entropy_with_logits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.softmax_cross_entropy_with_logits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper around tf.nn.softmax_cross_entropy_with_logits_v2 to handle
+deprecated warning</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.vatm">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">vatm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">logits</span></em>, <em class="sig-param"><span class="n">eps</span></em>, <em class="sig-param"><span class="n">num_iterations</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">xi</span><span class="o">=</span><span class="default_value">1e-06</span></em>, <em class="sig-param"><span class="n">clip_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">scope</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/attacks/virtual_adversarial_method.html#vatm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.vatm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tensorflow implementation of the perturbation method used for virtual
+adversarial training: <a class="reference external" href="https://arxiv.org/abs/1507.00677">https://arxiv.org/abs/1507.00677</a>
+:param model: the model which returns the network unnormalized logits
+:param x: the input placeholder
+:param logits: the model’s unnormalized output tensor (the input to</p>
+<blockquote>
+<div><p>the softmax layer)</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eps</strong> – the epsilon (input variation parameter)</p></li>
+<li><p><strong>num_iterations</strong> – the number of iterations</p></li>
+<li><p><strong>xi</strong> – the finite difference parameter</p></li>
+<li><p><strong>clip_min</strong> – optional parameter that can be used to set a minimum
+value for components of the example returned</p></li>
+<li><p><strong>clip_max</strong> – optional parameter that can be used to set a maximum
+value for components of the example returned</p></li>
+<li><p><strong>seed</strong> – the seed for random generator</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tensor for the adversarial example</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.wrapper_warning">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">wrapper_warning</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#wrapper_warning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.wrapper_warning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issue a deprecation warning. Used in multiple places that implemented
+attacks by automatically wrapping a user-supplied callable with a
+CallableModelWrapper with output_layer=”probs”.
+Using “probs” as any part of the attack interface is dangerous.
+We can’t just change output_layer to logits because:
+- that would be a silent interface change. We’d have no way of detecting</p>
+<blockquote>
+<div><p>code that still means to use probs. Note that we can’t just check whether
+the final output op is a softmax—for example, Inception puts a reshape
+after the softmax.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>automatically wrapping user-supplied callables with output_layer=’logits’
+is even worse, see <cite>wrapper_warning_logits</cite></p></li>
+</ul>
+<p>Note: this function will be removed at the same time as the code that
+calls it.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="cleverhans.attacks.wrapper_warning_logits">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">wrapper_warning_logits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cleverhans/model.html#wrapper_warning_logits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#cleverhans.attacks.wrapper_warning_logits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issue a deprecation warning. Used in multiple places that implemented
+attacks by automatically wrapping a user-supplied callable with a
+CallableModelWrapper with output_layer=”logits”.
+This is dangerous because it is under-the-hood automagic that the user
+may not realize has been invoked for them. If they pass a callable
+that actually outputs probs, the probs will be treated as logits,
+resulting in an incorrect cross-entropy loss and severe gradient
+masking.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="cleverhans.attacks.xrange">
+<code class="sig-prename descclassname">cleverhans.attacks.</code><code class="sig-name descname">xrange</code><a class="headerlink" href="#cleverhans.attacks.xrange" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code></p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../index.html" title="previous chapter">CleverHans Documentation</a></li>
+      <li>Next: <a href="model.html" title="next chapter"><cite>model</cite> module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

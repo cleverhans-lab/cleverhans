@@ -1,0 +1,343 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.deep_fool &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.deep_fool</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The DeepFool attack</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.attack</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">wrapper_warning_logits</span><span class="p">,</span> <span class="n">CallableModelWrapper</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils_tf</span>
+
+<span class="n">np_dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+
+<span class="n">_logger</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">create_logger</span><span class="p">(</span><span class="s2">&quot;cleverhans.attacks.deep_fool&quot;</span><span class="p">)</span>
+<span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DeepFool"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.DeepFool">[docs]</a><span class="k">class</span> <span class="nc">DeepFool</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  DeepFool is an untargeted &amp; iterative attack which is based on an</span>
+<span class="sd">  iterative linearization of the classifier. The implementation here</span>
+<span class="sd">  is w.r.t. the L2 norm.</span>
+<span class="sd">  Paper link: &quot;https://arxiv.org/pdf/1511.04599.pdf&quot;</span>
+
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: tf.Session</span>
+<span class="sd">  :param dtypestr: dtype of the data</span>
+<span class="sd">  :param kwargs: passed through to super constructor</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a DeepFool instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+      <span class="n">wrapper_warning_logits</span><span class="p">()</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">CallableModelWrapper</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;logits&#39;</span><span class="p">)</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">DeepFool</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;overshoot&#39;</span><span class="p">,</span> <span class="s1">&#39;max_iter&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_max&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_min&#39;</span><span class="p">,</span> <span class="s1">&#39;nb_candidate&#39;</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="DeepFool.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.DeepFool.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate symbolic graph for adversarial examples and return.</span>
+
+<span class="sd">    :param x: The model&#39;s symbolic inputs.</span>
+<span class="sd">    :param kwargs: See `parse_params`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+        <span class="s1">&#39;Cannot use `generate` when no `sess` was provided&#39;</span>
+    <span class="kn">from</span> <span class="nn">cleverhans.utils_tf</span> <span class="kn">import</span> <span class="n">jacobian_graph</span>
+
+    <span class="c1"># Parse and save attack-specific parameters</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_params</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># Define graph wrt to this input placeholder</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_candidate</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">,</span> \
+        <span class="s1">&#39;nb_candidate should not be greater than nb_classes&#39;</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_candidate</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_candidate</span><span class="p">])</span>
+    <span class="c1"># grads will be the shape [batch_size, nb_candidate, image_size]</span>
+    <span class="n">grads</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">jacobian_graph</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nb_candidate</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Define graph</span>
+    <span class="k">def</span> <span class="nf">deepfool_wrap</span><span class="p">(</span><span class="n">x_val</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;deepfool function for py_func&quot;&quot;&quot;</span>
+      <span class="k">return</span> <span class="n">deepfool_batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">x_val</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">nb_candidate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overshoot</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span><span class="p">)</span>
+
+    <span class="n">wrap</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">py_func</span><span class="p">(</span><span class="n">deepfool_wrap</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span><span class="p">)</span>
+    <span class="n">wrap</span><span class="o">.</span><span class="n">set_shape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">wrap</span></div>
+
+<div class="viewcode-block" id="DeepFool.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.DeepFool.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                   <span class="n">nb_candidate</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                   <span class="n">overshoot</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+                   <span class="n">max_iter</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+                   <span class="n">clip_min</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                   <span class="n">clip_max</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
+                   <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param nb_candidate: The number of classes to test against, i.e.,</span>
+<span class="sd">                         deepfool only consider nb_candidate classes when</span>
+<span class="sd">                         attacking(thus accelerate speed). The nb_candidate</span>
+<span class="sd">                         classes are chosen according to the prediction</span>
+<span class="sd">                         confidence during implementation.</span>
+<span class="sd">    :param overshoot: A termination criterion to prevent vanishing updates</span>
+<span class="sd">    :param max_iter: Maximum number of iteration for deepfool</span>
+<span class="sd">    :param clip_min: Minimum component value for clipping</span>
+<span class="sd">    :param clip_max: Maximum component value for clipping</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_candidate</span> <span class="o">=</span> <span class="n">nb_candidate</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">overshoot</span> <span class="o">=</span> <span class="n">overshoot</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;kwargs is unused and will be removed on or after &quot;</span>
+                    <span class="s2">&quot;2019-04-26.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">True</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">deepfool_batch</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span>
+                   <span class="n">x</span><span class="p">,</span>
+                   <span class="n">pred</span><span class="p">,</span>
+                   <span class="n">logits</span><span class="p">,</span>
+                   <span class="n">grads</span><span class="p">,</span>
+                   <span class="n">X</span><span class="p">,</span>
+                   <span class="n">nb_candidate</span><span class="p">,</span>
+                   <span class="n">overshoot</span><span class="p">,</span>
+                   <span class="n">max_iter</span><span class="p">,</span>
+                   <span class="n">clip_min</span><span class="p">,</span>
+                   <span class="n">clip_max</span><span class="p">,</span>
+                   <span class="n">nb_classes</span><span class="p">,</span>
+                   <span class="n">feed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Applies DeepFool to a batch of inputs</span>
+<span class="sd">  :param sess: TF session</span>
+<span class="sd">  :param x: The input placeholder</span>
+<span class="sd">  :param pred: The model&#39;s sorted symbolic output of logits, only the top</span>
+<span class="sd">               nb_candidate classes are contained</span>
+<span class="sd">  :param logits: The model&#39;s unnormalized output tensor (the input to</span>
+<span class="sd">                 the softmax layer)</span>
+<span class="sd">  :param grads: Symbolic gradients of the top nb_candidate classes, procuded</span>
+<span class="sd">                from gradient_graph</span>
+<span class="sd">  :param X: Numpy array with sample inputs</span>
+<span class="sd">  :param nb_candidate: The number of classes to test against, i.e.,</span>
+<span class="sd">                       deepfool only consider nb_candidate classes when</span>
+<span class="sd">                       attacking(thus accelerate speed). The nb_candidate</span>
+<span class="sd">                       classes are chosen according to the prediction</span>
+<span class="sd">                       confidence during implementation.</span>
+<span class="sd">  :param overshoot: A termination criterion to prevent vanishing updates</span>
+<span class="sd">  :param max_iter: Maximum number of iteration for DeepFool</span>
+<span class="sd">  :param clip_min: Minimum value for components of the example returned</span>
+<span class="sd">  :param clip_max: Maximum value for components of the example returned</span>
+<span class="sd">  :param nb_classes: Number of model output classes</span>
+<span class="sd">  :return: Adversarial examples</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">X_adv</span> <span class="o">=</span> <span class="n">deepfool_attack</span><span class="p">(</span>
+      <span class="n">sess</span><span class="p">,</span>
+      <span class="n">x</span><span class="p">,</span>
+      <span class="n">pred</span><span class="p">,</span>
+      <span class="n">logits</span><span class="p">,</span>
+      <span class="n">grads</span><span class="p">,</span>
+      <span class="n">X</span><span class="p">,</span>
+      <span class="n">nb_candidate</span><span class="p">,</span>
+      <span class="n">overshoot</span><span class="p">,</span>
+      <span class="n">max_iter</span><span class="p">,</span>
+      <span class="n">clip_min</span><span class="p">,</span>
+      <span class="n">clip_max</span><span class="p">,</span>
+      <span class="n">feed</span><span class="o">=</span><span class="n">feed</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X_adv</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np_dtype</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">deepfool_attack</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span>
+                    <span class="n">x</span><span class="p">,</span>
+                    <span class="n">predictions</span><span class="p">,</span>
+                    <span class="n">logits</span><span class="p">,</span>
+                    <span class="n">grads</span><span class="p">,</span>
+                    <span class="n">sample</span><span class="p">,</span>
+                    <span class="n">nb_candidate</span><span class="p">,</span>
+                    <span class="n">overshoot</span><span class="p">,</span>
+                    <span class="n">max_iter</span><span class="p">,</span>
+                    <span class="n">clip_min</span><span class="p">,</span>
+                    <span class="n">clip_max</span><span class="p">,</span>
+                    <span class="n">feed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  TensorFlow implementation of DeepFool.</span>
+<span class="sd">  Paper link: see https://arxiv.org/pdf/1511.04599.pdf</span>
+<span class="sd">  :param sess: TF session</span>
+<span class="sd">  :param x: The input placeholder</span>
+<span class="sd">  :param predictions: The model&#39;s sorted symbolic output of logits, only the</span>
+<span class="sd">                     top nb_candidate classes are contained</span>
+<span class="sd">  :param logits: The model&#39;s unnormalized output tensor (the input to</span>
+<span class="sd">                 the softmax layer)</span>
+<span class="sd">  :param grads: Symbolic gradients of the top nb_candidate classes, procuded</span>
+<span class="sd">               from gradient_graph</span>
+<span class="sd">  :param sample: Numpy array with sample input</span>
+<span class="sd">  :param nb_candidate: The number of classes to test against, i.e.,</span>
+<span class="sd">                       deepfool only consider nb_candidate classes when</span>
+<span class="sd">                       attacking(thus accelerate speed). The nb_candidate</span>
+<span class="sd">                       classes are chosen according to the prediction</span>
+<span class="sd">                       confidence during implementation.</span>
+<span class="sd">  :param overshoot: A termination criterion to prevent vanishing updates</span>
+<span class="sd">  :param max_iter: Maximum number of iteration for DeepFool</span>
+<span class="sd">  :param clip_min: Minimum value for components of the example returned</span>
+<span class="sd">  :param clip_max: Maximum value for components of the example returned</span>
+<span class="sd">  :return: Adversarial examples</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">adv_x</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+  <span class="c1"># Initialize the loop variables</span>
+  <span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">current</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">model_argmax</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">adv_x</span><span class="p">,</span> <span class="n">feed</span><span class="o">=</span><span class="n">feed</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">current</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">():</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">current</span><span class="p">])</span>
+  <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>  <span class="c1"># same shape as original image</span>
+  <span class="n">r_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+  <span class="n">original</span> <span class="o">=</span> <span class="n">current</span>  <span class="c1"># use original label as the reference</span>
+
+  <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+      <span class="s2">&quot;Starting DeepFool attack up to </span><span class="si">%s</span><span class="s2"> iterations&quot;</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">)</span>
+  <span class="c1"># Repeat this main loop until we have achieved misclassification</span>
+  <span class="k">while</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">current</span> <span class="o">==</span> <span class="n">original</span><span class="p">)</span> <span class="ow">and</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="n">max_iter</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">iteration</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">iteration</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Attack result at iteration </span><span class="si">%s</span><span class="s2"> is </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="n">current</span><span class="p">)</span>
+    <span class="n">gradients</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">grads</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">adv_x</span><span class="p">})</span>
+    <span class="n">predictions_val</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">adv_x</span><span class="p">})</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+      <span class="n">pert</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+      <span class="k">if</span> <span class="n">current</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">!=</span> <span class="n">original</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span>
+        <span class="k">continue</span>
+      <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_candidate</span><span class="p">):</span>
+        <span class="n">w_k</span> <span class="o">=</span> <span class="n">gradients</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">-</span> <span class="n">gradients</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+        <span class="n">f_k</span> <span class="o">=</span> <span class="n">predictions_val</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">predictions_val</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># adding value 0.00001 to prevent f_k = 0</span>
+        <span class="n">pert_k</span> <span class="o">=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">f_k</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.00001</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">w_k</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">pert_k</span> <span class="o">&lt;</span> <span class="n">pert</span><span class="p">:</span>
+          <span class="n">pert</span> <span class="o">=</span> <span class="n">pert_k</span>
+          <span class="n">w</span> <span class="o">=</span> <span class="n">w_k</span>
+      <span class="n">r_i</span> <span class="o">=</span> <span class="n">pert</span> <span class="o">*</span> <span class="n">w</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+      <span class="n">r_tot</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_tot</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">+</span> <span class="n">r_i</span>
+
+    <span class="n">adv_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">r_tot</span> <span class="o">+</span> <span class="n">sample</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">)</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">utils_tf</span><span class="o">.</span><span class="n">model_argmax</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logits</span><span class="p">,</span> <span class="n">adv_x</span><span class="p">,</span> <span class="n">feed</span><span class="o">=</span><span class="n">feed</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">current</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">():</span>
+      <span class="n">current</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">current</span><span class="p">])</span>
+    <span class="c1"># Update loop variables</span>
+    <span class="n">iteration</span> <span class="o">=</span> <span class="n">iteration</span> <span class="o">+</span> <span class="mi">1</span>
+
+  <span class="c1"># need more revision, including info like how many succeed</span>
+  <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Attack result at iteration </span><span class="si">%s</span><span class="s2"> is </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="n">current</span><span class="p">)</span>
+  <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> out of </span><span class="si">%s</span><span class="s2"> become adversarial examples at iteration </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+               <span class="nb">sum</span><span class="p">(</span><span class="n">current</span> <span class="o">!=</span> <span class="n">original</span><span class="p">),</span>
+               <span class="n">sample</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+               <span class="n">iteration</span><span class="p">)</span>
+  <span class="c1"># need to clip this image into the given range</span>
+  <span class="n">adv_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">overshoot</span><span class="p">)</span> <span class="o">*</span> <span class="n">r_tot</span> <span class="o">+</span> <span class="n">sample</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">adv_x</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

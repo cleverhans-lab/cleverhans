@@ -11,8 +11,20 @@ import torch
 from cleverhans.devtools.checks import CleverHansTest
 from cleverhans.future.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
+from cleverhans.future.torch.attacks.carlini_wagner_l2 import carlini_wagner_l2
 from cleverhans.future.torch.attacks.spsa import spsa
 from cleverhans.future.torch.attacks.hop_skip_jump_attack import hop_skip_jump_attack
+
+
+class TrivialModel(torch.nn.Module):
+
+  def __init__(self):
+    super(TrivialModel, self).__init__()
+    self.w1 = torch.tensor([[1., -1]])
+
+  def forward(self, x, **kwargs):
+    return torch.matmul(x, self.w1)
+
 
 class SimpleModel(torch.nn.Module):
 
@@ -27,36 +39,40 @@ class SimpleModel(torch.nn.Module):
     x = torch.matmul(x, self.w2)
     return x
 
+
 class CommonAttackProperties(CleverHansTest):
 
   def setUp(self):
     super(CommonAttackProperties, self).setUp()
     self.model = SimpleModel()
+    self.trivial_model = TrivialModel()
     self.x = torch.randn(100, 2)
     self.normalized_x = torch.rand(100, 2) # truncated between [0, 1)
-    self.red_ind = list(range(1, len(self.x.size())))
+    self.trivial_x = torch.randn(100, 1)
+    self.trivial_normalized_x = torch.rand(100, 1) # truncated between [0, 1)
+    self.y_target = torch.randint(low=0, high=2, size=(100,))
     self.ord_list = [1, 2, np.inf]
 
-  def help_adv_examples_success_rate(self, **kwargs):
-    x_adv = self.attack(model_fn=self.model, x=self.normalized_x, **kwargs)
-    _, ori_label = self.model(self.normalized_x).max(1)
-    _, adv_label = self.model(x_adv).max(1)
+  def help_adv_examples_success_rate(self, model, x, rate=.5, **kwargs):
+    x_adv = self.attack(model_fn=model, x=x, **kwargs)
+    _, ori_label = model(x).max(1)
+    _, adv_label = model(x_adv).max(1)
     adv_acc = (
         adv_label.eq(ori_label).sum().to(torch.float)
-        / self.normalized_x.size(0))
-    self.assertLess(adv_acc, .5)
+        / x.size(0))
+    self.assertLess(adv_acc, rate)
 
-  def help_targeted_adv_examples_success_rate(self, **kwargs):
-    y_target = torch.randint(low=0, high=2, size=(self.normalized_x.size(0),))
+  def help_targeted_adv_examples_success_rate(self, model, x, rate=.7, **kwargs):
     x_adv = self.attack(
-        model_fn=self.model, x=self.normalized_x,
-        y=y_target, targeted=True, **kwargs)
+        model_fn=model, x=x,
+        y=self.y_target, targeted=True, **kwargs)
 
-    _, adv_label = self.model(x_adv).max(1)
+    _, adv_label = model(x_adv).max(1)
     adv_success = (
-        adv_label.eq(y_target).sum().to(torch.float)
-        / self.normalized_x.size(0))
-    self.assertGreater(adv_success, .7)
+        adv_label.eq(self.y_target).sum().to(torch.float)
+        / x.size(0))
+    self.assertGreater(adv_success, rate)
+
 
 class TestFastGradientMethod(CommonAttackProperties):
 
@@ -121,28 +137,29 @@ class TestFastGradientMethod(CommonAttackProperties):
   def test_adv_example_success_rate_linf(self):
     # use normalized_x to make sure the same eps gives uniformly high attack
     # success rate across randomized tests
-    self.help_adv_examples_success_rate(
-        norm=np.inf, **self.attack_param)
+    self.help_adv_examples_success_rate(x=self.normalized_x,
+        model=self.model, norm=np.inf, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_linf(self):
-    self.help_targeted_adv_examples_success_rate(
-        norm=np.inf, **self.attack_param)
+    self.help_targeted_adv_examples_success_rate(x=self.normalized_x,
+        model=self.model, norm=np.inf, **self.attack_param)
 
   def test_adv_example_success_rate_l1(self):
-    self.help_adv_examples_success_rate(
-        norm=1, **self.attack_param)
+    self.help_adv_examples_success_rate(x=self.normalized_x,
+        model=self.model, norm=1, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l1(self):
-    self.help_targeted_adv_examples_success_rate(
-        norm=1, **self.attack_param)
+    self.help_targeted_adv_examples_success_rate(x=self.normalized_x,
+        model=self.model, norm=1, **self.attack_param)
 
   def test_adv_example_success_rate_l2(self):
-    self.help_adv_examples_success_rate(
-        norm=2, **self.attack_param)
+    self.help_adv_examples_success_rate(x=self.normalized_x,
+        model=self.model, norm=2, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l2(self):
-    self.help_targeted_adv_examples_success_rate(
-        norm=2, **self.attack_param)
+    self.help_targeted_adv_examples_success_rate(x=self.normalized_x,
+        model=self.model, norm=2, **self.attack_param)
+
 
 class TestProjectedGradientMethod(CommonAttackProperties):
 
@@ -237,36 +254,36 @@ class TestProjectedGradientMethod(CommonAttackProperties):
   def test_adv_example_success_rate_linf(self):
     # use normalized_x to make sure the same eps gives uniformly high attack
     # success rate across randomized tests
-    self.help_adv_examples_success_rate(
-        norm=np.inf, **self.attack_param)
+    self.help_adv_examples_success_rate(x=self.normalized_x,
+        model=self.model, norm=np.inf, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_linf(self):
-    self.help_targeted_adv_examples_success_rate(
-        norm=np.inf, **self.attack_param)
+    self.help_targeted_adv_examples_success_rate(x=self.normalized_x,
+        model=self.model, norm=np.inf, **self.attack_param)
 
   def test_adv_example_success_rate_l1(self):
     self.assertRaises(
-        NotImplementedError, self.help_adv_examples_success_rate, norm=1,
-        **self.attack_param)
+        NotImplementedError, self.help_adv_examples_success_rate, model=self.model,
+      x=self.normalized_x, norm=1, **self.attack_param)
     # TODO uncomment the actual test below after we have implemented the L1 attack
-    # self.help_adv_examples_success_rate(
-    #     norm=1, **self.attack_param)
+    # self.help_adv_examples_success_rate(x=self.normalized_x,
+    #     model=self.model, norm=1, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l1(self):
     self.assertRaises(
         NotImplementedError, self.help_targeted_adv_examples_success_rate,
-        norm=1, **self.attack_param)
+        x=self.normalized_x, model=self.model, norm=1, **self.attack_param)
     # TODO uncomment the actual test below after we have implemented the L1 attack
-    # self.help_targeted_adv_examples_success_rate(
-    #     norm=1, **self.attack_param)
+    # self.help_targeted_adv_examples_success_rate(x=self.normalized_x,
+    #     model=self.model, norm=1, **self.attack_param)
 
   def test_adv_example_success_rate_l2(self):
-    self.help_adv_examples_success_rate(
-        norm=2, **self.attack_param)
+    self.help_adv_examples_success_rate(model=self.model,
+        x=self.normalized_x, norm=2, **self.attack_param)
 
   def test_targeted_adv_example_success_rate_l2(self):
-    self.help_targeted_adv_examples_success_rate(
-        norm=2, **self.attack_param)
+    self.help_targeted_adv_examples_success_rate(model=self.model,
+        x=self.normalized_x, norm=2, **self.attack_param)
 
   def test_do_not_reach_lp_boundary(self):
     for norm in self.ord_list:
@@ -353,6 +370,92 @@ class TestProjectedGradientMethod(CommonAttackProperties):
     self.assertLess(failed_attack, .5)
 
 
+class TestCarliniWagnerL2(CommonAttackProperties):
+
+  def setUp(self):
+    super(TestCarliniWagnerL2, self).setUp()
+    self.attack = carlini_wagner_l2
+    self.attack_param = {
+      'n_classes': 2,
+      'max_iterations': 100,
+      'binary_search_steps': 3,
+      'initial_const': 1,
+    }
+
+  def test_adv_example_success_rate(self):
+    self.help_adv_examples_success_rate(model=self.model,
+      x=self.normalized_x, rate=.1, clip_min=-5, clip_max=5,
+                                        **self.attack_param)
+
+  def test_targeted_adv_example_success_rate(self):
+    self.help_targeted_adv_examples_success_rate(model=self.model,
+      x=self.normalized_x, rate=.9, clip_min=-5, clip_max=5,
+                                        **self.attack_param)
+
+  def test_adv_examples_clipped_successfully(self):
+    x_adv = self.attack(model_fn=self.model,
+                        x=self.normalized_x,
+                        clip_min=-.2,
+                        clip_max=.3,
+                        **self.attack_param
+                        )
+    self.assertGreater(torch.min(x_adv), -.201)
+    self.assertLess(torch.max(x_adv), .301)
+
+  def test_high_confidence_adv_example(self):
+    from copy import copy
+
+    attack_param_copy = copy(self.attack_param)
+    attack_param_copy['binary_search_steps'] = 2
+
+    x = self.trivial_normalized_x - .5
+    _, y = self.trivial_model(x).max(1)
+
+    for confidence in [0, 2.3]:
+      x_adv = self.attack(model_fn=self.trivial_model,
+                          x=x,
+                          lr=1e-2,
+                          clip_min=-10,
+                          clip_max=10,
+                          confidence=confidence,
+                          **attack_param_copy
+                          )
+      logits = self.trivial_model(x_adv)
+      target = logits[range(len(logits)), 1 - y]
+      other = logits[range(len(logits)), y]
+      self.assertClose(confidence, torch.min(target - other).detach(), atol=1e-1)
+      self.assertTrue(
+        torch.argmax(logits, 1).eq(y).sum().to(torch.float)
+        / len(logits) == 0
+      )
+
+  def test_high_confidence_targeted_adv_example(self):
+    from copy import copy
+
+    attack_param_copy = copy(self.attack_param)
+    attack_param_copy['binary_search_steps'] = 2
+
+    for confidence in [0, 2.3]:
+      x_adv = self.attack(model_fn=self.trivial_model,
+                          x=self.trivial_normalized_x - .5,
+                          lr=1e-2,
+                          clip_min=-10,
+                          clip_max=10,
+                          targeted=True,
+                          y=self.y_target,
+                          confidence=confidence,
+                          **attack_param_copy
+                          )
+      logits = self.trivial_model(x_adv)
+      target = logits[range(len(logits)), self.y_target]
+      other = logits[range(len(logits)), 1 - self.y_target]
+      self.assertClose(confidence, torch.min(target - other).detach(), atol=1e-1)
+      self.assertGreater(
+        torch.argmax(logits, 1).eq(self.y_target).sum().to(torch.float) / len(logits),
+        .9
+        )
+
+
 class TestSPSA(CommonAttackProperties):
 
   def setUp(self):
@@ -363,6 +466,8 @@ class TestSPSA(CommonAttackProperties):
         'clip_min': -5,
         'clip_max': 5,
         'nb_iter': 50,
+        'model': self.model,
+        'x': self.normalized_x
     }
 
   def test_invalid_input(self):
