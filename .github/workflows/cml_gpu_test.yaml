@@ -17,7 +17,8 @@ jobs:
           pip install -r requirements/requirements-pytorch.txt
           pip install -r requirements/requirements-jax.txt
           pip install -r requirements/requirements-tf2.txt
-          pip install -r requirements/requirements-dev.txt\
+          pip install -r requirements/requirements-dev.txt
+          pip install -r requirements/requirements-gpu.txt
 
           find tutorials/future/torch/ -name '*.py' | while read f
           do

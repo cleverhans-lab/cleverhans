@@ -1,0 +1,1 @@
+jaxlib==0.1.61+cuda112 -f https://storage.googleapis.com/jax-releases/jax_releases.html
