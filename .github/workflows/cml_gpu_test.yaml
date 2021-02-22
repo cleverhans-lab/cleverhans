@@ -20,7 +20,7 @@ jobs:
           pip install -r requirements/requirements-dev.txt
           pip install -r requirements/requirements-gpu.txt
 
-          find tutorials/future/torch/ -name '*.py' | while read f
+          find tutorials/future/jax/ -name '*.py' | while read f
           do
               python $f
               if [ $? -ne 0 ]
@@ -29,7 +29,7 @@ jobs:
               fi
           done
 
-          find tutorials/future/jax/ -name '*.py' | while read f
+          find tutorials/future/torch/ -name '*.py' | while read f
           do
               python $f
               if [ $? -ne 0 ]
