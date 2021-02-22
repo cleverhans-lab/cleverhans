@@ -28,7 +28,7 @@ jobs:
               fi
           done
 
-          find tutorials/future/jax/ -name '*.py' | while read f
+          find tutorials/future/tf2/ -name '*.py' | while read f
           do
               python $f
               if [ $? -ne 0 ]
@@ -37,7 +37,7 @@ jobs:
               fi
           done
 
-          find tutorials/future/tf2/ -name '*.py' | while read f
+          find tutorials/future/jax/ -name '*.py' | while read f
           do
               python $f
               if [ $? -ne 0 ]
