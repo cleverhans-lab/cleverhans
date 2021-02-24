@@ -195,7 +195,7 @@ other inputs.
 
 ## Authors
 
-This library is collectively maintained by the [CleverHans Lab](cleverhans-lab.github.io/) 
+This library is collectively maintained by the [CleverHans Lab](https://cleverhans-lab.github.io/) 
 at the University of Toronto. The current point of contact is Jonas Guan. 
 It was previously maintained by Ian Goodfellow and Nicolas Papernot.
 
