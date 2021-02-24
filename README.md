@@ -14,7 +14,8 @@ of the latest attacks and defenses.
 In particular, we always welcome help towards resolving the [issues](https://github.com/cleverhans-lab/cleverhans/issues)
 currently open.
 
-Since v4.0.0, CleverHans supports 3 frameworks: JAX, PyTorch, and TF2. In versions v3.1.0 and prior,
+Since v4.0.0, CleverHans supports 3 frameworks: JAX, PyTorch, and TF2. We are currently prioritizing implementing 
+attacks in PyTorch, but we very much welcome contributions for all 3 frameworks. In versions v3.1.0 and prior,
 CleverHans supported TF1; the code for v3.1.0 can be found under `cleverhans_v3.1.0/` or by checking
 out a prior Github release.
 
@@ -31,7 +32,7 @@ within these folders, e.g. `cleverhans/jax`.
 
 ### Dependencies
 
-This library uses [Jax](https://github.com/google/jax), [PyTorch](https://pytorch.org/) or [TensorFlow](https://www.tensorflow.org/) to accelerate graph
+This library uses [Jax](https://github.com/google/jax), [PyTorch](https://pytorch.org/) or [TensorFlow 2](https://www.tensorflow.org/) to accelerate graph
 computations performed by many machine learning models.
 Therefore, installing one of these libraries is a pre-requisite.
 
@@ -90,8 +91,7 @@ issue tracker should *only* be used to report bugs or make feature requests.
 ## Contributing
 
 Contributions are welcomed! To speed the code review process, we ask that:
-* New efforts and features be coordinated
-on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
+* New efforts and features be coordinated on the [discussion board](https://github.com/cleverhans-lab/cleverhans/discussions).
 * When making code contributions to CleverHans, you follow the
 `PEP8 with two spaces` coding style (the same as the one used
 by TensorFlow) in your pull requests.
@@ -100,7 +100,7 @@ on the files you have edited.
 You can check your code by running `nosetests cleverhans/devtools/tests/test_format.py` or check an individual file by running `pylint <file>` from inside the cleverhans repository root directory.
 * We do not accept pull requests that add git submodules because of [the
   problems that arise when maintaining git
-  submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407)
+  submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407).
 
 Bug fixes can be initiated through Github pull requests.
 
@@ -142,6 +142,8 @@ we may just delete it without warning.
 
 Since we recently discontinued support for TF1, the `examples/` folder is currently 
 empty, but you are welcome to submit your uses via a pull request :)
+
+Old examples for CleverHans v3.1.0 and prior can be found under `cleverhans_v3.1.0/examples/`.
 
 ## Reporting benchmarks
 
@@ -195,7 +197,7 @@ other inputs.
 
 This library is collectively maintained by the [CleverHans Lab](cleverhans-lab.github.io/) 
 at the University of Toronto. The current point of contact is Jonas Guan. 
-It was previously maintained by Ian Goodfellow and Nicolas Papernot at Google Brain.
+It was previously maintained by Ian Goodfellow and Nicolas Papernot.
 
 
 The following authors contributed 100 lines or more (ordered according to the GitHub contributors page):
