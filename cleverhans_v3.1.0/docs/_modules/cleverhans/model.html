@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.model &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The Model class and related functionality.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils_tf</span>
+
+
+<div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  An abstract interface for model wrappers that exposes model symbols</span>
+<span class="sd">  needed for making an attack. This abstraction removes the dependency on</span>
+<span class="sd">  any specific neural network package (e.g. Keras) from the core</span>
+<span class="sd">  code of CleverHans. It can also simplify exposing the hidden features of a</span>
+<span class="sd">  model when a specific package does not directly expose them.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">ABCMeta</span>
+  <span class="n">O_LOGITS</span><span class="p">,</span> <span class="n">O_PROBS</span><span class="p">,</span> <span class="n">O_FEATURES</span> <span class="o">=</span> <span class="s1">&#39;logits probs features&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nb_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">needs_dummy_fprop</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructor.</span>
+<span class="sd">    :param scope: str, the name of model.</span>
+<span class="sd">    :param nb_classes: integer, the number of classes.</span>
+<span class="sd">    :param hparams: dict, hyper-parameters for the model.</span>
+<span class="sd">    :needs_dummy_fprop: bool, if True the model&#39;s parameters are not</span>
+<span class="sd">        created until fprop is called.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">scope</span> <span class="o">=</span> <span class="n">scope</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_classes</span> <span class="o">=</span> <span class="n">nb_classes</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span> <span class="o">=</span> <span class="n">hparams</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">needs_dummy_fprop</span> <span class="o">=</span> <span class="n">needs_dummy_fprop</span>
+
+  <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For compatibility with functions used as model definitions (taking</span>
+<span class="sd">    an input tensor and returning the tensor giving the output</span>
+<span class="sd">    of the model on that input).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Model.__call__ is deprecated. &quot;</span>
+                  <span class="s2">&quot;The call is ambiguous as to whether the output should &quot;</span>
+                  <span class="s2">&quot;be logits or probabilities, and getting the wrong one &quot;</span>
+                  <span class="s2">&quot;can cause serious problems. &quot;</span>
+                  <span class="s2">&quot;The output actually is probabilities, which are a very &quot;</span>
+                  <span class="s2">&quot;dangerous thing to use as part of any interface for &quot;</span>
+                  <span class="s2">&quot;cleverhans, because softmax probabilities are prone &quot;</span>
+                  <span class="s2">&quot;to gradient masking.&quot;</span>
+                  <span class="s2">&quot;On or after 2019-04-24, this method will change to raise &quot;</span>
+                  <span class="s2">&quot;an exception explaining why Model.__call__ should not be &quot;</span>
+                  <span class="s2">&quot;used.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_probs</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Model.get_logits"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.get_logits">[docs]</a>  <span class="k">def</span> <span class="nf">get_logits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param x: A symbolic representation (Tensor) of the network input</span>
+<span class="sd">    :return: A symbolic representation (Tensor) of the output logits</span>
+<span class="sd">    (i.e., the values fed as inputs to the softmax layer).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fprop</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">O_LOGITS</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">outputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">O_LOGITS</span><span class="p">]</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;must implement `get_logits`&quot;</span>
+                              <span class="s2">&quot; or must define a &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">O_LOGITS</span> <span class="o">+</span>
+                              <span class="s2">&quot; output in `fprop`&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.get_predicted_class"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.get_predicted_class">[docs]</a>  <span class="k">def</span> <span class="nf">get_predicted_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param x: A symbolic representation (Tensor) of the network input</span>
+<span class="sd">    :return: A symbolic representation (Tensor) of the predicted label</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.get_probs"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.get_probs">[docs]</a>  <span class="k">def</span> <span class="nf">get_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param x: A symbolic representation (Tensor) of the network input</span>
+<span class="sd">    :return: A symbolic representation (Tensor) of the output</span>
+<span class="sd">    probabilities (i.e., the output values produced by the softmax layer).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fprop</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">O_PROBS</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+      <span class="n">output</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">O_PROBS</span><span class="p">]</span>
+      <span class="n">min_prob</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_min</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+      <span class="n">max_prob</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+      <span class="n">asserts</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_greater_equal</span><span class="p">(</span><span class="n">min_prob</span><span class="p">,</span>
+                                               <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">min_prob</span><span class="o">.</span><span class="n">dtype</span><span class="p">)),</span>
+                 <span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_less_equal</span><span class="p">(</span><span class="n">max_prob</span><span class="p">,</span>
+                                            <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="n">min_prob</span><span class="o">.</span><span class="n">dtype</span><span class="p">))]</span>
+      <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">control_dependencies</span><span class="p">(</span><span class="n">asserts</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">output</span>
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">O_LOGITS</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">O_LOGITS</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot find probs or logits.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.fprop"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.fprop">[docs]</a>  <span class="k">def</span> <span class="nf">fprop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Forward propagation to compute the model outputs.</span>
+<span class="sd">    :param x: A symbolic representation of the network input</span>
+<span class="sd">    :return: A dictionary mapping layer names to the symbolic</span>
+<span class="sd">             representation of their output.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;`fprop` not implemented.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.get_params"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.get_params">[docs]</a>  <span class="k">def</span> <span class="nf">get_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides access to the model&#39;s parameters.</span>
+<span class="sd">    :return: A list of all Variables defining the model parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;params&#39;</span><span class="p">):</span>
+      <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="c1"># Catch eager execution and assert function overload.</span>
+    <span class="k">try</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">tf</span><span class="o">.</span><span class="n">executing_eagerly</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;For Eager execution - get_params &quot;</span>
+                                  <span class="s2">&quot;must be overridden.&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+      <span class="k">pass</span>
+
+    <span class="c1"># For graph-based execution</span>
+    <span class="n">scope_vars</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">GraphKeys</span><span class="o">.</span><span class="n">TRAINABLE_VARIABLES</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">scope</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">scope_vars</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">make_params</span><span class="p">()</span>
+      <span class="n">scope_vars</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">GraphKeys</span><span class="o">.</span><span class="n">TRAINABLE_VARIABLES</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">scope</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
+      <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">scope_vars</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="c1"># Make sure no parameters have been added or removed</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;num_params&quot;</span><span class="p">):</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_params</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scope_vars</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Scope: &quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Expected &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_params</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; variables&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Got &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scope_vars</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">scope_vars</span><span class="p">:</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">num_params</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scope_vars</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">scope_vars</span></div>
+
+<div class="viewcode-block" id="Model.make_params"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.make_params">[docs]</a>  <span class="k">def</span> <span class="nf">make_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create all Variables to be returned later by get_params.</span>
+<span class="sd">    By default this is a no-op.</span>
+<span class="sd">    Models that need their fprop to be called for their params to be</span>
+<span class="sd">    created can set `needs_dummy_fprop=True` in the constructor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">needs_dummy_fprop</span><span class="p">:</span>
+      <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_dummy_input&quot;</span><span class="p">):</span>
+        <span class="k">return</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_input_placeholder</span><span class="p">()</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">fprop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dummy_input</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.get_layer_names"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.get_layer_names">[docs]</a>  <span class="k">def</span> <span class="nf">get_layer_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the list of exposed layers for this model.&quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="Model.get_layer"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.get_layer">[docs]</a>  <span class="k">def</span> <span class="nf">get_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a layer output.</span>
+<span class="sd">    :param x: tensor, the input to the network.</span>
+<span class="sd">    :param layer: str, the name of the layer to compute.</span>
+<span class="sd">    :param **kwargs: dict, extra optional params to pass to self.fprop.</span>
+<span class="sd">    :return: the content of layer `layer`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fprop</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)[</span><span class="n">layer</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Model.make_input_placeholder"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.make_input_placeholder">[docs]</a>  <span class="k">def</span> <span class="nf">make_input_placeholder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create and return a placeholder representing an input to the model.</span>
+
+<span class="sd">    This method should respect context managers (e.g. &quot;with tf.device&quot;)</span>
+<span class="sd">    and should not just return a reference to a single pre-created</span>
+<span class="sd">    placeholder.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; does not implement &quot;</span>
+                              <span class="s2">&quot;make_input_placeholder&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.make_label_placeholder"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.Model.make_label_placeholder">[docs]</a>  <span class="k">def</span> <span class="nf">make_label_placeholder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create and return a placeholder representing class labels.</span>
+
+<span class="sd">    This method should respect context managers (e.g. &quot;with tf.device&quot;)</span>
+<span class="sd">    and should not just return a reference to a single pre-created</span>
+<span class="sd">    placeholder.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; does not implement &quot;</span>
+                              <span class="s2">&quot;make_label_placeholder&quot;</span><span class="p">)</span></div>
+
+  <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+  <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">other</span></div>
+
+
+<div class="viewcode-block" id="CallableModelWrapper"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.CallableModelWrapper">[docs]</a><span class="k">class</span> <span class="nc">CallableModelWrapper</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;A wrapper that turns a callable into a valid Model&quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callable_fn</span><span class="p">,</span> <span class="n">output_layer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrap a callable function that takes a tensor as input and returns</span>
+<span class="sd">    a tensor as output with the given layer name.</span>
+<span class="sd">    :param callable_fn: The callable function taking a tensor and</span>
+<span class="sd">                        returning a given layer as output.</span>
+<span class="sd">    :param output_layer: A string of the output layer returned by the</span>
+<span class="sd">                         function. (Usually either &quot;probs&quot; or &quot;logits&quot;.)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">CallableModelWrapper</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">output_layer</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">callable_fn</span> <span class="o">=</span> <span class="n">callable_fn</span>
+
+<div class="viewcode-block" id="CallableModelWrapper.fprop"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.CallableModelWrapper.fprop">[docs]</a>  <span class="k">def</span> <span class="nf">fprop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callable_fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># Do some sanity checking to reduce the chance that probs are used</span>
+    <span class="c1"># as logits accidentally or vice versa</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">==</span> <span class="s1">&#39;probs&#39;</span><span class="p">:</span>
+      <span class="k">assert</span> <span class="n">output</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;Softmax&quot;</span>
+      <span class="n">min_prob</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_min</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+      <span class="n">max_prob</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+      <span class="n">asserts</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_greater_equal</span><span class="p">(</span><span class="n">min_prob</span><span class="p">,</span>
+                                               <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">min_prob</span><span class="o">.</span><span class="n">dtype</span><span class="p">)),</span>
+                 <span class="n">utils_tf</span><span class="o">.</span><span class="n">assert_less_equal</span><span class="p">(</span><span class="n">max_prob</span><span class="p">,</span>
+                                            <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="n">max_prob</span><span class="o">.</span><span class="n">dtype</span><span class="p">))]</span>
+      <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">control_dependencies</span><span class="p">(</span><span class="n">asserts</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">==</span> <span class="s1">&#39;logits&#39;</span><span class="p">:</span>
+      <span class="k">assert</span> <span class="n">output</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s1">&#39;Softmax&#39;</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="p">:</span> <span class="n">output</span><span class="p">}</span></div></div>
+
+<div class="viewcode-block" id="wrapper_warning"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.wrapper_warning">[docs]</a><span class="k">def</span> <span class="nf">wrapper_warning</span><span class="p">():</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Issue a deprecation warning. Used in multiple places that implemented</span>
+<span class="sd">  attacks by automatically wrapping a user-supplied callable with a</span>
+<span class="sd">  CallableModelWrapper with output_layer=&quot;probs&quot;.</span>
+<span class="sd">  Using &quot;probs&quot; as any part of the attack interface is dangerous.</span>
+<span class="sd">  We can&#39;t just change output_layer to logits because:</span>
+<span class="sd">  - that would be a silent interface change. We&#39;d have no way of detecting</span>
+<span class="sd">    code that still means to use probs. Note that we can&#39;t just check whether</span>
+<span class="sd">    the final output op is a softmax---for example, Inception puts a reshape</span>
+<span class="sd">    after the softmax.</span>
+<span class="sd">  - automatically wrapping user-supplied callables with output_layer=&#39;logits&#39;</span>
+<span class="sd">    is even worse, see `wrapper_warning_logits`</span>
+<span class="sd">  Note: this function will be removed at the same time as the code that</span>
+<span class="sd">  calls it.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Passing a callable is deprecated, because using&quot;</span>
+                <span class="s2">&quot; probabilities is dangerous. It has a high risk &quot;</span>
+                <span class="s2">&quot; of causing gradient masking due to loss of precision &quot;</span>
+                <span class="s2">&quot; in the softmax op. Passing a callable rather than a &quot;</span>
+                <span class="s2">&quot; Model subclass will become an error on or after &quot;</span>
+                <span class="s2">&quot; 2019-04-24.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="wrapper_warning_logits"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.wrapper_warning_logits">[docs]</a><span class="k">def</span> <span class="nf">wrapper_warning_logits</span><span class="p">():</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Issue a deprecation warning. Used in multiple places that implemented</span>
+<span class="sd">  attacks by automatically wrapping a user-supplied callable with a</span>
+<span class="sd">  CallableModelWrapper with output_layer=&quot;logits&quot;.</span>
+<span class="sd">  This is dangerous because it is under-the-hood automagic that the user</span>
+<span class="sd">  may not realize has been invoked for them. If they pass a callable</span>
+<span class="sd">  that actually outputs probs, the probs will be treated as logits,</span>
+<span class="sd">  resulting in an incorrect cross-entropy loss and severe gradient</span>
+<span class="sd">  masking.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Passing a callable is deprecated, because it runs the &quot;</span>
+                <span class="s2">&quot;risk of accidentally using probabilities in the place &quot;</span>
+                <span class="s2">&quot;of logits. Please switch to passing a Model subclass &quot;</span>
+                <span class="s2">&quot;so that you clearly specify which values are the logits. &quot;</span>
+                <span class="s2">&quot;Passing a callable rather than a Model subclass will become &quot;</span>
+                <span class="s2">&quot;an error on or after 2019-04-24.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NoSuchLayerError"><a class="viewcode-back" href="../../source/model.html#cleverhans.attacks.NoSuchLayerError">[docs]</a><span class="k">class</span> <span class="nc">NoSuchLayerError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Raised when a layer that does not exist is requested.&quot;&quot;&quot;</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

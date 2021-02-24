@@ -1,0 +1,372 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.saliency_map_method &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.saliency_map_method</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The SalienceMapMethod attack</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># pylint: disable=missing-docstring</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">xrange</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.attack</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">reduce_sum</span><span class="p">,</span> <span class="n">reduce_max</span><span class="p">,</span> <span class="n">reduce_any</span>
+
+<span class="n">tf_dtype</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">as_dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SaliencyMapMethod"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.SaliencyMapMethod">[docs]</a><span class="k">class</span> <span class="nc">SaliencyMapMethod</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  The Jacobian-based Saliency Map Method (Papernot et al. 2016).</span>
+<span class="sd">  Paper link: https://arxiv.org/pdf/1511.07528.pdf</span>
+
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: optional tf.Session</span>
+<span class="sd">  :param dtypestr: dtype of the data</span>
+<span class="sd">  :param kwargs: passed through to super constructor</span>
+
+<span class="sd">  :note: When not using symbolic implementation in `generate`, `sess` should</span>
+<span class="sd">         be provided</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a SaliencyMapMethod instance.</span>
+<span class="sd">    Note: the model parameter should be an instance of the</span>
+<span class="sd">    cleverhans.model.Model abstraction provided by CleverHans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">SaliencyMapMethod</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;y_target&#39;</span><span class="p">,)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;theta&#39;</span><span class="p">,</span> <span class="s1">&#39;gamma&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_max&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_min&#39;</span><span class="p">,</span> <span class="s1">&#39;symbolic_impl&#39;</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="SaliencyMapMethod.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.SaliencyMapMethod.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate symbolic graph for adversarial examples and return.</span>
+
+<span class="sd">    :param x: The model&#39;s symbolic inputs.</span>
+<span class="sd">    :param kwargs: See `parse_params`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Parse and save attack-specific parameters</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_params</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic_impl</span><span class="p">:</span>
+      <span class="c1"># Create random targets if y_target not provided</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
+
+        <span class="k">def</span> <span class="nf">random_targets</span><span class="p">(</span><span class="n">gt</span><span class="p">):</span>
+          <span class="n">result</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+          <span class="n">nb_s</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+          <span class="n">nb_classes</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+          <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_s</span><span class="p">):</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span>
+                                   <span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_classes</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+          <span class="k">return</span> <span class="n">result</span>
+
+        <span class="n">labels</span><span class="p">,</span> <span class="n">nb_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_or_guess_labels</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">py_func</span><span class="p">(</span><span class="n">random_targets</span><span class="p">,</span> <span class="p">[</span><span class="n">labels</span><span class="p">],</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span><span class="o">.</span><span class="n">set_shape</span><span class="p">([</span><span class="kc">None</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">])</span>
+
+      <span class="n">x_adv</span> <span class="o">=</span> <span class="n">jsma_symbolic</span><span class="p">(</span>
+          <span class="n">x</span><span class="p">,</span>
+          <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+          <span class="n">y_target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_target</span><span class="p">,</span>
+          <span class="n">theta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span>
+          <span class="n">gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">,</span>
+          <span class="n">clip_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span>
+          <span class="n">clip_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;The jsma_batch function has been removed.&quot;</span>
+                                <span class="s2">&quot; The symbolic_impl argument to SaliencyMapMethod will be removed&quot;</span>
+                                <span class="s2">&quot; on 2019-07-18 or after. Any code that depends on the non-symbolic&quot;</span>
+                                <span class="s2">&quot; implementation of the JSMA should be revised. Consider using&quot;</span>
+                                <span class="s2">&quot; SaliencyMapMethod.generate_np() instead.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">x_adv</span></div>
+
+<div class="viewcode-block" id="SaliencyMapMethod.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.SaliencyMapMethod.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                   <span class="n">theta</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
+                   <span class="n">gamma</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
+                   <span class="n">clip_min</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                   <span class="n">clip_max</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
+                   <span class="n">y_target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">symbolic_impl</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                   <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take in a dictionary of parameters and applies attack-specific checks</span>
+<span class="sd">    before saving them as attributes.</span>
+
+<span class="sd">    Attack-specific parameters:</span>
+
+<span class="sd">    :param theta: (optional float) Perturbation introduced to modified</span>
+<span class="sd">                  components (can be positive or negative)</span>
+<span class="sd">    :param gamma: (optional float) Maximum percentage of perturbed features</span>
+<span class="sd">    :param clip_min: (optional float) Minimum component value for clipping</span>
+<span class="sd">    :param clip_max: (optional float) Maximum component value for clipping</span>
+<span class="sd">    :param y_target: (optional) Target tensor if the attack is targeted</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">y_target</span> <span class="o">=</span> <span class="n">y_target</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">symbolic_impl</span> <span class="o">=</span> <span class="n">symbolic_impl</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;kwargs is unused and will be removed on or after &quot;</span>
+                    <span class="s2">&quot;2019-04-26.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">True</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">jsma_batch</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+      <span class="s2">&quot;The jsma_batch function has been removed. Any code that depends on it should be revised.&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">jsma_symbolic</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y_target</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  TensorFlow implementation of the JSMA (see https://arxiv.org/abs/1511.07528</span>
+<span class="sd">  for details about the algorithm design choices).</span>
+
+<span class="sd">  :param x: the input placeholder</span>
+<span class="sd">  :param y_target: the target tensor</span>
+<span class="sd">  :param model: a cleverhans.model.Model object.</span>
+<span class="sd">  :param theta: delta for each feature adjustment</span>
+<span class="sd">  :param gamma: a float between 0 - 1 indicating the maximum distortion</span>
+<span class="sd">      percentage</span>
+<span class="sd">  :param clip_min: minimum value for components of the example returned</span>
+<span class="sd">  :param clip_max: maximum value for components of the example returned</span>
+<span class="sd">  :return: a tensor for the adversarial example</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="n">nb_classes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">y_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+  <span class="n">nb_features</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span> <span class="ow">and</span> <span class="n">y_target</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">int64</span><span class="p">:</span>
+    <span class="n">y_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">y_target</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span> <span class="ow">and</span> <span class="n">y_target</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">float64</span><span class="p">:</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Downcasting labels---this should be harmless unless&quot;</span>
+                  <span class="s2">&quot; they are smoothed&quot;</span><span class="p">)</span>
+    <span class="n">y_target</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">y_target</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+  <span class="n">max_iters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">nb_features</span> <span class="o">*</span> <span class="n">gamma</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+  <span class="n">increase</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">theta</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+  <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nb_features</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">),</span> <span class="nb">int</span><span class="p">)</span>
+  <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="n">zero_diagonal</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">tf_dtype</span><span class="p">)</span>
+
+  <span class="c1"># Compute our initial search domain. We optimize the initial search domain</span>
+  <span class="c1"># by removing all features that are already at their maximum values (if</span>
+  <span class="c1"># increasing input features---otherwise, at their minimum value).</span>
+  <span class="k">if</span> <span class="n">increase</span><span class="p">:</span>
+    <span class="n">search_domain</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">clip_max</span><span class="p">,</span> <span class="n">tf_dtype</span><span class="p">),</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">])</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">search_domain</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">tf_dtype</span><span class="p">),</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">])</span>
+
+  <span class="c1"># Loop variables</span>
+  <span class="c1"># x_in: the tensor that holds the latest adversarial outputs that are in</span>
+  <span class="c1">#       progress.</span>
+  <span class="c1"># y_in: the tensor for target labels</span>
+  <span class="c1"># domain_in: the tensor that holds the latest search domain</span>
+  <span class="c1"># cond_in: the boolean tensor to show if more iteration is needed for</span>
+  <span class="c1">#          generating adversarial samples</span>
+  <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span><span class="n">x_in</span><span class="p">,</span> <span class="n">y_in</span><span class="p">,</span> <span class="n">domain_in</span><span class="p">,</span> <span class="n">i_in</span><span class="p">,</span> <span class="n">cond_in</span><span class="p">):</span>
+    <span class="c1"># Repeat the loop until we have achieved misclassification or</span>
+    <span class="c1"># reaches the maximum iterations</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">less</span><span class="p">(</span><span class="n">i_in</span><span class="p">,</span> <span class="n">max_iters</span><span class="p">),</span> <span class="n">cond_in</span><span class="p">)</span>
+
+  <span class="c1"># Same loop variables as above</span>
+  <span class="k">def</span> <span class="nf">body</span><span class="p">(</span><span class="n">x_in</span><span class="p">,</span> <span class="n">y_in</span><span class="p">,</span> <span class="n">domain_in</span><span class="p">,</span> <span class="n">i_in</span><span class="p">,</span> <span class="n">cond_in</span><span class="p">):</span>
+    <span class="c1"># Create graph for model logits and predictions</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="n">x_in</span><span class="p">)</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+    <span class="n">preds_onehot</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">depth</span><span class="o">=</span><span class="n">nb_classes</span><span class="p">)</span>
+
+    <span class="c1"># create the Jacobian graph</span>
+    <span class="n">list_derivatives</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">class_ind</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">nb_classes</span><span class="p">):</span>
+      <span class="n">derivatives</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">logits</span><span class="p">[:,</span> <span class="n">class_ind</span><span class="p">],</span> <span class="n">x_in</span><span class="p">)</span>
+      <span class="n">list_derivatives</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">derivatives</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">grads</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">list_derivatives</span><span class="p">),</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="n">nb_classes</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">])</span>
+
+    <span class="c1"># Compute the Jacobian components</span>
+    <span class="c1"># To help with the computation later, reshape the target_class</span>
+    <span class="c1"># and other_class to [nb_classes, -1, 1].</span>
+    <span class="c1"># The last dimention is added to allow broadcasting later.</span>
+    <span class="n">target_class</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">y_in</span><span class="p">,</span> <span class="n">perm</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="n">nb_classes</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">other_classes</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">not_equal</span><span class="p">(</span><span class="n">target_class</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">tf_dtype</span><span class="p">)</span>
+
+    <span class="n">grads_target</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="n">grads</span> <span class="o">*</span> <span class="n">target_class</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">grads_other</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="n">grads</span> <span class="o">*</span> <span class="n">other_classes</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Remove the already-used input features from the search space</span>
+    <span class="c1"># Subtract 2 times the maximum value from those value so that</span>
+    <span class="c1"># they won&#39;t be picked later</span>
+    <span class="n">increase_coef</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">increase</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> \
+        <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">domain_in</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">tf_dtype</span><span class="p">)</span>
+
+    <span class="n">target_tmp</span> <span class="o">=</span> <span class="n">grads_target</span>
+    <span class="n">target_tmp</span> <span class="o">-=</span> <span class="n">increase_coef</span> \
+        <span class="o">*</span> <span class="n">reduce_max</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">grads_target</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">target_sum</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">target_tmp</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> \
+        <span class="o">+</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">target_tmp</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">])</span>
+
+    <span class="n">other_tmp</span> <span class="o">=</span> <span class="n">grads_other</span>
+    <span class="n">other_tmp</span> <span class="o">+=</span> <span class="n">increase_coef</span> \
+        <span class="o">*</span> <span class="n">reduce_max</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">grads_other</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">other_sum</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">other_tmp</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> \
+        <span class="o">+</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">other_tmp</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">])</span>
+
+    <span class="c1"># Create a mask to only keep features that match conditions</span>
+    <span class="k">if</span> <span class="n">increase</span><span class="p">:</span>
+      <span class="n">scores_mask</span> <span class="o">=</span> <span class="p">((</span><span class="n">target_sum</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">other_sum</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">scores_mask</span> <span class="o">=</span> <span class="p">((</span><span class="n">target_sum</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">other_sum</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="c1"># Create a 2D numpy array of scores for each pair of candidate features</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">scores_mask</span><span class="p">,</span> <span class="n">tf_dtype</span><span class="p">)</span> \
+        <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">target_sum</span> <span class="o">*</span> <span class="n">other_sum</span><span class="p">)</span> <span class="o">*</span> <span class="n">zero_diagonal</span>
+
+    <span class="c1"># Extract the best two pixels</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_features</span> <span class="o">*</span> <span class="n">nb_features</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">p1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">best</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">)</span>
+    <span class="n">p2</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">floordiv</span><span class="p">(</span><span class="n">best</span><span class="p">,</span> <span class="n">nb_features</span><span class="p">)</span>
+    <span class="n">p1_one_hot</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">nb_features</span><span class="p">)</span>
+    <span class="n">p2_one_hot</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">nb_features</span><span class="p">)</span>
+
+    <span class="c1"># Check if more modification is needed for each sample</span>
+    <span class="n">mod_not_done</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">y_in</span> <span class="o">*</span> <span class="n">preds_onehot</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">cond</span> <span class="o">=</span> <span class="n">mod_not_done</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">domain_in</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># Update the search domain</span>
+    <span class="n">cond_float</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">tf_dtype</span><span class="p">),</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">to_mod</span> <span class="o">=</span> <span class="p">(</span><span class="n">p1_one_hot</span> <span class="o">+</span> <span class="n">p2_one_hot</span><span class="p">)</span> <span class="o">*</span> <span class="n">cond_float</span>
+
+    <span class="n">domain_out</span> <span class="o">=</span> <span class="n">domain_in</span> <span class="o">-</span> <span class="n">to_mod</span>
+
+    <span class="c1"># Apply the modification to the images</span>
+    <span class="n">to_mod_reshape</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+        <span class="n">to_mod</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">x_in</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">as_list</span><span class="p">()))</span>
+    <span class="k">if</span> <span class="n">increase</span><span class="p">:</span>
+      <span class="n">x_out</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">clip_max</span><span class="p">,</span> <span class="n">x_in</span> <span class="o">+</span> <span class="n">to_mod_reshape</span> <span class="o">*</span> <span class="n">theta</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">x_out</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">clip_min</span><span class="p">,</span> <span class="n">x_in</span> <span class="o">-</span> <span class="n">to_mod_reshape</span> <span class="o">*</span> <span class="n">theta</span><span class="p">)</span>
+
+    <span class="c1"># Increase the iterator, and check if all misclassifications are done</span>
+    <span class="n">i_out</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">i_in</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">cond_out</span> <span class="o">=</span> <span class="n">reduce_any</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">x_out</span><span class="p">,</span> <span class="n">y_in</span><span class="p">,</span> <span class="n">domain_out</span><span class="p">,</span> <span class="n">i_out</span><span class="p">,</span> <span class="n">cond_out</span>
+
+  <span class="c1"># Run loop to do JSMA</span>
+  <span class="n">x_adv</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">while_loop</span><span class="p">(</span>
+      <span class="n">condition</span><span class="p">,</span>
+      <span class="n">body</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y_target</span><span class="p">,</span> <span class="n">search_domain</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+      <span class="n">parallel_iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">x_adv</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>
