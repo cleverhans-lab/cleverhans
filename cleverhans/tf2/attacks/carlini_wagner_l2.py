@@ -2,7 +2,7 @@
 """
 import numpy as np
 import tensorflow as tf
-from cleverhans.future.tf2.utils_tf import get_or_guess_labels, set_with_mask
+from cleverhans.tf2.utils import get_or_guess_labels, set_with_mask
 
 
 def carlini_wagner_l2(model_fn, x, **kwargs):
@@ -11,6 +11,10 @@ def carlini_wagner_l2(model_fn, x, **kwargs):
   For more details on the attack and the parameters see the corresponding class.
   """
   return CarliniWagnerL2(model_fn, **kwargs).attack(x)
+
+
+class CarliniWagnerL2Exception(Exception):
+  pass
 
 
 class CarliniWagnerL2(object):
@@ -106,10 +110,14 @@ class CarliniWagnerL2(object):
 
   def _attack(self, x):
     if self.clip_min is not None:
-      assert np.all(tf.math.greater_equal(x, self.clip_min))
+      if not np.all(tf.math.greater_equal(x, self.clip_min)):
+        raise CarliniWagnerL2Exception(
+            f"The input is smaller than the minimum value of {self.clip_min}r")
 
     if self.clip_max is not None:
-      assert np.all(tf.math.less_equal(x, self.clip_max))
+      if not np.all(tf.math.less_equal(x, self.clip_max)):
+        raise CarliniWagnerL2Exception(
+            f"The input is greater than the maximum value of {self.clip_max}!")
 
     y, _ = get_or_guess_labels(
         self.model_fn, x, y=self.y, targeted=self.targeted)
@@ -118,7 +126,9 @@ class CarliniWagnerL2(object):
     original_x = tf.cast(x, tf.float32)
     shape = original_x.shape
 
-    assert y.shape.as_list()[0] == original_x.shape.as_list()[0]
+    if not y.shape.as_list()[0] == original_x.shape.as_list()[0]:
+      raise CarliniWagnerL2Exception(
+          "x and y do not have the same shape!")
 
     # re-scale x to [0, 1]
     x = original_x
