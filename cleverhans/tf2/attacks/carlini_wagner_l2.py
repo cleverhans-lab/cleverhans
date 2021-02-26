@@ -2,7 +2,6 @@
 """
 import numpy as np
 import tensorflow as tf
-
 from cleverhans.future.tf2.utils_tf import get_or_guess_labels, set_with_mask
 
 
@@ -40,32 +39,32 @@ class CarliniWagnerL2(object):
 
     :param model_fn: a callable that takes an input tensor and returns the model logits.
     :param y: (optional) Tensor with target labels. 
-    :param y: (optional) Targeted attack? 
-    :param batch_size: Number of attacks to run simultaneously.
+    :param targeted: (optional) Targeted attack? 
+    :param batch_size (optional): Number of attacks to run simultaneously.
     :param clip_min: (optional) float. Minimum float values for adversarial example components.
     :param clip_max: (optional) float. Maximum float value for adversarial example components.
-    :param binary_search_steps: The number of times we perform binary
+    :param binary_search_steps (optional): The number of times we perform binary
                             search to find the optimal tradeoff-
                             constant between norm of the purturbation
                             and confidence of the classification.
-    :param max_iterations: The maximum number of iterations. Setting this
+    :param max_iterations (optional): The maximum number of iterations. Setting this
                            to a larger value will produce lower distortion
                            results. Using only a few iterations requires
                            a larger learning rate, and will produce larger
                            distortion results.
-    :param abort_early: If true, allows early aborts if gradient descent
+    :param abort_early (optional): If true, allows early aborts if gradient descent
                     is unable to make progress (i.e., gets stuck in
                     a local minimum).
-    :param confidence: Confidence of adversarial examples: higher produces
+    :param confidence (optional): Confidence of adversarial examples: higher produces
                        examples with larger l2 distortion, but more
                        strongly classified as adversarial.
-    :param initial_const: The initial tradeoff-constant to use to tune the
-                      relative importance of size of the pururbation
+    :param initial_const (optional): The initial tradeoff-constant used to tune the
+                      relative importance of the size of the perturbation
                       and confidence of classification.
                       If binary_search_steps is large, the initial
                       constant is not important. A smaller value of
                       this constant gives lower distortion results.
-    :param learning_rate: The learning rate for the attack algorithm.
+    :param learning_rate (optional): The learning rate for the attack algorithm.
                       Smaller values produce better results but are
                       slower to converge.
     """
