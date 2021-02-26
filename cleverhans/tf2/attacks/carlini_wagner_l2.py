@@ -198,10 +198,6 @@ class CarliniWagnerL2(object):
         pred = tf.cast(pred, tf.int32)
 
         # compute a binary mask of the tensors we want to assign
-        # tf1:
-        #   if l2 < current_best_l2[e] and compare(pred, lab):
-        #       current_best_l2[e] = l2
-        #       current_best_score[e] = tf.argmax[pred]
         mask = tf.math.logical_and(
             tf.less(l2_dist, current_best_l2),
             compare_fn(pred_with_conf, lab)
@@ -212,11 +208,6 @@ class CarliniWagnerL2(object):
         current_best_score = set_with_mask(
             current_best_score, pred, mask)
 
-        # tf1:
-        #   if l2 < best_l2[e] and compare(pred, lab):
-        #       best_l2[e] = l2
-        #       best_score[e] = tf.argmax(pred)
-        #       best_attack[e] = ii
         # if the l2 distance is better than the one found before
         # and if the example is a correct example (with regards to the labels)
         mask = tf.math.logical_and(
@@ -236,12 +227,6 @@ class CarliniWagnerL2(object):
         best_attack = set_with_mask(best_attack, x_new, mask)
 
       # adjust binary search parameters
-      # tf1:
-      # if compare(best_score[e], tf.argmax(y[e])) and best_score[e] != -1:
-      #      # success, divide const by two
-      #      upper_bound[e] = min(upper_bound[e], const[e])
-      #      if upper_bound[e] < 1e9:
-      #          const[e] = (lower_bound[e] + upper_bound[e]) / 2.
       lab = tf.argmax(y, axis=1)
       lab = tf.cast(lab, tf.int32)
 
@@ -260,16 +245,6 @@ class CarliniWagnerL2(object):
       )
       const = set_with_mask(
           const, (lower_bound + upper_bound) / 2., const_mask)
-
-      #  tf1:
-      #  else:
-      #      # failure, either multiply by 10 if no solution found yet
-      #      #          or do binary search with the known upper bound
-      #      lower_bound[e] = max(lower_bound[e], const[e])
-      #      if upper_bound[e] < 1e9:
-      #          const[e] = (lower_bound[e] + upper_bound[e]) / 2
-      #      else:
-      #          const[e] *= 10
 
       # else case is the negation of the inital mask
       lower_mask = tf.math.logical_not(upper_mask)
