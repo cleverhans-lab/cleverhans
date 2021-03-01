@@ -1,0 +1,506 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.attacks.carlini_wagner_l2 &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.attacks.carlini_wagner_l2</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The CarliniWagnerL2 attack</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># pylint: disable=missing-docstring</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">cleverhans.attacks.attack</span> <span class="kn">import</span> <span class="n">Attack</span>
+<span class="kn">from</span> <span class="nn">cleverhans.compat</span> <span class="kn">import</span> <span class="n">reduce_sum</span><span class="p">,</span> <span class="n">reduce_max</span>
+<span class="kn">from</span> <span class="nn">cleverhans.model</span> <span class="kn">import</span> <span class="n">CallableModelWrapper</span><span class="p">,</span> <span class="n">Model</span><span class="p">,</span> <span class="n">wrapper_warning_logits</span>
+<span class="kn">from</span> <span class="nn">cleverhans</span> <span class="kn">import</span> <span class="n">utils</span>
+
+<span class="n">np_dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+<span class="n">tf_dtype</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">as_dtype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+
+<span class="n">_logger</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">create_logger</span><span class="p">(</span><span class="s2">&quot;cleverhans.attacks.carlini_wagner_l2&quot;</span><span class="p">)</span>
+<span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CarliniWagnerL2"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.CarliniWagnerL2">[docs]</a><span class="k">class</span> <span class="nc">CarliniWagnerL2</span><span class="p">(</span><span class="n">Attack</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  This attack was originally proposed by Carlini and Wagner. It is an</span>
+<span class="sd">  iterative attack that finds adversarial examples on many defenses that</span>
+<span class="sd">  are robust to other attacks.</span>
+<span class="sd">  Paper link: https://arxiv.org/abs/1608.04644</span>
+
+<span class="sd">  At a high level, this attack is an iterative attack using Adam and</span>
+<span class="sd">  a specially-chosen loss function to find adversarial examples with</span>
+<span class="sd">  lower distortion than other attacks. This comes at the cost of speed,</span>
+<span class="sd">  as this attack is often much slower than others.</span>
+
+<span class="sd">  :param model: cleverhans.model.Model</span>
+<span class="sd">  :param sess: tf.Session</span>
+<span class="sd">  :param dtypestr: dtype of the data</span>
+<span class="sd">  :param kwargs: passed through to super constructor</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Note: the model parameter should be an instance of the</span>
+<span class="sd">    cleverhans.model.Model abstraction provided by CleverHans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+      <span class="n">wrapper_warning_logits</span><span class="p">()</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">CallableModelWrapper</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;logits&#39;</span><span class="p">)</span>
+
+    <span class="nb">super</span><span class="p">(</span><span class="n">CarliniWagnerL2</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">dtypestr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">feedable_kwargs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;y_target&#39;</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">structural_kwargs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;batch_size&#39;</span><span class="p">,</span> <span class="s1">&#39;confidence&#39;</span><span class="p">,</span> <span class="s1">&#39;targeted&#39;</span><span class="p">,</span> <span class="s1">&#39;learning_rate&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;binary_search_steps&#39;</span><span class="p">,</span> <span class="s1">&#39;max_iterations&#39;</span><span class="p">,</span> <span class="s1">&#39;abort_early&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;initial_const&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_min&#39;</span><span class="p">,</span> <span class="s1">&#39;clip_max&#39;</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="CarliniWagnerL2.generate"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.CarliniWagnerL2.generate">[docs]</a>  <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a tensor that constructs adversarial examples for the given</span>
+<span class="sd">    input. Generate uses tf.py_func in order to operate over tensors.</span>
+
+<span class="sd">    :param x: A tensor with the inputs.</span>
+<span class="sd">    :param kwargs: See `parse_params`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+        <span class="s1">&#39;Cannot use `generate` when no `sess` was provided&#39;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">parse_params</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">labels</span><span class="p">,</span> <span class="n">nb_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_or_guess_labels</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">attack</span> <span class="o">=</span> <span class="n">CWL2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">confidence</span><span class="p">,</span>
+                  <span class="s1">&#39;y_target&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+                  <span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="p">,</span>
+                  <span class="bp">self</span><span class="o">.</span><span class="n">abort_early</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_const</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span>
+                  <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">,</span> <span class="n">nb_classes</span><span class="p">,</span>
+                  <span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">:])</span>
+
+    <span class="k">def</span> <span class="nf">cw_wrap</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_val</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">attack</span><span class="o">.</span><span class="n">attack</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_val</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">np_dtype</span><span class="p">)</span>
+
+    <span class="n">wrap</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">py_func</span><span class="p">(</span><span class="n">cw_wrap</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">labels</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tf_dtype</span><span class="p">)</span>
+    <span class="n">wrap</span><span class="o">.</span><span class="n">set_shape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get_shape</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">wrap</span></div>
+
+<div class="viewcode-block" id="CarliniWagnerL2.parse_params"><a class="viewcode-back" href="../../../source/attacks.html#cleverhans.attacks.CarliniWagnerL2.parse_params">[docs]</a>  <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                   <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">y_target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="n">confidence</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                   <span class="n">learning_rate</span><span class="o">=</span><span class="mf">5e-3</span><span class="p">,</span>
+                   <span class="n">binary_search_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                   <span class="n">max_iterations</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                   <span class="n">abort_early</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                   <span class="n">initial_const</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span>
+                   <span class="n">clip_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                   <span class="n">clip_max</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param y: (optional) A tensor with the true labels for an untargeted</span>
+<span class="sd">              attack. If None (and y_target is None) then use the</span>
+<span class="sd">              original labels the classifier assigns.</span>
+<span class="sd">    :param y_target: (optional) A tensor with the target labels for a</span>
+<span class="sd">              targeted attack.</span>
+<span class="sd">    :param confidence: Confidence of adversarial examples: higher produces</span>
+<span class="sd">                       examples with larger l2 distortion, but more</span>
+<span class="sd">                       strongly classified as adversarial.</span>
+<span class="sd">    :param batch_size: Number of attacks to run simultaneously.</span>
+<span class="sd">    :param learning_rate: The learning rate for the attack algorithm.</span>
+<span class="sd">                          Smaller values produce better results but are</span>
+<span class="sd">                          slower to converge.</span>
+<span class="sd">    :param binary_search_steps: The number of times we perform binary</span>
+<span class="sd">                                search to find the optimal tradeoff-</span>
+<span class="sd">                                constant between norm of the purturbation</span>
+<span class="sd">                                and confidence of the classification.</span>
+<span class="sd">    :param max_iterations: The maximum number of iterations. Setting this</span>
+<span class="sd">                           to a larger value will produce lower distortion</span>
+<span class="sd">                           results. Using only a few iterations requires</span>
+<span class="sd">                           a larger learning rate, and will produce larger</span>
+<span class="sd">                           distortion results.</span>
+<span class="sd">    :param abort_early: If true, allows early aborts if gradient descent</span>
+<span class="sd">                        is unable to make progress (i.e., gets stuck in</span>
+<span class="sd">                        a local minimum).</span>
+<span class="sd">    :param initial_const: The initial tradeoff-constant to use to tune the</span>
+<span class="sd">                          relative importance of size of the perturbation</span>
+<span class="sd">                          and confidence of classification.</span>
+<span class="sd">                          If binary_search_steps is large, the initial</span>
+<span class="sd">                          constant is not important. A smaller value of</span>
+<span class="sd">                          this constant gives lower distortion results.</span>
+<span class="sd">    :param clip_min: (optional float) Minimum input component value</span>
+<span class="sd">    :param clip_max: (optional float) Maximum input component value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># ignore the y and y_target argument</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">confidence</span> <span class="o">=</span> <span class="n">confidence</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span> <span class="o">=</span> <span class="n">learning_rate</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">binary_search_steps</span> <span class="o">=</span> <span class="n">binary_search_steps</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span> <span class="o">=</span> <span class="n">max_iterations</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">abort_early</span> <span class="o">=</span> <span class="n">abort_early</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_const</span> <span class="o">=</span> <span class="n">initial_const</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">ZERO</span><span class="p">():</span>
+  <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np_dtype</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">CWL2</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sess</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">targeted</span><span class="p">,</span>
+               <span class="n">learning_rate</span><span class="p">,</span> <span class="n">binary_search_steps</span><span class="p">,</span> <span class="n">max_iterations</span><span class="p">,</span>
+               <span class="n">abort_early</span><span class="p">,</span> <span class="n">initial_const</span><span class="p">,</span> <span class="n">clip_min</span><span class="p">,</span> <span class="n">clip_max</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">,</span>
+               <span class="n">shape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a tensor that constructs adversarial examples for the given</span>
+<span class="sd">    input. Generate uses tf.py_func in order to operate over tensors.</span>
+
+<span class="sd">    :param sess: a TF session.</span>
+<span class="sd">    :param model: a cleverhans.model.Model object.</span>
+<span class="sd">    :param batch_size: Number of attacks to run simultaneously.</span>
+<span class="sd">    :param confidence: Confidence of adversarial examples: higher produces</span>
+<span class="sd">                       examples with larger l2 distortion, but more</span>
+<span class="sd">                       strongly classified as adversarial.</span>
+<span class="sd">    :param targeted: boolean controlling the behavior of the adversarial</span>
+<span class="sd">                     examples produced. If set to False, they will be</span>
+<span class="sd">                     misclassified in any wrong class. If set to True,</span>
+<span class="sd">                     they will be misclassified in a chosen target class.</span>
+<span class="sd">    :param learning_rate: The learning rate for the attack algorithm.</span>
+<span class="sd">                          Smaller values produce better results but are</span>
+<span class="sd">                          slower to converge.</span>
+<span class="sd">    :param binary_search_steps: The number of times we perform binary</span>
+<span class="sd">                                search to find the optimal tradeoff-</span>
+<span class="sd">                                constant between norm of the purturbation</span>
+<span class="sd">                                and confidence of the classification.</span>
+<span class="sd">    :param max_iterations: The maximum number of iterations. Setting this</span>
+<span class="sd">                           to a larger value will produce lower distortion</span>
+<span class="sd">                           results. Using only a few iterations requires</span>
+<span class="sd">                           a larger learning rate, and will produce larger</span>
+<span class="sd">                           distortion results.</span>
+<span class="sd">    :param abort_early: If true, allows early aborts if gradient descent</span>
+<span class="sd">                        is unable to make progress (i.e., gets stuck in</span>
+<span class="sd">                        a local minimum).</span>
+<span class="sd">    :param initial_const: The initial tradeoff-constant to use to tune the</span>
+<span class="sd">                          relative importance of size of the pururbation</span>
+<span class="sd">                          and confidence of classification.</span>
+<span class="sd">                          If binary_search_steps is large, the initial</span>
+<span class="sd">                          constant is not important. A smaller value of</span>
+<span class="sd">                          this constant gives lower distortion results.</span>
+<span class="sd">    :param clip_min: (optional float) Minimum input component value.</span>
+<span class="sd">    :param clip_max: (optional float) Maximum input component value.</span>
+<span class="sd">    :param num_labels: the number of classes in the model&#39;s output.</span>
+<span class="sd">    :param shape: the shape of the model&#39;s input tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">sess</span> <span class="o">=</span> <span class="n">sess</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">TARGETED</span> <span class="o">=</span> <span class="n">targeted</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">LEARNING_RATE</span> <span class="o">=</span> <span class="n">learning_rate</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">MAX_ITERATIONS</span> <span class="o">=</span> <span class="n">max_iterations</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">BINARY_SEARCH_STEPS</span> <span class="o">=</span> <span class="n">binary_search_steps</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ABORT_EARLY</span> <span class="o">=</span> <span class="n">abort_early</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">CONFIDENCE</span> <span class="o">=</span> <span class="n">confidence</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_const</span> <span class="o">=</span> <span class="n">initial_const</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span> <span class="o">=</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">=</span> <span class="n">clip_max</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">repeat</span> <span class="o">=</span> <span class="n">binary_search_steps</span> <span class="o">&gt;=</span> <span class="mi">10</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">batch_size</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="c1"># the variable we&#39;re going to optimize over</span>
+    <span class="n">modifier</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np_dtype</span><span class="p">))</span>
+
+    <span class="c1"># these are variables to be more efficient in sending data to tf</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">timg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf_dtype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;timg&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">tlab</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf_dtype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;tlab&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">const</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">batch_size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf_dtype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;const&#39;</span><span class="p">)</span>
+
+    <span class="c1"># and here&#39;s what we use to assign them</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assign_timg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf_dtype</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;assign_timg&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assign_tlab</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span>
+        <span class="n">tf_dtype</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;assign_tlab&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assign_const</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span>
+        <span class="n">tf_dtype</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;assign_const&#39;</span><span class="p">)</span>
+
+    <span class="c1"># the resulting instance, tanh&#39;d to keep bounded from clip_min</span>
+    <span class="c1"># to clip_max</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">newimg</span> <span class="o">=</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">modifier</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">timg</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">newimg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">newimg</span> <span class="o">*</span> <span class="p">(</span><span class="n">clip_max</span> <span class="o">-</span> <span class="n">clip_min</span><span class="p">)</span> <span class="o">+</span> <span class="n">clip_min</span>
+
+    <span class="c1"># prediction BEFORE-SOFTMAX of the model</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_logits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">newimg</span><span class="p">)</span>
+
+    <span class="c1"># distance to the input data</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">other</span> <span class="o">=</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timg</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> \
+        <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">clip_max</span> <span class="o">-</span> <span class="n">clip_min</span><span class="p">)</span> <span class="o">+</span> <span class="n">clip_min</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">l2dist</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">newimg</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">other</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">))))</span>
+
+    <span class="c1"># compute the probability of the label class versus the maximum other</span>
+    <span class="n">real</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">tlab</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">other</span> <span class="o">=</span> <span class="n">reduce_max</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tlab</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tlab</span> <span class="o">*</span> <span class="mi">10000</span><span class="p">,</span>
+                       <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">TARGETED</span><span class="p">:</span>
+      <span class="c1"># if targeted, optimize for making the other class most likely</span>
+      <span class="n">loss1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">ZERO</span><span class="p">(),</span> <span class="n">other</span> <span class="o">-</span> <span class="n">real</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIDENCE</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="c1"># if untargeted, optimize for making this class least likely.</span>
+      <span class="n">loss1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">ZERO</span><span class="p">(),</span> <span class="n">real</span> <span class="o">-</span> <span class="n">other</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIDENCE</span><span class="p">)</span>
+
+    <span class="c1"># sum up the losses</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">loss2</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l2dist</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">loss1</span> <span class="o">=</span> <span class="n">reduce_sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">const</span> <span class="o">*</span> <span class="n">loss1</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss2</span>
+
+    <span class="c1"># Setup the adam optimizer and keep track of variables we&#39;re creating</span>
+    <span class="n">start_vars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tf</span><span class="o">.</span><span class="n">global_variables</span><span class="p">())</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">AdamOptimizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LEARNING_RATE</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">train</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="n">var_list</span><span class="o">=</span><span class="p">[</span><span class="n">modifier</span><span class="p">])</span>
+    <span class="n">end_vars</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">global_variables</span><span class="p">()</span>
+    <span class="n">new_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">end_vars</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">start_vars</span><span class="p">]</span>
+
+    <span class="c1"># these are the variables to initialize when we run</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">setup</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timg</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">assign_timg</span><span class="p">))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tlab</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">assign_tlab</span><span class="p">))</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">assign_const</span><span class="p">))</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">variables_initializer</span><span class="p">(</span><span class="n">var_list</span><span class="o">=</span><span class="p">[</span><span class="n">modifier</span><span class="p">]</span> <span class="o">+</span> <span class="n">new_vars</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">attack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imgs</span><span class="p">,</span> <span class="n">targets</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform the L_2 attack on the given instance for the given targets.</span>
+
+<span class="sd">    If self.targeted is true, then the targets represents the target labels</span>
+<span class="sd">    If self.targeted is false, then targets are the original class labels</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">imgs</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+          <span class="p">(</span><span class="s2">&quot;Running CWL2 attack on instance </span><span class="si">%s</span><span class="s2"> of </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">imgs</span><span class="p">)))</span>
+      <span class="n">r</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">attack_batch</span><span class="p">(</span><span class="n">imgs</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span>
+                            <span class="n">targets</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">attack_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imgs</span><span class="p">,</span> <span class="n">labs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run the attack on a batch of instance and labels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+      <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">TARGETED</span><span class="p">:</span>
+          <span class="n">x</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIDENCE</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="n">x</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIDENCE</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">TARGETED</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">==</span> <span class="n">y</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">!=</span> <span class="n">y</span>
+
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span>
+
+    <span class="n">oimgs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">imgs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span><span class="p">)</span>
+
+    <span class="c1"># re-scale instances to be within range [0, 1]</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="p">(</span><span class="n">imgs</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_max</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_min</span><span class="p">)</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">imgs</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># now convert to [-1, 1]</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="p">(</span><span class="n">imgs</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="c1"># convert to tanh-space</span>
+    <span class="n">imgs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctanh</span><span class="p">(</span><span class="n">imgs</span> <span class="o">*</span> <span class="o">.</span><span class="mi">999999</span><span class="p">)</span>
+
+    <span class="c1"># set the lower and upper bounds accordingly</span>
+    <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+    <span class="n">CONST</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_const</span>
+    <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e10</span>
+
+    <span class="c1"># placeholders for the best l2, score, and instance attack found so far</span>
+    <span class="n">o_bestl2</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e10</span><span class="p">]</span> <span class="o">*</span> <span class="n">batch_size</span>
+    <span class="n">o_bestscore</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">batch_size</span>
+    <span class="n">o_bestattack</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">oimgs</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">outer_step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BINARY_SEARCH_STEPS</span><span class="p">):</span>
+      <span class="c1"># completely reset adam&#39;s internal state.</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">)</span>
+      <span class="n">batch</span> <span class="o">=</span> <span class="n">imgs</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]</span>
+      <span class="n">batchlab</span> <span class="o">=</span> <span class="n">labs</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]</span>
+
+      <span class="n">bestl2</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e10</span><span class="p">]</span> <span class="o">*</span> <span class="n">batch_size</span>
+      <span class="n">bestscore</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">batch_size</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;  Binary search step </span><span class="si">%s</span><span class="s2"> of </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">outer_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">BINARY_SEARCH_STEPS</span><span class="p">)</span>
+
+      <span class="c1"># The last iteration (if we run many steps) repeat the search once.</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">repeat</span> <span class="ow">and</span> <span class="n">outer_step</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">BINARY_SEARCH_STEPS</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">CONST</span> <span class="o">=</span> <span class="n">upper_bound</span>
+
+      <span class="c1"># set the variables so that we don&#39;t have to send them over again</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="p">,</span> <span class="p">{</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">assign_timg</span><span class="p">:</span> <span class="n">batch</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">assign_tlab</span><span class="p">:</span> <span class="n">batchlab</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">assign_const</span><span class="p">:</span> <span class="n">CONST</span>
+          <span class="p">})</span>
+
+      <span class="n">prev</span> <span class="o">=</span> <span class="mf">1e6</span>
+      <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MAX_ITERATIONS</span><span class="p">):</span>
+        <span class="c1"># perform the attack</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">l2s</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">nimg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">l2dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">newimg</span>
+        <span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">iteration</span> <span class="o">%</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">MAX_ITERATIONS</span> <span class="o">//</span> <span class="mi">10</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+          <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">((</span><span class="s2">&quot;    Iteration </span><span class="si">{}</span><span class="s2"> of </span><span class="si">{}</span><span class="s2">: loss=</span><span class="si">{:.3g}</span><span class="s2"> &quot;</span> <span class="o">+</span>
+                         <span class="s2">&quot;l2=</span><span class="si">{:.3g}</span><span class="s2"> f=</span><span class="si">{:.3g}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                             <span class="n">iteration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_ITERATIONS</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span>
+                             <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">l2s</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">scores</span><span class="p">)))</span>
+
+        <span class="c1"># check if we should abort search if we&#39;re getting nowhere.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ABORT_EARLY</span> <span class="ow">and</span> \
+           <span class="n">iteration</span> <span class="o">%</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">MAX_ITERATIONS</span> <span class="o">//</span> <span class="mi">10</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+          <span class="k">if</span> <span class="n">l</span> <span class="o">&gt;</span> <span class="n">prev</span> <span class="o">*</span> <span class="o">.</span><span class="mi">9999</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;    Failed to make progress; stop early&quot;</span>
+            <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">break</span>
+          <span class="n">prev</span> <span class="o">=</span> <span class="n">l</span>
+
+        <span class="c1"># adjust the best result found so far</span>
+        <span class="k">for</span> <span class="n">e</span><span class="p">,</span> <span class="p">(</span><span class="n">l2</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">l2s</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">nimg</span><span class="p">)):</span>
+          <span class="n">lab</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">batchlab</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+          <span class="k">if</span> <span class="n">l2</span> <span class="o">&lt;</span> <span class="n">bestl2</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="ow">and</span> <span class="n">compare</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">lab</span><span class="p">):</span>
+            <span class="n">bestl2</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">l2</span>
+            <span class="n">bestscore</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+          <span class="k">if</span> <span class="n">l2</span> <span class="o">&lt;</span> <span class="n">o_bestl2</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="ow">and</span> <span class="n">compare</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">lab</span><span class="p">):</span>
+            <span class="n">o_bestl2</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">l2</span>
+            <span class="n">o_bestscore</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+            <span class="n">o_bestattack</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">ii</span>
+
+      <span class="c1"># adjust the constant as needed</span>
+      <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">compare</span><span class="p">(</span><span class="n">bestscore</span><span class="p">[</span><span class="n">e</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">batchlab</span><span class="p">[</span><span class="n">e</span><span class="p">]))</span> <span class="ow">and</span> \
+           <span class="n">bestscore</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+          <span class="c1"># success, divide const by two</span>
+          <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">],</span> <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+          <span class="k">if</span> <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">:</span>
+            <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">lower_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+</span> <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="c1"># failure, either multiply by 10 if no solution found yet</span>
+          <span class="c1">#          or do binary search with the known upper bound</span>
+          <span class="n">lower_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lower_bound</span><span class="p">[</span><span class="n">e</span><span class="p">],</span> <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+          <span class="k">if</span> <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">:</span>
+            <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">lower_bound</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+</span> <span class="n">upper_bound</span><span class="p">[</span><span class="n">e</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+          <span class="k">else</span><span class="p">:</span>
+            <span class="n">CONST</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">10</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;  Successfully generated adversarial examples &quot;</span> <span class="o">+</span>
+                    <span class="s2">&quot;on </span><span class="si">{}</span><span class="s2"> of </span><span class="si">{}</span><span class="s2"> instances.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="nb">sum</span><span class="p">(</span><span class="n">upper_bound</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">))</span>
+      <span class="n">o_bestl2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">o_bestl2</span><span class="p">)</span>
+      <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">o_bestl2</span><span class="p">[</span><span class="n">o_bestl2</span> <span class="o">&lt;</span> <span class="mf">1e9</span><span class="p">]))</span>
+      <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;   Mean successful distortion: </span><span class="si">{:.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mean</span><span class="p">))</span>
+
+    <span class="c1"># return the best solution found</span>
+    <span class="n">o_bestl2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">o_bestl2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">o_bestattack</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>
