@@ -32,6 +32,7 @@ from __future__ import unicode_literals
 import tensorflow as tf
 
 from cleverhans.utils_tf import silence
+
 silence()
 # silence call must precede this imports. pylint doesn't like that
 # pylint: disable=C0413
@@ -54,42 +55,59 @@ FLAGS = flags.FLAGS
 
 
 def main(argv=None):
-  """
-  Make a confidence report and save it to disk.
-  """
-  try:
-    _name_of_script, filepath = argv
-  except ValueError:
-    raise ValueError(argv)
-  make_confidence_report(filepath=filepath, test_start=FLAGS.test_start,
-                         test_end=FLAGS.test_end, which_set=FLAGS.which_set,
-                         report_path=FLAGS.report_path,
-                         mc_batch_size=FLAGS.mc_batch_size,
-                         nb_iter=FLAGS.nb_iter,
-                         base_eps_iter=FLAGS.base_eps_iter,
-                         batch_size=FLAGS.batch_size,
-                         save_advx=FLAGS.save_advx)
+    """
+    Make a confidence report and save it to disk.
+    """
+    try:
+        _name_of_script, filepath = argv
+    except ValueError:
+        raise ValueError(argv)
+    make_confidence_report(
+        filepath=filepath,
+        test_start=FLAGS.test_start,
+        test_end=FLAGS.test_end,
+        which_set=FLAGS.which_set,
+        report_path=FLAGS.report_path,
+        mc_batch_size=FLAGS.mc_batch_size,
+        nb_iter=FLAGS.nb_iter,
+        base_eps_iter=FLAGS.base_eps_iter,
+        batch_size=FLAGS.batch_size,
+        save_advx=FLAGS.save_advx,
+    )
 
 
-if __name__ == '__main__':
-  flags.DEFINE_integer('train_start', TRAIN_START, 'Starting point (inclusive)'
-                       'of range of train examples to use')
-  flags.DEFINE_integer('train_end', TRAIN_END, 'Ending point (non-inclusive) '
-                       'of range of train examples to use')
-  flags.DEFINE_integer('test_start', TEST_START, 'Starting point (inclusive) '
-                       'of range of test examples to use')
-  flags.DEFINE_integer('test_end', TEST_END, 'End point (non-inclusive) of '
-                       'range of test examples to use')
-  flags.DEFINE_integer('nb_iter', NB_ITER, 'Number of iterations of PGD')
-  flags.DEFINE_string('which_set', WHICH_SET, '"train" or "test"')
-  flags.DEFINE_string('report_path', REPORT_PATH, 'Path to save to')
-  flags.DEFINE_integer('mc_batch_size', MC_BATCH_SIZE,
-                       'Batch size for MaxConfidence')
-  flags.DEFINE_integer('batch_size', BATCH_SIZE,
-                       'Batch size for most jobs')
-  flags.DEFINE_float('base_eps_iter', BASE_EPS_ITER,
-                     'epsilon per iteration, if data were in [0, 1]')
-  flags.DEFINE_integer('save_advx', SAVE_ADVX,
-                       'If True, saves the adversarial examples to the '
-                       'filesystem.')
-  tf.app.run()
+if __name__ == "__main__":
+    flags.DEFINE_integer(
+        "train_start",
+        TRAIN_START,
+        "Starting point (inclusive)" "of range of train examples to use",
+    )
+    flags.DEFINE_integer(
+        "train_end",
+        TRAIN_END,
+        "Ending point (non-inclusive) " "of range of train examples to use",
+    )
+    flags.DEFINE_integer(
+        "test_start",
+        TEST_START,
+        "Starting point (inclusive) " "of range of test examples to use",
+    )
+    flags.DEFINE_integer(
+        "test_end",
+        TEST_END,
+        "End point (non-inclusive) of " "range of test examples to use",
+    )
+    flags.DEFINE_integer("nb_iter", NB_ITER, "Number of iterations of PGD")
+    flags.DEFINE_string("which_set", WHICH_SET, '"train" or "test"')
+    flags.DEFINE_string("report_path", REPORT_PATH, "Path to save to")
+    flags.DEFINE_integer("mc_batch_size", MC_BATCH_SIZE, "Batch size for MaxConfidence")
+    flags.DEFINE_integer("batch_size", BATCH_SIZE, "Batch size for most jobs")
+    flags.DEFINE_float(
+        "base_eps_iter", BASE_EPS_ITER, "epsilon per iteration, if data were in [0, 1]"
+    )
+    flags.DEFINE_integer(
+        "save_advx",
+        SAVE_ADVX,
+        "If True, saves the adversarial examples to the " "filesystem.",
+    )
+    tf.app.run()

@@ -11,18 +11,20 @@ from cleverhans.picklable_model import MLP, Conv2D, ReLU, Flatten, Linear
 from cleverhans.picklable_model import Softmax
 
 
-def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
-                             input_shape=(None, 28, 28, 1)):
-  """The model for the picklable models tutorial.
-  """
-  layers = [Conv2D(nb_filters, (8, 8), (2, 2), "SAME"),
-            ReLU(),
-            Conv2D(nb_filters * 2, (6, 6), (2, 2), "VALID"),
-            ReLU(),
-            Conv2D(nb_filters * 2, (5, 5), (1, 1), "VALID"),
-            ReLU(),
-            Flatten(),
-            Linear(nb_classes),
-            Softmax()]
-  model = MLP(layers, input_shape)
-  return model
+def make_basic_picklable_cnn(
+    nb_filters=64, nb_classes=10, input_shape=(None, 28, 28, 1)
+):
+    """The model for the picklable models tutorial."""
+    layers = [
+        Conv2D(nb_filters, (8, 8), (2, 2), "SAME"),
+        ReLU(),
+        Conv2D(nb_filters * 2, (6, 6), (2, 2), "VALID"),
+        ReLU(),
+        Conv2D(nb_filters * 2, (5, 5), (1, 1), "VALID"),
+        ReLU(),
+        Flatten(),
+        Linear(nb_classes),
+        Softmax(),
+    ]
+    model = MLP(layers, input_shape)
+    return model

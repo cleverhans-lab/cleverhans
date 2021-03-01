@@ -13,19 +13,20 @@ import unittest
 
 import numpy as np
 
+
 class CleverHansTest(unittest.TestCase):
-  """TestCase with some extra features"""
+    """TestCase with some extra features"""
 
-  def setUp(self):
-    self.test_start = time.time()
-    # seed the randomness
-    np.random.seed(1234)
+    def setUp(self):
+        self.test_start = time.time()
+        # seed the randomness
+        np.random.seed(1234)
 
-  def tearDown(self):
-    print(self.id(), "took", time.time() - self.test_start, "seconds")
+    def tearDown(self):
+        print(self.id(), "took", time.time() - self.test_start, "seconds")
 
-  def assertClose(self, x, y, *args, **kwargs):
-    """Assert that `x` and `y` have close to the same value"""
-    # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
-    # on failure
-    assert np.allclose(x, y, *args, **kwargs), (x, y)
+    def assertClose(self, x, y, *args, **kwargs):
+        """Assert that `x` and `y` have close to the same value"""
+        # self.assertTrue(np.allclose(x, y)) doesn't give a useful message
+        # on failure
+        assert np.allclose(x, y, *args, **kwargs), (x, y)

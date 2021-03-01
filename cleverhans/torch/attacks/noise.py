@@ -22,15 +22,16 @@ def noise(x, eps=0.3, order=np.inf, clip_min=None, clip_max=None):
 
     Args:
     :param x: the input tensor
-    :param eps: (optional float) maximum distortion of adversarial example 
+    :param eps: (optional float) maximum distortion of adversarial example
                 compared to original input.
     :param norm: (optional) Order of the norm.
     :param clip_min: (optional float) Minimum input component value
     :param clip_max: (optional float) Maximum input component value
     """
 
-    if order != np.inf: raise NotImplementedError(norm)
-    
+    if order != np.inf:
+        raise NotImplementedError(norm)
+
     eta = torch.FloatTensor(*x.shape).to(x.device).uniform_(-eps, eps)
     adv_x = x + eta
 
