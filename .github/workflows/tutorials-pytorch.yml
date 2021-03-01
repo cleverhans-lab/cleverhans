@@ -12,33 +12,26 @@ on:
       - 'tutorials/future/torch/**/*'
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.6]
-
+  run:
+    runs-on: [self-hosted,cml,gpu]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e "."
-        pip install -r requirements/requirements.txt
-        pip install -r requirements/requirements-pytorch.txt
-        pip install -r requirements/requirements-dev.txt
-    - name: Run tutorials
-      run: |
-        find tutorials/future/torch/ -name '*.py' | while read f
-        do
-            python $f
-            if [ $? -ne 0 ]
-            then
-                exit 1
-            fi
-        done
+      - uses: actions/checkout@v2
+      - name: cml_run
+        env:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "."
+          pip install -r requirements/requirements.txt
+          pip install -r requirements/requirements-pytorch.txt
+          pip install -r requirements/requirements-dev.txt
+          pip install -r requirements/requirements-gpu.txt
+
+          find tutorials/future/torch/ -name '*.py' | while read f
+          do
+              python $f
+              if [ $? -ne 0 ]
+              then
+                  exit 1
+              fi
+          done
