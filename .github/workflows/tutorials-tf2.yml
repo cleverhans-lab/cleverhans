@@ -3,13 +3,13 @@ name: TensorFlow 2 Tutorials
 on:
   push:
     paths:
-      - 'cleverhans/future/tf2/**/*'
-      - 'tutorials/future/tf2/**/*'
+      - 'cleverhans/tf2/**/*'
+      - 'tutorials/tf2/**/*'
 
   pull_request:
     paths:
-      - 'cleverhans/future/tf2/**/*'
-      - 'tutorials/future/tf2/**/*'
+      - 'cleverhans/tf2/**/*'
+      - 'tutorials/tf2/**/*'
 
 jobs:
   run:
@@ -27,7 +27,7 @@ jobs:
           pip install -r requirements/requirements-dev.txt
           pip install -r requirements/requirements-gpu.txt
 
-          find tutorials/future/tf2/ -name '*.py' | while read f
+          find tutorials/tf2/ -name '*.py' | while read f
           do
               python $f
               if [ $? -ne 0 ]

@@ -3,13 +3,13 @@ name: JAX Tutorials
 on:
   push:
     paths:
-      - 'cleverhans/future/jax/**/*'
-      - 'tutorials/future/jax/**/*'
+      - 'cleverhans/jax/**/*'
+      - 'tutorials/jax/**/*'
 
   pull_request:
     paths:
-      - 'cleverhans/future/jax/**/*'
-      - 'tutorials/future/jax/**/*'
+      - 'cleverhans/jax/**/*'
+      - 'tutorials/jax/**/*'
 
 jobs:
   run:
@@ -27,7 +27,7 @@ jobs:
           pip install -r requirements/requirements-dev.txt
           pip install -r requirements/requirements-gpu.txt
 
-          find tutorials/future/jax/ -name '*.py' | while read f
+          find tutorials/jax/ -name '*.py' | while read f
           do
               python $f
               if [ $? -ne 0 ]

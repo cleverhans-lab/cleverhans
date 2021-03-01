@@ -3,13 +3,13 @@ name: Style and type checks
 on:
   push:
     paths:
-      - 'cleverhans/future/**/*'
-      - 'tutorials/future/**/*'
+      - 'cleverhans/**/*'
+      - 'tutorials/**/*'
 
   pull_request:
     paths:
-      - 'cleverhans/future/**/*'
-      - 'tutorials/future/**/'
+      - 'cleverhans/**/*'
+      - 'tutorials/**/'
 
 jobs:
   build:
@@ -36,12 +36,12 @@ jobs:
         pip install -r requirements/requirements-dev.txt
     - name: Code reformat check
       run: |
-        black --check cleverhans/future/
-        black --check tutorials/future/
+        black --check cleverhans/
+        black --check tutorials/
     - name: flake8 linting check
       run: |
-        flake8 cleverhans/future/
-        flake8 tutorials/future/
+        flake8 cleverhans/
+        flake8 tutorials/
 #    - name: Type check
 #      run: |
 #        mypy cleverhans/future/

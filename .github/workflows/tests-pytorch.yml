@@ -3,11 +3,11 @@ name: PyTorch Tests
 on:
   push:
     paths:
-      - 'cleverhans/future/torch/**/*'
+      - 'cleverhans/torch/**/*'
 
   pull_request:
     paths:
-      - 'cleverhans/future/torch/**/*'
+      - 'cleverhans/torch/**/*'
 
 jobs:
   run:
@@ -25,4 +25,4 @@ jobs:
           pip install -r requirements/requirements-dev.txt
           pip install -r requirements/requirements-gpu.txt
 
-          pytest cleverhans/future/torch/tests
+          pytest cleverhans/torch/tests

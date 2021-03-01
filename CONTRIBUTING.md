@@ -34,12 +34,12 @@ when contributing.
 
 ### Setting up Cleverhans on your machine
 
-Start by creating a new Conda or Virtualenv environment. 
+Then create a new Conda or Virtualenv environment. 
 
 Conda:
 ```
 $ conda create --name cleverhans python=3.6
-$ conda activate cleverhanse
+$ conda activate cleverhans
 ```
 
 Virtualenv:
@@ -49,8 +49,9 @@ $ cd /path/to/new/virtual/environment
 $ source ./bin/activate
 ```
 
-Then install the Cleverhans library and all corresponding requirements
-into your newly created environment.
+Then, after `cd`-ing into the `cleverhans` directory, install the 
+Cleverhans library and all corresponding requirements into your 
+newly created environment.
 
 ```
 $ pip install -e "."

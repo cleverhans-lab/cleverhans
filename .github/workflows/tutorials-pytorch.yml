@@ -3,13 +3,13 @@ name: PyTorch Tutorials
 on:
   push:
     paths:
-      - 'cleverhans/future/torch/**/*'
-      - 'tutorials/future/torch/**/*'
+      - 'cleverhans/torch/**/*'
+      - 'tutorials/torch/**/*'
 
   pull_request:
     paths:
-      - 'cleverhans/future/torch/**/*'
-      - 'tutorials/future/torch/**/*'
+      - 'cleverhans/torch/**/*'
+      - 'tutorials/torch/**/*'
 
 jobs:
   run:
@@ -27,7 +27,7 @@ jobs:
           pip install -r requirements/requirements-dev.txt
           pip install -r requirements/requirements-gpu.txt
 
-          find tutorials/future/torch/ -name '*.py' | while read f
+          find tutorials/torch/ -name '*.py' | while read f
           do
               python $f
               if [ $? -ne 0 ]
