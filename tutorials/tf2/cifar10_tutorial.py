@@ -58,13 +58,13 @@ def ld_cifar10():
     y = tf.pad(x, [[w] * 2, [w] * 2, [0] * 2], mode='REFLECT')
     return tf.image.random_crop(y, tf.shape(x))
 
-  mnist_train, mnist_test = dataset['train'], dataset['test']
+  cifar10_train, cifar10_test = dataset['train'], dataset['test']
   # Augmentation helps a lot in CIFAR10
-  mnist_train = mnist_train.map(lambda x, y: (augment_mirror(augment_shift(x)), y))
-  mnist_train = mnist_train.map(convert_types).shuffle(10000).batch(128)
-  mnist_test = mnist_test.map(convert_types).batch(128)
+  cifar10_train = cifar10_train.map(lambda x, y: (augment_mirror(augment_shift(x)), y))
+  cifar10_train = cifar10_train.map(convert_types).shuffle(10000).batch(128)
+  cifar10_test = cifar10_test.map(convert_types).batch(128)
 
-  return EasyDict(train=mnist_train, test=mnist_test)
+  return EasyDict(train=cifar10_train, test=cifar10_test)
 
 
 def main(_):
