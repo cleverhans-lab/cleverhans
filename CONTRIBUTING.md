@@ -25,3 +25,57 @@ on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com
   submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407)
 
 Bug fixes can be initiated through Github pull requests.
+
+## Development setup
+
+Please follow the usual 
+[git forking workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/forking-workflow) 
+when contributing.
+
+### Setting up Cleverhans on your machine
+
+Start by creating a new Conda or Virtualenv environment. 
+
+Conda:
+```
+$ conda create --name cleverhans python=3.6
+$ conda activate cleverhanse
+```
+
+Virtualenv:
+```
+$ python3 -m venv /path/to/new/virtual/environment
+$ cd /path/to/new/virtual/environment
+$ source ./bin/activate
+```
+
+Then install the Cleverhans library and all corresponding requirements
+into your newly created environment.
+
+```
+$ pip install -e "."
+$ pip install -r requirements/requirements.txt
+$ pip install -r requirements/requirements-pytorch.txt
+$ pip install -r requirements/requirements-jax.txt
+$ pip install -r requirements/requirements-tf2.txt
+$ pip install -r requirements/requirements-dev.txt
+```
+
+Optionally also install GPU dependencies for JAX (PyTorch and 
+TF2 already come with GPU as part of their default package):
+```
+$ pip install -r requirements/requirements-gpu.txt
+```
+
+### Add git pre-commit hooks
+
+Install our pre-commit hooks that ensure that your code is always formatted
+via `black` before committing.
+
+```
+$ pre-commit install
+```
+
+Note that we do have code style checks in place for every submitted 
+PR and will reject PRs that do not meet these checks. By installing the 
+pre-commit hooks, this will be taken care of automatically
