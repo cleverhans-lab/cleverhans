@@ -9,7 +9,7 @@ on:
   pull_request:
     paths:
       - 'cleverhans/**/*'
-      - 'tutorials/**/'
+      - 'tutorials/**/*'
 
 jobs:
   build:
@@ -38,10 +38,10 @@ jobs:
       run: |
         black --check cleverhans/
         black --check tutorials/
-    - name: flake8 linting check
-      run: |
-        flake8 cleverhans/
-        flake8 tutorials/
+#    - name: flake8 linting check
+#      run: |
+#        flake8 cleverhans/
+#        flake8 tutorials/
 #    - name: Type check
 #      run: |
 #        mypy cleverhans/future/
