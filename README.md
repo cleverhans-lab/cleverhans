@@ -64,7 +64,7 @@ develop the library and contribute changes back, first fork the repository
 on GitHub and then clone your fork into a directory of your choice:
 
 ```
-git clone https://github.com/cleverhans-lab/cleverhans
+git clone https://github.com/<your-org>/cleverhans
 ```
 
 You can then install the local package in "editable" mode in order to add it to
@@ -92,12 +92,8 @@ issue tracker should *only* be used to report bugs or make feature requests.
 
 Contributions are welcomed! To speed the code review process, we ask that:
 * New efforts and features be coordinated on the [discussion board](https://github.com/cleverhans-lab/cleverhans/discussions).
-* When making code contributions to CleverHans, you follow the
-`PEP8 with two spaces` coding style (the same as the one used
-by TensorFlow) in your pull requests.
-In most cases this can be done by running `autopep8 -i --indent-size 2 <file>`
-on the files you have edited.
-You can check your code by running `nosetests cleverhans/devtools/tests/test_format.py` or check an individual file by running `pylint <file>` from inside the cleverhans repository root directory.
+* When making code contributions to CleverHans, you should follow the [`Black`](https://black.readthedocs.io/en/stable/index.html)
+ coding style in your pull requests.
 * We do not accept pull requests that add git submodules because of [the
   problems that arise when maintaining git
   submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407).
@@ -124,7 +120,7 @@ You should not write 3rd party code that imports the tutorials and expect
 that the interface will not break. Only the main library is subject to
 our six month interface deprecation warning rule.
 
-NOTE: please write to cleverhans-dev@googlegroups.com before writing a new
+NOTE: please start a thread on the [discussion board](https://github.com/cleverhans-lab/cleverhans/discussions) before writing a new
 tutorial. Because each new tutorial involves a large amount of duplicated
 code relative to the existing tutorials, and because every line of code
 requires ongoing testing and maintenance indefinitely, we generally prefer
@@ -247,6 +243,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Erfan Noury (UMBC)
 * Robert Wagner (Case Western Reserve University)
 * Erh-Chung Chen (National Tsing Hua University)
+* Joel Frank (Ruhr-University Bochum)
 
 ## Copyright
 
