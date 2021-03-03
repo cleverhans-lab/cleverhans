@@ -243,6 +243,7 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Erfan Noury (UMBC)
 * Robert Wagner (Case Western Reserve University)
 * Erh-Chung Chen (National Tsing Hua University)
+* Joel Frank (Ruhr-University Bochum)
 
 ## Copyright
 
