@@ -15,9 +15,7 @@ we strongly encourage you to add it to CleverHans so that others
 may evaluate it fairly in their own work.
 
 To speed the code review process, we ask that:
-
-* New efforts and features be coordinated
-on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
+* New efforts and features be coordinated on the [discussion board](https://github.com/cleverhans-lab/cleverhans/discussions).
 * When making code contributions to CleverHans, you should follow the
 [`Black`](https://black.readthedocs.io/en/stable/index.html) coding style in your pull requests.
 * We do not accept pull requests that add git submodules because of [the
