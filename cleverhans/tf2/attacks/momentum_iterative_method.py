@@ -8,18 +8,18 @@ from cleverhans.tf2.utils import clip_eta
 
 
 def momentum_iterative_method(
-        model_fn,
-        x,
-        eps=0.3,
-        eps_iter=0.06,
-        nb_iter=10,
-        norm=np.inf,
-        clip_min=None,
-        clip_max=None,
-        y=None,
-        targeted=False,
-        decay_factor=1.0,
-        sanity_checks=True
+    model_fn,
+    x,
+    eps=0.3,
+    eps_iter=0.06,
+    nb_iter=10,
+    norm=np.inf,
+    clip_min=None,
+    clip_max=None,
+    y=None,
+    targeted=False,
+    decay_factor=1.0,
+    sanity_checks=True
 ):
   """
   Tensorflow 2.0 implementation of Momentum Iterative Method (Dong et al. 2017).
