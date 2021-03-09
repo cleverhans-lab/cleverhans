@@ -114,4 +114,5 @@ def loss_fn(
   """
   Added softmax cross entropy loss for MIM as in the original MI-FGSM paper.
   """
+
   return tf.nn.sparse_softmax_cross_entropy_with_logits(labels, logits, name=None)
