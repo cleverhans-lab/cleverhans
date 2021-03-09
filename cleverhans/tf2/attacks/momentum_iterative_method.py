@@ -107,7 +107,10 @@ def momentum_iterative_method(
 
   return adv_x
 
-def loss_fn(labels, logits):
+def loss_fn(
+    labels,
+    logits
+):
   """
   Added softmax cross entropy loss for MIM as in the original MI-FGSM paper.
   """
