@@ -83,7 +83,7 @@ def momentum_iterative_method(
     i = 0
     while i < nb_iter:
         # Define gradient of loss wrt input
-        grad = compute_gradient(model_fn, adv_x, y, targeted)
+        grad = compute_gradient(model_fn, loss_fn, adv_x, y, targeted)
 
         # Normalize current gradient and add it to the accumulated gradient
         red_ind = list(range(1, len(grad.shape)))
@@ -107,3 +107,11 @@ def momentum_iterative_method(
         assert np.all(asserts)
 
     return adv_x
+
+
+def loss_fn(labels, logits):
+    """
+    Added softmax cross entropy loss for MIM as in the original MI-FGSM paper.
+    """
+
+    return tf.nn.sparse_softmax_cross_entropy_with_logits(labels, logits, name=None)
