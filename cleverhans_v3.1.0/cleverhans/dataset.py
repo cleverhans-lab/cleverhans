@@ -185,7 +185,7 @@ def maybe_download_file(url, datadir=None, force=False):
 
 
 def download_and_parse_mnist_file(file_name, datadir=None, force=False):
-  url = os.path.join('http://yann.lecun.com/exdb/mnist/', file_name)
+  url = os.path.join('https://storage.googleapis.com/cvdf-datasets/mnist/', file_name)
   file_name = maybe_download_file(url, datadir=datadir, force=force)
 
   # Open the file and unzip it if necessary

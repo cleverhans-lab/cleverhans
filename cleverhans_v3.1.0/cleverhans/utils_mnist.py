@@ -17,7 +17,7 @@ utils_mnist_warning = "cleverhans.utils_mnist is deprecrated and will be " \
 
 def maybe_download_mnist_file(file_name, datadir=None, force=False):
   warnings.warn(utils_mnist_warning)
-  url = os.path.join('http://yann.lecun.com/exdb/mnist/', file_name)
+  url = os.path.join('https://storage.googleapis.com/cvdf-datasets/mnist/', file_name)
   return dataset.maybe_download_file(url, datadir=None, force=False)
 
 
