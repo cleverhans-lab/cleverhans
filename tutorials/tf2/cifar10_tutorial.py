@@ -54,9 +54,11 @@ def ld_cifar10():
         y = tf.pad(x, [[w] * 2, [w] * 2, [0] * 2], mode="REFLECT")
         return tf.image.random_crop(y, tf.shape(x))
 
-    cifar10_train, cifar10_test = dataset['train'], dataset['test']
+    cifar10_train, cifar10_test = dataset["train"], dataset["test"]
     # Augmentation helps a lot in CIFAR10
-    cifar10_train = cifar10_train.map(lambda x, y: (augment_mirror(augment_shift(x)), y))
+    cifar10_train = cifar10_train.map(
+        lambda x, y: (augment_mirror(augment_shift(x)), y)
+    )
     cifar10_train = cifar10_train.map(convert_types).shuffle(10000).batch(128)
     cifar10_test = cifar10_test.map(convert_types).batch(128)
 
@@ -128,7 +130,7 @@ def main(_):
 
 
 if __name__ == "__main__":
-    flags.DEFINE_integer("nb_epochs", 200, "Number of epochs.")
+    flags.DEFINE_integer("nb_epochs", 8, "Number of epochs.")
     flags.DEFINE_float("eps", 0.05, "Total epsilon for FGM and PGD attacks.")
     flags.DEFINE_bool(
         "adv_train", False, "Use adversarial training (on PGD adversarial examples)."
