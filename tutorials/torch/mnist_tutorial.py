@@ -5,11 +5,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
+from datasets import MNISTDataset
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.torch.attacks.projected_gradient_descent import (
     projected_gradient_descent,
 )
+
 
 FLAGS = flags.FLAGS
 
@@ -79,12 +81,13 @@ def ld_mnist():
     test_transforms = torchvision.transforms.Compose(
         [torchvision.transforms.ToTensor()]
     )
-    train_dataset = torchvision.datasets.MNIST(
-        root="/tmp/data", train=True, transform=train_transforms, download=True
+
+    # Load MNIST dataset
+    train_dataset = MNISTDataset(root="/tmp/data", transform=train_transforms)
+    test_dataset = MNISTDataset(
+        root="/tmp/data", train=False, transform=test_transforms
     )
-    test_dataset = torchvision.datasets.MNIST(
-        root="/tmp/data", train=False, transform=test_transforms, download=True
-    )
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=128, shuffle=True, num_workers=2
     )
