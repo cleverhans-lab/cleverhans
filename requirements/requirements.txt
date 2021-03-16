@@ -2,3 +2,4 @@ numpy>=1.19.0
 scipy>=1.5.0
 easydict>=1.9
 absl-py>=0.10.0
+requests>=2.25.0
