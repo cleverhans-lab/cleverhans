@@ -12,5 +12,5 @@ from cleverhans.utils import shell_call
 
 for f in list_files(".py"):
 
-  command = ["autopep8", "-i", "--indent-size", "2", f]
-  shell_call(command)
+    command = ["autopep8", "-i", "--indent-size", "2", f]
+    shell_call(command)

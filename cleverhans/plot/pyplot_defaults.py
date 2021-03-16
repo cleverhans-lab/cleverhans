@@ -16,10 +16,11 @@ from __future__ import print_function
 
 import matplotlib
 from matplotlib import pyplot
-matplotlib.rcParams['text.latex.preamble'] = r'\usepackage{bm}'
-matplotlib.rcParams['text.usetex'] = True
-pyplot.rcParams['pdf.fonttype'] = 42
-pyplot.rcParams['font.family'] = 'serif'
-pyplot.rcParams['font.serif'] = 'CMU Serif'
-pyplot.rcParams['font.size'] = 8
+
+matplotlib.rcParams["text.latex.preamble"] = r"\usepackage{bm}"
+matplotlib.rcParams["text.usetex"] = True
+pyplot.rcParams["pdf.fonttype"] = 42
+pyplot.rcParams["font.family"] = "serif"
+pyplot.rcParams["font.serif"] = "CMU Serif"
+pyplot.rcParams["font.size"] = 8
 # Note: if you get an error, delete fontList.cache

@@ -15,7 +15,11 @@ from cleverhans.attacks.carlini_wagner_l2 import CarliniWagnerL2
 from cleverhans.attacks.deep_fool import DeepFool
 from cleverhans.attacks.elastic_net_method import ElasticNetMethod
 from cleverhans.attacks.fast_feature_adversaries import FastFeatureAdversaries
-from cleverhans.attacks.fast_gradient_method import FastGradientMethod, fgm, optimize_linear
+from cleverhans.attacks.fast_gradient_method import (
+    FastGradientMethod,
+    fgm,
+    optimize_linear,
+)
 from cleverhans.attacks.lbfgs import LBFGS
 from cleverhans.attacks.madry_et_al import MadryEtAl
 from cleverhans.attacks.max_confidence import MaxConfidence
@@ -27,7 +31,10 @@ from cleverhans.attacks.semantic import Semantic
 from cleverhans.attacks.spsa import SPSA, projected_optimization
 from cleverhans.attacks.spatial_transformation_method import SpatialTransformationMethod
 from cleverhans.attacks.virtual_adversarial_method import VirtualAdversarialMethod, vatm
-from cleverhans.attacks.hop_skip_jump_attack import HopSkipJumpAttack, BoundaryAttackPlusPlus
+from cleverhans.attacks.hop_skip_jump_attack import (
+    HopSkipJumpAttack,
+    BoundaryAttackPlusPlus,
+)
 from cleverhans.attacks.sparse_l1_descent import SparseL1Descent
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.model import wrapper_warning, wrapper_warning_logits
@@ -38,4 +45,4 @@ from cleverhans.utils_tf import clip_eta
 from cleverhans import utils_tf
 
 _logger = utils.create_logger("cleverhans.attacks")
-tf_dtype = tf.as_dtype('float32')
+tf_dtype = tf.as_dtype("float32")

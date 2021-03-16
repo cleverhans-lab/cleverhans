@@ -6,12 +6,12 @@ from matplotlib import pyplot
 
 
 def save_pdf(path):
-  """
-  Saves a pdf of the current matplotlib figure.
+    """
+    Saves a pdf of the current matplotlib figure.
 
-  :param path: str, filepath to save to
-  """
+    :param path: str, filepath to save to
+    """
 
-  pp = PdfPages(path)
-  pp.savefig(pyplot.gcf())
-  pp.close()
+    pp = PdfPages(path)
+    pp.savefig(pyplot.gcf())
+    pp.close()
