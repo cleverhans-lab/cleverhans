@@ -18,7 +18,7 @@ def sparse_l1_descent(
     rand_init=False,
     clip_grad=False,
     grad_sparsity=99,
-    sanity_checks=True,
+    sanity_checks=False,
 ):
     """
     This class implements a variant of Projected Gradient Descent for the l1-norm
@@ -60,10 +60,6 @@ def sparse_l1_descent(
     if clip_grad and (clip_min is None or clip_max is None):
         raise ValueError("Must set clip_min and clip_max if clip_grad is set")
 
-    assert eps_iter <= eps, "eps_iter should be at most eps. Got {}, {} instead".format(
-        eps_iter, eps
-    )
-
     # The grad_sparsity argument governs the sparsity of the gradient
     # update. It indicates the percentile value above which gradient entries
     # are retained. It can be specified as a scalar or as a 1-dimensional
@@ -72,6 +68,7 @@ def sparse_l1_descent(
         if not 0 < grad_sparsity < 100:
             raise ValueError("grad_sparsity should be in (0, 100)")
     else:
+        grad_sparsity = torch.tensor(grad_sparsity)
         if len(grad_sparsity.shape) > 1:
             raise ValueError("grad_sparsity should either be a scalar or a tensor")
         grad_sparsity = grad_sparsity.to(x.device)
@@ -81,6 +78,9 @@ def sparse_l1_descent(
             )
 
     asserts = []
+
+    # eps_iter should be at most eps
+    asserts.append(eps_iter <= eps)
 
     # If a data range was specified, check that the input was in that range
     if clip_min is not None:
@@ -101,9 +101,15 @@ def sparse_l1_descent(
     # Initialize loop variables
     if rand_init:
         dist = torch.distributions.laplace.Laplace(
-            torch.tensor([0.0]), torch.tensor([1.0])
+            torch.tensor([1.0]), torch.tensor([1.0])
         )
-        eta = dist.sample(x.shape).squeeze(-1)
+        dim = torch.prod(torch.tensor(x.shape[1:]))
+        eta = dist.sample([x.shape[0], dim]).squeeze(-1).to(x.device)
+        norm = torch.sum(torch.abs(eta), axis=-1, keepdim=True)
+        w = torch.pow(
+            torch.rand(x.shape[0], 1, device=x.device), torch.tensor(1.0 / dim)
+        )
+        eta = torch.reshape(eps * (w * eta / norm), x.shape)
     else:
         eta = torch.zeros_like(x)
 
