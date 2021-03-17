@@ -217,7 +217,7 @@ def maybe_download_file(url, datadir=None, force=False):
 
 
 def download_and_parse_mnist_file(file_name, datadir=None, force=False):
-    url = os.path.join("http://yann.lecun.com/exdb/mnist/", file_name)
+    url = os.path.join('https://storage.googleapis.com/cvdf-datasets/mnist/', file_name)
     file_name = maybe_download_file(url, datadir=datadir, force=force)
 
     # Open the file and unzip it if necessary
@@ -304,6 +304,7 @@ def data_mnist(
     Y_train = utils.to_categorical(Y_train, nb_classes=10)
     Y_test = utils.to_categorical(Y_test, nb_classes=10)
     return X_train, Y_train, X_test, Y_test
+
 
 
 def data_cifar10(train_start=0, train_end=50000, test_start=0, test_end=10000):
