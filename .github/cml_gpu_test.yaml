@@ -1,0 +1,48 @@
+name: CML Single GPU Test
+on: [push]
+jobs:
+  run:
+    runs-on: [self-hosted,cml,gpu]
+    steps:
+      - uses: actions/checkout@v2
+      - name: cml_run
+        env:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          nvidia-smi
+          
+          python -m pip install --upgrade pip
+          pip install -e "."
+          pip install -r requirements/requirements.txt
+          pip install -r requirements/requirements-pytorch.txt
+          pip install -r requirements/requirements-jax.txt
+          pip install -r requirements/requirements-tf2.txt
+          pip install -r requirements/requirements-dev.txt
+          pip install -r requirements/requirements-gpu.txt
+
+          find tutorials/future/jax/ -name '*.py' | while read f
+          do
+              python $f
+              if [ $? -ne 0 ]
+              then
+                  exit 1
+              fi
+          done
+
+          find tutorials/future/torch/ -name '*.py' | while read f
+          do
+              python $f
+              if [ $? -ne 0 ]
+              then
+                  exit 1
+              fi
+          done
+
+          find tutorials/future/tf2/ -name '*.py' | while read f
+          do
+              python $f
+              if [ $? -ne 0 ]
+              then
+                  exit 1
+              fi
+          done

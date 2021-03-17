@@ -1,0 +1,47 @@
+name: Style and type checks
+
+on:
+  push:
+    paths:
+      - 'cleverhans/**/*'
+      - 'tutorials/**/*'
+
+  pull_request:
+    paths:
+      - 'cleverhans/**/*'
+      - 'tutorials/**/*'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e "."
+        pip install -r requirements/requirements.txt
+        pip install -r requirements/requirements-pytorch.txt
+        pip install -r requirements/requirements-tf2.txt
+        pip install -r requirements/requirements-jax.txt
+        pip install -r requirements/requirements-dev.txt
+    - name: Code reformat check
+      run: |
+        black --check cleverhans/
+        black --check tutorials/
+#    - name: flake8 linting check
+#      run: |
+#        flake8 cleverhans/
+#        flake8 tutorials/
+#    - name: Type check
+#      run: |
+#        mypy cleverhans/future/

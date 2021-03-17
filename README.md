@@ -1,9 +1,7 @@
-# CleverHans (latest release: v3.0.1)
+# CleverHans (latest release: v4.0.0)
 
 <img src="https://github.com/tensorflow/cleverhans/blob/master/assets/logo.png?raw=true" alt="cleverhans logo">
 
-[![Build Status](https://travis-ci.org/tensorflow/cleverhans.svg?branch=master)](https://travis-ci.org/tensorflow/cleverhans)
-[![Documentation Status](https://readthedocs.org/projects/cleverhans/badge/?version=latest)](https://cleverhans.readthedocs.io/en/latest/?badge=latest)
 
 This repository contains the source code for CleverHans, a Python library to
 benchmark machine learning systems' vulnerability to
@@ -11,77 +9,32 @@ benchmark machine learning systems' vulnerability to
 You can learn more about such vulnerabilities on the accompanying [blog](http://cleverhans.io).
 
 The CleverHans library is under continual development, always welcoming
-[contributions](https://github.com/tensorflow/cleverhans#contributing)
+[contributions](https://github.com/cleverhans-lab/cleverhans#contributing)
 of the latest attacks and defenses.
-In particular, we always welcome help towards resolving the [issues](https://github.com/tensorflow/cleverhans/issues)
+In particular, we always welcome help towards resolving the [issues](https://github.com/cleverhans-lab/cleverhans/issues)
 currently open.
 
-## Major updates coming to CleverHans
+Since v4.0.0, CleverHans supports 3 frameworks: JAX, PyTorch, and TF2. We are currently prioritizing implementing 
+attacks in PyTorch, but we very much welcome contributions for all 3 frameworks. In versions v3.1.0 and prior,
+CleverHans supported TF1; the code for v3.1.0 can be found under `cleverhans_v3.1.0/` or by checking
+out a prior Github release.
 
-CleverHans will soon support 3 frameworks: JAX, PyTorch, and TF2.  The package
-itself will focus on its initial principle: reference implementation of attacks
+The library focuses on providing reference implementation of attacks
 against machine learning models to help with benchmarking models against
-adversarial examples. This repository will also contain two folders:
-`tutorials/` for scripts demonstrating the features of CleverHans and
-`defenses/` for scripts that contain authoritative implementations of defenses
-in one of the 3 supported frameworks. The structure of the future repository
-will look like this:
+adversarial examples. 
 
-```
-cleverhans/
-  jax/
-    attacks/
-      ...
-    tests/
-      ...
-  tf2/
-    attacks/
-      ...
-    tests/
-      ...
-  torch/
-    attacks/
-      ...
-    tests/
-      ...
-defenses/
-  jax/
-    ...
-  tf2/
-    ...
-  torch/
-    ...
-tutorials/
-  jax/
-    ...
-  tf2/
-    ...
-  torch/
-    ...
-```
-
-In the meanwhile, all of these folders can be found in the correspond `future/`
-subdirectory (e.g., `cleverhans/future/jax/attacks`, `cleverhans/future/jax/tests` or `defenses/future/jax/`).
-
-A public milestone has been created to track the changes that are to be
-implemented before the library version is incremented to v4. 
+The directory structure is as follows: 
+`cleverhans/` contain attack implementations, `tutorials/` contain scripts demonstrating the features
+of CleverHans, and `defenses/` contains defense implementations. Each framework has its own subdirectory
+within these folders, e.g. `cleverhans/jax`.
 
 ## Setting up CleverHans
 
 ### Dependencies
 
-This library uses [TensorFlow](https://www.tensorflow.org/) to accelerate graph
+This library uses [Jax](https://github.com/google/jax), [PyTorch](https://pytorch.org/) or [TensorFlow 2](https://www.tensorflow.org/) to accelerate graph
 computations performed by many machine learning models.
-Therefore, installing TensorFlow is a pre-requisite.
-
-You can find instructions
-[here](https://www.tensorflow.org/install/).
-For better performance, it is also recommended to install TensorFlow
-with GPU support (detailed instructions on how to do this are available
-in the TensorFlow installation documentation).
-
-Installing TensorFlow will
-take care of all other dependencies like `numpy` and `scipy`.
+Therefore, installing one of these libraries is a pre-requisite.
 
 ### Installation
 
@@ -90,8 +43,7 @@ Once dependencies have been taken care of, you can install CleverHans using
 
 #### `pip` installation
 
-If you are installing CleverHans using `pip`, run the following command
-after installing TensorFlow:
+If you are installing CleverHans using `pip`, run the following command:
 
 ```
 pip install cleverhans
@@ -102,7 +54,7 @@ This will install the last version uploaded to
 If you'd instead like to install the bleeding edge version, use:
 
 ```
-pip install git+https://github.com/tensorflow/cleverhans.git#egg=cleverhans
+pip install git+https://github.com/cleverhans-lab/cleverhans.git#egg=cleverhans
 ```
 
 #### Installation for development
@@ -112,7 +64,7 @@ develop the library and contribute changes back, first fork the repository
 on GitHub and then clone your fork into a directory of your choice:
 
 ```
-git clone https://github.com/tensorflow/cleverhans
+git clone https://github.com/<your-org>/cleverhans
 ```
 
 You can then install the local package in "editable" mode in order to add it to
@@ -126,19 +78,8 @@ pip install -e .
 ### Currently supported setups
 
 Although CleverHans is likely to work on many other machine configurations, we
-currently [test it](https://travis-ci.org/tensorflow/cleverhans) it with Python
-3.5 and TensorFlow {1.8, 1.12} on Ubuntu 14.04.5 LTS (Trusty Tahr).
-Support for Python 2.7 is deprecated.
-CleverHans 3.0.1 supports Python 2.7 and the master branch is likely to
-continue to work in Python 2.7 for some time, but we no longer run the tests
-in Python 2.7 and we do not plan to fix bugs affecting only Python 2.7 after
-2019-07-04.
-Support for TensorFlow prior to 1.12 is deprecated.
-Backwards compatibility wrappers for these versions may be removed after 2019-07-07,
-and we will not fix bugs for those versions after that date.
-Support for TensorFlow 1.7 and earlier is already deprecated: we do not fix
-bugs for those versions and any remaining wrapper code for those versions
-may be removed without further notice.
+currently test it with Python
+3.7, Jax 0.2, PyTorch 1.7, and Tensorflow 2.4 on Ubuntu 18.04 LTS (Bionic Beaver).
 
 ## Getting support
 
@@ -150,55 +91,27 @@ issue tracker should *only* be used to report bugs or make feature requests.
 ## Contributing
 
 Contributions are welcomed! To speed the code review process, we ask that:
-* New efforts and features be coordinated
-on the mailing list for CleverHans development: [cleverhans-dev@googlegroups.com](https://groups.google.com/forum/#!forum/cleverhans-dev).
-* When making code contributions to CleverHans, you follow the
-`PEP8 with two spaces` coding style (the same as the one used
-by TensorFlow) in your pull requests.
-In most cases this can be done by running `autopep8 -i --indent-size 2 <file>`
-on the files you have edited.
-You can check your code by running `nosetests cleverhans/devtools/tests/test_format.py` or check an individual file by running `pylint <file>` from inside the cleverhans repository root directory.
-* When making your first pull request, you [sign the Google CLA](https://cla.developers.google.com/clas)
+* New efforts and features be coordinated on the [discussion board](https://github.com/cleverhans-lab/cleverhans/discussions).
+* When making code contributions to CleverHans, you should follow the [`Black`](https://black.readthedocs.io/en/stable/index.html)
+ coding style in your pull requests.
 * We do not accept pull requests that add git submodules because of [the
   problems that arise when maintaining git
-  submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407)
+  submodules](https://medium.com/@porteneuve/mastering-git-submodules-34c65e940407).
 
 Bug fixes can be initiated through Github pull requests.
 
-## Scripts: `scripts` directory
-
-The `scripts` directory contains command line utilities.
-In many cases you can use these to run CleverHans functionality on your
-saved models without needing to write any of your own Python code.
-
-You may want to set your `.bashrc` / `.bash_profile` file to add the
-CleverHans `scripts` directory to your `PATH` environment variable
-so that these scripts will be conveniently executable from any directory.
-
-## Tutorials: `cleverhans_tutorials` directory
+## Tutorials: `tutorials` directory
 
 To help you get started with the functionalities provided by this library, the
-`cleverhans_tutorials/` folder comes with the following tutorials:
-* **MNIST with FGSM** ([code](cleverhans_tutorials/mnist_tutorial_tf.py)): this
-tutorial covers how to train a MNIST model using TensorFlow,
-craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
-and make the model more robust to adversarial examples using adversarial training.
-* **MNIST with FGSM using Keras** ([code](cleverhans_tutorials/mnist_tutorial_keras_tf.py)): this
-tutorial covers how to define a MNIST model with Keras and train it using TensorFlow,
-craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572),
-and make the model more robust to adversarial
-examples using adversarial training.
-* **MNIST with JSMA** ([code](cleverhans_tutorials/mnist_tutorial_jsma.py)): this second
-tutorial covers how to define a MNIST model with Keras and train it using TensorFlow and
-craft adversarial examples using the [Jacobian-based saliency map approach](https://arxiv.org/abs/1511.07528).
-* **MNIST using a black-box attack** ([code](cleverhans_tutorials/mnist_blackbox.py)):
-this tutorial implements the black-box
-attack described in this [paper](https://arxiv.org/abs/1602.02697).
-The adversary train a substitute model: a copy that imitates the black-box
-model by observing the labels that the black-box model assigns to inputs chosen
-carefully by the adversary. The adversary then uses the substitute
-model’s gradients to find adversarial examples that are misclassified by the
-black-box model as well.
+`tutorials/` folder comes with the following tutorials:
+* **MNIST with FGSM and PGD** ([jax](tutorials/jax/mnist_tutorial.py), [tf2](tutorials/tf2/mnist_tutorial.py):
+this tutorial covers how to train an MNIST model and craft adversarial examples using the
+ [fast gradient sign method](https://arxiv.org/abs/1412.6572) and 
+ [projected gradient descent](https://arxiv.org/abs/1706.06083).
+* **CIFAR10 with FGSM and PGD** ([pytorch](tutorials/torch/cifar10_tutorial.py), [tf2](tutorials/tf2/cifar10_tutorial.py)):
+this tutorial covers how to train a CIFAR10 model and 
+craft adversarial examples using the [fast gradient sign method](https://arxiv.org/abs/1412.6572) and
+ [projected gradient descent](https://arxiv.org/abs/1706.06083).
 
 NOTE: the tutorials are maintained carefully, in the sense that we use
 continuous integration to make sure they continue working. They are not
@@ -207,7 +120,7 @@ You should not write 3rd party code that imports the tutorials and expect
 that the interface will not break. Only the main library is subject to
 our six month interface deprecation warning rule.
 
-NOTE: please write to cleverhans-dev@googlegroups.com before writing a new
+NOTE: please start a thread on the [discussion board](https://github.com/cleverhans-lab/cleverhans/discussions) before writing a new
 tutorial. Because each new tutorial involves a large amount of duplicated
 code relative to the existing tutorials, and because every line of code
 requires ongoing testing and maintenance indefinitely, we generally prefer
@@ -223,16 +136,21 @@ example contests. We do not offer nearly as much ongoing maintenance or support
 for this directory as the rest of the library, and if code in here gets broken
 we may just delete it without warning.
 
+Since we recently discontinued support for TF1, the `examples/` folder is currently 
+empty, but you are welcome to submit your uses via a pull request :)
+
+Old examples for CleverHans v3.1.0 and prior can be found under `cleverhans_v3.1.0/examples/`.
+
 ## Reporting benchmarks
 
 When reporting benchmarks, please:
-* Use a versioned release of CleverHans. You can find a list of released versions [here](https://github.com/tensorflow/cleverhans/releases).
+* Use a versioned release of CleverHans. You can find a list of released versions [here](https://github.com/cleverhans-lab/cleverhans/releases).
 * Either use the latest version, or, if comparing to an earlier publication, use the same version as the earlier publication.
 * Report which attack method was used.
 * Report any configuration variables used to determine the behavior of the attack.
 
 For example, you might report "We benchmarked the robustness of our method to
-adversarial attack using v3.0.1 of CleverHans. On a test set modified by the
+adversarial attack using v4.0.0 of CleverHans. On a test set modified by the
 `FastGradientMethod` with a max-norm `eps` of 0.3, we obtained a test set accuracy of 71.3%."
 
 ## Citing this work
@@ -273,8 +191,10 @@ other inputs.
 
 ## Authors
 
-This library is managed and maintained by Ian Goodfellow (Google Brain) and
-Nicolas Papernot (Google Brain).
+This library is collectively maintained by the [CleverHans Lab](https://cleverhans-lab.github.io/) 
+at the University of Toronto. The current point of contact is Jonas Guan. 
+It was previously maintained by Ian Goodfellow and Nicolas Papernot.
+
 
 The following authors contributed 100 lines or more (ordered according to the GitHub contributors page):
 * Ian Goodfellow (Google Brain)
@@ -323,7 +243,8 @@ The following authors contributed 100 lines or more (ordered according to the Gi
 * Erfan Noury (UMBC)
 * Robert Wagner (Case Western Reserve University)
 * Erh-Chung Chen (National Tsing Hua University)
+* Joel Frank (Ruhr-University Bochum)
 
 ## Copyright
 
-Copyright 2019 - Google Inc., OpenAI and Pennsylvania State University.
+Copyright 2021 - Google Inc., OpenAI, Pennsylvania State University, University of Toronto.

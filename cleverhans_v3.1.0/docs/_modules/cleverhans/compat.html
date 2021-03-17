@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cleverhans.compat &#8212; CleverHans  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for cleverhans.compat</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Wrapper functions for writing code that is compatible with many versions</span>
+<span class="sd">of TensorFlow.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="c1"># The following 2 imports are not used in this module. They are imported so that users of cleverhans.compat can</span>
+<span class="c1"># get access to device_lib, app, and flags. A pylint bug makes these imports cause errors when using python3+tf1.8.</span>
+<span class="c1"># Doing the sanitized import here once makes it possible to do &quot;from cleverhans.compat import flags&quot; throughout the</span>
+<span class="c1"># library without needing to repeat the pylint boilerplate.</span>
+<span class="kn">from</span> <span class="nn">tensorflow.python.client</span> <span class="kn">import</span> <span class="n">device_lib</span> <span class="c1"># pylint: disable=no-name-in-module,unused-import</span>
+<span class="kn">from</span> <span class="nn">tensorflow.python.platform</span> <span class="kn">import</span> <span class="n">app</span><span class="p">,</span> <span class="n">flags</span> <span class="c1"># pylint: disable=no-name-in-module,unused-import</span>
+
+<span class="k">def</span> <span class="nf">_wrap</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Wraps a callable `f` in a function that warns that the function is deprecated.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Issues a deprecation warning and passes through the arguments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; is deprecated. Switch to calling the equivalent function in tensorflow. &quot;</span>
+                  <span class="s2">&quot; This function was originally needed as a compatibility layer for old versions of tensorflow, &quot;</span>
+                  <span class="s2">&quot; but support for those versions has now been dropped.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">wrapper</span>
+
+<span class="n">reduce_sum</span> <span class="o">=</span> <span class="n">_wrap</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">)</span>
+<span class="n">reduce_max</span> <span class="o">=</span> <span class="n">_wrap</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_max</span><span class="p">)</span>
+<span class="n">reduce_min</span> <span class="o">=</span> <span class="n">_wrap</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_min</span><span class="p">)</span>
+<span class="n">reduce_mean</span> <span class="o">=</span> <span class="n">_wrap</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">)</span>
+<span class="n">reduce_prod</span> <span class="o">=</span> <span class="n">_wrap</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_prod</span><span class="p">)</span>
+<span class="n">reduce_any</span> <span class="o">=</span> <span class="n">_wrap</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_any</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">reduce_function</span><span class="p">(</span><span class="n">op_func</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reduction_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  This function used to be needed to support tf 1.4 and early, but support for tf 1.4 and earlier is now dropped.</span>
+<span class="sd">  :param op_func: expects the function to handle eg: tf.reduce_sum.</span>
+<span class="sd">  :param input_tensor: The tensor to reduce. Should have numeric type.</span>
+<span class="sd">  :param axis: The dimensions to reduce. If None (the default),</span>
+<span class="sd">          reduces all dimensions. Must be in the range</span>
+<span class="sd">          [-rank(input_tensor), rank(input_tensor)).</span>
+<span class="sd">  :param keepdims: If true, retains reduced dimensions with length 1.</span>
+<span class="sd">  :param name: A name for the operation (optional).</span>
+<span class="sd">  :param reduction_indices: The old (deprecated) name for axis.</span>
+<span class="sd">  :return: outputs same value as op_func.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;`reduce_function` is deprecated and may be removed on or after 2019-09-08.&quot;</span><span class="p">)</span>
+
+  <span class="n">out</span> <span class="o">=</span> <span class="n">op_func</span><span class="p">(</span><span class="n">input_tensor</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="n">keepdims</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">reduction_indices</span><span class="o">=</span><span class="n">reduction_indices</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">out</span>
+
+<div class="viewcode-block" id="softmax_cross_entropy_with_logits"><a class="viewcode-back" href="../../source/attacks.html#cleverhans.attacks.softmax_cross_entropy_with_logits">[docs]</a><span class="k">def</span> <span class="nf">softmax_cross_entropy_with_logits</span><span class="p">(</span><span class="n">sentinel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">logits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Wrapper around tf.nn.softmax_cross_entropy_with_logits_v2 to handle</span>
+<span class="sd">  deprecated warning</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1"># Make sure that all arguments were passed as named arguments.</span>
+  <span class="k">if</span> <span class="n">sentinel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;softmax_cross_entropy_with_logits&quot;</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only call `</span><span class="si">%s</span><span class="s2">` with &quot;</span>
+                     <span class="s2">&quot;named arguments (labels=..., logits=..., ...)&quot;</span>
+                     <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">logits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Both labels and logits must be provided.&quot;</span><span class="p">)</span>
+
+  <span class="k">try</span><span class="p">:</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax_cross_entropy_with_logits_v2</span>
+  <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;This version of TensorFlow is no longer supported. See cleverhans/README.md&quot;</span><span class="p">)</span>
+
+  <span class="n">labels</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+  <span class="n">loss</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">logits</span><span class="o">=</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">loss</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">CleverHans</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../source/attacks.html"><cite>attacks</cite> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/model.html"><cite>model</cite> module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+  </body>
+</html>

@@ -1,0 +1,2 @@
+tensorflow>=2.3.0
+tensorflow-datasets>=4.2.0
