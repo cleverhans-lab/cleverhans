@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 
-from cleverhans.future.torch.utils import zero_out_clipped_grads
+from cleverhans.torch.utils import zero_out_clipped_grads
 
 
 def sparse_l1_descent(model_fn, x, eps=10.0, eps_iter=1.0, nb_iter=20, y=None,
