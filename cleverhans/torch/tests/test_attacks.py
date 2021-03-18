@@ -16,6 +16,7 @@ from cleverhans.torch.attacks.projected_gradient_descent import (
 from cleverhans.torch.attacks.carlini_wagner_l2 import carlini_wagner_l2
 from cleverhans.torch.attacks.spsa import spsa
 from cleverhans.torch.attacks.hop_skip_jump_attack import hop_skip_jump_attack
+from cleverhans.torch.attacks.sparse_l1_descent import sparse_l1_descent
 
 
 class TrivialModel(torch.nn.Module):
@@ -38,6 +39,20 @@ class SimpleModel(torch.nn.Module):
         x = torch.sigmoid(x)
         x = torch.matmul(x, self.w2)
         return x
+
+
+class DummyModel(torch.nn.Module):
+    def __init__(self, n_features):
+        super(DummyModel, self).__init__()
+        self.model = torch.nn.Sequential(
+            torch.nn.Linear(n_features, 60),
+            torch.nn.ReLU(),
+            torch.nn.Linear(60, 10),
+        )
+
+    def forward(self, x):
+        x = x.view(x.shape[0], -1)
+        return self.model(x)
 
 
 class CommonAttackProperties(CleverHansTest):
@@ -848,3 +863,185 @@ class TestHopSkipJumpAttack(CommonAttackProperties):
         adv_acc = new_labs.eq(y_target).sum().to(torch.float) / y_target.size(0)
 
         self.assertGreater(adv_acc, 0.9)
+
+
+class TestSparseL1Descent(CommonAttackProperties):
+    def setUp(self):
+        super(TestSparseL1Descent, self).setUp()
+        self.attack = sparse_l1_descent
+
+    def generate_adversarial_examples(self, **kwargs):
+        x_adv = self.attack(model_fn=self.model, x=self.normalized_x, **kwargs)
+        _, ori_label = self.model(self.normalized_x).max(1)
+        _, adv_label = self.model(x_adv).max(1)
+        adv_acc = adv_label.eq(ori_label).sum().to(
+            torch.float
+        ) / self.normalized_x.size(0)
+
+        delta = torch.sum(torch.abs(x_adv - self.normalized_x), dim=1)
+        return x_adv, delta, adv_acc
+
+    def generate_targeted_adversarial_examples(self, **kwargs):
+        y_target = torch.randint(low=0, high=2, size=(self.normalized_x.size(0),))
+        x_adv = self.attack(
+            model_fn=self.model,
+            x=self.normalized_x,
+            y=y_target,
+            targeted=True,
+            **kwargs
+        )
+
+        _, adv_label = self.model(x_adv).max(1)
+        adv_success = adv_label.eq(y_target).sum().to(
+            torch.float
+        ) / self.normalized_x.size(0)
+
+        delta = torch.sum(torch.abs(x_adv - self.normalized_x), dim=1)
+        return x_adv, delta, adv_success
+
+    def test_invalid_input(self):
+        x_val = -torch.ones((2, 2))
+        with self.assertRaises(AssertionError):
+            self.attack(self.model, x_val, eps=10.0, clip_min=0.0, clip_max=1.0)
+
+    def test_gives_adversarial_example(self):
+        _, delta, adv_acc = self.generate_adversarial_examples(
+            eps=2, clip_min=-5, clip_max=5
+        )
+        self.assertLess(adv_acc, 0.5)
+        self.assertLess(torch.max(torch.abs(delta - 2)), 1e-3)
+
+    def test_targeted_gives_adversarial_example(self):
+        _, delta, adv_acc = self.generate_targeted_adversarial_examples(
+            eps=10, clip_min=-5, clip_max=5
+        )
+        self.assertGreater(adv_acc, 0.7)
+        self.assertLessEqual(torch.max(delta), 10.001)
+
+    def test_can_be_called_with_different_eps(self):
+        for eps in [10, 20, 30, 40]:
+            _, delta, _ = self.generate_adversarial_examples(
+                eps=eps, clip_min=-5, clip_max=5
+            )
+            self.assertLessEqual(torch.max(delta), eps + 1e-4)
+
+    def test_clip_works_as_expected(self):
+        x_adv, _, _ = self.generate_adversarial_examples(
+            eps=10,
+            nb_iter=20,
+            rand_init=True,
+            clip_min=-0.2,
+            clip_max=0.1,
+            sanity_checks=False,
+        )
+
+        self.assertClose(torch.min(x_adv), -0.2)
+        self.assertClose(torch.max(x_adv), 0.1)
+
+    def test_do_not_reach_lp_boundary(self):
+        """
+        Make sure that iterative attack don't reach boundary of Lp
+        neighbourhood if nb_iter * eps_iter is relatively small compared to
+        epsilon.
+        """
+        _, delta, _ = self.generate_adversarial_examples(
+            eps=0.5, clip_min=-5, clip_max=5, nb_iter=10, eps_iter=0.01
+        )
+        self.assertTrue(torch.max(0.5 - delta) > 0.25)
+
+    def test_generate_np_gives_clipped_adversarial_examples(self):
+        x_adv, _, _ = self.generate_adversarial_examples(
+            eps=1.0,
+            eps_iter=0.1,
+            nb_iter=5,
+            clip_min=-0.2,
+            clip_max=0.3,
+            sanity_checks=False,
+        )
+
+        self.assertLess(-0.201, torch.min(x_adv))
+        self.assertLess(torch.max(x_adv), 0.301)
+
+    def test_clip_eta(self):
+        _, delta, _ = self.generate_adversarial_examples(
+            eps=1, clip_min=-5, clip_max=5, nb_iter=5, eps_iter=0.1
+        )
+
+        # this projection is less numerically stable so give it some slack
+        self.assertLessEqual(torch.max(delta), 1.0 + 1e-6)
+
+    def test_attack_strength(self):
+        # sanity checks turned off because this test initializes outside
+        # the valid range.
+        _, _, adv_acc = self.generate_adversarial_examples(
+            eps=10,
+            rand_init=True,
+            clip_min=0.5,
+            clip_max=0.7,
+            nb_iter=10,
+            sanity_checks=False,
+        )
+
+        self.assertLess(adv_acc, 0.4)
+
+    def test_grad_clip(self):
+        """
+        With clipped gradients, we achieve
+        np.mean(orig_labels == new_labels) == 0.0
+        """
+
+        # sanity checks turned off because this test initializes outside
+        # the valid range.
+        _, _, adv_acc = self.generate_adversarial_examples(
+            eps=10,
+            rand_init=True,
+            clip_grad=True,
+            clip_min=0.5,
+            clip_max=0.7,
+            nb_iter=10,
+            sanity_checks=False,
+        )
+        self.assertLess(adv_acc, 0.1)
+
+    def test_sparsity(self):
+        # use a model with larger input dimensionality for this test.
+        model_fn = DummyModel(1000)
+        x_val = torch.rand(100, 1000)
+
+        for q in [1, 9, 25.8, 50, 75.4, 90.2, 99, 99.9]:
+            x_adv = self.attack(
+                model_fn,
+                x_val,
+                eps=5.0,
+                grad_sparsity=q,
+                nb_iter=1,
+                sanity_checks=False,
+            )
+
+            numzero = torch.sum(x_adv - x_val == 0, dim=-1).float()
+            self.assertAlmostEqual(q * 1000.0 / 100.0, torch.mean(numzero), delta=1)
+
+    def test_grad_sparsity_checks(self):
+        # test that the attacks allows `grad_sparsity` to be specified as a scalar
+        # in (0, 100) or as a vector.
+
+        # scalar values out of range
+        with self.assertRaises(ValueError):
+            self.generate_adversarial_examples(grad_sparsity=0)
+
+        with self.assertRaises(ValueError):
+            self.generate_adversarial_examples(grad_sparsity=100)
+
+        # sparsity as 2D array should fail
+        with self.assertRaises(ValueError):
+            gs = torch.empty(100, 2).uniform_(90, 99)
+            self.generate_adversarial_examples(sanity_checks=False, grad_sparsity=gs)
+
+        # sparsity as 1D array should succeed
+        gs = torch.empty(100).uniform_(90, 99)
+        self.generate_adversarial_examples(sanity_checks=False, grad_sparsity=gs)
+
+        # sparsity vector of wrong size should fail
+        with self.assertRaises(ValueError) as context:
+            gs = torch.empty(101).uniform_(90, 99)
+            self.generate_adversarial_examples(sanity_checks=False, grad_sparsity=gs)

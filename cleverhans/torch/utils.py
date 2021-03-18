@@ -122,3 +122,24 @@ def optimize_linear(grad, eps, norm=np.inf):
     # norm=1 problem
     scaled_perturbation = eps * optimal_perturbation
     return scaled_perturbation
+
+
+def zero_out_clipped_grads(grad, x, clip_min, clip_max):
+    """
+    Helper function to erase entries in the gradient where the update would be
+    clipped.
+    :param grad: The gradient
+    :param x: The current input
+    :param clip_min: Minimum input component value
+    :param clip_max: Maximum input component value
+    """
+    signed_grad = torch.sign(grad)
+
+    # Find input components that lie at the boundary of the input range, and
+    # where the gradient points in the wrong direction.
+    clip_low = torch.le(x, clip_min) & torch.lt(signed_grad, 0)
+    clip_high = torch.ge(x, clip_max) & torch.gt(signed_grad, 0)
+    clip = clip_low | clip_high
+    grad = torch.where(clip, torch.zeros_like(grad), grad)
+
+    return grad
