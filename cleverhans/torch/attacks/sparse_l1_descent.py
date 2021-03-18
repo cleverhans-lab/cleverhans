@@ -18,7 +18,7 @@ def sparse_l1_descent(
     rand_init=False,
     clip_grad=False,
     grad_sparsity=99,
-    sanity_checks=False,
+    sanity_checks=True,
 ):
     """
     This class implements a variant of Projected Gradient Descent for the l1-norm
