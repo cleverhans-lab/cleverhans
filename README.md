@@ -79,7 +79,7 @@ pip install -e .
 
 Although CleverHans is likely to work on many other machine configurations, we
 currently test it with Python
-3.7, Jax 0.2, PyTorch 1.7, and Tensorflow 2.4 on Ubuntu 18.04 LTS (Bionic Beaver).
+3.6, Jax 0.2, PyTorch 1.7, and Tensorflow 2.4 on Ubuntu 18.04 LTS (Bionic Beaver).
 
 ## Getting support
 
