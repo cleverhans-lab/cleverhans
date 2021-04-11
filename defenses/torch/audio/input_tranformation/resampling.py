@@ -12,8 +12,7 @@ audio_data = librosa.load(files, sr=16000)[0][-19456:]
 
 audio_data = torch.tensor(audio_data).float().to(device)
 
-# Discarding samples from a waveform during downsampling could remove a significant portion of the adversarial perturbation,
-# thereby prevents an adversarial attack.
+# Discarding samples from a waveform during downsampling could remove a significant portion of the adversarial perturbation, thereby prevents an adversarial attack.
 
 # resample the audio files to 8kHz from 16kHz
 sample = T.Resample(16000, 8000, resampling_method="sinc_interpolation")
