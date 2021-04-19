@@ -1,7 +1,8 @@
 import torchaudio
 import librosa
 
-
+# There exist a limitation of this defense that it may lead to the problem of aliasing, and we can use the narrowband sample rate
+# rather than downsampling followed by upsampling.
 # resampling reference https://core.ac.uk/download/pdf/228298313.pdf
 # resampling input transformation defense for audio
 
