@@ -114,17 +114,10 @@ def carlini_wagner_l2(
     o_bestattack = x.clone().detach()
 
     # Map images into the tanh-space
-    # TODO as of 01/06/2020, PyTorch does not natively support
-    # arctanh (see, e.g.,
-    # https://github.com/pytorch/pytorch/issues/10324).
-    # This particular implementation here is not numerically
-    # stable and should be substituted w/ PyTorch's native
-    # implementation when it comes out in the future
-    arctanh = lambda x: 0.5 * torch.log((1 + x) / (1 - x))
     x = (x - clip_min) / (clip_max - clip_min)
     x = torch.clamp(x, 0, 1)
     x = x * 2 - 1
-    x = arctanh(x * 0.999999)
+    x = torch.arctanh(x * 0.999999)
 
     # Prepare some variables
     modifier = torch.zeros_like(x, requires_grad=True)
