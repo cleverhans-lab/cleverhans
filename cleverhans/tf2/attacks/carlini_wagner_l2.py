@@ -124,11 +124,13 @@ class CarliniWagnerL2(object):
                     f"The input is greater than the maximum value of {self.clip_max}!"
                 )
 
-        y, _ = get_or_guess_labels(self.model_fn, x, y=self.y, targeted=self.targeted)
-
         # cast to tensor if provided as numpy array
         original_x = tf.cast(x, tf.float32)
         shape = original_x.shape
+
+        y, _ = get_or_guess_labels(
+            self.model_fn, original_x, y=self.y, targeted=self.targeted
+        )
 
         if not y.shape.as_list()[0] == original_x.shape.as_list()[0]:
             raise CarliniWagnerL2Exception("x and y do not have the same shape!")
