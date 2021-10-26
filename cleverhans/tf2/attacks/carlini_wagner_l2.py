@@ -150,7 +150,7 @@ class CarliniWagnerL2(object):
         lower_bound = tf.zeros(shape[:1])
         upper_bound = tf.ones(shape[:1]) * 1e10
 
-        const = tf.ones(shape) * self.initial_const
+        const = tf.ones(shape[:1]) * self.initial_const
 
         # placeholder variables for best values
         best_l2 = tf.fill(shape[:1], 1e10)
