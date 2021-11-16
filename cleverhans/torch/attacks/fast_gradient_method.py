@@ -10,6 +10,7 @@ def fast_gradient_method(
     x,
     eps,
     norm,
+    loss_fn=None,
     clip_min=None,
     clip_max=None,
     y=None,
@@ -22,6 +23,8 @@ def fast_gradient_method(
     :param x: input tensor.
     :param eps: epsilon (input variation parameter); see https://arxiv.org/abs/1412.6572.
     :param norm: Order of the norm (mimics NumPy). Possible values: np.inf, 1 or 2.
+    :param loss_fn: (optional) callable. Loss function that takes (output, target) as arguments and returns loss.
+                    default function is 'torch.nn.CrossEntropyLoss()'
     :param clip_min: (optional) float. Minimum float value for adversarial example components.
     :param clip_max: (optional) float. Maximum float value for adversarial example components.
     :param y: (optional) Tensor with true labels. If targeted is true, then provide the
@@ -77,7 +80,8 @@ def fast_gradient_method(
         _, y = torch.max(model_fn(x), 1)
 
     # Compute loss
-    loss_fn = torch.nn.CrossEntropyLoss()
+    if loss_fn is None:
+        loss_fn = torch.nn.CrossEntropyLoss()
     loss = loss_fn(model_fn(x), y)
     # If attack is targeted, minimize loss of target label rather than maximize loss of correct label
     if targeted:
