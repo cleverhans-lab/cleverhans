@@ -1,6 +1,6 @@
 import jax.numpy as np
 from jax import grad, vmap
-from jax.experimental.stax import logsoftmax
+from jax.example_libraries.stax import logsoftmax
 
 from cleverhans.jax.utils import one_hot
 
