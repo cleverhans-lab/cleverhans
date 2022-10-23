@@ -17,6 +17,7 @@ def projected_gradient_descent(
     targeted=False,
     rand_init=None,
     rand_minmax=0.3,
+    num_classes=10
 ):
     """
     This class implements either the Basic Iterative Method
@@ -71,7 +72,7 @@ def projected_gradient_descent(
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
         x_labels = np.argmax(model_fn(x), 1)
-        y = one_hot(x_labels, 10)
+        y = one_hot(x_labels, num_classes)
 
     for _ in range(nb_iter):
         adv_x = fast_gradient_method(
