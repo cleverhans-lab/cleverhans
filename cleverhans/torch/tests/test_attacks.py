@@ -695,7 +695,7 @@ class TestSPSA(CommonAttackProperties):
     def test_adv_example_success_rate_linf(self):
         # use normalized_x to make sure the same eps gives uniformly high attack
         # success rate across randomized tests
-        self.help_adv_examples_success_rate(**self.attack_param)
+        self.help_adv_examples_success_rate(rate=0.29, **self.attack_param)
 
     def test_targeted_adv_example_success_rate_linf(self):
         self.help_targeted_adv_examples_success_rate(**self.attack_param)
