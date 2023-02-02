@@ -47,8 +47,8 @@ class CarliniWagnerL2(object):
         :param y: (optional) Tensor with target labels.
         :param targeted: (optional) Targeted attack?
         :param batch_size (optional): Number of attacks to run simultaneously.
-        :param clip_min: (optional) float. Minimum float values for adversarial example components.
-        :param clip_max: (optional) float. Maximum float value for adversarial example components.
+        :param clip_min: Minimum float values for adversarial example components.
+        :param clip_max: Maximum float value for adversarial example components.
         :param binary_search_steps (optional): The number of times we perform binary
                                 search to find the optimal tradeoff-
                                 constant between norm of the purturbation
@@ -117,11 +117,19 @@ class CarliniWagnerL2(object):
                 raise CarliniWagnerL2Exception(
                     f"The input is smaller than the minimum value of {self.clip_min}r"
                 )
+        else:
+            raise CarliniWagnerL2Exception(
+                    "The parameter clip_min can not be None."
+                )
 
         if self.clip_max is not None:
             if not np.all(tf.math.less_equal(x, self.clip_max)):
                 raise CarliniWagnerL2Exception(
                     f"The input is greater than the maximum value of {self.clip_max}!"
+                )
+        else:
+            raise CarliniWagnerL2Exception(
+                    "The parameter clip_max can not be None."
                 )
 
         # cast to tensor if provided as numpy array
