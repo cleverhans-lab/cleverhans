@@ -489,6 +489,7 @@ class TestProjectedGradientMethod(CommonAttackProperties):
             if norm == 1:
                 self.assertRaises(
                     NotImplementedError,
+                    self.attack,
                     model_fn=self.model,
                     x=self.normalized_x,
                     eps=0.3,
@@ -1045,3 +1046,4 @@ class TestSparseL1Descent(CommonAttackProperties):
         with self.assertRaises(ValueError) as context:
             gs = torch.empty(101).uniform_(90, 99)
             self.generate_adversarial_examples(sanity_checks=False, grad_sparsity=gs)
+

@@ -71,7 +71,9 @@ def fast_gradient_method(
 
     # x needs to be a leaf variable, of floating point type and have requires_grad being True for
     # its grad to be computed and stored properly in a backward call
-    x = x.clone().detach().to(torch.float).requires_grad_(True)
+    # kylematoba: probably don't need this, but I'll add it here to respect the intention of the earlier cast
+    assert torch.is_floating_point(x)
+    x = x.clone().detach().to(x.dtype).requires_grad_(True)
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
         _, y = torch.max(model_fn(x), 1)

@@ -89,7 +89,7 @@ def hop_skip_jump_attack(
             images = torch.clamp(images, clip_min, clip_max)
             prob = []
             for i in range(0, len(images), batch_size):
-                batch = images[i : i + batch_size]
+                batch = images[i: i + batch_size]
                 prob_i = model_fn(batch)
                 prob.append(prob_i)
             prob = torch.cat(prob, dim=0)
@@ -214,7 +214,7 @@ def hop_skip_jump_attack(
 
 
 def compute_distance(x_ori, x_pert, constraint=2):
-    """ Compute the distance between two images. """
+    """Compute the distance between two images."""
     if constraint == 2:
         dist = torch.norm(x_ori - x_pert, p=2)
     elif constraint == np.inf:
@@ -225,7 +225,7 @@ def compute_distance(x_ori, x_pert, constraint=2):
 def approximate_gradient(
     decision_function, sample, num_evals, delta, constraint, shape, clip_min, clip_max
 ):
-    """ Gradient direction estimation """
+    """Gradient direction estimation"""
     # Generate random vectors.
     noise_shape = [num_evals] + list(shape)
     if constraint == 2:
@@ -260,7 +260,7 @@ def approximate_gradient(
 
 
 def project(original_image, perturbed_images, alphas, shape, constraint):
-    """ Projection onto given l2 / linf balls in a batch. """
+    """Projection onto given l2 / linf balls in a batch."""
     alphas = alphas.view((alphas.shape[0],) + (1,) * (len(shape) - 1))
     if constraint == 2:
         projected = (1 - alphas) * original_image + alphas * perturbed_images
@@ -274,7 +274,7 @@ def project(original_image, perturbed_images, alphas, shape, constraint):
 def binary_search_batch(
     original_image, perturbed_images, decision_function, shape, constraint, theta
 ):
-    """ Binary search to approach the boundary. """
+    """Binary search to approach the boundary."""
 
     # Compute distance between each of perturbed image and original image.
     dists_post_update = torch.stack(
