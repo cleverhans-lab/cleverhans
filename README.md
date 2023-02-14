@@ -104,7 +104,7 @@ Bug fixes can be initiated through Github pull requests.
 
 To help you get started with the functionalities provided by this library, the
 `tutorials/` folder comes with the following tutorials:
-* **MNIST with FGSM and PGD** ([jax](tutorials/jax/mnist_tutorial.py), [tf2](tutorials/tf2/mnist_tutorial.py):
+* **MNIST with FGSM and PGD** ([jax](tutorials/jax/mnist_tutorial.py), [pytorch](tutorials/torch/mnist_tutorial.py), [tf2](tutorials/tf2/mnist_tutorial.py):
 this tutorial covers how to train an MNIST model and craft adversarial examples using the
  [fast gradient sign method](https://arxiv.org/abs/1412.6572) and 
  [projected gradient descent](https://arxiv.org/abs/1706.06083).
