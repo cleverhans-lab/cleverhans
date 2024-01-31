@@ -150,6 +150,17 @@ class CarliniWagnerL2(object):
         lower_bound = tf.zeros(shape[:1])
         upper_bound = tf.ones(shape[:1]) * 1e10
 
+        # manually broadcast
+        def explicit_broadcast(tensor):
+            while len(tensor.shape) < len(shape):
+                tensor = tf.expand_dims(tensor, -1)
+            return tensor
+
+        lower_bound = explicit_broadcast(lower_bound)
+        upper_bound = explicit_broadcast(upper_bound)
+
+        assert len(lower_bound.shape) == len(lower_bound.shape) == len(shape)
+
         const = tf.ones(shape) * self.initial_const
 
         # placeholder variables for best values
@@ -244,6 +255,8 @@ class CarliniWagnerL2(object):
                 compare_fn(best_score, lab),
                 tf.not_equal(best_score, -1),
             )
+            upper_mask = explicit_broadcast(upper_mask)
+
             upper_bound = set_with_mask(
                 upper_bound, tf.math.minimum(upper_bound, const), upper_mask
             )
@@ -332,7 +345,10 @@ def loss_fn(
 
     # sum up losses
     loss_2 = tf.reduce_sum(l2_dist)
-    loss_1 = tf.reduce_sum(const * loss_1)
+    if len(loss_1.shape) == 1 and loss_1.shape[0] == const.shape[0]:
+        loss_1 = tf.reduce_sum(tf.transpose(const) * loss_1)
+    else:
+        loss_1 = tf.reduce_sum(const * loss_1)
     loss = loss_1 + loss_2
     return loss, l2_dist
 
