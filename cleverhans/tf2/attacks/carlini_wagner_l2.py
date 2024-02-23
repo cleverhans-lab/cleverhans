@@ -241,7 +241,7 @@ class CarliniWagnerL2(object):
 
                 # mask is of shape [batch_size]; best_attack is [batch_size, image_size]
                 # need to expand
-                mask = tf.reshape(mask, [-1, 1, 1, 1])
+                mask = tf.reshape(mask, [-1] + [1] * (shape.ndims-1))
                 mask = tf.tile(mask, [1, *best_attack.shape[1:]])
 
                 best_attack = set_with_mask(best_attack, x_new, mask)
