@@ -1,6 +1,7 @@
 # pylint: disable=missing-docstring
 
 import tensorflow as tf
+import inspect
 
 tf_dtype = tf.as_dtype("float32")
 
@@ -59,6 +60,7 @@ def spsa(
         Margin logit loss, with correct sign for targeted vs untargeted loss.
         """
         logits = model_fn(x)
+        logits = tf.cast(logits, tf_dtype)
         loss_multiplier = 1 if targeted else -1
         return loss_multiplier * margin_logit_loss(
             logits, label, nb_classes=logits.get_shape()[-1]
@@ -95,12 +97,20 @@ class SPSAAdam(tf.optimizers.Adam):
         num_iters=1,
         compare_to_analytic_grad=False,
     ):
-        super(SPSAAdam, self).__init__(lr=lr)
+        lr_long_name = 'learning_rate' in inspect.signature(tf.optimizers.Adam).parameters
+        lr_key = 'learning_rate' if lr_long_name else 'lr'
+        super(SPSAAdam, self).__init__(** { lr_key : lr })
         assert num_samples % 2 == 0, "number of samples must be even"
         self._delta = delta
         self._num_samples = num_samples // 2  # Since we mirror +/- delta later
         self._num_iters = num_iters
         self._compare_to_analytic_grad = compare_to_analytic_grad
+
+    def _get_lr(self):
+        if hasattr(self, 'learning_rate'):
+            return self.learning_rate
+        else:
+            return self.lr
 
     def _get_delta(self, x, delta):
         x_shape = x.get_shape().as_list()
@@ -190,7 +200,7 @@ class SPSAAdam(tf.optimizers.Adam):
             new_optim_state["u"][i] = self.beta_2 * u_old + (1.0 - self.beta_2) * g * g
             m_hat = new_optim_state["m"][i] / (1.0 - tf.pow(self.beta_1, t))
             u_hat = new_optim_state["u"][i] / (1.0 - tf.pow(self.beta_2, t))
-            new_x[i] = x[i] - self.lr * m_hat / (tf.sqrt(u_hat) + self.epsilon)
+            new_x[i] = x[i] - self._get_lr() * m_hat / (tf.sqrt(u_hat) + self.epsilon)
         return new_x, new_optim_state
 
     def init_state(self, x):
